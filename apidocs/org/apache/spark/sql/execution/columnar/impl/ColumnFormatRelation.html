@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ColumnFormatRelation - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation</title>
-          <meta name="description" content="ColumnFormatRelation - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation" />
-          <meta name="keywords" content="ColumnFormatRelation snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation" />
+          <title>ColumnFormatRelation - snappydata_2.11 1.1.1 API - org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation</title>
+          <meta name="description" content="ColumnFormatRelation - snappydata 2.11 1.1.1 API - org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation" />
+          <meta name="keywords" content="ColumnFormatRelation snappydata 2.11 1.1.1 API org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -269,6 +269,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation#canEqual" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="canEqual(that:Any):Boolean"></a>
+      <a id="canEqual(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">canEqual</span><span class="params">(<span name="that">that: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation@canEqual(that:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../JDBCAppendableRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a> → Equals</dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -361,18 +378,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> → <a href="../../../sources/NativeTableRowLevelSecurityRelation.html" class="extype" name="org.apache.spark.sql.sources.NativeTableRowLevelSecurityRelation">NativeTableRowLevelSecurityRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation#createIndex" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="createIndex(indexIdent:org.apache.spark.sql.catalyst.TableIdentifier,tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,indexColumns:Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]],options:Map[String,String]):Unit"></a>
-      <a id="createIndex(TableIdentifier,TableIdentifier,Map[String,Option[SortDirection]],Map[String,String]):Unit"></a>
+      <a id="createIndex(indexIdent:org.apache.spark.sql.catalyst.TableIdentifier,tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,indexColumns:Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])],options:Map[String,String]):Unit"></a>
+      <a id="createIndex(TableIdentifier,TableIdentifier,Seq[(String,Option[SortDirection])],Map[String,String]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">createIndex</span><span class="params">(<span name="indexIdent">indexIdent: <a href="../../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="tableIdent">tableIdent: <a href="../../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="indexColumns">indexColumns: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../../../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>]]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">createIndex</span><span class="params">(<span name="indexIdent">indexIdent: <a href="../../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="tableIdent">tableIdent: <a href="../../../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="indexColumns">indexColumns: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../../../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>])]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation@createIndex(indexIdent:org.apache.spark.sql.catalyst.TableIdentifier,tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,indexColumns:Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]],options:Map[String,String]):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation@createIndex(indexIdent:org.apache.spark.sql.catalyst.TableIdentifier,tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,indexColumns:Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])],options:Map[String,String]):Unit" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -536,6 +553,23 @@ dropping the external table that this relation represents.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(that:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="that">that: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation@equals(that:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../JDBCAppendableRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a> → Equals → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation#executeUpdate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executeUpdate(sql:String,defaultSchema:String):Int"></a>
       <a id="executeUpdate(String,String):Int"></a>
@@ -810,6 +844,23 @@ The result of SparkPlan execution should be a count of number of rows put.
       <p class="shortcomment cmt">Get a spark plan to update rows in the relation.</p><div class="fullcomment"><div class="comment cmt"><p>Get a spark plan to update rows in the relation. The result of SparkPlan
 execution should be a count of number of updated rows.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> → <a href="../../../sources/MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../JDBCAppendableRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a> → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeLogIfNecessary():Unit"></a>
       <a id="initializeLogIfNecessary():Unit"></a>
@@ -1871,6 +1922,23 @@ avoid double filtering when they are capable of processing a filter internally.
     </span>
       <p class="shortcomment cmt">If required inject the key columns in the original relation.</p><div class="fullcomment"><div class="comment cmt"><p>If required inject the key columns in the original relation.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation">ColumnFormatRelation</a> → <a href="../../../sources/MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation#withTableWriteLock" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="withTableWriteLock()(f:()=&gt;org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan"></a>
+      <a id="withTableWriteLock()(()⇒SparkPlan):SparkPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">withTableWriteLock</span><span class="params">()</span><span class="params">(<span name="f">f: () ⇒ <a href="../../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="../../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation@withTableWriteLock()(f:()=&gt;org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation#withoutUserSchema" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="withoutUserSchema:Boolean"></a>
       <a id="withoutUserSchema:Boolean"></a>

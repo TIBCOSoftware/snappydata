@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>snappydata_2.11 1.1.0-HF-1 API</title>
-          <meta name="description" content="snappydata 2.11 1.1.0 - HF - 1 API" />
-          <meta name="keywords" content="snappydata 2.11 1.1.0 HF 1 API" />
+          <title>snappydata_2.11 1.1.1 API</title>
+          <meta name="description" content="snappydata 2.11 1.1.1 API" />
+          <meta name="keywords" content="snappydata 2.11 1.1.1 API" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../lib/ref-index.css" media="screen" type="text/css" rel="stylesheet" />
@@ -536,6 +536,9 @@
       <div class="name">generateEquals</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/ObjectHashMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.ObjectHashMapAccessor">ObjectHashMapAccessor</a> <a href="../org/apache/spark/sql/execution/aggregate/HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a> <a href="../org/apache/spark/sql/execution/aggregate/RowBasedHashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.RowBasedHashMapGenerator">RowBasedHashMapGenerator</a> <a href="../org/apache/spark/sql/execution/aggregate/VectorizedHashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.VectorizedHashMapGenerator">VectorizedHashMapGenerator</a> </div>
     </div><div class="entry">
+      <div class="name">generateExplodedStructFieldVars</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SHAMapAccessor$.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
+    </div><div class="entry">
       <div class="name">generateExpressions</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a> </div>
     </div><div class="entry">
@@ -546,7 +549,7 @@
       <div class="occurrences"><a href="../org/apache/spark/examples/SparkTC$.html" class="extype" name="org.apache.spark.examples.SparkTC">SparkTC</a> </div>
     </div><div class="entry">
       <div class="name">generateHashCode</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/ObjectHashMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.ObjectHashMapAccessor">ObjectHashMapAccessor</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/ObjectHashMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.ObjectHashMapAccessor">ObjectHashMapAccessor</a> <a href="../org/apache/spark/sql/execution/SHAMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
     </div><div class="entry">
       <div class="name">generateHashFunction</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/aggregate/HashMapGenerator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.HashMapGenerator">HashMapGenerator</a> </div>
@@ -559,6 +562,12 @@
     </div><div class="entry">
       <div class="name">generateKMeansRDD</div>
       <div class="occurrences"><a href="../org/apache/spark/mllib/util/KMeansDataGenerator$.html" class="extype" name="org.apache.spark.mllib.util.KMeansDataGenerator">KMeansDataGenerator</a> </div>
+    </div><div class="entry">
+      <div class="name">generateKeyBytesHolderCode</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SHAMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
+    </div><div class="entry">
+      <div class="name">generateKeySizeCode</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SHAMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
     </div><div class="entry">
       <div class="name">generateLinearInput</div>
       <div class="occurrences"><a href="../org/apache/spark/mllib/util/LinearDataGenerator$.html" class="extype" name="org.apache.spark.mllib.util.LinearDataGenerator">LinearDataGenerator</a> </div>
@@ -573,10 +582,13 @@
       <div class="occurrences"><a href="../org/apache/spark/mllib/util/LogisticRegressionDataGenerator$.html" class="extype" name="org.apache.spark.mllib.util.LogisticRegressionDataGenerator">LogisticRegressionDataGenerator</a> </div>
     </div><div class="entry">
       <div class="name">generateMapGetOrInsert</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/ObjectHashMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.ObjectHashMapAccessor">ObjectHashMapAccessor</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/ObjectHashMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.ObjectHashMapAccessor">ObjectHashMapAccessor</a> <a href="../org/apache/spark/sql/execution/SHAMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
     </div><div class="entry">
       <div class="name">generateMapLookup</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/ObjectHashMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.ObjectHashMapAccessor">ObjectHashMapAccessor</a> </div>
+    </div><div class="entry">
+      <div class="name">generateNullKeysBitTermForStruct</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SHAMapAccessor$.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
     </div><div class="entry">
       <div class="name">generateObjAttr</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/plans/logical/CatalystSerde$.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.CatalystSerde">CatalystSerde</a> </div>
@@ -606,7 +618,10 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> <a href="../org/apache/spark/sql/execution/CodegenSparkFallback.html" class="extype" name="org.apache.spark.sql.execution.CodegenSparkFallback">CodegenSparkFallback</a> <a href="../org/apache/spark/sql/execution/InputAdapter.html" class="extype" name="org.apache.spark.sql.execution.InputAdapter">InputAdapter</a> <a href="../org/apache/spark/sql/execution/WholeStageCodegenExec.html" class="extype" name="org.apache.spark.sql.execution.WholeStageCodegenExec">WholeStageCodegenExec</a> </div>
     </div><div class="entry">
       <div class="name">generateUpdate</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/ObjectHashMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.ObjectHashMapAccessor">ObjectHashMapAccessor</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/ObjectHashMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.ObjectHashMapAccessor">ObjectHashMapAccessor</a> <a href="../org/apache/spark/sql/execution/SHAMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
+    </div><div class="entry">
+      <div class="name">generateVarNameForStructField</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SHAMapAccessor$.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
     </div><div class="entry">
       <div class="name">generatedReferences</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/AggregatePartialDataIterator.html" class="extype" name="org.apache.spark.sql.AggregatePartialDataIterator">AggregatePartialDataIterator</a> </div>
@@ -905,6 +920,9 @@
       <div class="name">getBucketId</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a> <a href="../org/apache/spark/sql/execution/StratifiedSamplerCachedInRegion.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerCachedInRegion">StratifiedSamplerCachedInRegion</a> <a href="../org/apache/spark/sql/execution/datasources/BucketingUtils$.html" class="extype" name="org.apache.spark.sql.execution.datasources.BucketingUtils">BucketingUtils</a> <a href="../org/apache/spark/sql/execution/datasources/DataSourceStrategy$.html" class="extype" name="org.apache.spark.sql.execution.datasources.DataSourceStrategy">DataSourceStrategy</a> </div>
     </div><div class="entry">
+      <div class="name">getBufferVars</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SHAMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
+    </div><div class="entry">
       <div class="name">getByte</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> <a href="../org/apache/spark/sql/catalyst/expressions/BaseGenericInternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.BaseGenericInternalRow">BaseGenericInternalRow</a> <a href="../org/apache/spark/sql/catalyst/expressions/JoinedRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.JoinedRow">JoinedRow</a> <a href="../org/apache/spark/sql/catalyst/expressions/SpecializedGetters.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SpecializedGetters">SpecializedGetters</a> <a href="../org/apache/spark/sql/catalyst/expressions/SpecificInternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SpecificInternalRow">SpecificInternalRow</a> <a href="../org/apache/spark/sql/catalyst/expressions/UnsafeArrayData.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeArrayData">UnsafeArrayData</a> <a href="../org/apache/spark/sql/catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> <a href="../org/apache/spark/sql/catalyst/util/GenericArrayData.html" class="extype" name="org.apache.spark.sql.catalyst.util.GenericArrayData">GenericArrayData</a> <a href="../org/apache/spark/sql/collection/InternalRowToRow$.html" class="extype" name="org.apache.spark.sql.collection.InternalRowToRow">InternalRowToRow</a> <a href="../org/apache/spark/sql/collection/ReusableRow.html" class="extype" name="org.apache.spark.sql.collection.ReusableRow">ReusableRow</a> <a href="../org/apache/spark/sql/collection/WrappedInternalRow.html" class="extype" name="org.apache.spark.sql.collection.WrappedInternalRow">WrappedInternalRow</a> <a href="../org/apache/spark/sql/execution/StratifiedSampler$RowWithWeight.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> <a href="../org/apache/spark/sql/execution/StratumInternalRow.html" class="extype" name="org.apache.spark.sql.execution.StratumInternalRow">StratumInternalRow</a> <a href="../org/apache/spark/sql/execution/bootstrap/ByteMutableRow.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.ByteMutableRow">ByteMutableRow</a> <a href="../org/apache/spark/sql/execution/bootstrap/DoubleMutableRow.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.DoubleMutableRow">DoubleMutableRow</a> <a href="../org/apache/spark/sql/execution/vectorized/ColumnVector.html" class="extype" name="org.apache.spark.sql.execution.vectorized.ColumnVector">ColumnVector</a> <a href="../org/apache/spark/sql/execution/vectorized/OffHeapColumnVector.html" class="extype" name="org.apache.spark.sql.execution.vectorized.OffHeapColumnVector">OffHeapColumnVector</a> <a href="../org/apache/spark/sql/execution/vectorized/OnHeapColumnVector.html" class="extype" name="org.apache.spark.sql.execution.vectorized.OnHeapColumnVector">OnHeapColumnVector</a> <a href="../org/apache/spark/unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a> </div>
     </div><div class="entry">
@@ -916,6 +934,9 @@
     </div><div class="entry">
       <div class="name">getCachedCatalogTable</div>
       <div class="occurrences"><a href="../io/snappydata/sql/catalog/SnappyExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.SnappyExternalCatalog">SnappyExternalCatalog</a> <a href="../io/snappydata/sql/catalog/impl/SmartConnectorExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog">SmartConnectorExternalCatalog</a> <a href="../org/apache/spark/sql/hive/SnappyHiveExternalCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyHiveExternalCatalog">SnappyHiveExternalCatalog</a> </div>
+    </div><div class="entry">
+      <div class="name">getCachedDataSourceTable</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/test/TestHiveSparkSession.html" class="extype" name="org.apache.spark.sql.hive.test.TestHiveSparkSession">TestHiveSparkSession</a> </div>
     </div><div class="entry">
       <div class="name">getCallStackCount</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/internal/AnalyzerInvocation.html" class="extype" name="org.apache.spark.sql.internal.AnalyzerInvocation">AnalyzerInvocation</a> </div>
@@ -1236,7 +1257,7 @@
       <div class="occurrences"><a href="../io/snappydata/sql/catalog/impl/SmartConnectorExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog">SmartConnectorExternalCatalog</a> <a href="../org/apache/spark/sql/catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/InMemoryCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.InMemoryCatalog">InMemoryCatalog</a> <a href="../org/apache/spark/sql/hive/SnappyHiveExternalCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyHiveExternalCatalog">SnappyHiveExternalCatalog</a> <a href="../org/apache/spark/sql/internal/CatalogImpl.html" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> </div>
     </div><div class="entry">
       <div class="name">getDatabaseMetadata</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a> <a href="../org/apache/spark/sql/internal/SnappySessionCatalog.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> </div>
     </div><div class="entry">
       <div class="name">getDate</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a> <a href="../org/apache/spark/sql/execution/StratifiedSampler$RowWithWeight.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler.RowWithWeight">RowWithWeight</a> </div>
@@ -1337,6 +1358,9 @@
       <div class="name">getDriverJar</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/internal/ContextJarUtils$.html" class="extype" name="org.apache.spark.sql.internal.ContextJarUtils">ContextJarUtils</a> </div>
     </div><div class="entry">
+      <div class="name">getDriverJarURLs</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/internal/ContextJarUtils$.html" class="extype" name="org.apache.spark.sql.internal.ContextJarUtils">ContextJarUtils</a> </div>
+    </div><div class="entry">
       <div class="name">getDriverURL</div>
       <div class="occurrences"><a href="../io/snappydata/cluster/ExecutorInitiator$$ExecutorRunnable.html" class="extype" name="io.snappydata.cluster.ExecutorInitiator.ExecutorRunnable">ExecutorRunnable</a> <a href="../io/snappydata/gemxd/ClusterCallbacksImpl$.html" class="extype" name="io.snappydata.gemxd.ClusterCallbacksImpl">ClusterCallbacksImpl</a> </div>
     </div><div class="entry">
@@ -1430,8 +1454,14 @@
       <div class="name">getExpandedGranteesIterator</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/ExternalStoreUtils$.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils">ExternalStoreUtils</a> </div>
     </div><div class="entry">
+      <div class="name">getExplodedExprCodeAndDataTypeForStruct</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SHAMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
+    </div><div class="entry">
       <div class="name">getExprIDReserveQuota</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/BootstrapAverage.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapAverage">BootstrapAverage</a> <a href="../org/apache/spark/sql/execution/bootstrap/BootstrapCount.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapCount">BootstrapCount</a> <a href="../org/apache/spark/sql/execution/bootstrap/BootstrapSum.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapSum">BootstrapSum</a> <a href="../org/apache/spark/sql/execution/bootstrap/DeclarativeBootstrapAggregateFunction.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.DeclarativeBootstrapAggregateFunction">DeclarativeBootstrapAggregateFunction</a> </div>
+    </div><div class="entry">
+      <div class="name">getExpressionForNullEvalFromMask</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SHAMapAccessor$.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
     </div><div class="entry">
       <div class="name">getExtTmpPathRelTo</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/hive/execution/InsertIntoHiveTable.html" class="extype" name="org.apache.spark.sql.hive.execution.InsertIntoHiveTable">InsertIntoHiveTable</a> </div>
@@ -1440,10 +1470,10 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/ExpressionInfo.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionInfo">ExpressionInfo</a> </div>
     </div><div class="entry">
       <div class="name">getExtendedCheckRules</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/internal/SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a> </div>
     </div><div class="entry">
       <div class="name">getExtendedResolutionRules</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/internal/SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a> </div>
     </div><div class="entry">
       <div class="name">getExternalStoreMetaData</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/sampling/ColumnFormatSamplingRelation.html" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> </div>
@@ -1521,7 +1551,7 @@
       <div class="occurrences"><a href="../io/snappydata/sql/catalog/impl/SmartConnectorExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog">SmartConnectorExternalCatalog</a> <a href="../org/apache/spark/sql/catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/InMemoryCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.InMemoryCatalog">InMemoryCatalog</a> <a href="../org/apache/spark/sql/hive/SnappyHiveExternalCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyHiveExternalCatalog">SnappyHiveExternalCatalog</a> <a href="../org/apache/spark/sql/internal/CatalogImpl.html" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> </div>
     </div><div class="entry">
       <div class="name">getFunctionMetadata</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a> <a href="../org/apache/spark/sql/internal/SnappySessionCatalog.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> </div>
     </div><div class="entry">
       <div class="name">getFunctionName</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/thrift/TGetFunctionsReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetFunctionsReq">TGetFunctionsReq</a> </div>
@@ -1590,7 +1620,10 @@
       <div class="occurrences"><a href="../org/apache/hive/service/AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a> <a href="../org/apache/hive/service/FilterService.html" class="extype" name="org.apache.hive.service.FilterService">FilterService</a> <a href="../org/apache/hive/service/Service.html" class="extype" name="org.apache.hive.service.Service">Service</a> <a href="../org/apache/hive/service/cli/session/HiveSessionBase.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionBase">HiveSessionBase</a> <a href="../org/apache/hive/service/cli/session/HiveSessionImpl.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionImpl">HiveSessionImpl</a> </div>
     </div><div class="entry">
       <div class="name">getHiveFile</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/hive/test/TestHiveContext.html" class="extype" name="org.apache.spark.sql.hive.test.TestHiveContext">TestHiveContext</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/test/TestHiveContext.html" class="extype" name="org.apache.spark.sql.hive.test.TestHiveContext">TestHiveContext</a> <a href="../org/apache/spark/sql/hive/test/TestHiveSparkSession.html" class="extype" name="org.apache.spark.sql.hive.test.TestHiveSparkSession">TestHiveSparkSession</a> </div>
+    </div><div class="entry">
+      <div class="name">getHiveSharedState</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SnappyContext$.html" class="extype" name="org.apache.spark.sql.SnappyContext">SnappyContext</a> </div>
     </div><div class="entry">
       <div class="name">getHost</div>
       <div class="occurrences"><a href="../io/snappydata/test/dunit/VM.html" class="extype" name="io.snappydata.test.dunit.VM">VM</a> </div>
@@ -1877,6 +1910,12 @@
       <div class="name">getLiteralSuffix</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/Type.html" class="extype" name="org.apache.hive.service.cli.Type">Type</a> </div>
     </div><div class="entry">
+      <div class="name">getLocalDir</div>
+      <div class="occurrences"><a href="../org/apache/spark/executor/SnappyExecutor.html" class="extype" name="org.apache.spark.executor.SnappyExecutor">SnappyExecutor</a> </div>
+    </div><div class="entry">
+      <div class="name">getLocalProperties</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/collection/Utils$.html" class="extype" name="org.apache.spark.sql.collection.Utils">Utils</a> </div>
+    </div><div class="entry">
       <div class="name">getLocalProperty</div>
       <div class="occurrences"><a href="../org/apache/spark/SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a> <a href="../org/apache/spark/TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a> <a href="../org/apache/spark/api/java/JavaSparkContext.html" class="extype" name="org.apache.spark.api.java.JavaSparkContext">JavaSparkContext</a> </div>
     </div><div class="entry">
@@ -1927,6 +1966,9 @@
     </div><div class="entry">
       <div class="name">getMapEntry</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/thrift/TTypeEntry.html" class="extype" name="org.apache.hive.service.cli.thrift.TTypeEntry">TTypeEntry</a> </div>
+    </div><div class="entry">
+      <div class="name">getMaskedLocUri</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/catalog/CatalogStorageFormat.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat">CatalogStorageFormat</a> </div>
     </div><div class="entry">
       <div class="name">getMaxBins</div>
       <div class="occurrences"><a href="../org/apache/spark/mllib/tree/configuration/Strategy.html" class="extype" name="org.apache.spark.mllib.tree.configuration.Strategy">Strategy</a> </div>
@@ -2114,6 +2156,9 @@
       <div class="name">getNoOperationTime</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/session/HiveSession.html" class="extype" name="org.apache.hive.service.cli.session.HiveSession">HiveSession</a> <a href="../org/apache/hive/service/cli/session/HiveSessionImpl.html" class="extype" name="org.apache.hive.service.cli.session.HiveSessionImpl">HiveSessionImpl</a> </div>
     </div><div class="entry">
+      <div class="name">getNullBitsCastTerm</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SHAMapAccessor$.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
+    </div><div class="entry">
       <div class="name">getNullMillis</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/TopKWrapper.html" class="extype" name="org.apache.spark.sql.execution.TopKWrapper">TopKWrapper</a> <a href="../org/apache/spark/sql/sources/CastLongTime.html" class="extype" name="org.apache.spark.sql.sources.CastLongTime">CastLongTime</a> </div>
     </div><div class="entry">
@@ -2188,6 +2233,9 @@
     </div><div class="entry">
       <div class="name">getOffsetInPage</div>
       <div class="occurrences"><a href="../org/apache/spark/memory/TaskMemoryManager.html" class="extype" name="org.apache.spark.memory.TaskMemoryManager">TaskMemoryManager</a> </div>
+    </div><div class="entry">
+      <div class="name">getOffsetIncrementCodeForNullAgg</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SHAMapAccessor$.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
     </div><div class="entry">
       <div class="name">getOpenSessionCount</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/session/SessionManager.html" class="extype" name="org.apache.hive.service.cli.session.SessionManager">SessionManager</a> </div>
@@ -2310,10 +2358,10 @@
       <div class="occurrences"><a href="../org/apache/spark/NarrowDependency.html" class="extype" name="org.apache.spark.NarrowDependency">NarrowDependency</a> <a href="../org/apache/spark/OneToOneDependency.html" class="extype" name="org.apache.spark.OneToOneDependency">OneToOneDependency</a> <a href="../org/apache/spark/RangeDependency.html" class="extype" name="org.apache.spark.RangeDependency">RangeDependency</a> </div>
     </div><div class="entry">
       <div class="name">getPartCols</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/internal/SnappySessionState$OrderJoinConditions$.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState.OrderJoinConditions">OrderJoinConditions</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/SnappySessionState$OrderJoinConditions$.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState.OrderJoinConditions">OrderJoinConditions</a> </div>
     </div><div class="entry">
       <div class="name">getPartition</div>
-      <div class="occurrences"><a href="../io/snappydata/sql/catalog/impl/SmartConnectorExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog">SmartConnectorExternalCatalog</a> <a href="../org/apache/spark/HashPartitioner.html" class="extype" name="org.apache.spark.HashPartitioner">HashPartitioner</a> <a href="../org/apache/spark/Partitioner.html" class="extype" name="org.apache.spark.Partitioner">Partitioner</a> <a href="../org/apache/spark/RangePartitioner.html" class="extype" name="org.apache.spark.RangePartitioner">RangePartitioner</a> <a href="../org/apache/spark/graphx/PartitionStrategy.html" class="extype" name="org.apache.spark.graphx.PartitionStrategy">PartitionStrategy</a> <a href="../org/apache/spark/graphx/PartitionStrategy$$CanonicalRandomVertexCut$.html" class="extype" name="org.apache.spark.graphx.PartitionStrategy.CanonicalRandomVertexCut">CanonicalRandomVertexCut</a> <a href="../org/apache/spark/graphx/PartitionStrategy$$EdgePartition1D$.html" class="extype" name="org.apache.spark.graphx.PartitionStrategy.EdgePartition1D">EdgePartition1D</a> <a href="../org/apache/spark/graphx/PartitionStrategy$$EdgePartition2D$.html" class="extype" name="org.apache.spark.graphx.PartitionStrategy.EdgePartition2D">EdgePartition2D</a> <a href="../org/apache/spark/graphx/PartitionStrategy$$RandomVertexCut$.html" class="extype" name="org.apache.spark.graphx.PartitionStrategy.RandomVertexCut">RandomVertexCut</a> <a href="../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/InMemoryCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.InMemoryCatalog">InMemoryCatalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a> <a href="../org/apache/spark/sql/execution/CoalescedPartitioner.html" class="extype" name="org.apache.spark.sql.execution.CoalescedPartitioner">CoalescedPartitioner</a> <a href="../org/apache/spark/sql/hive/SnappyHiveExternalCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyHiveExternalCatalog">SnappyHiveExternalCatalog</a> <a href="../org/apache/spark/sql/store/ColumnPartitioner.html" class="extype" name="org.apache.spark.sql.store.ColumnPartitioner">ColumnPartitioner</a> </div>
+      <div class="occurrences"><a href="../io/snappydata/sql/catalog/impl/SmartConnectorExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog">SmartConnectorExternalCatalog</a> <a href="../org/apache/spark/HashPartitioner.html" class="extype" name="org.apache.spark.HashPartitioner">HashPartitioner</a> <a href="../org/apache/spark/Partitioner.html" class="extype" name="org.apache.spark.Partitioner">Partitioner</a> <a href="../org/apache/spark/RangePartitioner.html" class="extype" name="org.apache.spark.RangePartitioner">RangePartitioner</a> <a href="../org/apache/spark/graphx/PartitionStrategy.html" class="extype" name="org.apache.spark.graphx.PartitionStrategy">PartitionStrategy</a> <a href="../org/apache/spark/graphx/PartitionStrategy$$CanonicalRandomVertexCut$.html" class="extype" name="org.apache.spark.graphx.PartitionStrategy.CanonicalRandomVertexCut">CanonicalRandomVertexCut</a> <a href="../org/apache/spark/graphx/PartitionStrategy$$EdgePartition1D$.html" class="extype" name="org.apache.spark.graphx.PartitionStrategy.EdgePartition1D">EdgePartition1D</a> <a href="../org/apache/spark/graphx/PartitionStrategy$$EdgePartition2D$.html" class="extype" name="org.apache.spark.graphx.PartitionStrategy.EdgePartition2D">EdgePartition2D</a> <a href="../org/apache/spark/graphx/PartitionStrategy$$RandomVertexCut$.html" class="extype" name="org.apache.spark.graphx.PartitionStrategy.RandomVertexCut">RandomVertexCut</a> <a href="../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/InMemoryCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.InMemoryCatalog">InMemoryCatalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a> <a href="../org/apache/spark/sql/execution/CoalescedPartitioner.html" class="extype" name="org.apache.spark.sql.execution.CoalescedPartitioner">CoalescedPartitioner</a> <a href="../org/apache/spark/sql/hive/SnappyHiveExternalCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyHiveExternalCatalog">SnappyHiveExternalCatalog</a> <a href="../org/apache/spark/sql/internal/SnappySessionCatalog.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> <a href="../org/apache/spark/sql/store/ColumnPartitioner.html" class="extype" name="org.apache.spark.sql.store.ColumnPartitioner">ColumnPartitioner</a> </div>
     </div><div class="entry">
       <div class="name">getPartitionByClause</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/SnappyDataBaseDialect.html" class="extype" name="org.apache.spark.sql.SnappyDataBaseDialect">SnappyDataBaseDialect</a> <a href="../org/apache/spark/sql/sources/JdbcExtendedDialect.html" class="extype" name="org.apache.spark.sql.sources.JdbcExtendedDialect">JdbcExtendedDialect</a> </div>
@@ -2759,6 +2807,9 @@
       <div class="name">getSizeInBytes</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnsafeArrayData.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeArrayData">UnsafeArrayData</a> <a href="../org/apache/spark/sql/catalyst/expressions/UnsafeMapData.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeMapData">UnsafeMapData</a> <a href="../org/apache/spark/sql/catalyst/expressions/UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a> <a href="../org/apache/spark/sql/execution/StratumCache.html" class="extype" name="org.apache.spark.sql.execution.StratumCache">StratumCache</a> <a href="../org/apache/spark/sql/execution/StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a> </div>
     </div><div class="entry">
+      <div class="name">getSizeOfValueBytes</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SHAMapAccessor$.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
+    </div><div class="entry">
       <div class="name">getSmallIntValue</div>
       <div class="occurrences"><a href="../org/apache/hive/service/cli/thrift/TGetInfoValue.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetInfoValue">TGetInfoValue</a> </div>
     </div><div class="entry">
@@ -2916,7 +2967,7 @@
       <div class="occurrences"><a href="../io/snappydata/test/dunit/Host.html" class="extype" name="io.snappydata.test.dunit.Host">Host</a> </div>
     </div><div class="entry">
       <div class="name">getTable</div>
-      <div class="occurrences"><a href="../io/snappydata/sql/catalog/SnappyExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.SnappyExternalCatalog">SnappyExternalCatalog</a> <a href="../org/apache/spark/sql/catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/InMemoryCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.InMemoryCatalog">InMemoryCatalog</a> <a href="../org/apache/spark/sql/execution/cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a> <a href="../org/apache/spark/sql/internal/CatalogImpl.html" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> <a href="../org/apache/spark/sql/internal/SnappySessionState$ResolveRelationsExtended$.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState.ResolveRelationsExtended">ResolveRelationsExtended</a> </div>
+      <div class="occurrences"><a href="../io/snappydata/sql/catalog/SnappyExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.SnappyExternalCatalog">SnappyExternalCatalog</a> <a href="../org/apache/spark/sql/catalog/Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/InMemoryCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.InMemoryCatalog">InMemoryCatalog</a> <a href="../org/apache/spark/sql/execution/cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a> <a href="../org/apache/spark/sql/internal/CatalogImpl.html" class="extype" name="org.apache.spark.sql.internal.CatalogImpl">CatalogImpl</a> </div>
     </div><div class="entry">
       <div class="name">getTableExistsQuery</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/SnappyDataBaseDialect.html" class="extype" name="org.apache.spark.sql.SnappyDataBaseDialect">SnappyDataBaseDialect</a> <a href="../org/apache/spark/sql/SnappyDataPoolDialect$.html" class="extype" name="org.apache.spark.sql.SnappyDataPoolDialect">SnappyDataPoolDialect</a> <a href="../org/apache/spark/sql/jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a> </div>
@@ -2940,7 +2991,7 @@
       <div class="occurrences"><a href="../io/snappydata/sql/catalog/impl/SmartConnectorExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog">SmartConnectorExternalCatalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a> <a href="../org/apache/spark/sql/catalyst/catalog/InMemoryCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.InMemoryCatalog">InMemoryCatalog</a> <a href="../org/apache/spark/sql/hive/SnappyHiveExternalCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyHiveExternalCatalog">SnappyHiveExternalCatalog</a> </div>
     </div><div class="entry">
       <div class="name">getTablePartitions</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/internal/SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a> </div>
     </div><div class="entry">
       <div class="name">getTableSchema</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/ExternalStoreUtils$.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils">ExternalStoreUtils</a> <a href="../org/apache/spark/sql/sources/JdbcExtendedUtils$.html" class="extype" name="org.apache.spark.sql.sources.JdbcExtendedUtils">JdbcExtendedUtils</a> </div>
@@ -3208,6 +3259,9 @@
     </div><div class="entry">
       <div class="name">getVocabulary</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/parser/SqlBaseLexer.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseLexer">SqlBaseLexer</a> <a href="../org/apache/spark/sql/catalyst/parser/SqlBaseParser.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseParser">SqlBaseParser</a> </div>
+    </div><div class="entry">
+      <div class="name">getWarehousePath</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/test/TestHiveSparkSession.html" class="extype" name="org.apache.spark.sql.hive.test.TestHiveSparkSession">TestHiveSparkSession</a> </div>
     </div><div class="entry">
       <div class="name">getWarnings</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a> </div>

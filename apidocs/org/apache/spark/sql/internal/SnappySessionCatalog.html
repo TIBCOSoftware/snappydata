@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappySessionCatalog - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.internal.SnappySessionCatalog</title>
-          <meta name="description" content="SnappySessionCatalog - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.internal.SnappySessionCatalog" />
-          <meta name="keywords" content="SnappySessionCatalog snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.internal.SnappySessionCatalog" />
+          <title>SnappySessionCatalog - snappydata_2.11 1.1.1 API - org.apache.spark.sql.internal.SnappySessionCatalog</title>
+          <meta name="description" content="SnappySessionCatalog - snappydata 2.11 1.1.1 API - org.apache.spark.sql.internal.SnappySessionCatalog" />
+          <meta name="keywords" content="SnappySessionCatalog snappydata 2.11 1.1.1 API org.apache.spark.sql.internal.SnappySessionCatalog" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -60,7 +60,7 @@ stream/topK tables and returning LogicalPlan to materialize these entities.
           <div class="superTypes hiddenContent"><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
             <span class="toggle">Known Subclasses</span>
-            <div class="subClasses hiddenContent"><a href="../hive/SnappyAQPSessionCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyAQPSessionCatalog">SnappyAQPSessionCatalog</a></div>
+            <div class="subClasses hiddenContent"><a href="SessionCatalogWrapper.html" class="extype" name="org.apache.spark.sql.internal.SessionCatalogWrapper">SessionCatalogWrapper</a>, <a href="../hive/SnappyAQPSessionCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyAQPSessionCatalog">SnappyAQPSessionCatalog</a></div>
           </div></div>
         
 
@@ -194,8 +194,8 @@ stream/topK tables and returning LogicalPlan to materialize these entities.
 adds it to TableIdentifier if required so that super methods can be invoked directly.</p><div class="fullcomment"><div class="comment cmt"><p>SnappyData allows the schema for global temporary views to be optional so this method
 adds it to TableIdentifier if required so that super methods can be invoked directly.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#alterDatabase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="alterDatabase(dbDefinition:org.apache.spark.sql.catalyst.catalog.CatalogDatabase):Unit"></a>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#alterDatabase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="alterDatabase(schemaDefinition:org.apache.spark.sql.catalyst.catalog.CatalogDatabase):Unit"></a>
       <a id="alterDatabase(CatalogDatabase):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -203,14 +203,14 @@ adds it to TableIdentifier if required so that super methods can be invoked dire
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">alterDatabase</span><span class="params">(<span name="dbDefinition">dbDefinition: <a href="../catalyst/catalog/CatalogDatabase.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogDatabase">CatalogDatabase</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">alterDatabase</span><span class="params">(<span name="schemaDefinition">schemaDefinition: <a href="../catalyst/catalog/CatalogDatabase.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogDatabase">CatalogDatabase</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@alterDatabase(dbDefinition:org.apache.spark.sql.catalyst.catalog.CatalogDatabase):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@alterDatabase(schemaDefinition:org.apache.spark.sql.catalyst.catalog.CatalogDatabase):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#alterPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="alterPartitions(tableName:org.apache.spark.sql.catalyst.TableIdentifier,parts:Seq[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]):Unit"></a>
       <a id="alterPartitions(TableIdentifier,Seq[CatalogTablePartition]):Unit"></a>
@@ -289,6 +289,26 @@ temp view is matched and altered, false otherwise.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#checkBuiltinCatalog" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="checkBuiltinCatalog(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier):Boolean"></a>
+      <a id="checkBuiltinCatalog(TableIdentifier):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">checkBuiltinCatalog</span><span class="params">(<span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@checkBuiltinCatalog(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return true if the given table needs to be checked in the builtin catalog
+rather than the external hive catalog (if enabled).</p><div class="fullcomment"><div class="comment cmt"><p>Return true if the given table needs to be checked in the builtin catalog
+rather than the external hive catalog (if enabled).
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#clearTempTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clearTempTables():Unit"></a>
       <a id="clearTempTables():Unit"></a>
@@ -533,8 +553,8 @@ This assumes no database is specified in <code>funcDefinition</code>.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#databaseExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="databaseExists(db:String):Boolean"></a>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#databaseExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="databaseExists(schema:String):Boolean"></a>
       <a id="databaseExists(String):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -542,14 +562,14 @@ This assumes no database is specified in <code>funcDefinition</code>.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">databaseExists</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">databaseExists</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@databaseExists(db:String):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@databaseExists(schema:String):Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#defaultSchemaName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="defaultSchemaName:String"></a>
       <a id="defaultSchemaName:String"></a>
@@ -835,7 +855,7 @@ the same name, then, if that does not exist, drop the table from the current dat
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#failFunctionLookup" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#failFunctionLookup" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="failFunctionLookup(name:String):Nothing"></a>
       <a id="failFunctionLookup(String):Nothing"></a>
       <h4 class="signature">
@@ -851,7 +871,7 @@ the same name, then, if that does not exist, drop the table from the current dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -928,7 +948,7 @@ the same name, then, if that does not exist, drop the table from the current dat
     </span>
       <p class="shortcomment cmt">Format table name.</p><div class="fullcomment"><div class="comment cmt"><p>Format table name. Hive meta-store is case-insensitive so always convert to lower case.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#functionExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#functionExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="functionExists(name:org.apache.spark.sql.catalyst.FunctionIdentifier):Boolean"></a>
       <a id="functionExists(FunctionIdentifier):Boolean"></a>
       <h4 class="signature">
@@ -945,7 +965,7 @@ the same name, then, if that does not exist, drop the table from the current dat
       </a>
     </span>
       <p class="shortcomment cmt">Check if the specified function exists.</p><div class="fullcomment"><div class="comment cmt"><p>Check if the specified function exists.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -1048,8 +1068,8 @@ the same name, then, if that does not exist, drop the table from the current dat
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#getDatabaseMetadata" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getDatabaseMetadata(db:String):org.apache.spark.sql.catalyst.catalog.CatalogDatabase"></a>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#getDatabaseMetadata" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDatabaseMetadata(schema:String):org.apache.spark.sql.catalyst.catalog.CatalogDatabase"></a>
       <a id="getDatabaseMetadata(String):CatalogDatabase"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1057,14 +1077,14 @@ the same name, then, if that does not exist, drop the table from the current dat
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getDatabaseMetadata</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../catalyst/catalog/CatalogDatabase.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogDatabase">CatalogDatabase</a></span>
+        <span class="name">getDatabaseMetadata</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../catalyst/catalog/CatalogDatabase.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogDatabase">CatalogDatabase</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@getDatabaseMetadata(db:String):org.apache.spark.sql.catalyst.catalog.CatalogDatabase" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@getDatabaseMetadata(schema:String):org.apache.spark.sql.catalyst.catalog.CatalogDatabase" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#getDefaultDBPath" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getDefaultDBPath(db:String):String"></a>
       <a id="getDefaultDBPath(String):String"></a>
@@ -1085,7 +1105,7 @@ the same name, then, if that does not exist, drop the table from the current dat
 by users.</p><div class="fullcomment"><div class="comment cmt"><p>Get the path for creating a non-default database when database location is not provided
 by users.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#getFunctionMetadata" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#getFunctionMetadata" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getFunctionMetadata(name:org.apache.spark.sql.catalyst.FunctionIdentifier):org.apache.spark.sql.catalyst.catalog.CatalogFunction"></a>
       <a id="getFunctionMetadata(FunctionIdentifier):CatalogFunction"></a>
       <h4 class="signature">
@@ -1103,7 +1123,7 @@ by users.
     </span>
       <p class="shortcomment cmt">Retrieve the metadata of a metastore function.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieve the metadata of a metastore function.</p><p>If a database is specified in <code>name</code>, this will return the function in that database.
 If no database is specified, this will return the function in the current database.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#getGlobalTempView" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getGlobalTempView(name:String):Option[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
       <a id="getGlobalTempView(String):Option[LogicalPlan]"></a>
@@ -1156,8 +1176,8 @@ If no database is specified, this will return the function in the current databa
       </a>
     </span>
       <p class="shortcomment cmt">API to get primary key or Key Columns of a SnappyData table</p>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#getPartition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getPartition(tableName:org.apache.spark.sql.catalyst.TableIdentifier,spec:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec):org.apache.spark.sql.catalyst.catalog.CatalogTablePartition"></a>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#getPartition" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getPartition(table:org.apache.spark.sql.catalyst.TableIdentifier,spec:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec):org.apache.spark.sql.catalyst.catalog.CatalogTablePartition"></a>
       <a id="getPartition(TableIdentifier,TablePartitionSpec):CatalogTablePartition"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1165,16 +1185,16 @@ If no database is specified, this will return the function in the current databa
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getPartition</span><span class="params">(<span name="tableName">tableName: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="spec">spec: <a href="../catalyst/catalog/CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a></span>)</span><span class="result">: <a href="../catalyst/catalog/CatalogTablePartition.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTablePartition">CatalogTablePartition</a></span>
+        <span class="name">getPartition</span><span class="params">(<span name="table">table: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="spec">spec: <a href="../catalyst/catalog/CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a></span>)</span><span class="result">: <a href="../catalyst/catalog/CatalogTablePartition.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTablePartition">CatalogTablePartition</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@getPartition(tableName:org.apache.spark.sql.catalyst.TableIdentifier,spec:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec):org.apache.spark.sql.catalyst.catalog.CatalogTablePartition" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@getPartition(table:org.apache.spark.sql.catalyst.TableIdentifier,spec:org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec):org.apache.spark.sql.catalyst.catalog.CatalogTablePartition" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Retrieve the metadata of a table partition, assuming it exists.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieve the metadata of a table partition, assuming it exists.
 If no database is specified, assume the table is in the current database.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#getSchemaName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="getSchemaName(identifier:org.apache.spark.sql.catalyst.IdentifierWithDatabase):String"></a>
       <a id="getSchemaName(IdentifierWithDatabase):String"></a>
@@ -1306,6 +1326,26 @@ current database.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#hiveSessionCatalog" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hiveSessionCatalog:org.apache.spark.sql.hive.HiveSessionCatalog"></a>
+      <a id="hiveSessionCatalog:HiveSessionCatalog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hiveSessionCatalog</span><span class="result">: <span class="extype" name="org.apache.spark.sql.hive.HiveSessionCatalog">HiveSessionCatalog</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@hiveSessionCatalog:org.apache.spark.sql.hive.HiveSessionCatalog" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Fallback session state to lookup from external hive catalog in case
+&quot;snappydata.sql.hive.enabled&quot; is set on the session.</p><div class="fullcomment"><div class="comment cmt"><p>Fallback session state to lookup from external hive catalog in case
+&quot;snappydata.sql.hive.enabled&quot; is set on the session.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
       <a id="initializeLogIfNecessary(Boolean):Unit"></a>
@@ -1412,6 +1452,23 @@ explicitly specified.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#listDatabases" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="listDatabases(pattern:String):Seq[String]"></a>
+      <a id="listDatabases(String):Seq[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">listDatabases</span><span class="params">(<span name="pattern">pattern: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@listDatabases(pattern:String):Seq[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#listDatabases" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="listDatabases():Seq[String]"></a>
       <a id="listDatabases():Seq[String]"></a>
       <h4 class="signature">
@@ -1428,25 +1485,8 @@ explicitly specified.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listDatabases" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="listDatabases(pattern:String):Seq[String]"></a>
-      <a id="listDatabases(String):Seq[String]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">listDatabases</span><span class="params">(<span name="pattern">pattern: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@listDatabases(pattern:String):Seq[String]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listFunctions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="listFunctions(db:String,pattern:String):Seq[(org.apache.spark.sql.catalyst.FunctionIdentifier,String)]"></a>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#listFunctions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="listFunctions(schema:String,pattern:String):Seq[(org.apache.spark.sql.catalyst.FunctionIdentifier,String)]"></a>
       <a id="listFunctions(String,String):Seq[(FunctionIdentifier,String)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1454,17 +1494,17 @@ explicitly specified.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">listFunctions</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="pattern">pattern: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="../catalyst/FunctionIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.FunctionIdentifier">FunctionIdentifier</a>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
+        <span class="name">listFunctions</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="pattern">pattern: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="../catalyst/FunctionIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.FunctionIdentifier">FunctionIdentifier</a>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@listFunctions(db:String,pattern:String):Seq[(org.apache.spark.sql.catalyst.FunctionIdentifier,String)]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@listFunctions(schema:String,pattern:String):Seq[(org.apache.spark.sql.catalyst.FunctionIdentifier,String)]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">List all matching functions in the specified database, including temporary functions.</p><div class="fullcomment"><div class="comment cmt"><p>List all matching functions in the specified database, including temporary functions. This
 returns the function identifier and the scope in which it was defined (system or user
 defined).
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listFunctions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="listFunctions(db:String):Seq[(org.apache.spark.sql.catalyst.FunctionIdentifier,String)]"></a>
       <a id="listFunctions(String):Seq[(FunctionIdentifier,String)]"></a>
@@ -1485,7 +1525,7 @@ defined).
 returns the function identifier and the scope in which it was defined (system or user
 defined).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listPartitionNames" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#listPartitionNames" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="listPartitionNames(tableName:org.apache.spark.sql.catalyst.TableIdentifier,partialSpec:Option[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec]):Seq[String]"></a>
       <a id="listPartitionNames(TableIdentifier,Option[TablePartitionSpec]):Seq[String]"></a>
       <h4 class="signature">
@@ -1504,8 +1544,8 @@ defined).
       <p class="shortcomment cmt">List the names of all partitions that belong to the specified table, assuming it exists.</p><div class="fullcomment"><div class="comment cmt"><p>List the names of all partitions that belong to the specified table, assuming it exists.</p><p>A partial partition spec may optionally be provided to filter the partitions returned.
 For instance, if there exist partitions (a='1', b='2'), (a='1', b='3') and (a='2', b='4'),
 then a partial spec of (a='1') will return the first two only.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#listPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="listPartitions(tableName:org.apache.spark.sql.catalyst.TableIdentifier,partialSpec:Option[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec]):Seq[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]"></a>
       <a id="listPartitions(TableIdentifier,Option[TablePartitionSpec]):Seq[CatalogTablePartition]"></a>
       <h4 class="signature">
@@ -1514,7 +1554,7 @@ then a partial spec of (a='1') will return the first two only.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">listPartitions</span><span class="params">(<span name="tableName">tableName: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="partialSpec">partialSpec: <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/catalog/CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/catalog/CatalogTablePartition.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTablePartition">CatalogTablePartition</a>]</span>
+        <span class="name">listPartitions</span><span class="params">(<span name="tableName">tableName: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="partialSpec">partialSpec: <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/catalog/CatalogTypes$.html#TablePartitionSpec=Map[String,String]" class="extmbr" name="org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec">TablePartitionSpec</a>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/catalog/CatalogTablePartition.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTablePartition">CatalogTablePartition</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@listPartitions(tableName:org.apache.spark.sql.catalyst.TableIdentifier,partialSpec:Option[org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec]):Seq[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]" title="Permalink" target="_top">
@@ -1524,8 +1564,8 @@ then a partial spec of (a='1') will return the first two only.
       <p class="shortcomment cmt">List the metadata of all partitions that belong to the specified table, assuming it exists.</p><div class="fullcomment"><div class="comment cmt"><p>List the metadata of all partitions that belong to the specified table, assuming it exists.</p><p>A partial partition spec may optionally be provided to filter the partitions returned.
 For instance, if there exist partitions (a='1', b='2'), (a='1', b='3') and (a='2', b='4'),
 then a partial spec of (a='1') will return the first two only.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listPartitionsByFilter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#listPartitionsByFilter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="listPartitionsByFilter(tableName:org.apache.spark.sql.catalyst.TableIdentifier,predicates:Seq[org.apache.spark.sql.catalyst.expressions.Expression]):Seq[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]"></a>
       <a id="listPartitionsByFilter(TableIdentifier,Seq[Expression]):Seq[CatalogTablePartition]"></a>
       <h4 class="signature">
@@ -1544,9 +1584,9 @@ then a partial spec of (a='1') will return the first two only.
       <p class="shortcomment cmt">List the metadata of partitions that belong to the specified table, assuming it exists, that
 satisfy the given partition-pruning predicate expressions.</p><div class="fullcomment"><div class="comment cmt"><p>List the metadata of partitions that belong to the specified table, assuming it exists, that
 satisfy the given partition-pruning predicate expressions.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="listTables(db:String,pattern:String):Seq[org.apache.spark.sql.catalyst.TableIdentifier]"></a>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#listTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="listTables(schema:String,pattern:String):Seq[org.apache.spark.sql.catalyst.TableIdentifier]"></a>
       <a id="listTables(String,String):Seq[TableIdentifier]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1554,16 +1594,16 @@ satisfy the given partition-pruning predicate expressions.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">listTables</span><span class="params">(<span name="db">db: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="pattern">pattern: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a>]</span>
+        <span class="name">listTables</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="pattern">pattern: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@listTables(db:String,pattern:String):Seq[org.apache.spark.sql.catalyst.TableIdentifier]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@listTables(schema:String,pattern:String):Seq[org.apache.spark.sql.catalyst.TableIdentifier]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">List all matching tables in the specified database, including local temporary tables.</p><div class="fullcomment"><div class="comment cmt"><p>List all matching tables in the specified database, including local temporary tables.</p><p>Note that, if the specified database is global temporary view database, we will list global
 temporary views.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#listTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="listTables(db:String):Seq[org.apache.spark.sql.catalyst.TableIdentifier]"></a>
       <a id="listTables(String):Seq[TableIdentifier]"></a>
@@ -1870,7 +1910,7 @@ with this function (i.e. jars and files). Finally, we create a function builder
 based on the function class and put the builder into the FunctionRegistry.
 The name of this function in the FunctionRegistry will be <code>databaseName.functionName</code>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#lookupFunctionInfo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#lookupFunctionInfo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="lookupFunctionInfo(name:org.apache.spark.sql.catalyst.FunctionIdentifier):org.apache.spark.sql.catalyst.expressions.ExpressionInfo"></a>
       <a id="lookupFunctionInfo(FunctionIdentifier):ExpressionInfo"></a>
       <h4 class="signature">
@@ -1887,7 +1927,7 @@ The name of this function in the FunctionRegistry will be <code>databaseName.fun
       </a>
     </span>
       <p class="shortcomment cmt">Look up the <span class="extype" name="ExpressionInfo">ExpressionInfo</span> associated with the specified function, assuming it exists.</p><div class="fullcomment"><div class="comment cmt"><p>Look up the <span class="extype" name="ExpressionInfo">ExpressionInfo</span> associated with the specified function, assuming it exists.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#lookupRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="lookupRelation(name:org.apache.spark.sql.catalyst.TableIdentifier,alias:Option[String]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
       <a id="lookupRelation(TableIdentifier,Option[String]):LogicalPlan"></a>
@@ -2017,7 +2057,7 @@ track the name of the view.
 If no database is specified, assume the table is in the current database.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#renameTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="renameTable(oldName:org.apache.spark.sql.catalyst.TableIdentifier,newName:org.apache.spark.sql.catalyst.TableIdentifier):Unit"></a>
+      <a id="renameTable(old:org.apache.spark.sql.catalyst.TableIdentifier,newName:org.apache.spark.sql.catalyst.TableIdentifier):Unit"></a>
       <a id="renameTable(TableIdentifier,TableIdentifier):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -2025,10 +2065,10 @@ If no database is specified, assume the table is in the current database.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">renameTable</span><span class="params">(<span name="oldName">oldName: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="newName">newName: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">renameTable</span><span class="params">(<span name="old">old: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="newName">newName: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@renameTable(oldName:org.apache.spark.sql.catalyst.TableIdentifier,newName:org.apache.spark.sql.catalyst.TableIdentifier):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@renameTable(old:org.apache.spark.sql.catalyst.TableIdentifier,newName:org.apache.spark.sql.catalyst.TableIdentifier):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2091,18 +2131,18 @@ and set the current database to &quot;default&quot;.</p><p>This is mainly used f
     </span>
       <p class="shortcomment cmt">Lookup relation and resolve to a LogicalRelation if not a temporary view.</p>
     </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#resolveRelationWithAlias" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="resolveRelationWithAlias(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
-      <a id="resolveRelationWithAlias(TableIdentifier):LogicalPlan"></a>
+      <a id="resolveRelationWithAlias(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,alias:Option[String]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
+      <a id="resolveRelationWithAlias(TableIdentifier,Option[String]):LogicalPlan"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">resolveRelationWithAlias</span><span class="params">(<span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>)</span><span class="result">: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
+        <span class="name">resolveRelationWithAlias</span><span class="params">(<span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="alias">alias: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result">: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@resolveRelationWithAlias(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@resolveRelationWithAlias(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,alias:Option[String]):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2175,7 +2215,7 @@ and set the current database to &quot;default&quot;.</p><p>This is mainly used f
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#tableExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#tableExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="tableExists(name:org.apache.spark.sql.catalyst.TableIdentifier):Boolean"></a>
       <a id="tableExists(TableIdentifier):Boolean"></a>
       <h4 class="signature">
@@ -2193,7 +2233,7 @@ and set the current database to &quot;default&quot;.</p><p>This is mainly used f
     </span>
       <p class="shortcomment cmt">Return whether a table/view with the specified name exists.</p><div class="fullcomment"><div class="comment cmt"><p>Return whether a table/view with the specified name exists. If no database is specified, check
 with current database.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#tempTables" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="tempTables:scala.collection.mutable.HashMap[String,org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
       <a id="tempTables:HashMap[String,LogicalPlan]"></a>

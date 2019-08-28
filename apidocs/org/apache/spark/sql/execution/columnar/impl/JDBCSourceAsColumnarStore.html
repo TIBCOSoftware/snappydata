@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>JDBCSourceAsColumnarStore - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore</title>
-          <meta name="description" content="JDBCSourceAsColumnarStore - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore" />
-          <meta name="keywords" content="JDBCSourceAsColumnarStore snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore" />
+          <title>JDBCSourceAsColumnarStore - snappydata_2.11 1.1.1 API - org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore</title>
+          <meta name="description" content="JDBCSourceAsColumnarStore - snappydata 2.11 1.1.1 API - org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore" />
+          <meta name="keywords" content="JDBCSourceAsColumnarStore snappydata 2.11 1.1.1 API org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -196,6 +196,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@beginTx(delayRollover:Boolean):Array[_&lt;:Object]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore#beginTxSmartConnector" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="beginTxSmartConnector(delayRollover:Boolean,catalogVersion:Long):Array[_&lt;:Object]"></a>
+      <a id="beginTxSmartConnector(Boolean,Long):Array[_&lt;:AnyRef]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">beginTxSmartConnector</span><span class="params">(<span name="delayRollover">delayRollover: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="catalogVersion">catalogVersion: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[_ &lt;: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@beginTxSmartConnector(delayRollover:Boolean,catalogVersion:Long):Array[_&lt;:Object]" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -994,7 +1011,7 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> → <a href="../ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></dd></dl></div>
-    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
       <h4 class="signature">
@@ -1003,14 +1020,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@toString():String" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.ExternalStore#tryExecute" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="tryExecute[T](tableName:String,closeOnSuccessOrFailure:Boolean,onExecutor:Boolean)(f:java.sql.Connection=&gt;T)(implicitc:Option[java.sql.Connection]):T"></a>
       <a id="tryExecute[T](String,Boolean,Boolean)((Connection)⇒T)(Option[Connection]):T"></a>
@@ -1097,6 +1114,23 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore#withTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="withTable(tableName:String,numPartitions:Int):org.apache.spark.sql.execution.columnar.ExternalStore"></a>
+      <a id="withTable(String,Int):ExternalStore"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">withTable</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numPartitions">numPartitions: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore@withTable(tableName:String,numPartitions:Int):org.apache.spark.sql.execution.columnar.ExternalStore" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> → <a href="../ExternalStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStore">ExternalStore</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore#write" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="write(kryo:com.esotericsoftware.kryo.Kryo,output:com.esotericsoftware.kryo.io.Output):Unit"></a>
       <a id="write(Kryo,Output):Unit"></a>

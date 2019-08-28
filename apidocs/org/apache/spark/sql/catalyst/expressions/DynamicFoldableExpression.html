@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>DynamicFoldableExpression - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression</title>
-          <meta name="description" content="DynamicFoldableExpression - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression" />
-          <meta name="keywords" content="DynamicFoldableExpression snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression" />
+          <title>DynamicFoldableExpression - snappydata_2.11 1.1.1 API - org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression</title>
+          <meta name="description" content="DynamicFoldableExpression - snappydata 2.11 1.1.1 API - org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression" />
+          <meta name="keywords" content="DynamicFoldableExpression snappydata 2.11 1.1.1 API org.apache.spark.sql.catalyst.expressions.DynamicFoldableExpression" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -54,12 +54,12 @@ initialization code within the <code>.init()</code> method of the generated clas
 <br><br></p><p>This pushes itself as reference object and uses a call to eval() on itself for actual
 evaluation and avoids embedding any generated code. This allows it to keep the
 generated code identical regardless of the constant expression (and in addition
-  DynamicReplacableConstant trait casts to itself rather than actual object type).
+DynamicReplacableConstant trait casts to itself rather than actual object type).
 <br><br></p><p>We try to locate first foldable expression in a query tree such that all its child is foldable
 but parent isn't. That way we locate the exact point where an expression is safe to evaluate
 once instead of evaluating every row.
 <br><br></p><p>Expressions like <code> select c from tab where
- case col2 when 1 then col3 else 'y' end = 22 </code>
+case col2 when 1 then col3 else 'y' end = 22 </code>
 like queries don't convert literal evaluation into init method.
 </p></div><dl class="paramcmts block"><dt class="param">expr</dt><dd class="cmt"><p>minimal expression tree that can be evaluated only once and turn into a constant.</p></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>

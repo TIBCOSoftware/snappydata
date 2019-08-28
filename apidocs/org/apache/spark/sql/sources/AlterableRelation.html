@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>AlterableRelation - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.sources.AlterableRelation</title>
-          <meta name="description" content="AlterableRelation - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.sources.AlterableRelation" />
-          <meta name="keywords" content="AlterableRelation snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.sources.AlterableRelation" />
+          <title>AlterableRelation - snappydata_2.11 1.1.1 API - org.apache.spark.sql.sources.AlterableRelation</title>
+          <meta name="description" content="AlterableRelation - snappydata 2.11 1.1.1 API - org.apache.spark.sql.sources.AlterableRelation" />
+          <meta name="keywords" content="AlterableRelation snappydata 2.11 1.1.1 API org.apache.spark.sql.sources.AlterableRelation" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -99,24 +99,25 @@
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
               <ol><li name="org.apache.spark.sql.sources.AlterableRelation#alterTable" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="alterTable(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,isAddColumn:Boolean,column:org.apache.spark.sql.types.StructField,defaultValue:Option[String]):Unit"></a>
-      <a id="alterTable(TableIdentifier,Boolean,StructField,Option[String]):Unit"></a>
+      <a id="alterTable(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,isAddColumn:Boolean,column:org.apache.spark.sql.types.StructField,extensions:String):Unit"></a>
+      <a id="alterTable(TableIdentifier,Boolean,StructField,String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">alterTable</span><span class="params">(<span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="isAddColumn">isAddColumn: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="column">column: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="defaultValue">defaultValue: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">alterTable</span><span class="params">(<span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="isAddColumn">isAddColumn: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="column">column: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="extensions">extensions: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.AlterableRelation@alterTable(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,isAddColumn:Boolean,column:org.apache.spark.sql.types.StructField,defaultValue:Option[String]):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.AlterableRelation@alterTable(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,isAddColumn:Boolean,column:org.apache.spark.sql.types.StructField,extensions:String):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Alter's table schema by adding or dropping a provided column.</p><div class="fullcomment"><div class="comment cmt"><p>Alter's table schema by adding or dropping a provided column.
 The schema of this instance must reflect the updated one after alter.
-</p></div><dl class="paramcmts block"><dt class="param">tableIdent</dt><dd class="cmt"><p>Table identifier</p></dd><dt class="param">isAddColumn</dt><dd class="cmt"><p>True if column is to be added else it is to be dropped</p></dd><dt class="param">column</dt><dd class="cmt"><p>Column to be added or dropped</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">tableIdent</dt><dd class="cmt"><p>Table identifier</p></dd><dt class="param">isAddColumn</dt><dd class="cmt"><p>True if column is to be added else it is to be dropped</p></dd><dt class="param">column</dt><dd class="cmt"><p>Column to be added or dropped</p></dd><dt class="param">extensions</dt><dd class="cmt"><p>Any additional clauses accepted by underlying table storage
+                   like DEFAULT value or column constraints</p></dd></dl></div>
     </li></ol>
             </div>
 

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>streaming - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.streaming</title>
-          <meta name="description" content="streaming - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.streaming" />
-          <meta name="keywords" content="streaming snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.streaming" />
+          <title>streaming - snappydata_2.11 1.1.1 API - org.apache.spark.sql.streaming</title>
+          <meta name="description" content="streaming - snappydata 2.11 1.1.1 API - org.apache.spark.sql.streaming" />
+          <meta name="keywords" content="streaming snappydata 2.11 1.1.1 API org.apache.spark.sql.streaming" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -117,7 +117,7 @@ key-value stores, etc). Use <code>Dataset.writeStream</code> to access this.
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.streaming.DefaultSnappySinkCallback" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DefaultSnappySinkCallbackextendsSnappySinkCallback"></a>
+      <a id="DefaultSnappySinkCallbackextendsSnappySinkCallbackwithLogging"></a>
       <a id="DefaultSnappySinkCallback:DefaultSnappySinkCallback"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -125,10 +125,10 @@ key-value stores, etc). Use <code>Dataset.writeStream</code> to access this.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="DefaultSnappySinkCallback.html"><span class="name">DefaultSnappySinkCallback</span></a><span class="result"> extends <a href="SnappySinkCallback.html" class="extype" name="org.apache.spark.sql.streaming.SnappySinkCallback">SnappySinkCallback</a></span>
+        <a href="DefaultSnappySinkCallback.html"><span class="name">DefaultSnappySinkCallback</span></a><span class="result"> extends <a href="SnappySinkCallback.html" class="extype" name="org.apache.spark.sql.streaming.SnappySinkCallback">SnappySinkCallback</a> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DefaultSnappySinkCallbackextendsSnappySinkCallback" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DefaultSnappySinkCallbackextendsSnappySinkCallbackwithLogging" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -526,7 +526,7 @@ during a trigger. See <a href="StreamingQueryProgress.html" class="extype" name=
 <a href="DefaultSnappySinkCallback.html" class="extype" name="org.apache.spark.sql.streaming.DefaultSnappySinkCallback">DefaultSnappySinkCallback</a>.</p><p>In order to override the default callback behavior the qualified name of the implementing
 class needs to be passed against <code>sinkCallback</code> option while defining stream query.</p></div></div>
     </li><li name="org.apache.spark.sql.streaming.SnappyStoreSink" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SnappyStoreSinkextendsSinkwithProductwithSerializable"></a>
+      <a id="SnappyStoreSinkextendsSinkwithLoggingwithProductwithSerializable"></a>
       <a id="SnappyStoreSink:SnappyStoreSink"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -534,10 +534,10 @@ class needs to be passed against <code>sinkCallback</code> option while defining
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="SnappyStoreSink.html"><span class="name">SnappyStoreSink</span></a><span class="params">(<span name="snappySession">snappySession: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="parameters">parameters: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="sinkCallback">sinkCallback: <a href="SnappySinkCallback.html" class="extype" name="org.apache.spark.sql.streaming.SnappySinkCallback">SnappySinkCallback</a></span>)</span><span class="result"> extends <a href="../execution/streaming/Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="SnappyStoreSink.html"><span class="name">SnappyStoreSink</span></a><span class="params">(<span name="snappySession">snappySession: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="parameters">parameters: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="sinkCallback">sinkCallback: <a href="SnappySinkCallback.html" class="extype" name="org.apache.spark.sql.streaming.SnappySinkCallback">SnappySinkCallback</a></span>)</span><span class="result"> extends <a href="../execution/streaming/Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SnappyStoreSinkextendsSinkwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SnappyStoreSinkextendsSinkwithLoggingwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1101,24 +1101,7 @@ Used to indicate how often results should be produced by a <a href="StreamingQue
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="org.apache.spark.sql.streaming.DefaultSnappySinkCallback" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DefaultSnappySinkCallback"></a>
-      <a id="DefaultSnappySinkCallback:DefaultSnappySinkCallback"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="DefaultSnappySinkCallback$.html"><span class="name">DefaultSnappySinkCallback</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DefaultSnappySinkCallback" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.streaming.DirectKafkaStreamRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.streaming.DirectKafkaStreamRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DirectKafkaStreamRelation"></a>
       <a id="DirectKafkaStreamRelation:DirectKafkaStreamRelation"></a>
       <h4 class="signature">

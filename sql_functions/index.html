@@ -1,0 +1,2741 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  
+  <title>Spark SQL, Built-in Functions</title>
+  
+
+  <link rel="shortcut icon" href="./img/favicon.ico">
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="./css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="./css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="./css/highlight.css">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "None";
+    var mkdocs_page_input_path = "index.md";
+    var mkdocs_page_url = "/";
+  </script>
+  
+  <script src="./js/jquery-2.1.1.min.js"></script>
+  <script src="./js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="./js/highlight.pack.js"></script>
+  <script src="./js/theme.js"></script> 
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="." class="icon icon-home"> Spark SQL, Built-in Functions</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href=".">Functions</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#_1">!</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#_2">%</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#_3">&amp;</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#_4">*</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#_5">+</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#-">-</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#_6">/</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#_7">&lt;</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#_8">&lt;=</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#_9">&lt;=&gt;</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#_10">=</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#_11">==</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#_12">&gt;</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#_13">&gt;=</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#_14">^</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#abs">abs</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#absolute_error">absolute_error</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#acos">acos</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#add_months">add_months</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#and">and</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#approx_count_distinct">approx_count_distinct</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#approx_percentile">approx_percentile</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#array">array</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#array_contains">array_contains</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#ascii">ascii</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#asin">asin</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#assert_true">assert_true</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#atan">atan</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#atan2">atan2</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#avg">avg</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#base64">base64</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#bigint">bigint</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#bin">bin</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#binary">binary</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#boolean">boolean</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#bround">bround</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#cbrt">cbrt</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#ceil">ceil</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#ceiling">ceiling</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#coalesce">coalesce</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#collect_list">collect_list</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#collect_set">collect_set</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#concat">concat</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#concat_ws">concat_ws</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#conv">conv</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#corr">corr</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#cos">cos</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#cosh">cosh</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#count">count</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#covar_pop">covar_pop</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#covar_samp">covar_samp</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#crc32">crc32</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#cube">cube</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#cume_dist">cume_dist</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#current_database">current_database</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#current_date">current_date</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#current_schema">current_schema</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#current_timestamp">current_timestamp</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#current_user">current_user</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#current_user_ldap_groups">current_user_ldap_groups</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#date">date</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#date_add">date_add</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#date_format">date_format</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#date_sub">date_sub</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#datediff">datediff</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#day">day</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#dayofmonth">dayofmonth</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#dayofyear">dayofyear</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#decimal">decimal</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#decode">decode</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#degrees">degrees</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#dense_rank">dense_rank</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#double">double</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#dsid">dsid</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#e">e</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#elt">elt</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#encode">encode</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#exp">exp</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#explode">explode</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#expm1">expm1</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#factorial">factorial</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#find_in_set">find_in_set</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#first">first</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#first_value">first_value</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#float">float</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#floor">floor</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#format_number">format_number</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#format_string">format_string</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#from_unixtime">from_unixtime</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#from_utc_timestamp">from_utc_timestamp</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#get_json_object">get_json_object</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#greatest">greatest</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#grouping">grouping</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#grouping_id">grouping_id</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#hash">hash</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#hex">hex</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#hour">hour</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#hypot">hypot</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#if">if</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#ifnull">ifnull</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#in">in</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#initcap">initcap</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#inline">inline</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#input_file_name">input_file_name</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#instr">instr</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#int">int</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#isnan">isnan</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#isnotnull">isnotnull</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#isnull">isnull</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#java_method">java_method</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#json_tuple">json_tuple</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#kurtosis">kurtosis</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#lag">lag</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#last">last</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#last_day">last_day</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#last_value">last_value</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#lcase">lcase</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#lead">lead</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#least">least</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#length">length</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#levenshtein">levenshtein</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#like">like</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#ln">ln</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#locate">locate</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#log">log</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#log10">log10</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#log1p">log1p</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#log2">log2</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#lower">lower</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#lower_bound">lower_bound</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#repeat">repeat</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#reverse">reverse</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#rint">rint</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#rlike">rlike</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#rollup">rollup</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#round">round</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#row_number">row_number</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#rpad">rpad</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#rtrim">rtrim</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#second">second</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#sentences">sentences</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#sha">sha</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#sha1">sha1</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#sha2">sha2</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#shiftleft">shiftleft</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#shiftright">shiftright</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#shiftrightunsigned">shiftrightunsigned</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#sign">sign</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#signum">signum</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#sin">sin</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#sinh">sinh</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#size">size</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#skewness">skewness</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#smallint">smallint</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#sort_array">sort_array</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#soundex">soundex</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#space">space</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#spark_partition_id">spark_partition_id</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#split">split</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#sqrt">sqrt</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#stack">stack</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#std">std</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#stddev">stddev</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#stddev_pop">stddev_pop</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#stddev_samp">stddev_samp</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#str_to_map">str_to_map</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#string">string</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#struct">struct</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#substr">substr</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#substring">substring</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#substring_index">substring_index</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#sum">sum</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#tan">tan</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#tanh">tanh</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#timestamp">timestamp</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#tinyint">tinyint</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#to_date">to_date</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#to_unix_timestamp">to_unix_timestamp</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#to_utc_timestamp">to_utc_timestamp</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#translate">translate</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#trim">trim</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#trunc">trunc</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#ucase">ucase</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#unbase64">unbase64</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#unhex">unhex</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#unix_timestamp">unix_timestamp</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#upper">upper</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#upper_bound">upper_bound</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href=".">Spark SQL, Built-in Functions</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Functions</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h3 id="_1">!</h3>
+<p>! expr - Logical not.</p>
+<pre><code>No example/argument for !.
+</code></pre>
+
+<h3 id="_2">%</h3>
+<p>expr1 % expr2 - Returns the remainder after <code>expr1</code>/<code>expr2</code>.</p>
+<pre><code>Examples:
+&gt; SELECT 2 % 1.8;
+0.2
+</code></pre>
+
+<h3 id="_3">&amp;</h3>
+<p>expr1 &amp; expr2 - Returns the result of bitwise AND of <code>expr1</code> and <code>expr2</code>.</p>
+<pre><code>Examples:
+&gt; SELECT 3 &amp; 5;
+1
+</code></pre>
+
+<h3 id="_4">*</h3>
+<p>expr1 * expr2 - Returns <code>expr1</code>*<code>expr2</code>.</p>
+<pre><code>Examples:
+&gt; SELECT 2 * 3;
+6
+</code></pre>
+
+<h3 id="_5">+</h3>
+<p>expr1 + expr2 - Returns <code>expr1</code>+<code>expr2</code>.</p>
+<pre><code>Examples:
+&gt; SELECT 1 + 2;
+3
+</code></pre>
+
+<h3 id="-">-</h3>
+<p>expr1 - expr2 - Returns <code>expr1</code>-<code>expr2</code>.</p>
+<pre><code>Examples:
+&gt; SELECT 2 - 1;
+1
+</code></pre>
+
+<h3 id="_6">/</h3>
+<p>expr1 / expr2 - Returns <code>expr1</code>/<code>expr2</code>. It always performs floating point division.</p>
+<pre><code>Examples:
+&gt; SELECT 3 / 2;
+1.5
+&gt; SELECT 2L / 2L;
+1.0
+</code></pre>
+
+<h3 id="_7">&lt;</h3>
+<p>expr1 &lt; expr2 - Returns true if <code>expr1</code> is less than <code>expr2</code>.</p>
+<pre><code>No example/argument for &lt;.
+</code></pre>
+
+<h3 id="_8">&lt;=</h3>
+<p>expr1 &lt;= expr2 - Returns true if <code>expr1</code> is less than or equal to <code>expr2</code>.</p>
+<pre><code>No example/argument for &lt;=.
+</code></pre>
+
+<h3 id="_9">&lt;=&gt;</h3>
+<p>expr1 &lt;=&gt; expr2 - Returns same result as the EQUAL(=) operator for non-null operands,
+but returns true if both are null, false if one of the them is null.</p>
+<pre><code>No example/argument for &lt;=&gt;.
+</code></pre>
+
+<h3 id="_10">=</h3>
+<p>expr1 = expr2 - Returns true if <code>expr1</code> equals <code>expr2</code>, or false otherwise.</p>
+<pre><code>No example/argument for =.
+</code></pre>
+
+<h3 id="_11">==</h3>
+<p>expr1 == expr2 - Returns true if <code>expr1</code> equals <code>expr2</code>, or false otherwise.</p>
+<pre><code>No example/argument for ==.
+</code></pre>
+
+<h3 id="_12">&gt;</h3>
+<p>expr1 &gt; expr2 - Returns true if <code>expr1</code> is greater than <code>expr2</code>.</p>
+<pre><code>No example/argument for &gt;.
+</code></pre>
+
+<h3 id="_13">&gt;=</h3>
+<p>expr1 &gt;= expr2 - Returns true if <code>expr1</code> is greater than or equal to <code>expr2</code>.</p>
+<pre><code>No example/argument for &gt;=.
+</code></pre>
+
+<h3 id="_14">^</h3>
+<p>expr1 ^ expr2 - Returns the result of bitwise exclusive OR of <code>expr1</code> and <code>expr2</code>.</p>
+<pre><code>Examples:
+&gt; SELECT 3 ^ 5;
+2
+</code></pre>
+
+<h3 id="abs">abs</h3>
+<p>abs(expr) - Returns the absolute value of the numeric value.</p>
+<pre><code>Examples:
+&gt; SELECT abs(-1);
+1
+</code></pre>
+
+<h3 id="absolute_error">absolute_error</h3>
+<p>absolute_error() - Indicates absolute error present in the estimate (approx answer) calculated using error estimation method (ClosedForm or Bootstrap).  [enterprise]</p>
+<pre><code>Examples:
+&gt; SELECT sum(ArrDelay) ArrivalDelay, absolute_error(ArrivalDelay),
+Month_ from airline group by Month_ order by Month_ desc with error 0.10;
+1117.6, 43.4, Jan
+</code></pre>
+
+<h3 id="acos">acos</h3>
+<p>acos(expr) - Returns the inverse cosine (a.k.a. arccosine) of <code>expr</code> if -1&lt;=<code>expr</code>&lt;=1 or NaN otherwise.</p>
+<pre><code>Examples:
+&gt; SELECT acos(1);
+0.0
+&gt; SELECT acos(2);
+NaN
+</code></pre>
+
+<h3 id="add_months">add_months</h3>
+<p>add_months(start_date, num_months) - Returns the date that is <code>num_months</code> after <code>start_date</code>.</p>
+<pre><code>Examples:
+&gt; SELECT add_months('2016-08-31', 1);
+2016-09-30
+</code></pre>
+
+<h3 id="and">and</h3>
+<p>expr1 and expr2 - Logical AND.</p>
+<pre><code>No example/argument for and.
+</code></pre>
+
+<h3 id="approx_count_distinct">approx_count_distinct</h3>
+<p>approx_count_distinct(expr[, relativeSD]) - Returns the estimated cardinality by HyperLogLog++.
+<code>relativeSD</code> defines the maximum estimation error allowed.</p>
+<pre><code>No example/argument for approx_count_distinct.
+</code></pre>
+
+<h3 id="approx_percentile">approx_percentile</h3>
+<p>approx_percentile(col, percentage [, accuracy]) - Returns the approximate percentile value of numeric
+column <code>col</code> at the given percentage. The value of percentage must be between 0.0
+and 1.0. The <code>accuracy</code> parameter (default: 10000) is a positive numeric literal which
+controls approximation accuracy at the cost of memory. Higher value of <code>accuracy</code> yields
+better accuracy, <code>1.0/accuracy</code> is the relative error of the approximation.
+When <code>percentage</code> is an array, each value of the percentage array must be between 0.0 and 1.0.
+In this case, returns the approximate percentile array of column <code>col</code> at the given
+percentage array.</p>
+<pre><code>Examples:
+&gt; SELECT approx_percentile(10.0, array(0.5, 0.4, 0.1), 100);
+[10.0,10.0,10.0]
+&gt; SELECT approx_percentile(10.0, 0.5, 100);
+10.0
+</code></pre>
+
+<h3 id="array">array</h3>
+<p>array(expr, ...) - Returns an array with the given elements.</p>
+<pre><code>Examples:
+&gt; SELECT array(1, 2, 3);
+[1,2,3]
+</code></pre>
+
+<h3 id="array_contains">array_contains</h3>
+<p>array_contains(array, value) - Returns true if the array contains the value.</p>
+<pre><code>Examples:
+&gt; SELECT array_contains(array(1, 2, 3), 2);
+true
+</code></pre>
+
+<h3 id="ascii">ascii</h3>
+<p>ascii(str) - Returns the numeric value of the first character of <code>str</code>.</p>
+<pre><code>Examples:
+&gt; SELECT ascii('222');
+50
+&gt; SELECT ascii(2);
+50
+</code></pre>
+
+<h3 id="asin">asin</h3>
+<p>asin(expr) - Returns the inverse sine (a.k.a. arcsine) the arc sin of <code>expr</code> if -1&lt;=<code>expr</code>&lt;=1 or NaN otherwise.</p>
+<pre><code>Examples:
+&gt; SELECT asin(0);
+0.0
+&gt; SELECT asin(2);
+NaN
+</code></pre>
+
+<h3 id="assert_true">assert_true</h3>
+<p>assert_true(expr) - Throws an exception if <code>expr</code> is not true.</p>
+<pre><code>Examples:
+&gt; SELECT assert_true(0 &lt; 1);
+NULL
+</code></pre>
+
+<h3 id="atan">atan</h3>
+<p>atan(expr) - Returns the inverse tangent (a.k.a. arctangent).</p>
+<pre><code>Examples:
+&gt; SELECT atan(0);
+0.0
+</code></pre>
+
+<h3 id="atan2">atan2</h3>
+<p>atan2(expr1, expr2) - Returns the angle in radians between the positive x-axis of a plane and the point given by the coordinates (<code>expr1</code>, <code>expr2</code>).</p>
+<pre><code>Examples:
+&gt; SELECT atan2(0, 0);
+0.0
+</code></pre>
+
+<h3 id="avg">avg</h3>
+<p>avg(expr) - Returns the mean calculated from values of a group.</p>
+<pre><code>No example/argument for avg.
+</code></pre>
+
+<h3 id="base64">base64</h3>
+<p>base64(bin) - Converts the argument from a binary <code>bin</code> to a base 64 string.</p>
+<pre><code>Examples:
+&gt; SELECT base64('Spark SQL');
+U3BhcmsgU1FM
+</code></pre>
+
+<h3 id="bigint">bigint</h3>
+<p>bigint(expr AS type) - Casts the value <code>expr</code> to the target data type <code>type</code>.</p>
+<pre><code>Examples:
+&gt; SELECT bigint('10' as int);
+10
+</code></pre>
+
+<h3 id="bin">bin</h3>
+<p>bin(expr) - Returns the string representation of the long value <code>expr</code> represented in binary.</p>
+<pre><code>Examples:
+&gt; SELECT bin(13);
+1101
+&gt; SELECT bin(-13);
+1111111111111111111111111111111111111111111111111111111111110011
+&gt; SELECT bin(13.3);
+1101
+</code></pre>
+
+<h3 id="binary">binary</h3>
+<p>binary(expr AS type) - Casts the value <code>expr</code> to the target data type <code>type</code>.</p>
+<pre><code>Examples:
+&gt; SELECT binary('10' as int);
+10
+</code></pre>
+
+<h3 id="boolean">boolean</h3>
+<p>boolean(expr AS type) - Casts the value <code>expr</code> to the target data type <code>type</code>.</p>
+<pre><code>Examples:
+&gt; SELECT boolean('10' as int);
+10
+</code></pre>
+
+<h3 id="bround">bround</h3>
+<p>bround(expr, d) - Returns <code>expr</code> rounded to <code>d</code> decimal places using HALF_EVEN rounding mode.</p>
+<pre><code>Examples:
+&gt; SELECT bround(2.5, 0);
+2.0
+</code></pre>
+
+<h3 id="cbrt">cbrt</h3>
+<p>cbrt(expr) - Returns the cube root of <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT cbrt(27.0);
+3.0
+</code></pre>
+
+<h3 id="ceil">ceil</h3>
+<p>ceil(expr) - Returns the smallest integer not smaller than <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT ceil(-0.1);
+0
+&gt; SELECT ceil(5);
+5
+</code></pre>
+
+<h3 id="ceiling">ceiling</h3>
+<p>ceiling(expr) - Returns the smallest integer not smaller than <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT ceiling(-0.1);
+0
+&gt; SELECT ceiling(5);
+5
+</code></pre>
+
+<h3 id="coalesce">coalesce</h3>
+<p>coalesce(expr1, expr2, ...) - Returns the first non-null argument if exists. Otherwise, null.</p>
+<pre><code>Examples:
+&gt; SELECT coalesce(NULL, 1, NULL);
+1
+</code></pre>
+
+<h3 id="collect_list">collect_list</h3>
+<p>collect_list(expr) - Collects and returns a list of non-unique elements.</p>
+<pre><code>No example/argument for collect_list.
+</code></pre>
+
+<h3 id="collect_set">collect_set</h3>
+<p>collect_set(expr) - Collects and returns a set of unique elements.</p>
+<pre><code>No example/argument for collect_set.
+</code></pre>
+
+<h3 id="concat">concat</h3>
+<p>concat(str1, str2, ..., strN) - Returns the concatenation of str1, str2, ..., strN.</p>
+<pre><code>Examples:
+&gt; SELECT concat('Spark', 'SQL');
+SparkSQL
+</code></pre>
+
+<h3 id="concat_ws">concat_ws</h3>
+<p>concat_ws(sep, [str | array(str)]+) - Returns the concatenation of the strings separated by <code>sep</code>.</p>
+<pre><code>Examples:
+&gt; SELECT concat_ws(' ', 'Spark', 'SQL');
+Spark SQL
+</code></pre>
+
+<h3 id="conv">conv</h3>
+<p>conv(num, from_base, to_base) - Convert <code>num</code> from <code>from_base</code> to <code>to_base</code>.</p>
+<pre><code>Examples:
+&gt; SELECT conv('100', 2, 10);
+4
+&gt; SELECT conv(-10, 16, -10);
+16
+</code></pre>
+
+<h3 id="corr">corr</h3>
+<p>corr(expr1, expr2) - Returns Pearson coefficient of correlation between a set of number pairs.</p>
+<pre><code>No example/argument for corr.
+</code></pre>
+
+<h3 id="cos">cos</h3>
+<p>cos(expr) - Returns the cosine of <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT cos(0);
+1.0
+</code></pre>
+
+<h3 id="cosh">cosh</h3>
+<p>cosh(expr) - Returns the hyperbolic cosine of <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT cosh(0);
+1.0
+</code></pre>
+
+<h3 id="count">count</h3>
+<p>count(*) - Returns the total number of retrieved rows, including rows containing null.</p>
+<p>count(expr) - Returns the number of rows for which the supplied expression is non-null.</p>
+<p>count(DISTINCT expr[, expr...]) - Returns the number of rows for which the supplied expression(s) are unique and non-null.</p>
+<pre><code>No example/argument for count.
+</code></pre>
+
+<h3 id="covar_pop">covar_pop</h3>
+<p>covar_pop(expr1, expr2) - Returns the population covariance of a set of number pairs.</p>
+<pre><code>No example/argument for covar_pop.
+</code></pre>
+
+<h3 id="covar_samp">covar_samp</h3>
+<p>covar_samp(expr1, expr2) - Returns the sample covariance of a set of number pairs.</p>
+<pre><code>No example/argument for covar_samp.
+</code></pre>
+
+<h3 id="crc32">crc32</h3>
+<p>crc32(expr) - Returns a cyclic redundancy check value of the <code>expr</code> as a bigint.</p>
+<pre><code>Examples:
+&gt; SELECT crc32('Spark');
+1557323817
+</code></pre>
+
+<h3 id="cube">cube</h3>
+<h3 id="cume_dist">cume_dist</h3>
+<p>cume_dist() - Computes the position of a value relative to all values in the partition.</p>
+<pre><code>No example/argument for cume_dist.
+</code></pre>
+
+<h3 id="current_database">current_database</h3>
+<p>current_database() - Returns the current database.</p>
+<pre><code>Examples:
+&gt; SELECT current_database();
+default
+</code></pre>
+
+<h3 id="current_date">current_date</h3>
+<p>current_date() - Returns the current date at the start of query evaluation.</p>
+<pre><code>No example/argument for current_date.
+</code></pre>
+
+<h3 id="current_schema">current_schema</h3>
+<p>current_schema() - Returns the current database.</p>
+<pre><code>Examples:
+&gt; SELECT current_schema();
+default
+</code></pre>
+
+<h3 id="current_timestamp">current_timestamp</h3>
+<p>current_timestamp() - Returns the current timestamp at the start of query evaluation.</p>
+<pre><code>No example/argument for current_timestamp.
+</code></pre>
+
+<h3 id="current_user">current_user</h3>
+<p>current_user() - Returns the name of the user that owns the session executing the current SQL statement.</p>
+<pre><code>Examples:
+&gt; SELECT current_user();
+USER1
+</code></pre>
+
+<h3 id="current_user_ldap_groups">current_user_ldap_groups</h3>
+<p>current_user_ldap_groups() - Returns all the ldap groups as an ARRAY to which the user who is executing the current SQL statement belongs.</p>
+<pre><code>Examples:
+&gt; SELECT array_contains(current_user_ldap_groups(), 'GROUP1');
+true
+</code></pre>
+
+<h3 id="date">date</h3>
+<p>date(expr AS type) - Casts the value <code>expr</code> to the target data type <code>type</code>.</p>
+<pre><code>Examples:
+&gt; SELECT date('10' as int);
+10
+</code></pre>
+
+<h3 id="date_add">date_add</h3>
+<p>date_add(start_date, num_days) - Returns the date that is <code>num_days</code> after <code>start_date</code>.</p>
+<pre><code>Examples:
+&gt; SELECT date_add('2016-07-30', 1);
+2016-07-31
+</code></pre>
+
+<h3 id="date_format">date_format</h3>
+<p>date_format(timestamp, fmt) - Converts <code>timestamp</code> to a value of string in the format specified by the date format <code>fmt</code>.</p>
+<pre><code>Examples:
+&gt; SELECT date_format('2016-04-08', 'y');
+2016
+</code></pre>
+
+<h3 id="date_sub">date_sub</h3>
+<p>date_sub(start_date, num_days) - Returns the date that is <code>num_days</code> before <code>start_date</code>.</p>
+<pre><code>Examples:
+&gt; SELECT date_sub('2016-07-30', 1);
+2016-07-29
+</code></pre>
+
+<h3 id="datediff">datediff</h3>
+<p>datediff(endDate, startDate) - Returns the number of days from <code>startDate</code> to <code>endDate</code>.</p>
+<pre><code>Examples:
+&gt; SELECT datediff('2009-07-31', '2009-07-30');
+1
+
+&gt; SELECT datediff('2009-07-30', '2009-07-31');
+-1
+</code></pre>
+
+<h3 id="day">day</h3>
+<p>day(date) - Returns the day of month of the date/timestamp.</p>
+<pre><code>Examples:
+&gt; SELECT day('2009-07-30');
+30
+</code></pre>
+
+<h3 id="dayofmonth">dayofmonth</h3>
+<p>dayofmonth(date) - Returns the day of month of the date/timestamp.</p>
+<pre><code>Examples:
+&gt; SELECT dayofmonth('2009-07-30');
+30
+</code></pre>
+
+<h3 id="dayofyear">dayofyear</h3>
+<p>dayofyear(date) - Returns the day of year of the date/timestamp.</p>
+<pre><code>Examples:
+&gt; SELECT dayofyear('2016-04-09');
+100
+</code></pre>
+
+<h3 id="decimal">decimal</h3>
+<p>decimal(expr AS type) - Casts the value <code>expr</code> to the target data type <code>type</code>.</p>
+<pre><code>Examples:
+&gt; SELECT decimal('10' as int);
+10
+</code></pre>
+
+<h3 id="decode">decode</h3>
+<p>decode(bin, charset) - Decodes the first argument using the second argument character set.</p>
+<pre><code>Examples:
+&gt; SELECT decode(encode('abc', 'utf-8'), 'utf-8');
+abc
+</code></pre>
+
+<h3 id="degrees">degrees</h3>
+<p>degrees(expr) - Converts radians to degrees.</p>
+<pre><code>Examples:
+&gt; SELECT degrees(3.141592653589793);
+180.0
+</code></pre>
+
+<h3 id="dense_rank">dense_rank</h3>
+<p>dense_rank() - Computes the rank of a value in a group of values. The result is one plus the
+previously assigned rank value. Unlike the function rank, dense_rank will not produce gaps
+in the ranking sequence.</p>
+<pre><code>No example/argument for dense_rank.
+</code></pre>
+
+<h3 id="double">double</h3>
+<p>double(expr AS type) - Casts the value <code>expr</code> to the target data type <code>type</code>.</p>
+<pre><code>Examples:
+&gt; SELECT double('10' as int);
+10
+</code></pre>
+
+<h3 id="dsid">dsid</h3>
+<p>dsid() - Returns the unique distributed member ID of executor fetching current row.</p>
+<pre><code>Examples:
+&gt; SELECT dsid();
+localhost(1831)&lt;v2&gt;:18165
+</code></pre>
+
+<h3 id="e">e</h3>
+<p>e() - Returns Euler's number, e.</p>
+<pre><code>Examples:
+&gt; SELECT e();
+2.718281828459045
+</code></pre>
+
+<h3 id="elt">elt</h3>
+<p>elt(n, str1, str2, ...) - Returns the <code>n</code>-th string, e.g., returns <code>str2</code> when <code>n</code> is 2.</p>
+<pre><code>Examples:
+&gt; SELECT elt(1, 'scala', 'java');
+scala
+</code></pre>
+
+<h3 id="encode">encode</h3>
+<p>encode(str, charset) - Encodes the first argument using the second argument character set.</p>
+<pre><code>Examples:
+&gt; SELECT encode('abc', 'utf-8');
+abc
+</code></pre>
+
+<h3 id="exp">exp</h3>
+<p>exp(expr) - Returns e to the power of <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT exp(0);
+1.0
+</code></pre>
+
+<h3 id="explode">explode</h3>
+<p>explode(expr) - Separates the elements of array <code>expr</code> into multiple rows, or the elements of map <code>expr</code> into multiple rows and columns.</p>
+<pre><code>Examples:
+&gt; SELECT explode(array(10, 20));
+10
+20
+</code></pre>
+
+<h3 id="expm1">expm1</h3>
+<p>expm1(expr) - Returns exp(<code>expr</code>) - 1.</p>
+<pre><code>Examples:
+&gt; SELECT expm1(0);
+0.0
+</code></pre>
+
+<h3 id="factorial">factorial</h3>
+<p>factorial(expr) - Returns the factorial of <code>expr</code>. <code>expr</code> is [0..20]. Otherwise, null.</p>
+<pre><code>Examples:
+&gt; SELECT factorial(5);
+120
+</code></pre>
+
+<h3 id="find_in_set">find_in_set</h3>
+<p>find_in_set(str, str_array) - Returns the index (1-based) of the given string (<code>str</code>) in the comma-delimited list (<code>str_array</code>).
+Returns 0, if the string was not found or if the given string (<code>str</code>) contains a comma.</p>
+<pre><code>Examples:
+&gt; SELECT find_in_set('ab','abc,b,ab,c,def');
+3
+</code></pre>
+
+<h3 id="first">first</h3>
+<p>first(expr[, isIgnoreNull]) - Returns the first value of <code>expr</code> for a group of rows.
+If <code>isIgnoreNull</code> is true, returns only non-null values.</p>
+<pre><code>No example/argument for first.
+</code></pre>
+
+<h3 id="first_value">first_value</h3>
+<p>first_value(expr[, isIgnoreNull]) - Returns the first value of <code>expr</code> for a group of rows.
+If <code>isIgnoreNull</code> is true, returns only non-null values.</p>
+<pre><code>No example/argument for first_value.
+</code></pre>
+
+<h3 id="float">float</h3>
+<p>float(expr AS type) - Casts the value <code>expr</code> to the target data type <code>type</code>.</p>
+<pre><code>Examples:
+&gt; SELECT float('10' as int);
+10
+</code></pre>
+
+<h3 id="floor">floor</h3>
+<p>floor(expr) - Returns the largest integer not greater than <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT floor(-0.1);
+-1
+&gt; SELECT floor(5);
+5
+</code></pre>
+
+<h3 id="format_number">format_number</h3>
+<p>format_number(expr1, expr2) - Formats the number <code>expr1</code> like '#,###,###.##', rounded to <code>expr2</code>
+decimal places. If <code>expr2</code> is 0, the result has no decimal point or fractional part.
+This is supposed to function like MySQL's FORMAT.</p>
+<pre><code>Examples:
+&gt; SELECT format_number(12332.123456, 4);
+12,332.1235
+</code></pre>
+
+<h3 id="format_string">format_string</h3>
+<p>format_string(strfmt, obj, ...) - Returns a formatted string from printf-style format strings.</p>
+<pre><code>Examples:
+&gt; SELECT format_string(&quot;Hello World %d %s&quot;, 100, &quot;days&quot;);
+Hello World 100 days
+</code></pre>
+
+<h3 id="from_unixtime">from_unixtime</h3>
+<p>from_unixtime(unix_time, format) - Returns <code>unix_time</code> in the specified <code>format</code>.</p>
+<pre><code>Examples:
+&gt; SELECT from_unixtime(0, 'yyyy-MM-dd HH:mm:ss');
+1970-01-01 00:00:00
+</code></pre>
+
+<h3 id="from_utc_timestamp">from_utc_timestamp</h3>
+<p>from_utc_timestamp(timestamp, timezone) - Given a timestamp, which corresponds to a certain time of day in UTC, returns another timestamp that corresponds to the same time of day in the given timezone.</p>
+<pre><code>Examples:
+&gt; SELECT from_utc_timestamp('2016-08-31', 'Asia/Seoul');
+2016-08-31 09:00:00
+</code></pre>
+
+<h3 id="get_json_object">get_json_object</h3>
+<p>get_json_object(json_txt, path) - Extracts a json object from <code>path</code>.</p>
+<pre><code>Examples:
+&gt; SELECT get_json_object('{&quot;a&quot;:&quot;b&quot;}', '$.a');
+b
+</code></pre>
+
+<h3 id="greatest">greatest</h3>
+<p>greatest(expr, ...) - Returns the greatest value of all parameters, skipping null values.</p>
+<pre><code>Examples:
+&gt; SELECT greatest(10, 9, 2, 4, 3);
+10
+</code></pre>
+
+<h3 id="grouping">grouping</h3>
+<h3 id="grouping_id">grouping_id</h3>
+<h3 id="hash">hash</h3>
+<p>hash(expr1, expr2, ...) - Returns a hash value of the arguments.</p>
+<pre><code>Examples:
+&gt; SELECT hash('Spark', array(123), 2);
+-1321691492
+</code></pre>
+
+<h3 id="hex">hex</h3>
+<p>hex(expr) - Converts <code>expr</code> to hexadecimal.</p>
+<pre><code>Examples:
+&gt; SELECT hex(17);
+11
+&gt; SELECT hex('Spark SQL');
+537061726B2053514C
+</code></pre>
+
+<h3 id="hour">hour</h3>
+<p>hour(timestamp) - Returns the hour component of the string/timestamp.</p>
+<pre><code>Examples:
+&gt; SELECT hour('2009-07-30 12:58:59');
+12
+</code></pre>
+
+<h3 id="hypot">hypot</h3>
+<p>hypot(expr1, expr2) - Returns sqrt(<code>expr1</code><strong>2 + <code>expr2</code></strong>2).</p>
+<pre><code>Examples:
+&gt; SELECT hypot(3, 4);
+5.0
+</code></pre>
+
+<h3 id="if">if</h3>
+<p>if(expr1, expr2, expr3) - If <code>expr1</code> evaluates to true, then returns <code>expr2</code>; otherwise returns <code>expr3</code>.</p>
+<pre><code>Examples:
+&gt; SELECT if(1 &lt; 2, 'a', 'b');
+a
+</code></pre>
+
+<h3 id="ifnull">ifnull</h3>
+<p>ifnull(expr1, expr2) - Returns <code>expr2</code> if <code>expr1</code> is null, or <code>expr1</code> otherwise.</p>
+<pre><code>Examples:
+&gt; SELECT ifnull(NULL, array('2'));
+[&quot;2&quot;]
+</code></pre>
+
+<h3 id="in">in</h3>
+<p>expr1 in(expr2, expr3, ...) - Returns true if <code>expr</code> equals to any valN.</p>
+<pre><code>No example/argument for in.
+</code></pre>
+
+<h3 id="initcap">initcap</h3>
+<p>initcap(str) - Returns <code>str</code> with the first letter of each word in uppercase.
+All other letters are in lowercase. Words are delimited by white space.</p>
+<pre><code>Examples:
+&gt; SELECT initcap('sPark sql');
+Spark Sql
+</code></pre>
+
+<h3 id="inline">inline</h3>
+<p>inline(expr) - Explodes an array of structs into a table.</p>
+<pre><code>Examples:
+&gt; SELECT inline(array(struct(1, 'a'), struct(2, 'b')));
+1  a
+2  b
+</code></pre>
+
+<h3 id="input_file_name">input_file_name</h3>
+<p>input_file_name() - Returns the name of the current file being read if available.</p>
+<pre><code>No example/argument for input_file_name.
+</code></pre>
+
+<h3 id="instr">instr</h3>
+<p>instr(str, substr) - Returns the (1-based) index of the first occurrence of <code>substr</code> in <code>str</code>.</p>
+<pre><code>Examples:
+&gt; SELECT instr('SparkSQL', 'SQL');
+6
+</code></pre>
+
+<h3 id="int">int</h3>
+<p>int(expr AS type) - Casts the value <code>expr</code> to the target data type <code>type</code>.</p>
+<pre><code>Examples:
+&gt; SELECT int('10' as int);
+10
+</code></pre>
+
+<h3 id="isnan">isnan</h3>
+<p>isnan(expr) - Returns true if <code>expr</code> is NaN, or false otherwise.</p>
+<pre><code>Examples:
+&gt; SELECT isnan(cast('NaN' as double));
+true
+</code></pre>
+
+<h3 id="isnotnull">isnotnull</h3>
+<p>isnotnull(expr) - Returns true if <code>expr</code> is not null, or false otherwise.</p>
+<pre><code>Examples:
+&gt; SELECT isnotnull(1);
+true
+</code></pre>
+
+<h3 id="isnull">isnull</h3>
+<p>isnull(expr) - Returns true if <code>expr</code> is null, or false otherwise.</p>
+<pre><code>Examples:
+&gt; SELECT isnull(1);
+false
+</code></pre>
+
+<h3 id="java_method">java_method</h3>
+<p>java_method(class, method[, arg1[, arg2 ..]]) - Calls a method with reflection.</p>
+<pre><code>Examples:
+&gt; SELECT java_method('java.util.UUID', 'randomUUID');
+c33fb387-8500-4bfa-81d2-6e0e3e930df2
+&gt; SELECT java_method('java.util.UUID', 'fromString', 'a5cf6c42-0c85-418f-af6c-3e4e5b1328f2');
+a5cf6c42-0c85-418f-af6c-3e4e5b1328f2
+</code></pre>
+
+<h3 id="json_tuple">json_tuple</h3>
+<p>json_tuple(jsonStr, p1, p2, ..., pn) - Return a tuple like the function get_json_object, but it takes multiple names. All the input parameters and output column types are string.</p>
+<pre><code>Examples:
+&gt; SELECT json_tuple('{&quot;a&quot;:1, &quot;b&quot;:2}', 'a', 'b');
+1  2
+</code></pre>
+
+<h3 id="kurtosis">kurtosis</h3>
+<p>kurtosis(expr) - Returns the kurtosis value calculated from values of a group.</p>
+<pre><code>No example/argument for kurtosis.
+</code></pre>
+
+<h3 id="lag">lag</h3>
+<p>lag(input[, offset[, default]]) - Returns the value of <code>input</code> at the <code>offset</code>th row
+before the current row in the window. The default value of <code>offset</code> is 1 and the default
+value of <code>default</code> is null. If the value of <code>input</code> at the <code>offset</code>th row is null,
+null is returned. If there is no such offset row (e.g., when the offset is 1, the first
+row of the window does not have any previous row), <code>default</code> is returned.</p>
+<pre><code>No example/argument for lag.
+</code></pre>
+
+<h3 id="last">last</h3>
+<p>last(expr[, isIgnoreNull]) - Returns the last value of <code>expr</code> for a group of rows.
+If <code>isIgnoreNull</code> is true, returns only non-null values.</p>
+<pre><code>No example/argument for last.
+</code></pre>
+
+<h3 id="last_day">last_day</h3>
+<p>last_day(date) - Returns the last day of the month which the date belongs to.</p>
+<pre><code>Examples:
+&gt; SELECT last_day('2009-01-12');
+2009-01-31
+</code></pre>
+
+<h3 id="last_value">last_value</h3>
+<p>last_value(expr[, isIgnoreNull]) - Returns the last value of <code>expr</code> for a group of rows.
+If <code>isIgnoreNull</code> is true, returns only non-null values.</p>
+<pre><code>No example/argument for last_value.
+</code></pre>
+
+<h3 id="lcase">lcase</h3>
+<p>lcase(str) - Returns <code>str</code> with all characters changed to lowercase.</p>
+<pre><code>Examples:
+&gt; SELECT lcase('SparkSql');
+sparksql
+</code></pre>
+
+<h3 id="lead">lead</h3>
+<p>lead(input[, offset[, default]]) - Returns the value of <code>input</code> at the <code>offset</code>th row
+after the current row in the window. The default value of <code>offset</code> is 1 and the default
+value of <code>default</code> is null. If the value of <code>input</code> at the <code>offset</code>th row is null,
+null is returned. If there is no such an offset row (e.g., when the offset is 1, the last
+row of the window does not have any subsequent row), <code>default</code> is returned.</p>
+<pre><code>No example/argument for lead.
+</code></pre>
+
+<h3 id="least">least</h3>
+<p>least(expr, ...) - Returns the least value of all parameters, skipping null values.</p>
+<pre><code>Examples:
+&gt; SELECT least(10, 9, 2, 4, 3);
+2
+</code></pre>
+
+<h3 id="length">length</h3>
+<p>length(expr) - Returns the length of <code>expr</code> or number of bytes in binary data.</p>
+<pre><code>Examples:
+&gt; SELECT length('Spark SQL');
+9
+</code></pre>
+
+<h3 id="levenshtein">levenshtein</h3>
+<p>levenshtein(str1, str2) - Returns the Levenshtein distance between the two given strings.</p>
+<pre><code>Examples:
+&gt; SELECT levenshtein('kitten', 'sitting');
+3
+</code></pre>
+
+<h3 id="like">like</h3>
+<p>str like pattern - Returns true if str matches pattern, null if any arguments are null, false otherwise.</p>
+<pre><code>Arguments:
+str - a string expression
+pattern - a string expression. The pattern is a string which is matched literally, with
+exception to the following special symbols:
+
+_ matches any one character in the input (similar to . in posix regular expressions)
+
+% matches zero or more characters in the input (similar to .* in posix regular
+expressions)
+
+The escape character is '\'. If an escape character precedes a special symbol or another
+escape character, the following character is matched literally. It is invalid to escape
+any other character.
+
+Examples:
+&gt; SELECT '%SystemDrive%\Users\John' like '\%SystemDrive\%\\Users%'
+true
+
+See also:
+Use RLIKE to match with standard regular expressions.
+</code></pre>
+
+<h3 id="ln">ln</h3>
+<p>ln(expr) - Returns the natural logarithm (base e) of <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT ln(1);
+0.0
+</code></pre>
+
+<h3 id="locate">locate</h3>
+<p>locate(substr, str[, pos]) - Returns the position of the first occurrence of <code>substr</code> in <code>str</code> after position <code>pos</code>.
+The given <code>pos</code> and return value are 1-based.</p>
+<pre><code>Examples:
+&gt; SELECT locate('bar', 'foobarbar', 5);
+7
+</code></pre>
+
+<h3 id="log">log</h3>
+<p>log(base, expr) - Returns the logarithm of <code>expr</code> with <code>base</code>.</p>
+<pre><code>Examples:
+&gt; SELECT log(10, 100);
+2.0
+</code></pre>
+
+<h3 id="log10">log10</h3>
+<p>log10(expr) - Returns the logarithm of <code>expr</code> with base 10.</p>
+<pre><code>Examples:
+&gt; SELECT log10(10);
+1.0
+</code></pre>
+
+<h3 id="log1p">log1p</h3>
+<p>log1p(expr) - Returns log(1 + <code>expr</code>).</p>
+<pre><code>Examples:
+&gt; SELECT log1p(0);
+0.0
+</code></pre>
+
+<h3 id="log2">log2</h3>
+<p>log2(expr) - Returns the logarithm of <code>expr</code> with base 2.</p>
+<pre><code>Examples:
+&gt; SELECT log2(2);
+1.0
+</code></pre>
+
+<h3 id="lower">lower</h3>
+<p>lower(str) - Returns <code>str</code> with all characters changed to lowercase.</p>
+<pre><code>Examples:
+&gt; SELECT lower('SparkSql');
+sparksql
+</code></pre>
+
+<h3 id="lower_bound">lower_bound</h3>
+<p>lower_bound() - Lower value of an estimate interval for a given confidence.calculated using error estimation method (ClosedForm or Bootstrap).  [enterprise]</p>
+<pre><code>Examples:
+&gt; SELECT sum(ArrDelay) ArrivalDelay, lower_bound(ArrivalDelay),
+Month_ from airline group by Month_ order by Month_ desc with error 0.10;
+1117.6, 11101.5, Jan
+&quot;```
+
+### lpad
+
+
+lpad(str, len, pad) - Returns `str`, left-padded with `pad` to a length of `len`.
+If `str` is longer than `len`, the return value is shortened to `len` characters.
+
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT lpad('hi', 5, '??');
+???hi
+SELECT lpad('hi', 1, '??');
+h</p>
+</blockquote>
+<pre><code>
+### ltrim
+
+ltrim(str) - Removes the leading and trailing space characters from `str`.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT ltrim('    SparkSQL');
+SparkSQL</p>
+</blockquote>
+<pre><code>
+### map
+
+map(key0, value0, key1, value1, ...) - Creates a map with the given key/value pairs.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT map(1.0, '2', 3.0, '4');
+{1.0:"2",3.0:"4"}</p>
+</blockquote>
+<pre><code>
+### map_keys
+
+map_keys(map) - Returns an unordered array containing the keys of the map.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT map_keys(map(1, 'a', 2, 'b'));
+[1,2]</p>
+</blockquote>
+<pre><code>
+### map_values
+
+map_values(map) - Returns an unordered array containing the values of the map.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT map_values(map(1, 'a', 2, 'b'));
+["a","b"]</p>
+</blockquote>
+<pre><code>
+### max
+
+max(expr) - Returns the maximum value of `expr`.
+
+</code></pre>
+
+<p>No example/argument for max.</p>
+<pre><code>
+### md5
+
+md5(expr) - Returns an MD5 128-bit checksum as a hex string of `expr`.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT md5('Spark');
+8cde774d6f7333752ed72cacddb05126</p>
+</blockquote>
+<pre><code>
+### mean
+
+mean(expr) - Returns the mean calculated from values of a group.
+
+</code></pre>
+
+<p>No example/argument for mean.</p>
+<pre><code>
+### min
+
+min(expr) - Returns the minimum value of `expr`.
+
+</code></pre>
+
+<p>No example/argument for min.</p>
+<pre><code>
+### minute
+
+minute(timestamp) - Returns the minute component of the string/timestamp.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT minute('2009-07-30 12:58:59');
+58</p>
+</blockquote>
+<pre><code>
+### monotonically_increasing_id
+
+
+monotonically_increasing_id() - Returns monotonically increasing 64-bit integers. The generated ID is guaranteed
+to be monotonically increasing and unique, but not consecutive. The current implementation
+puts the partition ID in the upper 31 bits, and the lower 33 bits represent the record number
+within each partition. The assumption is that the data frame has less than 1 billion
+partitions, and each partition has less than 8 billion records.
+
+
+</code></pre>
+
+<p>No example/argument for monotonically_increasing_id.</p>
+<pre><code>
+### month
+
+month(date) - Returns the month component of the date/timestamp.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT month('2016-07-30');
+7</p>
+</blockquote>
+<pre><code>
+### months_between
+
+months_between(timestamp1, timestamp2) - Returns number of months between `timestamp1` and `timestamp2`.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT months_between('1997-02-28 10:30:00', '1996-10-30');
+3.94959677</p>
+</blockquote>
+<pre><code>
+### named_struct
+
+named_struct(name1, val1, name2, val2, ...) - Creates a struct with the given field names and values.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT named_struct("a", 1, "b", 2, "c", 3);
+{"a":1,"b":2,"c":3}</p>
+</blockquote>
+<pre><code>
+### nanvl
+
+nanvl(expr1, expr2) - Returns `expr1` if it's not NaN, or `expr2` otherwise.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT nanvl(cast('NaN' as double), 123);
+123.0</p>
+</blockquote>
+<pre><code>
+### negative
+
+negative(expr) - Returns the negated value of `expr`.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT negative(1);
+-1</p>
+</blockquote>
+<pre><code>
+### next_day
+
+next_day(start_date, day_of_week) - Returns the first date which is later than `start_date` and named as indicated.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT next_day('2015-01-14', 'TU');
+2015-01-20</p>
+</blockquote>
+<pre><code>
+### not
+
+not expr - Logical not.
+
+</code></pre>
+
+<p>No example/argument for not.</p>
+<pre><code>
+### now
+
+now() - Returns the current timestamp at the start of query evaluation.
+
+</code></pre>
+
+<p>No example/argument for now.</p>
+<pre><code>
+### ntile
+
+
+ntile(n) - Divides the rows for each window partition into `n` buckets ranging
+from 1 to at most `n`.
+
+
+</code></pre>
+
+<p>No example/argument for ntile.</p>
+<pre><code>
+### nullif
+
+nullif(expr1, expr2) - Returns null if `expr1` equals to `expr2`, or `expr1` otherwise.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT nullif(2, 2);
+NULL</p>
+</blockquote>
+<pre><code>
+### nvl
+
+nvl(expr1, expr2) - Returns `expr2` if `expr1` is null, or `expr1` otherwise.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT nvl(NULL, array('2'));
+["2"]</p>
+</blockquote>
+<pre><code>
+### nvl2
+
+nvl2(expr1, expr2, expr3) - Returns `expr2` if `expr1` is not null, or `expr3` otherwise.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT nvl2(NULL, 2, 1);
+1</p>
+</blockquote>
+<pre><code>
+### or
+
+expr1 or expr2 - Logical OR.
+
+</code></pre>
+
+<p>No example/argument for or.</p>
+<pre><code>
+### parse_url
+
+parse_url(url, partToExtract[, key]) - Extracts a part from a URL.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT parse_url('http://spark.apache.org/path?query=1', 'HOST')
+spark.apache.org
+SELECT parse_url('http://spark.apache.org/path?query=1', 'QUERY')
+query=1
+SELECT parse_url('http://spark.apache.org/path?query=1', 'QUERY', 'query')
+1</p>
+</blockquote>
+<pre><code>
+### percent_rank
+
+
+percent_rank() - Computes the percentage ranking of a value in a group of values.
+
+
+</code></pre>
+
+<p>No example/argument for percent_rank.</p>
+<pre><code>
+### percentile
+
+
+percentile(col, percentage) - Returns the exact percentile value of numeric column `col` at the
+given percentage. The value of percentage must be between 0.0 and 1.0.
+
+percentile(col, array(percentage1 [, percentage2]...)) - Returns the exact percentile value array
+of numeric column `col` at the given percentage(s). Each value of the percentage array must
+be between 0.0 and 1.0.
+
+
+</code></pre>
+
+<p>No example/argument for percentile.</p>
+<pre><code>
+### percentile_approx
+
+
+percentile_approx(col, percentage [, accuracy]) - Returns the approximate percentile value of numeric
+column `col` at the given percentage. The value of percentage must be between 0.0
+and 1.0. The `accuracy` parameter (default: 10000) is a positive numeric literal which
+controls approximation accuracy at the cost of memory. Higher value of `accuracy` yields
+better accuracy, `1.0/accuracy` is the relative error of the approximation.
+When `percentage` is an array, each value of the percentage array must be between 0.0 and 1.0.
+In this case, returns the approximate percentile array of column `col` at the given
+percentage array.
+
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT percentile_approx(10.0, array(0.5, 0.4, 0.1), 100);
+[10.0,10.0,10.0]
+SELECT percentile_approx(10.0, 0.5, 100);
+10.0</p>
+</blockquote>
+<pre><code>
+### pi
+
+pi() - Returns pi.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT pi();
+3.141592653589793</p>
+</blockquote>
+<pre><code>
+### pmod
+
+pmod(expr1, expr2) - Returns the positive value of `expr1` mod `expr2`.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT pmod(10, 3);
+1
+SELECT pmod(-10, 3);
+2</p>
+</blockquote>
+<pre><code>
+### posexplode
+
+posexplode(expr) - Separates the elements of array `expr` into multiple rows with positions, or the elements of map `expr` into multiple rows and columns with positions.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT posexplode(array(10,20));
+0  10
+1  20</p>
+</blockquote>
+<pre><code>
+### positive
+
+positive(expr) - Returns the value of `expr`.
+
+</code></pre>
+
+<p>No example/argument for positive.</p>
+<pre><code>
+### pow
+
+pow(expr1, expr2) - Raises `expr1` to the power of `expr2`.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT pow(2, 3);
+8.0</p>
+</blockquote>
+<pre><code>
+### power
+
+power(expr1, expr2) - Raises `expr1` to the power of `expr2`.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT power(2, 3);
+8.0</p>
+</blockquote>
+<pre><code>
+### printf
+
+printf(strfmt, obj, ...) - Returns a formatted string from printf-style format strings.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT printf("Hello World %d %s", 100, "days");
+Hello World 100 days</p>
+</blockquote>
+<pre><code>
+### quarter
+
+quarter(date) - Returns the quarter of the year for date, in the range 1 to 4.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT quarter('2016-08-31');
+3</p>
+</blockquote>
+<pre><code>
+### radians
+
+radians(expr) - Converts degrees to radians.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT radians(180);
+3.141592653589793</p>
+</blockquote>
+<pre><code>
+### rand
+
+rand([seed]) - Returns a random value with independent and identically distributed (i.i.d.) uniformly distributed values in [0, 1).
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT rand();
+0.9629742951434543
+SELECT rand(0);
+0.8446490682263027
+SELECT rand(null);
+0.8446490682263027</p>
+</blockquote>
+<pre><code>
+### randn
+
+randn([seed]) - Returns a random value with independent and identically distributed (i.i.d.) values drawn from the standard normal distribution.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT randn();
+-0.3254147983080288
+SELECT randn(0);
+1.1164209726833079
+SELECT randn(null);
+1.1164209726833079</p>
+</blockquote>
+<pre><code>
+### rank
+
+
+rank() - Computes the rank of a value in a group of values. The result is one plus the number
+of rows preceding or equal to the current row in the ordering of the partition. The values
+will produce gaps in the sequence.
+
+
+</code></pre>
+
+<p>No example/argument for rank.</p>
+<pre><code>
+### reflect
+
+reflect(class, method[, arg1[, arg2 ..]]) - Calls a method with reflection.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT reflect('java.util.UUID', 'randomUUID');
+c33fb387-8500-4bfa-81d2-6e0e3e930df2
+SELECT reflect('java.util.UUID', 'fromString', 'a5cf6c42-0c85-418f-af6c-3e4e5b1328f2');
+a5cf6c42-0c85-418f-af6c-3e4e5b1328f2</p>
+</blockquote>
+<pre><code>
+### regexp_extract
+
+regexp_extract(str, regexp[, idx]) - Extracts a group that matches `regexp`.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT regexp_extract('100-200', '(\d+)-(\d+)', 1);
+100</p>
+</blockquote>
+<pre><code>
+### regexp_replace
+
+regexp_replace(str, regexp, rep) - Replaces all substrings of `str` that match `regexp` with `rep`.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT regexp_replace('100-200', '(\d+)', 'num');
+num-num</p>
+</blockquote>
+<pre><code>
+### relative_error
+
+relative_error() - Indicates ratio of absolute error to estimate (approx answer).  calculated using error estimation method (ClosedForm or Bootstrap). [enterprise]
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT sum(ArrDelay) ArrivalDelay, relative_error(ArrivalDelay),
+Month_ from airline group by Month_ order by Month_ desc with error 0.10;
+1117.6, 0.3, Jan
+"```</p>
+</blockquote>
+<h3 id="repeat">repeat</h3>
+<p>repeat(str, n) - Returns the string which repeats the given string value n times.</p>
+<pre><code>Examples:
+&gt; SELECT repeat('123', 2);
+123123
+</code></pre>
+
+<h3 id="reverse">reverse</h3>
+<p>reverse(str) - Returns the reversed given string.</p>
+<pre><code>Examples:
+&gt; SELECT reverse('Spark SQL');
+LQS krapS
+</code></pre>
+
+<h3 id="rint">rint</h3>
+<p>rint(expr) - Returns the double value that is closest in value to the argument and is equal to a mathematical integer.</p>
+<pre><code>Examples:
+&gt; SELECT rint(12.3456);
+12.0
+</code></pre>
+
+<h3 id="rlike">rlike</h3>
+<p>str rlike regexp - Returns true if <code>str</code> matches <code>regexp</code>, or false otherwise.</p>
+<pre><code>No example/argument for rlike.
+</code></pre>
+
+<h3 id="rollup">rollup</h3>
+<h3 id="round">round</h3>
+<p>round(expr, d) - Returns <code>expr</code> rounded to <code>d</code> decimal places using HALF_UP rounding mode.</p>
+<pre><code>Examples:
+&gt; SELECT round(2.5, 0);
+3.0
+</code></pre>
+
+<h3 id="row_number">row_number</h3>
+<p>row_number() - Assigns a unique, sequential number to each row, starting with one,
+according to the ordering of rows within the window partition.</p>
+<pre><code>No example/argument for row_number.
+</code></pre>
+
+<h3 id="rpad">rpad</h3>
+<p>rpad(str, len, pad) - Returns <code>str</code>, right-padded with <code>pad</code> to a length of <code>len</code>.
+If <code>str</code> is longer than <code>len</code>, the return value is shortened to <code>len</code> characters.</p>
+<pre><code>Examples:
+&gt; SELECT rpad('hi', 5, '??');
+hi???
+&gt; SELECT rpad('hi', 1, '??');
+h
+</code></pre>
+
+<h3 id="rtrim">rtrim</h3>
+<p>rtrim(str) - Removes the trailing space characters from <code>str</code>.</p>
+<pre><code>Examples:
+&gt; SELECT rtrim('    SparkSQL   ');
+SparkSQL
+</code></pre>
+
+<h3 id="second">second</h3>
+<p>second(timestamp) - Returns the second component of the string/timestamp.</p>
+<pre><code>Examples:
+&gt; SELECT second('2009-07-30 12:58:59');
+59
+</code></pre>
+
+<h3 id="sentences">sentences</h3>
+<p>sentences(str[, lang, country]) - Splits <code>str</code> into an array of array of words.</p>
+<pre><code>Examples:
+&gt; SELECT sentences('Hi there! Good morning.');
+[[&quot;Hi&quot;,&quot;there&quot;],[&quot;Good&quot;,&quot;morning&quot;]]
+</code></pre>
+
+<h3 id="sha">sha</h3>
+<p>sha(expr) - Returns a sha1 hash value as a hex string of the <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT sha('Spark');
+85f5955f4b27a9a4c2aab6ffe5d7189fc298b92c
+</code></pre>
+
+<h3 id="sha1">sha1</h3>
+<p>sha1(expr) - Returns a sha1 hash value as a hex string of the <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT sha1('Spark');
+85f5955f4b27a9a4c2aab6ffe5d7189fc298b92c
+</code></pre>
+
+<h3 id="sha2">sha2</h3>
+<p>sha2(expr, bitLength) - Returns a checksum of SHA-2 family as a hex string of <code>expr</code>.
+SHA-224, SHA-256, SHA-384, and SHA-512 are supported. Bit length of 0 is equivalent to 256.</p>
+<pre><code>Examples:
+&gt; SELECT sha2('Spark', 256);
+529bc3b07127ecb7e53a4dcf1991d9152c24537d919178022b2c42657f79a26b
+</code></pre>
+
+<h3 id="shiftleft">shiftleft</h3>
+<p>shiftleft(base, expr) - Bitwise left shift.</p>
+<pre><code>Examples:
+&gt; SELECT shiftleft(2, 1);
+4
+</code></pre>
+
+<h3 id="shiftright">shiftright</h3>
+<p>shiftright(base, expr) - Bitwise (signed) right shift.</p>
+<pre><code>Examples:
+&gt; SELECT shiftright(4, 1);
+2
+</code></pre>
+
+<h3 id="shiftrightunsigned">shiftrightunsigned</h3>
+<p>shiftrightunsigned(base, expr) - Bitwise unsigned right shift.</p>
+<pre><code>Examples:
+&gt; SELECT shiftrightunsigned(4, 1);
+2
+</code></pre>
+
+<h3 id="sign">sign</h3>
+<p>sign(expr) - Returns -1.0, 0.0 or 1.0 as <code>expr</code> is negative, 0 or positive.</p>
+<pre><code>Examples:
+&gt; SELECT sign(40);
+1.0
+</code></pre>
+
+<h3 id="signum">signum</h3>
+<p>signum(expr) - Returns -1.0, 0.0 or 1.0 as <code>expr</code> is negative, 0 or positive.</p>
+<pre><code>Examples:
+&gt; SELECT signum(40);
+1.0
+</code></pre>
+
+<h3 id="sin">sin</h3>
+<p>sin(expr) - Returns the sine of <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT sin(0);
+0.0
+</code></pre>
+
+<h3 id="sinh">sinh</h3>
+<p>sinh(expr) - Returns the hyperbolic sine of <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT sinh(0);
+0.0
+</code></pre>
+
+<h3 id="size">size</h3>
+<p>size(expr) - Returns the size of an array or a map. Returns -1 if null.</p>
+<pre><code>Examples:
+&gt; SELECT size(array('b', 'd', 'c', 'a'));
+4
+</code></pre>
+
+<h3 id="skewness">skewness</h3>
+<p>skewness(expr) - Returns the skewness value calculated from values of a group.</p>
+<pre><code>No example/argument for skewness.
+</code></pre>
+
+<h3 id="smallint">smallint</h3>
+<p>smallint(expr AS type) - Casts the value <code>expr</code> to the target data type <code>type</code>.</p>
+<pre><code>Examples:
+&gt; SELECT smallint('10' as int);
+10
+</code></pre>
+
+<h3 id="sort_array">sort_array</h3>
+<p>sort_array(array[, ascendingOrder]) - Sorts the input array in ascending or descending order according to the natural ordering of the array elements.</p>
+<pre><code>Examples:
+&gt; SELECT sort_array(array('b', 'd', 'c', 'a'), true);
+[&quot;a&quot;,&quot;b&quot;,&quot;c&quot;,&quot;d&quot;]
+</code></pre>
+
+<h3 id="soundex">soundex</h3>
+<p>soundex(str) - Returns Soundex code of the string.</p>
+<pre><code>Examples:
+&gt; SELECT soundex('Miller');
+M460
+</code></pre>
+
+<h3 id="space">space</h3>
+<p>space(n) - Returns a string consisting of <code>n</code> spaces.</p>
+<pre><code>Examples:
+&gt; SELECT concat(space(2), '1');
+1
+</code></pre>
+
+<h3 id="spark_partition_id">spark_partition_id</h3>
+<p>spark_partition_id() - Returns the current partition id.</p>
+<pre><code>No example/argument for spark_partition_id.
+</code></pre>
+
+<h3 id="split">split</h3>
+<p>split(str, regex) - Splits <code>str</code> around occurrences that match <code>regex</code>.</p>
+<pre><code>Examples:
+&gt; SELECT split('oneAtwoBthreeC', '[ABC]');
+[&quot;one&quot;,&quot;two&quot;,&quot;three&quot;,&quot;&quot;]
+</code></pre>
+
+<h3 id="sqrt">sqrt</h3>
+<p>sqrt(expr) - Returns the square root of <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT sqrt(4);
+2.0
+</code></pre>
+
+<h3 id="stack">stack</h3>
+<p>stack(n, expr1, ..., exprk) - Separates <code>expr1</code>, ..., <code>exprk</code> into <code>n</code> rows.</p>
+<pre><code>Examples:
+&gt; SELECT stack(2, 1, 2, 3);
+1  2
+3  NULL
+</code></pre>
+
+<h3 id="std">std</h3>
+<p>std(expr) - Returns the sample standard deviation calculated from values of a group.</p>
+<pre><code>No example/argument for std.
+</code></pre>
+
+<h3 id="stddev">stddev</h3>
+<p>stddev(expr) - Returns the sample standard deviation calculated from values of a group.</p>
+<pre><code>No example/argument for stddev.
+</code></pre>
+
+<h3 id="stddev_pop">stddev_pop</h3>
+<p>stddev_pop(expr) - Returns the population standard deviation calculated from values of a group.</p>
+<pre><code>No example/argument for stddev_pop.
+</code></pre>
+
+<h3 id="stddev_samp">stddev_samp</h3>
+<p>stddev_samp(expr) - Returns the sample standard deviation calculated from values of a group.</p>
+<pre><code>No example/argument for stddev_samp.
+</code></pre>
+
+<h3 id="str_to_map">str_to_map</h3>
+<p>str_to_map(text[, pairDelim[, keyValueDelim]]) - Creates a map after splitting the text into key/value pairs using delimiters. Default delimiters are ',' for <code>pairDelim</code> and ':' for <code>keyValueDelim</code>.</p>
+<pre><code>Examples:
+&gt; SELECT str_to_map('a:1,b:2,c:3', ',', ':');
+map(&quot;a&quot;:&quot;1&quot;,&quot;b&quot;:&quot;2&quot;,&quot;c&quot;:&quot;3&quot;)
+&gt; SELECT str_to_map('a');
+map(&quot;a&quot;:null)
+</code></pre>
+
+<h3 id="string">string</h3>
+<p>string(expr AS type) - Casts the value <code>expr</code> to the target data type <code>type</code>.</p>
+<pre><code>Examples:
+&gt; SELECT string('10' as int);
+10
+</code></pre>
+
+<h3 id="struct">struct</h3>
+<p>struct(col1, col2, col3, ...) - Creates a struct with the given field values.</p>
+<h3 id="substr">substr</h3>
+<p>substr(str, pos[, len]) - Returns the substring of <code>str</code> that starts at <code>pos</code> and is of length <code>len</code>, or the slice of byte array that starts at <code>pos</code> and is of length <code>len</code>.</p>
+<pre><code>Examples:
+&gt; SELECT substr('Spark SQL', 5);
+k SQL
+&gt; SELECT substr('Spark SQL', -3);
+SQL
+&gt; SELECT substr('Spark SQL', 5, 1);
+k
+</code></pre>
+
+<h3 id="substring">substring</h3>
+<p>substring(str, pos[, len]) - Returns the substring of <code>str</code> that starts at <code>pos</code> and is of length <code>len</code>, or the slice of byte array that starts at <code>pos</code> and is of length <code>len</code>.</p>
+<pre><code>Examples:
+&gt; SELECT substring('Spark SQL', 5);
+k SQL
+&gt; SELECT substring('Spark SQL', -3);
+SQL
+&gt; SELECT substring('Spark SQL', 5, 1);
+k
+</code></pre>
+
+<h3 id="substring_index">substring_index</h3>
+<p>substring_index(str, delim, count) - Returns the substring from <code>str</code> before <code>count</code> occurrences of the delimiter <code>delim</code>.
+If <code>count</code> is positive, everything to the left of the final delimiter (counting from the
+left) is returned. If <code>count</code> is negative, everything to the right of the final delimiter
+(counting from the right) is returned. The function substring_index performs a case-sensitive match
+when searching for <code>delim</code>.</p>
+<pre><code>Examples:
+&gt; SELECT substring_index('www.apache.org', '.', 2);
+www.apache
+</code></pre>
+
+<h3 id="sum">sum</h3>
+<p>sum(expr) - Returns the sum calculated from values of a group.</p>
+<pre><code>No example/argument for sum.
+</code></pre>
+
+<h3 id="tan">tan</h3>
+<p>tan(expr) - Returns the tangent of <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT tan(0);
+0.0
+</code></pre>
+
+<h3 id="tanh">tanh</h3>
+<p>tanh(expr) - Returns the hyperbolic tangent of <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT tanh(0);
+0.0
+</code></pre>
+
+<h3 id="timestamp">timestamp</h3>
+<p>timestamp(expr AS type) - Casts the value <code>expr</code> to the target data type <code>type</code>.</p>
+<pre><code>Examples:
+&gt; SELECT timestamp('10' as int);
+10
+</code></pre>
+
+<h3 id="tinyint">tinyint</h3>
+<p>tinyint(expr AS type) - Casts the value <code>expr</code> to the target data type <code>type</code>.</p>
+<pre><code>Examples:
+&gt; SELECT tinyint('10' as int);
+10
+</code></pre>
+
+<h3 id="to_date">to_date</h3>
+<p>to_date(expr) - Extracts the date part of the date or timestamp expression <code>expr</code>.</p>
+<pre><code>Examples:
+&gt; SELECT to_date('2009-07-30 04:17:52');
+2009-07-30
+</code></pre>
+
+<h3 id="to_unix_timestamp">to_unix_timestamp</h3>
+<p>to_unix_timestamp(expr[, pattern]) - Returns the UNIX timestamp of the give time.</p>
+<pre><code>Examples:
+&gt; SELECT to_unix_timestamp('2016-04-08', 'yyyy-MM-dd');
+1460041200
+</code></pre>
+
+<h3 id="to_utc_timestamp">to_utc_timestamp</h3>
+<p>to_utc_timestamp(timestamp, timezone) - Given a timestamp, which corresponds to a certain time of day in the given timezone, returns another timestamp that corresponds to the same time of day in UTC.</p>
+<pre><code>Examples:
+&gt; SELECT to_utc_timestamp('2016-08-31', 'Asia/Seoul');
+2016-08-30 15:00:00
+</code></pre>
+
+<h3 id="translate">translate</h3>
+<p>translate(input, from, to) - Translates the <code>input</code> string by replacing the characters present in the <code>from</code> string with the corresponding characters in the <code>to</code> string.</p>
+<pre><code>Examples:
+&gt; SELECT translate('AaBbCc', 'abc', '123');
+A1B2C3
+</code></pre>
+
+<h3 id="trim">trim</h3>
+<p>trim(str) - Removes the leading and trailing space characters from <code>str</code>.</p>
+<pre><code>Examples:
+&gt; SELECT trim('    SparkSQL   ');
+SparkSQL
+</code></pre>
+
+<h3 id="trunc">trunc</h3>
+<p>trunc(date, fmt) - Returns <code>date</code> with the time portion of the day truncated to the unit specified by the format model <code>fmt</code>.</p>
+<pre><code>Examples:
+&gt; SELECT trunc('2009-02-12', 'MM');
+2009-02-01
+&gt; SELECT trunc('2015-10-27', 'YEAR');
+2015-01-01
+</code></pre>
+
+<h3 id="ucase">ucase</h3>
+<p>ucase(str) - Returns <code>str</code> with all characters changed to uppercase.</p>
+<pre><code>Examples:
+&gt; SELECT ucase('SparkSql');
+SPARKSQL
+</code></pre>
+
+<h3 id="unbase64">unbase64</h3>
+<p>unbase64(str) - Converts the argument from a base 64 string <code>str</code> to a binary.</p>
+<pre><code>Examples:
+&gt; SELECT unbase64('U3BhcmsgU1FM');
+Spark SQL
+</code></pre>
+
+<h3 id="unhex">unhex</h3>
+<p>unhex(expr) - Converts hexadecimal <code>expr</code> to binary.</p>
+<pre><code>Examples:
+&gt; SELECT decode(unhex('537061726B2053514C'), 'UTF-8');
+Spark SQL
+</code></pre>
+
+<h3 id="unix_timestamp">unix_timestamp</h3>
+<p>unix_timestamp([expr[, pattern]]) - Returns the UNIX timestamp of current or specified time.</p>
+<pre><code>Examples:
+&gt; SELECT unix_timestamp();
+1476884637
+&gt; SELECT unix_timestamp('2016-04-08', 'yyyy-MM-dd');
+1460041200
+</code></pre>
+
+<h3 id="upper">upper</h3>
+<p>upper(str) - Returns <code>str</code> with all characters changed to uppercase.</p>
+<pre><code>Examples:
+&gt; SELECT upper('SparkSql');
+SPARKSQL
+</code></pre>
+
+<h3 id="upper_bound">upper_bound</h3>
+<p>upper_bound() - Upper value of an estimate interval for a given confidence.calculated using error estimation method (ClosedForm or Bootstrap).  [enterprise]</p>
+<pre><code>Examples:
+&gt; SELECT sum(ArrDelay) ArrivalDelay, upper_bound(ArrivalDelay),
+Month_ from airline group by Month_ order by Month_ desc with error 0.10;
+1117.6, 11135.5, Jan
+&quot;```
+
+### var_pop
+
+var_pop(expr) - Returns the population variance calculated from values of a group.
+
+</code></pre>
+
+<p>No example/argument for var_pop.</p>
+<pre><code>
+### var_samp
+
+var_samp(expr) - Returns the sample variance calculated from values of a group.
+
+</code></pre>
+
+<p>No example/argument for var_samp.</p>
+<pre><code>
+### variance
+
+variance(expr) - Returns the sample variance calculated from values of a group.
+
+</code></pre>
+
+<p>No example/argument for variance.</p>
+<pre><code>
+### weekofyear
+
+weekofyear(date) - Returns the week of the year of the given date.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT weekofyear('2008-02-20');
+8</p>
+</blockquote>
+<pre><code>
+### when
+
+CASE WHEN expr1 THEN expr2 [WHEN expr3 THEN expr4]* [ELSE expr5] END - When `expr1` = true, returns `expr2`; when `expr3` = true, return `expr4`; else return `expr5`.
+
+</code></pre>
+
+<p>No example/argument for when.</p>
+<pre><code>
+### window
+
+### xpath
+
+xpath(xml, xpath) - Returns a string array of values within the nodes of xml that match the XPath expression.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT xpath('<a><b>b1</b><b>b2</b><b>b3</b><c>c1</c><c>c2</c></a>','a/b/text()');
+['b1','b2','b3']</p>
+</blockquote>
+<pre><code>
+### xpath_boolean
+
+xpath_boolean(xml, xpath) - Returns true if the XPath expression evaluates to true, or if a matching node is found.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT xpath_boolean('<a><b>1</b></a>','a/b');
+true</p>
+</blockquote>
+<pre><code>
+### xpath_double
+
+xpath_double(xml, xpath) - Returns a double value, the value zero if no match is found, or NaN if a match is found but the value is non-numeric.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT xpath_double('<a><b>1</b><b>2</b></a>', 'sum(a/b)');
+3.0</p>
+</blockquote>
+<pre><code>
+### xpath_float
+
+xpath_float(xml, xpath) - Returns a float value, the value zero if no match is found, or NaN if a match is found but the value is non-numeric.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT xpath_float('<a><b>1</b><b>2</b></a>', 'sum(a/b)');
+3.0</p>
+</blockquote>
+<pre><code>
+### xpath_int
+
+xpath_int(xml, xpath) - Returns an integer value, or the value zero if no match is found, or a match is found but the value is non-numeric.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT xpath_int('<a><b>1</b><b>2</b></a>', 'sum(a/b)');
+3</p>
+</blockquote>
+<pre><code>
+### xpath_long
+
+xpath_long(xml, xpath) - Returns a long integer value, or the value zero if no match is found, or a match is found but the value is non-numeric.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT xpath_long('<a><b>1</b><b>2</b></a>', 'sum(a/b)');
+3</p>
+</blockquote>
+<pre><code>
+### xpath_number
+
+xpath_number(xml, xpath) - Returns a double value, the value zero if no match is found, or NaN if a match is found but the value is non-numeric.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT xpath_number('<a><b>1</b><b>2</b></a>', 'sum(a/b)');
+3.0</p>
+</blockquote>
+<pre><code>
+### xpath_short
+
+xpath_short(xml, xpath) - Returns a short integer value, or the value zero if no match is found, or a match is found but the value is non-numeric.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT xpath_short('<a><b>1</b><b>2</b></a>', 'sum(a/b)');
+3</p>
+</blockquote>
+<pre><code>
+### xpath_string
+
+xpath_string(xml, xpath) - Returns the text contents of the first xml node that matches the XPath expression.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT xpath_string('<a><b>b</b><c>cc</c></a>','a/c');
+cc</p>
+</blockquote>
+<pre><code>
+### year
+
+year(date) - Returns the year component of the date/timestamp.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT year('2016-07-30');
+2016</p>
+</blockquote>
+<pre><code>
+### |
+
+expr1 | expr2 - Returns the result of bitwise OR of `expr1` and `expr2`.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT 3 | 5;
+7</p>
+</blockquote>
+<pre><code>
+### ~
+
+~ expr - Returns the result of bitwise NOT of `expr`.
+
+</code></pre>
+
+<p>Examples:</p>
+<blockquote>
+<p>SELECT ~ 0;
+-1
+```</p>
+</blockquote>
+              
+            </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+      
+    </span>
+</div>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 0.15.3
+Build Date UTC : 2019-08-28 12:08:47.060529
+-->

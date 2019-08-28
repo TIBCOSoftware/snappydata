@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>execution - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.execution</title>
-          <meta name="description" content="execution - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.execution" />
-          <meta name="keywords" content="execution snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.execution" />
+          <title>execution - snappydata_2.11 1.1.1 API - org.apache.spark.sql.execution</title>
+          <meta name="description" content="execution - snappydata 2.11 1.1.1 API - org.apache.spark.sql.execution" />
+          <meta name="keywords" content="execution snappydata 2.11 1.1.1 API org.apache.spark.sql.execution" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -100,7 +100,7 @@ to change between minor releases.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="AlterTableAddColumnCommand.html"><span class="name">AlterTableAddColumnCommand</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="addColumn">addColumn: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="defaultValue">defaultValue: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="AlterTableAddColumnCommand.html"><span class="name">AlterTableAddColumnCommand</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="addColumn">addColumn: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="extensions">extensions: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@AlterTableAddColumnCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
@@ -117,10 +117,27 @@ to change between minor releases.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="AlterTableDropColumnCommand.html"><span class="name">AlterTableDropColumnCommand</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="column">column: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="AlterTableDropColumnCommand.html"><span class="name">AlterTableDropColumnCommand</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="column">column: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="extensions">extensions: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@AlterTableDropColumnCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.AlterTableMiscCommand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AlterTableMiscCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
+      <a id="AlterTableMiscCommand:AlterTableMiscCommand"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="AlterTableMiscCommand.html"><span class="name">AlterTableMiscCommand</span></a><span class="params">(<span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="sql">sql: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@AlterTableMiscCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -558,7 +575,7 @@ logical plan, which happens when the user is collecting results back to the driv
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CreateIndexCommand.html"><span class="name">CreateIndexCommand</span></a><span class="params">(<span name="indexName">indexName: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="baseTable">baseTable: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="indexColumns">indexColumns: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>]]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="CreateIndexCommand.html"><span class="name">CreateIndexCommand</span></a><span class="params">(<span name="indexName">indexName: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="baseTable">baseTable: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="indexColumns">indexColumns: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>])]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@CreateIndexCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
@@ -765,7 +782,7 @@ dictionary reference and its index when dictionary encoding is being used.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="DropSchemaCommand.html"><span class="name">DropSchemaCommand</span></a><span class="params">(<span name="schemaName">schemaName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ifExists">ifExists: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="cascade">cascade: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="DropSchemaCommand.html"><span class="name">DropSchemaCommand</span></a><span class="params">(<span name="schemaName">schemaName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="cascade">cascade: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@DropSchemaCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
@@ -1167,23 +1184,6 @@ that consumes an RDD iterator of InternalRow.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@IntervalTrackerextendsAnyRef" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.InvalidateCachedPlans" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="InvalidateCachedPlansextendsLeafNodewithRunnableCommand"></a>
-      <a id="InvalidateCachedPlans:InvalidateCachedPlans"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="InvalidateCachedPlans.html"><span class="name">InvalidateCachedPlans</span></a><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@InvalidateCachedPlansextendsLeafNodewithRunnableCommand" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1752,6 +1752,23 @@ calls: Scala's iterator allows users to call <code>hasNext()</code> without imme
 iterator to consume the next row, whereas RowIterator combines these calls into a single
 <span class="extype" name="advanceNext()">advanceNext()</span> method.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.execution.SHAMapAccessor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SHAMapAccessorextendsSparkPlanwithCodegenSupportwithProductwithSerializable"></a>
+      <a id="SHAMapAccessor:SHAMapAccessor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SHAMapAccessor.html"><span class="name">SHAMapAccessor</span></a><span class="params">(<span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="ctx">ctx: <a href="../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="keyExprs">keyExprs: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="valueExprs">valueExprs: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="classPrefix">classPrefix: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="hashMapTerm">hashMapTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="overflowHashMapsTerm">overflowHashMapsTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyValSize">keyValSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="valueOffsetTerm">valueOffsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numKeyBytesTerm">numKeyBytesTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numValueBytes">numValueBytes: <span class="extype" name="scala.Int">Int</span></span>, <span name="currentOffSetForMapLookupUpdt">currentOffSetForMapLookupUpdt: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueDataTerm">valueDataTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="vdBaseObjectTerm">vdBaseObjectTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="vdBaseOffsetTerm">vdBaseOffsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="nullKeysBitsetTerm">nullKeysBitsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numBytesForNullKeyBits">numBytesForNullKeyBits: <span class="extype" name="scala.Int">Int</span></span>, <span name="allocatorTerm">allocatorTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numBytesForNullAggBits">numBytesForNullAggBits: <span class="extype" name="scala.Int">Int</span></span>, <span name="nullAggsBitsetTerm">nullAggsBitsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="sizeAndNumNotNullFuncForStringArr">sizeAndNumNotNullFuncForStringArr: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyBytesHolderVarTerm">keyBytesHolderVarTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseKeyObject">baseKeyObject: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseKeyHolderOffset">baseKeyHolderOffset: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyExistedTerm">keyExistedTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="skipLenForAttribIndex">skipLenForAttribIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="codeForLenOfSkippedTerm">codeForLenOfSkippedTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueDataCapacityTerm">valueDataCapacityTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="storedAggNullBitsTerm">storedAggNullBitsTerm: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="storedKeyNullBitsTerm">storedKeyNullBitsTerm: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="aggregateBufferVars">aggregateBufferVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="keyHolderCapacityTerm">keyHolderCapacityTerm: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@SHAMapAccessorextendsSparkPlanwithCodegenSupportwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.SampleExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SampleExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportwithProductwithSerializable"></a>
       <a id="SampleExec:SampleExec"></a>
@@ -1856,6 +1873,23 @@ expression.  The output of its child must be a single-field row containing the i
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@SetSchemaCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.SetSnappyCommand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SetSnappyCommandextendsSetCommand"></a>
+      <a id="SetSnappyCommand:SetSnappyCommand"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SetSnappyCommand.html"><span class="name">SetSnappyCommand</span></a><span class="result"> extends <a href="command/SetCommand.html" class="extype" name="org.apache.spark.sql.execution.command.SetCommand">SetCommand</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@SetSnappyCommandextendsSetCommand" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -3000,6 +3034,23 @@ cases), hence this optimization is currently only for string type.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@RowIterator" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.SHAMapAccessor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SHAMapAccessor"></a>
+      <a id="SHAMapAccessor:SHAMapAccessor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SHAMapAccessor$.html"><span class="name">SHAMapAccessor</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@SHAMapAccessor" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

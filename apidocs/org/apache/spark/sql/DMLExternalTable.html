@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>DMLExternalTable - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.DMLExternalTable</title>
-          <meta name="description" content="DMLExternalTable - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.DMLExternalTable" />
-          <meta name="keywords" content="DMLExternalTable snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.DMLExternalTable" />
+          <title>DMLExternalTable - snappydata_2.11 1.1.1 API - org.apache.spark.sql.DMLExternalTable</title>
+          <meta name="description" content="DMLExternalTable - snappydata 2.11 1.1.1 API - org.apache.spark.sql.DMLExternalTable" />
+          <meta name="keywords" content="DMLExternalTable snappydata 2.11 1.1.1 API org.apache.spark.sql.DMLExternalTable" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,13 +45,13 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">DMLExternalTable</span><span class="params">(<span name="tableName">tableName: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="query">query: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="command">command: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">DMLExternalTable</span><span class="params">(<span name="child">child: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="command">command: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a>, <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a>, <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a>, <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -69,7 +69,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.DMLExternalTable"><span>DMLExternalTable</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.logical.Command"><span>Command</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode"><span>LeafNode</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"><span>LogicalPlan</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.QueryPlan"><span>QueryPlan</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.DMLExternalTable"><span>DMLExternalTable</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode"><span>UnaryNode</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"><span>LogicalPlan</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.sql.catalyst.plans.QueryPlan"><span>QueryPlan</span></li><li class="in" name="org.apache.spark.sql.catalyst.trees.TreeNode"><span>TreeNode</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.DMLExternalTable#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(tableName:org.apache.spark.sql.catalyst.TableIdentifier,query:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,command:String):org.apache.spark.sql.DMLExternalTable"></a>
+      <a id="&lt;init&gt;(child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,command:String):org.apache.spark.sql.DMLExternalTable"></a>
       <a id="&lt;init&gt;:DMLExternalTable"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">DMLExternalTable</span><span class="params">(<span name="tableName">tableName: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="query">query: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="command">command: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
+        <span class="name">DMLExternalTable</span><span class="params">(<span name="child">child: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="command">command: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.DMLExternalTable@&lt;init&gt;(tableName:org.apache.spark.sql.catalyst.TableIdentifier,query:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,command:String):org.apache.spark.sql.DMLExternalTable" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.DMLExternalTable@&lt;init&gt;(child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,command:String):org.apache.spark.sql.DMLExternalTable" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -298,7 +298,24 @@ pasted in the REPL to build an equivalent Tree.
     </span>
       <p class="shortcomment cmt">Canonicalized copy of this query plan.</p><div class="fullcomment"><div class="comment cmt"><p>Canonicalized copy of this query plan.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> → <a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.plans.logical.LeafNode#children" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.DMLExternalTable#child" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
+      <a id="child:LogicalPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">child</span><span class="result">: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.DMLExternalTable@child:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.DMLExternalTable">DMLExternalTable</a> → <a href="catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode#children" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="children:Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
       <a id="children:Seq[LogicalPlan]"></a>
       <h4 class="signature">
@@ -316,7 +333,7 @@ pasted in the REPL to build an equivalent Tree.
     </span>
       <p class="shortcomment cmt">Returns a Seq of the children of this node.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a Seq of the children of this node.
 Children should not change. Immutability required for containsChild optimization
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> → <a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> → <a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan#childrenResolved" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="childrenResolved:Boolean"></a>
       <a id="childrenResolved:Boolean"></a>
@@ -674,6 +691,27 @@ resulting collections.
 depth <code>i + 1</code> is the last child of its own parent node.  The depth of the root node is 0, and
 <code>lastChildren</code> for the root node should be empty.</p><p>Note that this traversal (numbering) order must be the same as <span class="extype" name="getNodeNumbered">getNodeNumbered</span>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode#getAliasedConstraints" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getAliasedConstraints(projectList:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression]):Set[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
+      <a id="getAliasedConstraints(Seq[NamedExpression]):Set[Expression]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAliasedConstraints</span><span class="params">(<span name="projectList">projectList: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.Set">Set</span>[<a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.DMLExternalTable@getAliasedConstraints(projectList:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression]):Set[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generates an additional set of aliased constraints by replacing the original constraint
+expressions with the corresponding alias
+</p><div class="fullcomment"><div class="comment cmt"><p>Generates an additional set of aliased constraints by replacing the original constraint
+expressions with the corresponding alias
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -745,7 +783,7 @@ appear in the <a href="catalyst/plans/QueryPlan.html#outputSet:org.apache.spark.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.sql.DMLExternalTable#innerChildren" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#innerChildren" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="innerChildren:Seq[org.apache.spark.sql.catalyst.plans.QueryPlan[_]]"></a>
       <a id="innerChildren:Seq[QueryPlan[_]]"></a>
       <h4 class="signature">
@@ -763,7 +801,7 @@ appear in the <a href="catalyst/plans/QueryPlan.html#outputSet:org.apache.spark.
     </span>
       <p class="shortcomment cmt">All the nodes that should be shown as a inner nested tree of this node.</p><div class="fullcomment"><div class="comment cmt"><p>All the nodes that should be shown as a inner nested tree of this node.
 For example, this can be used to show sub-queries.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.DMLExternalTable">DMLExternalTable</a> → <a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#inputSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="inputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="inputSet:AttributeSet"></a>
@@ -1328,7 +1366,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.DMLExternalTable">DMLExternalTable</a> → <a href="catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> → <a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.DMLExternalTable">DMLExternalTable</a> → <a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#outputSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="outputSet:AttributeSet"></a>
@@ -1400,7 +1438,7 @@ Numbers for each node can be found in the <a href="catalyst/trees/TreeNode.html#
       </a>
     </span>
       <p class="shortcomment cmt">Prints out the schema in the tree format</p><div class="fullcomment"><div class="comment cmt"><p>Prints out the schema in the tree format</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.plans.logical.LeafNode#producedAttributes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#producedAttributes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="producedAttributes:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="producedAttributes:AttributeSet"></a>
       <h4 class="signature">
@@ -1417,24 +1455,7 @@ Numbers for each node can be found in the <a href="catalyst/trees/TreeNode.html#
       </a>
     </span>
       <p class="shortcomment cmt">The set of all attributes that are produced by this node.</p><div class="fullcomment"><div class="comment cmt"><p>The set of all attributes that are produced by this node.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> → <a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.DMLExternalTable#query" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="query:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
-      <a id="query:LogicalPlan"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">query</span><span class="result">: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.DMLExternalTable@query:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#references" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="references:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="references:AttributeSet"></a>
@@ -1731,7 +1752,7 @@ can do better should override this function.
     </span>
       <p class="shortcomment cmt">A prefix string used when printing the plan.</p><div class="fullcomment"><div class="comment cmt"><p>A prefix string used when printing the plan.</p><p>We use &quot;!&quot; to indicate an invalid plan, and &quot;'&quot; to indicate an unresolved plan.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> → <a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan#statistics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode#statistics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="statistics:org.apache.spark.sql.catalyst.plans.logical.Statistics"></a>
       <a id="statistics:Statistics"></a>
       <h4 class="signature">
@@ -1750,7 +1771,7 @@ can do better should override this function.
       <p class="shortcomment cmt">Computes <a href="catalyst/plans/logical/Statistics.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Statistics">Statistics</a> for this plan.</p><div class="fullcomment"><div class="comment cmt"><p>Computes <a href="catalyst/plans/logical/Statistics.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Statistics">Statistics</a> for this plan. The default implementation assumes the output
 cardinality is the product of all child plan's cardinality, i.e. applies in the case
 of cartesian joins.</p><p><a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a>s must override this.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> → <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#stringArgs" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="stringArgs:Iterator[Any]"></a>
       <a id="stringArgs:Iterator[Any]"></a>
@@ -1804,23 +1825,6 @@ of cartesian joins.</p><p><a href="catalyst/plans/logical/LeafNode.html" class="
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.DMLExternalTable#tableName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="tableName:org.apache.spark.sql.catalyst.TableIdentifier"></a>
-      <a id="tableName:TableIdentifier"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">tableName</span><span class="result">: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.DMLExternalTable@tableName:org.apache.spark.sql.catalyst.TableIdentifier" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#toJSON" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toJSON:String"></a>
       <a id="toJSON:String"></a>
@@ -2027,7 +2031,7 @@ unchanged.
       </a>
     </span>
       <p class="shortcomment cmt">Returns a string representation of the nodes in this tree</p><div class="fullcomment"><div class="comment cmt"><p>Returns a string representation of the nodes in this tree</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#validConstraints" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode#validConstraints" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="validConstraints:Set[org.apache.spark.sql.catalyst.expressions.Expression]"></a>
       <a id="validConstraints:Set[Expression]"></a>
       <h4 class="signature">
@@ -2047,8 +2051,8 @@ unchanged.
 based on the given operator's constraint propagation logic.</p><div class="fullcomment"><div class="comment cmt"><p>This method can be overridden by any child class of QueryPlan to specify a set of constraints
 based on the given operator's constraint propagation logic. These constraints are then
 canonicalized and filtered automatically to contain only those attributes that appear in the
-<a href="catalyst/plans/QueryPlan.html#outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet" class="extmbr" name="org.apache.spark.sql.catalyst.plans.QueryPlan#outputSet">outputSet</a>.</p><p>See <span class="extype" name="Canonicalize">Canonicalize</span> for more details.
-</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+<a href="catalyst/plans/logical/UnaryNode.html#outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet" class="extmbr" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode#outputSet">outputSet</a>.</p><p>See <span class="extype" name="Canonicalize">Canonicalize</span> for more details.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> → <a href="catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#verboseString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="verboseString:String"></a>
       <a id="verboseString:String"></a>
@@ -2167,10 +2171,8 @@ TODO: Validate somewhere (in debug mode?) that children are ordered correctly.
               <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
             </div><div class="parent" name="java.io.Serializable">
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
-            </div><div class="parent" name="org.apache.spark.sql.catalyst.plans.logical.Command">
-              <h3>Inherited from <a href="catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a></h3>
-            </div><div class="parent" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">
-              <h3>Inherited from <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a></h3>
+            </div><div class="parent" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">
+              <h3>Inherited from <a href="catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">
               <h3>Inherited from <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></h3>
             </div><div class="parent" name="org.apache.spark.internal.Logging">

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyExecutor - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.executor.SnappyExecutor</title>
-          <meta name="description" content="SnappyExecutor - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.executor.SnappyExecutor" />
-          <meta name="keywords" content="SnappyExecutor snappydata 2.11 1.1.0 HF 1 API org.apache.spark.executor.SnappyExecutor" />
+          <title>SnappyExecutor - snappydata_2.11 1.1.1 API - org.apache.spark.executor.SnappyExecutor</title>
+          <meta name="description" content="SnappyExecutor - snappydata 2.11 1.1.1 API - org.apache.spark.executor.SnappyExecutor" />
+          <meta name="keywords" content="SnappyExecutor snappydata 2.11 1.1.1 API org.apache.spark.executor.SnappyExecutor" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -392,6 +392,40 @@ created by the interpreter to the search path
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyExecutor#getLocalDir" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getLocalDir:String"></a>
+      <a id="getLocalDir:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getLocalDir</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@getLocalDir:String" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.executor.SnappyExecutor#handleNonDefaultCpusPerTask" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="handleNonDefaultCpusPerTask(init:Boolean):Unit"></a>
+      <a id="handleNonDefaultCpusPerTask(Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">handleNonDefaultCpusPerTask</span><span class="params">(<span name="init">init: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@handleNonDefaultCpusPerTask(init:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.executor.SnappyExecutor">SnappyExecutor</a> → Executor</dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -819,13 +853,30 @@ tasks instead of taking the JVM down.</p></div><dl class="paramcmts block"><dt c
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyExecutor#removeJarsFromExecutorLoader" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="removeJarsFromExecutorLoader(jars:Array[String]):Unit"></a>
+      <a id="removeJarsFromExecutorLoader(Array[String]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">removeJarsFromExecutorLoader</span><span class="params">(<span name="jars">jars: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor@removeJarsFromExecutorLoader(jars:Array[String]):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.executor.Executor#replClassLoader" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="replClassLoader:ClassLoader"></a>
       <a id="replClassLoader:ClassLoader"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">replClassLoader</span><span class="result">: <span class="extype" name="java.lang.ClassLoader">ClassLoader</span></span>
@@ -964,7 +1015,7 @@ SparkContext. Also adds any new JARs we fetched to the class loader.
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">var</span>
       </span>
       <span class="symbol">
         <span class="name">urlClassLoader</span><span class="result">: <span class="extype" name="org.apache.spark.util.MutableURLClassLoader">MutableURLClassLoader</span></span>

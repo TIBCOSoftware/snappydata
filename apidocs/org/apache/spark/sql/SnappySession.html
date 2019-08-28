@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappySession - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.SnappySession</title>
-          <meta name="description" content="SnappySession - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.SnappySession" />
-          <meta name="keywords" content="SnappySession snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.SnappySession" />
+          <title>SnappySession - snappydata_2.11 1.1.1 API - org.apache.spark.sql.SnappySession</title>
+          <meta name="description" content="SnappySession - snappydata 2.11 1.1.1 API - org.apache.spark.sql.SnappySession" />
+          <meta name="keywords" content="SnappySession snappydata 2.11 1.1.1 API org.apache.spark.sql.SnappySession" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -168,18 +168,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#alterTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="alterTable(tableName:String,isAddColumn:Boolean,column:org.apache.spark.sql.types.StructField,defaultValue:Option[String]):Unit"></a>
-      <a id="alterTable(String,Boolean,StructField,Option[String]):Unit"></a>
+      <a id="alterTable(tableName:String,isAddColumn:Boolean,column:org.apache.spark.sql.types.StructField,extensions:String):Unit"></a>
+      <a id="alterTable(String,Boolean,StructField,String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">alterTable</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="isAddColumn">isAddColumn: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="column">column: <a href="types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="defaultValue">defaultValue: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">alterTable</span><span class="params">(<span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="isAddColumn">isAddColumn: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="column">column: <a href="types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="extensions">extensions: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@alterTable(tableName:String,isAddColumn:Boolean,column:org.apache.spark.sql.types.StructField,defaultValue:Option[String]):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@alterTable(tableName:String,isAddColumn:Boolean,column:org.apache.spark.sql.types.StructField,extensions:String):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -842,18 +842,18 @@ a set of options. For inbuilt relation providers like row or column tables, use 
 </p></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>Name of the table</p></dd><dt class="param">provider</dt><dd class="cmt"><p>Provider name such as 'CSV', 'PARQUET' etc.</p></dd><dt class="param">options</dt><dd class="cmt"><p>Properties for table creation</p></dd><dt class="param">allowExisting</dt><dd class="cmt"><p>When set to true it will ignore if a table with the same
                      name is present, else it will throw table exist exception</p></dd><dt>returns</dt><dd class="cmt"><p>DataFrame for the table</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#createIndex" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="createIndex(indexName:String,baseTable:String,indexColumns:Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]],options:Map[String,String]):Unit"></a>
-      <a id="createIndex(String,String,Map[String,Option[SortDirection]],Map[String,String]):Unit"></a>
+      <a id="createIndex(indexName:String,baseTable:String,indexColumns:Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])],options:Map[String,String]):Unit"></a>
+      <a id="createIndex(String,String,Seq[(String,Option[SortDirection])],Map[String,String]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">createIndex</span><span class="params">(<span name="indexName">indexName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="indexColumns">indexColumns: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>]]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">createIndex</span><span class="params">(<span name="indexName">indexName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="indexColumns">indexColumns: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>])]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@createIndex(indexName:String,baseTable:String,indexColumns:Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]],options:Map[String,String]):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@createIndex(indexName:String,baseTable:String,indexColumns:Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])],options:Map[String,String]):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -863,26 +863,27 @@ a set of options. For inbuilt relation providers like row or column tables, use 
                     column table index - (&quot;COLOCATE_WITH&quot;-&gt;&quot;CUSTOMER&quot;).
                     row table index - (&quot;INDEX_TYPE&quot;-&gt;&quot;GLOBAL HASH&quot;) or (&quot;INDEX_TYPE&quot;-&gt;&quot;UNIQUE&quot;)</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#createIndex" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="createIndex(indexName:String,baseTable:String,indexColumns:java.util.Map[String,Boolean],options:java.util.Map[String,String]):Unit"></a>
-      <a id="createIndex(String,String,Map[String,Boolean],Map[String,String]):Unit"></a>
+      <a id="createIndex(indexName:String,baseTable:String,indexColumns:java.util.List[String],sortOrders:java.util.List[Boolean],options:java.util.Map[String,String]):Unit"></a>
+      <a id="createIndex(String,String,List[String],List[Boolean],Map[String,String]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">createIndex</span><span class="params">(<span name="indexName">indexName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="indexColumns">indexColumns: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="java.lang.Boolean">Boolean</span>]</span>, <span name="options">options: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">createIndex</span><span class="params">(<span name="indexName">indexName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="indexColumns">indexColumns: <span class="extype" name="java.util.List">List</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="sortOrders">sortOrders: <span class="extype" name="java.util.List">List</span>[<span class="extype" name="java.lang.Boolean">Boolean</span>]</span>, <span name="options">options: <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@createIndex(indexName:String,baseTable:String,indexColumns:java.util.Map[String,Boolean],options:java.util.Map[String,String]):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@createIndex(indexName:String,baseTable:String,indexColumns:java.util.List[String],sortOrders:java.util.List[Boolean],options:java.util.Map[String,String]):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Create an index on a table.</p><div class="fullcomment"><div class="comment cmt"><p>Create an index on a table.
 </p></div><dl class="paramcmts block"><dt class="param">indexName</dt><dd class="cmt"><p>Index name which goes in the catalog</p></dd><dt class="param">baseTable</dt><dd class="cmt"><p>Fully qualified name of table on which the index is created.</p></dd><dt class="param">indexColumns</dt><dd class="cmt"><p>Columns on which the index has to be created along with the
-                    sorting direction.The direction of index will be ascending
-                    if value is true and descending when value is false.
-                    Direction can be specified as null</p></dd><dt class="param">options</dt><dd class="cmt"><p>Options for indexes. For e.g.
+                    sorting direction.</p></dd><dt class="param">sortOrders</dt><dd class="cmt"><p>Sorting direction for indexColumns. The direction of index will be
+                    ascending if value is true and descending when value is false.
+                    The values in this list must exactly match indexColumns list.
+                    Direction can be specified as null in which case ascending is used.</p></dd><dt class="param">options</dt><dd class="cmt"><p>Options for indexes. For e.g.
                     column table index - (&quot;COLOCATE_WITH&quot;-&gt;&quot;CUSTOMER&quot;).
                     row table index - (&quot;INDEX_TYPE&quot;-&gt;&quot;GLOBAL HASH&quot;) or (&quot;INDEX_TYPE&quot;-&gt;&quot;UNIQUE&quot;)</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#createSampleTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
@@ -2281,7 +2282,7 @@ sparkSession.readStream.schema(schema).json(<span class="lit">"/path/to/director
     </span>
       
     </li><li name="org.apache.spark.sql.SnappySession#sessionState" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="sessionState:org.apache.spark.sql.internal.SnappySessionState"></a>
+      <a id="sessionState:org.apache.spark.sql.hive.SnappySessionState"></a>
       <a id="sessionState:SnappySessionState"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -2289,10 +2290,10 @@ sparkSession.readStream.schema(schema).json(<span class="lit">"/path/to/director
         <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">sessionState</span><span class="result">: <a href="internal/SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></span>
+        <span class="name">sessionState</span><span class="result">: <a href="hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@sessionState:org.apache.spark.sql.internal.SnappySessionState" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@sessionState:org.apache.spark.sql.hive.SnappySessionState" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2301,7 +2302,7 @@ functions, and everything else that accepts a <a href="internal/SQLConf.html" cl
 functions, and everything else that accepts a <a href="internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">org.apache.spark.sql.internal.SQLConf</a>.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a> → <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#setCurrentSchema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="setCurrentSchema(schemaName:String):Unit"></a>
+      <a id="setCurrentSchema(schema:String):Unit"></a>
       <a id="setCurrentSchema(String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -2309,15 +2310,32 @@ functions, and everything else that accepts a <a href="internal/SQLConf.html" cl
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">setCurrentSchema</span><span class="params">(<span name="schemaName">schemaName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">setCurrentSchema</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@setCurrentSchema(schemaName:String):Unit" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@setCurrentSchema(schema:String):Unit" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Set current schema for the session.</p><div class="fullcomment"><div class="comment cmt"><p>Set current schema for the session.
-</p></div><dl class="paramcmts block"><dt class="param">schemaName</dt><dd class="cmt"><p>schema name which goes in the catalog</p></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">schema</dt><dd class="cmt"><p>schema name which goes in the catalog</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappySession#setPreparedParamsTypeInfo" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setPreparedParamsTypeInfo(info:Array[Int]):Unit"></a>
+      <a id="setPreparedParamsTypeInfo(Array[Int]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setPreparedParamsTypeInfo</span><span class="params">(<span name="info">info: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@setPreparedParamsTypeInfo(info:Array[Int]):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.SnappySession#setPreparedQuery" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="setPreparedQuery(preparePhase:Boolean,paramSet:Option[com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet]):Unit"></a>
       <a id="setPreparedQuery(Boolean,Option[ParameterValueSet]):Unit"></a>

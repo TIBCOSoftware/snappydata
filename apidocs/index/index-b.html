@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>snappydata_2.11 1.1.0-HF-1 API</title>
-          <meta name="description" content="snappydata 2.11 1.1.0 - HF - 1 API" />
-          <meta name="keywords" content="snappydata 2.11 1.1.0 HF 1 API" />
+          <title>snappydata_2.11 1.1.1 API</title>
+          <meta name="description" content="snappydata 2.11 1.1.1 API" />
+          <meta name="keywords" content="snappydata 2.11 1.1.1 API" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../lib/ref-index.css" media="screen" type="text/css" rel="stylesheet" />
@@ -494,6 +494,12 @@
       <div class="name">baseExpression</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/SnappyParser.html" class="extype" name="org.apache.spark.sql.SnappyParser">SnappyParser</a> </div>
     </div><div class="entry">
+      <div class="name">baseKeyHolderOffset</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SHAMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
+    </div><div class="entry">
+      <div class="name">baseKeyObject</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SHAMapAccessor.html" class="extype" name="org.apache.spark.sql.execution.SHAMapAccessor">SHAMapAccessor</a> </div>
+    </div><div class="entry">
       <div class="name">baseMap</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/util/CaseInsensitiveMap.html" class="extype" name="org.apache.spark.sql.catalyst.util.CaseInsensitiveMap">CaseInsensitiveMap</a> <a href="../org/apache/spark/sql/execution/columnar/ExternalStoreUtils$$CaseInsensitiveMutableHashMap.html" class="extype" name="org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap">CaseInsensitiveMutableHashMap</a> <a href="../org/apache/spark/sql/execution/streaming/StreamProgress.html" class="extype" name="org.apache.spark.sql.execution.streaming.StreamProgress">StreamProgress</a> </div>
     </div><div class="entry">
@@ -508,6 +514,9 @@
     </div><div class="entry">
       <div class="name">basePath</div>
       <div class="occurrences"><a href="../org/apache/spark/ui/SparkUI.html" class="extype" name="org.apache.spark.ui.SparkUI">SparkUI</a> </div>
+    </div><div class="entry">
+      <div class="name">basePlan</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/aggregate/CollectAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.CollectAggregateExec">CollectAggregateExec</a> </div>
     </div><div class="entry">
       <div class="name">baseRdd</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/DelegateRDD.html" class="extype" name="org.apache.spark.sql.DelegateRDD">DelegateRDD</a> </div>
@@ -594,7 +603,7 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/streaming/OffsetSeqMetadata.html" class="extype" name="org.apache.spark.sql.execution.streaming.OffsetSeqMetadata">OffsetSeqMetadata</a> </div>
     </div><div class="entry">
       <div class="name">batches</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/SQLBuilder$Canonicalizer$.html" class="extype" name="org.apache.spark.sql.catalyst.SQLBuilder.Canonicalizer">Canonicalizer</a> <a href="../org/apache/spark/sql/catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a> <a href="../org/apache/spark/sql/catalyst/expressions/codegen/package$$ExpressionCanonicalizer$.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExpressionCanonicalizer">ExpressionCanonicalizer</a> <a href="../org/apache/spark/sql/catalyst/optimizer/Optimizer.html" class="extype" name="org.apache.spark.sql.catalyst.optimizer.Optimizer">Optimizer</a> <a href="../org/apache/spark/sql/catalyst/rules/RuleExecutor.html" class="extype" name="org.apache.spark.sql.catalyst.rules.RuleExecutor">RuleExecutor</a> <a href="../org/apache/spark/sql/execution/SparkOptimizer.html" class="extype" name="org.apache.spark.sql.execution.SparkOptimizer">SparkOptimizer</a> <a href="../org/apache/spark/sql/execution/streaming/MemoryStream.html" class="extype" name="org.apache.spark.sql.execution.streaming.MemoryStream">MemoryStream</a> <a href="../org/apache/spark/sql/execution/streaming/TextSocketSource.html" class="extype" name="org.apache.spark.sql.execution.streaming.TextSocketSource">TextSocketSource</a> <a href="../org/apache/spark/sql/internal/SnappyAnalyzer.html" class="extype" name="org.apache.spark.sql.internal.SnappyAnalyzer">SnappyAnalyzer</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/SQLBuilder$Canonicalizer$.html" class="extype" name="org.apache.spark.sql.catalyst.SQLBuilder.Canonicalizer">Canonicalizer</a> <a href="../org/apache/spark/sql/catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a> <a href="../org/apache/spark/sql/catalyst/expressions/codegen/package$$ExpressionCanonicalizer$.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExpressionCanonicalizer">ExpressionCanonicalizer</a> <a href="../org/apache/spark/sql/catalyst/optimizer/Optimizer.html" class="extype" name="org.apache.spark.sql.catalyst.optimizer.Optimizer">Optimizer</a> <a href="../org/apache/spark/sql/catalyst/rules/RuleExecutor.html" class="extype" name="org.apache.spark.sql.catalyst.rules.RuleExecutor">RuleExecutor</a> <a href="../org/apache/spark/sql/execution/SparkOptimizer.html" class="extype" name="org.apache.spark.sql.execution.SparkOptimizer">SparkOptimizer</a> <a href="../org/apache/spark/sql/execution/streaming/MemoryStream.html" class="extype" name="org.apache.spark.sql.execution.streaming.MemoryStream">MemoryStream</a> <a href="../org/apache/spark/sql/execution/streaming/TextSocketSource.html" class="extype" name="org.apache.spark.sql.execution.streaming.TextSocketSource">TextSocketSource</a> <a href="../org/apache/spark/sql/hive/SnappyAnalyzer.html" class="extype" name="org.apache.spark.sql.hive.SnappyAnalyzer">SnappyAnalyzer</a> </div>
     </div><div class="entry">
       <div class="name">batterytest</div>
       <div class="occurrences"><a href="../io/snappydata/test/package.html" class="extype" name="io.snappydata.test">test</a> </div>
@@ -612,7 +621,7 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/SnappyDDLParser.html" class="extype" name="org.apache.spark.sql.SnappyDDLParser">SnappyDDLParser</a> </div>
     </div><div class="entry">
       <div class="name">beforeExecutePlan</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/internal/SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a> </div>
     </div><div class="entry">
       <div class="name">beforeFetch</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/jdbc/JdbcDialect.html" class="extype" name="org.apache.spark.sql.jdbc.JdbcDialect">JdbcDialect</a> </div>
@@ -627,6 +636,9 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/BatchConsumer.html" class="extype" name="org.apache.spark.sql.execution.BatchConsumer">BatchConsumer</a> <a href="../org/apache/spark/sql/execution/aggregate/SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a> </div>
     </div><div class="entry">
       <div class="name">beginTx</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/impl/JDBCSourceAsColumnarStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> </div>
+    </div><div class="entry">
+      <div class="name">beginTxSmartConnector</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/impl/JDBCSourceAsColumnarStore.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore">JDBCSourceAsColumnarStore</a> </div>
     </div><div class="entry">
       <div class="name">behavior</div>
@@ -920,6 +932,9 @@
       <div class="name">buildKeys</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/joins/HashJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.HashJoin">HashJoin</a> </div>
     </div><div class="entry">
+      <div class="name">buildOneArgExpression</div>
+      <div class="occurrences"><a href="../io/snappydata/SnappyDataFunctions$.html" class="extype" name="io.snappydata.SnappyDataFunctions">SnappyDataFunctions</a> </div>
+    </div><div class="entry">
       <div class="name">buildPlan</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/joins/HashJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.HashJoin">HashJoin</a> </div>
     </div><div class="entry">
@@ -953,11 +968,14 @@
       <div class="name">buildUnsafeScanForSampledRelation</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/columnar/impl/BaseColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> </div>
     </div><div class="entry">
+      <div class="name">buildZeroArgExpression</div>
+      <div class="occurrences"><a href="../io/snappydata/SnappyDataFunctions$.html" class="extype" name="io.snappydata.SnappyDataFunctions">SnappyDataFunctions</a> </div>
+    </div><div class="entry">
       <div class="name">builder</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/SparkSession$.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a> <a href="../org/apache/spark/sql/execution/python/UserDefinedPythonFunction.html" class="extype" name="org.apache.spark.sql.execution.python.UserDefinedPythonFunction">UserDefinedPythonFunction</a> </div>
     </div><div class="entry">
       <div class="name">builtin</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/analysis/FunctionRegistry$.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.FunctionRegistry">FunctionRegistry</a> </div>
+      <div class="occurrences"><a href="../io/snappydata/SnappyDataFunctions$.html" class="extype" name="io.snappydata.SnappyDataFunctions">SnappyDataFunctions</a> <a href="../org/apache/spark/sql/catalyst/analysis/FunctionRegistry$.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.FunctionRegistry">FunctionRegistry</a> <a href="../org/apache/spark/sql/execution/SnappyContextAQPFunctions$.html" class="extype" name="org.apache.spark.sql.execution.SnappyContextAQPFunctions">SnappyContextAQPFunctions</a> </div>
     </div><div class="entry">
       <div class="name">bulkInsertOrPut</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/internal/ColumnTableBulkOps$.html" class="extype" name="org.apache.spark.sql.internal.ColumnTableBulkOps">ColumnTableBulkOps</a> </div>

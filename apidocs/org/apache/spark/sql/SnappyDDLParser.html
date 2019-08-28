@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyDDLParser - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.SnappyDDLParser</title>
-          <meta name="description" content="SnappyDDLParser - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.SnappyDDLParser" />
-          <meta name="keywords" content="SnappyDDLParser snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.SnappyDDLParser" />
+          <title>SnappyDDLParser - snappydata_2.11 1.1.1 API - org.apache.spark.sql.SnappyDDLParser</title>
+          <meta name="description" content="SnappyDDLParser - snappydata 2.11 1.1.1 API - org.apache.spark.sql.SnappyDDLParser" />
+          <meta name="keywords" content="SnappyDDLParser snappydata 2.11 1.1.1 API org.apache.spark.sql.SnappyDDLParser" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -92,7 +92,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.SnappyDDLParser#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(session:org.apache.spark.sql.SparkSession):org.apache.spark.sql.SnappyDDLParser"></a>
+      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession):org.apache.spark.sql.SnappyDDLParser"></a>
       <a id="&lt;init&gt;:SnappyDDLParser"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -100,10 +100,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SnappyDDLParser</span><span class="params">(<span name="session">session: <a href="SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>)</span>
+        <span class="name">SnappyDDLParser</span><span class="params">(<span name="session">session: <a href="SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@&lt;init&gt;(session:org.apache.spark.sql.SparkSession):org.apache.spark.sql.SnappyDDLParser" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@&lt;init&gt;(session:org.apache.spark.sql.SnappySession):org.apache.spark.sql.SnappyDDLParser" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -147,6 +147,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>RuleDSLBasics</dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappyDDLParser.ColumnDirectionMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ColumnDirectionMap=Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])]"></a>
+      <a id="ColumnDirectionMap:ColumnDirectionMap"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ColumnDirectionMap</span><span class="result"> = <span class="extype" name="scala.collection.Seq">Seq</span>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>])]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@ColumnDirectionMap=Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.parboiled2.RuleDSLCombinators.NTimes" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="NTimesextendsAnyRef"></a>
       <a id="NTimes:NTimes"></a>
@@ -866,6 +883,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#CHECK" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CHECK:org.parboiled2.Rule0"></a>
+      <a id="CHECK:Rule0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">CHECK</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@CHECK:org.parboiled2.Rule0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.SnappyDDLParser#CLEAR" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="CLEAR:org.parboiled2.Rule0"></a>
       <a id="CLEAR:Rule0"></a>
@@ -1015,6 +1049,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@COMPUTE:org.parboiled2.Rule0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#CONSTRAINT" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CONSTRAINT:org.parboiled2.Rule0"></a>
+      <a id="CONSTRAINT:Rule0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">CONSTRAINT</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@CONSTRAINT:org.parboiled2.Rule0" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1223,23 +1274,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.SnappyDDLParser#DEFAULT" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DEFAULT:org.parboiled2.Rule0"></a>
-      <a id="DEFAULT:Rule0"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">DEFAULT</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@DEFAULT:org.parboiled2.Rule0" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.SnappyDDLParser#DELETE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DELETE:org.parboiled2.Rule0"></a>
       <a id="DELETE:Rule0"></a>
@@ -1325,19 +1359,19 @@
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.SnappyDDLParser#DISK_STORE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DISK_STORE:org.parboiled2.Rule0"></a>
-      <a id="DISK_STORE:Rule0"></a>
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#DISKSTORE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DISKSTORE:org.parboiled2.Rule0"></a>
+      <a id="DISKSTORE:Rule0"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">DISK_STORE</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
+        <span class="name">DISKSTORE</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@DISK_STORE:org.parboiled2.Rule0" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@DISKSTORE:org.parboiled2.Rule0" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1712,6 +1746,40 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@FOR:org.parboiled2.Rule0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#FOREIGN" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FOREIGN:org.parboiled2.Rule0"></a>
+      <a id="FOREIGN:Rule0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">FOREIGN</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@FOREIGN:org.parboiled2.Rule0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#FORMAT" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FORMAT:org.parboiled2.Rule0"></a>
+      <a id="FORMAT:Rule0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">FORMAT</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@FORMAT:org.parboiled2.Rule0" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2328,6 +2396,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#LOAD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LOAD:org.parboiled2.Rule0"></a>
+      <a id="LOAD:Rule0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">LOAD</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@LOAD:org.parboiled2.Rule0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.SnappyDDLParser#LOCATION" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="LOCATION:org.parboiled2.Rule0"></a>
       <a id="LOCATION:Rule0"></a>
@@ -2579,6 +2664,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@MONTH:org.parboiled2.Rule0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#MSCK" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MSCK:org.parboiled2.Rule0"></a>
+      <a id="MSCK:Rule0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">MSCK</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@MSCK:org.parboiled2.Rule0" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -2940,6 +3042,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#PIVOT" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PIVOT:org.parboiled2.Rule0"></a>
+      <a id="PIVOT:Rule0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">PIVOT</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@PIVOT:org.parboiled2.Rule0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.SnappyDDLParser#POLICY" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="POLICY:org.parboiled2.Rule0"></a>
       <a id="POLICY:Rule0"></a>
@@ -2991,6 +3110,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#PRIMARY" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PRIMARY:org.parboiled2.Rule0"></a>
+      <a id="PRIMARY:Rule0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">PRIMARY</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@PRIMARY:org.parboiled2.Rule0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.SnappyDDLParser#PURGE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="PURGE:org.parboiled2.Rule0"></a>
       <a id="PURGE:Rule0"></a>
@@ -3518,6 +3654,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#SKEWED" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SKEWED:org.parboiled2.Rule0"></a>
+      <a id="SKEWED:Rule0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SKEWED</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@SKEWED:org.parboiled2.Rule0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.SnappyDDLParser#SLIDE" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SLIDE:org.parboiled2.Rule0"></a>
       <a id="SLIDE:Rule0"></a>
@@ -3633,6 +3786,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@STOP:org.parboiled2.Rule0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#STORED" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="STORED:org.parboiled2.Rule0"></a>
+      <a id="STORED:Rule0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">STORED</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@STORED:org.parboiled2.Rule0" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -3773,23 +3943,6 @@
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.SnappyDDLParser#TEMP" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="TEMP:org.parboiled2.Rule0"></a>
-      <a id="TEMP:Rule0"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">TEMP</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@TEMP:org.parboiled2.Rule0" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.SnappyDDLParser#TEMPORARY" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TEMPORARY:org.parboiled2.Rule0"></a>
       <a id="TEMPORARY:Rule0"></a>
@@ -3871,6 +4024,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@TO:org.parboiled2.Rule0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#TRIGGER" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TRIGGER:org.parboiled2.Rule0"></a>
+      <a id="TRIGGER:Rule0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">TRIGGER</span><span class="result">: <span class="extype" name="org.parboiled2.Rule0">Rule0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@TRIGGER:org.parboiled2.Rule0" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -5056,7 +5226,7 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.SnappyDDLParser#checkExists" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#checkExists" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="checkExists(resource:org.apache.spark.sql.catalyst.catalog.FunctionResource):Unit"></a>
       <a id="checkExists(FunctionResource):Unit"></a>
       <h4 class="signature">
@@ -5072,7 +5242,7 @@
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappyBaseParser#clearQueryHints" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clearQueryHints():Unit"></a>
       <a id="clearQueryHints():Unit"></a>
@@ -5114,18 +5284,18 @@
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappyDDLParser#colsWithDirection" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="colsWithDirection:org.parboiled2.Rule1[Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]]]"></a>
-      <a id="colsWithDirection:Rule1[Map[String,Option[SortDirection]]]"></a>
+      <a id="colsWithDirection:org.parboiled2.Rule1[SnappyDDLParser.this.ColumnDirectionMap]"></a>
+      <a id="colsWithDirection:Rule1[ColumnDirectionMap]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">colsWithDirection</span><span class="result">: <span class="extype" name="org.parboiled2.Rule1">Rule1</span>[<span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>]]]</span>
+        <span class="name">colsWithDirection</span><span class="result">: <span class="extype" name="org.parboiled2.Rule1">Rule1</span>[<a href="#ColumnDirectionMap=Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])]" class="extmbr" name="org.apache.spark.sql.SnappyDDLParser.ColumnDirectionMap">ColumnDirectionMap</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@colsWithDirection:org.parboiled2.Rule1[Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]]]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@colsWithDirection:org.parboiled2.Rule1[SnappyDDLParser.this.ColumnDirectionMap]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -5267,6 +5437,23 @@
     </span>
       <p class="shortcomment cmt">Create a <span class="extype" name="CreateFunctionCommand">CreateFunctionCommand</span> command.</p><div class="fullcomment"><div class="comment cmt"><p>Create a <span class="extype" name="CreateFunctionCommand">CreateFunctionCommand</span> command.</p><p>For example:</p><pre>CREATE [TEMPORARY] FUNCTION [db_name.]function_name AS class_name RETURNS ReturnType
  USING JAR 'file_uri<span class="lit">';</span></pre></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#createHiveTable" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createHiveTable:org.parboiled2.Rule1[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
+      <a id="createHiveTable:Rule1[LogicalPlan]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createHiveTable</span><span class="result">: <span class="extype" name="org.parboiled2.Rule1">Rule1</span>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@createHiveTable:org.parboiled2.Rule1[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappyDDLParser#createIndex" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createIndex:org.parboiled2.Rule1[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
       <a id="createIndex:Rule1[LogicalPlan]"></a>
@@ -5488,40 +5675,27 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
-    </li><li name="org.apache.spark.sql.SnappyDDLParser#defaultLiteral" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="defaultLiteral:org.parboiled2.Rule1[Option[String]]"></a>
-      <a id="defaultLiteral:Rule1[Option[String]]"></a>
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#delegateToSpark" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="delegateToSpark:org.parboiled2.Rule1[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
+      <a id="delegateToSpark:Rule1[LogicalPlan]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">final </span>
+        <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">defaultLiteral</span><span class="result">: <span class="extype" name="org.parboiled2.Rule1">Rule1</span>[<span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]]</span>
+        <span class="name">delegateToSpark</span><span class="result">: <span class="extype" name="org.parboiled2.Rule1">Rule1</span>[<a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@defaultLiteral:org.parboiled2.Rule1[Option[String]]" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@delegateToSpark:org.parboiled2.Rule1[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
-    </li><li name="org.apache.spark.sql.SnappyDDLParser#defaultVal" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="defaultVal:org.parboiled2.Rule1[Option[String]]"></a>
-      <a id="defaultVal:Rule1[Option[String]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">defaultVal</span><span class="result">: <span class="extype" name="org.parboiled2.Rule1">Rule1</span>[<span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@defaultVal:org.parboiled2.Rule1[Option[String]]" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+      <p class="shortcomment cmt">Handle other statements not appropriate for SnappyData's builtin sources but used by hive/file
+based sources in Spark.</p><div class="fullcomment"><div class="comment cmt"><p>Handle other statements not appropriate for SnappyData's builtin sources but used by hive/file
+based sources in Spark. This rule should always be at the end of the &quot;start&quot; rule so that
+this is used as the last fallback and not before any of the SnappyData customizations.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappyBaseParser#delimiter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="delimiter:org.parboiled2.Rule0"></a>
       <a id="delimiter:Rule0"></a>
@@ -5960,6 +6134,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappyBaseParser#hexLiteral" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hexLiteral:org.parboiled2.Rule1[Array[Byte]]"></a>
+      <a id="hexLiteral:Rule1[Array[Byte]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hexLiteral</span><span class="result">: <span class="extype" name="org.parboiled2.Rule1">Rule1</span>[<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@hexLiteral:org.parboiled2.Rule1[Array[Byte]]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappyBaseParser#identifier" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="identifier:org.parboiled2.Rule1[String]"></a>
       <a id="identifier:Rule1[String]"></a>
@@ -5977,6 +6168,40 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappyBaseParser#identifierExt" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="identifierExt:org.parboiled2.Rule1[String]"></a>
+      <a id="identifierExt:Rule1[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">identifierExt</span><span class="result">: <span class="extype" name="org.parboiled2.Rule1">Rule1</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@identifierExt:org.parboiled2.Rule1[String]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">allow for first character of unquoted identifier to be a numeric</p><div class="fullcomment"><div class="comment cmt"><p>allow for first character of unquoted identifier to be a numeric</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#identifierList" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="identifierList:org.parboiled2.Rule1[Seq[String]]"></a>
+      <a id="identifierList:Rule1[Seq[String]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">identifierList</span><span class="result">: <span class="extype" name="org.parboiled2.Rule1">Rule1</span>[<a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@identifierList:org.parboiled2.Rule1[Seq[String]]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappyDDLParser#identifierWithComment" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="identifierWithComment:org.parboiled2.Rule1[(String,Option[String])]"></a>
       <a id="identifierWithComment:Rule1[(String,Option[String])]"></a>
@@ -6458,6 +6683,40 @@ to incorrect DataType definition.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappyBaseParser#packageIdentifier" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="packageIdentifier:org.parboiled2.Rule1[org.apache.spark.sql.catalyst.TableIdentifier]"></a>
+      <a id="packageIdentifier:Rule1[TableIdentifier]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">packageIdentifier</span><span class="result">: <span class="extype" name="org.parboiled2.Rule1">Rule1</span>[<a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@packageIdentifier:org.parboiled2.Rule1[org.apache.spark.sql.catalyst.TableIdentifier]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappyBaseParser#packageIdentifierPart" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="packageIdentifierPart:org.parboiled2.Rule1[String]"></a>
+      <a id="packageIdentifierPart:Rule1[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">packageIdentifierPart</span><span class="result">: <span class="extype" name="org.parboiled2.Rule1">Rule1</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@packageIdentifierPart:org.parboiled2.Rule1[String]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappyDDLParser#passThrough" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="passThrough:org.parboiled2.Rule1[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
       <a id="passThrough:Rule1[LogicalPlan]"></a>
@@ -6903,6 +7162,23 @@ CALL SYSCS_UTIL.SYSCS_SET_RUNTIMESTATISTICS(<span class="num">1</span>)</pre></d
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappyDDLParser#sparkParser" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sparkParser:org.apache.spark.sql.execution.SparkSqlParser"></a>
+      <a id="sparkParser:SparkSqlParser"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sparkParser</span><span class="result">: <a href="execution/SparkSqlParser.html" class="extype" name="org.apache.spark.sql.execution.SparkSqlParser">SparkSqlParser</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@sparkParser:org.apache.spark.sql.execution.SparkSqlParser" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">spark parser used for hive DDLs that are not relevant to SnappyData's builtin sources</p><div class="fullcomment"><div class="comment cmt"><p>spark parser used for hive DDLs that are not relevant to SnappyData's builtin sources</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappyBaseParser#sql" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sql:org.parboiled2.Rule1[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
       <a id="sql:Rule1[LogicalPlan]"></a>
@@ -7124,23 +7400,6 @@ interpreted as a strictIdentifier.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.SnappyBaseParser#tableIdentifierPart" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="tableIdentifierPart:org.parboiled2.Rule1[String]"></a>
-      <a id="tableIdentifierPart:Rule1[String]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">tableIdentifierPart</span><span class="result">: <span class="extype" name="org.parboiled2.Rule1">Rule1</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappyDDLParser@tableIdentifierPart:org.parboiled2.Rule1[String]" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappyDDLParser#tableSchema" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="tableSchema:org.parboiled2.Rule1[Seq[org.apache.spark.sql.types.StructField]]"></a>
       <a id="tableSchema:Rule1[Seq[StructField]]"></a>

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ToolsCallbackImpl - snappydata_2.11 1.1.0-HF-1 API - io.snappydata.ToolsCallbackImpl</title>
-          <meta name="description" content="ToolsCallbackImpl - snappydata 2.11 1.1.0 - HF - 1 API - io.snappydata.ToolsCallbackImpl" />
-          <meta name="keywords" content="ToolsCallbackImpl snappydata 2.11 1.1.0 HF 1 API io.snappydata.ToolsCallbackImpl" />
+          <title>ToolsCallbackImpl - snappydata_2.11 1.1.1 API - io.snappydata.ToolsCallbackImpl</title>
+          <meta name="description" content="ToolsCallbackImpl - snappydata 2.11 1.1.1 API - io.snappydata.ToolsCallbackImpl" />
+          <meta name="keywords" content="ToolsCallbackImpl snappydata 2.11 1.1.1 API io.snappydata.ToolsCallbackImpl" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -773,23 +773,40 @@ LDAP group name of the schema owner (or passed user itself if security is disabl
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="io.snappydata.ToolsCallbackImpl#removeAddedJar" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="removeAddedJar(sc:org.apache.spark.SparkContext,jarName:String):Unit"></a>
-      <a id="removeAddedJar(SparkContext,String):Unit"></a>
+    </li><li name="io.snappydata.ToolsCallbackImpl#removeFunctionJars" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="removeFunctionJars(args:Array[String]):Unit"></a>
+      <a id="removeFunctionJars(Array[String]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">removeAddedJar</span><span class="params">(<span name="sc">sc: <a href="../../org/apache/spark/SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="jarName">jarName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">removeFunctionJars</span><span class="params">(<span name="args">args: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../index.html#io.snappydata.ToolsCallbackImpl$@removeAddedJar(sc:org.apache.spark.SparkContext,jarName:String):Unit" title="Permalink" target="_top">
+      <a href="../../index.html#io.snappydata.ToolsCallbackImpl$@removeFunctionJars(args:Array[String]):Unit" title="Permalink" target="_top">
         <img src="../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="io.snappydata.ToolsCallbackImpl">ToolsCallbackImpl</a> → <a href="ToolsCallback.html" class="extype" name="io.snappydata.ToolsCallback">ToolsCallback</a></dd></dl></div>
+    </li><li name="io.snappydata.ToolsCallbackImpl#removeJarFiles" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="removeJarFiles(jars:Array[String]):Unit"></a>
+      <a id="removeJarFiles(Array[String]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">removeJarFiles</span><span class="params">(<span name="jars">jars: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.ToolsCallbackImpl$@removeJarFiles(jars:Array[String]):Unit" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="io.snappydata.ToolsCallbackImpl#removePackage" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="removePackage(alias:String):Unit"></a>
       <a id="removePackage(String):Unit"></a>
@@ -803,6 +820,40 @@ LDAP group name of the schema owner (or passed user itself if security is disabl
       </span>
       </h4><span class="permalink">
       <a href="../../index.html#io.snappydata.ToolsCallbackImpl$@removePackage(alias:String):Unit" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="io.snappydata.ToolsCallbackImpl">ToolsCallbackImpl</a> → <a href="ToolsCallback.html" class="extype" name="io.snappydata.ToolsCallback">ToolsCallback</a></dd></dl></div>
+    </li><li name="io.snappydata.ToolsCallbackImpl#removeURIs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="removeURIs(uris:Array[String],isPackage:Boolean):Unit"></a>
+      <a id="removeURIs(Array[String],Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">removeURIs</span><span class="params">(<span name="uris">uris: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="isPackage">isPackage: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.ToolsCallbackImpl$@removeURIs(uris:Array[String],isPackage:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="io.snappydata.ToolsCallbackImpl">ToolsCallbackImpl</a> → <a href="ToolsCallback.html" class="extype" name="io.snappydata.ToolsCallback">ToolsCallback</a></dd></dl></div>
+    </li><li name="io.snappydata.ToolsCallbackImpl#removeURIsFromExecutorClassLoader" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="removeURIsFromExecutorClassLoader(jars:Array[String]):Unit"></a>
+      <a id="removeURIsFromExecutorClassLoader(Array[String]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">removeURIsFromExecutorClassLoader</span><span class="params">(<span name="jars">jars: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.ToolsCallbackImpl$@removeURIsFromExecutorClassLoader(jars:Array[String]):Unit" title="Permalink" target="_top">
         <img src="../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -842,18 +893,18 @@ LDAP group name of the schema owner (or passed user itself if security is disabl
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="io.snappydata.ToolsCallbackImpl">ToolsCallbackImpl</a> → <a href="ToolsCallback.html" class="extype" name="io.snappydata.ToolsCallback">ToolsCallback</a></dd></dl></div>
     </li><li name="io.snappydata.ToolsCallbackImpl#setSessionDependencies" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="setSessionDependencies(sparkContext:org.apache.spark.SparkContext,appName:String,classLoader:ClassLoader):Unit"></a>
-      <a id="setSessionDependencies(SparkContext,String,ClassLoader):Unit"></a>
+      <a id="setSessionDependencies(sparkContext:org.apache.spark.SparkContext,appName:String,classLoader:ClassLoader,addAllJars:Boolean):Unit"></a>
+      <a id="setSessionDependencies(SparkContext,String,ClassLoader,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">setSessionDependencies</span><span class="params">(<span name="sparkContext">sparkContext: <a href="../../org/apache/spark/SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="appName">appName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="classLoader">classLoader: <span class="extype" name="java.lang.ClassLoader">ClassLoader</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">setSessionDependencies</span><span class="params">(<span name="sparkContext">sparkContext: <a href="../../org/apache/spark/SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="appName">appName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="classLoader">classLoader: <span class="extype" name="java.lang.ClassLoader">ClassLoader</span></span>, <span name="addAllJars">addAllJars: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../index.html#io.snappydata.ToolsCallbackImpl$@setSessionDependencies(sparkContext:org.apache.spark.SparkContext,appName:String,classLoader:ClassLoader):Unit" title="Permalink" target="_top">
+      <a href="../../index.html#io.snappydata.ToolsCallbackImpl$@setSessionDependencies(sparkContext:org.apache.spark.SparkContext,appName:String,classLoader:ClassLoader,addAllJars:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>hive - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.hive</title>
-          <meta name="description" content="hive - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.hive" />
-          <meta name="keywords" content="hive snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.hive" />
+          <title>hive - snappydata_2.11 1.1.1 API - org.apache.spark.sql.hive</title>
+          <meta name="description" content="hive - snappydata 2.11 1.1.1 API - org.apache.spark.sql.hive" />
+          <meta name="keywords" content="hive snappydata 2.11 1.1.1 API org.apache.spark.sql.hive" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -91,7 +91,60 @@ existing Hive installation).  Supported Hive features include:</p><ul><li>Using 
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.hive.SampledRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.hive.HiveConditionalRule" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HiveConditionalRuleextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
+      <a id="HiveConditionalRule:HiveConditionalRule"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HiveConditionalRule.html"><span class="name">HiveConditionalRule</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@HiveConditionalRuleextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.HiveConditionalStrategy" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HiveConditionalStrategyextendsorg.apache.spark.sql.Strategy"></a>
+      <a id="HiveConditionalStrategy:HiveConditionalStrategy"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HiveConditionalStrategy.html"><span class="name">HiveConditionalStrategy</span></a><span class="result"> extends <a href="../package.html#Strategy=org.apache.spark.sql.execution.SparkStrategy" class="extmbr" name="org.apache.spark.sql.Strategy">Strategy</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@HiveConditionalStrategyextendsorg.apache.spark.sql.Strategy" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.OptimizeSortAndFilePlans" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OptimizeSortAndFilePlansextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable"></a>
+      <a id="OptimizeSortAndFilePlans:OptimizeSortAndFilePlans"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="OptimizeSortAndFilePlans.html"><span class="name">OptimizeSortAndFilePlans</span></a><span class="params">(<span name="conf">conf: <a href="../internal/SnappyConf.html" class="extype" name="org.apache.spark.sql.internal.SnappyConf">SnappyConf</a></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@OptimizeSortAndFilePlansextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Rule to replace Spark's SortExec plans with an optimized SnappySortExec (in SMJ for now).</p><div class="fullcomment"><div class="comment cmt"><p>Rule to replace Spark's SortExec plans with an optimized SnappySortExec (in SMJ for now).
+Also sets the &quot;spark.task.cpus&quot; property implicitly for file scans/writes.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.hive.SampledRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SampledRelationextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
       <a id="SampledRelation:SampledRelation"></a>
       <h4 class="signature">
@@ -121,6 +174,23 @@ existing Hive installation).  Supported Hive features include:</p><ul><li>Using 
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.hive.package@SnappyAQPSessionCatalogextendsSnappySessionCatalog" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.SnappyAnalyzer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyAnalyzerextendsAnalyzer"></a>
+      <a id="SnappyAnalyzer:SnappyAnalyzer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyAnalyzer.html"><span class="name">SnappyAnalyzer</span></a><span class="result"> extends <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@SnappyAnalyzerextendsAnalyzer" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -159,6 +229,23 @@ existing Hive installation).  Supported Hive features include:</p><ul><li>Using 
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappySessionStateextendsSessionStatewithSnappyStrategies"></a>
+      <a id="SnappySessionState:SnappySessionState"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappySessionState.html"><span class="name">SnappySessionState</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.sql.internal.SessionState">SessionState</span> with <span class="extype" name="org.apache.spark.sql.SnappyStrategies">SnappyStrategies</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@SnappySessionStateextendsSessionStatewithSnappyStrategies" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Holds all session-specific state for a given <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a>.</p>
     </li><li name="org.apache.spark.sql.hive.TopKPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TopKPlanextendsLeafNodewithProductwithSerializable"></a>
       <a id="TopKPlan:TopKPlan"></a>
@@ -255,6 +342,23 @@ for connection to embedded store.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.hive.package@IdentifySampledRelation" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.QuestionMark" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="QuestionMark"></a>
+      <a id="QuestionMark:QuestionMark"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="QuestionMark$.html"><span class="name">QuestionMark</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@QuestionMark" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>internal - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.internal</title>
-          <meta name="description" content="internal - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.internal" />
-          <meta name="keywords" content="internal snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.internal" />
+          <title>internal - snappydata_2.11 1.1.1 API - org.apache.spark.sql.internal</title>
+          <meta name="description" content="internal - snappydata 2.11 1.1.1 API - org.apache.spark.sql.internal" />
+          <meta name="keywords" content="internal snappydata 2.11 1.1.1 API org.apache.spark.sql.internal" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -99,7 +99,7 @@ are subject to change between minor releases.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="AQPQueryAnalyzer.html"><span class="name">AQPQueryAnalyzer</span></a><span class="result"> extends <a href="SnappyAnalyzer.html" class="extype" name="org.apache.spark.sql.internal.SnappyAnalyzer">SnappyAnalyzer</a> with <a href="AnalyzerInvocation.html" class="extype" name="org.apache.spark.sql.internal.AnalyzerInvocation">AnalyzerInvocation</a></span>
+        <a href="AQPQueryAnalyzer.html"><span class="name">AQPQueryAnalyzer</span></a><span class="result"> extends <a href="../hive/SnappyAnalyzer.html" class="extype" name="org.apache.spark.sql.hive.SnappyAnalyzer">SnappyAnalyzer</a> with <a href="AnalyzerInvocation.html" class="extype" name="org.apache.spark.sql.internal.AnalyzerInvocation">AnalyzerInvocation</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.internal.package@AQPQueryAnalyzerextendsSnappyAnalyzerwithAnalyzerInvocation" title="Permalink" target="_top">
@@ -333,6 +333,23 @@ modify the hints by programmatically calling the setters and getters of this cla
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.internal.SessionCatalogWrapper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SessionCatalogWrapperextendsSnappySessionCatalog"></a>
+      <a id="SessionCatalogWrapper:SessionCatalogWrapper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SessionCatalogWrapper.html"><span class="name">SessionCatalogWrapper</span></a><span class="result"> extends <a href="SnappySessionCatalog.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SessionCatalogWrapperextendsSnappySessionCatalog" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.internal.SnappyAQPSessionState" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SnappyAQPSessionStateextendsSnappySessionState"></a>
       <a id="SnappyAQPSessionState:SnappyAQPSessionState"></a>
@@ -342,27 +359,10 @@ modify the hints by programmatically calling the setters and getters of this cla
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SnappyAQPSessionState.html"><span class="name">SnappyAQPSessionState</span></a><span class="result"> extends <a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></span>
+        <a href="SnappyAQPSessionState.html"><span class="name">SnappyAQPSessionState</span></a><span class="result"> extends <a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SnappyAQPSessionStateextendsSnappySessionState" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.internal.SnappyAnalyzer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SnappyAnalyzerextendsAnalyzer"></a>
-      <a id="SnappyAnalyzer:SnappyAnalyzer"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="SnappyAnalyzer.html"><span class="name">SnappyAnalyzer</span></a><span class="result"> extends <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SnappyAnalyzerextendsAnalyzer" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -409,23 +409,6 @@ stream/topK tables and returning LogicalPlan to materialize these entities.
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SnappySessionStateextendsSessionStatewithSnappyStrategies"></a>
-      <a id="SnappySessionState:SnappySessionState"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="SnappySessionState.html"><span class="name">SnappySessionState</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.sql.internal.SessionState">SessionState</span> with <span class="extype" name="org.apache.spark.sql.SnappyStrategies">SnappyStrategies</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@SnappySessionStateextendsSessionStatewithSnappyStrategies" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.internal.VariableSubstitution" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="VariableSubstitutionextendsAnyRef"></a>
       <a id="VariableSubstitution:VariableSubstitution"></a>
@@ -533,23 +516,6 @@ adding classloader at query time.</p></div></div>
 Does not deal with startsAndEndsWith equivalent of Spark's LikeSimplification
 so 'a%b' kind of pattern with additional escaped chars will not be optimized.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.internal.QuestionMark" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="QuestionMark"></a>
-      <a id="QuestionMark:QuestionMark"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="QuestionMark$.html"><span class="name">QuestionMark</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.package@QuestionMark" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.internal.SQLConf" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SQLConf"></a>
       <a id="SQLConf:SQLConf"></a>

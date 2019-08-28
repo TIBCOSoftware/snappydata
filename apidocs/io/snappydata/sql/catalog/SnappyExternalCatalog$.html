@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyExternalCatalog - snappydata_2.11 1.1.0-HF-1 API - io.snappydata.sql.catalog.SnappyExternalCatalog</title>
-          <meta name="description" content="SnappyExternalCatalog - snappydata 2.11 1.1.0 - HF - 1 API - io.snappydata.sql.catalog.SnappyExternalCatalog" />
-          <meta name="keywords" content="SnappyExternalCatalog snappydata 2.11 1.1.0 HF 1 API io.snappydata.sql.catalog.SnappyExternalCatalog" />
+          <title>SnappyExternalCatalog - snappydata_2.11 1.1.1 API - io.snappydata.sql.catalog.SnappyExternalCatalog</title>
+          <meta name="description" content="SnappyExternalCatalog - snappydata 2.11 1.1.1 API - io.snappydata.sql.catalog.SnappyExternalCatalog" />
+          <meta name="keywords" content="SnappyExternalCatalog snappydata 2.11 1.1.1 API io.snappydata.sql.catalog.SnappyExternalCatalog" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -550,6 +550,25 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="io.snappydata.sql.catalog.SnappyExternalCatalog#getAllTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getAllTables(catalog:org.apache.spark.sql.catalyst.catalog.ExternalCatalog,skipSchemas:Seq[String]):Seq[org.apache.spark.sql.catalyst.catalog.CatalogTable]"></a>
+      <a id="getAllTables(ExternalCatalog,Seq[String]):Seq[CatalogTable]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAllTables</span><span class="params">(<span name="catalog">catalog: <a href="../../../../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a></span>, <span name="skipSchemas">skipSchemas: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../org/apache/spark/sql/catalyst/catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.snappydata.sql.catalog.SnappyExternalCatalog$@getAllTables(catalog:org.apache.spark.sql.catalyst.catalog.ExternalCatalog,skipSchemas:Seq[String]):Seq[org.apache.spark.sql.catalyst.catalog.CatalogTable]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get all the tables in the catalog skipping given schema names.</p><div class="fullcomment"><div class="comment cmt"><p>Get all the tables in the catalog skipping given schema names. By default
+the inbuilt SYS schema is skipped.
+</p></div></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -703,6 +722,40 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="io.snappydata.sql.catalog.SnappyExternalCatalog#objectExistsException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="objectExistsException(tableIdentifier:org.apache.spark.sql.catalyst.TableIdentifier,objectType:io.snappydata.sql.catalog.CatalogObjectType.Type):org.apache.spark.sql.AnalysisException"></a>
+      <a id="objectExistsException(TableIdentifier,Type):AnalysisException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">objectExistsException</span><span class="params">(<span name="tableIdentifier">tableIdentifier: <a href="../../../../org/apache/spark/sql/catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="objectType">objectType: <a href="CatalogObjectType$.html#Type=io.snappydata.sql.catalog.CatalogObjectType.Value" class="extmbr" name="io.snappydata.sql.catalog.CatalogObjectType.Type">Type</a></span>)</span><span class="result">: <a href="../../../../org/apache/spark/sql/AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.snappydata.sql.catalog.SnappyExternalCatalog$@objectExistsException(tableIdentifier:org.apache.spark.sql.catalyst.TableIdentifier,objectType:io.snappydata.sql.catalog.CatalogObjectType.Type):org.apache.spark.sql.AnalysisException" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.sql.catalog.SnappyExternalCatalog#schemaNotFoundException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="schemaNotFoundException(schema:String):org.apache.spark.sql.AnalysisException"></a>
+      <a id="schemaNotFoundException(String):AnalysisException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">schemaNotFoundException</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../../org/apache/spark/sql/AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.snappydata.sql.catalog.SnappyExternalCatalog$@schemaNotFoundException(schema:String):org.apache.spark.sql.AnalysisException" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

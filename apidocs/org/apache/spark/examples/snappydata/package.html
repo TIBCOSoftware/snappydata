@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>snappydata - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.examples.snappydata</title>
-          <meta name="description" content="snappydata - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.examples.snappydata" />
-          <meta name="keywords" content="snappydata snappydata 2.11 1.1.0 HF 1 API org.apache.spark.examples.snappydata" />
+          <title>snappydata - snappydata_2.11 1.1.1 API - org.apache.spark.examples.snappydata</title>
+          <meta name="description" content="snappydata - snappydata 2.11 1.1.1 API - org.apache.spark.examples.snappydata" />
+          <meta name="keywords" content="snappydata snappydata 2.11 1.1.1 API org.apache.spark.examples.snappydata" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -156,23 +156,6 @@ bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
       <p class="shortcomment cmt">Converts an input stream message into an org.apache.spark.sql.Row
 instance
 </p>
-    </li><li name="org.apache.spark.examples.snappydata.User" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="UserextendsProductwithSerializable"></a>
-      <a id="User:User"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="User.html"><span class="name">User</span></a><span class="params">(<span name="is">is: <span class="extype" name="scala.Long">Long</span></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="age">age: <span class="extype" name="scala.Int">Int</span></span>, <span name="_eventType">_eventType: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@UserextendsProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li></ol>
             </div>
 
@@ -434,81 +417,6 @@ publisher_bid_counts table is modified based on the streaming data</p><p>We also
 of storing and updating a state of streaming data)</p><p>For more details on streaming with SnappyData refer to:
 http://snappydatainc.github.io/snappydata/programming_guide
 /stream_processing_using_sql/#stream-processing-using-sql</p></div></div>
-    </li><li name="org.apache.spark.examples.snappydata.StructuredStreamingCDCExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="StructuredStreamingCDCExample"></a>
-      <a id="StructuredStreamingCDCExample:StructuredStreamingCDCExample"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="StructuredStreamingCDCExample$.html"><span class="name">StructuredStreamingCDCExample</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@StructuredStreamingCDCExample" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">An example showing CDC usage with SnappyData structured streaming</p><div class="fullcomment"><div class="comment cmt"><p>An example showing CDC usage with SnappyData structured streaming</p><p>To run the example in local mode go to your SnappyData product distribution
-directory and type following command on the command prompt
-<pre>
-bin/run-example snappydata.StructuredStreamingCDCExample
-</pre></p><p>To run this on your local machine, you need to first run a Netcat server <br>
-<code>$ nc -lk 9999</code></p><p>Sample input data:</p><pre><span class="num">1</span>,user1,<span class="num">23</span>,<span class="num">0</span>
-<span class="num">2</span>,user2,<span class="num">45</span>,<span class="num">0</span>
-<span class="num">1</span>,user1,<span class="num">23</span>,<span class="num">2</span>
-<span class="num">2</span>,user2,<span class="num">46</span>,<span class="num">1</span></pre></div></div>
-    </li><li name="org.apache.spark.examples.snappydata.StructuredStreamingExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="StructuredStreamingExample"></a>
-      <a id="StructuredStreamingExample:StructuredStreamingExample"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="StructuredStreamingExample$.html"><span class="name">StructuredStreamingExample</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@StructuredStreamingExample" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">An example showing usage of structured streaming with SnappyData</p><div class="fullcomment"><div class="comment cmt"><p>An example showing usage of structured streaming with SnappyData</p><p>To run the example in local mode go to your SnappyData product distribution
-directory and type following command on the command prompt
-<pre>
-bin/run-example snappydata.StructuredStreamingExample
-</pre></p><p>To run this on your local machine, you need to first run a Netcat server <br>
-<code>$ nc -lk 9999</code></p><p>Sample input data:</p><pre>device1,<span class="num">45</span>
-device2,<span class="num">67</span>
-device3,<span class="num">35</span></pre><p>For more details on streaming with SnappyData refer to:
-http://snappydatainc.github.io/snappydata/programming_guide
-/stream_processing_using_sql/#stream-processing-using-sql</p></div></div>
-    </li><li name="org.apache.spark.examples.snappydata.StructuredStreamingWithSnappySink" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="StructuredStreamingWithSnappySink"></a>
-      <a id="StructuredStreamingWithSnappySink:StructuredStreamingWithSnappySink"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="StructuredStreamingWithSnappySink$.html"><span class="name">StructuredStreamingWithSnappySink</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@StructuredStreamingWithSnappySink" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">An example showing usage of structured streaming with SnappyData</p><div class="fullcomment"><div class="comment cmt"><p>An example showing usage of structured streaming with SnappyData</p><p>To run the example in local mode go to your SnappyData product distribution
-directory and type following command on the command prompt
-<pre>
-bin/run-example snappydata.StructuredStreamingWithSnappySink
-</pre></p><p>To run this on your local machine, you need to first run a Netcat server <br>
-<code>$ nc -lk 9999</code></p><p>Sample input data:</p><pre>device1,<span class="num">45</span>
-device2,<span class="num">67</span>
-device3,<span class="num">35</span></pre></div></div>
     </li><li name="org.apache.spark.examples.snappydata.SynopsisDataExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SynopsisDataExample"></a>
       <a id="SynopsisDataExample:SynopsisDataExample"></a>
@@ -596,6 +504,23 @@ bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@WorkingWithObjects" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.examples.snappydata.structuredstreaming" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="structuredstreaming"></a>
+      <a id="structuredstreaming:structuredstreaming"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="structuredstreaming/package.html"><span class="name">structuredstreaming</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@structuredstreaming" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ColumnExec - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.execution.columnar.ColumnExec</title>
-          <meta name="description" content="ColumnExec - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.execution.columnar.ColumnExec" />
-          <meta name="keywords" content="ColumnExec snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.execution.columnar.ColumnExec" />
+          <title>ColumnExec - snappydata_2.11 1.1.1 API - org.apache.spark.sql.execution.columnar.ColumnExec</title>
+          <meta name="description" content="ColumnExec - snappydata 2.11 1.1.1 API - org.apache.spark.sql.execution.columnar.ColumnExec" />
+          <meta name="keywords" content="ColumnExec snappydata 2.11 1.1.1 API org.apache.spark.sql.execution.columnar.ColumnExec" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -548,6 +548,23 @@ pasted in the REPL to build an equivalent Tree.
     </span>
       <p class="shortcomment cmt">Canonicalized copy of this query plan.</p><div class="fullcomment"><div class="comment cmt"><p>Canonicalized copy of this query plan.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.TableExec#catalogSchemaVersion" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="catalogSchemaVersion:Long"></a>
+      <a id="catalogSchemaVersion:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">catalogSchemaVersion</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnExec@catalogSchemaVersion:Long" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.UnaryExecNode#children" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="children:Seq[org.apache.spark.sql.execution.SparkPlan]"></a>
       <a id="children:Seq[SparkPlan]"></a>
@@ -842,7 +859,7 @@ evaluate to <code>true</code> for all rows produced.
   if (isNull1 || !value2) continue;
   # call consume(), which will call parent.doConsume()</p><p>Note: A plan can either consume the rows as UnsafeRow (row), or a list of variables (input).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.TableExec#doExecute" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnExec#doExecute" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doExecute():org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="doExecute():RDD[InternalRow]"></a>
       <h4 class="signature">
@@ -860,7 +877,7 @@ evaluate to <code>true</code> for all rows produced.
     </span>
       <p class="shortcomment cmt">Overridden by concrete implementations of SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Overridden by concrete implementations of SparkPlan.
 Produces the result of the query as an RDD[InternalRow]
-</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnExec">ColumnExec</a> → <a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#doExecuteBroadcast" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doExecuteBroadcast[T]():org.apache.spark.broadcast.Broadcast[T]"></a>
       <a id="doExecuteBroadcast[T]():Broadcast[T]"></a>

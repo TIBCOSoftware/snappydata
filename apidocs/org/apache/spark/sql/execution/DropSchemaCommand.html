@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>DropSchemaCommand - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.execution.DropSchemaCommand</title>
-          <meta name="description" content="DropSchemaCommand - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.execution.DropSchemaCommand" />
-          <meta name="keywords" content="DropSchemaCommand snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.execution.DropSchemaCommand" />
+          <title>DropSchemaCommand - snappydata_2.11 1.1.1 API - org.apache.spark.sql.execution.DropSchemaCommand</title>
+          <meta name="description" content="DropSchemaCommand - snappydata 2.11 1.1.1 API - org.apache.spark.sql.execution.DropSchemaCommand" />
+          <meta name="keywords" content="DropSchemaCommand snappydata 2.11 1.1.1 API org.apache.spark.sql.execution.DropSchemaCommand" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">DropSchemaCommand</span><span class="params">(<span name="schemaName">schemaName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ifExists">ifExists: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="cascade">cascade: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">DropSchemaCommand</span><span class="params">(<span name="schemaName">schemaName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="cascade">cascade: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.DropSchemaCommand#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(schemaName:String,ifExists:Boolean,cascade:Boolean):org.apache.spark.sql.execution.DropSchemaCommand"></a>
+      <a id="&lt;init&gt;(schemaName:String,ignoreIfNotExists:Boolean,cascade:Boolean):org.apache.spark.sql.execution.DropSchemaCommand"></a>
       <a id="&lt;init&gt;:DropSchemaCommand"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">DropSchemaCommand</span><span class="params">(<span name="schemaName">schemaName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ifExists">ifExists: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="cascade">cascade: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
+        <span class="name">DropSchemaCommand</span><span class="params">(<span name="schemaName">schemaName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="cascade">cascade: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DropSchemaCommand@&lt;init&gt;(schemaName:String,ifExists:Boolean,cascade:Boolean):org.apache.spark.sql.execution.DropSchemaCommand" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DropSchemaCommand@&lt;init&gt;(schemaName:String,ignoreIfNotExists:Boolean,cascade:Boolean):org.apache.spark.sql.execution.DropSchemaCommand" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -728,19 +728,19 @@ appear in the <a href="../catalyst/plans/QueryPlan.html#outputSet:org.apache.spa
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> → AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.DropSchemaCommand#ifExists" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ifExists:Boolean"></a>
-      <a id="ifExists:Boolean"></a>
+    </li><li name="org.apache.spark.sql.execution.DropSchemaCommand#ignoreIfNotExists" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ignoreIfNotExists:Boolean"></a>
+      <a id="ignoreIfNotExists:Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">ifExists</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">ignoreIfNotExists</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.DropSchemaCommand@ifExists:Boolean" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.DropSchemaCommand@ignoreIfNotExists:Boolean" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

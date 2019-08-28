@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyAQPSessionState - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.internal.SnappyAQPSessionState</title>
-          <meta name="description" content="SnappyAQPSessionState - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.internal.SnappyAQPSessionState" />
-          <meta name="keywords" content="SnappyAQPSessionState snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.internal.SnappyAQPSessionState" />
+          <title>SnappyAQPSessionState - snappydata_2.11 1.1.1 API - org.apache.spark.sql.internal.SnappyAQPSessionState</title>
+          <meta name="description" content="SnappyAQPSessionState - snappydata 2.11 1.1.1 API - org.apache.spark.sql.internal.SnappyAQPSessionState" />
+          <meta name="keywords" content="SnappyAQPSessionState snappydata 2.11 1.1.1 API org.apache.spark.sql.internal.SnappyAQPSessionState" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,13 +45,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">SnappyAQPSessionState</span><span class="result"> extends <a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></span>
+        <span class="name">SnappyAQPSessionState</span><span class="result"> extends <a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Self Type</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappyAQPSessionState">SnappyAQPSessionState</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a>, <span class="extype" name="org.apache.spark.sql.SnappyStrategies">SnappyStrategies</span>, <span class="extype" name="org.apache.spark.sql.internal.SessionState">SessionState</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a>, <span class="extype" name="org.apache.spark.sql.SnappyStrategies">SnappyStrategies</span>, <span class="extype" name="org.apache.spark.sql.internal.SessionState">SessionState</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -69,7 +69,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.internal.SnappyAQPSessionState"><span>SnappyAQPSessionState</span></li><li class="in" name="org.apache.spark.sql.internal.SnappySessionState"><span>SnappySessionState</span></li><li class="in" name="org.apache.spark.sql.SnappyStrategies"><span>SnappyStrategies</span></li><li class="in" name="org.apache.spark.sql.internal.SessionState"><span>SessionState</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.internal.SnappyAQPSessionState"><span>SnappyAQPSessionState</span></li><li class="in" name="org.apache.spark.sql.hive.SnappySessionState"><span>SnappySessionState</span></li><li class="in" name="org.apache.spark.sql.SnappyStrategies"><span>SnappyStrategies</span></li><li class="in" name="org.apache.spark.sql.internal.SessionState"><span>SessionState</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -110,7 +110,7 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.internal.SnappySessionState.AnalyzeMutableOperations" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.hive.SnappySessionState.AnalyzeMutableOperations" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="AnalyzeMutableOperationsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withPredicateHelperwithProductwithSerializable"></a>
       <a id="AnalyzeMutableOperations:AnalyzeMutableOperations"></a>
       <h4 class="signature">
@@ -119,15 +119,15 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="SnappySessionState$AnalyzeMutableOperations.html"><span class="name">AnalyzeMutableOperations</span></a><span class="params">(<span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="analyzer">analyzer: <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="../hive/SnappySessionState$AnalyzeMutableOperations.html"><span class="name">AnalyzeMutableOperations</span></a><span class="params">(<span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="analyzer">analyzer: <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@AnalyzeMutableOperationsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withPredicateHelperwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappySessionState@AnalyzeMutableOperationsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withPredicateHelperwithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState.LinkPartitionsToBuckets" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState.LinkPartitionsToBuckets" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="LinkPartitionsToBucketsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
       <a id="LinkPartitionsToBuckets:LinkPartitionsToBuckets"></a>
       <h4 class="signature">
@@ -136,10 +136,10 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SnappySessionState$LinkPartitionsToBuckets.html"><span class="name">LinkPartitionsToBuckets</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+        <a href="../hive/SnappySessionState$LinkPartitionsToBuckets.html"><span class="name">LinkPartitionsToBuckets</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@LinkPartitionsToBucketsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappySessionState@LinkPartitionsToBucketsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -147,7 +147,7 @@
 be created for tables to be the same as number of buckets.</p><div class="fullcomment"><div class="comment cmt"><p>This rule sets the flag at query level to link the partitions to
 be created for tables to be the same as number of buckets. This will avoid
 exchange on one side of a non-collocated join in many cases.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li></ol>
             </div>
 
@@ -206,7 +206,7 @@ exchange on one side of a non-collocated join in many cases.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState.ExternalRelationLimitFetch" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState.ExternalRelationLimitFetch" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ExternalRelationLimitFetch"></a>
       <a id="ExternalRelationLimitFetch:ExternalRelationLimitFetch"></a>
       <h4 class="signature">
@@ -215,14 +215,14 @@ exchange on one side of a non-collocated join in many cases.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="SnappySessionState$ExternalRelationLimitFetch$.html"><span class="name">ExternalRelationLimitFetch</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+        <a href="../hive/SnappySessionState$ExternalRelationLimitFetch$.html"><span class="name">ExternalRelationLimitFetch</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@ExternalRelationLimitFetch" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappySessionState@ExternalRelationLimitFetch" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappyStrategies.HashJoinStrategies" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="HashJoinStrategies"></a>
       <a id="HashJoinStrategies:HashJoinStrategies"></a>
@@ -240,7 +240,7 @@ exchange on one side of a non-collocated join in many cases.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStrategies</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState.OrderJoinConditions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState.OrderJoinConditions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="OrderJoinConditions"></a>
       <a id="OrderJoinConditions:OrderJoinConditions"></a>
       <h4 class="signature">
@@ -249,16 +249,16 @@ exchange on one side of a non-collocated join in many cases.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="SnappySessionState$OrderJoinConditions$.html"><span class="name">OrderJoinConditions</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="JoinQueryPlanning.html" class="extype" name="org.apache.spark.sql.internal.JoinQueryPlanning">JoinQueryPlanning</a></span>
+        <a href="../hive/SnappySessionState$OrderJoinConditions$.html"><span class="name">OrderJoinConditions</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="JoinQueryPlanning.html" class="extype" name="org.apache.spark.sql.internal.JoinQueryPlanning">JoinQueryPlanning</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@OrderJoinConditions" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappySessionState@OrderJoinConditions" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Orders the join keys as per the  underlying partitioning keys ordering of the table.</p><div class="fullcomment"><div class="comment cmt"><p>Orders the join keys as per the  underlying partitioning keys ordering of the table.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState.PushDownWindowLogicalPlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState.PushDownWindowLogicalPlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="PushDownWindowLogicalPlan"></a>
       <a id="PushDownWindowLogicalPlan:PushDownWindowLogicalPlan"></a>
       <h4 class="signature">
@@ -267,15 +267,15 @@ exchange on one side of a non-collocated join in many cases.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="SnappySessionState$PushDownWindowLogicalPlan$.html"><span class="name">PushDownWindowLogicalPlan</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+        <a href="../hive/SnappySessionState$PushDownWindowLogicalPlan$.html"><span class="name">PushDownWindowLogicalPlan</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@PushDownWindowLogicalPlan" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappySessionState@PushDownWindowLogicalPlan" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState.ResolveAliasInGroupBy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState.ResolveAliasInGroupBy" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ResolveAliasInGroupBy"></a>
       <a id="ResolveAliasInGroupBy:ResolveAliasInGroupBy"></a>
       <h4 class="signature">
@@ -284,33 +284,15 @@ exchange on one side of a non-collocated join in many cases.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="SnappySessionState$ResolveAliasInGroupBy$.html"><span class="name">ResolveAliasInGroupBy</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+        <a href="../hive/SnappySessionState$ResolveAliasInGroupBy$.html"><span class="name">ResolveAliasInGroupBy</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@ResolveAliasInGroupBy" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappySessionState@ResolveAliasInGroupBy" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState.ResolveRelationsExtended" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ResolveRelationsExtended"></a>
-      <a id="ResolveRelationsExtended:ResolveRelationsExtended"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="SnappySessionState$ResolveRelationsExtended$.html"><span class="name">ResolveRelationsExtended</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@ResolveRelationsExtended" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Replaces <span class="extype" name="UnresolvedRelation">UnresolvedRelation</span>s with concrete relations from the catalog.</p><div class="fullcomment"><div class="comment cmt"><p>Replaces <span class="extype" name="UnresolvedRelation">UnresolvedRelation</span>s with concrete relations from the catalog.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState.RowLevelSecurity" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState.RowLevelSecurity" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="RowLevelSecurity"></a>
       <a id="RowLevelSecurity:RowLevelSecurity"></a>
       <h4 class="signature">
@@ -319,14 +301,14 @@ exchange on one side of a non-collocated join in many cases.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="SnappySessionState$RowLevelSecurity$.html"><span class="name">RowLevelSecurity</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+        <a href="../hive/SnappySessionState$RowLevelSecurity$.html"><span class="name">RowLevelSecurity</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@RowLevelSecurity" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappySessionState@RowLevelSecurity" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappyStrategies.SnappyAggregation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SnappyAggregation"></a>
       <a id="SnappyAggregation:SnappyAggregation"></a>
@@ -378,7 +360,7 @@ exchange on one side of a non-collocated join in many cases.
       </a>
     </span>
       <p class="shortcomment cmt">Stream related strategies to map stream specific logical plan to physical plan</p><div class="fullcomment"><div class="comment cmt"><p>Stream related strategies to map stream specific logical plan to physical plan</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>SnappyStrategies</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState.TokenizedLiteralFolding" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState.TokenizedLiteralFolding" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="TokenizedLiteralFolding"></a>
       <a id="TokenizedLiteralFolding:TokenizedLiteralFolding"></a>
       <h4 class="signature">
@@ -387,14 +369,14 @@ exchange on one side of a non-collocated join in many cases.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="SnappySessionState$TokenizedLiteralFolding$.html"><span class="name">TokenizedLiteralFolding</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+        <a href="../hive/SnappySessionState$TokenizedLiteralFolding$.html"><span class="name">TokenizedLiteralFolding</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@TokenizedLiteralFolding" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.SnappySessionState@TokenizedLiteralFolding" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SessionState#addJar" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="addJar(path:String):Unit"></a>
       <a id="addJar(String):Unit"></a>
@@ -449,7 +431,7 @@ used in query optimizations.
       </a>
     </span>
       <p class="shortcomment cmt">Logical query plan analyzer for resolving unresolved attributes and relations.</p><div class="fullcomment"><div class="comment cmt"><p>Logical query plan analyzer for resolving unresolved attributes and relations.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappyAQPSessionState">SnappyAQPSessionState</a> → <a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappyAQPSessionState">SnappyAQPSessionState</a> → <a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -467,7 +449,7 @@ used in query optimizations.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#beforeExecutePlan" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#beforeExecutePlan" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="beforeExecutePlan(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Unit"></a>
       <a id="beforeExecutePlan(LogicalPlan):Unit"></a>
       <h4 class="signature">
@@ -483,7 +465,7 @@ used in query optimizations.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappyAQPSessionState#catalog" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="catalog:org.apache.spark.sql.hive.SnappyAQPSessionCatalog"></a>
       <a id="catalog:SnappyAQPSessionCatalog"></a>
@@ -501,7 +483,7 @@ used in query optimizations.
       </a>
     </span>
       <p class="shortcomment cmt">Internal catalog for managing table and database states.</p><div class="fullcomment"><div class="comment cmt"><p>Internal catalog for managing table and database states.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappyAQPSessionState">SnappyAQPSessionState</a> → <a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappyAQPSessionState">SnappyAQPSessionState</a> → <a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -525,7 +507,7 @@ used in query optimizations.
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#conf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#conf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="conf:org.apache.spark.sql.internal.SnappyConf"></a>
       <a id="conf:SnappyConf"></a>
       <h4 class="signature">
@@ -542,7 +524,7 @@ used in query optimizations.
       </a>
     </span>
       <p class="shortcomment cmt">SQL-specific key-value configurations.</p><div class="fullcomment"><div class="comment cmt"><p>SQL-specific key-value configurations.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappyAQPSessionState#contextFunctions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="contextFunctions:org.apache.spark.sql.execution.SnappyContextAQPFunctions"></a>
       <a id="contextFunctions:SnappyContextAQPFunctions"></a>
@@ -559,7 +541,7 @@ used in query optimizations.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappyAQPSessionState">SnappyAQPSessionState</a> → <a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappyAQPSessionState">SnappyAQPSessionState</a> → <a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -594,7 +576,7 @@ used in query optimizations.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#executePlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#executePlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executePlan(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.execution.QueryExecution"></a>
       <a id="executePlan(LogicalPlan):QueryExecution"></a>
       <h4 class="signature">
@@ -610,8 +592,8 @@ used in query optimizations.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#executionCache" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#executionCache" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executionCache:java.util.concurrent.ConcurrentHashMap[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,org.apache.spark.sql.execution.QueryExecution]"></a>
       <a id="executionCache:ConcurrentHashMap[LogicalPlan,QueryExecution]"></a>
       <h4 class="signature">
@@ -627,7 +609,7 @@ used in query optimizations.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SessionState#experimentalMethods" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="experimentalMethods:org.apache.spark.sql.ExperimentalMethods"></a>
       <a id="experimentalMethods:ExperimentalMethods"></a>
@@ -721,7 +703,7 @@ used in query optimizations.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#getExtendedCheckRules" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#getExtendedCheckRules" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getExtendedCheckRules:Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan=&gt;Unit]"></a>
       <a id="getExtendedCheckRules:Seq[(LogicalPlan)⇒Unit]"></a>
       <h4 class="signature">
@@ -737,8 +719,8 @@ used in query optimizations.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#getExtendedResolutionRules" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#getExtendedResolutionRules" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getExtendedResolutionRules(analyzer:org.apache.spark.sql.catalyst.analysis.Analyzer):Seq[org.apache.spark.sql.catalyst.rules.Rule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]]"></a>
       <a id="getExtendedResolutionRules(Analyzer):Seq[Rule[LogicalPlan]]"></a>
       <h4 class="signature">
@@ -754,8 +736,8 @@ used in query optimizations.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#getTablePartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#getTablePartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getTablePartitions(region:com.gemstone.gemfire.internal.cache.CacheDistributionAdvisee):Array[org.apache.spark.Partition]"></a>
       <a id="getTablePartitions(CacheDistributionAdvisee):Array[Partition]"></a>
       <h4 class="signature">
@@ -771,8 +753,8 @@ used in query optimizations.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#getTablePartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#getTablePartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getTablePartitions(region:com.gemstone.gemfire.internal.cache.PartitionedRegion):Array[org.apache.spark.Partition]"></a>
       <a id="getTablePartitions(PartitionedRegion):Array[Partition]"></a>
       <h4 class="signature">
@@ -788,7 +770,7 @@ used in query optimizations.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -945,7 +927,7 @@ that listen for execution metrics.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SessionState</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#newQueryExecution" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#newQueryExecution" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="newQueryExecution(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.execution.QueryExecution"></a>
       <a id="newQueryExecution(LogicalPlan):QueryExecution"></a>
       <h4 class="signature">
@@ -961,7 +943,7 @@ that listen for execution metrics.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -996,7 +978,7 @@ that listen for execution metrics.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#optimizer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#optimizer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="optimizer:org.apache.spark.sql.catalyst.optimizer.Optimizer"></a>
       <a id="optimizer:Optimizer"></a>
       <h4 class="signature">
@@ -1013,7 +995,7 @@ that listen for execution metrics.
       </a>
     </span>
       <p class="shortcomment cmt">Logical query plan optimizer.</p><div class="fullcomment"><div class="comment cmt"><p>Logical query plan optimizer.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SessionState#planner" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="planner:org.apache.spark.sql.execution.SparkPlanner"></a>
       <a id="planner:SparkPlanner"></a>
@@ -1048,7 +1030,7 @@ that listen for execution metrics.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappyAQPSessionState">SnappyAQPSessionState</a> → <a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappyAQPSessionState">SnappyAQPSessionState</a> → <a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SessionState#refreshTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="refreshTable(tableName:String):Unit"></a>
       <a id="refreshTable(String):Unit"></a>
@@ -1082,8 +1064,8 @@ that listen for execution metrics.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappyAQPSessionState">SnappyAQPSessionState</a> → <a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#snappySession" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappyAQPSessionState">SnappyAQPSessionState</a> → <a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#snappySession" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="snappySession:org.apache.spark.sql.SnappySession"></a>
       <a id="snappySession:SnappySession"></a>
       <h4 class="signature">
@@ -1099,25 +1081,8 @@ that listen for execution metrics.
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#snappySharedState" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="snappySharedState:org.apache.spark.sql.internal.SnappySharedState"></a>
-      <a id="snappySharedState:SnappySharedState"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">lazy val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">snappySharedState</span><span class="result">: <span class="extype" name="org.apache.spark.sql.internal.SnappySharedState">SnappySharedState</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappyAQPSessionState@snappySharedState:org.apache.spark.sql.internal.SnappySharedState" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#sqlParser" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#sqlParser" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="sqlParser:org.apache.spark.sql.SnappySqlParser"></a>
       <a id="sqlParser:SnappySqlParser"></a>
       <h4 class="signature">
@@ -1134,8 +1099,8 @@ that listen for execution metrics.
       </a>
     </span>
       <p class="shortcomment cmt">Parser that extracts expressions, plans, table identifiers etc.</p><div class="fullcomment"><div class="comment cmt"><p>Parser that extracts expressions, plans, table identifiers etc. from SQL texts.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#streamingQueryManager" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#streamingQueryManager" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="streamingQueryManager:org.apache.spark.sql.streaming.StreamingQueryManager"></a>
       <a id="streamingQueryManager:StreamingQueryManager"></a>
       <h4 class="signature">
@@ -1152,7 +1117,7 @@ that listen for execution metrics.
       </a>
     </span>
       <p class="shortcomment cmt">Interface to start and stop <span class="extype" name="StreamingQuery">StreamingQuery</span>s.</p><div class="fullcomment"><div class="comment cmt"><p>Interface to start and stop <span class="extype" name="StreamingQuery">StreamingQuery</span>s.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -1275,6 +1240,23 @@ Note that the user-defined functions must be deterministic.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.SnappySessionState#wrapperCatalog" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wrapperCatalog:org.apache.spark.sql.internal.SessionCatalogWrapper"></a>
+      <a id="wrapperCatalog:SessionCatalogWrapper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wrapperCatalog</span><span class="result">: <a href="SessionCatalogWrapper.html" class="extype" name="org.apache.spark.sql.internal.SessionCatalogWrapper">SessionCatalogWrapper</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappyAQPSessionState@wrapperCatalog:org.apache.spark.sql.internal.SessionCatalogWrapper" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></dd></dl></div>
     </li></ol>
             </div>
 
@@ -1284,8 +1266,8 @@ Note that the user-defined functions must be deterministic.
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.sql.internal.SnappySessionState">
-              <h3>Inherited from <a href="SnappySessionState.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a></h3>
+        <div class="parent" name="org.apache.spark.sql.hive.SnappySessionState">
+              <h3>Inherited from <a href="../hive/SnappySessionState.html" class="extype" name="org.apache.spark.sql.hive.SnappySessionState">SnappySessionState</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.SnappyStrategies">
               <h3>Inherited from <span class="extype" name="org.apache.spark.sql.SnappyStrategies">SnappyStrategies</span></h3>
             </div><div class="parent" name="org.apache.spark.sql.internal.SessionState">

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SmartConnectorExternalCatalog - snappydata_2.11 1.1.0-HF-1 API - io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog</title>
-          <meta name="description" content="SmartConnectorExternalCatalog - snappydata 2.11 1.1.0 - HF - 1 API - io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog" />
-          <meta name="keywords" content="SmartConnectorExternalCatalog snappydata 2.11 1.1.0 HF 1 API io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog" />
+          <title>SmartConnectorExternalCatalog - snappydata_2.11 1.1.1 API - io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog</title>
+          <meta name="description" content="SmartConnectorExternalCatalog - snappydata 2.11 1.1.1 API - io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog" />
+          <meta name="keywords" content="SmartConnectorExternalCatalog snappydata 2.11 1.1.1 API io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -172,7 +172,7 @@ of now it is used only by some hive insert paths which are not used in SnappySes
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="io.snappydata.sql.catalog.SnappyExternalCatalog#alterDatabase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog#alterDatabase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="alterDatabase(schemaDefinition:org.apache.spark.sql.catalyst.catalog.CatalogDatabase):Unit"></a>
       <a id="alterDatabase(CatalogDatabase):Unit"></a>
       <h4 class="signature">
@@ -192,7 +192,7 @@ of now it is used only by some hive insert paths which are not used in SnappySes
 assuming the database exists.</p><div class="fullcomment"><div class="comment cmt"><p>Alter a database whose name matches the one specified in <code>dbDefinition</code>,
 assuming the database exists.</p><p>Note: If the underlying implementation does not support altering a certain field,
 this becomes a no-op.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../SnappyExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.SnappyExternalCatalog">SnappyExternalCatalog</a> → <a href="../../../../../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog">SmartConnectorExternalCatalog</a> → <a href="../../../../../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a></dd></dl></div>
     </li><li name="io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog#alterPartitions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="alterPartitions(schema:String,table:String,parts:Seq[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]):Unit"></a>
       <a id="alterPartitions(String,String,Seq[CatalogTablePartition]):Unit"></a>
@@ -1347,23 +1347,6 @@ This assumes index i of <code>specs</code> corresponds to index i of <code>newSp
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../SnappyExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.SnappyExternalCatalog">SnappyExternalCatalog</a> → <a href="../../../../../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a></dd></dl></div>
-    </li><li name="io.snappydata.sql.catalog.SnappyExternalCatalog#schemaNotFoundException" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="schemaNotFoundException(schema:String):org.apache.spark.sql.AnalysisException"></a>
-      <a id="schemaNotFoundException(String):AnalysisException"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">schemaNotFoundException</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../../../org/apache/spark/sql/AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog@schemaNotFoundException(schema:String):org.apache.spark.sql.AnalysisException" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../SnappyExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.SnappyExternalCatalog">SnappyExternalCatalog</a></dd></dl></div>
     </li><li name="io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog#session" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="session:org.apache.spark.sql.SparkSession"></a>
       <a id="session:SparkSession"></a>

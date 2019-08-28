@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>sql - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql</title>
-          <meta name="description" content="sql - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql" />
-          <meta name="keywords" content="sql snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql" />
+          <title>sql - snappydata_2.11 1.1.1 API - org.apache.spark.sql</title>
+          <meta name="description" content="sql - snappydata 2.11 1.1.1 API - org.apache.spark.sql" />
+          <meta name="keywords" content="sql snappydata 2.11 1.1.1 API org.apache.spark.sql" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -283,7 +283,7 @@ debugging purposes only and can change in any future Spark releases.</p></span><
               
         </dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.DMLExternalTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DMLExternalTableextendsLeafNodewithCommandwithProductwithSerializable"></a>
+      <a id="DMLExternalTableextendsUnaryNodewithProductwithSerializable"></a>
       <a id="DMLExternalTable:DMLExternalTable"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -291,10 +291,10 @@ debugging purposes only and can change in any future Spark releases.</p></span><
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="DMLExternalTable.html"><span class="name">DMLExternalTable</span></a><span class="params">(<span name="tableName">tableName: <a href="catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="query">query: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="command">command: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="DMLExternalTable.html"><span class="name">DMLExternalTable</span></a><span class="params">(<span name="child">child: <a href="catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="command">command: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.package@DMLExternalTableextendsLeafNodewithCommandwithProductwithSerializable" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.package@DMLExternalTableextendsUnaryNodewithProductwithSerializable" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1515,7 +1515,7 @@ writing libraries should instead consider using the stable APIs provided in
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.TableNotFoundException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="TableNotFoundExceptionextendsAnalysisException"></a>
+      <a id="TableNotFoundExceptionextendsNoSuchTableException"></a>
       <a id="TableNotFoundException:TableNotFoundException"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1523,10 +1523,10 @@ writing libraries should instead consider using the stable APIs provided in
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="TableNotFoundException.html"><span class="name">TableNotFoundException</span></a><span class="result"> extends <a href="AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+        <a href="TableNotFoundException.html"><span class="name">TableNotFoundException</span></a><span class="result"> extends <a href="catalyst/analysis/NoSuchTableException.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.NoSuchTableException">NoSuchTableException</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.package@TableNotFoundExceptionextendsAnalysisException" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.package@TableNotFoundExceptionextendsNoSuchTableException" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1730,23 +1730,6 @@ Methods for creating an <a href="Encoder.html" class="extype" name="org.apache.s
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.OptimizeSortPlans" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="OptimizeSortPlans"></a>
-      <a id="OptimizeSortPlans:OptimizeSortPlans"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="OptimizeSortPlans$.html"><span class="name">OptimizeSortPlans</span></a><span class="result"> extends <a href="catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.package@OptimizeSortPlans" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Rule to replace Spark's SortExec plans with an optimized SnappySortExec (in SMJ for now).</p>
     </li><li name="org.apache.spark.sql.RDDs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="RDDs"></a>
       <a id="RDDs:RDDs"></a>

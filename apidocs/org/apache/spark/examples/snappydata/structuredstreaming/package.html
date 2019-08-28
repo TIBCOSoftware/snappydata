@@ -1,0 +1,356 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>structuredstreaming - snappydata_2.11 1.1.1 API - org.apache.spark.examples.snappydata.structuredstreaming</title>
+          <meta name="description" content="structuredstreaming - snappydata 2.11 1.1.1 API - org.apache.spark.examples.snappydata.structuredstreaming" />
+          <meta name="keywords" content="structuredstreaming snappydata 2.11 1.1.1 API org.apache.spark.examples.snappydata.structuredstreaming" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.examples.snappydata.structuredstreaming.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.examples">examples</a>.<a href="../package.html" class="extype" name="org.apache.spark.examples.snappydata">snappydata</a></p>
+        <h1>structuredstreaming</h1><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.examples.snappydata.structuredstreaming.package" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">structuredstreaming</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.examples.snappydata.structuredstreaming.User" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UserextendsProductwithSerializable"></a>
+      <a id="User:User"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="User.html"><span class="name">User</span></a><span class="params">(<span name="is">is: <span class="extype" name="scala.Long">Long</span></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="age">age: <span class="extype" name="scala.Int">Int</span></span>, <span name="_eventType">_eventType: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.examples.snappydata.structuredstreaming.package@UserextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.examples.snappydata.structuredstreaming.CDCExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CDCExample"></a>
+      <a id="CDCExample:CDCExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CDCExample$.html"><span class="name">CDCExample</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.examples.snappydata.structuredstreaming.package@CDCExample" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example explaining CDC (change data capture) use case with SnappyData streaming sink.</p><div class="fullcomment"><div class="comment cmt"><p>An example explaining CDC (change data capture) use case with SnappyData streaming sink.</p><p>For CDC use case following two conditions should match:
+1) The target table must be defined with key columns (for column tables) or primary keys ( for
+row table).
+2) The input dataset must have an numeric column with name <code>_eventType</code> indicating type of the
+event. The value of this column is mapped with event type in the following manner:</p><p> 0 - insert
+ 1 - putInto
+ 2 - delete</p><p>Based on the key values in the incoming dataset and the value of <code>_eventType</code> column the sink
+will decide which operation need to be performed for each record.</p><p>To run this on your local machine, you need to first run a Netcat server:
+<code>$ nc -lk 9999</code></p><p>Example input data. Note that the last value from CSV record indicates the <code>_eventType</code>:</p><p>1,user1,23,0
+2,user2,45,0
+1,user1,23,2
+2,user2,46,1</p><p>To run the example in local mode go to your SnappyData product distribution
+directory and execute the following command:</p><p><code>bin/run-example snappydata.structuredstreaming.CDCExample</code>
+<br><br></p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.structuredstreaming.CSVFileSourceExampleWithSnappySink" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CSVFileSourceExampleWithSnappySink"></a>
+      <a id="CSVFileSourceExampleWithSnappySink:CSVFileSourceExampleWithSnappySink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CSVFileSourceExampleWithSnappySink$.html"><span class="name">CSVFileSourceExampleWithSnappySink</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.examples.snappydata.structuredstreaming.package@CSVFileSourceExampleWithSnappySink" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example of structured streaming depicting CSV file processing with Snappy sink.</p><div class="fullcomment"><div class="comment cmt"><p>An example of structured streaming depicting CSV file processing with Snappy sink.</p><p>Example input data:</p><p>Yin,31,Columbus,Ohio
+Michael,38,&quot;San Jose&quot;,California</p><p>Usage: CSVFileSourceExampleWithSnappySink [checkpoint-directory] [input-directory]</p><p>   [checkpoint-directory] Optional argument providing checkpoint directory where the
+                          state of the steaming query will be stored. Note that this
+                          directory needs to be deleted manually to reset the state
+                          of the streaming query.
+                          Default: <code>CSVFileSourceExampleWithSnappySink</code> directory
+                          in working directory.
+   [input-directory] Optional argument pointing to input directory path where incoming
+                     CSV files should be dumped to get picked up for processing.
+                     Default: <code>people.csv</code> directory under resources</p><p>Example:
+   $ bin/run-example snappydata.structuredstreaming.CSVFileSourceExampleWithSnappySink \
+   &quot;checkpoint_dir&quot; &quot;CSV_input_dir&quot;
+</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.structuredstreaming.CSVKafkaSourceExampleWithSnappySink" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CSVKafkaSourceExampleWithSnappySink"></a>
+      <a id="CSVKafkaSourceExampleWithSnappySink:CSVKafkaSourceExampleWithSnappySink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CSVKafkaSourceExampleWithSnappySink$.html"><span class="name">CSVKafkaSourceExampleWithSnappySink</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.examples.snappydata.structuredstreaming.package@CSVKafkaSourceExampleWithSnappySink" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example of structured streaming depicting processing of JSON coming from kafka source
+using snappy sink.</p><div class="fullcomment"><div class="comment cmt"><p>An example of structured streaming depicting processing of JSON coming from kafka source
+using snappy sink.</p><p>Example input data:</p><p>Key: USA, Value: Yin,31,Columbus,Ohio
+Key: USA, Value: John,44,&quot;San Jose&quot;,California</p><p>Usage: CSVKafkaSourceExampleWithSnappySink &lt;kafka-brokers&gt; &lt;topics&gt; [checkpoint-directory]</p><p>   &lt;kafka-brokers&gt; Compulsory argument providing comma separate list of kafka brokers
+   &lt;topics&gt; Compulsory argument providing comma separated list of kafka topics to subscribe
+   [checkpoint-directory] Optional argument providing checkpoint directory where the state of
+                          the steaming query will be stored. Note that this directory needs to
+                          be deleted manually to reset the state of the streaming query.
+                          Default: <code>CSVKafkaSourceExampleWithSnappySink</code> directory under
+                          working directory.</p><p>Example:
+   $ bin/run-example snappydata.structuredstreaming.CSVKafkaSourceExampleWithSnappySink \
+   &quot;broker-1:9092,broker-2:9092&quot; &quot;topic1,topic2&quot; &quot;checkpoint_dir&quot;
+</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.structuredstreaming.JSONFileSourceExampleWithSnappySink" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="JSONFileSourceExampleWithSnappySink"></a>
+      <a id="JSONFileSourceExampleWithSnappySink:JSONFileSourceExampleWithSnappySink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="JSONFileSourceExampleWithSnappySink$.html"><span class="name">JSONFileSourceExampleWithSnappySink</span></a><span class="result"> extends <a href="../../../sql/SnappySQLJob.html" class="extype" name="org.apache.spark.sql.SnappySQLJob">SnappySQLJob</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.examples.snappydata.structuredstreaming.package@JSONFileSourceExampleWithSnappySink" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example of structured streaming depicting JSON file processing with Snappy sink.</p><div class="fullcomment"><div class="comment cmt"><p>An example of structured streaming depicting JSON file processing with Snappy sink.</p><p>This example can be run either in local mode (in which case the example runs
+collocated with Spark+SnappyData Store in the same JVM) or can be submitted as a job
+to an already running SnappyData cluster.</p><p>Example input data:</p><p>{&quot;name&quot;:&quot;Yin&quot;, &quot;age&quot;:31, &quot;address&quot;:{&quot;city&quot;:&quot;Columbus&quot;,&quot;state&quot;:&quot;Ohio&quot;, &quot;district&quot; :&quot;Cincinnati&quot;}}
+{&quot;name&quot;:&quot;Michael&quot;, &quot;age&quot;:38, &quot;address&quot;:{&quot;city&quot;:&quot;San Jose&quot;, &quot;state&quot;:&quot;California&quot;, &quot;lane&quot; :&quot;15&quot;}}</p><p>Running locally:</p><p>Usage: JSONFileSourceExampleWithSnappySink [checkpoint-directory] [input-directory]</p><p>   [checkpoint-directory] Optional argument providing checkpoint directory where the
+                          state of the steaming query will be stored. Note that this
+                          directory needs to be deleted manually to reset the state
+                          of the streaming query.
+                          Default: <code>JSONFileSourceExampleWithSnappySink</code> directory
+                          in working directory.
+   [input-directory] Optional argument pointing to input directory path where incoming
+                     JSON files should be dumped to get picked up for processing.
+                     Default: <code>people.json</code> directory under resources</p><p>Example:
+   $ bin/run-example snappydata.structuredstreaming.JSONFileSourceExampleWithSnappySink \
+   &quot;checkpoint_dir&quot; &quot;JSON_input_dir&quot;</p><p>Submitting as a snappy job to already running cluster:
+  cd $SNAPPY_HOME
+ bin/snappy-job.sh submit \
+   --app-name JSONFileSourceExampleWsithSnappySink \
+   --class org.apache.spark.examples.snappydata.structuredstreaming.JSONFileSourceExampleWithSnappySink \
+   --app-jar examples/jars/quickstart.jar \
+   --conf checkpoint-directory=&lt;checkpoint directory&gt; \
+   --conf input-directory=<input directory path>
+
+Note that the checkpoint directory and input directory are mandatory options while submitting snappy job.
+Check the status of your job id
+  bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+
+To stop the job:
+  bin/snappy-job.sh stop --lead [leadHost:port] --job-id [job-id]
+
+The content of the sink table can be checked from snappy-sql using a select query:
+ select * from people;
+
+Resetting the streaming query:
+To reset streaming query progress delete the checkpoint directory.
+While running this example from as snappy job, you will also need to clear the state from state
+table using following query:
+
+ delete from app.snappysys_internal____sink_state_table where stream_query_id = 'query1';
+
+</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.structuredstreaming.JSONKafkaSourceExampleWithSnappySink" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="JSONKafkaSourceExampleWithSnappySink"></a>
+      <a id="JSONKafkaSourceExampleWithSnappySink:JSONKafkaSourceExampleWithSnappySink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="JSONKafkaSourceExampleWithSnappySink$.html"><span class="name">JSONKafkaSourceExampleWithSnappySink</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.examples.snappydata.structuredstreaming.package@JSONKafkaSourceExampleWithSnappySink" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example of structured streaming depicting processing of JSON coming from kafka source
+using snappy sink.</p><div class="fullcomment"><div class="comment cmt"><p>An example of structured streaming depicting processing of JSON coming from kafka source
+using snappy sink.</p><p>Example input data:
+key: {&quot;country&quot; : &quot;USA&quot;}, value: {&quot;name&quot;:&quot;Adam&quot;, &quot;age&quot;:21, &quot;address&quot;:{&quot;city&quot;:&quot;Columbus&quot;,&quot;state&quot;:&quot;Ohio&quot;}}
+key: {&quot;country&quot; : &quot;England&quot;}, value: {&quot;name&quot;:&quot;John&quot;, &quot;age&quot;:44, &quot;address&quot;:{&quot;city&quot;:&quot;London&quot;}}
+key: {&quot;country&quot; : &quot;USA&quot;}, value: {&quot;name&quot;:&quot;Carol&quot;, &quot;age&quot;:37, &quot;address&quot;:{&quot;city&quot;:&quot;San Diego&quot;, &quot;state&quot;:&quot;California&quot;}}</p><p>Usage: JSONKafkaSourceExampleWithSnappySink &lt;kafka-brokers&gt; &lt;topics&gt; [checkpoint-directory]</p><p>   &lt;kafka-brokers&gt; Compulsory argument providing comma separate list of kafka brokers
+   &lt;topics&gt; Compulsory argument providing comma separated list of kafka topics to subscribe
+   [checkpoint-directory] Optional argument providing checkpoint directory where the state of
+                          the steaming query will be stored. Note that this directory needs to
+                          be deleted manually to reset the state of the streaming query.
+                          Default: <code>JSONKafkaSourceExampleWithSnappySink</code> directory under
+                          working directory.</p><p>Example:
+   $ bin/run-example snappydata.structuredstreaming.JSONKafkaSourceExampleWithSnappySink \
+   &quot;broker-1:9092,broker-2:9092&quot; &quot;topic1,topic2&quot; &quot;checkpoint_dir&quot;
+</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.structuredstreaming.SocketSourceExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SocketSourceExample"></a>
+      <a id="SocketSourceExample:SocketSourceExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SocketSourceExample$.html"><span class="name">SocketSourceExample</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.examples.snappydata.structuredstreaming.package@SocketSourceExample" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example showing usage of structured streaming with console sink.</p><div class="fullcomment"><div class="comment cmt"><p>An example showing usage of structured streaming with console sink.</p><p>To run this example on your local machine, you need to first start a Netcat server: <br>
+<code>$ nc -lk 9999</code></p><p>Sample input data:
+<pre>
+device1,45
+device2,67
+device3,35
+</pre></p><p>To run the example in local mode go to your SnappyData product distribution
+directory and run the following command:
+<pre>
+bin/run-example snappydata.structuredstreaming.SocketSourceExample
+</pre></p><p>For more details on streaming with SnappyData refer to:
+http://snappydatainc.github.io/snappydata/programming_guide
+/stream_processing_using_sql/#stream-processing-using-sql</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.structuredstreaming.SocketSourceExampleWithSnappySink" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SocketSourceExampleWithSnappySink"></a>
+      <a id="SocketSourceExampleWithSnappySink:SocketSourceExampleWithSnappySink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SocketSourceExampleWithSnappySink$.html"><span class="name">SocketSourceExampleWithSnappySink</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.examples.snappydata.structuredstreaming.package@SocketSourceExampleWithSnappySink" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example showing usage of structured streaming with SnappyData.<br>
+To run this on your local machine, you need to first start a Netcat server: <br>
+<code>$ nc -lk 9999</code></p><div class="fullcomment"><div class="comment cmt"><p>An example showing usage of structured streaming with SnappyData.<br>
+To run this on your local machine, you need to first start a Netcat server: <br>
+<code>$ nc -lk 9999</code></p><p>Sample input data:
+<pre>
+device1,45
+device2,67
+device3,35
+</pre>
+To run the example in local mode go to your SnappyData product distribution
+directory and run the following command:
+<pre>
+bin/run-example snappydata.structuredstreaming.SocketSourceExampleWithSnappySink
+</pre></p></div></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

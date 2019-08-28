@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappyExternalCatalog - snappydata_2.11 1.1.0-HF-1 API - io.snappydata.sql.catalog.SnappyExternalCatalog</title>
-          <meta name="description" content="SnappyExternalCatalog - snappydata 2.11 1.1.0 - HF - 1 API - io.snappydata.sql.catalog.SnappyExternalCatalog" />
-          <meta name="keywords" content="SnappyExternalCatalog snappydata 2.11 1.1.0 HF 1 API io.snappydata.sql.catalog.SnappyExternalCatalog" />
+          <title>SnappyExternalCatalog - snappydata_2.11 1.1.1 API - io.snappydata.sql.catalog.SnappyExternalCatalog</title>
+          <meta name="description" content="SnappyExternalCatalog - snappydata 2.11 1.1.1 API - io.snappydata.sql.catalog.SnappyExternalCatalog" />
+          <meta name="keywords" content="SnappyExternalCatalog snappydata 2.11 1.1.1 API io.snappydata.sql.catalog.SnappyExternalCatalog" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -97,7 +97,28 @@
 
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
-              <ol><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#alterPartitions" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#alterDatabase" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="alterDatabase(dbDefinition:org.apache.spark.sql.catalyst.catalog.CatalogDatabase):Unit"></a>
+      <a id="alterDatabase(CatalogDatabase):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">alterDatabase</span><span class="params">(<span name="dbDefinition">dbDefinition: <a href="../../../../org/apache/spark/sql/catalyst/catalog/CatalogDatabase.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogDatabase">CatalogDatabase</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#io.snappydata.sql.catalog.SnappyExternalCatalog@alterDatabase(dbDefinition:org.apache.spark.sql.catalyst.catalog.CatalogDatabase):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Alter a database whose name matches the one specified in <code>dbDefinition</code>,
+assuming the database exists.</p><div class="fullcomment"><div class="comment cmt"><p>Alter a database whose name matches the one specified in <code>dbDefinition</code>,
+assuming the database exists.</p><p>Note: If the underlying implementation does not support altering a certain field,
+this becomes a no-op.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog#alterPartitions" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="alterPartitions(db:String,table:String,parts:Seq[org.apache.spark.sql.catalyst.catalog.CatalogTablePartition]):Unit"></a>
       <a id="alterPartitions(String,String,Seq[CatalogTablePartition]):Unit"></a>
       <h4 class="signature">
@@ -855,27 +876,6 @@ This assumes index i of <code>specs</code> corresponds to index i of <code>newSp
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="io.snappydata.sql.catalog.SnappyExternalCatalog#alterDatabase" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="alterDatabase(schemaDefinition:org.apache.spark.sql.catalyst.catalog.CatalogDatabase):Unit"></a>
-      <a id="alterDatabase(CatalogDatabase):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">alterDatabase</span><span class="params">(<span name="schemaDefinition">schemaDefinition: <a href="../../../../org/apache/spark/sql/catalyst/catalog/CatalogDatabase.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogDatabase">CatalogDatabase</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.sql.catalog.SnappyExternalCatalog@alterDatabase(schemaDefinition:org.apache.spark.sql.catalyst.catalog.CatalogDatabase):Unit" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Alter a database whose name matches the one specified in <code>dbDefinition</code>,
-assuming the database exists.</p><div class="fullcomment"><div class="comment cmt"><p>Alter a database whose name matches the one specified in <code>dbDefinition</code>,
-assuming the database exists.</p><p>Note: If the underlying implementation does not support altering a certain field,
-this becomes a no-op.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="io.snappydata.sql.catalog.SnappyExternalCatalog">SnappyExternalCatalog</a> → <a href="../../../../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a></dd></dl></div>
     </li><li name="io.snappydata.sql.catalog.SnappyExternalCatalog#alterTableSchema" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="alterTableSchema(schemaName:String,table:String,schema:org.apache.spark.sql.types.StructType):Unit"></a>
       <a id="alterTableSchema(String,String,StructType):Unit"></a>
@@ -1308,23 +1308,6 @@ Use <a href="#getDependents(schema:String,table:String,catalogTable:org.apache.s
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="io.snappydata.sql.catalog.SnappyExternalCatalog">SnappyExternalCatalog</a> → <a href="../../../../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a></dd></dl></div>
-    </li><li name="io.snappydata.sql.catalog.SnappyExternalCatalog#schemaNotFoundException" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="schemaNotFoundException(schema:String):org.apache.spark.sql.AnalysisException"></a>
-      <a id="schemaNotFoundException(String):AnalysisException"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">schemaNotFoundException</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../../org/apache/spark/sql/AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../index.html#io.snappydata.sql.catalog.SnappyExternalCatalog@schemaNotFoundException(schema:String):org.apache.spark.sql.AnalysisException" title="Permalink" target="_top">
-        <img src="../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

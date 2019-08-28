@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>JDBCMutableRelation - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.row.JDBCMutableRelation</title>
-          <meta name="description" content="JDBCMutableRelation - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.row.JDBCMutableRelation" />
-          <meta name="keywords" content="JDBCMutableRelation snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.row.JDBCMutableRelation" />
+          <title>JDBCMutableRelation - snappydata_2.11 1.1.1 API - org.apache.spark.sql.row.JDBCMutableRelation</title>
+          <meta name="description" content="JDBCMutableRelation - snappydata 2.11 1.1.1 API - org.apache.spark.sql.row.JDBCMutableRelation" />
+          <meta name="keywords" content="JDBCMutableRelation snappydata 2.11 1.1.1 API org.apache.spark.sql.row.JDBCMutableRelation" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -313,24 +313,25 @@ double evaluate an <span class="extype" name="Expression">Expression</span>.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[this] </dd><dt>Definition Classes</dt><dd><a href="../sources/NativeTableRowLevelSecurityRelation.html" class="extype" name="org.apache.spark.sql.sources.NativeTableRowLevelSecurityRelation">NativeTableRowLevelSecurityRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.row.JDBCMutableRelation#alterTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="alterTable(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,isAddColumn:Boolean,column:org.apache.spark.sql.types.StructField,defaultValue:Option[String]):Unit"></a>
-      <a id="alterTable(TableIdentifier,Boolean,StructField,Option[String]):Unit"></a>
+      <a id="alterTable(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,isAddColumn:Boolean,column:org.apache.spark.sql.types.StructField,extensions:String):Unit"></a>
+      <a id="alterTable(TableIdentifier,Boolean,StructField,String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">alterTable</span><span class="params">(<span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="isAddColumn">isAddColumn: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="column">column: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="defaultValue">defaultValue: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">alterTable</span><span class="params">(<span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="isAddColumn">isAddColumn: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="column">column: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="extensions">extensions: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.row.JDBCMutableRelation@alterTable(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,isAddColumn:Boolean,column:org.apache.spark.sql.types.StructField,defaultValue:Option[String]):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.row.JDBCMutableRelation@alterTable(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,isAddColumn:Boolean,column:org.apache.spark.sql.types.StructField,extensions:String):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <p class="shortcomment cmt">Alter's table schema by adding or dropping a provided column.</p><div class="fullcomment"><div class="comment cmt"><p>Alter's table schema by adding or dropping a provided column.
 The schema of this instance must reflect the updated one after alter.
-</p></div><dl class="paramcmts block"><dt class="param">tableIdent</dt><dd class="cmt"><p>Table identifier</p></dd><dt class="param">isAddColumn</dt><dd class="cmt"><p>True if column is to be added else it is to be dropped</p></dd><dt class="param">column</dt><dd class="cmt"><p>Column to be added or dropped</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> → <a href="../sources/AlterableRelation.html" class="extype" name="org.apache.spark.sql.sources.AlterableRelation">AlterableRelation</a></dd></dl></div>
+</p></div><dl class="paramcmts block"><dt class="param">tableIdent</dt><dd class="cmt"><p>Table identifier</p></dd><dt class="param">isAddColumn</dt><dd class="cmt"><p>True if column is to be added else it is to be dropped</p></dd><dt class="param">column</dt><dd class="cmt"><p>Column to be added or dropped</p></dd><dt class="param">extensions</dt><dd class="cmt"><p>Any additional clauses accepted by underlying table storage
+                   like DEFAULT value or column constraints</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> → <a href="../sources/AlterableRelation.html" class="extype" name="org.apache.spark.sql.sources.AlterableRelation">AlterableRelation</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -365,6 +366,23 @@ The schema of this instance must reflect the updated one after alter.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> → <a href="../sources/PrunedUnsafeFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.row.JDBCMutableRelation#canEqual" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="canEqual(that:Any):Boolean"></a>
+      <a id="canEqual(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">canEqual</span><span class="params">(<span name="that">that: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.row.JDBCMutableRelation@canEqual(that:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> → Equals</dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -422,19 +440,19 @@ The schema of this instance must reflect the updated one after alter.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> → <a href="../sources/NativeTableRowLevelSecurityRelation.html" class="extype" name="org.apache.spark.sql.sources.NativeTableRowLevelSecurityRelation">NativeTableRowLevelSecurityRelation</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.row.JDBCMutableRelation#constructSQL" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="constructSQL(indexName:String,baseTable:String,indexColumns:Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]],options:Map[String,String]):String"></a>
-      <a id="constructSQL(String,String,Map[String,Option[SortDirection]],Map[String,String]):String"></a>
+    </li><li name="org.apache.spark.sql.row.JDBCMutableRelation#constructCreateIndexSQL" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="constructCreateIndexSQL(indexName:String,baseTable:String,indexColumns:Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])],options:Map[String,String]):String"></a>
+      <a id="constructCreateIndexSQL(String,String,Seq[(String,Option[SortDirection])],Map[String,String]):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">constructSQL</span><span class="params">(<span name="indexName">indexName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="indexColumns">indexColumns: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>]]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">constructCreateIndexSQL</span><span class="params">(<span name="indexName">indexName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="indexColumns">indexColumns: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>])]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.row.JDBCMutableRelation@constructSQL(indexName:String,baseTable:String,indexColumns:Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]],options:Map[String,String]):String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.row.JDBCMutableRelation@constructCreateIndexSQL(indexName:String,baseTable:String,indexColumns:Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])],options:Map[String,String]):String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -457,18 +475,18 @@ The schema of this instance must reflect the updated one after alter.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> → <a href="../sources/NativeTableRowLevelSecurityRelation.html" class="extype" name="org.apache.spark.sql.sources.NativeTableRowLevelSecurityRelation">NativeTableRowLevelSecurityRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.row.JDBCMutableRelation#createIndex" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="createIndex(indexIdent:org.apache.spark.sql.catalyst.TableIdentifier,tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,indexColumns:Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]],options:Map[String,String]):Unit"></a>
-      <a id="createIndex(TableIdentifier,TableIdentifier,Map[String,Option[SortDirection]],Map[String,String]):Unit"></a>
+      <a id="createIndex(indexIdent:org.apache.spark.sql.catalyst.TableIdentifier,tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,indexColumns:Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])],options:Map[String,String]):Unit"></a>
+      <a id="createIndex(TableIdentifier,TableIdentifier,Seq[(String,Option[SortDirection])],Map[String,String]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">createIndex</span><span class="params">(<span name="indexIdent">indexIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="indexColumns">indexColumns: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>]]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">createIndex</span><span class="params">(<span name="indexIdent">indexIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="tableIdent">tableIdent: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="indexColumns">indexColumns: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>])]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.row.JDBCMutableRelation@createIndex(indexIdent:org.apache.spark.sql.catalyst.TableIdentifier,tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,indexColumns:Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]],options:Map[String,String]):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.row.JDBCMutableRelation@createIndex(indexIdent:org.apache.spark.sql.catalyst.TableIdentifier,tableIdent:org.apache.spark.sql.catalyst.TableIdentifier,indexColumns:Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])],options:Map[String,String]):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -616,6 +634,23 @@ dropping the external table that this relation represents.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.row.JDBCMutableRelation#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(that:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="that">that: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.row.JDBCMutableRelation@equals(that:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> → Equals → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.row.JDBCMutableRelation#executeUpdate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="executeUpdate(sql:String,defaultSchema:String):Int"></a>
       <a id="executeUpdate(String,String):Int"></a>
@@ -768,6 +803,23 @@ UPDATE and DELETE operations for affecting the selected rows.
       <p class="shortcomment cmt">Get a spark plan to update rows in the relation.</p><div class="fullcomment"><div class="comment cmt"><p>Get a spark plan to update rows in the relation. The result of SparkPlan
 execution should be a count of number of updated rows.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> → <a href="../sources/MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.row.JDBCMutableRelation#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.row.JDBCMutableRelation@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeLogIfNecessary():Unit"></a>
       <a id="initializeLogIfNecessary():Unit"></a>

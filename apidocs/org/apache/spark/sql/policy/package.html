@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>policy - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.policy</title>
-          <meta name="description" content="policy - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.policy" />
-          <meta name="keywords" content="policy snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.policy" />
+          <title>policy - snappydata_2.11 1.1.1 API - org.apache.spark.sql.policy</title>
+          <meta name="description" content="policy - snappydata 2.11 1.1.1 API - org.apache.spark.sql.policy" />
+          <meta name="keywords" content="policy snappydata 2.11 1.1.1 API org.apache.spark.sql.policy" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -66,7 +66,7 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.policy.CurrentUser" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.policy.CurrentUser" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="CurrentUserextendsLeafExpressionwithCodegenFallbackwithProductwithSerializable"></a>
       <a id="CurrentUser:CurrentUser"></a>
       <h4 class="signature">
@@ -82,8 +82,12 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">There is no code generation since this expression should get constant folded by the optimizer.</p>
-    </li><li name="org.apache.spark.sql.policy.LdapGroupsOfCurrentUser" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <p class="shortcomment cmt">Get the current user that owns the session executing the function.</p><div class="fullcomment"><div class="comment cmt"><p>Get the current user that owns the session executing the function.</p><p>There is no code generation since this expression should get constant folded by the optimizer.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../catalyst/expressions/ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.policy.LdapGroupsOfCurrentUser" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="LdapGroupsOfCurrentUserextendsLeafExpressionwithCodegenFallbackwithProductwithSerializable"></a>
       <a id="LdapGroupsOfCurrentUser:LdapGroupsOfCurrentUser"></a>
       <h4 class="signature">
@@ -99,7 +103,11 @@
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      
+      <p class="shortcomment cmt">Get the LDAP groups of the current user executing the function.</p><div class="fullcomment"><div class="comment cmt"><p>Get the LDAP groups of the current user executing the function.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../catalyst/expressions/ExpressionDescription.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpressionDescription">ExpressionDescription</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li></ol>
             </div>
 
@@ -107,24 +115,7 @@
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="org.apache.spark.sql.policy.LdapGroupsOfCurrentUser" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="LdapGroupsOfCurrentUser"></a>
-      <a id="LdapGroupsOfCurrentUser:LdapGroupsOfCurrentUser"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="LdapGroupsOfCurrentUser$.html"><span class="name">LdapGroupsOfCurrentUser</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.policy.package@LdapGroupsOfCurrentUser" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.policy.PolicyProperties" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.policy.PolicyProperties" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="PolicyProperties"></a>
       <a id="PolicyProperties:PolicyProperties"></a>
       <h4 class="signature">

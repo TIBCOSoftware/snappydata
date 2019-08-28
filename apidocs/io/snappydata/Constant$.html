@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>Constant - snappydata_2.11 1.1.0-HF-1 API - io.snappydata.Constant</title>
-          <meta name="description" content="Constant - snappydata 2.11 1.1.0 - HF - 1 API - io.snappydata.Constant" />
-          <meta name="keywords" content="Constant snappydata 2.11 1.1.0 HF 1 API io.snappydata.Constant" />
+          <title>Constant - snappydata_2.11 1.1.1 API - io.snappydata.Constant</title>
+          <meta name="description" content="Constant - snappydata 2.11 1.1.1 API - io.snappydata.Constant" />
+          <meta name="keywords" content="Constant snappydata 2.11 1.1.1 API io.snappydata.Constant" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -385,6 +385,30 @@ http://docs.scala-lang.org/style/naming-conventions.html</p><p>we decided to use
       </a>
     </span>
       
+    </li><li name="io.snappydata.Constant#CPUS_PER_TASK_PROP" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CPUS_PER_TASK_PROP:String"></a>
+      <a id="CPUS_PER_TASK_PROP:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">CPUS_PER_TASK_PROP</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.Constant$@CPUS_PER_TASK_PROP:String" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Enable per-session setting for CPUs required per task for the jobs
+in the session.</p><div class="fullcomment"><div class="comment cmt"><p>Enable per-session setting for CPUs required per task for the jobs
+in the session. Unlike Spark's system-wide setting, this will only
+pretend to require those many CPUs for scheduler though backend will
+not mark those many CPUs as busy. The net effect is that lesser number
+of tasks will be scheduled for the jobs on session and remaining executor
+cores will still be available for other tasks.
+</p></div></div>
     </li><li name="io.snappydata.Constant#DEFAULT_BEHAVIOR" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DEFAULT_BEHAVIOR:String"></a>
       <a id="DEFAULT_BEHAVIOR:String"></a>
@@ -909,6 +933,23 @@ ColumnBatchSize property).</p>
       </span>
       </h4><span class="permalink">
       <a href="../../index.html#io.snappydata.Constant$@SHADOW_TABLE_SUFFIX:String(&quot;_COLUMN_STORE_&quot;)" title="Permalink" target="_top">
+        <img src="../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.Constant#SNAPPY_JOB_URL" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SNAPPY_JOB_URL:String"></a>
+      <a id="SNAPPY_JOB_URL:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SNAPPY_JOB_URL</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../index.html#io.snappydata.Constant$@SNAPPY_JOB_URL:String" title="Permalink" target="_top">
         <img src="../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

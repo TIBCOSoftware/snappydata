@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ContextJarUtils - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.internal.ContextJarUtils</title>
-          <meta name="description" content="ContextJarUtils - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.internal.ContextJarUtils" />
-          <meta name="keywords" content="ContextJarUtils snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.internal.ContextJarUtils" />
+          <title>ContextJarUtils - snappydata_2.11 1.1.1 API - org.apache.spark.sql.internal.ContextJarUtils</title>
+          <meta name="description" content="ContextJarUtils - snappydata 2.11 1.1.1 API - org.apache.spark.sql.internal.ContextJarUtils" />
+          <meta name="keywords" content="ContextJarUtils snappydata 2.11 1.1.1 API org.apache.spark.sql.internal.ContextJarUtils" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -151,6 +151,23 @@ adding classloader at query time.</p></div><div class="toggleContainer block">
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#DELIMITER" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DELIMITER:String"></a>
+      <a id="DELIMITER:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">DELIMITER</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@DELIMITER:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.internal.ContextJarUtils#JAR_PATH" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="JAR_PATH:String"></a>
       <a id="JAR_PATH:String"></a>
@@ -185,19 +202,36 @@ adding classloader at query time.</p></div><div class="toggleContainer block">
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#addIfNotPresent" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="addIfNotPresent(key:String,urls:Array[java.net.URL],parent:ClassLoader):Unit"></a>
-      <a id="addIfNotPresent(String,Array[URL],ClassLoader):Unit"></a>
+    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#addFunctionArtifacts" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addFunctionArtifacts(funcDefinition:org.apache.spark.sql.catalyst.catalog.CatalogFunction,schemaName:String):Unit"></a>
+      <a id="addFunctionArtifacts(CatalogFunction,String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">addIfNotPresent</span><span class="params">(<span name="key">key: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="urls">urls: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="java.net.URL">URL</span>]</span>, <span name="parent">parent: <span class="extype" name="java.lang.ClassLoader">ClassLoader</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">addFunctionArtifacts</span><span class="params">(<span name="funcDefinition">funcDefinition: <a href="../catalyst/catalog/CatalogFunction.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogFunction">CatalogFunction</a></span>, <span name="schemaName">schemaName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@addIfNotPresent(key:String,urls:Array[java.net.URL],parent:ClassLoader):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@addFunctionArtifacts(funcDefinition:org.apache.spark.sql.catalyst.catalog.CatalogFunction,schemaName:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#addToTheListInCmdRegion" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addToTheListInCmdRegion(k:String,item:String,head:String):Unit"></a>
+      <a id="addToTheListInCmdRegion(String,String,String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addToTheListInCmdRegion</span><span class="params">(<span name="k">k: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="item">item: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="head">head: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@addToTheListInCmdRegion(k:String,item:String,head:String):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -219,6 +253,23 @@ adding classloader at query time.</p></div><div class="toggleContainer block">
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#checkItemExists" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="checkItemExists(k:String,item:String):Boolean"></a>
+      <a id="checkItemExists(String,String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">checkItemExists</span><span class="params">(<span name="k">k: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="item">item: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@checkItemExists(k:String,item:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -243,18 +294,35 @@ adding classloader at query time.</p></div><div class="toggleContainer block">
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.ContextJarUtils#deleteFile" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="deleteFile(prefix:String,path:String):Unit"></a>
-      <a id="deleteFile(String,String):Unit"></a>
+      <a id="deleteFile(prefix:String,path:String,isEmbedded:Boolean):Unit"></a>
+      <a id="deleteFile(String,String,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">deleteFile</span><span class="params">(<span name="prefix">prefix: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">deleteFile</span><span class="params">(<span name="prefix">prefix: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="isEmbedded">isEmbedded: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@deleteFile(prefix:String,path:String):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@deleteFile(prefix:String,path:String,isEmbedded:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#droppedFunctionsKey" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="droppedFunctionsKey:String"></a>
+      <a id="droppedFunctionsKey:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">droppedFunctionsKey</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@droppedFunctionsKey:String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -337,6 +405,23 @@ This ensures class &amp; jar isolation although it might be repetitive.
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#functionKeyPrefix" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="functionKeyPrefix:String"></a>
+      <a id="functionKeyPrefix:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">functionKeyPrefix</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@functionKeyPrefix:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -367,6 +452,23 @@ This ensures class &amp; jar isolation although it might be repetitive.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@getDriverJar(key:String):Option[java.net.URLClassLoader]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#getDriverJarURLs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getDriverJarURLs():Array[java.net.URL]"></a>
+      <a id="getDriverJarURLs():Array[URL]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDriverJarURLs</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="java.net.URL">URL</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@getDriverJarURLs():Array[java.net.URL]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -775,6 +877,40 @@ This ensures class &amp; jar isolation although it might be repetitive.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@removeDriverJar(key:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#removeFromTheListInCmdRegion" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="removeFromTheListInCmdRegion(k:String,item:String):Unit"></a>
+      <a id="removeFromTheListInCmdRegion(String,String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">removeFromTheListInCmdRegion</span><span class="params">(<span name="k">k: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="item">item: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@removeFromTheListInCmdRegion(k:String,item:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.ContextJarUtils#removeFunctionArtifacts" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="removeFunctionArtifacts(externalCatalog:io.snappydata.sql.catalog.SnappyExternalCatalog,sessionCatalog:Option[org.apache.spark.sql.internal.SnappySessionCatalog],schemaName:String,functionName:String,isEmbeddedMode:Boolean,ignoreIfNotExists:Boolean):Unit"></a>
+      <a id="removeFunctionArtifacts(SnappyExternalCatalog,Option[SnappySessionCatalog],String,String,Boolean,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">removeFunctionArtifacts</span><span class="params">(<span name="externalCatalog">externalCatalog: <a href="../../../../../io/snappydata/sql/catalog/SnappyExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.SnappyExternalCatalog">SnappyExternalCatalog</a></span>, <span name="sessionCatalog">sessionCatalog: <span class="extype" name="scala.Option">Option</span>[<a href="SnappySessionCatalog.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a>]</span>, <span name="schemaName">schemaName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="functionName">functionName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="isEmbeddedMode">isEmbeddedMode: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.ContextJarUtils$@removeFunctionArtifacts(externalCatalog:io.snappydata.sql.catalog.SnappyExternalCatalog,sessionCatalog:Option[org.apache.spark.sql.internal.SnappySessionCatalog],schemaName:String,functionName:String,isEmbeddedMode:Boolean,ignoreIfNotExists:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

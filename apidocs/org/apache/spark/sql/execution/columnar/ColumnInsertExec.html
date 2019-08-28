@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ColumnInsertExec - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.execution.columnar.ColumnInsertExec</title>
-          <meta name="description" content="ColumnInsertExec - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.execution.columnar.ColumnInsertExec" />
-          <meta name="keywords" content="ColumnInsertExec snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.execution.columnar.ColumnInsertExec" />
+          <title>ColumnInsertExec - snappydata_2.11 1.1.1 API - org.apache.spark.sql.execution.columnar.ColumnInsertExec</title>
+          <meta name="description" content="ColumnInsertExec - snappydata 2.11 1.1.1 API - org.apache.spark.sql.execution.columnar.ColumnInsertExec" />
+          <meta name="keywords" content="ColumnInsertExec snappydata 2.11 1.1.1 API org.apache.spark.sql.execution.columnar.ColumnInsertExec" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -312,6 +312,23 @@ pasted in the REPL to build an equivalent Tree.
     </span>
       <p class="shortcomment cmt">Canonicalized copy of this query plan.</p><div class="fullcomment"><div class="comment cmt"><p>Canonicalized copy of this query plan.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.TableExec#catalogSchemaVersion" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="catalogSchemaVersion:Long"></a>
+      <a id="catalogSchemaVersion:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">catalogSchemaVersion</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnInsertExec@catalogSchemaVersion:Long" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.ColumnInsertExec#child" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="child:org.apache.spark.sql.execution.SparkPlan"></a>
       <a id="child:SparkPlan"></a>
@@ -623,7 +640,7 @@ evaluate to <code>true</code> for all rows produced.
   if (isNull1 || !value2) continue;
   # call consume(), which will call parent.doConsume()</p><p>Note: A plan can either consume the rows as UnsafeRow (row), or a list of variables (input).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnInsertExec">ColumnInsertExec</a> → <a href="../CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.TableExec#doExecute" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnInsertExec#doExecute" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doExecute():org.apache.spark.rdd.RDD[org.apache.spark.sql.catalyst.InternalRow]"></a>
       <a id="doExecute():RDD[InternalRow]"></a>
       <h4 class="signature">
@@ -641,7 +658,7 @@ evaluate to <code>true</code> for all rows produced.
     </span>
       <p class="shortcomment cmt">Overridden by concrete implementations of SparkPlan.</p><div class="fullcomment"><div class="comment cmt"><p>Overridden by concrete implementations of SparkPlan.
 Produces the result of the query as an RDD[InternalRow]
-</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnInsertExec">ColumnInsertExec</a> → <a href="../TableExec.html" class="extype" name="org.apache.spark.sql.execution.TableExec">TableExec</a> → <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SparkPlan#doExecuteBroadcast" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="doExecuteBroadcast[T]():org.apache.spark.broadcast.Broadcast[T]"></a>
       <a id="doExecuteBroadcast[T]():Broadcast[T]"></a>
@@ -2335,6 +2352,23 @@ include attributes that are implicitly referenced by being passed through to the
       </a>
     </span>
       <p class="shortcomment cmt">Specifies sort order for each partition requirements on the input data for this operator.</p><div class="fullcomment"><div class="comment cmt"><p>Specifies sort order for each partition requirements on the input data for this operator.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.ColumnInsertExec#resetConnectionAttributesCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="resetConnectionAttributesCode():String"></a>
+      <a id="resetConnectionAttributesCode():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resetConnectionAttributesCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.ColumnInsertExec@resetConnectionAttributesCode():String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.SparkPlan#resetMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="resetMetrics():Unit"></a>
       <a id="resetMetrics():Unit"></a>

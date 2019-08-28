@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>CreateIndexCommand - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.execution.CreateIndexCommand</title>
-          <meta name="description" content="CreateIndexCommand - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.execution.CreateIndexCommand" />
-          <meta name="keywords" content="CreateIndexCommand snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.execution.CreateIndexCommand" />
+          <title>CreateIndexCommand - snappydata_2.11 1.1.1 API - org.apache.spark.sql.execution.CreateIndexCommand</title>
+          <meta name="description" content="CreateIndexCommand - snappydata 2.11 1.1.1 API - org.apache.spark.sql.execution.CreateIndexCommand" />
+          <meta name="keywords" content="CreateIndexCommand snappydata 2.11 1.1.1 API org.apache.spark.sql.execution.CreateIndexCommand" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">CreateIndexCommand</span><span class="params">(<span name="indexName">indexName: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="baseTable">baseTable: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="indexColumns">indexColumns: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>]]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">CreateIndexCommand</span><span class="params">(<span name="indexName">indexName: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="baseTable">baseTable: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="indexColumns">indexColumns: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>])]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.CreateIndexCommand#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(indexName:org.apache.spark.sql.catalyst.TableIdentifier,baseTable:org.apache.spark.sql.catalyst.TableIdentifier,indexColumns:Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]],options:Map[String,String]):org.apache.spark.sql.execution.CreateIndexCommand"></a>
+      <a id="&lt;init&gt;(indexName:org.apache.spark.sql.catalyst.TableIdentifier,baseTable:org.apache.spark.sql.catalyst.TableIdentifier,indexColumns:Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])],options:Map[String,String]):org.apache.spark.sql.execution.CreateIndexCommand"></a>
       <a id="&lt;init&gt;:CreateIndexCommand"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CreateIndexCommand</span><span class="params">(<span name="indexName">indexName: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="baseTable">baseTable: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="indexColumns">indexColumns: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>]]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span>
+        <span class="name">CreateIndexCommand</span><span class="params">(<span name="indexName">indexName: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="baseTable">baseTable: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="indexColumns">indexColumns: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>])]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.CreateIndexCommand@&lt;init&gt;(indexName:org.apache.spark.sql.catalyst.TableIdentifier,baseTable:org.apache.spark.sql.catalyst.TableIdentifier,indexColumns:Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]],options:Map[String,String]):org.apache.spark.sql.execution.CreateIndexCommand" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.CreateIndexCommand@&lt;init&gt;(indexName:org.apache.spark.sql.catalyst.TableIdentifier,baseTable:org.apache.spark.sql.catalyst.TableIdentifier,indexColumns:Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])],options:Map[String,String]):org.apache.spark.sql.execution.CreateIndexCommand" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -729,18 +729,18 @@ appear in the <a href="../catalyst/plans/QueryPlan.html#outputSet:org.apache.spa
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a> → AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.CreateIndexCommand#indexColumns" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="indexColumns:Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]]"></a>
-      <a id="indexColumns:Map[String,Option[SortDirection]]"></a>
+      <a id="indexColumns:Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])]"></a>
+      <a id="indexColumns:Seq[(String,Option[SortDirection])]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">indexColumns</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>]]</span>
+        <span class="name">indexColumns</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/expressions/SortDirection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortDirection">SortDirection</a>])]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.CreateIndexCommand@indexColumns:Map[String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection]]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.CreateIndexCommand@indexColumns:Seq[(String,Option[org.apache.spark.sql.catalyst.expressions.SortDirection])]" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

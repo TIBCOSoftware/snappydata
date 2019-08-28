@@ -1,0 +1,949 @@
+{
+    "docs": [
+        {
+            "location": "/", 
+            "text": "!\n\n\n! expr - Logical not.\n\n\nNo example/argument for !.\n\n\n\n\n%\n\n\nexpr1 % expr2 - Returns the remainder after \nexpr1\n/\nexpr2\n.\n\n\nExamples:\n\n SELECT 2 % 1.8;\n0.2\n\n\n\n\n\n\nexpr1 \n expr2 - Returns the result of bitwise AND of \nexpr1\n and \nexpr2\n.\n\n\nExamples:\n\n SELECT 3 \n 5;\n1\n\n\n\n\n*\n\n\nexpr1 * expr2 - Returns \nexpr1\n*\nexpr2\n.\n\n\nExamples:\n\n SELECT 2 * 3;\n6\n\n\n\n\n+\n\n\nexpr1 + expr2 - Returns \nexpr1\n+\nexpr2\n.\n\n\nExamples:\n\n SELECT 1 + 2;\n3\n\n\n\n\n-\n\n\nexpr1 - expr2 - Returns \nexpr1\n-\nexpr2\n.\n\n\nExamples:\n\n SELECT 2 - 1;\n1\n\n\n\n\n/\n\n\nexpr1 / expr2 - Returns \nexpr1\n/\nexpr2\n. It always performs floating point division.\n\n\nExamples:\n\n SELECT 3 / 2;\n1.5\n\n SELECT 2L / 2L;\n1.0\n\n\n\n\n\n\nexpr1 \n expr2 - Returns true if \nexpr1\n is less than \nexpr2\n.\n\n\nNo example/argument for \n.\n\n\n\n\n=\n\n\nexpr1 \n= expr2 - Returns true if \nexpr1\n is less than or equal to \nexpr2\n.\n\n\nNo example/argument for \n=.\n\n\n\n\n=\n\n\nexpr1 \n=\n expr2 - Returns same result as the EQUAL(=) operator for non-null operands,\nbut returns true if both are null, false if one of the them is null.\n\n\nNo example/argument for \n=\n.\n\n\n\n\n=\n\n\nexpr1 = expr2 - Returns true if \nexpr1\n equals \nexpr2\n, or false otherwise.\n\n\nNo example/argument for =.\n\n\n\n\n==\n\n\nexpr1 == expr2 - Returns true if \nexpr1\n equals \nexpr2\n, or false otherwise.\n\n\nNo example/argument for ==.\n\n\n\n\n\n\nexpr1 \n expr2 - Returns true if \nexpr1\n is greater than \nexpr2\n.\n\n\nNo example/argument for \n.\n\n\n\n\n=\n\n\nexpr1 \n= expr2 - Returns true if \nexpr1\n is greater than or equal to \nexpr2\n.\n\n\nNo example/argument for \n=.\n\n\n\n\n^\n\n\nexpr1 ^ expr2 - Returns the result of bitwise exclusive OR of \nexpr1\n and \nexpr2\n.\n\n\nExamples:\n\n SELECT 3 ^ 5;\n2\n\n\n\n\nabs\n\n\nabs(expr) - Returns the absolute value of the numeric value.\n\n\nExamples:\n\n SELECT abs(-1);\n1\n\n\n\n\nabsolute_error\n\n\nabsolute_error() - Indicates absolute error present in the estimate (approx answer) calculated using error estimation method (ClosedForm or Bootstrap).  [enterprise]\n\n\nExamples:\n\n SELECT sum(ArrDelay) ArrivalDelay, absolute_error(ArrivalDelay),\nMonth_ from airline group by Month_ order by Month_ desc with error 0.10;\n1117.6, 43.4, Jan\n\n\n\n\nacos\n\n\nacos(expr) - Returns the inverse cosine (a.k.a. arccosine) of \nexpr\n if -1\n=\nexpr\n=1 or NaN otherwise.\n\n\nExamples:\n\n SELECT acos(1);\n0.0\n\n SELECT acos(2);\nNaN\n\n\n\n\nadd_months\n\n\nadd_months(start_date, num_months) - Returns the date that is \nnum_months\n after \nstart_date\n.\n\n\nExamples:\n\n SELECT add_months('2016-08-31', 1);\n2016-09-30\n\n\n\n\nand\n\n\nexpr1 and expr2 - Logical AND.\n\n\nNo example/argument for and.\n\n\n\n\napprox_count_distinct\n\n\napprox_count_distinct(expr[, relativeSD]) - Returns the estimated cardinality by HyperLogLog++.\n\nrelativeSD\n defines the maximum estimation error allowed.\n\n\nNo example/argument for approx_count_distinct.\n\n\n\n\napprox_percentile\n\n\napprox_percentile(col, percentage [, accuracy]) - Returns the approximate percentile value of numeric\ncolumn \ncol\n at the given percentage. The value of percentage must be between 0.0\nand 1.0. The \naccuracy\n parameter (default: 10000) is a positive numeric literal which\ncontrols approximation accuracy at the cost of memory. Higher value of \naccuracy\n yields\nbetter accuracy, \n1.0/accuracy\n is the relative error of the approximation.\nWhen \npercentage\n is an array, each value of the percentage array must be between 0.0 and 1.0.\nIn this case, returns the approximate percentile array of column \ncol\n at the given\npercentage array.\n\n\nExamples:\n\n SELECT approx_percentile(10.0, array(0.5, 0.4, 0.1), 100);\n[10.0,10.0,10.0]\n\n SELECT approx_percentile(10.0, 0.5, 100);\n10.0\n\n\n\n\narray\n\n\narray(expr, ...) - Returns an array with the given elements.\n\n\nExamples:\n\n SELECT array(1, 2, 3);\n[1,2,3]\n\n\n\n\narray_contains\n\n\narray_contains(array, value) - Returns true if the array contains the value.\n\n\nExamples:\n\n SELECT array_contains(array(1, 2, 3), 2);\ntrue\n\n\n\n\nascii\n\n\nascii(str) - Returns the numeric value of the first character of \nstr\n.\n\n\nExamples:\n\n SELECT ascii('222');\n50\n\n SELECT ascii(2);\n50\n\n\n\n\nasin\n\n\nasin(expr) - Returns the inverse sine (a.k.a. arcsine) the arc sin of \nexpr\n if -1\n=\nexpr\n=1 or NaN otherwise.\n\n\nExamples:\n\n SELECT asin(0);\n0.0\n\n SELECT asin(2);\nNaN\n\n\n\n\nassert_true\n\n\nassert_true(expr) - Throws an exception if \nexpr\n is not true.\n\n\nExamples:\n\n SELECT assert_true(0 \n 1);\nNULL\n\n\n\n\natan\n\n\natan(expr) - Returns the inverse tangent (a.k.a. arctangent).\n\n\nExamples:\n\n SELECT atan(0);\n0.0\n\n\n\n\natan2\n\n\natan2(expr1, expr2) - Returns the angle in radians between the positive x-axis of a plane and the point given by the coordinates (\nexpr1\n, \nexpr2\n).\n\n\nExamples:\n\n SELECT atan2(0, 0);\n0.0\n\n\n\n\navg\n\n\navg(expr) - Returns the mean calculated from values of a group.\n\n\nNo example/argument for avg.\n\n\n\n\nbase64\n\n\nbase64(bin) - Converts the argument from a binary \nbin\n to a base 64 string.\n\n\nExamples:\n\n SELECT base64('Spark SQL');\nU3BhcmsgU1FM\n\n\n\n\nbigint\n\n\nbigint(expr AS type) - Casts the value \nexpr\n to the target data type \ntype\n.\n\n\nExamples:\n\n SELECT bigint('10' as int);\n10\n\n\n\n\nbin\n\n\nbin(expr) - Returns the string representation of the long value \nexpr\n represented in binary.\n\n\nExamples:\n\n SELECT bin(13);\n1101\n\n SELECT bin(-13);\n1111111111111111111111111111111111111111111111111111111111110011\n\n SELECT bin(13.3);\n1101\n\n\n\n\nbinary\n\n\nbinary(expr AS type) - Casts the value \nexpr\n to the target data type \ntype\n.\n\n\nExamples:\n\n SELECT binary('10' as int);\n10\n\n\n\n\nboolean\n\n\nboolean(expr AS type) - Casts the value \nexpr\n to the target data type \ntype\n.\n\n\nExamples:\n\n SELECT boolean('10' as int);\n10\n\n\n\n\nbround\n\n\nbround(expr, d) - Returns \nexpr\n rounded to \nd\n decimal places using HALF_EVEN rounding mode.\n\n\nExamples:\n\n SELECT bround(2.5, 0);\n2.0\n\n\n\n\ncbrt\n\n\ncbrt(expr) - Returns the cube root of \nexpr\n.\n\n\nExamples:\n\n SELECT cbrt(27.0);\n3.0\n\n\n\n\nceil\n\n\nceil(expr) - Returns the smallest integer not smaller than \nexpr\n.\n\n\nExamples:\n\n SELECT ceil(-0.1);\n0\n\n SELECT ceil(5);\n5\n\n\n\n\nceiling\n\n\nceiling(expr) - Returns the smallest integer not smaller than \nexpr\n.\n\n\nExamples:\n\n SELECT ceiling(-0.1);\n0\n\n SELECT ceiling(5);\n5\n\n\n\n\ncoalesce\n\n\ncoalesce(expr1, expr2, ...) - Returns the first non-null argument if exists. Otherwise, null.\n\n\nExamples:\n\n SELECT coalesce(NULL, 1, NULL);\n1\n\n\n\n\ncollect_list\n\n\ncollect_list(expr) - Collects and returns a list of non-unique elements.\n\n\nNo example/argument for collect_list.\n\n\n\n\ncollect_set\n\n\ncollect_set(expr) - Collects and returns a set of unique elements.\n\n\nNo example/argument for collect_set.\n\n\n\n\nconcat\n\n\nconcat(str1, str2, ..., strN) - Returns the concatenation of str1, str2, ..., strN.\n\n\nExamples:\n\n SELECT concat('Spark', 'SQL');\nSparkSQL\n\n\n\n\nconcat_ws\n\n\nconcat_ws(sep, [str | array(str)]+) - Returns the concatenation of the strings separated by \nsep\n.\n\n\nExamples:\n\n SELECT concat_ws(' ', 'Spark', 'SQL');\nSpark SQL\n\n\n\n\nconv\n\n\nconv(num, from_base, to_base) - Convert \nnum\n from \nfrom_base\n to \nto_base\n.\n\n\nExamples:\n\n SELECT conv('100', 2, 10);\n4\n\n SELECT conv(-10, 16, -10);\n16\n\n\n\n\ncorr\n\n\ncorr(expr1, expr2) - Returns Pearson coefficient of correlation between a set of number pairs.\n\n\nNo example/argument for corr.\n\n\n\n\ncos\n\n\ncos(expr) - Returns the cosine of \nexpr\n.\n\n\nExamples:\n\n SELECT cos(0);\n1.0\n\n\n\n\ncosh\n\n\ncosh(expr) - Returns the hyperbolic cosine of \nexpr\n.\n\n\nExamples:\n\n SELECT cosh(0);\n1.0\n\n\n\n\ncount\n\n\ncount(*) - Returns the total number of retrieved rows, including rows containing null.\n\n\ncount(expr) - Returns the number of rows for which the supplied expression is non-null.\n\n\ncount(DISTINCT expr[, expr...]) - Returns the number of rows for which the supplied expression(s) are unique and non-null.\n\n\nNo example/argument for count.\n\n\n\n\ncovar_pop\n\n\ncovar_pop(expr1, expr2) - Returns the population covariance of a set of number pairs.\n\n\nNo example/argument for covar_pop.\n\n\n\n\ncovar_samp\n\n\ncovar_samp(expr1, expr2) - Returns the sample covariance of a set of number pairs.\n\n\nNo example/argument for covar_samp.\n\n\n\n\ncrc32\n\n\ncrc32(expr) - Returns a cyclic redundancy check value of the \nexpr\n as a bigint.\n\n\nExamples:\n\n SELECT crc32('Spark');\n1557323817\n\n\n\n\ncube\n\n\ncume_dist\n\n\ncume_dist() - Computes the position of a value relative to all values in the partition.\n\n\nNo example/argument for cume_dist.\n\n\n\n\ncurrent_database\n\n\ncurrent_database() - Returns the current database.\n\n\nExamples:\n\n SELECT current_database();\ndefault\n\n\n\n\ncurrent_date\n\n\ncurrent_date() - Returns the current date at the start of query evaluation.\n\n\nNo example/argument for current_date.\n\n\n\n\ncurrent_schema\n\n\ncurrent_schema() - Returns the current database.\n\n\nExamples:\n\n SELECT current_schema();\ndefault\n\n\n\n\ncurrent_timestamp\n\n\ncurrent_timestamp() - Returns the current timestamp at the start of query evaluation.\n\n\nNo example/argument for current_timestamp.\n\n\n\n\ncurrent_user\n\n\ncurrent_user() - Returns the name of the user that owns the session executing the current SQL statement.\n\n\nExamples:\n\n SELECT current_user();\nUSER1\n\n\n\n\ncurrent_user_ldap_groups\n\n\ncurrent_user_ldap_groups() - Returns all the ldap groups as an ARRAY to which the user who is executing the current SQL statement belongs.\n\n\nExamples:\n\n SELECT array_contains(current_user_ldap_groups(), 'GROUP1');\ntrue\n\n\n\n\ndate\n\n\ndate(expr AS type) - Casts the value \nexpr\n to the target data type \ntype\n.\n\n\nExamples:\n\n SELECT date('10' as int);\n10\n\n\n\n\ndate_add\n\n\ndate_add(start_date, num_days) - Returns the date that is \nnum_days\n after \nstart_date\n.\n\n\nExamples:\n\n SELECT date_add('2016-07-30', 1);\n2016-07-31\n\n\n\n\ndate_format\n\n\ndate_format(timestamp, fmt) - Converts \ntimestamp\n to a value of string in the format specified by the date format \nfmt\n.\n\n\nExamples:\n\n SELECT date_format('2016-04-08', 'y');\n2016\n\n\n\n\ndate_sub\n\n\ndate_sub(start_date, num_days) - Returns the date that is \nnum_days\n before \nstart_date\n.\n\n\nExamples:\n\n SELECT date_sub('2016-07-30', 1);\n2016-07-29\n\n\n\n\ndatediff\n\n\ndatediff(endDate, startDate) - Returns the number of days from \nstartDate\n to \nendDate\n.\n\n\nExamples:\n\n SELECT datediff('2009-07-31', '2009-07-30');\n1\n\n\n SELECT datediff('2009-07-30', '2009-07-31');\n-1\n\n\n\n\nday\n\n\nday(date) - Returns the day of month of the date/timestamp.\n\n\nExamples:\n\n SELECT day('2009-07-30');\n30\n\n\n\n\ndayofmonth\n\n\ndayofmonth(date) - Returns the day of month of the date/timestamp.\n\n\nExamples:\n\n SELECT dayofmonth('2009-07-30');\n30\n\n\n\n\ndayofyear\n\n\ndayofyear(date) - Returns the day of year of the date/timestamp.\n\n\nExamples:\n\n SELECT dayofyear('2016-04-09');\n100\n\n\n\n\ndecimal\n\n\ndecimal(expr AS type) - Casts the value \nexpr\n to the target data type \ntype\n.\n\n\nExamples:\n\n SELECT decimal('10' as int);\n10\n\n\n\n\ndecode\n\n\ndecode(bin, charset) - Decodes the first argument using the second argument character set.\n\n\nExamples:\n\n SELECT decode(encode('abc', 'utf-8'), 'utf-8');\nabc\n\n\n\n\ndegrees\n\n\ndegrees(expr) - Converts radians to degrees.\n\n\nExamples:\n\n SELECT degrees(3.141592653589793);\n180.0\n\n\n\n\ndense_rank\n\n\ndense_rank() - Computes the rank of a value in a group of values. The result is one plus the\npreviously assigned rank value. Unlike the function rank, dense_rank will not produce gaps\nin the ranking sequence.\n\n\nNo example/argument for dense_rank.\n\n\n\n\ndouble\n\n\ndouble(expr AS type) - Casts the value \nexpr\n to the target data type \ntype\n.\n\n\nExamples:\n\n SELECT double('10' as int);\n10\n\n\n\n\ndsid\n\n\ndsid() - Returns the unique distributed member ID of executor fetching current row.\n\n\nExamples:\n\n SELECT dsid();\nlocalhost(1831)\nv2\n:18165\n\n\n\n\ne\n\n\ne() - Returns Euler's number, e.\n\n\nExamples:\n\n SELECT e();\n2.718281828459045\n\n\n\n\nelt\n\n\nelt(n, str1, str2, ...) - Returns the \nn\n-th string, e.g., returns \nstr2\n when \nn\n is 2.\n\n\nExamples:\n\n SELECT elt(1, 'scala', 'java');\nscala\n\n\n\n\nencode\n\n\nencode(str, charset) - Encodes the first argument using the second argument character set.\n\n\nExamples:\n\n SELECT encode('abc', 'utf-8');\nabc\n\n\n\n\nexp\n\n\nexp(expr) - Returns e to the power of \nexpr\n.\n\n\nExamples:\n\n SELECT exp(0);\n1.0\n\n\n\n\nexplode\n\n\nexplode(expr) - Separates the elements of array \nexpr\n into multiple rows, or the elements of map \nexpr\n into multiple rows and columns.\n\n\nExamples:\n\n SELECT explode(array(10, 20));\n10\n20\n\n\n\n\nexpm1\n\n\nexpm1(expr) - Returns exp(\nexpr\n) - 1.\n\n\nExamples:\n\n SELECT expm1(0);\n0.0\n\n\n\n\nfactorial\n\n\nfactorial(expr) - Returns the factorial of \nexpr\n. \nexpr\n is [0..20]. Otherwise, null.\n\n\nExamples:\n\n SELECT factorial(5);\n120\n\n\n\n\nfind_in_set\n\n\nfind_in_set(str, str_array) - Returns the index (1-based) of the given string (\nstr\n) in the comma-delimited list (\nstr_array\n).\nReturns 0, if the string was not found or if the given string (\nstr\n) contains a comma.\n\n\nExamples:\n\n SELECT find_in_set('ab','abc,b,ab,c,def');\n3\n\n\n\n\nfirst\n\n\nfirst(expr[, isIgnoreNull]) - Returns the first value of \nexpr\n for a group of rows.\nIf \nisIgnoreNull\n is true, returns only non-null values.\n\n\nNo example/argument for first.\n\n\n\n\nfirst_value\n\n\nfirst_value(expr[, isIgnoreNull]) - Returns the first value of \nexpr\n for a group of rows.\nIf \nisIgnoreNull\n is true, returns only non-null values.\n\n\nNo example/argument for first_value.\n\n\n\n\nfloat\n\n\nfloat(expr AS type) - Casts the value \nexpr\n to the target data type \ntype\n.\n\n\nExamples:\n\n SELECT float('10' as int);\n10\n\n\n\n\nfloor\n\n\nfloor(expr) - Returns the largest integer not greater than \nexpr\n.\n\n\nExamples:\n\n SELECT floor(-0.1);\n-1\n\n SELECT floor(5);\n5\n\n\n\n\nformat_number\n\n\nformat_number(expr1, expr2) - Formats the number \nexpr1\n like '#,###,###.##', rounded to \nexpr2\n\ndecimal places. If \nexpr2\n is 0, the result has no decimal point or fractional part.\nThis is supposed to function like MySQL's FORMAT.\n\n\nExamples:\n\n SELECT format_number(12332.123456, 4);\n12,332.1235\n\n\n\n\nformat_string\n\n\nformat_string(strfmt, obj, ...) - Returns a formatted string from printf-style format strings.\n\n\nExamples:\n\n SELECT format_string(\nHello World %d %s\n, 100, \ndays\n);\nHello World 100 days\n\n\n\n\nfrom_unixtime\n\n\nfrom_unixtime(unix_time, format) - Returns \nunix_time\n in the specified \nformat\n.\n\n\nExamples:\n\n SELECT from_unixtime(0, 'yyyy-MM-dd HH:mm:ss');\n1970-01-01 00:00:00\n\n\n\n\nfrom_utc_timestamp\n\n\nfrom_utc_timestamp(timestamp, timezone) - Given a timestamp, which corresponds to a certain time of day in UTC, returns another timestamp that corresponds to the same time of day in the given timezone.\n\n\nExamples:\n\n SELECT from_utc_timestamp('2016-08-31', 'Asia/Seoul');\n2016-08-31 09:00:00\n\n\n\n\nget_json_object\n\n\nget_json_object(json_txt, path) - Extracts a json object from \npath\n.\n\n\nExamples:\n\n SELECT get_json_object('{\na\n:\nb\n}', '$.a');\nb\n\n\n\n\ngreatest\n\n\ngreatest(expr, ...) - Returns the greatest value of all parameters, skipping null values.\n\n\nExamples:\n\n SELECT greatest(10, 9, 2, 4, 3);\n10\n\n\n\n\ngrouping\n\n\ngrouping_id\n\n\nhash\n\n\nhash(expr1, expr2, ...) - Returns a hash value of the arguments.\n\n\nExamples:\n\n SELECT hash('Spark', array(123), 2);\n-1321691492\n\n\n\n\nhex\n\n\nhex(expr) - Converts \nexpr\n to hexadecimal.\n\n\nExamples:\n\n SELECT hex(17);\n11\n\n SELECT hex('Spark SQL');\n537061726B2053514C\n\n\n\n\nhour\n\n\nhour(timestamp) - Returns the hour component of the string/timestamp.\n\n\nExamples:\n\n SELECT hour('2009-07-30 12:58:59');\n12\n\n\n\n\nhypot\n\n\nhypot(expr1, expr2) - Returns sqrt(\nexpr1\n2 + \nexpr2\n2).\n\n\nExamples:\n\n SELECT hypot(3, 4);\n5.0\n\n\n\n\nif\n\n\nif(expr1, expr2, expr3) - If \nexpr1\n evaluates to true, then returns \nexpr2\n; otherwise returns \nexpr3\n.\n\n\nExamples:\n\n SELECT if(1 \n 2, 'a', 'b');\na\n\n\n\n\nifnull\n\n\nifnull(expr1, expr2) - Returns \nexpr2\n if \nexpr1\n is null, or \nexpr1\n otherwise.\n\n\nExamples:\n\n SELECT ifnull(NULL, array('2'));\n[\n2\n]\n\n\n\n\nin\n\n\nexpr1 in(expr2, expr3, ...) - Returns true if \nexpr\n equals to any valN.\n\n\nNo example/argument for in.\n\n\n\n\ninitcap\n\n\ninitcap(str) - Returns \nstr\n with the first letter of each word in uppercase.\nAll other letters are in lowercase. Words are delimited by white space.\n\n\nExamples:\n\n SELECT initcap('sPark sql');\nSpark Sql\n\n\n\n\ninline\n\n\ninline(expr) - Explodes an array of structs into a table.\n\n\nExamples:\n\n SELECT inline(array(struct(1, 'a'), struct(2, 'b')));\n1  a\n2  b\n\n\n\n\ninput_file_name\n\n\ninput_file_name() - Returns the name of the current file being read if available.\n\n\nNo example/argument for input_file_name.\n\n\n\n\ninstr\n\n\ninstr(str, substr) - Returns the (1-based) index of the first occurrence of \nsubstr\n in \nstr\n.\n\n\nExamples:\n\n SELECT instr('SparkSQL', 'SQL');\n6\n\n\n\n\nint\n\n\nint(expr AS type) - Casts the value \nexpr\n to the target data type \ntype\n.\n\n\nExamples:\n\n SELECT int('10' as int);\n10\n\n\n\n\nisnan\n\n\nisnan(expr) - Returns true if \nexpr\n is NaN, or false otherwise.\n\n\nExamples:\n\n SELECT isnan(cast('NaN' as double));\ntrue\n\n\n\n\nisnotnull\n\n\nisnotnull(expr) - Returns true if \nexpr\n is not null, or false otherwise.\n\n\nExamples:\n\n SELECT isnotnull(1);\ntrue\n\n\n\n\nisnull\n\n\nisnull(expr) - Returns true if \nexpr\n is null, or false otherwise.\n\n\nExamples:\n\n SELECT isnull(1);\nfalse\n\n\n\n\njava_method\n\n\njava_method(class, method[, arg1[, arg2 ..]]) - Calls a method with reflection.\n\n\nExamples:\n\n SELECT java_method('java.util.UUID', 'randomUUID');\nc33fb387-8500-4bfa-81d2-6e0e3e930df2\n\n SELECT java_method('java.util.UUID', 'fromString', 'a5cf6c42-0c85-418f-af6c-3e4e5b1328f2');\na5cf6c42-0c85-418f-af6c-3e4e5b1328f2\n\n\n\n\njson_tuple\n\n\njson_tuple(jsonStr, p1, p2, ..., pn) - Return a tuple like the function get_json_object, but it takes multiple names. All the input parameters and output column types are string.\n\n\nExamples:\n\n SELECT json_tuple('{\na\n:1, \nb\n:2}', 'a', 'b');\n1  2\n\n\n\n\nkurtosis\n\n\nkurtosis(expr) - Returns the kurtosis value calculated from values of a group.\n\n\nNo example/argument for kurtosis.\n\n\n\n\nlag\n\n\nlag(input[, offset[, default]]) - Returns the value of \ninput\n at the \noffset\nth row\nbefore the current row in the window. The default value of \noffset\n is 1 and the default\nvalue of \ndefault\n is null. If the value of \ninput\n at the \noffset\nth row is null,\nnull is returned. If there is no such offset row (e.g., when the offset is 1, the first\nrow of the window does not have any previous row), \ndefault\n is returned.\n\n\nNo example/argument for lag.\n\n\n\n\nlast\n\n\nlast(expr[, isIgnoreNull]) - Returns the last value of \nexpr\n for a group of rows.\nIf \nisIgnoreNull\n is true, returns only non-null values.\n\n\nNo example/argument for last.\n\n\n\n\nlast_day\n\n\nlast_day(date) - Returns the last day of the month which the date belongs to.\n\n\nExamples:\n\n SELECT last_day('2009-01-12');\n2009-01-31\n\n\n\n\nlast_value\n\n\nlast_value(expr[, isIgnoreNull]) - Returns the last value of \nexpr\n for a group of rows.\nIf \nisIgnoreNull\n is true, returns only non-null values.\n\n\nNo example/argument for last_value.\n\n\n\n\nlcase\n\n\nlcase(str) - Returns \nstr\n with all characters changed to lowercase.\n\n\nExamples:\n\n SELECT lcase('SparkSql');\nsparksql\n\n\n\n\nlead\n\n\nlead(input[, offset[, default]]) - Returns the value of \ninput\n at the \noffset\nth row\nafter the current row in the window. The default value of \noffset\n is 1 and the default\nvalue of \ndefault\n is null. If the value of \ninput\n at the \noffset\nth row is null,\nnull is returned. If there is no such an offset row (e.g., when the offset is 1, the last\nrow of the window does not have any subsequent row), \ndefault\n is returned.\n\n\nNo example/argument for lead.\n\n\n\n\nleast\n\n\nleast(expr, ...) - Returns the least value of all parameters, skipping null values.\n\n\nExamples:\n\n SELECT least(10, 9, 2, 4, 3);\n2\n\n\n\n\nlength\n\n\nlength(expr) - Returns the length of \nexpr\n or number of bytes in binary data.\n\n\nExamples:\n\n SELECT length('Spark SQL');\n9\n\n\n\n\nlevenshtein\n\n\nlevenshtein(str1, str2) - Returns the Levenshtein distance between the two given strings.\n\n\nExamples:\n\n SELECT levenshtein('kitten', 'sitting');\n3\n\n\n\n\nlike\n\n\nstr like pattern - Returns true if str matches pattern, null if any arguments are null, false otherwise.\n\n\nArguments:\nstr - a string expression\npattern - a string expression. The pattern is a string which is matched literally, with\nexception to the following special symbols:\n\n_ matches any one character in the input (similar to . in posix regular expressions)\n\n% matches zero or more characters in the input (similar to .* in posix regular\nexpressions)\n\nThe escape character is '\\'. If an escape character precedes a special symbol or another\nescape character, the following character is matched literally. It is invalid to escape\nany other character.\n\nExamples:\n\n SELECT '%SystemDrive%\\Users\\John' like '\\%SystemDrive\\%\\\\Users%'\ntrue\n\nSee also:\nUse RLIKE to match with standard regular expressions.\n\n\n\n\nln\n\n\nln(expr) - Returns the natural logarithm (base e) of \nexpr\n.\n\n\nExamples:\n\n SELECT ln(1);\n0.0\n\n\n\n\nlocate\n\n\nlocate(substr, str[, pos]) - Returns the position of the first occurrence of \nsubstr\n in \nstr\n after position \npos\n.\nThe given \npos\n and return value are 1-based.\n\n\nExamples:\n\n SELECT locate('bar', 'foobarbar', 5);\n7\n\n\n\n\nlog\n\n\nlog(base, expr) - Returns the logarithm of \nexpr\n with \nbase\n.\n\n\nExamples:\n\n SELECT log(10, 100);\n2.0\n\n\n\n\nlog10\n\n\nlog10(expr) - Returns the logarithm of \nexpr\n with base 10.\n\n\nExamples:\n\n SELECT log10(10);\n1.0\n\n\n\n\nlog1p\n\n\nlog1p(expr) - Returns log(1 + \nexpr\n).\n\n\nExamples:\n\n SELECT log1p(0);\n0.0\n\n\n\n\nlog2\n\n\nlog2(expr) - Returns the logarithm of \nexpr\n with base 2.\n\n\nExamples:\n\n SELECT log2(2);\n1.0\n\n\n\n\nlower\n\n\nlower(str) - Returns \nstr\n with all characters changed to lowercase.\n\n\nExamples:\n\n SELECT lower('SparkSql');\nsparksql\n\n\n\n\nlower_bound\n\n\nlower_bound() - Lower value of an estimate interval for a given confidence.calculated using error estimation method (ClosedForm or Bootstrap).  [enterprise]\n\n\nExamples:\n\n SELECT sum(ArrDelay) ArrivalDelay, lower_bound(ArrivalDelay),\nMonth_ from airline group by Month_ order by Month_ desc with error 0.10;\n1117.6, 11101.5, Jan\n\n```\n\n### lpad\n\n\nlpad(str, len, pad) - Returns `str`, left-padded with `pad` to a length of `len`.\nIf `str` is longer than `len`, the return value is shortened to `len` characters.\n\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT lpad('hi', 5, '??');\n???hi\nSELECT lpad('hi', 1, '??');\nh\n\n\n\n\n\n### ltrim\n\nltrim(str) - Removes the leading and trailing space characters from `str`.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT ltrim('    SparkSQL');\nSparkSQL\n\n\n\n\n\n### map\n\nmap(key0, value0, key1, value1, ...) - Creates a map with the given key/value pairs.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT map(1.0, '2', 3.0, '4');\n{1.0:\"2\",3.0:\"4\"}\n\n\n\n\n\n### map_keys\n\nmap_keys(map) - Returns an unordered array containing the keys of the map.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT map_keys(map(1, 'a', 2, 'b'));\n[1,2]\n\n\n\n\n\n### map_values\n\nmap_values(map) - Returns an unordered array containing the values of the map.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT map_values(map(1, 'a', 2, 'b'));\n[\"a\",\"b\"]\n\n\n\n\n\n### max\n\nmax(expr) - Returns the maximum value of `expr`.\n\n\n\n\n\nNo example/argument for max.\n\n\n\n### md5\n\nmd5(expr) - Returns an MD5 128-bit checksum as a hex string of `expr`.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT md5('Spark');\n8cde774d6f7333752ed72cacddb05126\n\n\n\n\n\n### mean\n\nmean(expr) - Returns the mean calculated from values of a group.\n\n\n\n\n\nNo example/argument for mean.\n\n\n\n### min\n\nmin(expr) - Returns the minimum value of `expr`.\n\n\n\n\n\nNo example/argument for min.\n\n\n\n### minute\n\nminute(timestamp) - Returns the minute component of the string/timestamp.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT minute('2009-07-30 12:58:59');\n58\n\n\n\n\n\n### monotonically_increasing_id\n\n\nmonotonically_increasing_id() - Returns monotonically increasing 64-bit integers. The generated ID is guaranteed\nto be monotonically increasing and unique, but not consecutive. The current implementation\nputs the partition ID in the upper 31 bits, and the lower 33 bits represent the record number\nwithin each partition. The assumption is that the data frame has less than 1 billion\npartitions, and each partition has less than 8 billion records.\n\n\n\n\n\n\nNo example/argument for monotonically_increasing_id.\n\n\n\n### month\n\nmonth(date) - Returns the month component of the date/timestamp.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT month('2016-07-30');\n7\n\n\n\n\n\n### months_between\n\nmonths_between(timestamp1, timestamp2) - Returns number of months between `timestamp1` and `timestamp2`.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT months_between('1997-02-28 10:30:00', '1996-10-30');\n3.94959677\n\n\n\n\n\n### named_struct\n\nnamed_struct(name1, val1, name2, val2, ...) - Creates a struct with the given field names and values.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT named_struct(\"a\", 1, \"b\", 2, \"c\", 3);\n{\"a\":1,\"b\":2,\"c\":3}\n\n\n\n\n\n### nanvl\n\nnanvl(expr1, expr2) - Returns `expr1` if it's not NaN, or `expr2` otherwise.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT nanvl(cast('NaN' as double), 123);\n123.0\n\n\n\n\n\n### negative\n\nnegative(expr) - Returns the negated value of `expr`.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT negative(1);\n-1\n\n\n\n\n\n### next_day\n\nnext_day(start_date, day_of_week) - Returns the first date which is later than `start_date` and named as indicated.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT next_day('2015-01-14', 'TU');\n2015-01-20\n\n\n\n\n\n### not\n\nnot expr - Logical not.\n\n\n\n\n\nNo example/argument for not.\n\n\n\n### now\n\nnow() - Returns the current timestamp at the start of query evaluation.\n\n\n\n\n\nNo example/argument for now.\n\n\n\n### ntile\n\n\nntile(n) - Divides the rows for each window partition into `n` buckets ranging\nfrom 1 to at most `n`.\n\n\n\n\n\n\nNo example/argument for ntile.\n\n\n\n### nullif\n\nnullif(expr1, expr2) - Returns null if `expr1` equals to `expr2`, or `expr1` otherwise.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT nullif(2, 2);\nNULL\n\n\n\n\n\n### nvl\n\nnvl(expr1, expr2) - Returns `expr2` if `expr1` is null, or `expr1` otherwise.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT nvl(NULL, array('2'));\n[\"2\"]\n\n\n\n\n\n### nvl2\n\nnvl2(expr1, expr2, expr3) - Returns `expr2` if `expr1` is not null, or `expr3` otherwise.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT nvl2(NULL, 2, 1);\n1\n\n\n\n\n\n### or\n\nexpr1 or expr2 - Logical OR.\n\n\n\n\n\nNo example/argument for or.\n\n\n\n### parse_url\n\nparse_url(url, partToExtract[, key]) - Extracts a part from a URL.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT parse_url('http://spark.apache.org/path?query=1', 'HOST')\nspark.apache.org\nSELECT parse_url('http://spark.apache.org/path?query=1', 'QUERY')\nquery=1\nSELECT parse_url('http://spark.apache.org/path?query=1', 'QUERY', 'query')\n1\n\n\n\n\n\n### percent_rank\n\n\npercent_rank() - Computes the percentage ranking of a value in a group of values.\n\n\n\n\n\n\nNo example/argument for percent_rank.\n\n\n\n### percentile\n\n\npercentile(col, percentage) - Returns the exact percentile value of numeric column `col` at the\ngiven percentage. The value of percentage must be between 0.0 and 1.0.\n\npercentile(col, array(percentage1 [, percentage2]...)) - Returns the exact percentile value array\nof numeric column `col` at the given percentage(s). Each value of the percentage array must\nbe between 0.0 and 1.0.\n\n\n\n\n\n\nNo example/argument for percentile.\n\n\n\n### percentile_approx\n\n\npercentile_approx(col, percentage [, accuracy]) - Returns the approximate percentile value of numeric\ncolumn `col` at the given percentage. The value of percentage must be between 0.0\nand 1.0. The `accuracy` parameter (default: 10000) is a positive numeric literal which\ncontrols approximation accuracy at the cost of memory. Higher value of `accuracy` yields\nbetter accuracy, `1.0/accuracy` is the relative error of the approximation.\nWhen `percentage` is an array, each value of the percentage array must be between 0.0 and 1.0.\nIn this case, returns the approximate percentile array of column `col` at the given\npercentage array.\n\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT percentile_approx(10.0, array(0.5, 0.4, 0.1), 100);\n[10.0,10.0,10.0]\nSELECT percentile_approx(10.0, 0.5, 100);\n10.0\n\n\n\n\n\n### pi\n\npi() - Returns pi.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT pi();\n3.141592653589793\n\n\n\n\n\n### pmod\n\npmod(expr1, expr2) - Returns the positive value of `expr1` mod `expr2`.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT pmod(10, 3);\n1\nSELECT pmod(-10, 3);\n2\n\n\n\n\n\n### posexplode\n\nposexplode(expr) - Separates the elements of array `expr` into multiple rows with positions, or the elements of map `expr` into multiple rows and columns with positions.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT posexplode(array(10,20));\n0  10\n1  20\n\n\n\n\n\n### positive\n\npositive(expr) - Returns the value of `expr`.\n\n\n\n\n\nNo example/argument for positive.\n\n\n\n### pow\n\npow(expr1, expr2) - Raises `expr1` to the power of `expr2`.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT pow(2, 3);\n8.0\n\n\n\n\n\n### power\n\npower(expr1, expr2) - Raises `expr1` to the power of `expr2`.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT power(2, 3);\n8.0\n\n\n\n\n\n### printf\n\nprintf(strfmt, obj, ...) - Returns a formatted string from printf-style format strings.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT printf(\"Hello World %d %s\", 100, \"days\");\nHello World 100 days\n\n\n\n\n\n### quarter\n\nquarter(date) - Returns the quarter of the year for date, in the range 1 to 4.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT quarter('2016-08-31');\n3\n\n\n\n\n\n### radians\n\nradians(expr) - Converts degrees to radians.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT radians(180);\n3.141592653589793\n\n\n\n\n\n### rand\n\nrand([seed]) - Returns a random value with independent and identically distributed (i.i.d.) uniformly distributed values in [0, 1).\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT rand();\n0.9629742951434543\nSELECT rand(0);\n0.8446490682263027\nSELECT rand(null);\n0.8446490682263027\n\n\n\n\n\n### randn\n\nrandn([seed]) - Returns a random value with independent and identically distributed (i.i.d.) values drawn from the standard normal distribution.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT randn();\n-0.3254147983080288\nSELECT randn(0);\n1.1164209726833079\nSELECT randn(null);\n1.1164209726833079\n\n\n\n\n\n### rank\n\n\nrank() - Computes the rank of a value in a group of values. The result is one plus the number\nof rows preceding or equal to the current row in the ordering of the partition. The values\nwill produce gaps in the sequence.\n\n\n\n\n\n\nNo example/argument for rank.\n\n\n\n### reflect\n\nreflect(class, method[, arg1[, arg2 ..]]) - Calls a method with reflection.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT reflect('java.util.UUID', 'randomUUID');\nc33fb387-8500-4bfa-81d2-6e0e3e930df2\nSELECT reflect('java.util.UUID', 'fromString', 'a5cf6c42-0c85-418f-af6c-3e4e5b1328f2');\na5cf6c42-0c85-418f-af6c-3e4e5b1328f2\n\n\n\n\n\n### regexp_extract\n\nregexp_extract(str, regexp[, idx]) - Extracts a group that matches `regexp`.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT regexp_extract('100-200', '(\\d+)-(\\d+)', 1);\n100\n\n\n\n\n\n### regexp_replace\n\nregexp_replace(str, regexp, rep) - Replaces all substrings of `str` that match `regexp` with `rep`.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT regexp_replace('100-200', '(\\d+)', 'num');\nnum-num\n\n\n\n\n\n### relative_error\n\nrelative_error() - Indicates ratio of absolute error to estimate (approx answer).  calculated using error estimation method (ClosedForm or Bootstrap). [enterprise]\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT sum(ArrDelay) ArrivalDelay, relative_error(ArrivalDelay),\nMonth_ from airline group by Month_ order by Month_ desc with error 0.10;\n1117.6, 0.3, Jan\n\"```\n\n\n\n\nrepeat\n\n\nrepeat(str, n) - Returns the string which repeats the given string value n times.\n\n\nExamples:\n\n SELECT repeat('123', 2);\n123123\n\n\n\n\nreverse\n\n\nreverse(str) - Returns the reversed given string.\n\n\nExamples:\n\n SELECT reverse('Spark SQL');\nLQS krapS\n\n\n\n\nrint\n\n\nrint(expr) - Returns the double value that is closest in value to the argument and is equal to a mathematical integer.\n\n\nExamples:\n\n SELECT rint(12.3456);\n12.0\n\n\n\n\nrlike\n\n\nstr rlike regexp - Returns true if \nstr\n matches \nregexp\n, or false otherwise.\n\n\nNo example/argument for rlike.\n\n\n\n\nrollup\n\n\nround\n\n\nround(expr, d) - Returns \nexpr\n rounded to \nd\n decimal places using HALF_UP rounding mode.\n\n\nExamples:\n\n SELECT round(2.5, 0);\n3.0\n\n\n\n\nrow_number\n\n\nrow_number() - Assigns a unique, sequential number to each row, starting with one,\naccording to the ordering of rows within the window partition.\n\n\nNo example/argument for row_number.\n\n\n\n\nrpad\n\n\nrpad(str, len, pad) - Returns \nstr\n, right-padded with \npad\n to a length of \nlen\n.\nIf \nstr\n is longer than \nlen\n, the return value is shortened to \nlen\n characters.\n\n\nExamples:\n\n SELECT rpad('hi', 5, '??');\nhi???\n\n SELECT rpad('hi', 1, '??');\nh\n\n\n\n\nrtrim\n\n\nrtrim(str) - Removes the trailing space characters from \nstr\n.\n\n\nExamples:\n\n SELECT rtrim('    SparkSQL   ');\nSparkSQL\n\n\n\n\nsecond\n\n\nsecond(timestamp) - Returns the second component of the string/timestamp.\n\n\nExamples:\n\n SELECT second('2009-07-30 12:58:59');\n59\n\n\n\n\nsentences\n\n\nsentences(str[, lang, country]) - Splits \nstr\n into an array of array of words.\n\n\nExamples:\n\n SELECT sentences('Hi there! Good morning.');\n[[\nHi\n,\nthere\n],[\nGood\n,\nmorning\n]]\n\n\n\n\nsha\n\n\nsha(expr) - Returns a sha1 hash value as a hex string of the \nexpr\n.\n\n\nExamples:\n\n SELECT sha('Spark');\n85f5955f4b27a9a4c2aab6ffe5d7189fc298b92c\n\n\n\n\nsha1\n\n\nsha1(expr) - Returns a sha1 hash value as a hex string of the \nexpr\n.\n\n\nExamples:\n\n SELECT sha1('Spark');\n85f5955f4b27a9a4c2aab6ffe5d7189fc298b92c\n\n\n\n\nsha2\n\n\nsha2(expr, bitLength) - Returns a checksum of SHA-2 family as a hex string of \nexpr\n.\nSHA-224, SHA-256, SHA-384, and SHA-512 are supported. Bit length of 0 is equivalent to 256.\n\n\nExamples:\n\n SELECT sha2('Spark', 256);\n529bc3b07127ecb7e53a4dcf1991d9152c24537d919178022b2c42657f79a26b\n\n\n\n\nshiftleft\n\n\nshiftleft(base, expr) - Bitwise left shift.\n\n\nExamples:\n\n SELECT shiftleft(2, 1);\n4\n\n\n\n\nshiftright\n\n\nshiftright(base, expr) - Bitwise (signed) right shift.\n\n\nExamples:\n\n SELECT shiftright(4, 1);\n2\n\n\n\n\nshiftrightunsigned\n\n\nshiftrightunsigned(base, expr) - Bitwise unsigned right shift.\n\n\nExamples:\n\n SELECT shiftrightunsigned(4, 1);\n2\n\n\n\n\nsign\n\n\nsign(expr) - Returns -1.0, 0.0 or 1.0 as \nexpr\n is negative, 0 or positive.\n\n\nExamples:\n\n SELECT sign(40);\n1.0\n\n\n\n\nsignum\n\n\nsignum(expr) - Returns -1.0, 0.0 or 1.0 as \nexpr\n is negative, 0 or positive.\n\n\nExamples:\n\n SELECT signum(40);\n1.0\n\n\n\n\nsin\n\n\nsin(expr) - Returns the sine of \nexpr\n.\n\n\nExamples:\n\n SELECT sin(0);\n0.0\n\n\n\n\nsinh\n\n\nsinh(expr) - Returns the hyperbolic sine of \nexpr\n.\n\n\nExamples:\n\n SELECT sinh(0);\n0.0\n\n\n\n\nsize\n\n\nsize(expr) - Returns the size of an array or a map. Returns -1 if null.\n\n\nExamples:\n\n SELECT size(array('b', 'd', 'c', 'a'));\n4\n\n\n\n\nskewness\n\n\nskewness(expr) - Returns the skewness value calculated from values of a group.\n\n\nNo example/argument for skewness.\n\n\n\n\nsmallint\n\n\nsmallint(expr AS type) - Casts the value \nexpr\n to the target data type \ntype\n.\n\n\nExamples:\n\n SELECT smallint('10' as int);\n10\n\n\n\n\nsort_array\n\n\nsort_array(array[, ascendingOrder]) - Sorts the input array in ascending or descending order according to the natural ordering of the array elements.\n\n\nExamples:\n\n SELECT sort_array(array('b', 'd', 'c', 'a'), true);\n[\na\n,\nb\n,\nc\n,\nd\n]\n\n\n\n\nsoundex\n\n\nsoundex(str) - Returns Soundex code of the string.\n\n\nExamples:\n\n SELECT soundex('Miller');\nM460\n\n\n\n\nspace\n\n\nspace(n) - Returns a string consisting of \nn\n spaces.\n\n\nExamples:\n\n SELECT concat(space(2), '1');\n1\n\n\n\n\nspark_partition_id\n\n\nspark_partition_id() - Returns the current partition id.\n\n\nNo example/argument for spark_partition_id.\n\n\n\n\nsplit\n\n\nsplit(str, regex) - Splits \nstr\n around occurrences that match \nregex\n.\n\n\nExamples:\n\n SELECT split('oneAtwoBthreeC', '[ABC]');\n[\none\n,\ntwo\n,\nthree\n,\n]\n\n\n\n\nsqrt\n\n\nsqrt(expr) - Returns the square root of \nexpr\n.\n\n\nExamples:\n\n SELECT sqrt(4);\n2.0\n\n\n\n\nstack\n\n\nstack(n, expr1, ..., exprk) - Separates \nexpr1\n, ..., \nexprk\n into \nn\n rows.\n\n\nExamples:\n\n SELECT stack(2, 1, 2, 3);\n1  2\n3  NULL\n\n\n\n\nstd\n\n\nstd(expr) - Returns the sample standard deviation calculated from values of a group.\n\n\nNo example/argument for std.\n\n\n\n\nstddev\n\n\nstddev(expr) - Returns the sample standard deviation calculated from values of a group.\n\n\nNo example/argument for stddev.\n\n\n\n\nstddev_pop\n\n\nstddev_pop(expr) - Returns the population standard deviation calculated from values of a group.\n\n\nNo example/argument for stddev_pop.\n\n\n\n\nstddev_samp\n\n\nstddev_samp(expr) - Returns the sample standard deviation calculated from values of a group.\n\n\nNo example/argument for stddev_samp.\n\n\n\n\nstr_to_map\n\n\nstr_to_map(text[, pairDelim[, keyValueDelim]]) - Creates a map after splitting the text into key/value pairs using delimiters. Default delimiters are ',' for \npairDelim\n and ':' for \nkeyValueDelim\n.\n\n\nExamples:\n\n SELECT str_to_map('a:1,b:2,c:3', ',', ':');\nmap(\na\n:\n1\n,\nb\n:\n2\n,\nc\n:\n3\n)\n\n SELECT str_to_map('a');\nmap(\na\n:null)\n\n\n\n\nstring\n\n\nstring(expr AS type) - Casts the value \nexpr\n to the target data type \ntype\n.\n\n\nExamples:\n\n SELECT string('10' as int);\n10\n\n\n\n\nstruct\n\n\nstruct(col1, col2, col3, ...) - Creates a struct with the given field values.\n\n\nsubstr\n\n\nsubstr(str, pos[, len]) - Returns the substring of \nstr\n that starts at \npos\n and is of length \nlen\n, or the slice of byte array that starts at \npos\n and is of length \nlen\n.\n\n\nExamples:\n\n SELECT substr('Spark SQL', 5);\nk SQL\n\n SELECT substr('Spark SQL', -3);\nSQL\n\n SELECT substr('Spark SQL', 5, 1);\nk\n\n\n\n\nsubstring\n\n\nsubstring(str, pos[, len]) - Returns the substring of \nstr\n that starts at \npos\n and is of length \nlen\n, or the slice of byte array that starts at \npos\n and is of length \nlen\n.\n\n\nExamples:\n\n SELECT substring('Spark SQL', 5);\nk SQL\n\n SELECT substring('Spark SQL', -3);\nSQL\n\n SELECT substring('Spark SQL', 5, 1);\nk\n\n\n\n\nsubstring_index\n\n\nsubstring_index(str, delim, count) - Returns the substring from \nstr\n before \ncount\n occurrences of the delimiter \ndelim\n.\nIf \ncount\n is positive, everything to the left of the final delimiter (counting from the\nleft) is returned. If \ncount\n is negative, everything to the right of the final delimiter\n(counting from the right) is returned. The function substring_index performs a case-sensitive match\nwhen searching for \ndelim\n.\n\n\nExamples:\n\n SELECT substring_index('www.apache.org', '.', 2);\nwww.apache\n\n\n\n\nsum\n\n\nsum(expr) - Returns the sum calculated from values of a group.\n\n\nNo example/argument for sum.\n\n\n\n\ntan\n\n\ntan(expr) - Returns the tangent of \nexpr\n.\n\n\nExamples:\n\n SELECT tan(0);\n0.0\n\n\n\n\ntanh\n\n\ntanh(expr) - Returns the hyperbolic tangent of \nexpr\n.\n\n\nExamples:\n\n SELECT tanh(0);\n0.0\n\n\n\n\ntimestamp\n\n\ntimestamp(expr AS type) - Casts the value \nexpr\n to the target data type \ntype\n.\n\n\nExamples:\n\n SELECT timestamp('10' as int);\n10\n\n\n\n\ntinyint\n\n\ntinyint(expr AS type) - Casts the value \nexpr\n to the target data type \ntype\n.\n\n\nExamples:\n\n SELECT tinyint('10' as int);\n10\n\n\n\n\nto_date\n\n\nto_date(expr) - Extracts the date part of the date or timestamp expression \nexpr\n.\n\n\nExamples:\n\n SELECT to_date('2009-07-30 04:17:52');\n2009-07-30\n\n\n\n\nto_unix_timestamp\n\n\nto_unix_timestamp(expr[, pattern]) - Returns the UNIX timestamp of the give time.\n\n\nExamples:\n\n SELECT to_unix_timestamp('2016-04-08', 'yyyy-MM-dd');\n1460041200\n\n\n\n\nto_utc_timestamp\n\n\nto_utc_timestamp(timestamp, timezone) - Given a timestamp, which corresponds to a certain time of day in the given timezone, returns another timestamp that corresponds to the same time of day in UTC.\n\n\nExamples:\n\n SELECT to_utc_timestamp('2016-08-31', 'Asia/Seoul');\n2016-08-30 15:00:00\n\n\n\n\ntranslate\n\n\ntranslate(input, from, to) - Translates the \ninput\n string by replacing the characters present in the \nfrom\n string with the corresponding characters in the \nto\n string.\n\n\nExamples:\n\n SELECT translate('AaBbCc', 'abc', '123');\nA1B2C3\n\n\n\n\ntrim\n\n\ntrim(str) - Removes the leading and trailing space characters from \nstr\n.\n\n\nExamples:\n\n SELECT trim('    SparkSQL   ');\nSparkSQL\n\n\n\n\ntrunc\n\n\ntrunc(date, fmt) - Returns \ndate\n with the time portion of the day truncated to the unit specified by the format model \nfmt\n.\n\n\nExamples:\n\n SELECT trunc('2009-02-12', 'MM');\n2009-02-01\n\n SELECT trunc('2015-10-27', 'YEAR');\n2015-01-01\n\n\n\n\nucase\n\n\nucase(str) - Returns \nstr\n with all characters changed to uppercase.\n\n\nExamples:\n\n SELECT ucase('SparkSql');\nSPARKSQL\n\n\n\n\nunbase64\n\n\nunbase64(str) - Converts the argument from a base 64 string \nstr\n to a binary.\n\n\nExamples:\n\n SELECT unbase64('U3BhcmsgU1FM');\nSpark SQL\n\n\n\n\nunhex\n\n\nunhex(expr) - Converts hexadecimal \nexpr\n to binary.\n\n\nExamples:\n\n SELECT decode(unhex('537061726B2053514C'), 'UTF-8');\nSpark SQL\n\n\n\n\nunix_timestamp\n\n\nunix_timestamp([expr[, pattern]]) - Returns the UNIX timestamp of current or specified time.\n\n\nExamples:\n\n SELECT unix_timestamp();\n1476884637\n\n SELECT unix_timestamp('2016-04-08', 'yyyy-MM-dd');\n1460041200\n\n\n\n\nupper\n\n\nupper(str) - Returns \nstr\n with all characters changed to uppercase.\n\n\nExamples:\n\n SELECT upper('SparkSql');\nSPARKSQL\n\n\n\n\nupper_bound\n\n\nupper_bound() - Upper value of an estimate interval for a given confidence.calculated using error estimation method (ClosedForm or Bootstrap).  [enterprise]\n\n\nExamples:\n\n SELECT sum(ArrDelay) ArrivalDelay, upper_bound(ArrivalDelay),\nMonth_ from airline group by Month_ order by Month_ desc with error 0.10;\n1117.6, 11135.5, Jan\n\n```\n\n### var_pop\n\nvar_pop(expr) - Returns the population variance calculated from values of a group.\n\n\n\n\n\nNo example/argument for var_pop.\n\n\n\n### var_samp\n\nvar_samp(expr) - Returns the sample variance calculated from values of a group.\n\n\n\n\n\nNo example/argument for var_samp.\n\n\n\n### variance\n\nvariance(expr) - Returns the sample variance calculated from values of a group.\n\n\n\n\n\nNo example/argument for variance.\n\n\n\n### weekofyear\n\nweekofyear(date) - Returns the week of the year of the given date.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT weekofyear('2008-02-20');\n8\n\n\n\n\n\n### when\n\nCASE WHEN expr1 THEN expr2 [WHEN expr3 THEN expr4]* [ELSE expr5] END - When `expr1` = true, returns `expr2`; when `expr3` = true, return `expr4`; else return `expr5`.\n\n\n\n\n\nNo example/argument for when.\n\n\n\n### window\n\n### xpath\n\nxpath(xml, xpath) - Returns a string array of values within the nodes of xml that match the XPath expression.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT xpath('\nb1\nb2\nb3\nc1\nc2\n','a/b/text()');\n['b1','b2','b3']\n\n\n\n\n\n### xpath_boolean\n\nxpath_boolean(xml, xpath) - Returns true if the XPath expression evaluates to true, or if a matching node is found.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT xpath_boolean('\n1\n','a/b');\ntrue\n\n\n\n\n\n### xpath_double\n\nxpath_double(xml, xpath) - Returns a double value, the value zero if no match is found, or NaN if a match is found but the value is non-numeric.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT xpath_double('\n1\n2\n', 'sum(a/b)');\n3.0\n\n\n\n\n\n### xpath_float\n\nxpath_float(xml, xpath) - Returns a float value, the value zero if no match is found, or NaN if a match is found but the value is non-numeric.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT xpath_float('\n1\n2\n', 'sum(a/b)');\n3.0\n\n\n\n\n\n### xpath_int\n\nxpath_int(xml, xpath) - Returns an integer value, or the value zero if no match is found, or a match is found but the value is non-numeric.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT xpath_int('\n1\n2\n', 'sum(a/b)');\n3\n\n\n\n\n\n### xpath_long\n\nxpath_long(xml, xpath) - Returns a long integer value, or the value zero if no match is found, or a match is found but the value is non-numeric.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT xpath_long('\n1\n2\n', 'sum(a/b)');\n3\n\n\n\n\n\n### xpath_number\n\nxpath_number(xml, xpath) - Returns a double value, the value zero if no match is found, or NaN if a match is found but the value is non-numeric.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT xpath_number('\n1\n2\n', 'sum(a/b)');\n3.0\n\n\n\n\n\n### xpath_short\n\nxpath_short(xml, xpath) - Returns a short integer value, or the value zero if no match is found, or a match is found but the value is non-numeric.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT xpath_short('\n1\n2\n', 'sum(a/b)');\n3\n\n\n\n\n\n### xpath_string\n\nxpath_string(xml, xpath) - Returns the text contents of the first xml node that matches the XPath expression.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT xpath_string('\nb\ncc\n','a/c');\ncc\n\n\n\n\n\n### year\n\nyear(date) - Returns the year component of the date/timestamp.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT year('2016-07-30');\n2016\n\n\n\n\n\n### |\n\nexpr1 | expr2 - Returns the result of bitwise OR of `expr1` and `expr2`.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT 3 | 5;\n7\n\n\n\n\n\n### ~\n\n~ expr - Returns the result of bitwise NOT of `expr`.\n\n\n\n\n\nExamples:\n\n\n\n\nSELECT ~ 0;\n-1\n```", 
+            "title": "Functions"
+        }, 
+        {
+            "location": "/#_1", 
+            "text": "! expr - Logical not.  No example/argument for !.", 
+            "title": "!"
+        }, 
+        {
+            "location": "/#_2", 
+            "text": "expr1 % expr2 - Returns the remainder after  expr1 / expr2 .  Examples:  SELECT 2 % 1.8;\n0.2", 
+            "title": "%"
+        }, 
+        {
+            "location": "/#_3", 
+            "text": "expr1   expr2 - Returns the result of bitwise AND of  expr1  and  expr2 .  Examples:  SELECT 3   5;\n1", 
+            "title": "&amp;"
+        }, 
+        {
+            "location": "/#_4", 
+            "text": "expr1 * expr2 - Returns  expr1 * expr2 .  Examples:  SELECT 2 * 3;\n6", 
+            "title": "*"
+        }, 
+        {
+            "location": "/#_5", 
+            "text": "expr1 + expr2 - Returns  expr1 + expr2 .  Examples:  SELECT 1 + 2;\n3", 
+            "title": "+"
+        }, 
+        {
+            "location": "/#-", 
+            "text": "expr1 - expr2 - Returns  expr1 - expr2 .  Examples:  SELECT 2 - 1;\n1", 
+            "title": "-"
+        }, 
+        {
+            "location": "/#_6", 
+            "text": "expr1 / expr2 - Returns  expr1 / expr2 . It always performs floating point division.  Examples:  SELECT 3 / 2;\n1.5  SELECT 2L / 2L;\n1.0", 
+            "title": "/"
+        }, 
+        {
+            "location": "/#_7", 
+            "text": "expr1   expr2 - Returns true if  expr1  is less than  expr2 .  No example/argument for  .", 
+            "title": "&lt;"
+        }, 
+        {
+            "location": "/#_8", 
+            "text": "expr1  = expr2 - Returns true if  expr1  is less than or equal to  expr2 .  No example/argument for  =.", 
+            "title": "&lt;="
+        }, 
+        {
+            "location": "/#_9", 
+            "text": "expr1  =  expr2 - Returns same result as the EQUAL(=) operator for non-null operands,\nbut returns true if both are null, false if one of the them is null.  No example/argument for  = .", 
+            "title": "&lt;=&gt;"
+        }, 
+        {
+            "location": "/#_10", 
+            "text": "expr1 = expr2 - Returns true if  expr1  equals  expr2 , or false otherwise.  No example/argument for =.", 
+            "title": "="
+        }, 
+        {
+            "location": "/#_11", 
+            "text": "expr1 == expr2 - Returns true if  expr1  equals  expr2 , or false otherwise.  No example/argument for ==.", 
+            "title": "=="
+        }, 
+        {
+            "location": "/#_12", 
+            "text": "expr1   expr2 - Returns true if  expr1  is greater than  expr2 .  No example/argument for  .", 
+            "title": "&gt;"
+        }, 
+        {
+            "location": "/#_13", 
+            "text": "expr1  = expr2 - Returns true if  expr1  is greater than or equal to  expr2 .  No example/argument for  =.", 
+            "title": "&gt;="
+        }, 
+        {
+            "location": "/#_14", 
+            "text": "expr1 ^ expr2 - Returns the result of bitwise exclusive OR of  expr1  and  expr2 .  Examples:  SELECT 3 ^ 5;\n2", 
+            "title": "^"
+        }, 
+        {
+            "location": "/#abs", 
+            "text": "abs(expr) - Returns the absolute value of the numeric value.  Examples:  SELECT abs(-1);\n1", 
+            "title": "abs"
+        }, 
+        {
+            "location": "/#absolute_error", 
+            "text": "absolute_error() - Indicates absolute error present in the estimate (approx answer) calculated using error estimation method (ClosedForm or Bootstrap).  [enterprise]  Examples:  SELECT sum(ArrDelay) ArrivalDelay, absolute_error(ArrivalDelay),\nMonth_ from airline group by Month_ order by Month_ desc with error 0.10;\n1117.6, 43.4, Jan", 
+            "title": "absolute_error"
+        }, 
+        {
+            "location": "/#acos", 
+            "text": "acos(expr) - Returns the inverse cosine (a.k.a. arccosine) of  expr  if -1 = expr =1 or NaN otherwise.  Examples:  SELECT acos(1);\n0.0  SELECT acos(2);\nNaN", 
+            "title": "acos"
+        }, 
+        {
+            "location": "/#add_months", 
+            "text": "add_months(start_date, num_months) - Returns the date that is  num_months  after  start_date .  Examples:  SELECT add_months('2016-08-31', 1);\n2016-09-30", 
+            "title": "add_months"
+        }, 
+        {
+            "location": "/#and", 
+            "text": "expr1 and expr2 - Logical AND.  No example/argument for and.", 
+            "title": "and"
+        }, 
+        {
+            "location": "/#approx_count_distinct", 
+            "text": "approx_count_distinct(expr[, relativeSD]) - Returns the estimated cardinality by HyperLogLog++. relativeSD  defines the maximum estimation error allowed.  No example/argument for approx_count_distinct.", 
+            "title": "approx_count_distinct"
+        }, 
+        {
+            "location": "/#approx_percentile", 
+            "text": "approx_percentile(col, percentage [, accuracy]) - Returns the approximate percentile value of numeric\ncolumn  col  at the given percentage. The value of percentage must be between 0.0\nand 1.0. The  accuracy  parameter (default: 10000) is a positive numeric literal which\ncontrols approximation accuracy at the cost of memory. Higher value of  accuracy  yields\nbetter accuracy,  1.0/accuracy  is the relative error of the approximation.\nWhen  percentage  is an array, each value of the percentage array must be between 0.0 and 1.0.\nIn this case, returns the approximate percentile array of column  col  at the given\npercentage array.  Examples:  SELECT approx_percentile(10.0, array(0.5, 0.4, 0.1), 100);\n[10.0,10.0,10.0]  SELECT approx_percentile(10.0, 0.5, 100);\n10.0", 
+            "title": "approx_percentile"
+        }, 
+        {
+            "location": "/#array", 
+            "text": "array(expr, ...) - Returns an array with the given elements.  Examples:  SELECT array(1, 2, 3);\n[1,2,3]", 
+            "title": "array"
+        }, 
+        {
+            "location": "/#array_contains", 
+            "text": "array_contains(array, value) - Returns true if the array contains the value.  Examples:  SELECT array_contains(array(1, 2, 3), 2);\ntrue", 
+            "title": "array_contains"
+        }, 
+        {
+            "location": "/#ascii", 
+            "text": "ascii(str) - Returns the numeric value of the first character of  str .  Examples:  SELECT ascii('222');\n50  SELECT ascii(2);\n50", 
+            "title": "ascii"
+        }, 
+        {
+            "location": "/#asin", 
+            "text": "asin(expr) - Returns the inverse sine (a.k.a. arcsine) the arc sin of  expr  if -1 = expr =1 or NaN otherwise.  Examples:  SELECT asin(0);\n0.0  SELECT asin(2);\nNaN", 
+            "title": "asin"
+        }, 
+        {
+            "location": "/#assert_true", 
+            "text": "assert_true(expr) - Throws an exception if  expr  is not true.  Examples:  SELECT assert_true(0   1);\nNULL", 
+            "title": "assert_true"
+        }, 
+        {
+            "location": "/#atan", 
+            "text": "atan(expr) - Returns the inverse tangent (a.k.a. arctangent).  Examples:  SELECT atan(0);\n0.0", 
+            "title": "atan"
+        }, 
+        {
+            "location": "/#atan2", 
+            "text": "atan2(expr1, expr2) - Returns the angle in radians between the positive x-axis of a plane and the point given by the coordinates ( expr1 ,  expr2 ).  Examples:  SELECT atan2(0, 0);\n0.0", 
+            "title": "atan2"
+        }, 
+        {
+            "location": "/#avg", 
+            "text": "avg(expr) - Returns the mean calculated from values of a group.  No example/argument for avg.", 
+            "title": "avg"
+        }, 
+        {
+            "location": "/#base64", 
+            "text": "base64(bin) - Converts the argument from a binary  bin  to a base 64 string.  Examples:  SELECT base64('Spark SQL');\nU3BhcmsgU1FM", 
+            "title": "base64"
+        }, 
+        {
+            "location": "/#bigint", 
+            "text": "bigint(expr AS type) - Casts the value  expr  to the target data type  type .  Examples:  SELECT bigint('10' as int);\n10", 
+            "title": "bigint"
+        }, 
+        {
+            "location": "/#bin", 
+            "text": "bin(expr) - Returns the string representation of the long value  expr  represented in binary.  Examples:  SELECT bin(13);\n1101  SELECT bin(-13);\n1111111111111111111111111111111111111111111111111111111111110011  SELECT bin(13.3);\n1101", 
+            "title": "bin"
+        }, 
+        {
+            "location": "/#binary", 
+            "text": "binary(expr AS type) - Casts the value  expr  to the target data type  type .  Examples:  SELECT binary('10' as int);\n10", 
+            "title": "binary"
+        }, 
+        {
+            "location": "/#boolean", 
+            "text": "boolean(expr AS type) - Casts the value  expr  to the target data type  type .  Examples:  SELECT boolean('10' as int);\n10", 
+            "title": "boolean"
+        }, 
+        {
+            "location": "/#bround", 
+            "text": "bround(expr, d) - Returns  expr  rounded to  d  decimal places using HALF_EVEN rounding mode.  Examples:  SELECT bround(2.5, 0);\n2.0", 
+            "title": "bround"
+        }, 
+        {
+            "location": "/#cbrt", 
+            "text": "cbrt(expr) - Returns the cube root of  expr .  Examples:  SELECT cbrt(27.0);\n3.0", 
+            "title": "cbrt"
+        }, 
+        {
+            "location": "/#ceil", 
+            "text": "ceil(expr) - Returns the smallest integer not smaller than  expr .  Examples:  SELECT ceil(-0.1);\n0  SELECT ceil(5);\n5", 
+            "title": "ceil"
+        }, 
+        {
+            "location": "/#ceiling", 
+            "text": "ceiling(expr) - Returns the smallest integer not smaller than  expr .  Examples:  SELECT ceiling(-0.1);\n0  SELECT ceiling(5);\n5", 
+            "title": "ceiling"
+        }, 
+        {
+            "location": "/#coalesce", 
+            "text": "coalesce(expr1, expr2, ...) - Returns the first non-null argument if exists. Otherwise, null.  Examples:  SELECT coalesce(NULL, 1, NULL);\n1", 
+            "title": "coalesce"
+        }, 
+        {
+            "location": "/#collect_list", 
+            "text": "collect_list(expr) - Collects and returns a list of non-unique elements.  No example/argument for collect_list.", 
+            "title": "collect_list"
+        }, 
+        {
+            "location": "/#collect_set", 
+            "text": "collect_set(expr) - Collects and returns a set of unique elements.  No example/argument for collect_set.", 
+            "title": "collect_set"
+        }, 
+        {
+            "location": "/#concat", 
+            "text": "concat(str1, str2, ..., strN) - Returns the concatenation of str1, str2, ..., strN.  Examples:  SELECT concat('Spark', 'SQL');\nSparkSQL", 
+            "title": "concat"
+        }, 
+        {
+            "location": "/#concat_ws", 
+            "text": "concat_ws(sep, [str | array(str)]+) - Returns the concatenation of the strings separated by  sep .  Examples:  SELECT concat_ws(' ', 'Spark', 'SQL');\nSpark SQL", 
+            "title": "concat_ws"
+        }, 
+        {
+            "location": "/#conv", 
+            "text": "conv(num, from_base, to_base) - Convert  num  from  from_base  to  to_base .  Examples:  SELECT conv('100', 2, 10);\n4  SELECT conv(-10, 16, -10);\n16", 
+            "title": "conv"
+        }, 
+        {
+            "location": "/#corr", 
+            "text": "corr(expr1, expr2) - Returns Pearson coefficient of correlation between a set of number pairs.  No example/argument for corr.", 
+            "title": "corr"
+        }, 
+        {
+            "location": "/#cos", 
+            "text": "cos(expr) - Returns the cosine of  expr .  Examples:  SELECT cos(0);\n1.0", 
+            "title": "cos"
+        }, 
+        {
+            "location": "/#cosh", 
+            "text": "cosh(expr) - Returns the hyperbolic cosine of  expr .  Examples:  SELECT cosh(0);\n1.0", 
+            "title": "cosh"
+        }, 
+        {
+            "location": "/#count", 
+            "text": "count(*) - Returns the total number of retrieved rows, including rows containing null.  count(expr) - Returns the number of rows for which the supplied expression is non-null.  count(DISTINCT expr[, expr...]) - Returns the number of rows for which the supplied expression(s) are unique and non-null.  No example/argument for count.", 
+            "title": "count"
+        }, 
+        {
+            "location": "/#covar_pop", 
+            "text": "covar_pop(expr1, expr2) - Returns the population covariance of a set of number pairs.  No example/argument for covar_pop.", 
+            "title": "covar_pop"
+        }, 
+        {
+            "location": "/#covar_samp", 
+            "text": "covar_samp(expr1, expr2) - Returns the sample covariance of a set of number pairs.  No example/argument for covar_samp.", 
+            "title": "covar_samp"
+        }, 
+        {
+            "location": "/#crc32", 
+            "text": "crc32(expr) - Returns a cyclic redundancy check value of the  expr  as a bigint.  Examples:  SELECT crc32('Spark');\n1557323817", 
+            "title": "crc32"
+        }, 
+        {
+            "location": "/#cube", 
+            "text": "", 
+            "title": "cube"
+        }, 
+        {
+            "location": "/#cume_dist", 
+            "text": "cume_dist() - Computes the position of a value relative to all values in the partition.  No example/argument for cume_dist.", 
+            "title": "cume_dist"
+        }, 
+        {
+            "location": "/#current_database", 
+            "text": "current_database() - Returns the current database.  Examples:  SELECT current_database();\ndefault", 
+            "title": "current_database"
+        }, 
+        {
+            "location": "/#current_date", 
+            "text": "current_date() - Returns the current date at the start of query evaluation.  No example/argument for current_date.", 
+            "title": "current_date"
+        }, 
+        {
+            "location": "/#current_schema", 
+            "text": "current_schema() - Returns the current database.  Examples:  SELECT current_schema();\ndefault", 
+            "title": "current_schema"
+        }, 
+        {
+            "location": "/#current_timestamp", 
+            "text": "current_timestamp() - Returns the current timestamp at the start of query evaluation.  No example/argument for current_timestamp.", 
+            "title": "current_timestamp"
+        }, 
+        {
+            "location": "/#current_user", 
+            "text": "current_user() - Returns the name of the user that owns the session executing the current SQL statement.  Examples:  SELECT current_user();\nUSER1", 
+            "title": "current_user"
+        }, 
+        {
+            "location": "/#current_user_ldap_groups", 
+            "text": "current_user_ldap_groups() - Returns all the ldap groups as an ARRAY to which the user who is executing the current SQL statement belongs.  Examples:  SELECT array_contains(current_user_ldap_groups(), 'GROUP1');\ntrue", 
+            "title": "current_user_ldap_groups"
+        }, 
+        {
+            "location": "/#date", 
+            "text": "date(expr AS type) - Casts the value  expr  to the target data type  type .  Examples:  SELECT date('10' as int);\n10", 
+            "title": "date"
+        }, 
+        {
+            "location": "/#date_add", 
+            "text": "date_add(start_date, num_days) - Returns the date that is  num_days  after  start_date .  Examples:  SELECT date_add('2016-07-30', 1);\n2016-07-31", 
+            "title": "date_add"
+        }, 
+        {
+            "location": "/#date_format", 
+            "text": "date_format(timestamp, fmt) - Converts  timestamp  to a value of string in the format specified by the date format  fmt .  Examples:  SELECT date_format('2016-04-08', 'y');\n2016", 
+            "title": "date_format"
+        }, 
+        {
+            "location": "/#date_sub", 
+            "text": "date_sub(start_date, num_days) - Returns the date that is  num_days  before  start_date .  Examples:  SELECT date_sub('2016-07-30', 1);\n2016-07-29", 
+            "title": "date_sub"
+        }, 
+        {
+            "location": "/#datediff", 
+            "text": "datediff(endDate, startDate) - Returns the number of days from  startDate  to  endDate .  Examples:  SELECT datediff('2009-07-31', '2009-07-30');\n1  SELECT datediff('2009-07-30', '2009-07-31');\n-1", 
+            "title": "datediff"
+        }, 
+        {
+            "location": "/#day", 
+            "text": "day(date) - Returns the day of month of the date/timestamp.  Examples:  SELECT day('2009-07-30');\n30", 
+            "title": "day"
+        }, 
+        {
+            "location": "/#dayofmonth", 
+            "text": "dayofmonth(date) - Returns the day of month of the date/timestamp.  Examples:  SELECT dayofmonth('2009-07-30');\n30", 
+            "title": "dayofmonth"
+        }, 
+        {
+            "location": "/#dayofyear", 
+            "text": "dayofyear(date) - Returns the day of year of the date/timestamp.  Examples:  SELECT dayofyear('2016-04-09');\n100", 
+            "title": "dayofyear"
+        }, 
+        {
+            "location": "/#decimal", 
+            "text": "decimal(expr AS type) - Casts the value  expr  to the target data type  type .  Examples:  SELECT decimal('10' as int);\n10", 
+            "title": "decimal"
+        }, 
+        {
+            "location": "/#decode", 
+            "text": "decode(bin, charset) - Decodes the first argument using the second argument character set.  Examples:  SELECT decode(encode('abc', 'utf-8'), 'utf-8');\nabc", 
+            "title": "decode"
+        }, 
+        {
+            "location": "/#degrees", 
+            "text": "degrees(expr) - Converts radians to degrees.  Examples:  SELECT degrees(3.141592653589793);\n180.0", 
+            "title": "degrees"
+        }, 
+        {
+            "location": "/#dense_rank", 
+            "text": "dense_rank() - Computes the rank of a value in a group of values. The result is one plus the\npreviously assigned rank value. Unlike the function rank, dense_rank will not produce gaps\nin the ranking sequence.  No example/argument for dense_rank.", 
+            "title": "dense_rank"
+        }, 
+        {
+            "location": "/#double", 
+            "text": "double(expr AS type) - Casts the value  expr  to the target data type  type .  Examples:  SELECT double('10' as int);\n10", 
+            "title": "double"
+        }, 
+        {
+            "location": "/#dsid", 
+            "text": "dsid() - Returns the unique distributed member ID of executor fetching current row.  Examples:  SELECT dsid();\nlocalhost(1831) v2 :18165", 
+            "title": "dsid"
+        }, 
+        {
+            "location": "/#e", 
+            "text": "e() - Returns Euler's number, e.  Examples:  SELECT e();\n2.718281828459045", 
+            "title": "e"
+        }, 
+        {
+            "location": "/#elt", 
+            "text": "elt(n, str1, str2, ...) - Returns the  n -th string, e.g., returns  str2  when  n  is 2.  Examples:  SELECT elt(1, 'scala', 'java');\nscala", 
+            "title": "elt"
+        }, 
+        {
+            "location": "/#encode", 
+            "text": "encode(str, charset) - Encodes the first argument using the second argument character set.  Examples:  SELECT encode('abc', 'utf-8');\nabc", 
+            "title": "encode"
+        }, 
+        {
+            "location": "/#exp", 
+            "text": "exp(expr) - Returns e to the power of  expr .  Examples:  SELECT exp(0);\n1.0", 
+            "title": "exp"
+        }, 
+        {
+            "location": "/#explode", 
+            "text": "explode(expr) - Separates the elements of array  expr  into multiple rows, or the elements of map  expr  into multiple rows and columns.  Examples:  SELECT explode(array(10, 20));\n10\n20", 
+            "title": "explode"
+        }, 
+        {
+            "location": "/#expm1", 
+            "text": "expm1(expr) - Returns exp( expr ) - 1.  Examples:  SELECT expm1(0);\n0.0", 
+            "title": "expm1"
+        }, 
+        {
+            "location": "/#factorial", 
+            "text": "factorial(expr) - Returns the factorial of  expr .  expr  is [0..20]. Otherwise, null.  Examples:  SELECT factorial(5);\n120", 
+            "title": "factorial"
+        }, 
+        {
+            "location": "/#find_in_set", 
+            "text": "find_in_set(str, str_array) - Returns the index (1-based) of the given string ( str ) in the comma-delimited list ( str_array ).\nReturns 0, if the string was not found or if the given string ( str ) contains a comma.  Examples:  SELECT find_in_set('ab','abc,b,ab,c,def');\n3", 
+            "title": "find_in_set"
+        }, 
+        {
+            "location": "/#first", 
+            "text": "first(expr[, isIgnoreNull]) - Returns the first value of  expr  for a group of rows.\nIf  isIgnoreNull  is true, returns only non-null values.  No example/argument for first.", 
+            "title": "first"
+        }, 
+        {
+            "location": "/#first_value", 
+            "text": "first_value(expr[, isIgnoreNull]) - Returns the first value of  expr  for a group of rows.\nIf  isIgnoreNull  is true, returns only non-null values.  No example/argument for first_value.", 
+            "title": "first_value"
+        }, 
+        {
+            "location": "/#float", 
+            "text": "float(expr AS type) - Casts the value  expr  to the target data type  type .  Examples:  SELECT float('10' as int);\n10", 
+            "title": "float"
+        }, 
+        {
+            "location": "/#floor", 
+            "text": "floor(expr) - Returns the largest integer not greater than  expr .  Examples:  SELECT floor(-0.1);\n-1  SELECT floor(5);\n5", 
+            "title": "floor"
+        }, 
+        {
+            "location": "/#format_number", 
+            "text": "format_number(expr1, expr2) - Formats the number  expr1  like '#,###,###.##', rounded to  expr2 \ndecimal places. If  expr2  is 0, the result has no decimal point or fractional part.\nThis is supposed to function like MySQL's FORMAT.  Examples:  SELECT format_number(12332.123456, 4);\n12,332.1235", 
+            "title": "format_number"
+        }, 
+        {
+            "location": "/#format_string", 
+            "text": "format_string(strfmt, obj, ...) - Returns a formatted string from printf-style format strings.  Examples:  SELECT format_string( Hello World %d %s , 100,  days );\nHello World 100 days", 
+            "title": "format_string"
+        }, 
+        {
+            "location": "/#from_unixtime", 
+            "text": "from_unixtime(unix_time, format) - Returns  unix_time  in the specified  format .  Examples:  SELECT from_unixtime(0, 'yyyy-MM-dd HH:mm:ss');\n1970-01-01 00:00:00", 
+            "title": "from_unixtime"
+        }, 
+        {
+            "location": "/#from_utc_timestamp", 
+            "text": "from_utc_timestamp(timestamp, timezone) - Given a timestamp, which corresponds to a certain time of day in UTC, returns another timestamp that corresponds to the same time of day in the given timezone.  Examples:  SELECT from_utc_timestamp('2016-08-31', 'Asia/Seoul');\n2016-08-31 09:00:00", 
+            "title": "from_utc_timestamp"
+        }, 
+        {
+            "location": "/#get_json_object", 
+            "text": "get_json_object(json_txt, path) - Extracts a json object from  path .  Examples:  SELECT get_json_object('{ a : b }', '$.a');\nb", 
+            "title": "get_json_object"
+        }, 
+        {
+            "location": "/#greatest", 
+            "text": "greatest(expr, ...) - Returns the greatest value of all parameters, skipping null values.  Examples:  SELECT greatest(10, 9, 2, 4, 3);\n10", 
+            "title": "greatest"
+        }, 
+        {
+            "location": "/#grouping", 
+            "text": "", 
+            "title": "grouping"
+        }, 
+        {
+            "location": "/#grouping_id", 
+            "text": "", 
+            "title": "grouping_id"
+        }, 
+        {
+            "location": "/#hash", 
+            "text": "hash(expr1, expr2, ...) - Returns a hash value of the arguments.  Examples:  SELECT hash('Spark', array(123), 2);\n-1321691492", 
+            "title": "hash"
+        }, 
+        {
+            "location": "/#hex", 
+            "text": "hex(expr) - Converts  expr  to hexadecimal.  Examples:  SELECT hex(17);\n11  SELECT hex('Spark SQL');\n537061726B2053514C", 
+            "title": "hex"
+        }, 
+        {
+            "location": "/#hour", 
+            "text": "hour(timestamp) - Returns the hour component of the string/timestamp.  Examples:  SELECT hour('2009-07-30 12:58:59');\n12", 
+            "title": "hour"
+        }, 
+        {
+            "location": "/#hypot", 
+            "text": "hypot(expr1, expr2) - Returns sqrt( expr1 2 +  expr2 2).  Examples:  SELECT hypot(3, 4);\n5.0", 
+            "title": "hypot"
+        }, 
+        {
+            "location": "/#if", 
+            "text": "if(expr1, expr2, expr3) - If  expr1  evaluates to true, then returns  expr2 ; otherwise returns  expr3 .  Examples:  SELECT if(1   2, 'a', 'b');\na", 
+            "title": "if"
+        }, 
+        {
+            "location": "/#ifnull", 
+            "text": "ifnull(expr1, expr2) - Returns  expr2  if  expr1  is null, or  expr1  otherwise.  Examples:  SELECT ifnull(NULL, array('2'));\n[ 2 ]", 
+            "title": "ifnull"
+        }, 
+        {
+            "location": "/#in", 
+            "text": "expr1 in(expr2, expr3, ...) - Returns true if  expr  equals to any valN.  No example/argument for in.", 
+            "title": "in"
+        }, 
+        {
+            "location": "/#initcap", 
+            "text": "initcap(str) - Returns  str  with the first letter of each word in uppercase.\nAll other letters are in lowercase. Words are delimited by white space.  Examples:  SELECT initcap('sPark sql');\nSpark Sql", 
+            "title": "initcap"
+        }, 
+        {
+            "location": "/#inline", 
+            "text": "inline(expr) - Explodes an array of structs into a table.  Examples:  SELECT inline(array(struct(1, 'a'), struct(2, 'b')));\n1  a\n2  b", 
+            "title": "inline"
+        }, 
+        {
+            "location": "/#input_file_name", 
+            "text": "input_file_name() - Returns the name of the current file being read if available.  No example/argument for input_file_name.", 
+            "title": "input_file_name"
+        }, 
+        {
+            "location": "/#instr", 
+            "text": "instr(str, substr) - Returns the (1-based) index of the first occurrence of  substr  in  str .  Examples:  SELECT instr('SparkSQL', 'SQL');\n6", 
+            "title": "instr"
+        }, 
+        {
+            "location": "/#int", 
+            "text": "int(expr AS type) - Casts the value  expr  to the target data type  type .  Examples:  SELECT int('10' as int);\n10", 
+            "title": "int"
+        }, 
+        {
+            "location": "/#isnan", 
+            "text": "isnan(expr) - Returns true if  expr  is NaN, or false otherwise.  Examples:  SELECT isnan(cast('NaN' as double));\ntrue", 
+            "title": "isnan"
+        }, 
+        {
+            "location": "/#isnotnull", 
+            "text": "isnotnull(expr) - Returns true if  expr  is not null, or false otherwise.  Examples:  SELECT isnotnull(1);\ntrue", 
+            "title": "isnotnull"
+        }, 
+        {
+            "location": "/#isnull", 
+            "text": "isnull(expr) - Returns true if  expr  is null, or false otherwise.  Examples:  SELECT isnull(1);\nfalse", 
+            "title": "isnull"
+        }, 
+        {
+            "location": "/#java_method", 
+            "text": "java_method(class, method[, arg1[, arg2 ..]]) - Calls a method with reflection.  Examples:  SELECT java_method('java.util.UUID', 'randomUUID');\nc33fb387-8500-4bfa-81d2-6e0e3e930df2  SELECT java_method('java.util.UUID', 'fromString', 'a5cf6c42-0c85-418f-af6c-3e4e5b1328f2');\na5cf6c42-0c85-418f-af6c-3e4e5b1328f2", 
+            "title": "java_method"
+        }, 
+        {
+            "location": "/#json_tuple", 
+            "text": "json_tuple(jsonStr, p1, p2, ..., pn) - Return a tuple like the function get_json_object, but it takes multiple names. All the input parameters and output column types are string.  Examples:  SELECT json_tuple('{ a :1,  b :2}', 'a', 'b');\n1  2", 
+            "title": "json_tuple"
+        }, 
+        {
+            "location": "/#kurtosis", 
+            "text": "kurtosis(expr) - Returns the kurtosis value calculated from values of a group.  No example/argument for kurtosis.", 
+            "title": "kurtosis"
+        }, 
+        {
+            "location": "/#lag", 
+            "text": "lag(input[, offset[, default]]) - Returns the value of  input  at the  offset th row\nbefore the current row in the window. The default value of  offset  is 1 and the default\nvalue of  default  is null. If the value of  input  at the  offset th row is null,\nnull is returned. If there is no such offset row (e.g., when the offset is 1, the first\nrow of the window does not have any previous row),  default  is returned.  No example/argument for lag.", 
+            "title": "lag"
+        }, 
+        {
+            "location": "/#last", 
+            "text": "last(expr[, isIgnoreNull]) - Returns the last value of  expr  for a group of rows.\nIf  isIgnoreNull  is true, returns only non-null values.  No example/argument for last.", 
+            "title": "last"
+        }, 
+        {
+            "location": "/#last_day", 
+            "text": "last_day(date) - Returns the last day of the month which the date belongs to.  Examples:  SELECT last_day('2009-01-12');\n2009-01-31", 
+            "title": "last_day"
+        }, 
+        {
+            "location": "/#last_value", 
+            "text": "last_value(expr[, isIgnoreNull]) - Returns the last value of  expr  for a group of rows.\nIf  isIgnoreNull  is true, returns only non-null values.  No example/argument for last_value.", 
+            "title": "last_value"
+        }, 
+        {
+            "location": "/#lcase", 
+            "text": "lcase(str) - Returns  str  with all characters changed to lowercase.  Examples:  SELECT lcase('SparkSql');\nsparksql", 
+            "title": "lcase"
+        }, 
+        {
+            "location": "/#lead", 
+            "text": "lead(input[, offset[, default]]) - Returns the value of  input  at the  offset th row\nafter the current row in the window. The default value of  offset  is 1 and the default\nvalue of  default  is null. If the value of  input  at the  offset th row is null,\nnull is returned. If there is no such an offset row (e.g., when the offset is 1, the last\nrow of the window does not have any subsequent row),  default  is returned.  No example/argument for lead.", 
+            "title": "lead"
+        }, 
+        {
+            "location": "/#least", 
+            "text": "least(expr, ...) - Returns the least value of all parameters, skipping null values.  Examples:  SELECT least(10, 9, 2, 4, 3);\n2", 
+            "title": "least"
+        }, 
+        {
+            "location": "/#length", 
+            "text": "length(expr) - Returns the length of  expr  or number of bytes in binary data.  Examples:  SELECT length('Spark SQL');\n9", 
+            "title": "length"
+        }, 
+        {
+            "location": "/#levenshtein", 
+            "text": "levenshtein(str1, str2) - Returns the Levenshtein distance between the two given strings.  Examples:  SELECT levenshtein('kitten', 'sitting');\n3", 
+            "title": "levenshtein"
+        }, 
+        {
+            "location": "/#like", 
+            "text": "str like pattern - Returns true if str matches pattern, null if any arguments are null, false otherwise.  Arguments:\nstr - a string expression\npattern - a string expression. The pattern is a string which is matched literally, with\nexception to the following special symbols:\n\n_ matches any one character in the input (similar to . in posix regular expressions)\n\n% matches zero or more characters in the input (similar to .* in posix regular\nexpressions)\n\nThe escape character is '\\'. If an escape character precedes a special symbol or another\nescape character, the following character is matched literally. It is invalid to escape\nany other character.\n\nExamples:  SELECT '%SystemDrive%\\Users\\John' like '\\%SystemDrive\\%\\\\Users%'\ntrue\n\nSee also:\nUse RLIKE to match with standard regular expressions.", 
+            "title": "like"
+        }, 
+        {
+            "location": "/#ln", 
+            "text": "ln(expr) - Returns the natural logarithm (base e) of  expr .  Examples:  SELECT ln(1);\n0.0", 
+            "title": "ln"
+        }, 
+        {
+            "location": "/#locate", 
+            "text": "locate(substr, str[, pos]) - Returns the position of the first occurrence of  substr  in  str  after position  pos .\nThe given  pos  and return value are 1-based.  Examples:  SELECT locate('bar', 'foobarbar', 5);\n7", 
+            "title": "locate"
+        }, 
+        {
+            "location": "/#log", 
+            "text": "log(base, expr) - Returns the logarithm of  expr  with  base .  Examples:  SELECT log(10, 100);\n2.0", 
+            "title": "log"
+        }, 
+        {
+            "location": "/#log10", 
+            "text": "log10(expr) - Returns the logarithm of  expr  with base 10.  Examples:  SELECT log10(10);\n1.0", 
+            "title": "log10"
+        }, 
+        {
+            "location": "/#log1p", 
+            "text": "log1p(expr) - Returns log(1 +  expr ).  Examples:  SELECT log1p(0);\n0.0", 
+            "title": "log1p"
+        }, 
+        {
+            "location": "/#log2", 
+            "text": "log2(expr) - Returns the logarithm of  expr  with base 2.  Examples:  SELECT log2(2);\n1.0", 
+            "title": "log2"
+        }, 
+        {
+            "location": "/#lower", 
+            "text": "lower(str) - Returns  str  with all characters changed to lowercase.  Examples:  SELECT lower('SparkSql');\nsparksql", 
+            "title": "lower"
+        }, 
+        {
+            "location": "/#lower_bound", 
+            "text": "lower_bound() - Lower value of an estimate interval for a given confidence.calculated using error estimation method (ClosedForm or Bootstrap).  [enterprise]  Examples:  SELECT sum(ArrDelay) ArrivalDelay, lower_bound(ArrivalDelay),\nMonth_ from airline group by Month_ order by Month_ desc with error 0.10;\n1117.6, 11101.5, Jan ```\n\n### lpad\n\n\nlpad(str, len, pad) - Returns `str`, left-padded with `pad` to a length of `len`.\nIf `str` is longer than `len`, the return value is shortened to `len` characters.  Examples:   SELECT lpad('hi', 5, '??');\n???hi\nSELECT lpad('hi', 1, '??');\nh   \n### ltrim\n\nltrim(str) - Removes the leading and trailing space characters from `str`.  Examples:   SELECT ltrim('    SparkSQL');\nSparkSQL   \n### map\n\nmap(key0, value0, key1, value1, ...) - Creates a map with the given key/value pairs.  Examples:   SELECT map(1.0, '2', 3.0, '4');\n{1.0:\"2\",3.0:\"4\"}   \n### map_keys\n\nmap_keys(map) - Returns an unordered array containing the keys of the map.  Examples:   SELECT map_keys(map(1, 'a', 2, 'b'));\n[1,2]   \n### map_values\n\nmap_values(map) - Returns an unordered array containing the values of the map.  Examples:   SELECT map_values(map(1, 'a', 2, 'b'));\n[\"a\",\"b\"]   \n### max\n\nmax(expr) - Returns the maximum value of `expr`.  No example/argument for max.  \n### md5\n\nmd5(expr) - Returns an MD5 128-bit checksum as a hex string of `expr`.  Examples:   SELECT md5('Spark');\n8cde774d6f7333752ed72cacddb05126   \n### mean\n\nmean(expr) - Returns the mean calculated from values of a group.  No example/argument for mean.  \n### min\n\nmin(expr) - Returns the minimum value of `expr`.  No example/argument for min.  \n### minute\n\nminute(timestamp) - Returns the minute component of the string/timestamp.  Examples:   SELECT minute('2009-07-30 12:58:59');\n58   \n### monotonically_increasing_id\n\n\nmonotonically_increasing_id() - Returns monotonically increasing 64-bit integers. The generated ID is guaranteed\nto be monotonically increasing and unique, but not consecutive. The current implementation\nputs the partition ID in the upper 31 bits, and the lower 33 bits represent the record number\nwithin each partition. The assumption is that the data frame has less than 1 billion\npartitions, and each partition has less than 8 billion records.  No example/argument for monotonically_increasing_id.  \n### month\n\nmonth(date) - Returns the month component of the date/timestamp.  Examples:   SELECT month('2016-07-30');\n7   \n### months_between\n\nmonths_between(timestamp1, timestamp2) - Returns number of months between `timestamp1` and `timestamp2`.  Examples:   SELECT months_between('1997-02-28 10:30:00', '1996-10-30');\n3.94959677   \n### named_struct\n\nnamed_struct(name1, val1, name2, val2, ...) - Creates a struct with the given field names and values.  Examples:   SELECT named_struct(\"a\", 1, \"b\", 2, \"c\", 3);\n{\"a\":1,\"b\":2,\"c\":3}   \n### nanvl\n\nnanvl(expr1, expr2) - Returns `expr1` if it's not NaN, or `expr2` otherwise.  Examples:   SELECT nanvl(cast('NaN' as double), 123);\n123.0   \n### negative\n\nnegative(expr) - Returns the negated value of `expr`.  Examples:   SELECT negative(1);\n-1   \n### next_day\n\nnext_day(start_date, day_of_week) - Returns the first date which is later than `start_date` and named as indicated.  Examples:   SELECT next_day('2015-01-14', 'TU');\n2015-01-20   \n### not\n\nnot expr - Logical not.  No example/argument for not.  \n### now\n\nnow() - Returns the current timestamp at the start of query evaluation.  No example/argument for now.  \n### ntile\n\n\nntile(n) - Divides the rows for each window partition into `n` buckets ranging\nfrom 1 to at most `n`.  No example/argument for ntile.  \n### nullif\n\nnullif(expr1, expr2) - Returns null if `expr1` equals to `expr2`, or `expr1` otherwise.  Examples:   SELECT nullif(2, 2);\nNULL   \n### nvl\n\nnvl(expr1, expr2) - Returns `expr2` if `expr1` is null, or `expr1` otherwise.  Examples:   SELECT nvl(NULL, array('2'));\n[\"2\"]   \n### nvl2\n\nnvl2(expr1, expr2, expr3) - Returns `expr2` if `expr1` is not null, or `expr3` otherwise.  Examples:   SELECT nvl2(NULL, 2, 1);\n1   \n### or\n\nexpr1 or expr2 - Logical OR.  No example/argument for or.  \n### parse_url\n\nparse_url(url, partToExtract[, key]) - Extracts a part from a URL.  Examples:   SELECT parse_url('http://spark.apache.org/path?query=1', 'HOST')\nspark.apache.org\nSELECT parse_url('http://spark.apache.org/path?query=1', 'QUERY')\nquery=1\nSELECT parse_url('http://spark.apache.org/path?query=1', 'QUERY', 'query')\n1   \n### percent_rank\n\n\npercent_rank() - Computes the percentage ranking of a value in a group of values.  No example/argument for percent_rank.  \n### percentile\n\n\npercentile(col, percentage) - Returns the exact percentile value of numeric column `col` at the\ngiven percentage. The value of percentage must be between 0.0 and 1.0.\n\npercentile(col, array(percentage1 [, percentage2]...)) - Returns the exact percentile value array\nof numeric column `col` at the given percentage(s). Each value of the percentage array must\nbe between 0.0 and 1.0.  No example/argument for percentile.  \n### percentile_approx\n\n\npercentile_approx(col, percentage [, accuracy]) - Returns the approximate percentile value of numeric\ncolumn `col` at the given percentage. The value of percentage must be between 0.0\nand 1.0. The `accuracy` parameter (default: 10000) is a positive numeric literal which\ncontrols approximation accuracy at the cost of memory. Higher value of `accuracy` yields\nbetter accuracy, `1.0/accuracy` is the relative error of the approximation.\nWhen `percentage` is an array, each value of the percentage array must be between 0.0 and 1.0.\nIn this case, returns the approximate percentile array of column `col` at the given\npercentage array.  Examples:   SELECT percentile_approx(10.0, array(0.5, 0.4, 0.1), 100);\n[10.0,10.0,10.0]\nSELECT percentile_approx(10.0, 0.5, 100);\n10.0   \n### pi\n\npi() - Returns pi.  Examples:   SELECT pi();\n3.141592653589793   \n### pmod\n\npmod(expr1, expr2) - Returns the positive value of `expr1` mod `expr2`.  Examples:   SELECT pmod(10, 3);\n1\nSELECT pmod(-10, 3);\n2   \n### posexplode\n\nposexplode(expr) - Separates the elements of array `expr` into multiple rows with positions, or the elements of map `expr` into multiple rows and columns with positions.  Examples:   SELECT posexplode(array(10,20));\n0  10\n1  20   \n### positive\n\npositive(expr) - Returns the value of `expr`.  No example/argument for positive.  \n### pow\n\npow(expr1, expr2) - Raises `expr1` to the power of `expr2`.  Examples:   SELECT pow(2, 3);\n8.0   \n### power\n\npower(expr1, expr2) - Raises `expr1` to the power of `expr2`.  Examples:   SELECT power(2, 3);\n8.0   \n### printf\n\nprintf(strfmt, obj, ...) - Returns a formatted string from printf-style format strings.  Examples:   SELECT printf(\"Hello World %d %s\", 100, \"days\");\nHello World 100 days   \n### quarter\n\nquarter(date) - Returns the quarter of the year for date, in the range 1 to 4.  Examples:   SELECT quarter('2016-08-31');\n3   \n### radians\n\nradians(expr) - Converts degrees to radians.  Examples:   SELECT radians(180);\n3.141592653589793   \n### rand\n\nrand([seed]) - Returns a random value with independent and identically distributed (i.i.d.) uniformly distributed values in [0, 1).  Examples:   SELECT rand();\n0.9629742951434543\nSELECT rand(0);\n0.8446490682263027\nSELECT rand(null);\n0.8446490682263027   \n### randn\n\nrandn([seed]) - Returns a random value with independent and identically distributed (i.i.d.) values drawn from the standard normal distribution.  Examples:   SELECT randn();\n-0.3254147983080288\nSELECT randn(0);\n1.1164209726833079\nSELECT randn(null);\n1.1164209726833079   \n### rank\n\n\nrank() - Computes the rank of a value in a group of values. The result is one plus the number\nof rows preceding or equal to the current row in the ordering of the partition. The values\nwill produce gaps in the sequence.  No example/argument for rank.  \n### reflect\n\nreflect(class, method[, arg1[, arg2 ..]]) - Calls a method with reflection.  Examples:   SELECT reflect('java.util.UUID', 'randomUUID');\nc33fb387-8500-4bfa-81d2-6e0e3e930df2\nSELECT reflect('java.util.UUID', 'fromString', 'a5cf6c42-0c85-418f-af6c-3e4e5b1328f2');\na5cf6c42-0c85-418f-af6c-3e4e5b1328f2   \n### regexp_extract\n\nregexp_extract(str, regexp[, idx]) - Extracts a group that matches `regexp`.  Examples:   SELECT regexp_extract('100-200', '(\\d+)-(\\d+)', 1);\n100   \n### regexp_replace\n\nregexp_replace(str, regexp, rep) - Replaces all substrings of `str` that match `regexp` with `rep`.  Examples:   SELECT regexp_replace('100-200', '(\\d+)', 'num');\nnum-num   \n### relative_error\n\nrelative_error() - Indicates ratio of absolute error to estimate (approx answer).  calculated using error estimation method (ClosedForm or Bootstrap). [enterprise]  Examples:   SELECT sum(ArrDelay) ArrivalDelay, relative_error(ArrivalDelay),\nMonth_ from airline group by Month_ order by Month_ desc with error 0.10;\n1117.6, 0.3, Jan\n\"```", 
+            "title": "lower_bound"
+        }, 
+        {
+            "location": "/#repeat", 
+            "text": "repeat(str, n) - Returns the string which repeats the given string value n times.  Examples:  SELECT repeat('123', 2);\n123123", 
+            "title": "repeat"
+        }, 
+        {
+            "location": "/#reverse", 
+            "text": "reverse(str) - Returns the reversed given string.  Examples:  SELECT reverse('Spark SQL');\nLQS krapS", 
+            "title": "reverse"
+        }, 
+        {
+            "location": "/#rint", 
+            "text": "rint(expr) - Returns the double value that is closest in value to the argument and is equal to a mathematical integer.  Examples:  SELECT rint(12.3456);\n12.0", 
+            "title": "rint"
+        }, 
+        {
+            "location": "/#rlike", 
+            "text": "str rlike regexp - Returns true if  str  matches  regexp , or false otherwise.  No example/argument for rlike.", 
+            "title": "rlike"
+        }, 
+        {
+            "location": "/#rollup", 
+            "text": "", 
+            "title": "rollup"
+        }, 
+        {
+            "location": "/#round", 
+            "text": "round(expr, d) - Returns  expr  rounded to  d  decimal places using HALF_UP rounding mode.  Examples:  SELECT round(2.5, 0);\n3.0", 
+            "title": "round"
+        }, 
+        {
+            "location": "/#row_number", 
+            "text": "row_number() - Assigns a unique, sequential number to each row, starting with one,\naccording to the ordering of rows within the window partition.  No example/argument for row_number.", 
+            "title": "row_number"
+        }, 
+        {
+            "location": "/#rpad", 
+            "text": "rpad(str, len, pad) - Returns  str , right-padded with  pad  to a length of  len .\nIf  str  is longer than  len , the return value is shortened to  len  characters.  Examples:  SELECT rpad('hi', 5, '??');\nhi???  SELECT rpad('hi', 1, '??');\nh", 
+            "title": "rpad"
+        }, 
+        {
+            "location": "/#rtrim", 
+            "text": "rtrim(str) - Removes the trailing space characters from  str .  Examples:  SELECT rtrim('    SparkSQL   ');\nSparkSQL", 
+            "title": "rtrim"
+        }, 
+        {
+            "location": "/#second", 
+            "text": "second(timestamp) - Returns the second component of the string/timestamp.  Examples:  SELECT second('2009-07-30 12:58:59');\n59", 
+            "title": "second"
+        }, 
+        {
+            "location": "/#sentences", 
+            "text": "sentences(str[, lang, country]) - Splits  str  into an array of array of words.  Examples:  SELECT sentences('Hi there! Good morning.');\n[[ Hi , there ],[ Good , morning ]]", 
+            "title": "sentences"
+        }, 
+        {
+            "location": "/#sha", 
+            "text": "sha(expr) - Returns a sha1 hash value as a hex string of the  expr .  Examples:  SELECT sha('Spark');\n85f5955f4b27a9a4c2aab6ffe5d7189fc298b92c", 
+            "title": "sha"
+        }, 
+        {
+            "location": "/#sha1", 
+            "text": "sha1(expr) - Returns a sha1 hash value as a hex string of the  expr .  Examples:  SELECT sha1('Spark');\n85f5955f4b27a9a4c2aab6ffe5d7189fc298b92c", 
+            "title": "sha1"
+        }, 
+        {
+            "location": "/#sha2", 
+            "text": "sha2(expr, bitLength) - Returns a checksum of SHA-2 family as a hex string of  expr .\nSHA-224, SHA-256, SHA-384, and SHA-512 are supported. Bit length of 0 is equivalent to 256.  Examples:  SELECT sha2('Spark', 256);\n529bc3b07127ecb7e53a4dcf1991d9152c24537d919178022b2c42657f79a26b", 
+            "title": "sha2"
+        }, 
+        {
+            "location": "/#shiftleft", 
+            "text": "shiftleft(base, expr) - Bitwise left shift.  Examples:  SELECT shiftleft(2, 1);\n4", 
+            "title": "shiftleft"
+        }, 
+        {
+            "location": "/#shiftright", 
+            "text": "shiftright(base, expr) - Bitwise (signed) right shift.  Examples:  SELECT shiftright(4, 1);\n2", 
+            "title": "shiftright"
+        }, 
+        {
+            "location": "/#shiftrightunsigned", 
+            "text": "shiftrightunsigned(base, expr) - Bitwise unsigned right shift.  Examples:  SELECT shiftrightunsigned(4, 1);\n2", 
+            "title": "shiftrightunsigned"
+        }, 
+        {
+            "location": "/#sign", 
+            "text": "sign(expr) - Returns -1.0, 0.0 or 1.0 as  expr  is negative, 0 or positive.  Examples:  SELECT sign(40);\n1.0", 
+            "title": "sign"
+        }, 
+        {
+            "location": "/#signum", 
+            "text": "signum(expr) - Returns -1.0, 0.0 or 1.0 as  expr  is negative, 0 or positive.  Examples:  SELECT signum(40);\n1.0", 
+            "title": "signum"
+        }, 
+        {
+            "location": "/#sin", 
+            "text": "sin(expr) - Returns the sine of  expr .  Examples:  SELECT sin(0);\n0.0", 
+            "title": "sin"
+        }, 
+        {
+            "location": "/#sinh", 
+            "text": "sinh(expr) - Returns the hyperbolic sine of  expr .  Examples:  SELECT sinh(0);\n0.0", 
+            "title": "sinh"
+        }, 
+        {
+            "location": "/#size", 
+            "text": "size(expr) - Returns the size of an array or a map. Returns -1 if null.  Examples:  SELECT size(array('b', 'd', 'c', 'a'));\n4", 
+            "title": "size"
+        }, 
+        {
+            "location": "/#skewness", 
+            "text": "skewness(expr) - Returns the skewness value calculated from values of a group.  No example/argument for skewness.", 
+            "title": "skewness"
+        }, 
+        {
+            "location": "/#smallint", 
+            "text": "smallint(expr AS type) - Casts the value  expr  to the target data type  type .  Examples:  SELECT smallint('10' as int);\n10", 
+            "title": "smallint"
+        }, 
+        {
+            "location": "/#sort_array", 
+            "text": "sort_array(array[, ascendingOrder]) - Sorts the input array in ascending or descending order according to the natural ordering of the array elements.  Examples:  SELECT sort_array(array('b', 'd', 'c', 'a'), true);\n[ a , b , c , d ]", 
+            "title": "sort_array"
+        }, 
+        {
+            "location": "/#soundex", 
+            "text": "soundex(str) - Returns Soundex code of the string.  Examples:  SELECT soundex('Miller');\nM460", 
+            "title": "soundex"
+        }, 
+        {
+            "location": "/#space", 
+            "text": "space(n) - Returns a string consisting of  n  spaces.  Examples:  SELECT concat(space(2), '1');\n1", 
+            "title": "space"
+        }, 
+        {
+            "location": "/#spark_partition_id", 
+            "text": "spark_partition_id() - Returns the current partition id.  No example/argument for spark_partition_id.", 
+            "title": "spark_partition_id"
+        }, 
+        {
+            "location": "/#split", 
+            "text": "split(str, regex) - Splits  str  around occurrences that match  regex .  Examples:  SELECT split('oneAtwoBthreeC', '[ABC]');\n[ one , two , three , ]", 
+            "title": "split"
+        }, 
+        {
+            "location": "/#sqrt", 
+            "text": "sqrt(expr) - Returns the square root of  expr .  Examples:  SELECT sqrt(4);\n2.0", 
+            "title": "sqrt"
+        }, 
+        {
+            "location": "/#stack", 
+            "text": "stack(n, expr1, ..., exprk) - Separates  expr1 , ...,  exprk  into  n  rows.  Examples:  SELECT stack(2, 1, 2, 3);\n1  2\n3  NULL", 
+            "title": "stack"
+        }, 
+        {
+            "location": "/#std", 
+            "text": "std(expr) - Returns the sample standard deviation calculated from values of a group.  No example/argument for std.", 
+            "title": "std"
+        }, 
+        {
+            "location": "/#stddev", 
+            "text": "stddev(expr) - Returns the sample standard deviation calculated from values of a group.  No example/argument for stddev.", 
+            "title": "stddev"
+        }, 
+        {
+            "location": "/#stddev_pop", 
+            "text": "stddev_pop(expr) - Returns the population standard deviation calculated from values of a group.  No example/argument for stddev_pop.", 
+            "title": "stddev_pop"
+        }, 
+        {
+            "location": "/#stddev_samp", 
+            "text": "stddev_samp(expr) - Returns the sample standard deviation calculated from values of a group.  No example/argument for stddev_samp.", 
+            "title": "stddev_samp"
+        }, 
+        {
+            "location": "/#str_to_map", 
+            "text": "str_to_map(text[, pairDelim[, keyValueDelim]]) - Creates a map after splitting the text into key/value pairs using delimiters. Default delimiters are ',' for  pairDelim  and ':' for  keyValueDelim .  Examples:  SELECT str_to_map('a:1,b:2,c:3', ',', ':');\nmap( a : 1 , b : 2 , c : 3 )  SELECT str_to_map('a');\nmap( a :null)", 
+            "title": "str_to_map"
+        }, 
+        {
+            "location": "/#string", 
+            "text": "string(expr AS type) - Casts the value  expr  to the target data type  type .  Examples:  SELECT string('10' as int);\n10", 
+            "title": "string"
+        }, 
+        {
+            "location": "/#struct", 
+            "text": "struct(col1, col2, col3, ...) - Creates a struct with the given field values.", 
+            "title": "struct"
+        }, 
+        {
+            "location": "/#substr", 
+            "text": "substr(str, pos[, len]) - Returns the substring of  str  that starts at  pos  and is of length  len , or the slice of byte array that starts at  pos  and is of length  len .  Examples:  SELECT substr('Spark SQL', 5);\nk SQL  SELECT substr('Spark SQL', -3);\nSQL  SELECT substr('Spark SQL', 5, 1);\nk", 
+            "title": "substr"
+        }, 
+        {
+            "location": "/#substring", 
+            "text": "substring(str, pos[, len]) - Returns the substring of  str  that starts at  pos  and is of length  len , or the slice of byte array that starts at  pos  and is of length  len .  Examples:  SELECT substring('Spark SQL', 5);\nk SQL  SELECT substring('Spark SQL', -3);\nSQL  SELECT substring('Spark SQL', 5, 1);\nk", 
+            "title": "substring"
+        }, 
+        {
+            "location": "/#substring_index", 
+            "text": "substring_index(str, delim, count) - Returns the substring from  str  before  count  occurrences of the delimiter  delim .\nIf  count  is positive, everything to the left of the final delimiter (counting from the\nleft) is returned. If  count  is negative, everything to the right of the final delimiter\n(counting from the right) is returned. The function substring_index performs a case-sensitive match\nwhen searching for  delim .  Examples:  SELECT substring_index('www.apache.org', '.', 2);\nwww.apache", 
+            "title": "substring_index"
+        }, 
+        {
+            "location": "/#sum", 
+            "text": "sum(expr) - Returns the sum calculated from values of a group.  No example/argument for sum.", 
+            "title": "sum"
+        }, 
+        {
+            "location": "/#tan", 
+            "text": "tan(expr) - Returns the tangent of  expr .  Examples:  SELECT tan(0);\n0.0", 
+            "title": "tan"
+        }, 
+        {
+            "location": "/#tanh", 
+            "text": "tanh(expr) - Returns the hyperbolic tangent of  expr .  Examples:  SELECT tanh(0);\n0.0", 
+            "title": "tanh"
+        }, 
+        {
+            "location": "/#timestamp", 
+            "text": "timestamp(expr AS type) - Casts the value  expr  to the target data type  type .  Examples:  SELECT timestamp('10' as int);\n10", 
+            "title": "timestamp"
+        }, 
+        {
+            "location": "/#tinyint", 
+            "text": "tinyint(expr AS type) - Casts the value  expr  to the target data type  type .  Examples:  SELECT tinyint('10' as int);\n10", 
+            "title": "tinyint"
+        }, 
+        {
+            "location": "/#to_date", 
+            "text": "to_date(expr) - Extracts the date part of the date or timestamp expression  expr .  Examples:  SELECT to_date('2009-07-30 04:17:52');\n2009-07-30", 
+            "title": "to_date"
+        }, 
+        {
+            "location": "/#to_unix_timestamp", 
+            "text": "to_unix_timestamp(expr[, pattern]) - Returns the UNIX timestamp of the give time.  Examples:  SELECT to_unix_timestamp('2016-04-08', 'yyyy-MM-dd');\n1460041200", 
+            "title": "to_unix_timestamp"
+        }, 
+        {
+            "location": "/#to_utc_timestamp", 
+            "text": "to_utc_timestamp(timestamp, timezone) - Given a timestamp, which corresponds to a certain time of day in the given timezone, returns another timestamp that corresponds to the same time of day in UTC.  Examples:  SELECT to_utc_timestamp('2016-08-31', 'Asia/Seoul');\n2016-08-30 15:00:00", 
+            "title": "to_utc_timestamp"
+        }, 
+        {
+            "location": "/#translate", 
+            "text": "translate(input, from, to) - Translates the  input  string by replacing the characters present in the  from  string with the corresponding characters in the  to  string.  Examples:  SELECT translate('AaBbCc', 'abc', '123');\nA1B2C3", 
+            "title": "translate"
+        }, 
+        {
+            "location": "/#trim", 
+            "text": "trim(str) - Removes the leading and trailing space characters from  str .  Examples:  SELECT trim('    SparkSQL   ');\nSparkSQL", 
+            "title": "trim"
+        }, 
+        {
+            "location": "/#trunc", 
+            "text": "trunc(date, fmt) - Returns  date  with the time portion of the day truncated to the unit specified by the format model  fmt .  Examples:  SELECT trunc('2009-02-12', 'MM');\n2009-02-01  SELECT trunc('2015-10-27', 'YEAR');\n2015-01-01", 
+            "title": "trunc"
+        }, 
+        {
+            "location": "/#ucase", 
+            "text": "ucase(str) - Returns  str  with all characters changed to uppercase.  Examples:  SELECT ucase('SparkSql');\nSPARKSQL", 
+            "title": "ucase"
+        }, 
+        {
+            "location": "/#unbase64", 
+            "text": "unbase64(str) - Converts the argument from a base 64 string  str  to a binary.  Examples:  SELECT unbase64('U3BhcmsgU1FM');\nSpark SQL", 
+            "title": "unbase64"
+        }, 
+        {
+            "location": "/#unhex", 
+            "text": "unhex(expr) - Converts hexadecimal  expr  to binary.  Examples:  SELECT decode(unhex('537061726B2053514C'), 'UTF-8');\nSpark SQL", 
+            "title": "unhex"
+        }, 
+        {
+            "location": "/#unix_timestamp", 
+            "text": "unix_timestamp([expr[, pattern]]) - Returns the UNIX timestamp of current or specified time.  Examples:  SELECT unix_timestamp();\n1476884637  SELECT unix_timestamp('2016-04-08', 'yyyy-MM-dd');\n1460041200", 
+            "title": "unix_timestamp"
+        }, 
+        {
+            "location": "/#upper", 
+            "text": "upper(str) - Returns  str  with all characters changed to uppercase.  Examples:  SELECT upper('SparkSql');\nSPARKSQL", 
+            "title": "upper"
+        }, 
+        {
+            "location": "/#upper_bound", 
+            "text": "upper_bound() - Upper value of an estimate interval for a given confidence.calculated using error estimation method (ClosedForm or Bootstrap).  [enterprise]  Examples:  SELECT sum(ArrDelay) ArrivalDelay, upper_bound(ArrivalDelay),\nMonth_ from airline group by Month_ order by Month_ desc with error 0.10;\n1117.6, 11135.5, Jan ```\n\n### var_pop\n\nvar_pop(expr) - Returns the population variance calculated from values of a group.  No example/argument for var_pop.  \n### var_samp\n\nvar_samp(expr) - Returns the sample variance calculated from values of a group.  No example/argument for var_samp.  \n### variance\n\nvariance(expr) - Returns the sample variance calculated from values of a group.  No example/argument for variance.  \n### weekofyear\n\nweekofyear(date) - Returns the week of the year of the given date.  Examples:   SELECT weekofyear('2008-02-20');\n8   \n### when\n\nCASE WHEN expr1 THEN expr2 [WHEN expr3 THEN expr4]* [ELSE expr5] END - When `expr1` = true, returns `expr2`; when `expr3` = true, return `expr4`; else return `expr5`.  No example/argument for when.  \n### window\n\n### xpath\n\nxpath(xml, xpath) - Returns a string array of values within the nodes of xml that match the XPath expression.  Examples:   SELECT xpath(' b1 b2 b3 c1 c2 ','a/b/text()');\n['b1','b2','b3']   \n### xpath_boolean\n\nxpath_boolean(xml, xpath) - Returns true if the XPath expression evaluates to true, or if a matching node is found.  Examples:   SELECT xpath_boolean(' 1 ','a/b');\ntrue   \n### xpath_double\n\nxpath_double(xml, xpath) - Returns a double value, the value zero if no match is found, or NaN if a match is found but the value is non-numeric.  Examples:   SELECT xpath_double(' 1 2 ', 'sum(a/b)');\n3.0   \n### xpath_float\n\nxpath_float(xml, xpath) - Returns a float value, the value zero if no match is found, or NaN if a match is found but the value is non-numeric.  Examples:   SELECT xpath_float(' 1 2 ', 'sum(a/b)');\n3.0   \n### xpath_int\n\nxpath_int(xml, xpath) - Returns an integer value, or the value zero if no match is found, or a match is found but the value is non-numeric.  Examples:   SELECT xpath_int(' 1 2 ', 'sum(a/b)');\n3   \n### xpath_long\n\nxpath_long(xml, xpath) - Returns a long integer value, or the value zero if no match is found, or a match is found but the value is non-numeric.  Examples:   SELECT xpath_long(' 1 2 ', 'sum(a/b)');\n3   \n### xpath_number\n\nxpath_number(xml, xpath) - Returns a double value, the value zero if no match is found, or NaN if a match is found but the value is non-numeric.  Examples:   SELECT xpath_number(' 1 2 ', 'sum(a/b)');\n3.0   \n### xpath_short\n\nxpath_short(xml, xpath) - Returns a short integer value, or the value zero if no match is found, or a match is found but the value is non-numeric.  Examples:   SELECT xpath_short(' 1 2 ', 'sum(a/b)');\n3   \n### xpath_string\n\nxpath_string(xml, xpath) - Returns the text contents of the first xml node that matches the XPath expression.  Examples:   SELECT xpath_string(' b cc ','a/c');\ncc   \n### year\n\nyear(date) - Returns the year component of the date/timestamp.  Examples:   SELECT year('2016-07-30');\n2016   \n### |\n\nexpr1 | expr2 - Returns the result of bitwise OR of `expr1` and `expr2`.  Examples:   SELECT 3 | 5;\n7   \n### ~\n\n~ expr - Returns the result of bitwise NOT of `expr`.  Examples:   SELECT ~ 0;\n-1\n```", 
+            "title": "upper_bound"
+        }
+    ]
+}

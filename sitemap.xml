@@ -4,7 +4,7 @@
     
     <url>
      <loc>http://www.snappydata.io/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -12,7 +12,7 @@
     
     <url>
      <loc>http://www.snappydata.io/install/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -21,43 +21,43 @@
         
     <url>
      <loc>http://www.snappydata.io/install/system_requirements/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/install/install_on_premise/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/install/setting_up_cluster_on_amazon_web_services/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/kubernetes/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/quickstart/getting_started_with_docker_image/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/install/building_from_source/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/install/upgrade/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -66,7 +66,7 @@
     
     <url>
      <loc>http://www.snappydata.io/quickstart/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -74,56 +74,56 @@
     
         
     <url>
-     <loc>http://www.snappydata.io/quickstart/getting_started_with_your_spark_distribution/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
      <loc>http://www.snappydata.io/quickstart/getting_started_by_installing_snappydata_on-premise/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/quickstart/getting_started_on_kubernetes/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/quickstart/getting_started_with_docker_image/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
-     <loc>http://www.snappydata.io/quickstart/using_spark_scala_apis/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/quickstart/performance_apache_spark/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/quickstart/using_sql/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <loc>http://www.snappydata.io/quickstart/getting_started_with_your_spark_distribution/</loc>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/quickstart/snappydataquick_start/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/quickstart/using_spark_scala_apis/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/quickstart/performance_apache_spark/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/quickstart/using_sql/</loc>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/quickstart/structucture_streamingquickstart/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -131,194 +131,16 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/howto/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <loc>http://www.snappydata.io/configuring_cluster/configure_launch_cluster/</loc>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
 
     
-        
     <url>
-     <loc>http://www.snappydata.io/howto/start_snappy_cluster/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/check_status_cluster/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/stop_snappy_cluster/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/run_spark_job_inside_cluster/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/spark_installation_using_smart_connector/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/use_snappy_shell/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/create_row_tables_and_run_queries/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/create_column_tables_and_run_queries/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/load_data_into_snappydata_tables/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/load_data_from_external_data_stores/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/perform_a_colocated_join/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/connect_using_jdbc_driver/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/using_snappydata_for_any_spark_dist/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/store_retrieve_complex_datatypes_JDBC/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/store_and_query_json_objects/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/store_and_query_objects/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/use_stream_processing_with_snappydata/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/use_transactions_isolation_levels/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/use_synopsis_data_engine_to_run_approximate_queries/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/use_python_to_create_tables_and_run_queries/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/connect_using_odbc_driver/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/connect_to_the_cluster_from_external_clients/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/import_from_hive_table/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/export_hdfs/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/connect_oss_vis_client_tools/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/connecttibcospotfire/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/tableauconnect/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/use_apache_zeppelin_with_snappydata/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/howto/concurrent_apache_zeppelin_access_to_secure_snappydata/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    
-
-    
-    <url>
-     <loc>http://www.snappydata.io/architecture/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <loc>http://www.snappydata.io/install/concepts/</loc>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -327,25 +149,43 @@
         
     <url>
      <loc>http://www.snappydata.io/architecture/core_components/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/architecture/data_ingestion_pipeline/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/architecture/hybrid_cluster_manager/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/architecture/cluster_architecture/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/architecture/hybrid_cluster_manager/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/consistency/transactions_about/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io</loc>
+     <lastmod></lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/deployment/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io</loc>
+     <lastmod></lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -353,8 +193,8 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/configuration/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <loc>http://www.snappydata.io/howto/</loc>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -362,20 +202,176 @@
     
         
     <url>
-     <loc>http://www.snappydata.io/configuring_cluster/configuring_cluster/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <loc>http://www.snappydata.io/howto/start_snappy_cluster/</loc>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
-     <loc>http://www.snappydata.io/configuring_cluster/property_description/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <loc>http://www.snappydata.io/howto/check_status_cluster/</loc>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
-     <loc>http://www.snappydata.io/configuring_cluster/firewalls_connections/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <loc>http://www.snappydata.io/howto/stop_snappy_cluster/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/run_spark_job_inside_cluster/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/spark_installation_using_smart_connector/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/use_snappy_shell/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/create_row_tables_and_run_queries/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/create_column_tables_and_run_queries/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/load_data_into_snappydata_tables/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/load_data_from_external_data_stores/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/perform_a_colocated_join/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/connect_using_jdbc_driver/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/using_snappydata_for_any_spark_dist/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/store_retrieve_complex_datatypes_JDBC/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/store_and_query_json_objects/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/store_and_query_objects/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/use_stream_processing_with_snappydata/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/use_transactions_isolation_levels/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/use_synopsis_data_engine_to_run_approximate_queries/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/use_python_to_create_tables_and_run_queries/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/connect_using_odbc_driver/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/connect_to_the_cluster_from_external_clients/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/import_from_hive_table/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/export_hdfs/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/connect_oss_vis_client_tools/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/connecttibcospotfire/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/tableauconnect/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/use_apache_zeppelin_with_snappydata/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/howto/concurrent_apache_zeppelin_access_to_secure_snappydata/</loc>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -384,7 +380,7 @@
     
     <url>
      <loc>http://www.snappydata.io/programming_guide/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -393,133 +389,79 @@
         
     <url>
      <loc>http://www.snappydata.io/programming_guide/sparksession_snappysession_and_snappystreamingcontext/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/programming_guide/snappydata_jobs/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/programming_guide/managing_jar_files/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/programming_guide/using_snappydata_shell/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/programming_guide/using_the_spark_shell_and_spark-submit/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/programming_guide/working_with_hadoop_yarn_cluster_manager/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/programming_guide/using_jdbc_with_snappydata/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/programming_guide/spark_jdbc_connector/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/programming_guide/multiple_language_binding_using_thrift_protocol/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/programming_guide/building_snappydata_applications_using_spark_api/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/programming_guide/tables_in_snappydata/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/programming_guide/stream_processing_using_sql/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/programming_guide/udf_and_udaf/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    
-
-    
-    <url>
-     <loc>http://www.snappydata.io/consistency/transactions_about/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-    
-
-    
-        
-    <url>
-     <loc>http://www.snappydata.io/consistency/using_transactions_row/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/consistency/using_snapshot_isolation_column/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    
-
-    
-    <url>
-     <loc>http://www.snappydata.io/deployment/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-    
-
-    
-        
-    <url>
-     <loc>http://www.snappydata.io/affinity_modes/local_mode/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/affinity_modes/embedded_mode/</loc>
-     <lastmod>2019-07-09</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>http://www.snappydata.io/affinity_modes/connector_mode/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -528,7 +470,7 @@
     
     <url>
      <loc>http://www.snappydata.io/best_practices/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -537,13 +479,13 @@
         
     <url>
      <loc>http://www.snappydata.io/best_practices/setup_cluster/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/best_practices/design_schema/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -555,25 +497,25 @@
         
     <url>
      <loc>http://www.snappydata.io/best_practices/memory_management/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/best_practices/ha_considerations/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/best_practices/important_settings/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/best_practices/transactions_best_practices/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -582,7 +524,7 @@
     
     <url>
      <loc>http://www.snappydata.io/aqp/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -591,43 +533,43 @@
         
     <url>
      <loc>http://www.snappydata.io/sde/key_concepts/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/sde/working_with_stratified_samples/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/sde/running_queries/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/sde/more_examples/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/sde/sample_selection/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/sde/hac_contracts/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/sde/sketching/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -636,7 +578,7 @@
     
     <url>
      <loc>http://www.snappydata.io/connectors/connector/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -645,19 +587,19 @@
         
     <url>
      <loc>http://www.snappydata.io/connectors/deployment_dependency_jar/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/connectors/gemfire_connector/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/connectors/cdc_connector/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -666,7 +608,7 @@
     
     <url>
      <loc>http://www.snappydata.io/monitoring/managing_and_monitoring/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -675,25 +617,25 @@
         
     <url>
      <loc>http://www.snappydata.io/monitoring/monitoring/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/monitoring/configure_high_availability/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/monitoring/configure_logging/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/monitoring/monitor-manage/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -702,7 +644,7 @@
     
     <url>
      <loc>http://www.snappydata.io/security/security/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -711,55 +653,55 @@
         
     <url>
      <loc>http://www.snappydata.io/security/launching_the_cluster_in_secure_mode/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/security/specify_encrypt_passwords_conf_client/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/security/authentication_connecting_to_a_secure_cluster/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/security/authorization/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/security/row_level_security/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/security/configuring_network_encryption_and_authentication_using_ssl/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/configuring_cluster/ssl_setup/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/configuring_cluster/securinguiconnection/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/security/user_names_for_authentication_authorization_and_membership/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -768,7 +710,7 @@
     
     <url>
      <loc>http://www.snappydata.io/vsd/system_performance/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -777,13 +719,13 @@
         
     <url>
      <loc>http://www.snappydata.io/vsd/collecting_system_stats/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/vsd/vsd_overview/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -798,7 +740,7 @@
     
     <url>
      <loc>http://www.snappydata.io/reference/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -806,8 +748,20 @@
     
         
     <url>
+     <loc>http://www.snappydata.io/configuring_cluster/configuring_cluster/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/configuring_cluster/property_description/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
      <loc>http://www.snappydata.io/sql_reference/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -818,8 +772,14 @@
     </url>
         
     <url>
+     <loc>http://www.snappydata.io/reference/sql_general_limitations/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
      <loc>http://www.snappydata.io/reference/inbuilt_system_procedures/system-procedures/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -831,7 +791,7 @@
         
     <url>
      <loc>http://www.snappydata.io/reference/system_tables/system_tables/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -843,7 +803,7 @@
         
     <url>
      <loc>http://www.snappydata.io/reference/command_line_utilities/store-launcher/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -855,7 +815,7 @@
         
     <url>
      <loc>http://www.snappydata.io/reference/interactive_commands/store_command_reference/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -867,7 +827,7 @@
         
     <url>
      <loc>http://www.snappydata.io/reference/configuration_parameters/config_parameters/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -879,37 +839,49 @@
         
     <url>
      <loc>http://www.snappydata.io/apidocsintro/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/reference/API_Reference/odbc_supported_apis/</loc>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+        
+    <url>
+     <loc>http://www.snappydata.io/reference/sql_functions/sql_functions/</loc>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/reference/API_Reference/apireference_guide/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/reference/misc/supported_datatypes/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/reference/misc/passwordless_ssh/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/setting_up_odbc_driver-tableau_desktop/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/setting_up_jdbc_driver_qlikview/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -918,7 +890,7 @@
     
     <url>
      <loc>http://www.snappydata.io/troubleshooting/troubleshooting/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -927,49 +899,49 @@
         
     <url>
      <loc>http://www.snappydata.io/troubleshooting/member_startup_problems/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/troubleshooting/recovering_from_a_conflictingpersistentdataexception/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/troubleshooting/preventing_disk_full_errors/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/troubleshooting/recovering_from_disk_full_errors/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/troubleshooting/catalog_inconsistency/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/troubleshooting/oom/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/troubleshooting/collect_debug_artifacts/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>http://www.snappydata.io/troubleshooting/troubleshooting_error_messages/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -978,7 +950,7 @@
     
     <url>
      <loc>http://www.snappydata.io/additional_files/open_source_components/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -986,7 +958,7 @@
     
     <url>
      <loc>http://www.snappydata.io/additional_files/license_model/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -994,7 +966,7 @@
     
     <url>
      <loc>http://www.snappydata.io/release_notes/release_notes/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -1002,7 +974,7 @@
     
     <url>
      <loc>http://www.snappydata.io/prev_doc_ver/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -1010,7 +982,7 @@
     
     <url>
      <loc>http://www.snappydata.io/techsupport/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -1018,7 +990,15 @@
     
     <url>
      <loc>http://www.snappydata.io/LICENSE/</loc>
-     <lastmod>2019-07-09</lastmod>
+     <lastmod>2019-08-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>http://www.snappydata.io/imp_info/</loc>
+     <lastmod>2019-08-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
     

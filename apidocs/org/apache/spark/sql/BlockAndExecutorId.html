@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>BlockAndExecutorId - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.BlockAndExecutorId</title>
-          <meta name="description" content="BlockAndExecutorId - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.BlockAndExecutorId" />
-          <meta name="keywords" content="BlockAndExecutorId snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.BlockAndExecutorId" />
+          <title>BlockAndExecutorId - snappydata_2.11 1.1.1 API - org.apache.spark.sql.BlockAndExecutorId</title>
+          <meta name="description" content="BlockAndExecutorId - snappydata 2.11 1.1.1 API - org.apache.spark.sql.BlockAndExecutorId" />
+          <meta name="keywords" content="BlockAndExecutorId snappydata 2.11 1.1.1 API org.apache.spark.sql.BlockAndExecutorId" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.BlockAndExecutorId#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(_blockId:org.apache.spark.storage.BlockManagerId,_executorCores:Int,_numProcessors:Int):org.apache.spark.sql.BlockAndExecutorId"></a>
+      <a id="&lt;init&gt;(_blockId:org.apache.spark.storage.BlockManagerId,_executorCores:Int,_numProcessors:Int,_usableHeapBytes:Long):org.apache.spark.sql.BlockAndExecutorId"></a>
       <a id="&lt;init&gt;:BlockAndExecutorId"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">BlockAndExecutorId</span><span class="params">(<span name="_blockId">_blockId: <a href="../storage/BlockManagerId.html" class="extype" name="org.apache.spark.storage.BlockManagerId">BlockManagerId</a></span>, <span name="_executorCores">_executorCores: <span class="extype" name="scala.Int">Int</span></span>, <span name="_numProcessors">_numProcessors: <span class="extype" name="scala.Int">Int</span></span>)</span>
+        <span class="name">BlockAndExecutorId</span><span class="params">(<span name="_blockId">_blockId: <a href="../storage/BlockManagerId.html" class="extype" name="org.apache.spark.storage.BlockManagerId">BlockManagerId</a></span>, <span name="_executorCores">_executorCores: <span class="extype" name="scala.Int">Int</span></span>, <span name="_numProcessors">_numProcessors: <span class="extype" name="scala.Int">Int</span></span>, <span name="_usableHeapBytes">_usableHeapBytes: <span class="extype" name="scala.Long">Long</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.BlockAndExecutorId@&lt;init&gt;(_blockId:org.apache.spark.storage.BlockManagerId,_executorCores:Int,_numProcessors:Int):org.apache.spark.sql.BlockAndExecutorId" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.BlockAndExecutorId@&lt;init&gt;(_blockId:org.apache.spark.storage.BlockManagerId,_executorCores:Int,_numProcessors:Int,_usableHeapBytes:Long):org.apache.spark.sql.BlockAndExecutorId" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -466,6 +466,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.BlockAndExecutorId">BlockAndExecutorId</a> → AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.BlockAndExecutorId#usableHeapBytes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="usableHeapBytes:Long"></a>
+      <a id="usableHeapBytes:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">usableHeapBytes</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.BlockAndExecutorId@usableHeapBytes:Long" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
