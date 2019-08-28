@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -31,11 +31,12 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
-import org.apache.spark.Logging
-import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.PutIntoValuesColumnTable
+import org.apache.spark.sql.hive.QuestionMark
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
 
@@ -43,7 +44,7 @@ import org.apache.spark.util.SnappyUtils
 class SparkSQLPrepareImpl(val sql: String,
     val schema: String,
     val ctx: LeadNodeExecutionContext,
-    senderVersion: Version) extends SparkSQLExecute with Logging {
+    senderVersion: Version) extends SparkSQLExecute {
 
   if (Thread.currentThread().getContextClassLoader != null) {
     val loader = SnappyUtils.getSnappyStoreContextLoader(
@@ -59,18 +60,13 @@ class SparkSQLPrepareImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setCurrentSchema(schema)
+  Utils.setCurrentSchema(session, schema, createIfNotExists = true)
 
   session.setPreparedQuery(preparePhase = true, None)
 
   private[this] val analyzedPlan: LogicalPlan = {
-    var aplan = session.prepareSQL(sql)
-    val questionMarkCounter = session.snappyParser.questionMarkCounter
-    val paramLiterals = new mutable.HashSet[ParamLiteral]()
-    SparkSQLPrepareImpl.allParamLiterals(aplan, paramLiterals)
-    if (paramLiterals.size != questionMarkCounter) {
-      aplan = session.prepareSQL(sql, true)
-    }
+    val aplan = session.prepareSQL(sql)
+//    println(aplan)
     aplan
   }
 
@@ -100,6 +96,15 @@ class SparkSQLPrepareImpl(val sql: String,
     val questionMarkCounter = session.snappyParser.questionMarkCounter
     if (questionMarkCounter > 0) {
       val paramLiterals = new mutable.HashSet[ParamLiteral]()
+      analyzedPlan match {
+        case PutIntoValuesColumnTable(_, _, _, _) => analyzedPlan.expressions.foreach {
+          exp => exp.map {
+            case QuestionMark(pos) =>
+              SparkSQLPrepareImpl.addParamLiteral(pos, exp.dataType, exp.nullable, paramLiterals)
+          }
+        }
+        case _ =>
+      }
       SparkSQLPrepareImpl.allParamLiterals(analyzedPlan, paramLiterals)
       if (paramLiterals.size != questionMarkCounter) {
         SparkSQLPrepareImpl.remainingParamLiterals(analyzedPlan, paramLiterals)
@@ -121,6 +126,7 @@ class SparkSQLPrepareImpl(val sql: String,
         types(index + 2) = sqlType._3
         types(index + 3) = if (paramLiteralsAtPrepare(i).value.asInstanceOf[Boolean]) 1 else 0
       })
+      session.setPreparedParamsTypeInfo(types)
       DataSerializer.writeIntArray(types, hdos)
     } else {
       DataSerializer.writeIntArray(Array[Int](0), hdos)
@@ -174,6 +180,7 @@ object SparkSQLPrepareImpl{
     branches.foreach {
       case (_, QuestionMark(pos)) =>
         addParamLiteral(pos, datatype, nullable, result)
+      case _ =>
     }
     elseValue match {
       case Some(QuestionMark(pos)) =>
@@ -251,16 +258,5 @@ object SparkSQLPrepareImpl{
       case p@PredicateSubquery(query, x, y, z) => p.copy(handleSubQuery(query, f), x, y, z)
       case s@ScalarSubquery(query, x, y) => s.copy(handleSubQuery(query, f), x, y)
     }
-  }
-}
-
-object QuestionMark {
-  def unapply(p: ParamLiteral): Option[Int] = {
-    if (p.pos == 0 && p.dataType == NullType) {
-      p.value match {
-        case r: Row => Some(r.getInt(0))
-        case _ => None
-      }
-    } else None
   }
 }

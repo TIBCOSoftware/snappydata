@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,8 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.jdbc.JDBCWriteSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyJDBCWriteSuite extends JDBCWriteSuite with SharedSnappySessionContext{
-
-}
+class SnappyJDBCWriteSuite extends JDBCWriteSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

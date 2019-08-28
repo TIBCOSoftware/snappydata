@@ -72,7 +72,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.1.0-HF-1'
+  version = '1.1.1'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -108,7 +108,7 @@ allprojects {
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.1.1'
-    snappySparkVersion = '2.1.1.6'
+    snappySparkVersion = '2.1.1.7'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     sparkCurrentVersion = '2.3.2'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
@@ -151,10 +151,10 @@ allprojects {
     antlr2Version = '2.7.7'
 
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.3'
+    snappyStoreVersion = '1.6.4'
     snappydataVersion = version
     pulseVersion = '1.5.1'
-    zeppelinInterpreterVersion = '0.7.3.5'
+    zeppelinInterpreterVersion = '0.7.3.6'
 
     buildFlags = ''
     createdBy = System.getProperty('user.name')
@@ -165,7 +165,7 @@ allprojects {
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
-    sparkJobServerVersion = '0.6.2.9'
+    sparkJobServerVersion = '0.6.2.10'
     eclipseCollectionsVersion = '9.2.0'
     fastutilVersion = '8.2.2'
 
@@ -561,6 +561,7 @@ subprojects {
   configurations.testRuntime {
     // below is included indirectly by hadoop deps and conflicts with embedded 1.5.7 apacheds
     exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
+    exclude(group: 'org.apache.directory.server', module: 'apacheds-i18n')
   }
 
   task packageTests(type: Jar, dependsOn: testClasses) {
@@ -683,7 +684,7 @@ gradle.taskGraph.whenReady { graph ->
           if (dunitSingle == null || dunitSingle.length() == 0) {
             def dunitTests = testClassesDirs.asFileTree.matching {
               includes = [ '**/*DUnitTest.class', '**/*DUnit.class' ]
-              excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class',
+              excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/*HDFS*DUnit*.class',
                   '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
                   '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class' ]
             }
@@ -747,6 +748,7 @@ gradle.taskGraph.whenReady { graph ->
         environment 'SNAPPY_HOME': snappyProductDir,
           'APACHE_SPARK_HOME': sparkProductDir,
           'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
+          'SPARK_TESTING': '1',
           'SNAPPY_DIST_CLASSPATH': test.classpath.asPath
 
         def failureCount = new java.util.concurrent.atomic.AtomicInteger(0)
@@ -1244,7 +1246,8 @@ task distInstallers {
 
 // use the task below to prepare final release bits
 task distProduct {
-  dependsOn product, distTar, distZip dependsOn distInstallers
+  dependsOn product, distTar, distZip
+  dependsOn distInstallers
   dependsOn copyShadowJars
 }
 
@@ -1490,11 +1493,19 @@ task docs(type: ScalaDoc) {
   })
   destinationDir = file("${rootProject.buildDir}/docs")
 }
+
+task buildSqlFuncDocs(type: Exec) {
+  dependsOn product
+  //on linux
+  commandLine "${rootProject.projectDir}/spark/sql/create-docs.sh"
+}
+
 task publishDocs(type:Exec) {
-  dependsOn docs
+  dependsOn docs, buildSqlFuncDocs
   //on linux
   commandLine './publish-site.sh'
 }
+
 
 // It runs test script from product dir. Hence if running the target individually make sure
 // to run product target first

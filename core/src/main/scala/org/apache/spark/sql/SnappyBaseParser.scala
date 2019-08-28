@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,6 +17,7 @@
 package org.apache.spark.sql
 
 import java.util.concurrent.ConcurrentHashMap
+import javax.xml.bind.DatatypeConverter
 
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import io.snappydata.QueryHint
@@ -24,10 +25,11 @@ import org.eclipse.collections.impl.map.mutable.UnifiedMap
 import org.eclipse.collections.impl.set.mutable.UnifiedSet
 import org.parboiled2._
 
+import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, IdentifierWithDatabase, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.collection.Utils.{toUpperCase => upper}
+import org.apache.spark.sql.collection.Utils.{toLowerCase => lower, toUpperCase => upper}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 
@@ -36,7 +38,8 @@ import org.apache.spark.sql.{SnappyParserConsts => Consts}
  */
 abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
-  protected var caseSensitive: Boolean = session.sessionState.conf.caseSensitiveAnalysis
+  protected var caseSensitive: Boolean =
+    (session ne null) && session.sessionState.conf.caseSensitiveAnalysis
 
   private[sql] final val queryHints: ConcurrentHashMap[String, String] =
     new ConcurrentHashMap[String, String](4, 0.7f, 1)
@@ -129,8 +132,15 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def stringLiteral: Rule1[String] = rule {
-    '\'' ~ capture((noneOf("'") | "''").*) ~ '\'' ~ ws ~> ((s: String) =>
-      if (s.indexOf("''") >= 0) s.replace("''", "'") else s)
+    capture('\'' ~ (noneOf("'\\") | "''" | '\\' ~ ANY).* ~ '\'') ~ ws ~> ((s: String) =>
+      ParserUtils.unescapeSQLString(
+        if (s.indexOf("''") >= 0) "'" + s.substring(1, s.length - 1).replace("''", "\\'") + "'"
+        else s))
+  }
+
+  protected final def hexLiteral: Rule1[Array[Byte]] = rule {
+    (ch('X') | ch('x')) ~ ws ~ stringLiteral ~> ((s: String) =>
+      DatatypeConverter.parseHexBinary(if ((s.length & 0x1) == 1) "0" + s else s))
   }
 
   final def keyword(k: Keyword): Rule0 = rule {
@@ -158,9 +168,9 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
   protected final def identifier: Rule1[String] = rule {
     unquotedIdentifier ~> { (s: String) =>
-      val ucase = upper(s)
-      test(!Consts.reservedKeywords.contains(ucase)) ~
-          push(if (caseSensitive) s else ucase)
+      val lcase = lower(s)
+      test(!Consts.reservedKeywords.contains(lcase)) ~
+          push(if (caseSensitive) s else lcase)
     } |
     quotedIdentifier
   }
@@ -181,16 +191,16 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
    */
   protected final def strictIdentifier: Rule1[String] = rule {
     unquotedIdentifier ~> { (s: String) =>
-      val ucase = upper(s)
-      test(!Consts.allKeywords.contains(ucase)) ~
-          push(if (caseSensitive) s else ucase)
+      val lcase = lower(s)
+      test(!Consts.allKeywords.contains(lcase)) ~
+          push(if (caseSensitive) s else lcase)
     } |
     quotedIdentifier
   }
 
   private def quoteIdentifier(name: String): String = name.replace("`", "``")
 
-  protected final def quotedNormalizedId(id: IdentifierWithDatabase): String = id.database match {
+  protected final def quotedUppercaseId(id: IdentifierWithDatabase): String = id.database match {
     case None => s"`${upper(quoteIdentifier(id.identifier))}`"
     case Some(d) => s"`${upper(quoteIdentifier(d))}`.`${upper(quoteIdentifier(id.identifier))}`"
   }
@@ -228,9 +238,9 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   final def VARCHAR: Rule0 = newDataType(Consts.VARCHAR)
 
   protected final def fixedDecimalType: Rule1[DataType] = rule {
-    (DECIMAL | NUMERIC) ~ '(' ~ ws ~ digits ~ commaSep ~ digits ~ ')' ~ ws ~>
-        ((precision: String, scale: String) =>
-          DecimalType(precision.toInt, scale.toInt))
+    (DECIMAL | NUMERIC) ~ '(' ~ ws ~ digits ~ (commaSep ~ digits).? ~ ')' ~ ws ~>
+        ((precision: String, scale: Any) => DecimalType(precision.toInt,
+          if (scale == None) 0 else scale.asInstanceOf[Option[String]].get.toInt))
   }
 
   protected final def primitiveType: Rule1[DataType] = rule {
@@ -298,12 +308,36 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     columnCharType | primitiveType | arrayType | mapType | structType
   }
 
+  /** allow for first character of unquoted identifier to be a numeric */
+  protected final def identifierExt: Rule1[String] = rule {
+    atomic(capture(Consts.identifier. +)) ~ delimiter ~> { (s: String) =>
+      val lcase = lower(s)
+      test(!Consts.reservedKeywords.contains(lcase)) ~
+          push(if (caseSensitive) s else lcase)
+    } |
+    quotedIdentifier
+  }
+
+  protected final def packageIdentifierPart: Rule1[String] = rule {
+    atomic(capture((Consts.identifier | Consts.hyphen | Consts.dot). +)) ~ ws ~> { (s: String) =>
+      val lcase = lower(s)
+      test(!Consts.reservedKeywords.contains(lcase)) ~
+          push(if (caseSensitive) s else lcase)
+    } |
+        quotedIdentifier
+  }
+
   final def tableIdentifier: Rule1[TableIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
-    (identifier ~ '.' ~ ws).? ~ identifier ~> ((schema: Any, table: String) =>
+    (identifierExt ~ '.' ~ ws).? ~ identifierExt ~> ((schema: Any, table: String) =>
       TableIdentifier(table, schema.asInstanceOf[Option[String]]))
   }
 
+  final def packageIdentifier: Rule1[TableIdentifier] = rule {
+    // case-sensitivity already taken care of properly by "identifier"
+    (identifierExt ~ '.' ~ ws).? ~ packageIdentifierPart ~> ((schema: Any, table: String) =>
+      TableIdentifier(table, schema.asInstanceOf[Option[String]]))
+  }
 
   final def functionIdentifier: Rule1[FunctionIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
@@ -312,9 +346,17 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 }
 
-final class Keyword private[sql] (s: String) {
+final class Keyword private[sql](s: String) {
   val lower: String = Utils.toLowerCase(s)
-  val upper: String = Utils.toUpperCase(s)
+
+  override def hashCode(): Int = lower.hashCode
+
+  override def equals(obj: Any): Boolean = {
+    this.eq(obj.asInstanceOf[AnyRef]) ||
+        (obj.isInstanceOf[Keyword] && lower == obj.asInstanceOf[Keyword].lower)
+  }
+
+  override def toString: String = lower
 }
 
 final class ParseException(msg: String, cause: Option[Throwable] = None)
@@ -331,6 +373,8 @@ object SnappyParserConsts {
   final val lineHintEnd: String = ")\n\r\f" + EOI
   final val hintValueEnd: String = ")*" + EOI
   final val underscore: CharPredicate = CharPredicate('_')
+  final val dot: CharPredicate = CharPredicate('.')
+  final val hyphen: CharPredicate = CharPredicate('-')
   final val identifier: CharPredicate = CharPredicate.AlphaNum ++ underscore
   final val alphaUnderscore: CharPredicate = CharPredicate.Alpha ++ underscore
   final val plusOrMinus: CharPredicate = CharPredicate('+', '-')
@@ -338,7 +382,8 @@ object SnappyParserConsts {
   final val exponent: CharPredicate = CharPredicate('e', 'E')
   final val numeric: CharPredicate = CharPredicate.Digit ++
       CharPredicate('.')
-  final val numericSuffix: CharPredicate = CharPredicate('D', 'd', 'F', 'f', 'L', 'l', 'B', 'b')
+  final val numericSuffix: CharPredicate =
+    CharPredicate('D', 'd', 'F', 'f', 'L', 'l', 'B', 'b', 'S', 's', 'Y', 'y')
   final val plural: CharPredicate = CharPredicate('s', 'S')
 
   final val reservedKeywords: UnifiedSet[String] = new UnifiedSet[String]
@@ -356,29 +401,29 @@ object SnappyParserConsts {
 
   // -10 in sequence will mean all arguments, -1 will mean all odd argument and
   // -2 will mean all even arguments. -3 will mean all arguments except those listed after it.
-  // Empty argument array means plan caching has to be disabled.
+  // Empty argument array means plan caching has to be disabled. Indexes are 0-based.
   final val FOLDABLE_FUNCTIONS: UnifiedMap[String, Array[Int]] = Utils.toOpenHashMap(Map(
-    "ROUND" -> Array(1), "BROUND" -> Array(1), "PERCENTILE" -> Array(1), "STACK" -> Array(0),
-    "NTILE" -> Array(0), "STR_TO_MAP" -> Array(1, 2), "NAMED_STRUCT" -> Array(-1),
-    "REFLECT" -> Array(0, 1), "JAVA_METHOD" -> Array(0, 1), "XPATH" -> Array(1),
-    "XPATH_BOOLEAN" -> Array(1), "XPATH_DOUBLE" -> Array(1),
-    "XPATH_NUMBER" -> Array(1), "XPATH_FLOAT" -> Array(1),
-    "XPATH_INT" -> Array(1), "XPATH_LONG" -> Array(1),
-    "XPATH_SHORT" -> Array(1), "XPATH_STRING" -> Array(1),
-    "PERCENTILE_APPROX" -> Array(1, 2), "APPROX_PERCENTILE" -> Array(1, 2),
-    "TRANSLATE" -> Array(1, 2), "UNIX_TIMESTAMP" -> Array(1),
-    "TO_UNIX_TIMESTAMP" -> Array(1), "FROM_UNIX_TIMESTAMP" -> Array(1),
-    "TO_UTC_TIMESTAMP" -> Array(1), "FROM_UTC_TIMESTAMP" -> Array(1),
-    "FROM_UNIXTIME" -> Array(1), "TRUNC" -> Array(1), "NEXT_DAY" -> Array(1),
-    "GET_JSON_OBJECT" -> Array(1), "JSON_TUPLE" -> Array(-3, 0),
-    "FIRST" -> Array(1), "LAST" -> Array(1),
-    "WINDOW" -> Array(1, 2, 3), "RAND" -> Array(0), "RANDN" -> Array(0),
-    "PARSE_URL" -> Array(0, 1, 2),
-    "LAG" -> Array(1), "LEAD" -> Array(1),
+    "round" -> Array(1), "bround" -> Array(1), "percentile" -> Array(1), "stack" -> Array(0),
+    "ntile" -> Array(0), "str_to_map" -> Array(1, 2), "named_struct" -> Array(-2),
+    "reflect" -> Array(0, 1), "java_method" -> Array(0, 1), "xpath" -> Array(1),
+    "xpath_boolean" -> Array(1), "xpath_double" -> Array(1),
+    "xpath_number" -> Array(1), "xpath_float" -> Array(1),
+    "xpath_int" -> Array(1), "xpath_long" -> Array(1),
+    "xpath_short" -> Array(1), "xpath_string" -> Array(1),
+    "percentile_approx" -> Array(1, 2), "approx_percentile" -> Array(1, 2),
+    "translate" -> Array(1, 2), "unix_timestamp" -> Array(1),
+    "to_unix_timestamp" -> Array(1), "from_unix_timestamp" -> Array(1),
+    "to_utc_timestamp" -> Array(1), "from_utc_timestamp" -> Array(1),
+    "from_unixtime" -> Array(1), "trunc" -> Array(1), "next_day" -> Array(1),
+    "get_json_object" -> Array(1), "json_tuple" -> Array(-3, 0),
+    "first" -> Array(1), "last" -> Array(1),
+    "window" -> Array(1, 2, 3), "rand" -> Array(0), "randn" -> Array(0),
+    "parse_url" -> Array(0, 1, 2),
+    "lag" -> Array(1), "lead" -> Array(1),
     // rand() plans are not to be cached since each run should use different seed
     // and the Spark impls create the seed in constructor rather than in generated code
-    "RAND" -> Array.emptyIntArray, "RANDN" -> Array.emptyIntArray,
-    "LIKE" -> Array(1), "RLIKE" -> Array(1), "APPROX_COUNT_DISTINCT" -> Array(1)))
+    "rand" -> Array.emptyIntArray, "randn" -> Array.emptyIntArray,
+    "like" -> Array(1), "rlike" -> Array(1), "approx_count_distinct" -> Array(1)))
 
   /**
    * Registering a Keyword with this method marks it a reserved keyword,
@@ -389,8 +434,8 @@ object SnappyParserConsts {
    */
   private[sql] def reservedKeyword(s: String): Keyword = {
     val k = new Keyword(s)
-    reservedKeywords.add(k.upper)
-    allKeywords.add(k.upper)
+    reservedKeywords.add(k.lower)
+    allKeywords.add(k.lower)
     k
   }
 
@@ -405,7 +450,7 @@ object SnappyParserConsts {
    */
   private[sql] def nonReservedKeyword(s: String): Keyword = {
     val k = new Keyword(s)
-    allKeywords.add(k.upper)
+    allKeywords.add(k.lower)
     k
   }
 
@@ -462,7 +507,6 @@ object SnappyParserConsts {
   final val TO: Keyword = reservedKeyword("to")
   final val TRUE: Keyword = reservedKeyword("true")
   final val UNION: Keyword = reservedKeyword("union")
-  final val UNIQUE: Keyword = reservedKeyword("unique")
   final val UPDATE: Keyword = reservedKeyword("update")
   final val WHEN: Keyword = reservedKeyword("when")
   final val WHERE: Keyword = reservedKeyword("where")
@@ -470,30 +514,21 @@ object SnappyParserConsts {
 
   // marked as internal keywords to prevent use in SQL
   final val HIVE_METASTORE: Keyword = reservedKeyword(SystemProperties.SNAPPY_HIVE_METASTORE)
-
-  final val SAMPLER_WEIGHTAGE: Keyword = nonReservedKeyword(
-    Utils.WEIGHTAGE_COLUMN_NAME)
+  final val SAMPLER_WEIGHTAGE: Keyword = nonReservedKeyword(Utils.WEIGHTAGE_COLUMN_NAME)
 
   // non-reserved keywords
   final val ADD: Keyword = nonReservedKeyword("add")
   final val ALTER: Keyword = nonReservedKeyword("alter")
   final val ANTI: Keyword = nonReservedKeyword("anti")
   final val AUTHORIZATION: Keyword = nonReservedKeyword("authorization")
-  final val CACHE: Keyword = nonReservedKeyword("cache")
   final val CALL: Keyword = nonReservedKeyword("call")
   final val CLEAR: Keyword = nonReservedKeyword("clear")
-  final val CLUSTER: Keyword = nonReservedKeyword("cluster")
-  final val CODEGEN: Keyword = nonReservedKeyword("codegen")
   final val COLUMN: Keyword = nonReservedKeyword("column")
-  final val COLUMNS: Keyword = nonReservedKeyword("columns")
   final val COMMENT: Keyword = nonReservedKeyword("comment")
   final val CROSS: Keyword = nonReservedKeyword("cross")
   final val CURRENT_USER: Keyword = nonReservedKeyword("current_user")
-  final val DEFAULT: Keyword = nonReservedKeyword("default")
-  final val DEPLOY: Keyword = nonReservedKeyword("deploy")
   final val DESCRIBE: Keyword = nonReservedKeyword("describe")
   final val DISABLE: Keyword = nonReservedKeyword("disable")
-  final val DISK_STORE: Keyword = nonReservedKeyword("diskstore")
   final val DISTRIBUTE: Keyword = nonReservedKeyword("distribute")
   final val ENABLE: Keyword = nonReservedKeyword("enable")
   final val END: Keyword = nonReservedKeyword("end")
@@ -507,58 +542,34 @@ object SnappyParserConsts {
   final val FOR: Keyword = nonReservedKeyword("for")
   final val FULL: Keyword = nonReservedKeyword("full")
   final val FUNCTIONS: Keyword = nonReservedKeyword("functions")
-  final val GLOBAL: Keyword = nonReservedKeyword("global")
   final val GRANT: Keyword = nonReservedKeyword("grant")
-  final val HASH: Keyword = nonReservedKeyword("hash")
   final val IF: Keyword = nonReservedKeyword("if")
   final val INDEX: Keyword = nonReservedKeyword("index")
-  final val INIT: Keyword = nonReservedKeyword("init")
   final val INTERVAL: Keyword = nonReservedKeyword("interval")
-  final val JAR: Keyword = nonReservedKeyword("jar")
-  final val JARS: Keyword = nonReservedKeyword("jars")
   final val LAST: Keyword = nonReservedKeyword("last")
-  final val LAZY: Keyword = nonReservedKeyword("lazy")
-  final val LDAPGROUP: Keyword = nonReservedKeyword("ldapgroup")
-  final val LEVEL: Keyword = nonReservedKeyword("level")
   final val LIMIT: Keyword = nonReservedKeyword("limit")
-  final val LIST: Keyword = nonReservedKeyword("list")
-  final val MEMBERS: Keyword = nonReservedKeyword("members")
   final val MINUS: Keyword = nonReservedKeyword("minus")
   final val NATURAL: Keyword = nonReservedKeyword("natural")
   final val NULLS: Keyword = nonReservedKeyword("nulls")
   final val ONLY: Keyword = nonReservedKeyword("only")
   final val OPTIONS: Keyword = nonReservedKeyword("options")
   final val OVERWRITE: Keyword = nonReservedKeyword("overwrite")
-  final val PACKAGE: Keyword = nonReservedKeyword("package")
-  final val PACKAGES: Keyword = nonReservedKeyword("packages")
-  final val PATH: Keyword = nonReservedKeyword("path")
-  final val PARTITION: Keyword = nonReservedKeyword("partition")
-  final val POLICY: Keyword = nonReservedKeyword("policy")
-  final val PUT: Keyword = nonReservedKeyword("put")
-  final val REFRESH: Keyword = nonReservedKeyword("refresh")
   final val REGEXP: Keyword = nonReservedKeyword("regexp")
   final val RENAME: Keyword = nonReservedKeyword("rename")
   final val REPLACE: Keyword = nonReservedKeyword("replace")
   final val REVOKE: Keyword = nonReservedKeyword("revoke")
-  final val REPOS: Keyword = nonReservedKeyword("repos")
   final val RESET: Keyword = nonReservedKeyword("reset")
   final val RESTRICT: Keyword = nonReservedKeyword("restrict")
   final val RLIKE: Keyword = nonReservedKeyword("rlike")
   final val SCHEMAS: Keyword = nonReservedKeyword("schemas")
-  final val SECURITY: Keyword = nonReservedKeyword("security")
   final val SEMI: Keyword = nonReservedKeyword("semi")
   final val SHOW: Keyword = nonReservedKeyword("show")
   final val SORT: Keyword = nonReservedKeyword("sort")
   final val START: Keyword = nonReservedKeyword("start")
   final val STOP: Keyword = nonReservedKeyword("stop")
-  final val STREAM: Keyword = nonReservedKeyword("stream")
-  final val STREAMING: Keyword = nonReservedKeyword("streaming")
   final val TABLES: Keyword = nonReservedKeyword("tables")
-  final val TBLPROPERTIES: Keyword = nonReservedKeyword("tblproperties")
   final val TEMPORARY: Keyword = nonReservedKeyword("temporary")
   final val TRUNCATE: Keyword = nonReservedKeyword("truncate")
-  final val UNDEPLOY: Keyword = nonReservedKeyword("undeploy")
-  final val UNCACHE: Keyword = nonReservedKeyword("uncache")
   final val USE: Keyword = nonReservedKeyword("use")
   final val USER: Keyword = nonReservedKeyword("user")
   final val USING: Keyword = nonReservedKeyword("using")
@@ -578,16 +589,17 @@ object SnappyParserConsts {
   final val UNBOUNDED: Keyword = nonReservedKeyword("unbounded")
   final val WINDOW: Keyword = nonReservedKeyword("window")
 
-  // interval units are not reserved
-  final val DAY: Keyword = nonReservedKeyword("day")
-  final val HOUR: Keyword = nonReservedKeyword("hour")
-  final val MICROSECOND: Keyword = nonReservedKeyword("microsecond")
-  final val MILLISECOND: Keyword = nonReservedKeyword("millisecond")
-  final val MINUTE: Keyword = nonReservedKeyword("minute")
-  final val MONTH: Keyword = nonReservedKeyword("month")
-  final val SECOND: Keyword = nonReservedKeyword("seconds")
-  final val WEEK: Keyword = nonReservedKeyword("week")
-  final val YEAR: Keyword = nonReservedKeyword("year")
+  // interval units are neither reserved nor non-reserved and can be freely
+  // used as named strictIdentifier
+  final val DAY: Keyword = new Keyword("day")
+  final val HOUR: Keyword = new Keyword("hour")
+  final val MICROSECOND: Keyword = new Keyword("microsecond")
+  final val MILLISECOND: Keyword = new Keyword("millisecond")
+  final val MINUTE: Keyword = new Keyword("minute")
+  final val MONTH: Keyword = new Keyword("month")
+  final val SECOND: Keyword = new Keyword("second")
+  final val WEEK: Keyword = new Keyword("week")
+  final val YEAR: Keyword = new Keyword("year")
 
   // cube, rollup, grouping sets etc are not reserved
   final val CUBE: Keyword = nonReservedKeyword("cube")
@@ -595,6 +607,7 @@ object SnappyParserConsts {
   final val GROUPING: Keyword = nonReservedKeyword("grouping")
   final val SETS: Keyword = nonReservedKeyword("sets")
   final val LATERAL: Keyword = nonReservedKeyword("lateral")
+  final val PIVOT: Keyword = nonReservedKeyword("pivot")
 
   // datatypes are not reserved
   final val ARRAY: Keyword = nonReservedKeyword("array")
@@ -635,9 +648,67 @@ object SnappyParserConsts {
 
   // keywords that are neither reserved nor non-reserved and can be freely
   // used as named strictIdentifier
+  final val ANALYZE: Keyword = new Keyword("analyze")
+  final val BUCKETS: Keyword = new Keyword("buckets")
+  final val CACHE: Keyword = new Keyword("cache")
   final val CASCADE: Keyword = new Keyword("cascade")
+  final val CHECK: Keyword = new Keyword("check")
+  final val CONSTRAINT: Keyword = new Keyword("constraint")
+  final val CLUSTER: Keyword = new Keyword("cluster")
+  final val CLUSTERED: Keyword = new Keyword("clustered")
+  final val CODEGEN: Keyword = new Keyword("codegen")
+  final val COLUMNS: Keyword = new Keyword("columns")
+  final val COMPUTE: Keyword = new Keyword("compute")
   final val DATABASE: Keyword = new Keyword("database")
   final val DATABASES: Keyword = new Keyword("databases")
+  final val DEPLOY: Keyword = new Keyword("deploy")
+  final val DISKSTORE: Keyword = new Keyword("diskstore")
+  final val FOREIGN: Keyword = new Keyword("foreign")
+  final val FORMAT: Keyword = new Keyword("format")
+  final val FORMATTED: Keyword = new Keyword("formatted")
+  final val GLOBAL: Keyword = new Keyword("global")
+  final val HASH: Keyword = new Keyword("hash")
+  final val INIT: Keyword = new Keyword("init")
+  final val JAR: Keyword = new Keyword("jar")
+  final val JARS: Keyword = new Keyword("jars")
+  final val LAZY: Keyword = new Keyword("lazy")
+  final val LDAPGROUP: Keyword = new Keyword("ldapgroup")
+  final val LEVEL: Keyword = new Keyword("level")
+  final val LIST: Keyword = new Keyword("list")
+  final val LOAD: Keyword = new Keyword("load")
+  final val LOCATION: Keyword = new Keyword("location")
+  final val MEMBERS: Keyword = new Keyword("members")
+  final val MSCK: Keyword = new Keyword("msck")
+  final val OF: Keyword = new Keyword("of")
+  final val OUT: Keyword = new Keyword("out")
+  final val PACKAGE: Keyword = new Keyword("package")
+  final val PACKAGES: Keyword = new Keyword("packages")
+  final val PATH: Keyword = new Keyword("path")
+  final val PARTITION: Keyword = new Keyword("partition")
+  final val PARTITIONED: Keyword = new Keyword("partitioned")
+  final val PERCENT: Keyword = new Keyword("percent")
+  final val POLICY: Keyword = new Keyword("policy")
+  final val PRIMARY: Keyword = new Keyword("primary")
+  final val PURGE: Keyword = new Keyword("purge")
+  final val PUT: Keyword = new Keyword("put")
+  final val REFRESH: Keyword = new Keyword("refresh")
+  final val REPOS: Keyword = new Keyword("repos")
   final val RETURNS: Keyword = new Keyword("returns")
+  final val SECURITY: Keyword = new Keyword("security")
+  final val SERDE: Keyword = new Keyword("serde")
+  final val SERDEPROPERTIES: Keyword = new Keyword("serdeproperties")
+  final val SKEWED: Keyword = new Keyword("skewed")
+  final val SORTED: Keyword = new Keyword("sorted")
+  final val STATISTICS: Keyword = new Keyword("statistics")
+  final val STORED: Keyword = nonReservedKeyword("stored")
+  final val STREAM: Keyword = new Keyword("stream")
+  final val STREAMING: Keyword = new Keyword("streaming")
+  final val TABLESAMPLE: Keyword = new Keyword("tablesample")
+  final val TBLPROPERTIES: Keyword = new Keyword("tblproperties")
   final val TEMP: Keyword = new Keyword("temp")
+  final val TRIGGER: Keyword = new Keyword("trigger")
+  final val UNCACHE: Keyword = new Keyword("uncache")
+  final val UNDEPLOY: Keyword = new Keyword("undeploy")
+  final val UNIQUE: Keyword = new Keyword("unique")
+  final val UNSET: Keyword = new Keyword("unset")
 }

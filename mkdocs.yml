@@ -1,4 +1,4 @@
-site_name: SnappyData™ 1.1.0
+site_name: SnappyData™ 1.1.1
 site_url: http://www.snappydata.io
 site_description: Project documentation for SnappyData
 site_author: SnappyData Team
@@ -13,22 +13,24 @@ pages:
 - 'Provisioning SnappyData': 'install.md'
 - 'Provisioning SnappyData':
     - 'System Requirements': 'install/system_requirements.md'
-    - 'On-Premise': 'install/install_on_premise.md'
-    - 'Amazon Web Services (AWS)': 'install/setting_up_cluster_on_amazon_web_services.md'
-    - 'Kubernetes': 'kubernetes.md'
-    - 'Docker': 'quickstart/getting_started_with_docker_image.md'
-    - 'Building from Source': 'install/building_from_source.md'
-    - 'Upgrade Instructions': 'install/upgrade.md'
-- 'Getting Started in 5 minutes or Less': 'quickstart.md'
-- 'Getting Started in 5 minutes or Less': 
-    - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
-    - 'Getting Started with SnappyData On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
-    - 'Getting Started with SnappyData on Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
-    - 'Getting Started with SnappyData on Docker Image': 'quickstart/getting_started_with_docker_image.md'
+    - 'Installing SnappyData On-Premise': 'install/install_on_premise.md'
+    - 'Setup SnappyData Cluster on AWS': 'install/setting_up_cluster_on_amazon_web_services.md'
+    - 'Setup SnappyData Cluster on Kubernetes': 'kubernetes.md'
+    - 'Building a Docker Image with SnappyData Binaries': 'quickstart/getting_started_with_docker_image.md'
+    - 'Building SnappyData from Source files': 'install/building_from_source.md'
+    - 'Upgrading SnappyData': 'install/upgrade.md'
+- 'Getting Started': 'quickstart.md'
+- 'Getting Started': 
+    - 'On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
+    - 'Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
+    - 'Docker Image': 'quickstart/getting_started_with_docker_image.md'
+    - 'Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
+    - 'SnappyData Quickstart Guide': 'quickstart/snappydataquick_start.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
     - 'Benchmark 16-20x Faster Performance than Apache Spark': 'quickstart/performance_apache_spark.md'
     - 'Using SQL': 'quickstart/using_sql.md'
-    - 'Create SnappyData Cluster': 'quickstart/snappydataquick_start.md'
+    - 'Structured Streaming': 'quickstart/structucture_streamingquickstart.md'
+- 'Configure/Launch SnappyData Cluster': 'configuring_cluster/configure_launch_cluster.md'    
 #- 'Migration Guide': 'migration/migration.md'
 #- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
@@ -39,6 +41,24 @@ pages:
 # 1.0 - 'Concepts': 'concepts.md'
 # 1.0 - 'Concepts': 
 # 1.0    - 'Detecting and Handling Network Segmentation ("Split Brain")': 'concepts/network_partition.md'
+- 'Concepts': 'install/concepts.md'
+- 'Concepts':
+    - 'Core Components': 'architecture/core_components.md'
+    - 'SnappyData Cluster Architecture': 'architecture/cluster_architecture.md'  
+    - 'Distributed Transactions': 'consistency/transactions_about.md'
+    - 'Distributed Transactions':
+        - 'How Transactions Work for Row Tables': 'consistency/using_transactions_row.md' 
+        - 'Lock-free Queries using MVCC and Snapshot Isolation for Column Tables': 'consistency/using_snapshot_isolation_column.md'
+    - 'Affinity Modes': 'deployment.md'
+    - 'Affinity Modes': 
+        - 'Local Mode': 'affinity_modes/local_mode.md'
+        - 'Embedded SnappyData Store Mode': 'affinity_modes/embedded_mode.md'
+        - 'SnappyData Smart Connector Mode': 'affinity_modes/connector_mode.md'
+    - 'Data Ingestion Pipeline': 'architecture/data_ingestion_pipeline.md'
+    - 'Hybrid Cluster Manager': 'architecture/hybrid_cluster_manager.md'  
+#    - 'List of Properties':    (to be updated later)
+#        - 'Property Details': 'configuring_cluster/property_details.md'
+    - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
 - 'How Tos': 'howto.md'
 - 'How Tos': 
     - 'How to Start a SnappyData Cluster': 'howto/start_snappy_cluster.md'
@@ -70,19 +90,6 @@ pages:
     - 'How to Connect Tableau to SnappyData': 'howto/tableauconnect.md' 
     - 'How to Use Apache Zeppelin with SnappyData': 'howto/use_apache_zeppelin_with_snappydata.md'
     - 'How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster': 'howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md'
-- 'Architecture': 'architecture.md'
-- 'Architecture': 
-    - 'Core Components': 'architecture/core_components.md'
-    - 'Data Ingestion Pipeline': 'architecture/data_ingestion_pipeline.md'
-    - 'Hybrid Cluster Manager': 'architecture/hybrid_cluster_manager.md'
-    - 'SnappyData Cluster Architecture': 'architecture/cluster_architecture.md'    
-- 'Configuring the Cluster': 'configuration.md'
-- 'Configuring the Cluster':
-    - 'Configuration': 'configuring_cluster/configuring_cluster.md'
-    - 'List of Properties': 'configuring_cluster/property_description.md'
-#    - 'List of Properties':    (to be updated later)
-#        - 'Property Details': 'configuring_cluster/property_details.md'
-    - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
 - 'Programming Guide': 'programming_guide.md'
 - 'Programming Guide':
     - 'SparkSession, SnappySession and SnappyStreamingContext': 'programming_guide/sparksession_snappysession_and_snappystreamingcontext.md'
@@ -98,15 +105,6 @@ pages:
     - 'Tables in SnappyData': 'programming_guide/tables_in_snappydata.md'
     - 'Stream Processing using SQL': 'programming_guide/stream_processing_using_sql.md'
     - 'User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)': 'programming_guide/udf_and_udaf.md' 
-- 'Distributed Transactions': 'consistency/transactions_about.md'
-- 'Distributed Transactions':
-    - 'How Transactions Work for Row Tables': 'consistency/using_transactions_row.md' 
-    - 'Lock-free Queries using MVCC and Snapshot Isolation for Column Tables': 'consistency/using_snapshot_isolation_column.md'
-- 'Affinity Modes': 'deployment.md'
-- 'Affinity Modes': 
-    - 'Local Mode': 'affinity_modes/local_mode.md'
-    - 'Embedded SnappyData Store Mode': 'affinity_modes/embedded_mode.md'
-    - 'SnappyData Smart Connector Mode': 'affinity_modes/connector_mode.md'
 - 'Best Practices': 'best_practices.md'
 - 'Best Practices':
     - 'Tuning for Concurrency and Computation': 'best_practices/setup_cluster.md'
@@ -164,6 +162,7 @@ pages:
         - 'CPU Usage': 'vsd/vsd_cpu.md'
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
+    - 'Configure Cluster': 'configuring_cluster/configuring_cluster.md'
     - 'SQL Reference Guide': 'sql_reference.md'
     - 'SQL Reference Guide':
         - 'ALTER TABLE': 'reference/sql_reference/alter-table.md'    
@@ -204,12 +203,14 @@ pages:
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
+    - 'SQL General Limitations': 'reference/sql_general_limitations.md'
     - 'Built-in System Procedures and Built-in Functions': 'reference/inbuilt_system_procedures/system-procedures.md'
     - 'Built-in System Procedures and Built-in Functions': 
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
         - 'REBALANCE_ALL_BUCKETS': 'reference/inbuilt_system_procedures/rebalance-all-buckets.md'
         - 'SET_CRITICAL_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_critical_heap_percentage.md'
         - 'SET_TRACE_FLAG': 'reference/inbuilt_system_procedures/set-trace-flag.md'
+        - 'SYS.REMOVE_METASTORE_ENTRY': 'reference/inbuilt_system_procedures/sys_remove_metastore_entry.md'
         - 'DSID': 'reference/inbuilt_system_procedures/dsid.md'
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 
@@ -243,10 +244,12 @@ pages:
         - 'run': 'reference/interactive_commands/run.md'
         - 'set connection': 'reference/interactive_commands/set_connection.md'
         - 'show': 'reference/interactive_commands/show.md'
+    - 'List of Properties': 'configuring_cluster/property_description.md'
     - 'Configuration Parameters': 'reference/configuration_parameters/config_parameters.md'
     - 'Configuration Parameters':         
         - 'ack-severe-alert-threshold': 'reference/configuration_parameters/ack-severe-alert-threshold.md'
         - 'ack-wait-threshold': 'reference/configuration_parameters/ack-wait-threshold.md'
+        - 'allow-explicit-commit': 'reference/configuration_parameters/allow-explicit-commit.md'
         - 'archive-disk-space-limit': 'reference/configuration_parameters/archive-disk-space-limit.md'
         - 'archive-file-size-limit': 'reference/configuration_parameters/archive-file-size-limit.md'
         - 'bind-address': 'reference/configuration_parameters/bind-address.md'
@@ -298,6 +301,8 @@ pages:
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Reference': 'apidocsintro.md'
+    - 'ODBC Supported API': 'reference/API_Reference/odbc_supported_apis.md'
+    - 'SQL Functions Reference': 'reference/sql_functions/sql_functions.md'
     - 'SnappyData Spark extension API Reference Guide': 'reference/API_Reference/apireference_guide.md'
     - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'

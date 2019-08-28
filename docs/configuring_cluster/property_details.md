@@ -42,7 +42,6 @@
 *	[ParserTraceError](#ParserTraceError)
 *	[PartitionPruning](#PartitionPruning)
 *	[PlanCaching](#PlanCaching)
-*	[PlanCachingAll](#PlanCachingAll)
 *	[PlanCacheSize](#PlanCacheSize)
 *	[PreferPrimariesInQuery](#PreferPrimariesInQuery)
 *	[SchedulerPool](#SchedulerPool)
@@ -802,20 +801,6 @@ Allows you to enable plan caching.
 **Default Values**</br>
 
 **Components**</br>
-
-**Example**</br>
-
-<a id="PlanCachingAll"></a>
-## PlanCachingAll
-
-**Description**</br>
-Allows you to enable plan caching on all sessions.
-
-**Default Values**</br>
-
-**Components**</br>
-
-Can be set using a `SET SQL` command or using the configuration properties in the *conf/leads* file. The `SET SQL` command sets the property for the current SnappySession while setting it in *conf/leads* file sets the property for all SnappySession.
 
 **Example**</br>
 

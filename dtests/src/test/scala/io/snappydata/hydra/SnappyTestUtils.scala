@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -99,48 +99,9 @@ object SnappyTestUtils {
     }
     var fullRSValidationFailed: Boolean = false
     if (validateFullResultSet) {
-      val snappyQueryFileName = s"Snappy_${queryNum}"
-      val snappyDest: String = getQueryResultDir("snappyResults") +
-          File.separator + snappyQueryFileName
-      // scalastyle:off println
-      // pw.println(s"Snappy query results are at : ${snappyDest}")
-      val snappyFile: File = new java.io.File(snappyDest)
-
-      val sparkQueryFileName = s"Spark_${queryNum}"
-      val sparkDest: String = getQueryResultDir("sparkResults") + File.separator +
-          sparkQueryFileName
-      // pw.println(s"Spark query results are at : ${sparkDest}")
-      val sparkFile: File = new java.io.File(sparkDest)
       var sparkDF = sqlContext.sql(sqlString)
+      fullRSValidationFailed = assertQuery(snc, snappyDF, sparkDF, queryNum, pw)
 
-      try {
-        if (!snappyFile.exists()) {
-          // val snap_col1 = snappyDF.schema.fieldNames(0)
-          // val snap_col = snappyDF.schema.fieldNames.filter(!_.equals(snap_col1)).toSeq
-          snappyDF = snappyDF.repartition(1) // .sortWithinPartitions(snap_col1, snap_col: _*)
-          writeToFile(snappyDF, snappyDest, snc)
-          // writeResultSetToCsv(snappyDF, snappyFile)
-          pw.println(s"${logTime} Snappy result collected in : ${snappyDest}")
-        }
-        if (!sparkFile.exists()) {
-          // val col1 = sparkDF.schema.fieldNames(0)
-          // val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
-          sparkDF = sparkDF.repartition(1) // .sortWithinPartitions(col1, col: _*)
-          writeToFile(sparkDF, sparkDest, snc)
-          // writeResultSetToCsv(sparkDF, sparkFile)
-          pw.println(s"${logTime} Spark result collected in : ${sparkDest}")
-        }
-        fullRSValidationFailed = compareFiles(snappyFile, sparkFile, pw, queryNum,
-          fullRSValidationFailed)
-      } catch {
-        case ex: Exception => {
-          fullRSValidationFailed = true
-          pw.println(s"${logTime} Full resultSet validation for ${queryNum} got the following " +
-              s"exception:\n")
-          ex.printStackTrace(pw)
-        }
-      }
-      pw.flush()
     }
     if (validationFailed) {
       pw.println(s"\n${logTime} NumRows validation failed for query ${queryNum} on ${tableType} " +
@@ -155,6 +116,54 @@ object SnappyTestUtils {
     pw.flush()
     return validationFailed
   }
+
+  def assertQuery(snc: SnappyContext, snappyDF: DataFrame, sparkDF: DataFrame, queryNum: String,
+      pw: PrintWriter): Boolean = {
+    var fullRSValidationFailed = false
+    val snappyQueryFileName = s"Snappy_${queryNum}"
+    val snappyDest: String = getQueryResultDir("snappyResults") +
+        File.separator + snappyQueryFileName
+    // scalastyle:off println
+    // pw.println(s"Snappy query results are at : ${snappyDest}")
+    val snappyFile: File = new java.io.File(snappyDest)
+
+    val sparkQueryFileName = s"Spark_${queryNum}"
+    val sparkDest: String = getQueryResultDir("sparkResults") + File.separator +
+        sparkQueryFileName
+    // pw.println(s"Spark query results are at : ${sparkDest}")
+    val sparkFile: File = new java.io.File(sparkDest)
+
+    try {
+      if (!snappyFile.exists()) {
+        // val snap_col1 = snappyDF.schema.fieldNames(0)
+        // val snap_col = snappyDF.schema.fieldNames.filter(!_.equals(snap_col1)).toSeq
+        val snappyDF1 = snappyDF.repartition(1) // .sortWithinPartitions(snap_col1, snap_col: _*)
+        writeToFile(snappyDF, snappyDest, snc)
+        // writeResultSetToCsv(snappyDF, snappyFile)
+        pw.println(s"${logTime} Snappy result collected in : ${snappyDest}")
+      }
+      if (!sparkFile.exists()) {
+        // val col1 = sparkDF.schema.fieldNames(0)
+        // val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
+        val sparkDF1 = sparkDF.repartition(1) // .sortWithinPartitions(col1, col: _*)
+        writeToFile(sparkDF, sparkDest, snc)
+        // writeResultSetToCsv(sparkDF, sparkFile)
+        pw.println(s"${logTime} Spark result collected in : ${sparkDest}")
+      }
+      fullRSValidationFailed = compareFiles(snappyFile, sparkFile, pw, queryNum,
+        fullRSValidationFailed)
+    } catch {
+      case ex: Exception => {
+        fullRSValidationFailed = true
+        pw.println(s"${logTime} Full resultSet validation for ${queryNum} got the following " +
+            s"exception:\n")
+        ex.printStackTrace(pw)
+      }
+    }
+    pw.flush()
+    fullRSValidationFailed
+  }
+
 
   def dataTypeConverter(row: Row): Row = {
     val md = row.toSeq.map {
@@ -177,18 +186,18 @@ object SnappyTestUtils {
   def writeToFile(df: DataFrame, dest: String, snc: SnappyContext): Unit = {
     import snc.implicits._
     df.map(dataTypeConverter)(RowEncoder(df.schema))
-        .map(row => {
-          val sb = new StringBuilder
-          row.toSeq.foreach(e => {
-            if (e != null) {
-              sb.append(e.toString).append(",")
-            }
-            else {
-              sb.append("NULL").append(",")
-            }
-          })
-          sb.toString()
-        }).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option(
+      .map(row => {
+        val sb = new StringBuilder
+        row.toSeq.foreach(e => {
+          if (e != null) {
+            sb.append(e.toString).append(",")
+          }
+          else {
+            sb.append("NULL").append(",")
+          }
+        })
+        sb.toString()
+      }).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option(
       "header", false).save(dest)
   }
 
@@ -293,7 +302,6 @@ object SnappyTestUtils {
   String, validationFailed: Boolean)
   : Boolean = {
     var hasValidationFailed = validationFailed
-
     val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
     val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
 
@@ -449,6 +457,7 @@ object SnappyTestUtils {
     return str
   }
 
+
   /*
    Performs full resultSet validation from snappy for a select query against results in a
    goldenFile.
@@ -511,4 +520,5 @@ object SnappyTestUtils {
     pw.flush()
     return hasValidationFailed
   }
+
 }

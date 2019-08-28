@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,6 +20,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.core.{Data, TestData2}
 import io.snappydata.{Property, SnappyFunSuite, SnappyTableStatsProviderService}
+import jdk.internal.org.objectweb.asm.tree.analysis.AnalyzerException
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
@@ -155,9 +156,9 @@ class TokenizationTest
         s"GROUP BY ROLLUP (channel, id) ORDER BY channel, id LIMIT 100"
     try {
       snc.sql(sqlstr)
-      fail(s"this should have given TableNotFoundException")
+      fail("this should have given AnalysisException")
     } catch {
-      case tnfe: TableNotFoundException =>
+      case e: AnalysisException if e.message.contains("Table or view not found") =>
       case t: Throwable => fail(s"unexpected exception $t")
     }
   }
@@ -175,9 +176,9 @@ class TokenizationTest
         s"i_class, i_item_id, i_item_desc, revenueratio LIMIT 100"
     try {
       snc.sql(sqlstr)
-      fail(s"this should have given TableNotFoundException")
+      fail("this should have given AnalysisException")
     } catch {
-      case tnfe: TableNotFoundException =>
+      case e: AnalysisException if e.message.contains("Table or view not found") =>
       case t: Throwable => fail(s"unexpected exception $t")
     }
   }
@@ -413,7 +414,7 @@ class TokenizationTest
       assert(cacheMap.size() == 1)
 
       query = s"select * from $table where b = 1"
-      var res2 = newSession.sql(query).collect()
+      newSession.sql(query).collect()
       assert(cacheMap.size() == 1)
 
       cacheMap.clear()
@@ -1032,12 +1033,20 @@ class TokenizationTest
     // null, non-null combinations of updates
 
     // implicit int to string cast will cause it to be null (SNAP-2039)
-    res2 = snc.sql(s"update $colTableName set DEST = DEST + 1000 where " +
-        "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
-    val numUpdated0 = res2.foldLeft(0L)(_ + _.getLong(0))
-    assert(numUpdated0 > 0)
-    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
-        "and airtime > 350 and dest is not null").collect().length === 0)
+    // Update [SNAP-2052]: this behavior is updated to fail the update query if a string expression is
+    // as part of arithmetic operator in update expression. Explicity casting the srring to int is a
+    // workaround. However, it is important to note that casting a non-numeric string value to int will
+    // still end up in a NULL.
+    try {
+      res2 = snc.sql(s"update $colTableName set DEST = DEST + 1000 where " +
+          "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
+      fail("AnalyzerException was expected here")
+    } catch {
+      case ex: AnalysisException =>
+        val expectedMessage = "Implicit type casting of string type to numeric type is not performed" +
+            " for update statements.;"
+        assertResult(expectedMessage)(ex.getMessage)
+    }
 
     // check null updates
     res2 = snc.sql(s"update $colTableName set DEST = null where " +

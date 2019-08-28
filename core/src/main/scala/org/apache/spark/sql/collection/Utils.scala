@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -68,11 +68,11 @@ import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
 
-object Utils {
+object Utils extends Logging {
 
-  final val EMPTY_STRING_ARRAY = Array.empty[String]
-  final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
-  final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
+  final val EMPTY_STRING_ARRAY = SharedUtils.EMPTY_STRING_ARRAY
+  final val WEIGHTAGE_COLUMN_NAME = "snappy_sampler_weightage"
+  final val SKIP_ANALYSIS_PREFIX = "sample_"
   private final val TASKCONTEXT_FUNCTION = "getTaskContextFromTSS"
 
   // 1 - (1 - 0.95) / 2 = 0.975
@@ -93,10 +93,8 @@ object Utils {
     new AnalysisException(msg, None, None, None, cause)
 
   def columnIndex(col: String, cols: Array[String], module: String): Int = {
-    val colT = toUpperCase(col.trim)
     cols.indices.collectFirst {
-      case index if col == cols(index) => index
-      case index if colT == toUpperCase(cols(index)) => index
+      case index if col.equalsIgnoreCase(cols(index)) => index
     }.getOrElse {
       throw analysisException(
         s"""$module: Cannot resolve column name "$col" among
@@ -131,6 +129,10 @@ object Utils {
 
   def ERROR_NO_QCS(module: String): String = s"$module: QCS is empty"
 
+  def parseCSVList(s: String, parser: SnappyParser): Seq[String] = {
+    parser.parseSQLOnly(s, parser.parseIdentifiers.run()).map(Utils.toLowerCase)
+  }
+
   def qcsOf(qa: Array[String], cols: Array[String],
       module: String): (Array[Int], Array[String]) = {
     val colIndexes = qa.map(columnIndex(_, cols, module))
@@ -144,7 +146,7 @@ object Utils {
       case qi: Array[Int] => (qi, qi.map(fieldNames))
       case qs: String =>
         if (qs.isEmpty) throw analysisException(ERROR_NO_QCS(module))
-        else qcsOf(qs.split(","), fieldNames, module)
+        else qcsOf(parseCSVList(qs, new SnappyParser(session = null)).toArray, fieldNames, module)
       case qa: Array[String] => qcsOf(qa, fieldNames, module)
       case q => throw analysisException(
         s"$module: Cannot parse 'qcs'='$q'")
@@ -153,10 +155,9 @@ object Utils {
 
   def matchOption(optName: String,
       options: SMap[String, Any]): Option[(String, Any)] = {
-    val optionName = toLowerCase(optName)
-    options.get(optionName).map((optionName, _)).orElse {
+    options.get(optName).map((optName, _)).orElse {
       options.collectFirst { case (key, value)
-        if toLowerCase(key) == optionName => (key, value)
+        if key.equalsIgnoreCase(optName) => (key, value)
       }
     }
   }
@@ -397,22 +398,8 @@ object Utils {
     if (s.trim.equals("*")) {
       (true, Set.empty[String])
     } else {
-      val parser = session.snappyParser
-      (false, s.split(',').map(c => Utils.toUpperCase(parser.parseSQLOnly(
-        c, parser.parseIdentifier.run()))).toSet)
+      (false, parseCSVList(s, session.snappyParser).toSet)
     }
-  }
-
-  def hasLowerCase(k: String): Boolean = {
-    var index = 0
-    val len = k.length
-    while (index < len) {
-      if (Character.isLowerCase(k.charAt(index))) {
-        return true
-      }
-      index += 1
-    }
-    false
   }
 
   def toLowerCase(k: String): String = JdbcExtendedUtils.toLowerCase(k)
@@ -538,7 +525,7 @@ object Utils {
           // if both baseTable and schema have been specified, then both
           // should have matching schema
           try {
-            val tablePlan = catalog.lookupRelation(
+            val tablePlan = catalog.resolveRelation(
               catalog.snappySession.tableIdentifier(baseTableName))
             val tableSchema = tablePlan.schema
             if (catalog.compatibleSchema(tableSchema, s)) {
@@ -565,9 +552,9 @@ object Utils {
           try {
             // parquet and other such external tables may have different
             // schema representation so normalize the schema
-            val tablePlan = catalog.lookupRelation(
+            val tablePlan = catalog.resolveRelation(
               catalog.snappySession.tableIdentifier(baseTable))
-            (catalog.normalizeSchema(tablePlan.schema), Some(tablePlan))
+            (tablePlan.schema, Some(tablePlan))
           } catch {
             case ae: AnalysisException =>
               throw analysisException(s"Base table $baseTable " +
@@ -579,6 +566,11 @@ object Utils {
       }
     }
   }
+
+  def setCurrentSchema(session: SnappySession, schema: String, createIfNotExists: Boolean): Unit =
+    session.setCurrentSchema(schema, createIfNotExists)
+
+  def getLocalProperties(sc: SparkContext): java.util.Properties = sc.getLocalProperties
 
   def getDriverClassName(url: String): String = DriverManager.getDriver(url) match {
     case wrapper: DriverWrapper => wrapper.wrapped.getClass.getCanonicalName
@@ -692,7 +684,9 @@ object Utils {
           propName.startsWith(Constant.PROPERTY_PREFIX) ||
           propName.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) ||
           propName.startsWith("zeppelin.") ||
-          propName.startsWith("hive.")) {
+          propName.startsWith("hive.") ||
+          propName.startsWith("hadoop.") ||
+          propName.startsWith("javax.jdo.")) {
         entry.getValue match {
           case v: String => conf.set(propName, v)
           case _ =>
@@ -867,6 +861,26 @@ object Utils {
       -1
     }
   }
+
+  def executeIfSmartConnector[T](sc: SparkContext)(f: => T): Option[T] = {
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) => Option(f)
+      case _ => None
+    }
+  }
+
+  def isSmartConnectorMode(sc: SparkContext): Boolean = {
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) => true
+      case _ => false
+    }
+  }
+
+  override def logInfo(msg: => String): Unit = super.logInfo(msg)
+
+  override def logWarning(msg: => String): Unit = super.logWarning(msg)
+
+  override def logError(msg: => String): Unit = super.logError(msg)
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
@@ -1080,17 +1094,17 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def hashCode(): Int = idx
 }
 
-object ToolsCallbackInit extends Logging {
+object ToolsCallbackInit {
   final val toolsCallback: ToolsCallback = {
     try {
       val c = org.apache.spark.util.Utils.classForName(
         "io.snappydata.ToolsCallbackImpl$")
       val tc = c.getField("MODULE$").get(null).asInstanceOf[ToolsCallback]
-      logInfo("toolsCallback initialized")
+      Utils.logInfo("toolsCallback initialized")
       tc
     } catch {
       case _: ClassNotFoundException =>
-        logWarning("ToolsCallback couldn't be INITIALIZED. " +
+        Utils.logWarning("ToolsCallback couldn't be INITIALIZED. " +
             "DriverURL won't get published to others.")
         null
     }
