@@ -3,6 +3,7 @@
 The following items are inclulded in this section:
 
 *   [Configuring Cluster Components](#clustercompt)
+*   [List of Properties](#listofproperties)
 *   [Specifying Configuration Properties using Environment Variables](#speenvi)
 *   [Configuring SnappyData Smart Connector](#configure-smart-connector) 
 *   [Logging](#logging)
@@ -200,7 +201,8 @@ node-c -dir=/node-c/server1 -heap-size=4096m -memory-size=16g -locators=node-b:8
 node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 ```
 
-####  List of Properties
+<a id="listorproperties"></a>
+##  List of Properties
 
 Refer [SnappyData properties](property_description.md).
 
