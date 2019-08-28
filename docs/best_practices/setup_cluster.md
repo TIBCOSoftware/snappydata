@@ -16,7 +16,9 @@ So, with multiple concurrent users, it is best to avoid running such Jobs using 
 !!! Note 
 	This above scheduling logic is applicable only when queries are fully managed by SnappyData cluster. When running your application using the smart connector, each task running in the Spark cluster directly accesses the store partitions.
 
-### Computing the Number of Cores for a Job
+
+<a id="computenoscores"></a>
+## Computing the Number of Cores for a Job
 
 Executing queries or code in SnappyData results in the creation of one or more Spark jobs. Each Spark job first calculates the number of partitions on the underlying dataset and a task is assigned and scheduled for each partition. 
 But, the number of concurrent tasks executing is limited by the available core count. If the scheduled task count is larger then they will be executed in a staggered manner. Each task is assigned a single core to execute.
@@ -56,7 +58,7 @@ When you add more servers to SnappyData, the processing capacity of the system i
 
 ![Concurrency](../Images/core_concurrency.png)
 
-### Configuring the Scheduler Pools for Concurrency
+## Configuring the Scheduler Pools for Concurrency
 SnappyData out of the box comes configured with two execution pools:
 
 * **Low-latency pool**: This pool is automatically used when SnappyData determines that a request is of low latency, that is, the queries that are partition pruned to two or fewer partitions. </br>
@@ -71,7 +73,7 @@ Applications can explicitly configure to use a particular pool for the current s
 
 New pools can be added and properties of the existing pools can be configured by modifying the **conf/fairscheduler.xml** file. We do not recommend changing the pool names (`default` and `lowlatency`).
 
-#### Controlling CPU Usage for User Jobs
+### Controlling CPU Usage for User Jobs
 
 You can control the CPU usage for user jobs by configuring separate pools for different kinds of jobs. </br> See configuration [here](https://spark.apache.org/docs/2.1.1/job-scheduling.html#configuring-pool-properties). </br>
 The product is configured with two out-of-the-box pools, that is the **Default pool** and the **Low-latency pool**. The **Default pool** has higher priority and also has a **minShare**, so that some minimum cores are reserved for those jobs if possible. 
@@ -82,7 +84,7 @@ The [**Stages**](/monitoring/monitoring.md#stages) tab on the SnappyData Monitor
 
 To configure the priority based on specific requirements, you can also either permit the users to set the priority for queries or add some pool allocation logic in the application as per client requirements.
 
-### Using a Partitioning Strategy to Increase Concurrency
+## Using a Partitioning Strategy to Increase Concurrency
 
 The best way to increasing concurrency is to design your schema such that you minimize the need to run your queries across many partitions. The common strategy is to understand your application patterns and choose a partitioning strategy such that queries often target a specific partition. Such queries will be pruned to a single node and SnappyData automatically optimises such queries to use a single task. 
 For more information see, [How to design your schema](design_schema.md).

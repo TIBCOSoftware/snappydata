@@ -12,9 +12,9 @@ Prints information about the SnappyData product version.
 
 ```pre
 ./bin/snappy version
-SnappyData Platform Version 1.1.0
+SnappyData Platform Version 1.1.1
     SnappyData RowStore 1.6.3
-    SnappyData Column Store 1.1.0
+    SnappyData Column Store 1.1.1
 ```
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,6 +25,7 @@ import scala.reflect.{ClassTag, classTag}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import com.pivotal.gemfirexd.{Attribute => GAttr}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property}
 
@@ -37,6 +38,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, InsertIntoTab
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.command.DDLUtils
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation, PreprocessTableInsertion}
 import org.apache.spark.sql.execution.{SecurityUtils, datasources}
@@ -97,6 +99,12 @@ class SnappyConf(@transient val session: SnappySession)
     val count = SnappyContext.totalPhysicalCoreCount.get()
     if (count > 0 || (session eq null)) math.min(super.numShufflePartitions, count)
     else math.min(super.numShufflePartitions, session.sparkContext.defaultParallelism)
+  }
+
+  private lazy val allDefinedKeys = {
+    val map = new CaseInsensitiveMutableHashMap[String](Map.empty)
+    getAllDefinedConfs.foreach(e => map.put(e._1, e._1))
+    map
   }
 
   private def keyUpdateActions(key: String, value: Option[Any],
@@ -229,6 +237,8 @@ class SnappyConf(@transient val session: SnappySession)
         key
     }
 
+    case GAttr.USERNAME_ATTR | GAttr.USERNAME_ALT_ATTR | GAttr.PASSWORD_ATTR => key
+
     case _ if key.startsWith("spark.sql.aqp.") =>
       session.clearPlanCache()
       key
@@ -236,9 +246,7 @@ class SnappyConf(@transient val session: SnappySession)
     case _ =>
       // search case-insensitively for other keys if required
       if (search) {
-        getAllDefinedConfs.collectFirst {
-          case (k, _, _) if k.equalsIgnoreCase(key) => k
-        } match {
+        allDefinedKeys.get(key) match {
           case None => key
           case Some(k) =>
             // execute keyUpdateActions again since it might be one of the pre-defined ones
