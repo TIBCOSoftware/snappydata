@@ -23,3 +23,6 @@ This command writes thread stack information only for the local SnappyData membe
 snappy> call sys.dump_stacks('false');
 ```
 
+**Also see:**
+
+*	[Built-in System Procedures and Built-in Functions](system-procedures.md)
