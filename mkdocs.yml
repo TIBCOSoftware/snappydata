@@ -44,7 +44,8 @@ pages:
 - 'Concepts': 'install/concepts.md'
 - 'Concepts':
     - 'Core Components': 'architecture/core_components.md'
-    - 'TIBCO ComputeDB Cluster Architecture': 'architecture/cluster_architecture.md'  
+    - 'TIBCO ComputeDB Cluster Architecture': 'architecture/cluster_architecture.md'
+    - 'Hybrid Cluster Manager': 'architecture/hybrid_cluster_manager.md'  
     - 'Distributed Transactions': 'consistency/transactions_about.md'
     - 'Distributed Transactions':
         - 'How Transactions Work for Row Tables': 'consistency/using_transactions_row.md' 
@@ -53,12 +54,9 @@ pages:
     - 'Affinity Modes': 
         - 'Local Mode': 'affinity_modes/local_mode.md'
         - 'Embedded TIBCO ComputeDB Store Mode': 'affinity_modes/embedded_mode.md'
-        - 'TIBCO ComputeDB Smart Connector Mode': 'affinity_modes/connector_mode.md'
-    - 'Data Ingestion Pipeline': 'architecture/data_ingestion_pipeline.md'
-    - 'Hybrid Cluster Manager': 'architecture/hybrid_cluster_manager.md'  
+        - 'TIBCO ComputeDB Smart Connector Mode': 'affinity_modes/connector_mode.md'   
 #    - 'List of Properties':    (to be updated later)
 #        - 'Property Details': 'configuring_cluster/property_details.md'
-    - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
 - 'How Tos': 'howto.md'
 - 'How Tos': 
     - 'How to Start a TIBCO ComputeDB Cluster': 'howto/start_snappy_cluster.md'
@@ -166,7 +164,7 @@ pages:
         - 'CPU Usage': 'vsd/vsd_cpu.md'
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
-    - 'Cluster Components Configuration': 'configuring_cluster/configuring_cluster.md'
+    - 'Configuration Reference': 'configuring_cluster/configuring_cluster.md'
     - 'List of Properties': 'configuring_cluster/property_description.md'
     - 'SQL Reference Guide': 'sql_reference.md'
     - 'SQL Reference Guide':

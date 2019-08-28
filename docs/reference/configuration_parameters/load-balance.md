@@ -11,9 +11,6 @@ Specifies whether load balancing is performed for the JDBC/ODBC client connectio
 
 With 1.1.0 release, the load-balance is set to false by default, when you connect to a server's hostname:port. And it is set to true, when you connect to a locator's hostname:port. The locator then redirects the client to a less-loaded server with which the client makes the connection. With 1.1.1 release, same behavior is implemented for ODBC driver as well. 
 
-!!! Note 
-    You must specify load-balance=true in ODBC properties, if the locator address and port is provided.
-
 !!! Note
     	You must specify `load-balance=true` in ODBC properties, if the locator address and port is provided.
 

@@ -28,7 +28,7 @@ The following list of commonly used configuration properties can be set to confi
 |-hostname-for-clients<a id="host-name"></a>|Set the IP address or host name that this server/locator sends to JDBC/ODBC/thrift clients to use for connection. The default value causes the client-bind-address to be given to clients. This value can be different from client-bind-address for cases where locators, servers are behind a NAT firewall (AWS for example) where client-bind-address needs to be a private one that gets exposed to clients outside the firewall as a different public address specified by this property. In many cases this is handled by hostname translation itself, i.e. hostname used in client-bind-address resolves to internal IP address from inside but to public IP address from outside, but for other cases this property will be required.|Server|
 |-enable-network-partition-detection|See [enable-network-partition-detection](/reference/configuration_parameters/enable-network-partition-detection.md)||
 |-enforce-unique-host|See [enforce-unique-host](/reference/configuration_parameters/enforce-unique-host.md)||
-|-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system. This property should be configured for all the nodes in the respective configuration files, if there are multiple locators.|ServFer</br>Lead</br>Locator|
+|-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system. This property should be configured for all the nodes in the respective configuration files, if there are multiple locators.|Server</br>Lead</br>Locator|
 |-member-timeout<a id="member-timeout"></a>|Uses the member-timeout server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the **are you alive** datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000-600000 milliseconds. For more information, refer to [Best Practices](../best_practices/important_settings.md#member-timeout)|Server</br>Lead</br>Locator|
 |-membership-port-range|See [membership-port-range](/reference/configuration_parameters/membership-port-range.md)
 |-peer-discovery-address|Use this as value for the port in the "host:port" value of "-locators" property |Locator|
@@ -110,7 +110,7 @@ The following list of commonly used configuration properties can be set to confi
 |-spark.sql.aqp.numBootStrapTrials|Number of bootstrap trials to do for calculating error bounds. The default value is100. </br>This property must be set in the **conf/leads** file.|
 |-spark.sql.aqp.error|Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1. The default value is0.2. </br>This property can be set as connection property in the Snappy SQL shell.|
 |-spark.sql.aqp.confidence|Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> The default value is0.95. </br>This property can be set as connection property in the Snappy SQL shell.|
-|-sparksql.aqp.behavior|The action to be taken if the error computed goes outside the error tolerance limit. The default value is`DO_NOTHING`. </br>This property can be set as connection property in the Snappy SQL shell.|
+|-spark.sql.aqp.behavior|The action to be taken if the error computed goes outside the error tolerance limit. The default value is`DO_NOTHING`. </br>This property can be set as connection property in the Snappy SQL shell.|
 |-spark.ssl.enabled<a id="ssl_spark_enabled"></a>|Enables or disables Spark layer encryption. The default is false. |Lead|
 |-spark.ssl.keyPassword<a id="ssl_spark_password"></a>|The password to the private key in the key store. |Lead|
 |-spark.ssl.keyStore<a id="ssl_spark_keystore"></a>|Path to the key store file. The path can be absolute or relative to the directory in which the process is started.|Lead|
@@ -217,12 +217,21 @@ This sets the property for the snappy SQL shell's session.
 |-spark.sql.aqp.numBootStrapTrials|Number of bootstrap trials to do for calculating error bounds. The default value is100. </br>This property must be set in the **conf/leads** file.|
 |-spark.sql.aqp.error|Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1. The default value is0.2. </br>This property can be set as connection property in the Snappy SQL shell.|
 |-spark.sql.aqp.confidence|Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> The default value is0.95. </br>This property can be set as connection property in the Snappy SQL shell.|
-|-sparksql.aqp.behavior|The action to be taken if the error computed goes outside the error tolerance limit. The default value is`DO_NOTHING`. </br>This property can be set as connection property in the Snappy SQL shell.|
+|-spark.sql.aqp.behavior|The action to be taken if the error computed goes outside the error tolerance limit. The default value is`DO_NOTHING`. </br>This property can be set as connection property in the Snappy SQL shell.|
 
 <a id="connectionpro"></a>
 ## Connection Properties
 
-Connection properties configure the features of a SnappyData member or a SnappyData client connection when you start or connect to a SnappyData member. For more details refer [Connection properties](../reference/configuration_parameters/config_parameters.md#connectpro)
+You can define connection properties directly in the JDBC connection URL, or in the Properties object while using JDBC API `DriverManager.getConnection(String url, java.util.Properties info)`. You can also define connection properties  in the `connect` command in an interactive TIBCO ComputeDB session using snappy shell. 
+An example URL that defines a connection property is shown below. In the URL, replace the `property1=value1` string with appropriate property that you want to use. Multiple properties can be be specified by separating them with a semicolon.
+
+Example URL:
+
+	jdbc:snappydata://locatorHostName:1527/property1=value1;property2=value2
+
+Example connect command that sets connection properties while using snappy shell
+
+	snappy> connect client 'localhost:1527/property1=value1;property2=value2';
 
 |Property|Description|Components</br>|
 |-|-|-|
