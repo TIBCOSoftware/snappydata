@@ -161,6 +161,9 @@ node2_hostname -dir=/nfs/opt/snappy-db1/server3 -heap-size=8g -memory-size=42g
 node2_hostname -dir=/nfs/opt/snappy-db1/server4 -heap-size=8g -memory-size=42g
 
 ```
+## Configuration Reference
+
+See [Configuration Reference](/configuring_cluster/configuring_cluster.md) section for more details.
 
 ## TIBCO ComputeDB Properties
 

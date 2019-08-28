@@ -17,7 +17,7 @@ Do the following to connect TIBCO Data Virtulization (TDV) to TIBCO ComputeDB:
 	*	Parent Adapter: **Apache Hive 2.x**
 	*	Adapter Location: The location must default in a similar pattern to **C:/Program Files/TIBCO/TDV Server 8.1/conf/adapters/custom/tibco_computedb**
 	*	Adapter Class Name: **io.snappydata.jdbc.ClientDriver**
-	*	Connection URL Pattern: **jdbc:snappydata://<HOST>:<PORT>**
+	*	Connection URL Pattern: **jdbc:snappydata://<HOST>:<PORT>/**
 
 <a id= copyjdbcdriver> </a>
 ## Copy the JDBC Driver

@@ -40,20 +40,12 @@ On re-starting a TIBCO ComputeDB cluster, the TIBCO ComputeDB Monitoring Console
 
 On the top-right side of the TIBCO ComputeDB Monitoring Console page, you can click the help icon to view the details of TIBCO ComputeDB.
 
-On the top of the dashboard, the date and time details about when the cluster is started are displayed. The period till when the cluster is running is also shown.
-
 ![](../Images/MonitoringUI/TIBCO-ComputeDB-UI-About-Box.png)
-
-
 
 <a id="dashboard"></a>
 ## Dashboard
 The Dashboard page graphically presents various cluster-level statistics that can be used to monitor the current health status of a cluster. The statistics on the dashboard page can be set to update automatically after every five seconds.  If you want to turn off the auto-refresh, use the **Auto Refresh** switch that is provided on the upper-right corner.
 ![](../Images/AutoRefresh-is-ON.png)
-
-You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
-![](../Images/MonitoringUI/TotalCpuCores.png)
-
 
 The **Dashboard** page displays the following sections:
 
@@ -72,6 +64,11 @@ You can use the search and sort functionalities in any of the sections, except f
 In the **Cluster** section, you can view the following graphs which are automatically refreshed:
 
 ![Cluster](../Images/Dashboard-Trends.png)
+
+On the Dashboard page, the **Cluster** section displays the date and time when the cluster was launched. It also displays the cluster's up-time since cluster was launched.
+
+You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
+![](../Images/MonitoringUI/TotalCpuCores.png)
 
 |Graphs|Description|
 |--------|--------|
