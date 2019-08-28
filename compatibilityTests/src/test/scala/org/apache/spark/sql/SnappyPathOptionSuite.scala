@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,11 +20,4 @@ import org.apache.spark.sql.sources.PathOptionSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyPathOptionSuite extends PathOptionSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-    override def ignored: Seq[String] = Seq(
-    "path option always exist",
-    "path option also exist for write path",
-    "path option always represent the value of table location"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -35,7 +35,7 @@ import org.apache.spark.sql.catalyst.util.{sideBySide, stackTraceToString}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.row.SnappyStoreDialect
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{Metadata, StructField, StructType, TypeUtilities}
 import org.apache.spark.sql.{AnalysisException, DataFrame, Dataset, QueryTest, Row, SnappySession}
 // scalastyle:off
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome, Retries}
@@ -143,6 +143,8 @@ abstract class SnappyFunSuite
   }
 
   override def beforeAll(): Unit = {
+    log.info("Snappy Config:" + snc.sessionState.conf.getAllConfs.toString())
+
     baseCleanup()
   }
 
@@ -231,6 +233,9 @@ object SnappyFunSuite extends Assertions {
       s"The physical plan has missing inputs:\n${query.queryExecution.executedPlan}")
   }
 
+  private def withName(name: String, metadata: Metadata): Metadata =
+    TypeUtilities.putMetadata("name", name, metadata)
+
   /**
    * Converts a JDBC ResultSet to a DataFrame.
    */
@@ -238,7 +243,8 @@ object SnappyFunSuite extends Assertions {
       (sql: String): Dataset[Row] = {
     if (stmt.execute(sql)) {
       val rs = stmt.getResultSet
-      val schema = JdbcUtils.getSchema(rs, SnappyStoreDialect)
+      val schema = StructType(JdbcUtils.getSchema(rs, SnappyStoreDialect).map(f => StructField(
+        f.name.toLowerCase, f.dataType, f.nullable, withName(f.name.toLowerCase, f.metadata))))
       val rows = Utils.resultSetToSparkInternalRows(rs, schema).map(_.copy()).toSeq
       session.internalCreateDataFrame(session.sparkContext.makeRDD(rows), schema)
     } else {

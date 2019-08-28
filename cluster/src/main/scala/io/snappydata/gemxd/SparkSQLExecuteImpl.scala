@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,6 +23,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.DataSerializer
+import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, Version}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
 import com.pivotal.gemfirexd.Attribute
@@ -36,7 +37,7 @@ import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLChar}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
-import io.snappydata.{Constant, QueryHint}
+import io.snappydata.{Constant, Property, QueryHint}
 
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.expressions
@@ -74,11 +75,11 @@ class SparkSQLExecuteImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setCurrentSchema(schema)
+  Utils.setCurrentSchema(session, schema, createIfNotExists = true)
 
   session.setPreparedQuery(preparePhase = false, pvs)
 
-  private[this] val df = session.sql(sql)
+  private[this] val df = Utils.sqlInternal(session, sql)
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
@@ -138,7 +139,7 @@ class SparkSQLExecuteImpl(val sql: String,
             // prepare SnappyResultHolder with all data and create new one
             SparkSQLExecuteImpl.handleLocalExecution(srh, hdos)
             msg.sendResult(srh)
-            srh = new SnappyResultHolder(this, msg.isUpdateOrDelete)
+            srh = new SnappyResultHolder(this, msg.isUpdateOrDeleteOrPut)
           } else {
             // throttle sending if target node is CRITICAL_UP
             val targetMember = msg.getSender
@@ -196,7 +197,7 @@ class SparkSQLExecuteImpl(val sql: String,
   private def getColumnTypes: Array[(Int, Int, Int)] =
     querySchema.map(f => {
       SparkSQLExecuteImpl.getSQLType(f.dataType, complexTypeAsJson,
-        f.metadata, Utils.toUpperCase(f.name), allAsClob, columnsAsClob)
+        f.metadata, Utils.toLowerCase(f.name), allAsClob, columnsAsClob)
     }).toArray
 
   private def getColumnDataTypes: Array[DataType] =
@@ -287,7 +288,11 @@ object SparkSQLExecuteImpl {
       if (dotIdx > 0) {
         val tableName = fn.substring(0, dotIdx)
         val fullTableName = if (tableName.indexOf('.') > 0) tableName
-        else session.getCurrentSchema + '.' + tableName
+        else {
+          // JDBC spec allows returning empty string for getSchemaName so the code
+          // should do the same instead of returning current schema which can be incorrect
+          "." + tableName
+        }
         (fullTableName, a.nullable)
       } else {
         ("", a.nullable)
@@ -376,7 +381,7 @@ object SparkSQLExecuteImpl {
         val writer = new CharArrayWriter()
         writers += writer
         generators += Utils.getJsonGenerator(d.asInstanceOf[DataType],
-          s"COL_$size", writer)
+          s"col_$size", writer)
       }
     }
     val execRow = new ValueRow(dvds)
@@ -473,23 +478,30 @@ object SparkSQLExecuteImpl {
 
 object SnappySessionPerConnection {
 
-  private val connectionIdMap =
+  private[this] val connectionIdMap =
     new java.util.concurrent.ConcurrentHashMap[java.lang.Long, SnappySession]()
 
   def getSnappySessionForConnection(connId: Long): SnappySession = {
-    val connectionID = Long.box(connId)
-    val session = connectionIdMap.get(connectionID)
-    if (session != null) session
-    else {
-      val session = SnappyContext().snappySession
-      val oldSession = connectionIdMap.putIfAbsent(connectionID, session)
-      if (oldSession == null) session else oldSession
-    }
+    connectionIdMap.computeIfAbsent(Long.box(connId), CreateNewSession)
   }
 
   def getAllSessions: Seq[SnappySession] = connectionIdMap.values().asScala.toSeq
 
   def removeSnappySession(connectionID: java.lang.Long): Unit = {
-    connectionIdMap.remove(connectionID)
+    val session = connectionIdMap.remove(connectionID)
+    if (session ne null) session.clear()
+  }
+}
+
+object CreateNewSession extends java.util.function.Function[java.lang.Long, SnappySession] {
+  override def apply(connId: java.lang.Long): SnappySession = {
+    val session = SnappyContext.globalSparkContext match {
+      // use a CancelException to force failover by client to another lead if available
+      case null => throw new CacheClosedException("No SparkContext ...")
+      case sc => new SnappySession(sc)
+    }
+    Utils.getLocalProperties(session.sparkContext).clear()
+    Property.PlanCaching.set(session.sessionState.conf, true)
+    session
   }
 }

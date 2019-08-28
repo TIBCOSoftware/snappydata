@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,13 +16,12 @@
  */
 package org.apache.spark.sql
 
+import io.snappydata.SnappyDataFunctions
 import io.snappydata.sql.catalog.CatalogObjectType
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.ExpressionInfo
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.policy.CurrentUser
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
@@ -37,18 +36,7 @@ class SnappyContextFunctions {
 
   def registerSnappyFunctions(session: SnappySession): Unit = {
     val registry = session.sessionState.functionRegistry
-    val usageStr = "_FUNC_() - Returns the User's UserName who is executing the " +
-        "current SQL statement."
-    val info = new ExpressionInfo(CurrentUser.getClass.getCanonicalName, null,
-      "CURRENT_USER", usageStr, "")
-    registry.registerFunction("CURRENT_USER", info,
-      e => {
-        if (e.nonEmpty) {
-          throw new AnalysisException("Argument(s)  passed for zero arg function " +
-              s"CURRENT_USER")
-        }
-        CurrentUser()
-      })
+    SnappyDataFunctions.builtin.foreach(fn => registry.registerFunction(fn._1, fn._2, fn._3))
   }
 
   def createTopK(session: SnappySession, tableName: String,

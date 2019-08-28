@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -75,7 +75,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
       val maxProjection = Ints.max(projection: _*)
       val bitset = new Array[Long](UnsafeRow.calculateBitSetWidthInBytes(maxProjection) >>> 3)
       for (p <- projection) {
-        BitSet.set(bitset, Platform.LONG_ARRAY_OFFSET, p)
+        BitSet.set(bitset, Platform.LONG_ARRAY_OFFSET, p - 1)
       }
       bitset
     } else ReuseFactory.getZeroLenLongArray
@@ -217,7 +217,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
           val tableColumn = ColumnDelta.tableColumnIndex(columnIndex)
           tableColumn > 0 &&
               BitSet.isSet(projectionBitSet, Platform.LONG_ARRAY_OFFSET,
-                tableColumn, projectionBitSet.length)
+                tableColumn - 1 , projectionBitSet.length)
         }) {
           // note that the map used below uses value==0 to indicate free, so the
           // column indexes have to be 1-based (and negative for deltas/meta-data)

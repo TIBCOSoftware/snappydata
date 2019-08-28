@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -57,7 +57,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       options: Map[String, String]): BaseColumnFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val schema = getSchema(session, options) match {
-      case None => SnappyExternalCatalog.EMPTY_SCHEMA // table may already exist
+      case None => JdbcExtendedUtils.EMPTY_SCHEMA // table may already exist
       case Some(s) => s
     }
     // table has already been checked for existence by callers if required so here mode is Ignore
@@ -75,7 +75,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       options: Map[String, String], data: DataFrame): BaseColumnFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val schema = getSchema(session, options) match {
-      case None => session.sessionCatalog.normalizeSchema(data.schema)
+      case None => data.schema
       case Some(s) => s
     }
     val relation = createRelation(session, mode, options, schema)
@@ -105,7 +105,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       options: Map[String, String], specifiedSchema: StructType): BaseColumnFormatRelation = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
-    val fullTableName = ExternalStoreUtils.removeInternalProps(parameters)
+    val fullTableName = ExternalStoreUtils.removeInternalPropsAndGetTable(parameters)
 
     // don't allow commas in column names since it is used as separator in multiple places
     specifiedSchema.find(_.name.indexOf(',') != -1) match {
@@ -122,7 +122,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
     // change the schema to use VARCHAR for StringType for partitioning columns
     // so that the row buffer table can use it as part of primary key
     val (primaryKeyClause, stringPKCols) = StoreUtils.getPrimaryKeyClause(
-      parameters, specifiedSchema)
+      parameters, specifiedSchema, session)
     val schema = if (stringPKCols.isEmpty) specifiedSchema
     else {
       StructType(specifiedSchema.map { field =>

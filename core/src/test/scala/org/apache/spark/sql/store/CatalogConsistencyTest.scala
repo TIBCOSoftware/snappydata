@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,6 +19,7 @@ package org.apache.spark.sql.store
 
 import java.sql.{Connection, DriverManager, SQLException}
 
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedSQLException
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
@@ -87,7 +88,7 @@ class CatalogConsistencyTest
     snc.createTable("column_table1", "column", dataDF.schema, props)
 
     // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.externalCatalog.dropTable("APP", "COLUMN_TABLE1",
+    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "column_table1",
       ignoreIfNotExists = false, purge = false)
 
     // should throw an exception since the table has been removed from Hive store
@@ -113,7 +114,7 @@ class CatalogConsistencyTest
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
 
     // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.externalCatalog.dropTable("APP", "COLUMN_TABLE1",
+    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "column_table1",
       ignoreIfNotExists = false, purge = false)
 
     // repair the catalog
@@ -153,7 +154,7 @@ class CatalogConsistencyTest
     routeQueryDisabledConn.createStatement().execute("drop table " +
         ColumnFormatRelation.columnBatchTableName("app.column_table1"))
     // remove the table entry from Hive store
-    snc.snappySession.sessionCatalog.externalCatalog.dropTable("APP", "COLUMN_TABLE1",
+    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "column_table1",
       ignoreIfNotExists = false, purge = false)
 
     // make sure that the table does not exist in Hive metastore
@@ -255,7 +256,7 @@ class CatalogConsistencyTest
     snc.createTable("row_table1", "row", dataDF.schema, props)
 
     // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.externalCatalog.dropTable("APP", "ROW_TABLE1",
+    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "row_table1",
       ignoreIfNotExists = false, purge = false)
 
     // should throw an exception since the table has been removed from Hive store
@@ -276,7 +277,7 @@ class CatalogConsistencyTest
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table2")
 
     // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.externalCatalog.dropTable("APP", "ROW_TABLE1",
+    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "row_table1",
       ignoreIfNotExists = false, purge = false)
 
     // repair the catalog
@@ -324,5 +325,28 @@ class CatalogConsistencyTest
     val r = result.collect
     assert(r.length == 5)
 
+  }
+
+  test("REMOVE_METASTORE_ENTRY procedure should drop table from catalog") {
+    snc.sql("create table app.rowtable1 (c1 integer, c2 string, c3 float)")
+    snc.sql("insert into app.rowtable1 values (11, '11', 1.1)")
+
+    try {
+      snc.sql("call sys.REMOVE_METASTORE_ENTRY('app.rowtable1', 'false');")
+    } catch {
+      case e: EmbedSQLException =>
+        assert(e.getMessage.contains("Table retrieved successfully"))
+    }
+
+    snc.sql("call sys.REMOVE_METASTORE_ENTRY('app.rowtable1', 'true');")
+
+    intercept[TableNotFoundException] {
+      snc.snappySession.sessionCatalog.lookupRelation(
+        snc.snappySession.tableIdentifier("rowtable1"))
+    }
+    val result = snc.sql("show tables")
+    assert(result.collect.length == 0)
+    val routeQueryDisabledConn = getConnection(routeQuery = false)
+    routeQueryDisabledConn.createStatement().execute("drop table if exists rowtable1")
   }
 }

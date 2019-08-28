@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,8 +27,8 @@ import scala.io.Source
 object SnappyTestUtils {
 
   def assertJoinFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String,
-      tableType: String, pw: PrintWriter, sqlContext: SQLContext,
-      planCachingEnabled: Boolean): Any = {
+                              tableType: String, pw: PrintWriter, sqlContext: SQLContext,
+                              planCachingEnabled: Boolean): Any = {
     snc.sql("set spark.sql.crossJoin.enabled = true")
     sqlContext.sql("set spark.sql.crossJoin.enabled = true")
     assertQueryFullResultSet(snc, sqlString, queryNum, tableType, pw, sqlContext,
@@ -60,18 +60,18 @@ object SnappyTestUtils {
   def writeToFile(df: DataFrame, dest: String, snc: SnappyContext): Unit = {
     import snc.implicits._
     df.map(dataTypeConverter)(RowEncoder(df.schema))
-        .map(row => {
-          val sb = new StringBuilder
-          row.toSeq.foreach(e => {
-            if (e != null) {
-              sb.append(e.toString).append(",")
-            }
-            else {
-              sb.append("NULL").append(",")
-            }
-          })
-          sb.toString()
-        }).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option(
+      .map(row => {
+        val sb = new StringBuilder
+        row.toSeq.foreach(e => {
+          if (e != null) {
+            sb.append(e.toString).append(",")
+          }
+          else {
+            sb.append("NULL").append(",")
+          }
+        })
+        sb.toString()
+      }).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option(
       "header", false).save(dest)
   }
 
@@ -84,7 +84,7 @@ object SnappyTestUtils {
       if (!logDir.isEmpty) {
         val leaderLogFile: File = logDir.iterator.next()
         if (leaderLogFile.exists()) dest = dirString + File.separator + ".." + File.separator +
-            ".." + File.separator + dirName
+          ".." + File.separator + dirName
       }
       else dest = dirString + File.separator + ".." + File.separator + dirName
     }
@@ -94,14 +94,48 @@ object SnappyTestUtils {
     return tempDir.getAbsolutePath
   }
 
+  /*
+ In case of round-off, there is a difference of .1 in snappy and spark results. We can ignore
+ such differences
+ */
+  def isIgnorable(actualRow: String, expectedRow: String): Boolean = {
+    var isIgnorable = false
+    if (actualRow != null && actualRow.size > 0 && expectedRow != null && expectedRow.size > 0) {
+      val actualArray = actualRow.split(",")
+      val expectedArray = expectedRow.split(",")
+      var diff: Double = 0.0
+      if (actualArray.length == expectedArray.length) {
+        for (i <- 0 until actualArray.length) {
+          val value1: String = actualArray(i)
+          val value2: String = expectedArray(i)
+          if (!value1.equals(value2)) {
+            try {
+              val val1: Double = value1.toDouble
+              val val2: Double = value2.toDouble
+              if (val1 > val2) diff = val1.-(val2).doubleValue
+              else diff = val2.-(val1).doubleValue
+              diff = "%18.2f".format(diff).trim().toDouble
+              // scalastyle:off println
+              println("diff is " + diff)
+              if (diff <= 0.1) isIgnorable = true
+            } catch {
+              case nfe: NumberFormatException => return false
+            }
+          }
+        }
+      }
+    }
+    isIgnorable
+  }
+
   def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String,
-      tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
+                               tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
     assertQueryFullResultSet(snc, sqlString, queryNum, tableType, pw, sqlContext, true)
   }
 
   def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String,
-      tableType: String, pw: PrintWriter, sqlContext: SQLContext,
-      usePlanCaching: Boolean): Any = {
+                               tableType: String, pw: PrintWriter, sqlContext: SQLContext,
+                               usePlanCaching: Boolean): Any = {
     var snappyDF: DataFrame = null
     if(!usePlanCaching) {
       snappyDF = snc.sqlUncached(sqlString)
@@ -112,7 +146,7 @@ object SnappyTestUtils {
     val snappyQueryFileName = s"Snappy_${queryNum}.out"
     val sparkQueryFileName = s"Spark_${queryNum}.out"
     val snappyDest: String = getTempDir("snappyQueryFiles_" + tableType) + File.separator +
-        snappyQueryFileName
+      snappyQueryFileName
     val sparkDest: String = getTempDir("sparkQueryFiles") + File.separator + sparkQueryFileName
     val sparkFile: File = new java.io.File(sparkDest)
     val snappyFile = new java.io.File(snappyDest)
@@ -140,10 +174,12 @@ object SnappyTestUtils {
       val expectedLine = expectedLineSet.next()
       val actualLine = actualLineSet.next()
       if (!actualLine.equals(expectedLine)) {
-        pw.println(s"\n** For ${queryNum} result mismatch observed**")
-        pw.println(s"\nExpected Result:\n $expectedLine")
-        pw.println(s"\nActual Result:\n $actualLine")
-        pw.println(s"\nQuery =" + sqlString + " Table Type : " + tableType)
+        if (!isIgnorable(actualLine, expectedLine)) {
+          pw.println(s"\n** For ${queryNum} result mismatch observed**")
+          pw.println(s"\nExpected Result:\n $expectedLine")
+          pw.println(s"\nActual Result:\n $actualLine")
+          pw.println(s"\nQuery =" + sqlString + " Table Type : " + tableType)
+        }
         /* assert(assertion = false, s"\n** For $queryNum result mismatch observed** \n" +
             s"Expected Result \n: $expectedLine \n" +
             s"Actual Result   \n: $actualLine \n" +
@@ -161,5 +197,118 @@ object SnappyTestUtils {
     pw.flush()
   }
 
+  def assertQueryFullResultSet(snc: SnappyContext, snDF : DataFrame,
+                               spDF : DataFrame, queryNum: String,
+                               tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
+    var snappyDF: DataFrame = snDF
+    var sparkDF = spDF
+    val snappyQueryFileName = s"Snappy_${queryNum}.out"
+    val sparkQueryFileName = s"Spark_${queryNum}.out"
+    val snappyDest: String = getTempDir("snappyQueryFiles_" + tableType) + File.separator +
+      snappyQueryFileName
+    val sparkDest: String = getTempDir("sparkQueryFiles") + File.separator + sparkQueryFileName
+    val sparkFile: File = new java.io.File(sparkDest)
+    val snappyFile = new java.io.File(snappyDest)
+    if (snappyFile.listFiles() == null) {
+      val col1 = snappyDF.schema.fieldNames(0)
+      val col = snappyDF.schema.fieldNames.tail
+      snappyDF = snappyDF.repartition(1).sortWithinPartitions(col1, col: _*)
+      writeToFile(snappyDF, snappyDest, snc)
+      // scalastyle:off println
+      pw.println(s"${queryNum} Result Collected in file $snappyDest")
+    }
+    if (sparkFile.listFiles() == null) {
+      val col1 = sparkDF.schema.fieldNames(0)
+      val col = sparkDF.schema.fieldNames.tail
+      sparkDF = sparkDF.repartition(1).sortWithinPartitions(col1, col: _*)
+      writeToFile(sparkDF, sparkDest, snc)
+      pw.println(s"${queryNum} Result Collected in file $sparkDest")
+    }
+    val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
+    val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines
+    while (expectedLineSet.hasNext && actualLineSet.hasNext) {
+      val expectedLine = expectedLineSet.next()
+      val actualLine = actualLineSet.next()
+      if (!actualLine.equals(expectedLine)) {
+        if (!isIgnorable(actualLine, expectedLine)) {
+          pw.println(s"\n** For ${queryNum} result mismatch observed**")
+          pw.println(s"\nExpected Result:\n $expectedLine")
+          pw.println(s"\nActual Result:\n $actualLine")
 
+        }
+      }
+    }
+    if (actualLineSet.hasNext || expectedLineSet.hasNext) {
+      pw.println(s"\nFor ${queryNum} result count mismatch observed")
+      pw.flush()
+    }
+    pw.println(s"Validation for ${queryNum} finished.")
+    pw.println()
+    // scalastyle:on println
+    pw.flush()
+  }
+
+  def assertQueryFullResultSet(snc: SnappyContext, snDF : DataFrame,
+                               spDF : DataFrame, queryNum: String,
+                               tableType: String, pw: PrintWriter, sqlContext: SQLContext, isJoin : Boolean ): Any = {
+    var snappyDF: DataFrame = snDF
+    var sparkDF = spDF
+    val snappyQueryFileName = s"Snappy_${queryNum}.out"
+    val sparkQueryFileName = s"Spark_${queryNum}.out"
+    val snappyDest: String = getTempDir("snappyQueryFiles_" + tableType) + File.separator +
+      snappyQueryFileName
+    val sparkDest: String = getTempDir("sparkQueryFiles") + File.separator + sparkQueryFileName
+    val sparkFile: File = new java.io.File(sparkDest)
+    val snappyFile = new java.io.File(snappyDest)
+    if (snappyFile.listFiles() == null) {
+      val col1 = snappyDF.schema.fieldNames(0)
+      val col = snappyDF.schema.fieldNames.tail
+      if(isJoin) {
+        snappyDF = snappyDF.repartition(1)
+      }
+      else {
+        snappyDF = snappyDF.repartition(1).sortWithinPartitions(col1, col: _*)
+      }
+      writeToFile(snappyDF, snappyDest, snc)
+      // scalastyle:off println
+      pw.println(s"${queryNum} Result Collected in file $snappyDest")
+    }
+    if (sparkFile.listFiles() == null) {
+      val col1 = sparkDF.schema.fieldNames(0)
+      val col = sparkDF.schema.fieldNames.tail
+      if(isJoin) {
+        sparkDF = sparkDF.repartition(1)
+      }
+      else {
+        sparkDF = sparkDF.repartition(1).sortWithinPartitions(col1, col: _*)
+      }
+      writeToFile(sparkDF, sparkDest, snc)
+      pw.println(s"${queryNum} Result Collected in file $sparkDest")
+    }
+    val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
+    val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines
+    while (expectedLineSet.hasNext && actualLineSet.hasNext) {
+      val expectedLine = expectedLineSet.next()
+      val actualLine = actualLineSet.next()
+      if (!actualLine.equals(expectedLine)) {
+        if (!isIgnorable(actualLine, expectedLine)) {
+          pw.println(s"\n** For ${queryNum} result mismatch observed**")
+          pw.println(s"\nExpected Result:\n $expectedLine")
+          pw.println(s"\nActual Result:\n $actualLine")
+        }
+      }
+    }
+    if (actualLineSet.hasNext || expectedLineSet.hasNext) {
+      pw.println(s"\nFor ${queryNum} result count mismatch observed")
+      pw.flush()
+    }
+    pw.println(s"Validation for ${queryNum} finished.")
+    pw.println()
+    // scalastyle:on println
+    pw.flush()
+  }
 }

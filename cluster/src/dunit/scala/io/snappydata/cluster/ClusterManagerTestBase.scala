@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,6 +21,7 @@ import java.util.Properties
 
 import scala.language.postfixOps
 import scala.sys.process._
+import scala.util.Random
 
 import com.gemstone.gemfire.internal.shared.NativeCalls
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -32,7 +33,7 @@ import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import org.slf4j.LoggerFactory
 
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.{Logging, SparkContext}
@@ -70,6 +71,7 @@ abstract class ClusterManagerTestBase(s: String)
   bootProps.setProperty("critical-heap-percentage", "95")
   bootProps.setProperty("gemfirexd.max-lock-wait", "60000")
   bootProps.setProperty("member-timeout", "5000")
+  bootProps.setProperty("snappydata.sql.planCaching", random.nextBoolean().toString)
 
   // reduce startup time
   // sysProps.setProperty("p2p.discoveryTimeout", "1000")
@@ -85,6 +87,8 @@ abstract class ClusterManagerTestBase(s: String)
   sysProps.setProperty(Property.SparkFallback.name, "false")
 
   sysProps.setProperty("gemfire.DISALLOW_CLUSTER_RESTART_CHECK", "true")
+
+  sysProps.setProperty("gemfire.DISALLOW_RESERVE_SPACE", "true")
 
   var host: Host = _
   var vm0: VM = _
@@ -115,6 +119,9 @@ abstract class ClusterManagerTestBase(s: String)
 
   override def beforeClass(): Unit = {
     super.beforeClass()
+    val logger = LoggerFactory.getLogger(getClass)
+    logger.info("Boot properties:" + bootProps)
+
     doSetUp()
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
@@ -191,14 +198,13 @@ abstract class ClusterManagerTestBase(s: String)
   override def tearDown2(): Unit = {
     super.tearDown2()
     GemFireXDUtils.IS_TEST_MODE = false
-    cleanupTestData(getClass.getName, getName)
+    cleanupTestData(getClass.getName, getName, this)
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "cleanupTestData",
-      Array[AnyRef](getClass.getName, getName)))
+      Array[AnyRef](getClass.getName, getName, null)))
     if (stopNetServersInTearDown) {
       Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
       stopNetworkServers()
     }
-    
     bootProps.clear()
   }
 
@@ -216,6 +222,8 @@ abstract class ClusterManagerTestBase(s: String)
       }
     })
   }
+
+  protected def initSessionForCleanup(session: SnappySession): Unit = {}
 
   def getANetConnection(netPort: Int,
       useGemXDURL: Boolean = false,
@@ -254,6 +262,7 @@ abstract class ClusterManagerTestBase(s: String)
 object ClusterManagerTestBase extends Logging {
   final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
   final lazy val locPort: Int = locatorPort
+  private val random = new Random()
 
   /* SparkContext is initialized on the lead node and hence,
   this can be used only by jobs running on Lead node */
@@ -302,22 +311,24 @@ object ClusterManagerTestBase extends Logging {
       netPort, null)
   }
 
-  def cleanupTestData(testClass: String, testName: String): Unit = {
+  def cleanupTestData(testClass: String, testName: String, inst: ClusterManagerTestBase): Unit = {
     // cleanup metastore
     if (Misc.getMemStoreBootingNoThrow eq null) return
     val snc = SnappyContext()
     if (snc != null) {
-      TestUtils.resetAllFunctions(snc.snappySession)
-      TestUtils.dropAllSchemas(snc.snappySession)
+      val session = snc.snappySession
+      if (inst ne null) inst.initSessionForCleanup(session)
+      TestUtils.resetAllFunctions(session)
+      TestUtils.dropAllSchemas(session)
     }
     if (testName != null) {
       logInfo("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
     }
   }
 
-  def stopSpark(): Unit = {
+  def stopSpark(inst: ClusterManagerTestBase = null): Unit = {
     // cleanup metastore
-    cleanupTestData(null, null)
+    cleanupTestData(null, null, inst)
     val service = ServiceManager.currentFabricServiceInstance
     if (service != null) {
       service.stop(null)

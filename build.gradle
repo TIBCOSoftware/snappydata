@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -38,6 +38,8 @@ apply plugin: 'distribution'
 apply plugin: 'nebula.ospackage-base'
 apply plugin: "nebula.ospackage"
 
+def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
+
 allprojects {
   // We want to see all test results.  This is equivalent to setting --continue
   // on the command line.
@@ -70,7 +72,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.0.2.1'
+  version = '1.1.1'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -97,12 +99,16 @@ allprojects {
   javadoc.options.charSet = 'UTF-8'
 
   ext {
-    productName = 'SnappyData'
-    vendorName = 'SnappyData, Inc.'
+    if (isEnterpriseProduct) {
+      productName = 'TIBCO ComputeDB'
+    } else {
+      productName = 'SnappyData'
+    }
+    vendorName = 'TIBCO Software Inc.'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.1.1'
-    snappySparkVersion = '2.1.1.4'
+    snappySparkVersion = '2.1.1.7'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     sparkCurrentVersion = '2.3.2'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
@@ -145,20 +151,21 @@ allprojects {
     antlr2Version = '2.7.7'
 
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.2.1'
+    snappyStoreVersion = '1.6.4'
     snappydataVersion = version
     pulseVersion = '1.5.1'
-    zeppelinInterpreterVersion = '0.7.3.4'
+    zeppelinInterpreterVersion = '0.7.3.6'
 
     buildFlags = ''
     createdBy = System.getProperty('user.name')
     osArch = System.getProperty('os.arch')
     osName = org.gradle.internal.os.OperatingSystem.current()
+    osFamilyName = osName.getFamilyName().replace(' ', '').toLowerCase()
     osVersion = System.getProperty('os.version')
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
-    sparkJobServerVersion = '0.6.2.8'
+    sparkJobServerVersion = '0.6.2.10'
     eclipseCollectionsVersion = '9.2.0'
     fastutilVersion = '8.2.2'
 
@@ -209,7 +216,6 @@ allprojects {
 }
 
 
-def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
 def hasAqpProject = new File(rootDir, 'aqp/build.gradle').exists()
 def aqpProject = isEnterpriseProduct ? project(":snappy-aqp_${scalaBinaryVersion}") : null
 def hasJdbcConnectorProject = new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
@@ -503,7 +509,7 @@ subprojects {
 
   // apply default manifest
   if (rootProject.hasProperty('enablePublish')) {
-    createdBy = 'SnappyData Build Team'
+    createdBy = 'TIBCO Software Inc.'
   }
   jar {
     manifest {
@@ -558,6 +564,7 @@ subprojects {
   configurations.testRuntime {
     // below is included indirectly by hadoop deps and conflicts with embedded 1.5.7 apacheds
     exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
+    exclude(group: 'org.apache.directory.server', module: 'apacheds-i18n')
   }
 
   task packageTests(type: Jar, dependsOn: testClasses) {
@@ -608,10 +615,14 @@ subprojects {
           }
 
           pom.project {
-            name 'SnappyData'
+            if (isEnterpriseProduct) {
+              name 'TIBCO ComputeDB'
+            } else {
+              name 'SnappyData'
+            }
             packaging 'jar'
             // optionally artifactId can be defined here
-            description 'SnappyData distributed data store and execution engine'
+            description 'TIBCO ComputeDB distributed data store and execution engine'
             url 'http://www.snappydata.io'
 
             scm {
@@ -631,7 +642,7 @@ subprojects {
               developer {
                 id 'smenon'
                 name 'Sudhir Menon'
-                email 'smenon@snappydata.io'
+                email 'sumenon@tibco.com'
               }
             }
           }
@@ -676,7 +687,7 @@ gradle.taskGraph.whenReady { graph ->
           if (dunitSingle == null || dunitSingle.length() == 0) {
             def dunitTests = testClassesDirs.asFileTree.matching {
               includes = [ '**/*DUnitTest.class', '**/*DUnit.class' ]
-              excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class',
+              excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/*HDFS*DUnit*.class',
                   '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
                   '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class' ]
             }
@@ -740,6 +751,7 @@ gradle.taskGraph.whenReady { graph ->
         environment 'SNAPPY_HOME': snappyProductDir,
           'APACHE_SPARK_HOME': sparkProductDir,
           'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
+          'SPARK_TESTING': '1',
           'SNAPPY_DIST_CLASSPATH': test.classpath.asPath
 
         def failureCount = new java.util.concurrent.atomic.AtomicInteger(0)
@@ -905,10 +917,10 @@ task product(type: Zip) {
     }
 
     if (rootProject.hasProperty('hadoop-provided')) {
-      releaseFile.append("SnappyData ${version}${gitRevision} " +
+      releaseFile.append("TIBCO ComputeDB ${version}${gitRevision} " +
               "built with Hadoop ${hadoopVersion} but hadoop not bundled.\n")
     } else {
-      releaseFile.append("SnappyData ${version}${gitRevision} built for Hadoop ${hadoopVersion}.\n")
+      releaseFile.append("TIBCO ComputeDB ${version}${gitRevision} built for Hadoop ${hadoopVersion}.\n")
     }
     releaseFile.append("Build flags:${buildFlags}\n")
 
@@ -1034,6 +1046,24 @@ task product(type: Zip) {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
     }
+
+    if (rootProject.hasProperty('R.enable')) {
+      def targetRDir = "${snappyProductDir}/R"
+      copy {
+        from("${project(":snappy-spark").projectDir}/R")
+        into targetRDir
+      }
+
+      exec {
+        environment "SPARK_HOME", snappyProductDir
+        environment "NO_TESTS", "1"
+        environment "CLEAN_INSTALL", "1"
+        workingDir targetRDir
+        commandLine "${targetRDir}/check-cran.sh"
+      }
+
+      fileTree(targetRDir).exclude('lib').visit { delete it.file }
+    }
   }
 }
 
@@ -1049,7 +1079,11 @@ if (rootProject.hasProperty('copyToDir')) {
 
 distributions {
   main {
-    baseName = 'snappydata'
+    if (isEnterpriseProduct) {
+      baseName = 'tib-compute'
+    } else {
+      baseName = 'snappydata'
+    }
     contents {
       from { snappyProductDir }
     }
@@ -1090,7 +1124,9 @@ ospackage {
 
 buildRpm {
   dependsOn ':packageVSD'
-  dependsOn ':packageZeppelinInterpreter'
+  if (rootProject.hasProperty('enablePublish')) {
+    dependsOn ':packageZeppelinInterpreter'
+  }
   requires('glibc')
   requires('bash')
   requires('perl')
@@ -1104,7 +1140,9 @@ buildRpm {
 
 buildDeb {
   dependsOn ':packageVSD'
-  dependsOn ':packageZeppelinInterpreter'
+  if (rootProject.hasProperty('enablePublish')) {
+    dependsOn ':packageZeppelinInterpreter'
+  }
   requires('libc6')
   requires('bash')
   requires('perl')
@@ -1118,22 +1156,38 @@ buildDeb {
 }
 
 distTar {
+  // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.tar.gz'
+  if (isEnterpriseProduct) {
+    archiveName = 'TIB_compute_' + version + '_' + osFamilyName + '.tar.gz'
+  } else {
+    classifier 'bin'
+  }
   dependsOn product
   // also package VSD
   dependsOn ':packageVSD'
-  dependsOn ':packageZeppelinInterpreter'
-  classifier 'bin'
+  if (rootProject.hasProperty('enablePublish')) {
+    dependsOn ':packageZeppelinInterpreter'
+  }
+  compression = Compression.GZIP
+  extension = 'tar.gz'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
   }
 }
 
 distZip {
+  // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.zip'
+  if (isEnterpriseProduct) {
+    archiveName = 'TIB_compute_' + version + '_' + osFamilyName + '.zip'
+  } else {
+    classifier 'bin'
+  }
   dependsOn product
   // also package VSD
   dependsOn ':packageVSD'
-  dependsOn ':packageZeppelinInterpreter'
-  classifier 'bin'
+  if (rootProject.hasProperty('enablePublish')) {
+    dependsOn ':packageZeppelinInterpreter'
+  }
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
   }
@@ -1159,6 +1213,9 @@ task jdbcJar {
   doLast {
     def jdbcProject = project(":snappy-jdbc_${scalaBinaryVersion}")
     String jdbcName = "snappydata-jdbc_${scalaBinaryVersion}-${version}.jar"
+    if (isEnterpriseProduct) {
+      jdbcName = "TIB_compute-jdbc-${scalaBinaryVersion}_${version}.jar"
+    }
     // copy the snappy-jdbc shadow jar into distributions
     copy {
       from jdbcProject.shadowJar.destinationDir
@@ -1176,6 +1233,9 @@ task copyShadowJars {
   doLast {
     def coreProject = project(":snappy-core_${scalaBinaryVersion}")
     String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
+    if (isEnterpriseProduct) {
+      coreName = "TIB_compute-core-${scalaBinaryVersion}_${version}.jar"
+    }
     copy {
       from coreProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"
@@ -1193,7 +1253,8 @@ task distInstallers {
 
 // use the task below to prepare final release bits
 task distProduct {
-  dependsOn product, distTar, distZip dependsOn distInstallers
+  dependsOn product, distTar, distZip
+  dependsOn distInstallers
   dependsOn copyShadowJars
 }
 
@@ -1306,7 +1367,7 @@ task packageZeppelinInterpreter { doLast {
     exec {
       executable "${zeppelinInterpreterDir}/gradlew"
       workingDir = zeppelinInterpreterDir
-      args 'clean', 'product', 'distTar'
+      args "clean", "product", "distTar", "-PenablePublish"
     }
     println ''
     println "Copying Zeppelin Interpreter jar from ${zeppelinInterpreterLibDir} to ${snappyProductDir}/jars"
@@ -1439,11 +1500,19 @@ task docs(type: ScalaDoc) {
   })
   destinationDir = file("${rootProject.buildDir}/docs")
 }
+
+task buildSqlFuncDocs(type: Exec) {
+  dependsOn product
+  //on linux
+  commandLine "${rootProject.projectDir}/spark/sql/create-docs.sh"
+}
+
 task publishDocs(type:Exec) {
-  dependsOn docs
+  dependsOn docs, buildSqlFuncDocs
   //on linux
   commandLine './publish-site.sh'
 }
+
 
 // It runs test script from product dir. Hence if running the target individually make sure
 // to run product target first

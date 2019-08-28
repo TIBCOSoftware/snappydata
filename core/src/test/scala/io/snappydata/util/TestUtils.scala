@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -24,26 +24,33 @@ import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
 
 object TestUtils extends Logging {
 
-  def defaultCores: Int = math.min(16, Runtime.getRuntime.availableProcessors())
+  // factor of 2 like in product by default
+  val defaultCores: Int = math.min(8, Runtime.getRuntime.availableProcessors()) * 2
+
+  def defaultCoresForSmartConnector: String = (defaultCores / 2).toString
 
   def dropAllSchemas(session: SnappySession): Unit = {
     val sc = SnappyContext.globalSparkContext
     if (sc != null && !sc.isStopped) {
       val catalog = session.sessionCatalog
-      val skipSchemas = Seq(catalog.defaultSchemaName, "DEFAULT", "SYS", "SYSIBM")
-      val userSchemas = catalog.listDatabases().filterNot(s => skipSchemas.contains(s.toUpperCase))
+      catalog.setCurrentDatabase(catalog.defaultSchemaName)
+      val skipSchemas = Seq(catalog.defaultSchemaName, "default", "sys", "sysibm")
+      val userSchemas = catalog.listDatabases().filterNot(skipSchemas.contains)
       if (userSchemas.nonEmpty) {
         userSchemas.foreach { s =>
           try {
             session.sql(s"drop schema $s cascade")
           } catch {
-            case t: Throwable => logError(s"Failure in dropping schema $s in cleanup", t)
+            case t: Throwable =>
+              if (!t.getMessage.contains("Cannot drop own schema")) {
+                logError(s"Failure in dropping schema $s in cleanup", t)
+              }
           }
         }
       }
       catalog.dropAllSchemaObjects(catalog.defaultSchemaName,
         ignoreIfNotExists = true, cascade = true)
-      catalog.dropAllSchemaObjects("DEFAULT", ignoreIfNotExists = true, cascade = true)
+      catalog.dropAllSchemaObjects("default", ignoreIfNotExists = true, cascade = true)
       catalog.clearTempTables()
     }
   }

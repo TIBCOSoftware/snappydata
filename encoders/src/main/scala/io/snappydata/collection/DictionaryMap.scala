@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -53,12 +53,14 @@ final class DictionaryMap(_initialCapacity: Int, _loadFactor: Double,
       key.hashCode())
   }
 
-  override protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
+  override protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long,
+    valueStartOffset: Int): Int = {
     // get the dictionary index from the key bytes
     Platform.getInt(mapKeyObject, mapKeyOffset + 8)
   }
 
-  override protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
+  override protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long,
+    valueStartOffset: Int): Int = {
     val newIndex = size
     // write the dictionary index in the key bytes
     Platform.putInt(mapKeyObject, mapKeyOffset + 8, newIndex)
