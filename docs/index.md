@@ -84,9 +84,9 @@ We monitor the following channels comments/questions:
 
 *	[Mailing List](https://groups.google.com/forum/#!forum/snappydata-user) ![Mailing List](http://i.imgur.com/YomdH4s.png)
 
-*	[Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)          
+*	[Reddit](https://www.reddit.com/r/snappydata)	![Reddit](http://i.imgur.com/AB3cVtj.png)
 
-*	[JIRA](https://jira.snappydata.io/projects/SNAP/issues) ![JIRA](http://i.imgur.com/E92zntA.png)
+*	[JIRA](https://jira.snappydata.io/projects/SNAP/issues)	![JIRA](http://i.imgur.com/E92zntA.png)
 
 ## Link with TIBCO ComputeDB Distribution
 
@@ -155,4 +155,3 @@ Here is a stream + Transactions + Analytics use case example to illustrate the S
 ## Contributing to TIBCO ComputeDB
 
 If you are interested in contributing, please visit the [community page](http://www.snappydata.io/community) for ways in which you can help.
-
