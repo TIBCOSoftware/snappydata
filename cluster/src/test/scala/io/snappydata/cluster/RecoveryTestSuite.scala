@@ -1166,7 +1166,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
         " options(path '/tmp/test5_exttab1.csv')")
 
     // case: create table as select * from ...
-    stmt.execute("create table test5coltab4 as select * from test5_exttab1;")
+    stmt.execute("create table test5coltab4 as select * from test5_exttab1")
 
     // column table - how nulls are reflected in the recovered data files.
     stmt.execute("create table test5coltab5 (col1 timestamp, col2 integer, col3 varchar(33)," +

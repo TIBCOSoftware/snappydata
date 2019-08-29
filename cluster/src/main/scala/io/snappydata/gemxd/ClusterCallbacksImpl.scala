@@ -152,7 +152,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
       })
       tablesArr
     } else {
-      tableNames.split(",").toSeq
+      tableNames.split(",").map(_.trim).toSeq
     }
     logDebug(s"Using connection ID: $connId\n Export path:" +
         s" $exportUri\n Format Type: $formatType\n Table names: $tableNames")
