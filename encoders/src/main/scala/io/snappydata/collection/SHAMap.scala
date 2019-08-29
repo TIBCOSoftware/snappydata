@@ -19,9 +19,9 @@ package io.snappydata.collection
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 
 final class SHAMap(initialCapacity: Int, valueSize: Int,
-  maxCapacity: Int) extends ByteBufferHashMap(initialCapacity,0.75,
+  maxCapacity: Int) extends ByteBufferHashMap(initialCapacity, 0.75,
   0, valueSize, GemFireCacheImpl.getCurrentBufferAllocator,
-  null,null,0L, maxCapacity) {
+  null, null, 0L, maxCapacity) {
 
   override protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long,
     valueOffset: Int): Int = {

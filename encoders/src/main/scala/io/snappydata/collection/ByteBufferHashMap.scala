@@ -84,7 +84,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
   private var _size = 0
   private var growThreshold = (loadFactor * _capacity).toInt
 
-  private var mask = _capacity - 1
+  protected var mask = _capacity - 1
   private[this] var _maxMemory: Long = _
   if (keyData eq null) {
     val buffer = allocator.allocate(_capacity * fixedKeySize, "HASHMAP")
