@@ -304,7 +304,7 @@ class LeadImpl extends ServerImpl with Lead
       // start the service to gather table statistics
       SnappyTableStatsProviderService.start(sc, url = null)
 
-      if (startHiveServer) {
+      if (startHiveServer && !Misc.getGemFireCache.isSnappyRecoveryMode) {
         val hiveService = SnappyHiveThriftServer2.start(useHiveSession)
         if (jobServerWait) SnappyHiveThriftServer2.getHostPort(hiveService) match {
           case None => addStartupMessage(s"Started hive thrift server ($hiveSessionKind)")

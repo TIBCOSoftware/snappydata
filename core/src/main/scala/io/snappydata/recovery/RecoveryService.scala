@@ -47,6 +47,7 @@ import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, 
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructField, StructType}
 import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappyHiveExternalCatalog}
+import org.apache.spark.sql.internal.ContextJarUtils
 
 object RecoveryService extends Logging {
 
@@ -104,12 +105,6 @@ object RecoveryService extends Logging {
           .getPreprocessedDDLQueue(allDDLs, null, null, null, false).iterator;
 
       for (entry <- preprocessedqueue) {
-        logInfo(s"------------------------------" +
-            s"-\nPP:RecoveryService:preprocessedQueue:entry ${entry.getValue.toString} =" +
-            s"=> ${entry.getValue.asInstanceOf[DDLConflatable].getValueToConflate}\n-" +
-            s"----------------------------")
-
-        // todo add to ddlbuffer
         val qEntry = entry
         val qVal = qEntry.getValue
         if (qVal.isInstanceOf[DDLConflatable]) {
@@ -140,7 +135,6 @@ object RecoveryService extends Logging {
       val otherDdls = mostRecentMemberObject.getOtherDDLs.asScala
 
       otherDdls.foreach(ddl => {
-        // todo add grant revoke above.. in if
         val ddlLowerCase = ddl.toLowerCase()
         if (!"create[ ]+diskstore".r.findFirstIn(ddlLowerCase).isEmpty ||
             !"create[ ]+index".r.findFirstIn(ddlLowerCase).isEmpty ||
@@ -157,21 +151,19 @@ object RecoveryService extends Logging {
         .getOrCreateExternalCatalog(snappyContext.sparkContext, snappyContext.sparkContext.getConf)
     val dbList = snappyHiveExternalCatalog.listDatabases("*").filter(dbName =>
       !(dbName.equalsIgnoreCase("SYS") || dbName.equalsIgnoreCase("DEFAULT")))
-    logInfo(s"PP:RecoveryService : dbList : $dbList")
 
     val allFunctions = dbList.flatMap(dbName => snappyHiveExternalCatalog.listFunctions(dbName, "*")
         .map(func => snappyHiveExternalCatalog.getFunction(dbName, func)))
     val allDatabases = dbList.map(snappyHiveExternalCatalog.getDatabase)
-    logInfo(s"PP:RecoveryService : allDatabases : $allDatabases")
     allFunctions.foreach(func => {
-      val funcClass = func.className.split("_")(0)
-      val funcRetType = func.className.split("_")(1)
-      val funcDdl = s"CREATE FUNCTION ${func.identifier} RETURNS ${funcRetType} " +
-          s"AS ${funcClass} USING JAR ${func.resources.map(_.uri)}"
+      val funcClass = func.className.split("__")(0)
+      val funcRetType = func.className.split("__")(1)
+      assert(func.resources.map(_.uri).length == 1, "Function resource should be singular.")
+      val funcDdl = s"CREATE FUNCTION ${func.identifier} " +
+          s"AS ${funcClass} RETURNS ${funcRetType}  USING JAR '${func.resources.map(_.uri).head}'"
       ddlBuffer.append(funcDdl)
     })
     allDatabases.foreach(db => {
-      logInfo(s"PP:RecoveryService : db : $db")
       db.properties.get("orgSqlText") match {
         case Some(str) => if (!str.isEmpty) ddlBuffer.append(str)
         case None => ""
@@ -213,29 +205,31 @@ object RecoveryService extends Logging {
 
     val biConsumer = new BiConsumer[String, String] {
       def accept(alias: String, cmd: String) = {
-        val cmdFields = cmd.split('|')
+        val cmdFields = cmd.split("\\|", -1)
         if (cmdFields.length > 1) {
           val repos = cmdFields(1)
           val path = cmdFields(2)
-          if (!repos.isEmpty) {
-            ddlBuffer.append(s"DEPLOY PACKAGE ${alias} '${cmdFields(0)}' repos '${repos}'")
-          } else {
-            ddlBuffer.append(s"DEPLOY PACKAGE ${alias} '${cmdFields(0)}' path '${path}'")
+          if (!repos.isEmpty && !path.isEmpty) {
+            ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}' repos '$repos' path '$path'")
+          }
+          else if (!repos.isEmpty && path.isEmpty) {
+            ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}' repos '$repos'")
+          }
+          else if (repos.isEmpty && !path.isEmpty) {
+            ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}' path '$path'")
+          }
+          else {
+            ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}'")
           }
         } else {
-          ddlBuffer.append(s"DEPLOY JAR ${alias} '${cmdFields(0)}'")
+          if (!(alias.contains(ContextJarUtils.functionKeyPrefix) ||
+              alias.contains(ContextJarUtils.droppedFunctionsKey))) {
+            ddlBuffer.append(s"DEPLOY JAR ${alias} '${cmdFields(0)}'")
+          }
         }
       }
     }
     Misc.getMemStore.getGlobalCmdRgn.forEach(biConsumer)
-
-    logInfo(s"--PP: buffer ready.\n $ddlBuffer")
-
-    if (Misc.getGemFireCache.isSnappyRecoveryMode) {
-      logInfo(s"\n\n-- PP : RecoveryService - to compare with the buffer --" +
-          s" \n${mostRecentMemberObject.getOtherDDLs.asScala}\n\n")
-
-    }
     ddlBuffer
   }
 
@@ -254,9 +248,6 @@ object RecoveryService extends Logging {
       bucketPath = s"/${PartitionedRegionHelper.PR_ROOT_REGION_NAME}/${PartitionedRegionHelper.getBucketName(tablePath, bucketId)}"
       // TODO remove replace used and handle it in a proper way
       // bucketPath = bucketPath.replace("/__PR/_B_", "/__PR/_B__")
-    }
-    for (entry <- regionViewSortedSet) {
-      logInfo(s"1891: regionViewSortedSet[${entry._1}, ${entry._2}] and bucketPath = $bucketPath")
     }
     // check if the path exists else check path of column buffer.
     // also there could be no data in any.
@@ -288,11 +279,9 @@ object RecoveryService extends Logging {
       case _ => false
     }
     val cObj = cObjArr.head.asInstanceOf[CatalogTableObject]
-    logInfo(s"1891: cObj = ${cObj}")
     val tablePath = fqtn.replace(".", "/")
     import collection.JavaConversions._
     for ((s, i) <- mostRecentMemberObject.getPrToNumBuckets) {
-      logInfo(s"1891: mostrecentmemberobject map ${s} -> ${i} and tablePath = ${tablePath}")
     }
 
     val numBuckets = mostRecentMemberObject.getPrToNumBuckets.get(tablePath)
@@ -305,8 +294,6 @@ object RecoveryService extends Logging {
         tablePath == regionPath
       }
     })
-    logInfo(s"1891: robj = ${robj == null} numbuckets = ${numBuckets}")
-    // robj.get.getDiskStoreName
     (cObj.provider, numBuckets != null,
         null,
         numBuckets)
@@ -355,23 +342,17 @@ object RecoveryService extends Logging {
                 throw new Exception(s"Schema name not found for the table ${table.identifier.table}")
             }
             var schema: StructType = DataType.fromJson(schemaJsonStr).asInstanceOf[StructType]
-            logInfo(s"PP: RecService 1st schema from json - $schema")
 
             schemaStructMap.put(s"${versionCnt}#${fqtn}", schema)
             tableColumnIds.put(s"$versionCnt#$fqtn", Range(0, schema.fields.length).toArray)
             versionMap.put(fqtn, versionCnt)
             versionCnt += 1
-            logInfo(s"1. Resservice tablecolid, versionmap,schemamap : $tableColumnIds\n\n$versionMap\n\n$schemaStructMap")
-
             // Alter statements
-
             val altStmtKeys = table.properties.keys
                 .filter(_.contains(s"altTxt_")).toSeq
                 .sortBy(_.split("_")(1).toLong)
             altStmtKeys.foreach(k => {
               val stmt = table.properties(k).toUpperCase()
-              logInfo(s"PP:2. RecService :alter statement: key,stmt - $k - $stmt")
-
               var alteredSchema: StructType = null
               if (stmt.contains(" ADD COLUMN ")) {
                 // TODO replace ; at the end also add regex match instead of contains
@@ -400,12 +381,9 @@ object RecoveryService extends Logging {
               } else if (stmt.contains("DROP COLUMN ")) {
                 val dropColName = stmt.substring(stmt.indexOf("DROP COLUMN ") + 12).trim
                 // loop through schema and delete sruct field matching name and type
-                logInfo(s"PP:REcoveryservice : createSchema: dropcolName: $dropColName\n schema $schema")
                 val indx = schema.fieldIndex(dropColName.toLowerCase())
                 alteredSchema = new StructType(schema.toArray.filter(
                   field => !field.name.toUpperCase.equals(dropColName.toUpperCase)))
-
-                logInfo(s"PP:REcoveryservice : createSchemaMap: alteredSchema: $alteredSchema")
               }
               schema = alteredSchema
 
@@ -440,7 +418,6 @@ object RecoveryService extends Logging {
 
 
   def getNumBuckets(schemaName: String, tableName: String): (Integer, Boolean) = {
-    logInfo(s"PP: ${memberObject.getPrToNumBuckets}\n schema: $schemaName \n tablname: $tableName")
     val prName = s"/${schemaName}/${tableName}".toUpperCase()
 
     val memberContainsRegion = memberObject
@@ -448,18 +425,12 @@ object RecoveryService extends Logging {
     import collection.JavaConversions._
 
     for ((k, v) <- memberObject.getPrToNumBuckets) {
-      logInfo(s"1891: PrToNumBuckets map values = ${k} -> ${v}")
     }
-    logInfo(s"1891: PrToNumBuckets contains = ${memberContainsRegion} for member" + memberObject.getMember)
-    logInfo(s"1.PP:getNumBuckets ${memberObject.getreplicatedRegions().toSeq}")
     if (memberContainsRegion) {
       (memberObject.getPrToNumBuckets.get(prName), false)
     } else {
-      logWarning(s"1891: num of buckets not found for $prName")
-      logInfo(s"2.PP:getNumBuckets ${memberObject.getreplicatedRegions().toSeq}")
+      logWarning(s"Number of buckets not found for $prName")
       if (memberObject.getreplicatedRegions().contains(s"$prName")) {
-        logInfo(s"3.PP:getNumBuckets ${memberObject.getreplicatedRegions().toSeq}")
-        logInfo("1891: table is replicated ")
         (1, true)
       } else (-1, false)
     }
@@ -500,7 +471,6 @@ object RecoveryService extends Logging {
       _.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
     val hiveRegionToConsider =
       hiveRegionViews.keySet.toSeq.sortBy(hiveRegionViews.get(_).size).reverse.head
-    logInfo(s"Hive region to consider = $hiveRegionToConsider")
     val mostUptodateRegionView = regionViewSortedSet(hiveRegionToConsider).lastKey
     val memberToConsiderForHiveCatalog = mostUptodateRegionView.getMember
     val nonHiveRegionViews = regionViewSortedSet.filterKeys(
@@ -510,13 +480,10 @@ object RecoveryService extends Logging {
 
     val regionToConsider =
       nonHiveRegionViews.keySet.toSeq.sortBy(nonHiveRegionViews.get(_).size).reverse.head
-    logInfo(s"Non Hive region to consider = $regionToConsider")
     val regionView = regionViewSortedSet(regionToConsider).lastKey
     val memberToConsider = regionView.getMember
     memberObject = persistentObjectMemberMap(memberToConsider)
-    logInfo(s"For Hive memberToConsiderForHiveCatalog = $memberToConsiderForHiveCatalog")
     for ((k, v) <- persistentObjectMemberMap) {
-      logInfo(s"1891: persistentObjectMemberMap = ${k} ${v}")
     }
     mostRecentMemberObject = persistentObjectMemberMap(memberToConsiderForHiveCatalog)
     val otherExtractedDDLs = mostRecentMemberObject.getOtherDDLs
@@ -541,23 +508,21 @@ object RecoveryService extends Logging {
 
     RecoveryService.populateCatalog(catalogArr, snapCon.sparkContext)
 
-    // may be remove the log line later -------- * /
-    val dbList = snappyHiveExternalCatalog.listDatabases("*")
-    val allFunctions = dbList.map(dbName => snappyHiveExternalCatalog.listFunctions(dbName, "*")
-        .map(func => snappyHiveExternalCatalog.getFunction(dbName, func)))
-    val allDatabases = dbList.map(snappyHiveExternalCatalog.getDatabase)
-    logInfo("PP:RecoveryService: Catalog contents in recovery mode:\nTables\n"
-        + snappyHiveExternalCatalog.getAllTables().toString() + "\nDatabases\n"
-        + allDatabases.toString() + "\nFunctions\n" + allFunctions.toString())
-    //    -------- * /
+//    // may be remove the log line later -------- * /
+//    val dbList = snappyHiveExternalCatalog.listDatabases("*")
+//    val allFunctions = dbList.map(dbName => snappyHiveExternalCatalog.listFunctions(dbName, "*")
+//        .map(func => snappyHiveExternalCatalog.getFunction(dbName, func)))
+//    val allDatabases = dbList.map(snappyHiveExternalCatalog.getDatabase)
+//    logInfo("PP:RecoveryService: Catalog contents in recovery mode:\nTables\n"
+//        + snappyHiveExternalCatalog.getAllTables().toString() + "\nDatabases\n"
+//        + allDatabases.toString() + "\nFunctions\n" + allFunctions.toString())
+//    //    -------- * /
 
     createSchemasMap(snappyHiveExternalCatalog)
     logInfo(s"::L : $tableColumnIds\n\n$versionMap\n\n$schemaStructMap")
   }
 
   def getProvider(tableName: String): String = {
-    logInfo(s"RecoveryService.getProvider called with tablename $tableName and size of cto="
-        + mostRecentMemberObject.getCatalogObjects.size())
     val res = mostRecentMemberObject.getCatalogObjects.asScala.filter(x => {
       x.isInstanceOf[CatalogTableObject] && {
         val cbo = x.asInstanceOf[CatalogTableObject]
@@ -566,13 +531,9 @@ object RecoveryService extends Logging {
         }.${
           cbo.getTableName
         }"
-        logInfo(s"RecoveryService.getProvider fqtn $fqtn")
         fqtn.equalsIgnoreCase(tableName)
       }
     }).head.asInstanceOf[CatalogTableObject]
-    logInfo(s"RecoveryService.getProvider provider for $tableName is ${
-      res.getProvider
-    }")
     res.getProvider
   }
 

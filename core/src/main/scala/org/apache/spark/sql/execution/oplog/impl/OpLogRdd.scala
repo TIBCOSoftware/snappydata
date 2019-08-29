@@ -123,7 +123,7 @@ class OpLogRdd(
   def getProjectColumnId(tableName: String, columnName: String): Int = {
     val fqtn = tableName.replace(".", "_")
     val maxVersion = versionMap.getOrElse(fqtn, null)
-    logInfo(s"PP: getProjectColumnId: fqtn $fqtn  maxN: $maxVersion\ntableSchemas $tableSchemas")
+//    logInfo(s"PP: getProjectColumnId: fqtn $fqtn  maxN: $maxVersion\ntableSchemas $tableSchemas")
     assert(maxVersion != null)
     var index = -1
     val fieldsArr = tableSchemas.getOrElse(s"$maxVersion#$fqtn", null).fields
@@ -145,7 +145,6 @@ class OpLogRdd(
   def getSchemaColumnId(tableName: String, colName: String, version: Int): Int = {
     val fqtn = tableName.replace(".", "_")
     var index = -1
-    logInfo(s"PP: getProjectColumnId: fqtn $fqtn  maxN: $version\ntableSchemas $tableSchemas")
     val fieldsArr = tableSchemas.getOrElse(s"$version#$fqtn", null).fields
     breakable {
       for (i <- fieldsArr.indices) {
@@ -199,7 +198,6 @@ class OpLogRdd(
     }
     val schemaName = tblName.split("\\.")(0)
     val tableName = tblName.split("\\.")(1)
-    logInfo(s"PP: getRowFormatter: cdl : $cdl, schemaname: $schemaName, tableName: $tableName, versionNum: $versionNum")
     val rf = new RowFormatter(cdl, schemaName, tableName, versionNum, null, false)
     rf
   }
@@ -222,7 +220,6 @@ class OpLogRdd(
       var regUnescPath = PartitionedRegionHelper.unescapePRPath(adrPath)
       if (regUnescPath.contains(wrongTablePattern)) {
         regUnescPath = regUnescPath.replace(wrongTablePattern, tableName.replace('/', '_'))
-        logInfo("1891:1 correct pattern = " + regUnescPath)
       }
       var regionPath = regPath
       if (!adr.isBucket) {
@@ -233,11 +230,9 @@ class OpLogRdd(
       if (regUnescPath.equals(regionPath)) {
         phdr = adr.asInstanceOf[PlaceHolderDiskRegion]
       } else {
-        logInfo(s"1891: regunesc != regionpath ${regUnescPath} != ${regionPath}")
       }
     }
     assert(phdr != null, s"PlaceHolderDiskRegion not found for regionPath=${regPath}")
-    logInfo("1891: phdr is null? " + (phdr == null))
     phdr
   }
 
@@ -250,7 +245,6 @@ class OpLogRdd(
     def getFromDVD(schema: StructType, dvd: DataValueDescriptor, i: Integer,
         valueArr: Array[Array[Byte]], complexSchema: Seq[StructField]): Any = {
       val field = schema(i)
-      logInfo(s"PP: getFromDVD: schema: $schema, dvd: $dvd, i: $i, complexSch: $complexSchema")
       val complexFieldIndex = if (complexSchema == null) 0 else complexSchema.indexOf(field) + 1
       field.dataType match {
         case ShortType => if (dvd.isNull) {null} else {dvd.getShort}
@@ -271,7 +265,6 @@ class OpLogRdd(
           assert(field.dataType == m)
           val map = valueArr(complexFieldIndex)
           val data = new SerializedMap()
-          logInfo(s"PP: oplogrdd- dvd $dvd\nmap ${map.toSeq}\nfield $field\ncomplexFIndex $complexFieldIndex")
           if (map != null) {
             data.pointTo(map, Platform.BYTE_ARRAY_OFFSET)
             val jmap = new java.util.HashMap[Any, Any](data.numElements())
@@ -296,7 +289,6 @@ class OpLogRdd(
           Source.fromInputStream(blobValue.getBinaryStream).map(e => e.toByte).toArray
         case _ => {
           val res = dvd.getObject
-          logInfo(s"PP:getFromDVD - returning - ${res}")
           res
         }
       }
@@ -304,15 +296,10 @@ class OpLogRdd(
 
     val rm = phdrRow.getRegionMap
     if (rm != null) {
-      logInfo("1891: from iterrowdata. is rm null?" + (rm == null))
-      logInfo(s"1891: abc  ${rm.regionEntries() == null}")
       if (rm.regionEntries().size() > 0) {
         var projectColumns: Array[String] = sch.fields.map(_.name)
         val regMapItr = rm.regionEntries().iterator().asScala
-        logInfo("1891: 189111 " + (regMapItr == null))
         regMapItr.map { regEntry =>
-          logInfo(s"PP: oplogRdd: testing: schema name : $dbTableName  & table name : $tblName")
-          logInfo(s"PP: oplogRdd : tableSchemas:" + s" ${tableSchemas} ")
 
           DiskEntry.Helper.readValueFromDisk(
             regEntry.asInstanceOf[DiskEntry], phdrRow) match {
@@ -327,7 +314,6 @@ class OpLogRdd(
 
               // todo: build a local cache = table ->rowformatters -
               // todo: so we don't have to create rowformatters for every record
-              logInfo(s"PP:oplogrdd:iterateRowData: schStruct: $schemaOfVersion")
               // For row tables external catalog stores:
               // float gets stored as DoubleType
               // byte gets stored as ShortType
@@ -362,7 +348,6 @@ class OpLogRdd(
               val row = Row.fromSeq(dvdArr.zipWithIndex.map {
                 case (dvd, i) => getFromDVD(schemaOfVersion, dvd, i, null, null)
               })
-              logInfo(s"1891: rowasseq[]: ${row}")
               formatFinalRow(row, projectColumns, versionNum, schemaOfVersion)
             }
             case valueArr: Array[Array[Byte]] => {
@@ -402,9 +387,6 @@ class OpLogRdd(
                 schStruct = StructType(correctedFields)
               }
 
-              logInfo(s"PP: oplogRdd - check valueArr[][]'s first byte" +
-                  s" - for version = $versionNum\nSchema being used - $schStruct")
-
               val rowformatter = getRowFormatter(versionNum, schStruct)
               val dvdArr = new Array[DataValueDescriptor](schStruct.length)
               val complexSch = schStruct.filter(f =>
@@ -419,10 +401,8 @@ class OpLogRdd(
               val row = Row.fromSeq(dvdArr.zipWithIndex.map {
                 case (dvd, i) =>
                   val ret = getFromDVD(schStruct, dvd, i, valueArr, complexSch)
-                  logInfo("1891: value from dvd is " + ret)
                   ret
               })
-              logInfo(s"1891: rowasseq[][]: ${row}")
               formatFinalRow(row, projectColumns, versionNum, schStruct)
             }
             case Token.TOMBSTONE => null
@@ -495,7 +475,6 @@ class OpLogRdd(
                     .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
                 val decoder = ColumnEncoding.getColumnDecoder(valueBuffer, field)
                 val valueArray = if (valueBuffer == null || valueBuffer.isDirect) {
-                  logWarning(s"1891: valueBuffers is direct : ${valueBuffer.isDirect}")
                   null
                 } else {
                   valueBuffer.array()
@@ -540,7 +519,6 @@ class OpLogRdd(
                 } else null
                 updateDecoder
               }
-
               (0 until (numOfRows - deletedCount)).map { i =>
                 while ((deleteDecoder ne null) && deleteDecoder.deleted(i + numDeleted)) {
                   numDeleted += 1
@@ -562,7 +540,18 @@ class OpLogRdd(
                       updatedDecoder.readNotNull) {
                     getUpdatedValue(updatedDecoder.getCurrentDeltaBuffer, sch(colIndx))
                   } else {
-                    getDecodedValue(colDecoder, colArray, sch(colIndx).dataType, i + numDeleted)
+                    if ((i + numDeleted) == colNextNullPosition) {
+                      null
+                    } else {
+                      try {
+                        getDecodedValue(colDecoder,
+                        colArray, sch(colIndx).dataType, i + numDeleted - colNullCounts(colIndx))
+
+                      } catch {
+                        case e: Exception =>
+                          throw e
+                      }
+                    }
                   }
                 })
               }.toIterator
@@ -581,22 +570,18 @@ class OpLogRdd(
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
-    logInfo("PP: oplogrdd : 1. compute called")
     val diskStrs = Misc.getGemFireCache.listDiskStores()
     var diskStrCol: DiskStoreImpl = null
     var diskStrRow: DiskStoreImpl = null
     val tableName = dbTableName.split('.')(1)
-    logInfo(s"PP: oplogrdd : 2. table name : $tableName")
 
     val colRegPath = if (Misc.getRegionPath(tblName) == null) {
-      logInfo("PP: oplogrdd : 2. colregpath is null !!")
       "null"
     } else {
       val s = Misc.getRegionPath(tblName)
       s"/_PR//B_${s.substring(1, s.length - 1)}/_${split.index}"
     }
     val rowRegPath = s"/_PR//B_${dbTableName.replace('.', '/')}/${split.index}"
-    logInfo(s"1891: rowregpath=${rowRegPath} colregpath=${colRegPath}")
     for (d <- diskStrs.asScala) {
       val dskRegMap = d.getAllDiskRegions
       for ((_, adr) <- dskRegMap.asScala) {
@@ -606,9 +591,7 @@ class OpLogRdd(
         val wrongTablePattern = tableName.replace('_', '/')
         if (adrUnescapePath.contains(wrongTablePattern)) {
           adrUnescapePath = adrUnescapePath.replace(wrongTablePattern, tableName.replace('/', '_'))
-          logInfo("1891: correct pattern = " + adrUnescapePath)
         }
-        logInfo(s"1891: adrpath=${adrPath} adrunescapepath=${adrUnescapePath}")
         if (adrUnescapePath.equals(colRegPath) && adr.isBucket) {
           diskStrCol = d
         } else if (adrUnescapePath.equals(rowRegPath)) {
@@ -670,8 +653,7 @@ class OpLogRdd(
       value: Array[Byte],
       dataType: DataType,
       rowNum: Int): Any = {
-    if (decoder.isNullAt(value, rowNum)) null
-    else dataType match {
+    dataType match {
       case LongType => decoder.readLong(value, rowNum)
       case IntegerType => decoder.readInt(value, rowNum)
       case BooleanType => decoder.readBoolean(value, rowNum)
@@ -690,7 +672,9 @@ class OpLogRdd(
         }
         catch {
           case e: Throwable =>
-            logInfo(s"PP:OplogRDD: row num = $rowNum. stacktrace: ${e.getStackTraceString}")
+            logInfo(s"OplogRDD: Error while decoding StringType", e)
+            e.getStackTrace.foreach(e => logInfo(e.toString))
+            throw e
         }
       }
       case DateType =>
@@ -737,11 +721,6 @@ class OpLogRdd(
 
   // private[this] var allPartitions: Array[Partition] = _
   def getPartitionEvaluator: () => Array[Partition] = () => {
-    logInfo("PP:oplogrdd: getPartitionEvaluator: Thread dump")
-    println("PP:oplogrdd: getPartitionEvaluator: Thread dump")
-    Thread.dumpStack()
-    println(s"PP:oplogrdd: getPartitionEvaluator:\ndbTableName:" +
-        s" $dbTableName\ntblName: $tblName\nsch: $sch\n provider: $provider\nproject: ${projection.toSeq}")
     getPartitions
   }
 
@@ -753,24 +732,14 @@ class OpLogRdd(
    * @return number of buckets
    */
   override protected def getPartitions: Array[Partition] = {
-    logInfo(s"PP: getPartition: projection $projection")
-    println(s"PP:oplogrdd: getPartitions:\ndbTableName:" +
-        s" $dbTableName\ntblName: $tblName\nsch: $sch\n provider: $provider\n")
-    logInfo(s"PP:oplogrdd: getPartitions:\ndbTableName:" +
-        s" $dbTableName\ntblName: $tblName\nsch: $sch\n provider: $provider\n")
-    logInfo(s"thread dump")
-    Thread.dumpStack()
     val schemaName = dbTableName.split('.')(0)
     val tableName = dbTableName.split('.')(1)
     val (numBuckets, isReplicated) = RecoveryService.getNumBuckets(schemaName, tableName)
-    logInfo(s"PP: getpartition: numbuckets $numBuckets isReplicated $isReplicated")
     val partition = (0 until numBuckets).map { p =>
       new Partition {
         override def index: Int = p
       }
     }.toArray[Partition]
-    logInfo(s"PP:oplogrdd:getPartition: no. of partitions ${partition.length}")
-    partition.foreach(e => logInfo(s"PP: oplogrdd:getpartition: ${e.index}"))
     partition
   }
 
@@ -782,10 +751,7 @@ class OpLogRdd(
    * @return sequence of hostnames
    */
   override def getPreferredLocations(split: Partition): Seq[String] = {
-    logInfo(s"PP:oplogrdd getpreferredlocation: split - $split    dbTableName: $dbTableName")
-    val host = RecoveryService.getExecutorHost(dbTableName, split.index)
-    logInfo(s"1891: preferred host location for split: ${split.index} is ${host}")
-    host
+    RecoveryService.getExecutorHost(dbTableName, split.index)
   }
 
   override def write(kryo: Kryo, output: Output): Unit = {
