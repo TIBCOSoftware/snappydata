@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,9 +19,9 @@ package io.snappydata.hydra.ct
 
 import java.io.PrintWriter
 
-import io.snappydata.hydra.{SnappyTestUtils}
-import org.apache.spark.sql.snappy._
+import io.snappydata.hydra.SnappyTestUtils
 
+import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 
 object CTTestUtil {
@@ -236,9 +236,9 @@ object CTTestUtil {
       println(s"exec_details Table created successfully in spark")
     }
     else {
-      CTQueries.orders_details_df(sqlContext).createOrReplaceTempView("orders_details")
+      CTQueries.orders_details_df(sqlContext, true).createOrReplaceTempView("orders_details")
       println(s"orders_details Table created successfully in spark")
-      CTQueries.exec_details_df(sqlContext).createOrReplaceTempView("exec_details")
+      CTQueries.exec_details_df(sqlContext, true).createOrReplaceTempView("exec_details")
       println(s"exec_details Table created successfully in spark")
     }
   }

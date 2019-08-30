@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -78,9 +78,11 @@ class ValidateNWQueriesJob extends SnappySQLJob {
       pw.close()
     } match {
       case Success(v) => pw.close()
-        s"See ${getCurrentDirectory}/${outputFile}"
-      case Failure(e) => pw.close();
-        throw e;
+        s"Validation passed. See ${getCurrentDirectory}/${outputFile}"
+        throw new Exception()
+      case Failure(e) =>
+        pw.close();
+        throw new TestException(s"Validation failed. See ${getCurrentDirectory}/${outputFile}");
     }
   }
 

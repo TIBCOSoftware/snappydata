@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,26 +16,30 @@
  */
 package org.apache.spark.sql.store
 
-
-import scala.collection.mutable
-
-import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TestData}
+import io.snappydata.{ConcurrentOpsTests, SnappyFunSuite}
+import org.apache.spark.sql._
+import org.apache.spark.{Logging, SparkContext}
 import org.scalatest.{Assertions, BeforeAndAfter}
 
-import org.apache.spark.{Logging, SparkContext}
-import org.apache.spark.sql.{Dataset, Row, SaveMode, SnappySession}
+import scala.collection.mutable
 
 class ColumnTableBatchInsertTest extends SnappyFunSuite
     with Logging
     with BeforeAndAfter {
 
   val tableName: String = "ColumnTable"
+  val tableName2: String = "ColumnTable2"
+  val tableName3: String = "ColumnTable3"
+  val tableName4: String = "ColumnTable4"
+
   val props = Map.empty[String, String]
 
   after {
-    snc.dropTable(tableName, true)
-    snc.dropTable("ColumnTable2", true)
+    snc.dropTable(tableName, ifExists = true)
+    snc.dropTable(tableName2, ifExists = true)
+    snc.dropTable(tableName3, ifExists = true)
+    snc.dropTable(tableName4, ifExists = true)
   }
 
   test("test the shadow table creation") {
@@ -61,6 +65,87 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     logInfo("Successful")
   }
 
+  test("test the overwrite table after reading itself") {
+    snc.sql(s"DROP TABLE IF EXISTS $tableName")
+
+    snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
+      "USING column " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'Col1'," +
+      "BUCKETS '1')")
+    snc.sql(s"CREATE TABLE $tableName2(Col1 INT ,Col2 INT, Col3 INT) " +
+      "USING row " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'Col1'," +
+      "BUCKETS '1')")
+
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.insertInto(tableName)
+    val result = snc.sql("SELECT * FROM " + tableName)
+
+    try {
+      result.write.format("column").mode(SaveMode.Overwrite).saveAsTable(tableName)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      result.write.format("column").mode(SaveMode.Overwrite).saveAsTable(tableName)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+    dataDF.write.insertInto(tableName2)
+    val rowresult = snc.sql("SELECT * FROM " + tableName2)
+
+    try {
+      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(tableName2)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(tableName2)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+    // SQL overwrites.
+    try {
+      snc.sql(s"insert overwrite $tableName select * from $tableName")
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      snc.sql(s"insert into $tableName select * from $tableName")
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+  }
+
+
   test("test the shadow table creation heavy insert") {
     // snc.sql(s"DROP TABLE IF EXISTS $tableName")
 
@@ -71,8 +156,8 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
         "PARTITION_BY 'Key1'," +
         "BUCKETS '1')")
 
-    //val r = result.collect
-    //assert(r.length == 0)
+    // val r = result.collect
+    // assert(r.length == 0)
 
     var rdd = sc.parallelize(
       (1 to 10).map(i => TestData(i, i.toString)))
@@ -99,12 +184,57 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
 
     val r2 = result.collect
     assert(r2.length == 20)
-    println("Successful")
+    logInfo("Successful")
+  }
+
+  test("test the concurrent putInto") {
+    ConcurrentOpsTests.testConcurrentPutInto(snc.snappySession)
+  }
+
+  test("test the concurrent update") {
+    ConcurrentOpsTests.testConcurrentUpdate(snc.snappySession)
+  }
+
+  test("test the concurrent deleteFrom") {
+    ConcurrentOpsTests.testConcurrentDelete(snc.snappySession)
+  }
+
+
+  test("test the concurrent putInto/update") {
+   ConcurrentOpsTests.testConcurrentPutIntoUpdate(snc.snappySession)
+  }
+
+  test("test the concurrent insert/putInto/update/deleteFrom") {
+    ConcurrentOpsTests.testAllOpsConcurrent(snc.snappySession)
+  }
+
+  test("test the concurrent putInto in multiple Column tables") {
+    ConcurrentOpsTests.testConcurrentPutIntoMultipleTables(snc.snappySession)
+  }
+
+  test("simple write lock insert") {
+    ConcurrentOpsTests.testSimpleLockInsert(snc.snappySession)
+  }
+
+  test("simple write lock deleteFrom") {
+    ConcurrentOpsTests.testSimpleLockDeleteFrom(snc.snappySession)
+  }
+
+  test("simple write lock update") {
+    ConcurrentOpsTests.testSimpleLockUpdate(snc.snappySession)
+  }
+
+  test("simple write lock PutInto") {
+    ConcurrentOpsTests.testSimpleLockPutInto(snc.snappySession)
+  }
+
+  test("test the concurrent deleteFrom in multiple Column tables") {
+    ConcurrentOpsTests.testConcurrentDeleteFromMultipleTables(snc.snappySession)
   }
 
 
   test("test the shadow table creation without partition by clause") {
-    //snc.sql(s"DROP TABLE IF EXISTS $tableName")
+    // snc.sql(s"DROP TABLE IF EXISTS $tableName")
 
     val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
         "USING column " +
@@ -124,11 +254,11 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     dataDF.write.insertInto(tableName)
     val r2 = result.collect
     assert(r2.length == 19999)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("test the shadow table with persistence") {
-    //snc.sql(s"DROP TABLE IF EXISTS $tableName")
+    // snc.sql(s"DROP TABLE IF EXISTS $tableName")
 
     val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING)" +
         "USING column " +
@@ -150,11 +280,11 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
 
     val r2 = result.collect
     assert(r2.length == 19999)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("test the shadow table with eviction") {
-    //snc.sql(s"DROP TABLE IF EXISTS $tableName")
+    // snc.sql(s"DROP TABLE IF EXISTS $tableName")
 
     val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING)" +
         "USING column " +
@@ -174,7 +304,7 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     dataDF.write.insertInto(tableName)
     val r2 = result.collect
     assert(r2.length == 19999)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("test the shadow table with options on compressed table") {
@@ -200,18 +330,17 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     val r2 = result.collect
 
     val r3 = mutable.HashSet[Int]()
-    r2.map( i => {
+    r2.map(i => {
       r3.add(i.getInt(0))
     })
 
     (1 to 19999).map(i => {
-      if(!r3.contains(i))
-        println (s"Does not contain ${i}")
+      if (!r3.contains(i)) logInfo(s"Does not contain $i")
     })
 
     assert(r2.length == 19999)
 
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("test the shadow table with eviction options on compressed table") {
@@ -236,12 +365,12 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     dataDF.write.insertInto(tableName)
     val r2 = result.collect
     assert(r2.length == 19999)
-    println("Successful")
+    logInfo("Successful")
   }
 
   test("test create table as select with alias") {
-    val rowTable="rowTable"
-    val colTable="colTable"
+    val rowTable = "rowTable"
+    val colTable = "colTable"
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -255,38 +384,38 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     val tempRowTableName = "testRowTable"
     val tempColTableName = "testcolTable"
 
-    snc.sql("DROP TABLE IF EXISTS "+tempRowTableName)
-    snc.sql("CREATE TABLE " + tempRowTableName + " AS (SELECT col1 as field1,col2 as field2 FROM " + rowTable + ")"
-    )
+    snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
+    snc.sql("CREATE TABLE " + tempRowTableName +
+        " AS (SELECT col1 as field1,col2 as field2 FROM " + rowTable + ")")
     var testResults1 = snc.sql("SELECT * FROM " + tempRowTableName).collect
     assert(testResults1.length == 5)
-    snc.sql("DROP TABLE IF EXISTS "+tempRowTableName)
+    snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
 
-    snc.sql("DROP TABLE IF EXISTS "+tempRowTableName)
-    snc.sql("CREATE TABLE " + tempRowTableName + " AS (SELECT col1 as field1,col2 as field2 FROM " + colTable + ")"
-    )
+    snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
+    snc.sql("CREATE TABLE " + tempRowTableName +
+        " AS (SELECT col1 as field1,col2 as field2 FROM " + colTable + ")")
     var testResults2 = snc.sql("SELECT * FROM " + tempRowTableName).collect
     assert(testResults2.length == 5)
-    snc.sql("DROP TABLE IF EXISTS "+tempRowTableName)
+    snc.sql("DROP TABLE IF EXISTS " + tempRowTableName)
 
 
-    snc.sql("DROP TABLE IF EXISTS "+tempColTableName)
-    snc.sql("CREATE TABLE " + tempColTableName + " USING COLUMN OPTIONS() AS (SELECT col1 as field1,col2 as field2 FROM " + rowTable + ")"
-    )
+    snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
+    snc.sql("CREATE TABLE " + tempColTableName +
+        " USING COLUMN OPTIONS() AS (SELECT col1 as field1,col2 as field2 FROM " + rowTable + ")")
     var testResults3 = snc.sql("SELECT * FROM " + tempColTableName).collect
     assert(testResults3.length == 5)
-    snc.sql("DROP TABLE IF EXISTS "+tempColTableName)
+    snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
 
 
-    snc.sql("DROP TABLE IF EXISTS "+tempColTableName)
-    snc.sql("CREATE TABLE " + tempColTableName + " USING COLUMN OPTIONS() AS (SELECT col1 as field1,col2 as field2 FROM " + colTable + ")"
-    )
+    snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
+    snc.sql("CREATE TABLE " + tempColTableName +
+        " USING COLUMN OPTIONS() AS (SELECT col1 as field1,col2 as field2 FROM " + colTable + ")")
     var testResults4 = snc.sql("SELECT * FROM " + tempColTableName).collect
     assert(testResults4.length == 5)
-    snc.sql("DROP TABLE IF EXISTS "+tempColTableName)
+    snc.sql("DROP TABLE IF EXISTS " + tempColTableName)
 
-    snc.sql("DROP TABLE IF EXISTS "+rowTable)
-    snc.sql("DROP TABLE IF EXISTS "+colTable)
+    snc.sql("DROP TABLE IF EXISTS " + rowTable)
+    snc.sql("DROP TABLE IF EXISTS " + colTable)
 
 
   }
@@ -294,31 +423,27 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
   test("test table with column name having slash") {
     snc.sql(s"DROP TABLE IF EXISTS $tableName")
     val df = snc.sql("CREATE TABLE ColumnTable(\"a/b\" INT ,Col2 INT, Col3 INT) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'col2'," +
-      "BUCKETS '1')")
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'col2'," +
+        "BUCKETS '1')")
 
 
     snc.sql("CREATE TABLE rowTable(\"a/b\" INT ,Col2 INT, Col3 INT) " +
-      "USING row " +
-      "options " +
-      "()")
+        "USING row " +
+        "options " +
+        "()")
     snc.sql("insert into ColumnTable(\"a/b\",col2,col3) values(1,2,3)")
     snc.sql("insert into rowTable(\"a/b\",col2,col3)values(1,2,3)")
     val result = snc.sql("SELECT col2+1 FROM " + tableName)
-    val r = result.collect
-    result.show()
+    val r = result.collect()
     assert(r.length == 1)
 
-
     val result1 = snc.sql("SELECT \"a/b\"/1 FROM " + tableName)
-    val r1 = result1.collect
-    result1.show()
-    snc.sql("SELECT \"a/b\"/1 FROM rowTable").show
+    val r1 = result1.collect()
+    snc.sql("SELECT \"a/b\"/1 FROM rowTable").collect()
     assert(r1.length == 1)
-
 
     snc.sql("drop table if exists columntable")
     snc.sql("drop table if exists rowtable")

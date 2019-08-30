@@ -15,7 +15,7 @@ import util.TestHelper;
 
 public class DerbyTestUtils {
   protected static Connection discConn=null;
-  public static boolean hasDerbyServer = false;
+  public static boolean hasDerbyServer = TestConfig.tab().booleanAt(Prms.manageDerbyServer, false);;
   public static HydraThreadLocal derbyConnection = new HydraThreadLocal();
   public static HydraThreadLocal resetDerbyConnection = new HydraThreadLocal();
   //whether needs to reset the derby connection
@@ -26,7 +26,6 @@ public class DerbyTestUtils {
   public static void HydraTask_initialize() {
     if (testInstance == null)
       testInstance = new DerbyTestUtils();
-    hasDerbyServer = TestConfig.tab().booleanAt(Prms.manageDerbyServer, false);
     snappyDMLObj = new SnappyDMLOpsUtil();
   }
 
@@ -91,7 +90,7 @@ public class DerbyTestUtils {
   }
 
 
-  protected Connection getDerbyConnection() {
+  public Connection getDerbyConnection() {
     Connection conn = null;
     try {
       conn = (Connection)derbyConnection.get();
@@ -113,14 +112,14 @@ public class DerbyTestUtils {
         resetDerbyConnection.set(false);
       }
     } catch (NullPointerException npe) {
-      // /in case of sub threads
+      Log.getLogWriter().info("Caught NPE..." + npe.getMessage());
     } catch (Exception e) {
       throw new TestException("Exception while getting derby connection " + " : " + e.getMessage());
     }
     return conn;
   }
 
-  protected void closeDiscConnection(Connection conn, boolean end) {
+  public void closeDiscConnection(Connection conn, boolean end) {
     //close the connection at end of the test
     if (end) {
       try {
@@ -135,10 +134,6 @@ public class DerbyTestUtils {
   }
 
   public static void HydraTask_shutDownDerbyDB() {
-    testInstance.shutDownDiscDB();
-  }
-
-  protected void shutDownDiscDB() {
     if (hasDerbyServer) {
       ClientDiscDBManager.shutDownDB();
     }

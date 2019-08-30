@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -41,9 +41,16 @@ elif [ "$1" = "-fg" -o "$1" = "--foreground" ]; then
   shift
 fi
 
+# Check for conf dir  specification
+CONF_DIR_OPT=
+if [ "$1" = "--config" ]; then
+  CONF_DIR_OPT="--config $2"
+  shift 2
+fi
+
 # Launch the slaves
 if echo $@ | grep -qw start; then
-  "$sbin/snappy-nodes.sh" server $BACKGROUND cd "$SNAPPY_HOME" \; "$sbin/snappy-server.sh" "$@" $SERVER_STARTUP_OPTIONS
+  "$sbin/snappy-nodes.sh" server $BACKGROUND $CONF_DIR_OPT cd "$SNAPPY_HOME" \; "$sbin/snappy-server.sh" "$@" $SERVER_STARTUP_OPTIONS
 else
-  "$sbin/snappy-nodes.sh" server $BACKGROUND cd "$SNAPPY_HOME" \; "$sbin/snappy-server.sh" "$@"
+  "$sbin/snappy-nodes.sh" server $BACKGROUND $CONF_DIR_OPT cd "$SNAPPY_HOME" \; "$sbin/snappy-server.sh" "$@"
 fi

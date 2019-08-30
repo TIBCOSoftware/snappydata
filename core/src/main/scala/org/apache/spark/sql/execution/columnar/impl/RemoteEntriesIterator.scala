@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,11 +25,11 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
 import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXStateInterface}
-import com.koloboke.function.IntObjPredicate
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.message.GetAllExecutorMessage
 import com.pivotal.gemfirexd.internal.engine.sql.execute.GemFireResultSet
-import io.snappydata.collection.IntObjectHashMap
+import org.eclipse.collections.api.block.procedure.Procedure
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry._
 
@@ -70,19 +70,9 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
 
       fetchNextBatch()
 
-      private def releaseCurrentBatch(): Unit = {
-        if (currentBatch ne null) {
-          for ((_, v1, v2) <- currentBatch) {
-            releaseBuffer(v1)
-            releaseBuffer(v2)
-          }
-          currentBatch = null
-        }
-      }
-
       private def fetchNextBatch(): Boolean = {
         if (absoluteIndex >= statsKeys.length) {
-          releaseCurrentBatch()
+          currentBatch = null
           currentBatchIter = Iterator.empty
           return false
         }
@@ -101,8 +91,6 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
           java.util.Arrays.copyOfRange(statsKeys, absoluteIndex, batchLastIndex)).toArray
         absoluteIndex = batchLastIndex
         java.util.Arrays.sort(results.asInstanceOf[Array[AnyRef]], comparator)
-        // release values in old batch
-        releaseCurrentBatch()
         currentBatch = new ArrayBuffer[BatchStatsRows](1000)
         var i = 0
         while (i < results.length) {
@@ -160,8 +148,9 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
   }
 
   private var currentStatsKey: ColumnFormatKey = _
+  private var currentStatsValue: AnyRef = _
   private var currentDeltaStats: AnyRef = _
-  private val currentValueMap = IntObjectHashMap.withExpectedSize[AnyRef](8)
+  private val currentValueMap = new IntObjectHashMap[AnyRef](8)
 
   private def fetchUsingGetAll(keys: Array[AnyRef]): Seq[(AnyRef, AnyRef)] = {
     val msg = new GetAllExecutorMessage(pr, keys, null, null, null, null,
@@ -179,35 +168,37 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
   }
 
   private def releaseValues(): Unit = {
-    if (currentValueMap.size() > 0) {
-      currentValueMap.forEachWhile(new IntObjPredicate[AnyRef] {
-        override def test(c: Int, v: AnyRef): Boolean = {
+    if (!currentValueMap.isEmpty) {
+      currentValueMap.forEachValue(new Procedure[AnyRef] {
+        override def value(v: AnyRef): Unit = {
           releaseBuffer(v)
-          true
         }
       })
+      currentValueMap.clear()
     }
+    releaseBuffer(currentStatsValue)
+    releaseBuffer(currentDeltaStats)
   }
 
   override def hasNext: Boolean = statsRows.hasNext
 
   override def next(): RegionEntry = {
     releaseValues()
-    currentValueMap.clear()
     val p = statsRows.next()
     currentStatsKey = p._1
+    currentStatsValue = p._2
     currentDeltaStats = p._3
-    NonLocalRegionEntry.newEntry(currentStatsKey, p._2, null, null)
+    NonLocalRegionEntry.newEntry(currentStatsKey, currentStatsValue, null, null)
   }
 
   override def getColumnValue(column: Int): AnyRef = {
     if (column == DELTA_STATROW_COL_INDEX) return currentDeltaStats
-    if (currentValueMap.size() == 0) {
+    if (currentValueMap.isEmpty) {
       // fetch all the projected columns for current batch
       val fetchKeys = fullProjection.map(c =>
         new ColumnFormatKey(currentStatsKey.uuid, currentStatsKey.partitionId, c): AnyRef)
       fetchUsingGetAll(fetchKeys).foreach {
-        case (k: ColumnFormatKey, v) => currentValueMap.justPut(k.columnIndex, v)
+        case (k: ColumnFormatKey, v) => currentValueMap.put(k.columnIndex, v)
       }
     }
     currentValueMap.get(column)
@@ -216,7 +207,6 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
   override def close(): Unit = {
     currentStatsKey = null
     releaseValues()
-    currentValueMap.clear()
   }
 }
 

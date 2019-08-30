@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,8 +26,9 @@ import org.apache.spark.{SparkConf, SparkContext}
 object ValidateNWQueriesApp {
 
   def main(args: Array[String]) {
+    val threadID = Thread.currentThread().getId
     val conf = new SparkConf().
-        setAppName("ValidateNWQueries Application_" + System.currentTimeMillis())
+        setAppName("ValidateNWQueriesApplication_" + threadID + "_" + System.currentTimeMillis())
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)
     val snc = SnappyContext(sc)
@@ -46,7 +47,6 @@ object ValidateNWQueriesApp {
 
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
 
-    val threadID = Thread.currentThread().getId
     val outputFile = "ValidateNWQueriesApp_thread_" + threadID + "_" + System.currentTimeMillis +
         ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));

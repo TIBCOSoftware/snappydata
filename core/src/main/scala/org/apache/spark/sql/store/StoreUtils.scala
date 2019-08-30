@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,42 +19,43 @@ package org.apache.spark.sql.store
 import java.util.regex.Pattern
 
 import scala.collection.JavaConverters._
-import scala.collection.generic.Growable
 import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
+import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
-import io.snappydata.collection.ObjectObjectHashMap
+import io.snappydata.sql.catalog.SnappyExternalCatalog
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Attribute, SortOrder}
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.sources.JdbcExtendedUtils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext, SnappySession}
 
 
 object StoreUtils {
 
-  val PARTITION_BY = ExternalStoreUtils.PARTITION_BY
-  val REPLICATE = ExternalStoreUtils.REPLICATE
-  val BUCKETS = ExternalStoreUtils.BUCKETS
-  val PARTITIONER = "PARTITIONER"
-  val COLOCATE_WITH = "COLOCATE_WITH"
-  val REDUNDANCY = "REDUNDANCY"
-  val RECOVERYDELAY = "RECOVERYDELAY"
-  val MAXPARTSIZE = "MAXPARTSIZE"
-  val EVICTION_BY = "EVICTION_BY"
-  val PERSISTENCE = "PERSISTENCE"
-  val PERSISTENT = "PERSISTENT"
-  val DISKSTORE = "DISKSTORE"
-  val SERVER_GROUPS = "SERVER_GROUPS"
-  val EXPIRE = "EXPIRE"
-  val OVERFLOW = "OVERFLOW"
-  val COMPRESSION_CODEC_DEPRECATED = "COMPRESSION_CODEC"
+  val PARTITION_BY: String = ExternalStoreUtils.PARTITION_BY
+  val REPLICATE: String = ExternalStoreUtils.REPLICATE
+  val BUCKETS: String = ExternalStoreUtils.BUCKETS
+  val KEY_COLUMNS: String = ExternalStoreUtils.KEY_COLUMNS
+  val PARTITIONER = "partitioner"
+  val COLOCATE_WITH = "colocate_with"
+  val REDUNDANCY = "redundancy"
+  val RECOVERYDELAY = "recoverydelay"
+  val MAXPARTSIZE = "maxpartsize"
+  val EVICTION_BY = "eviction_by"
+  val PERSISTENCE = "persistence"
+  val PERSISTENT = "persistent"
+  val DISKSTORE = "diskstore"
+  val SERVER_GROUPS = "server_groups"
+  val EXPIRE = "expire"
+  val OVERFLOW = "overflow"
+  val COMPRESSION_CODEC_DEPRECATED = "compression_codec"
 
   val GEM_PARTITION_BY = "PARTITION BY"
   val GEM_BUCKETS = "BUCKETS"
@@ -72,7 +73,6 @@ object StoreUtils {
   val GEM_HEAPPERCENT = "EVICTION BY LRUHEAPPERCENT "
   val PRIMARY_KEY = "PRIMARY KEY"
   val LRUCOUNT = "LRUCOUNT"
-  val GEM_INDEXED_TABLE = "INDEXED_TABLE"
 
   // int values for Spark SQL types for efficient switching avoiding reflection
   val STRING_TYPE = 0
@@ -94,8 +94,8 @@ object StoreUtils {
 
   val ddlOptions: Seq[String] = Seq(PARTITION_BY, REPLICATE, BUCKETS, PARTITIONER,
     COLOCATE_WITH, REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
-    PERSISTENCE, PERSISTENT, SERVER_GROUPS, EXPIRE, OVERFLOW, COMPRESSION_CODEC_DEPRECATED,
-    GEM_INDEXED_TABLE) ++ ExternalStoreUtils.ddlOptions
+    PERSISTENCE, PERSISTENT, SERVER_GROUPS, EXPIRE, OVERFLOW, COMPRESSION_CODEC_DEPRECATED) ++
+      ExternalStoreUtils.ddlOptions
 
   val EMPTY_STRING = ""
   val NONE = "NONE"
@@ -110,8 +110,8 @@ object StoreUtils {
     Pattern.CASE_INSENSITIVE | Pattern.DOTALL)
 
   /** for testing only (a long convoluted name chosen deliberately) */
-  var TEST_RANDOM_BUCKETID_ASSIGNMENT: Boolean = java.lang.Boolean.getBoolean(
-    "SNAPPYTEST_RANDOM_BUCKETID_TO_PARTITION_ASSIGNMENT")
+  var TEST_RANDOM_BUCKETID_ASSIGNMENT: Boolean = SystemProperties.getServerInstance.getBoolean(
+    "SNAPPYTEST_RANDOM_BUCKETID_TO_PARTITION_ASSIGNMENT", false)
 
   // private property to indicate One-to-one mapping of partitions to buckets
   // which is enabled per-query using `LinkPartitionsToBuckets` rule
@@ -183,7 +183,7 @@ object StoreUtils {
       preferPrimaries: Boolean): Array[Partition] = {
 
     val callbacks = ToolsCallbackInit.toolsCallback
-    if (!linkBucketsToPartitions && callbacks != null) {
+    if (!linkBucketsToPartitions && callbacks != null && !TEST_RANDOM_BUCKETID_ASSIGNMENT) {
       allocateBucketsToPartitions(session, region, preferPrimaries)
     } else {
       val numPartitions = region.getTotalNumberOfBuckets
@@ -222,7 +222,7 @@ object StoreUtils {
       region: PartitionedRegion, preferPrimaries: Boolean): Array[Partition] = {
 
     val numTotalBuckets = region.getTotalNumberOfBuckets
-    val serverToBuckets = ObjectObjectHashMap.withExpectedSize[InternalDistributedMember,
+    val serverToBuckets = new UnifiedMap[InternalDistributedMember,
         (Option[BlockAndExecutorId], mutable.ArrayBuffer[Int])](4)
     val adviser = region.getRegionAdvisor
     for (p <- 0 until numTotalBuckets) {
@@ -260,7 +260,8 @@ object StoreUtils {
     val allocatedBuckets = new Array[Boolean](numTotalBuckets)
     // group buckets into as many partitions as available cores on each member
     var partitionIndex = -1
-    val partitions = serverToBuckets.asScala.flatMap { case (m, (blockId, buckets)) =>
+    val parts = mapAsScalaMapConverter(serverToBuckets)
+    val partitions = parts.asScala.flatMap { case (m, (blockId, buckets)) =>
       val numBuckets = buckets.length
       val numPartitions = math.max(1, blockId.map(b => math.min(math.min(
         b.numProcessors, b.executorCores), numBuckets)).getOrElse(numBuckets))
@@ -322,25 +323,21 @@ object StoreUtils {
 
   val pkDisallowdTypes = Seq(StringType, BinaryType, ArrayType, MapType, StructType)
 
-  def getPrimaryKeyClause(parameters: mutable.Map[String, String],
-      schema: StructType, context: SQLContext): (String, Seq[StructField]) = {
+  def getPrimaryKeyClause(parameters: CaseInsensitiveMutableHashMap[String],
+      schema: StructType, session: SnappySession): (String, Seq[StructField]) = {
     val sb = new StringBuilder()
     val stringPKCols = new mutable.ArrayBuffer[StructField](1)
     sb.append(parameters.get(PARTITION_BY).map(v => {
       val primaryKey = {
         v match {
-          case PRIMARY_KEY => ""
+          case _ if v.trim().equalsIgnoreCase(PRIMARY_KEY) => ""
           case _ =>
-            val normalizedSchema = context.sessionState.catalog
-                .asInstanceOf[SnappyStoreHiveCatalog]
-                .normalizeSchema(schema)
-            val schemaFields = Utils.schemaFields(normalizedSchema)
-            val cols = v.split(",") map (_.trim)
-            // always use case-insensitive analysis for partitioning columns
-            // since table creation can use case-insensitive in creation
-            val normalizedCols = cols.map(Utils.toUpperCase)
+            val schemaFields = Utils.schemaFields(schema)
+            // Use a new parser instance since parser may itself invoke DataSource.resolveRelation
+            val parser = session.snappyParser.newInstance()
+            val cols = parser.parseSQLOnly(v, parser.parseIdentifiers.run())
             val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields,
-              normalizedCols)
+              cols, columnType = "partition")
 
             var includeInPK = true
             for (field <- prunedSchema.fields if includeInPK) {
@@ -365,22 +362,23 @@ object StoreUtils {
     (sb.toString(), stringPKCols)
   }
 
-  def ddlExtensionString(parameters: mutable.Map[String, String],
+  def ddlExtensionString(parameters: CaseInsensitiveMutableHashMap[String],
       isRowTable: Boolean, isShadowTable: Boolean): String = {
     val sb = new StringBuilder()
 
     if (!isShadowTable) {
       sb.append(parameters.remove(PARTITION_BY).map(v => {
-        val (parClause) = {
+        val partCol = Utils.toUpperCase(v.trim())
+        val parClause = {
           v match {
-            case PRIMARY_KEY =>
+            case _ if partCol.equalsIgnoreCase(PRIMARY_KEY) =>
               if (isRowTable) {
                 s"sparkhash $PRIMARY_KEY"
               } else {
                 throw Utils.analysisException("Column table cannot be " +
                     "partitioned on PRIMARY KEY as no primary key")
               }
-            case _ => s"sparkhash COLUMN($v)"
+            case _ => s"sparkhash COLUMN($partCol)"
           }
         }
         s"$GEM_PARTITION_BY $parClause "
@@ -388,8 +386,8 @@ object StoreUtils {
       else s"$GEM_PARTITION_BY COLUMN ($ROWID_COLUMN_NAME) "))
     } else {
       parameters.remove(PARTITION_BY).foreach {
-        case PRIMARY_KEY => throw Utils.analysisException("Column table " +
-            "cannot be partitioned on PRIMARY KEY as no primary key")
+        case v if v.trim().equalsIgnoreCase(PRIMARY_KEY) => throw Utils.analysisException(
+          "Column table cannot be partitioned on PRIMARY KEY as no primary key")
         case _ =>
       }
     }
@@ -444,10 +442,13 @@ object StoreUtils {
           v.equalsIgnoreCase("synchronous")) {
         sb.append(s"$GEM_PERSISTENT SYNCHRONOUS ")
       } else if (v.equalsIgnoreCase("none")) {
+        if (isShadowTable) {
+          throw Utils.analysisException(s"Column tables do not support $PERSISTENCE = none")
+        }
         isPersistent = false
         sb
       } else {
-        throw Utils.analysisException(s"Invalid value for option " +
+        throw Utils.analysisException("Invalid value for option " +
             s"$PERSISTENCE = $v (expected one of: sync, async, none, " +
             s"synchronous, asynchronous)")
       }
@@ -491,11 +492,41 @@ object StoreUtils {
     sb.toString()
   }
 
-  def getPartitioningColumns(
-      parameters: mutable.Map[String, String]): Seq[String] = {
-    parameters.get(PARTITION_BY).map(v => {
-      v.split(",").toSeq.map(a => a.trim)
-    }).getOrElse(Nil)
+  def getAndSetPartitioningAndKeyColumns(session: SnappySession,
+      schema: StructType, parameters: CaseInsensitiveMutableHashMap[String]): Seq[String] = {
+    // parse the PARTITION_BY and KEYCOLUMNS and store the parsed result back in parameters
+
+    // Use a new parser instance since parser may itself invoke DataSource.resolveRelation.
+    val parser = session.snappyParser.newInstance()
+    val keyColumns = parameters.get(KEY_COLUMNS) match {
+      case None => Nil
+      case Some(k) =>
+        if (schema eq null) { // row table
+          throw new AnalysisException(s"$KEY_COLUMNS specified for a row table (use PRIMARY KEY)")
+        }
+        val keyCols = parser.parseSQLOnly(k, parser.parseIdentifiers.run())
+        // check for validity of columns
+        val schemaFields = Utils.schemaFields(schema)
+        ExternalStoreUtils.pruneSchema(schemaFields, keyCols, "key")
+        parameters.put(KEY_COLUMNS, keyCols.mkString(","))
+        keyCols.toList
+    }
+    parameters.get(PARTITION_BY) match {
+      case None =>
+        // default to KEY_COLUMNS if present
+        if (keyColumns.isEmpty) Nil
+        else {
+          parameters.put(PARTITION_BY, keyColumns.mkString(","))
+          keyColumns
+        }
+      case Some(p) if p.trim.equalsIgnoreCase(PRIMARY_KEY) =>
+        parameters.put(PARTITION_BY, PRIMARY_KEY)
+        PRIMARY_KEY :: Nil
+      case Some(p) =>
+        val partCols = parser.parseSQLOnly(p, parser.parseIdentifiers.run())
+        parameters.put(PARTITION_BY, partCols.mkString(","))
+        partCols
+    }
   }
 
   def getColumnUpdateDeleteOrdering(batchIdColumn: Attribute): SortOrder = {
@@ -505,51 +536,14 @@ object StoreUtils {
     SortOrder(batchIdColumn, Ascending)
   }
 
-  def validateConnProps(parameters: mutable.Map[String, String]): Unit = {
-    parameters.keys.forall(v => {
-      val u = Utils.toUpperCase(v)
-      if (!u.startsWith(JdbcExtendedUtils.SCHEMADDL_PROPERTY) &&
-          !ddlOptions.contains(u)) {
+  def validateConnProps(parameters: CaseInsensitiveMutableHashMap[String]): Unit = {
+    parameters.keys.foreach { k =>
+      if (!k.startsWith(SnappyExternalCatalog.SCHEMADDL_PROPERTY) &&
+          k != SnappyExternalCatalog.BASETABLE_PROPERTY &&
+          k != SnappyExternalCatalog.INDEXED_TABLE_LOWER && !ddlOptions.contains(k)) {
         throw new AnalysisException(
-          s"Unknown option '$v' specified while creating table")
+          s"Unknown option '$k' specified while creating table")
       }
-      true
-    })
-  }
-
-  def mapCatalystTypes(schema: StructType,
-      types: Growable[DataType]): Array[Int] = {
-    var i = 0
-    val result = new Array[Int](schema.length)
-    while (i < schema.length) {
-      val field = schema.fields(i)
-      val dataType = field.dataType
-      if (types != null) {
-        types += dataType
-      }
-      result(i) = dataType match {
-        case StringType => STRING_TYPE
-        case IntegerType => INT_TYPE
-        case LongType =>
-          if (field.metadata.contains("binarylong")) BINARY_LONG_TYPE
-          else LONG_TYPE
-        case ShortType => SHORT_TYPE
-        case ByteType => BYTE_TYPE
-        case BooleanType => BOOLEAN_TYPE
-        case _: DecimalType => DECIMAL_TYPE
-        case DoubleType => DOUBLE_TYPE
-        case FloatType => FLOAT_TYPE
-        case DateType => DATE_TYPE
-        case TimestampType => TIMESTAMP_TYPE
-        case BinaryType => BINARY_TYPE
-        case _: ArrayType => ARRAY_TYPE
-        case _: MapType => MAP_TYPE
-        case _: StructType => STRUCT_TYPE
-        case _ => throw new IllegalArgumentException(
-          s"Unsupported field $field")
-      }
-      i += 1
     }
-    result
   }
 }

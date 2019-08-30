@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,8 +25,6 @@ trait ToolsCallback {
 
   def updateUI(sc: SparkContext): Unit
 
-  def removeAddedJar(sc: SparkContext, jarName: String): Unit
-
   /**
    * Callback to spark Utils to fetch file
    * Download a file or directory to target directory. Supports fetching the file in a variety of
@@ -48,29 +46,33 @@ trait ToolsCallback {
 
   def setSessionDependencies(sparkContext: SparkContext,
       appName: String,
-      classLoader: ClassLoader): Unit = {
+      classLoader: ClassLoader, addAllJars: Boolean): Unit = {
   }
 
   def addURIs(alias: String, jars: Array[String],
-    deploySql: String, isPackage: Boolean = true): Unit
+      deploySql: String, isPackage: Boolean = true): Unit
+
+  def removeURIs(uris: Array[String], isPackage: Boolean = true): Unit
 
   def addURIsToExecutorClassLoader(jars: Array[String]): Unit
 
-  def getAllGlobalCmnds(): Array[String]
+  def removeURIsFromExecutorClassLoader(jars: Array[String]): Unit
 
-  def getGlobalCmndsSet(): java.util.Set[java.util.Map.Entry[String, String]]
+  def removeFunctionJars(args: Array[String]): Unit
+
+  def getAllGlobalCmnds: Array[String]
+
+  def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]]
 
   def removePackage(alias: String): Unit
 
   def setLeadClassLoader(): Unit
 
-  def getLeadClassLoader(): URLClassLoader
+  def getLeadClassLoader: URLClassLoader
 
   /**
-   *
-   * @param schema
-   * @param currentOwner
-   * @return the schema owner, can be ldap group
+   * Check permission to write to given schema for a user. Returns the normalized user or
+   * LDAP group name of the schema owner (or passed user itself if security is disabled).
    */
-  def checkSchemaPermission(schema: String, currentOwner: String): String
+  def checkSchemaPermission(schema: String, currentUser: String): String
 }

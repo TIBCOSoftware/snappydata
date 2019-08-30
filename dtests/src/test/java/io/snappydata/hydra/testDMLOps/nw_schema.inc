@@ -1,5 +1,7 @@
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-createSchemas = "create schema app";
 
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-dropSchemas = "drop schema app cascade";
+
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-createTablesStatements =
 "create table app.regions (RegionID int,RegionDescription varchar(100),tid int)"
 "create table app.categories (CategoryID int,CategoryName varchar(100),Description varchar(100),Picture varchar(300),tid int)"
@@ -96,12 +98,12 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertStmts =
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateStmts =
 "UPDATE app.products SET UnitPrice = UnitPrice * 1.1 WHERE CategoryID = (SELECT max(CategoryID) from products where tid=$tid)"
 "UPDATE app.products SET UnitPrice = UnitPrice * 0.9"
-"UPDATE app.products SET UnitPrice = UnitPrice * 1.1, ReorderLevel = ReorderLevel + 5 WHERE CategoryID = (SELECT min(CategoryID) from products where tid=$tid)"
-"UPDATE app.products SET Discontinued=-1 where Discontinued=1"
-"UPDATE app.products SET Discontinued=1 WHERE Discontinued=-1"
+"UPDATE app.products SET UnitPrice = UnitPrice * 1.1, ReorderLevel = cast((ReorderLevel + 5) as smallint) WHERE CategoryID = (SELECT min(CategoryID) from products where tid=$tid)"
+"UPDATE app.products SET Discontinued=cast(-1 as smallint) where Discontinued=1"
+"UPDATE app.products SET Discontinued=cast(-1 as smallint) WHERE Discontinued=-1"
 "UPDATE app.order_details SET UnitPrice = UnitPrice * 1.1"
 "UPDATE app.order_details SET UnitPrice = UnitPrice * 1.1 WHERE ORDERID < 10450"
-"UPDATE app.order_details SET Quantity = 0 WHERE ProductID = 11"
+"UPDATE app.order_details SET Quantity = cast(0 as smallint) WHERE ProductID = 11"
 "UPDATE app.employees SET TitleOfCourtesy='Mr.' WHERE FIRSTNAME LIKE '%3%'"
 "UPDATE app.employees SET TitleOfCourtesy='Mrs.' WHERE FIRSTNAME LIKE '%3%'"
 "UPDATE app.orders SET ShipVia = ShipVia + 1 WHERE OrderID IN (SELECT max(orderID) from orders where tid=$tid)"
@@ -153,7 +155,7 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-deleteStmts =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterDeleteSelects =
-"select * from orders"
+"select * from app.orders"
 "select * from app.order_details"
 "select * from orders"
 "select * from customers"

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -15,6 +15,8 @@
  * LICENSE file.
  */
 package io.snappydata.hydra.cluster;
+
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Vector;
 
@@ -248,9 +250,19 @@ public class SnappyPrms extends BasePrms {
   public static Long isUserConfTest;
 
   /**
+   * (boolean) - whether to run the CPP script in hydra.
+   */
+  public static Long isCppTest;
+
+  /**
    * (boolean) - whether TPCH schema is used in test for running the queries concurrently.
    */
   public static Long isTPCHSchema;
+
+  /**
+   * (boolean) - whether mix of schemas to be used in test for running the queries concurrently.
+   */
+  public static Long isStabilityTest;
 
   /**
    * (boolean) - whether to enable time statistics. snappy hydra already sets the
@@ -340,9 +352,20 @@ public class SnappyPrms extends BasePrms {
   public static Long executeInBackground;
 
   /**
+   * (boolean) whether to test conflation.
+   */
+
+  public static Long isConflationTest;
+
+  /**
    * (int) how long (seconds) it should wait before retrieving server status
    */
   public static Long sleepTimeSecsForMemberStatus;
+
+  /**
+   * (int) number of threads required for concurrent execution of queries/tasks.
+   */
+  public static Long numThreadsForConcExecution;
 
   /**
    * (int) warmUp time in secs for concurrenct queries execution.
@@ -371,6 +394,13 @@ public class SnappyPrms extends BasePrms {
    * (VectosetValues of Strings) A list of values for snappy-job.
    */
   public static Long appPropsForJobServer;
+
+  /**
+   * Parameter used to get the user list of queries to execute concurrently using
+   * jdbc clients.
+   * (VectorsetValues of Strings) A list of values queries.
+   */
+  public static Long queryList;
 
   /**
    * Parameter used to get the user list of pointLookUP queries to execute concurrently using
@@ -471,18 +501,6 @@ public class SnappyPrms extends BasePrms {
   public static Long serverMemory;
 
   /**
-   * (String) criticalHeapPercentage to be used while starting the Server process. Defaults to 90%
-   * if not provided.
-   */
-  public static Long criticalHeapPercentage;
-
-  /**
-   * (String) evictionHeapPercentage to be used while starting the Server process. Defaults to 90%
-   * of critical-heap-percentage if not provided.
-   */
-  public static Long evictionHeapPercentage;
-
-  /**
    * (String) Memory to be used while starting the Lead process. Defaults to 1GB if not provided.
    */
   public static Long leadMemory;
@@ -536,6 +554,11 @@ public class SnappyPrms extends BasePrms {
   public static Long kafkaDir;
 
   /**
+   * (String) path for kafka log directory
+   */
+  public static Long kafkaLogDir;
+
+  /**
    * (String) snappy-poc jar path
    */
   public static Long snappyPocJarPath;
@@ -563,6 +586,16 @@ public class SnappyPrms extends BasePrms {
   public static Long hasDynamicAppProps;
 
   /**
+   * (Boolean) parameter to pass connectionURL in APP_PROPS required for JDBC connection in snappy job.
+   */
+  public static Long useJDBCConnInSnappyJob;
+
+  /**
+   * (Boolean) parameter to pass maxResultWaitSec in APP_PROPS required for long running job termination.
+   */
+  public static Long isLongRunningJob;
+
+  /**
    * (Boolean) parameter to enable security for snappyJob,by default it is false.
    */
   public static Long isSecurity;
@@ -573,10 +606,58 @@ public class SnappyPrms extends BasePrms {
   public static Long credentialFile;
 
   /**
-   * Parameter used to get the user specified table List required for validation.
+   * Parameter used to get the user specified table List required for table creation/validation.
    * (VectorsetValues of Strings) A list of values for table List
    */
   public static Long tableList;
+
+  /**
+   * Parameter used to get the user specified table type List required for table(row/column) creation.
+   * (VectorsetValues of Strings) A list of values for table type
+   */
+  public static Long tableType;
+
+  /**
+   * Parameter used to get the user specified external table List required for table creation using parquet file format.
+   * (VectorsetValues of Strings) A list of values for external table List for parquet data format.
+   */
+  public static Long parquetExternalTableList;
+
+  /**
+   * Parameter used to get the user specified external table List required for table creation using CSV file format.
+   * (VectorsetValues of Strings) A list of values for external table List for CSV data format
+   */
+  public static Long csvExternalTableList;
+
+  /**
+   * Parameter used to get the user specified external table List required for inserting data into existing column tables.
+   * (VectorsetValues of Strings) A list of values for external table List for insert into operation.
+   */
+  public static Long externalTableListForInsert;
+
+  /**
+   * Parameter used to get the user specified table List required for loading data from extrenal table into column table.
+   * (VectorsetValues of Strings) A list of values for table List
+   */
+  public static Long insertTableList;
+
+  /**
+   * Parameter used to get the user specified table List of data path required for loading data into extrenal parquet table.
+   * (VectorsetValues of Strings) A list of values for data path List for extrenal parquet table.
+   */
+  public static Long dataPathListForParquet;
+
+  /**
+   * Parameter used to get the user specified table List of data path required for loading data into extrenal CSV table.
+   * (VectorsetValues of Strings) A list of values for data path List for extrenal CSV table.
+   */
+  public static Long dataPathListForCSV;
+
+  /**
+   * options parameters to be used while creating a column table. Defaults to empty if not provided.
+   * (VectorsetValues of Strings) A list of values for data path List for extrenal CSV table.
+   */
+  public static Long tableOptions;
 
   /**
    * Parameter used to get the user specified hostName List required for recording the PIDs with hydra Master
@@ -620,6 +701,39 @@ public class SnappyPrms extends BasePrms {
     Long key = numOfStackDumpItr;
     return tasktab().intAt(key, tab().intAt(key, 3));
   }
+
+  /**
+   *
+   */
+
+  public static Long reRunWithDebugLogging;
+
+  public static boolean isReRunWithDebugEnabled() {
+    Long key = reRunWithDebugLogging;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+
+  }
+  /**
+   * Parameter to pass for which logger the loglevel settings should be changed
+   */
+  public static Long logger;
+
+  public static String getLogger(){
+    Long key = logger;
+    return tasktab().stringAt(key, tab().stringAt(key, ""));
+  }
+
+  /**
+   * Parameter to specificy the required loglevel setting.
+   */
+
+  public static Long newLogLevel;
+
+  public static String getNewLogLevel(){
+    Long key = newLogLevel;
+    return tasktab().stringAt(key, tab().stringAt(key, "CONFIG"));
+  }
+
 
   /**
    * Parameter used to get the List of expected exceptions in the test run.
@@ -716,12 +830,12 @@ public class SnappyPrms extends BasePrms {
 
   public static int getSleepTimeSecsForJobStatus() {
     Long key = sleepTimeSecsForJobStatus;
-    return tasktab().intAt(key, tab().intAt(key, 120));
+    return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
   public static int getSleepTimeSecsForMemberStatus() {
     Long key = sleepTimeSecsForMemberStatus;
-    return tasktab().intAt(key, tab().intAt(key, 30));
+    return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
   public static String getExecutorCores() {
@@ -756,25 +870,6 @@ public class SnappyPrms extends BasePrms {
     if (serverHeapSize == null) return "";
     serverHeapSize = " -heap-size=" + serverHeapSize;
     return serverHeapSize;
-  }
-
-  public static String getCriticalHeapPercentage() {
-    String criticalHeapPercentageString = " -critical-heap-percentage=" + tab().stringAt
-        (criticalHeapPercentage, "90");
-    return criticalHeapPercentageString;
-  }
-
-  public static String calculateDefaultEvictionPercentage() {
-    int criticalHeapPercent = Integer.parseInt(tab().stringAt(criticalHeapPercentage, "90"));
-    int evictionHeapPercent = (criticalHeapPercent * 90) / 100;
-    String evictionHeapPercentString = String.valueOf(evictionHeapPercent);
-    return evictionHeapPercentString;
-  }
-
-  public static String getEvictionHeapPercentage() {
-    String evictionHeapPercentageString = " -eviction-heap-percentage=" + tab().stringAt
-        (evictionHeapPercentage, calculateDefaultEvictionPercentage());
-    return evictionHeapPercentageString;
   }
 
   public static String getLeadMemory() {
@@ -840,6 +935,11 @@ public class SnappyPrms extends BasePrms {
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
   }
 
+  public static Vector getQueryList() {
+    Long key = queryList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
   public static Vector getPointLookUpQueryList() {
     Long key = pointLookUpQueryList;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
@@ -882,26 +982,29 @@ public class SnappyPrms extends BasePrms {
 
   public static String getLeaderLauncherProps() {
     Long key = leaderLauncherProps;
-    String leaderLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+    Vector<String> leaderLauncherPropList = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key,
         null));
-    if (leaderLauncherPropList == null) return "";
-    else return leaderLauncherPropList;
+    if (leaderLauncherPropList != null && !leaderLauncherPropList.isEmpty())
+      return StringUtils.join(leaderLauncherPropList, " ");
+    else return "";
   }
 
   public static String getServerLauncherProps() {
     Long key = serverLauncherProps;
-    String serverLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+    Vector<String> serverLauncherPropList = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key,
         null));
-    if (serverLauncherPropList == null) return "";
-    else return serverLauncherPropList;
+    if (serverLauncherPropList != null && !serverLauncherPropList.isEmpty())
+      return StringUtils.join(serverLauncherPropList, " ");
+    else return "";
   }
 
   public static String getLocatorLauncherProps() {
     Long key = locatorLauncherProps;
-    String locatorLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+    Vector<String> locatorLauncherPropList = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key,
         null));
-    if (locatorLauncherPropList == null) return "";
-    else return locatorLauncherPropList;
+    if (locatorLauncherPropList != null && !locatorLauncherPropList.isEmpty())
+      return StringUtils.join(locatorLauncherPropList, " ");
+    else return "";
   }
 
   public static String getSparkSubmitExtraPrms() {
@@ -1106,6 +1209,16 @@ public class SnappyPrms extends BasePrms {
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
+  public static boolean useJDBCConnInSnappyJob() {
+    Long key = useJDBCConnInSnappyJob;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean isLongRunningJob() {
+    Long key = isLongRunningJob;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
   public static Vector getKafkaTopic() {
     Long key = kafkaTopic;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
@@ -1113,6 +1226,46 @@ public class SnappyPrms extends BasePrms {
 
   public static Vector getTableList() {
     Long key = tableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getTableTypeList() {
+    Long key = tableType;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getParquetExternalTableList() {
+    Long key = parquetExternalTableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getCSVExternalTableList() {
+    Long key = csvExternalTableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getExternalTableListForInsert() {
+    Long key = externalTableListForInsert;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getInsertTableList() {
+    Long key = insertTableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getDataPathListForParquet() {
+    Long key = dataPathListForParquet;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getDataPathListForCSV() {
+    Long key = dataPathListForCSV;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getTableOptions() {
+    Long key = tableOptions;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 

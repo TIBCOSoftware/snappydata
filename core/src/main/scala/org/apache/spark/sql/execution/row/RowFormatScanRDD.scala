@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -40,13 +40,13 @@ import com.zaxxer.hikari.pool.ProxyResultSet
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.collection.MultiBucketExecutorPartition
+import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, Utils}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{RDDKryo, SecurityUtils}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.{Partition, TaskContext, TaskContextImpl, TaskKilledException}
 
 /**
  * A scanner RDD which is very specific to Snappy store row tables.
@@ -61,7 +61,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     protected var connProperties: ConnectionProperties,
     @transient private[sql] val filters: Array[Expression] = Array.empty[Expression],
     @transient protected val partitionEvaluator: () => Array[Partition] = () =>
-      Array.empty[Partition], protected var commitTx: Boolean,
+      Array.empty[Partition], protected val partitionPruner: () => Int = () => -1,
+    protected var commitTx: Boolean,
     protected var delayRollover: Boolean, protected var projection: Array[Int],
     @transient protected val region: Option[LocalRegion])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
@@ -95,49 +96,52 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     field
   }
 
+  private def appendCol(sb: StringBuilder, col: String): StringBuilder =
+    sb.append(Utils.toUpperCase(col))
+
   // below should exactly match ExternalStoreUtils.handledFilter
   private def compileFilter(f: Filter, sb: StringBuilder,
-      args: ArrayBuffer[Any], addAnd: Boolean): Unit = f match {
+      args: ArrayBuffer[Any], addAnd: Boolean, literal: String = ""): Unit = f match {
     case EqualTo(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" = ?")
+      appendCol(sb, col).append(" = ?")
       args += value
     case LessThan(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" < ?")
+      appendCol(sb, col).append(" < ?")
       args += value
     case GreaterThan(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" > ?")
+      appendCol(sb, col).append(" > ?")
       args += value
     case LessThanOrEqual(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" <= ?")
+      appendCol(sb, col).append(" <= ?")
       args += value
     case GreaterThanOrEqual(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" >= ?")
+      appendCol(sb, col).append(" >= ?")
       args += value
     case StringStartsWith(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(s" LIKE $value%")
+      appendCol(sb, col).append(s" LIKE $value%")
     case In(col, values) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" IN (")
+      appendCol(sb, col).append(" IN (")
       (1 until values.length).foreach(_ => sb.append("?,"))
       sb.append("?)")
       args ++= values
@@ -146,20 +150,21 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         sb.append(" AND ")
       }
       sb.append('(')
-      compileFilter(left, sb, args, addAnd = false)
+      compileFilter(left, sb, args, addAnd = false, "TRUE")
       sb.append(") AND (")
-      compileFilter(right, sb, args, addAnd = false)
+      compileFilter(right, sb, args, addAnd = false, "TRUE")
       sb.append(')')
     case Or(left, right) =>
       if (addAnd) {
         sb.append(" AND ")
       }
       sb.append('(')
-      compileFilter(left, sb, args, addAnd = false)
+      compileFilter(left, sb, args, addAnd = false, "FALSE")
       sb.append(") OR (")
-      compileFilter(right, sb, args, addAnd = false)
+      compileFilter(right, sb, args, addAnd = false, "FALSE")
       sb.append(')')
-    case _ => // no filter pushdown
+    case _ => sb.append(literal)
+     // no filter pushdown
   }
 
   /**
@@ -171,7 +176,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       val sb = new StringBuilder()
       columns.foreach { s =>
         if (sb.nonEmpty) sb.append(',')
-        sb.append('"').append(s).append('"')
+        appendCol(sb.append('"'), s).append('"')
       }
       sb.toString()
     } else "1"
@@ -206,7 +211,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case _ => thePart.index.toString
         }
         ps.setString(2, bucketString)
-        ps.setInt(3, -1)
+        ps.setLong(3, -1)
         ps.executeUpdate()
       } finally {
         ps.close()
@@ -243,7 +248,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
 
   def commitTxBeforeTaskCompletion(conn: Option[Connection], context: TaskContext): Unit = {
-    Option(TaskContext.get()).foreach(_.addTaskCompletionListener(_ => {
+    Option(context).foreach(_.addTaskCompletionListener(_ => {
       val tx = TXManagerImpl.getCurrentSnapshotTXState
       if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
         // if rollover was marked as delayed, then do the rollover before commit
@@ -260,8 +265,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   /**
    * Runs the SQL query against the JDBC driver.
    */
-  override def compute(thePart: Partition,
-      context: TaskContext): Iterator[Any] = {
+  override def compute(thePart: Partition, context: TaskContext): Iterator[Any] = {
 
     if (pushProjections) {
       val (conn, stmt, rs) = computeResultSet(thePart, context)
@@ -295,7 +299,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         }
 
         val txId = if (tx ne null) tx.getTransactionId else null
-        val itr = new CompactExecRowIteratorOnScan(container, bucketIds, txId)
+        val itr = new CompactExecRowIteratorOnScan(container, bucketIds, txId, context)
         if (useResultSet) {
           // row buffer of column table: wrap a result set around the scan
           val dataItr = itr.map(r =>
@@ -332,7 +336,14 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     // (updated values in ParamLiteral will take care of updating filters)
     evaluateWhereClause()
     // use incoming partitions if provided (e.g. for collocated tables)
-    val parts = partitionEvaluator()
+    var parts = partitionEvaluator()
+    if (parts != null && parts.length > 0) {
+      return parts
+    }
+
+    // In the case of Direct Row scan, partitionEvaluator will be always empty.
+    // So, evaluating partition here again..
+    parts = evaluatePartitions()
     if (parts != null && parts.length > 0) {
       return parts
     }
@@ -342,6 +353,19 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       case Some(dr: CacheDistributionAdvisee) => session.sessionState.getTablePartitions(dr)
       // system table/VTI is shown as a replicated table having a single partition
       case _ => Array(new MultiBucketExecutorPartition(0, null, 0, Nil))
+    }
+  }
+
+  private def evaluatePartitions(): Array[Partition] = {
+    partitionPruner() match {
+      case -1 =>
+        Array.empty[Partition]
+      case bucketId: Int =>
+        if (!session.partitionPruning) {
+          Array.empty[Partition]
+        } else {
+          Utils.getPartitions(region.get, bucketId)
+        }
     }
   }
 
@@ -437,15 +461,16 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
   }
 }
 
-abstract class PRValuesIterator[T](container: GemFireContainer,
-    region: LocalRegion, bucketIds: java.util.Set[Integer]) extends Iterator[T] {
+abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalRegion,
+    bucketIds: java.util.Set[Integer], context: TaskContext) extends Iterator[T] {
 
   protected type PRIterator = PartitionedRegion#PRLocalScanIterator
 
-  protected final var hasNextValue = true
-  protected final var doMove = true
+  protected[this] final val taskContext = context.asInstanceOf[TaskContextImpl]
+  protected[this] final var hasNextValue = true
+  protected[this] final var doMove = true
   // transaction started by row buffer scan should be used here
-  private val tx = TXManagerImpl.getCurrentSnapshotTXState
+  private[this] val tx = TXManagerImpl.getCurrentSnapshotTXState
   private[execution] final val itr = createIterator(container, region, tx)
 
   protected def createIterator(container: GemFireContainer, region: LocalRegion,
@@ -465,6 +490,10 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
 
   override final def hasNext: Boolean = {
     if (doMove) {
+      // check for task killed before moving to next element
+      if ((taskContext ne null) && taskContext.isInterrupted()) {
+        throw new TaskKilledException
+      }
       moveNext()
       doMove = false
     }
@@ -473,6 +502,10 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
 
   override final def next: T = {
     if (doMove) {
+      // check for task killed before moving to next element
+      if ((taskContext ne null) && taskContext.isInterrupted()) {
+        throw new TaskKilledException
+      }
       moveNext()
     }
     doMove = true
@@ -481,9 +514,9 @@ abstract class PRValuesIterator[T](container: GemFireContainer,
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer], txId: TXId)
+    bucketIds: java.util.Set[Integer], txId: TXId, context: TaskContext)
     extends PRValuesIterator[AbstractCompactExecRow](container,
-      region = null, bucketIds) {
+      region = null, bucketIds, context) {
 
   override protected[sql] val currentVal: AbstractCompactExecRow = container
       .newTemplateRow().asInstanceOf[AbstractCompactExecRow]

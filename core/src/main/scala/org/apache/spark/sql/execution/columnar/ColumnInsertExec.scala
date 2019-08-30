@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,16 +18,20 @@ package org.apache.spark.sql.execution.columnar
 
 import scala.collection.mutable.ArrayBuffer
 
-import io.snappydata.collection.OpenHashSet
 import io.snappydata.{Constant, Property}
+import org.eclipse.collections.impl.set.mutable.UnifiedSet
 
 import org.apache.spark.TaskContext
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
-import org.apache.spark.sql.execution.{SparkPlan, TableExec}
+import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
+import org.apache.spark.sql.execution.{SparkPlan, TableExec, WholeStageCodegenExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.CompressionCodecId
 import org.apache.spark.sql.types._
@@ -45,7 +49,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
   def this(child: SparkPlan, partitionColumns: Seq[String],
       partitionExpressions: Seq[Expression],
-      relation: JDBCAppendableRelation, table: String) = {
+      relation: BaseColumnFormatRelation, table: String) = {
     // TODO: add compression for binary/complex types
     this(child, partitionColumns, partitionExpressions, relation.numBuckets,
       relation.isPartitioned, Some(relation), relation.getColumnBatchParams, table,
@@ -74,6 +78,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   @transient private var cursorsArrayCreate: String = _
   @transient private var encoderArrayTerm: String = _
   @transient private var cursorArrayTerm: String = _
+  @transient private var catalogVersion: String = _
 
   @transient private[sql] var batchIdRef = -1
 
@@ -234,6 +239,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       s"if ($encoderArrayTerm[i] != null) $encoderArrayTerm[i].close();",
       schema.length)
     val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders)
+    val resetConnectionAttributes = resetConnectionAttributesCode()
     s"""
        |$checkEnd; // already done
        |
@@ -268,6 +274,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |}
        |finally {
        |if ($txIdConnArray[1] != null) {
+       |  $resetConnectionAttributes
        |  if (success) {
        |    $commitSnapshotTx((String)$txIdConnArray[1],
        |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
@@ -281,6 +288,21 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |}
        |}
     """.stripMargin
+  }
+
+  def resetConnectionAttributesCode(): String = {
+    if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
+      // for smart connector, reset the connection attributes as well
+      val externalStoreUtilsClass = ExternalStoreUtils.getClass.getName
+      s"""
+        |  $externalStoreUtilsClass.MODULE$$.resetSchemaVersionOnConnection(
+        |  $catalogVersion, (java.sql.Connection)$txIdConnArray[0]);
+      """.stripMargin
+    } else {
+      """
+        |
+      """.stripMargin
+    }
   }
 
   override protected def doProduce(ctx: CodegenContext): String = {
@@ -363,6 +385,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val useBatchSize = if (columnBatchSize > 0) columnBatchSize
     else ExternalStoreUtils.sizeAsBytes(Property.ColumnBatchSize.defaultValue.get,
       Property.ColumnBatchSize.name)
+    val resetConnectionAttributes = resetConnectionAttributesCode()
     s"""
        |$checkEnd; // already done
        |final Object[] $txIdConnArray  = $beginSnapshotTx();
@@ -396,6 +419,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |}
        |finally {
        |if ($txIdConnArray[1] != null) {
+       |  $resetConnectionAttributes
        |  if (success) {
        |    $commitSnapshotTx((String)$txIdConnArray[1],
        |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
@@ -480,7 +504,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   private def doConsumeWideTables(ctx: CodegenContext, input: Seq[ExprCode],
                                   row: ExprCode): String = {
     val schema = tableSchema
-    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val buffers = ctx.freshName("buffers")
     val columnBatch = ctx.freshName("columnBatch")
     val sizeTerm = ctx.freshName("size")
@@ -536,14 +559,16 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     initEncoders = loop(cursorLoopCode, schema.length)
     val calculateSize = loop(encoderLoopCode, schema.length)
     val columnBatchClass = classOf[ColumnBatch].getName
+    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     batchIdRef = ctx.references.length
     val batchUUID = ctx.addReferenceObj("batchUUID", invalidUUID, "Long")
+    val bucketId = ctx.addReferenceObj("partitionId", -1, "Integer")
     val partitionIdCode = if (partitioned) "partitionIndex"
     else {
       // check for bucketId variable if available
       batchBucketIdTerm.getOrElse(
         // add as a reference object which can be updated by caller if required
-        s"${ctx.addReferenceObj("partitionId", -1, "Integer")}.intValue()")
+        s"$bucketId.intValue()")
     }
     val tableName = ctx.addReferenceObj("columnTable", columnTable,
       "java.lang.String")
@@ -575,13 +600,9 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
-    beginSnapshotTx = ctx.freshName("beginSnapshotTx")
-    ctx.addNewFunction(beginSnapshotTx,
-      s"""
-         |private final Object[] $beginSnapshotTx() {
-         |  return $externalStoreTerm.beginTx(false);
-         |}
-      """.stripMargin)
+
+    generateBeginSnapshotTx(ctx, externalStoreTerm)
+
     commitSnapshotTx = ctx.freshName("commitSnapshotTx")
     ctx.addNewFunction(commitSnapshotTx,
       s"""
@@ -632,6 +653,27 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     """.stripMargin
   }
 
+  private def generateBeginSnapshotTx(ctx: CodegenContext, externalStoreTerm: String): Unit = {
+    beginSnapshotTx = ctx.freshName("beginSnapshotTx")
+    catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
+    if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
+      // on smart connector also set connection attributes to check catalog schema version
+      ctx.addNewFunction(beginSnapshotTx,
+        s"""
+           |private final Object[] $beginSnapshotTx() throws java.io.IOException {
+           |  return $externalStoreTerm.beginTxSmartConnector(false, $catalogVersion);
+           |}
+      """.stripMargin)
+    } else {
+      ctx.addNewFunction(beginSnapshotTx,
+        s"""
+           |private final Object[] $beginSnapshotTx() {
+           |  return $externalStoreTerm.beginTx(false);
+           |}
+      """.stripMargin)
+    }
+  }
+
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
 
@@ -639,7 +681,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       return doConsumeWideTables(ctx, input, row)
     }
     val schema = tableSchema
-    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
 
     val buffers = ctx.freshName("buffers")
     val columnBatch = ctx.freshName("columnBatch")
@@ -678,14 +719,16 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     cursorsArrayCreate = ""
 
     val columnBatchClass = classOf[ColumnBatch].getName
+    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     batchIdRef = ctx.references.length
     val batchUUID = ctx.addReferenceObj("batchUUID", invalidUUID, "Long")
+    val bucketId = ctx.addReferenceObj("partitionId", -1, "Integer")
     val partitionIdCode = if (partitioned) "partitionIndex"
     else {
       // check for bucketId variable if available
       batchBucketIdTerm.getOrElse(
         // add as a reference object which can be updated by caller if required
-        s"${ctx.addReferenceObj("partitionId", -1, "Integer")}.intValue()")
+        s"$bucketId.intValue()")
     }
     val tableName = ctx.addReferenceObj("columnTable", columnTable,
       "java.lang.String")
@@ -712,13 +755,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
-    beginSnapshotTx = ctx.freshName("beginSnapshotTx")
-    ctx.addNewFunction(beginSnapshotTx,
-      s"""
-         |private final Object[] $beginSnapshotTx() {
-         |  return $externalStoreTerm.beginTx(false);
-         |}
-      """.stripMargin)
+    generateBeginSnapshotTx(ctx, externalStoreTerm)
     commitSnapshotTx = ctx.freshName("commitSnapshotTx")
     ctx.addNewFunction(commitSnapshotTx,
       s"""
@@ -765,6 +802,17 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     """.stripMargin
   }
 
+  override protected def doExecute(): RDD[InternalRow] = {
+    // don't expect code generation to fail
+    try {
+      WholeStageCodegenExec(this).execute()
+    }
+    finally {
+      sqlContext.sparkSession.asInstanceOf[SnappySession].clearWriteLockOnTable()
+    }
+  }
+
+
   private def genCodeColumnWrite(ctx: CodegenContext, dataType: DataType,
       nullable: Boolean, encoder: String, cursorTerm: String,
       ev: ExprCode): String = {
@@ -783,7 +831,7 @@ object ColumnWriter {
    * Supported types for which column statistics are maintained and can be used
    * for statistics checks. Excludes DecimalType that should be checked explicitly.
    */
-  val SUPPORTED_STATS_TYPES = new OpenHashSet[DataType](java.util.Arrays.asList(Array(
+  val SUPPORTED_STATS_TYPES = new UnifiedSet[DataType](java.util.Arrays.asList(Array(
     BooleanType, ByteType, ShortType, IntegerType, LongType, DateType, TimestampType,
     StringType, FloatType, DoubleType): _*))
 

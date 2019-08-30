@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,7 +26,8 @@ import io.snappydata.{Constant, Property, QueryHint}
 import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
+import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, Literal, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation}
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
@@ -39,7 +40,9 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.sources.PhysicalScan
-import org.apache.spark.sql.internal.{JoinQueryPlanning, LogicalPlanWithHints, SQLConf, SnappySessionState}
+import org.apache.spark.sql.hive.SnappySessionState
+import org.apache.spark.sql.internal.{JoinQueryPlanning, LogicalPlanWithHints, SQLConf}
+import org.apache.spark.sql.sources.SamplingRelation
 import org.apache.spark.sql.streaming._
 
 /**
@@ -364,8 +367,11 @@ private[sql] object JoinStrategy {
    * Matches a plan whose output should be small enough to be used in broadcast join.
    */
   def canBroadcast(plan: LogicalPlan, conf: SQLConf): Boolean = {
+    plan.collectFirst {
+        case LogicalRelation(_: SamplingRelation, _, _) => true
+    }.isEmpty && (
     plan.statistics.isBroadcastable ||
-        plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold
+        plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold)
   }
 
   def getMaxHashJoinSize(conf: SQLConf): Long = {
@@ -390,7 +396,10 @@ private[sql] object JoinStrategy {
   def allowsReplicatedJoin(plan: LogicalPlan): Boolean = {
     plan match {
       case PhysicalScan(_, _, child) => child match {
-        case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned
+        case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned && (t match {
+          case _: SamplingRelation => false
+          case _ => true
+        })
         case _: Filter | _: Project | _: LocalLimit => allowsReplicatedJoin(child.children.head)
         case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
           allowsReplicatedJoin(left) && allowsReplicatedJoin(right) &&
@@ -491,10 +500,15 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
     case _ => Nil
   }
 
-  def supportCodegen(aggregateExpressions: Seq[AggregateExpression]): Boolean = {
-    // ImperativeAggregate is not supported right now in code generation.
+  def supportsCodegen(aggregateExpressions: Seq[AggregateExpression],
+      resultExpressions: Seq[NamedExpression]): Boolean = {
+    planner.conf.wholeStageEnabled &&
+    // ImperativeAggregate is not supported in code generation.
     !aggregateExpressions.exists(_.aggregateFunction
-        .isInstanceOf[ImperativeAggregate])
+        .isInstanceOf[ImperativeAggregate]) &&
+    // aggregate and result expressions should be code-generated
+    !(aggregateExpressions ++ resultExpressions).exists(_.find(e => !e.isInstanceOf[Literal] &&
+        !e.foldable && e.isInstanceOf[CodegenFallback]).nonEmpty)
   }
 
   def planAggregateWithoutDistinct(
@@ -505,7 +519,7 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
       isRootPlan: Boolean): Seq[SparkPlan] = {
 
     // Check if we can use SnappyHashAggregateExec.
-    if (!supportCodegen(aggregateExpressions)) {
+    if (!supportsCodegen(aggregateExpressions, resultExpressions)) {
       return AggUtils.planAggregateWithoutDistinct(groupingExpressions,
         aggregateExpressions, resultExpressions, child)
     }
@@ -550,8 +564,7 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
     val finalAggregate = if (isRootPlan && groupingAttributes.isEmpty) {
       // Special CollectAggregateExec plan for top-level simple aggregations
       // which can be performed on the driver itself rather than an exchange.
-      CollectAggregateExec(basePlan = finalHashAggregate,
-        child = partialAggregate, output = finalHashAggregate.output)
+      CollectAggregateExec(partialAggregate)(finalHashAggregate)
     } else finalHashAggregate
     finalAggregate :: Nil
   }
@@ -565,7 +578,7 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
       child: SparkPlan): Seq[SparkPlan] = {
 
     // Check if we can use SnappyHashAggregateExec.
-    if (!supportCodegen(aggregateExpressions)) {
+    if (!supportsCodegen(aggregateExpressions, resultExpressions)) {
       return AggUtils.planAggregateWithOneDistinct(groupingExpressions,
         functionsWithDistinct, functionsWithoutDistinct,
         resultExpressions, child)
@@ -714,16 +727,6 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
 }
 
 /**
- * Rule to replace Spark's SortExec plans with an optimized SnappySortExec (in SMJ for now).
- */
-object OptimizeSortPlans extends Rule[SparkPlan] {
-  override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
-    case join@joins.SortMergeJoinExec(_, _, _, _, _, sort@SortExec(_, _, child, _)) =>
-      join.copy(right = SnappySortExec(sort, child))
-  }
-}
-
-/**
  * Rule to collapse the partial and final aggregates if the grouping keys
  * match or are superset of the child distribution. Also introduces exchange
  * when inserting into a partitioned table if number of partitions don't match.
@@ -802,7 +805,11 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
     else plan match {
       // TODO: disabled for StreamPlans due to issues but can it require fallback?
       case _: StreamPlan => plan
-      case _ => CodegenSparkFallback(plan)
+      case _: CollectAggregateExec => CodegenSparkFallback(plan, session)
+      case _ if !Property.TestDisableCodeGenFlag.get(session.sessionState.conf) ||
+       session.sessionState.conf.contains("snappydata.connection") =>
+        CodegenSparkFallback(plan, session)
+      case _ => plan
     }
   }
 
