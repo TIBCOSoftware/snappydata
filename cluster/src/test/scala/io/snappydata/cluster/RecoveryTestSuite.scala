@@ -21,7 +21,7 @@ import java.sql.{Connection, DriverManager, ResultSet, Statement, Timestamp}
 import java.util.Properties
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.sys.process.{Process, ProcessLogger, stderr, stdout, _}
 import scala.util.control.NonFatal
 
@@ -155,43 +155,43 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
       s"""
         CREATE TABLE $defaultSchema.tesst1coltab1 (
           col1 Int, col2 String, col3 Decimal
-        ) USING column options (buckets '1', COLUMN_MAX_DELTA_ROWS '4')""")
-    stmt.execute(s"insert into $defaultSchema.tesst1coltab1 values(1,'aaaa',2.2)")
-    stmt.execute(s"insert into $defaultSchema.tesst1coltab1 values(2,'bbbb',3.3)")
+        ) USING COLUMN OPTIONS (buckets '1', COLUMN_MAX_DELTA_ROWS '4')""")
+    stmt.execute(s"INSERT INTO $defaultSchema.tesst1coltab1 values(1,'aaaa',2.2)")
+    stmt.execute(s"INSERT INTO $defaultSchema.tesst1coltab1 values(2,'bbbb',3.3)")
 
-    stmt.execute(s"create view $defaultSchema.vw_tesst1coltab1 AS " +
-        s"(select * from $defaultSchema.tesst1coltab1)")
-    stmt.execute("create schema tapp")
+    stmt.execute(s"CREATE VIEW $defaultSchema.vw_tesst1coltab1 AS " +
+        s"(SELECT * FROM $defaultSchema.tesst1coltab1)")
+    stmt.execute("CREATE SCHEMA tapp")
 
     // empty column table & not null column
     // covers - empty buckets
-    stmt.execute("create table tapp.test1coltab2" +
-        " (col1 int, col2 int not null, col3 varchar(22) not null)" +
-        " using column options (BUCKETS '5', COLUMN_MAX_DELTA_ROWS '10')")
+    stmt.execute("CREATE TABLE tapp.test1coltab2" +
+        " (col1 int, col2 int NOT NULL, col3 varchar(22) NOT NULL)" +
+        " USING COLUMN OPTIONS (BUCKETS '5', COLUMN_MAX_DELTA_ROWS '10')")
 
     // empty row table & not null column
-    stmt.execute("create table tapp.test1rowtab3 (col1 int, col2 int not null, col3 varchar(22))" +
-        " using row options(PARTITION_BY 'col1', buckets '1')")
+    stmt.execute("CREATE TABLE tapp.test1rowtab3 (col1 int, col2 int NOT NULL, col3 varchar(22))" +
+        " USING ROW OPTIONS(PARTITION_BY 'col1', buckets '1')")
 
-    stmt.execute("create diskstore anotherdiskstore ('./testDS' 10240);")
+    stmt.execute("CREATE DISKSTORE anotherdiskstore ('./testDS' 10240);")
 
-    stmt.execute(s"create table $defaultSchema.test1coltab4 (col1 int not null," +
-        " col2 int not null) using column options(diskstore 'anotherdiskstore')")
-    stmt.execute(s"insert into $defaultSchema.test1coltab4 values(11,111)")
-    stmt.execute(s"insert into $defaultSchema.test1coltab4 values(333,33)")
-    stmt.execute(s"insert into $defaultSchema.test1coltab4 values(11,111)")
-    stmt.execute(s"insert into $defaultSchema.test1coltab4 values(333,33)")
+    stmt.execute(s"CREATE TABLE $defaultSchema.test1coltab4 (col1 int NOT NULL," +
+        " col2 int not null) USING COLUMN OPTIONS(diskstore 'anotherdiskstore')")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1coltab4 values(11,111)")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1coltab4 values(333,33)")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1coltab4 values(11,111)")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1coltab4 values(333,33)")
 
     // covers few empty buckets case
-    stmt.execute(s"create table $defaultSchema.test1rowtab5 (col1 int not null," +
+    stmt.execute(s"CREATE TABLE $defaultSchema.test1rowtab5 (col1 int NOT NULL," +
         " col2 String not null) using row" +
         " options(partition_by 'col1', buckets '22', diskstore 'anotherdiskstore')")
-    stmt.execute(s"insert into $defaultSchema.test1rowtab5 values(111,'adsf')")
-    stmt.execute(s"insert into $defaultSchema.test1rowtab5 values(2223,'zxcvxcv')")
-    stmt.execute(s"insert into $defaultSchema.test1rowtab5 values(111,'adsf')")
-    stmt.execute(s"insert into $defaultSchema.test1rowtab5 values(2223,'zxcvxcv')")
-    stmt.execute(s"insert into $defaultSchema.test1rowtab5 values(111,'adsf')")
-    stmt.execute(s"insert into $defaultSchema.test1rowtab5 values(2223,'zxcvxcv')")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1rowtab5 values(111,'adsf')")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1rowtab5 values(2223,'zxcvxcv')")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1rowtab5 values(111,'adsf')")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1rowtab5 values(2223,'zxcvxcv')")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1rowtab5 values(111,'adsf')")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1rowtab5 values(2223,'zxcvxcv')")
 
 
     val udfText: String = "public class IntegerUDF implements " +
@@ -209,27 +209,27 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
 
 
     // nulls in data - row table
-    stmt.execute(s"create table $defaultSchema.test1rowtab6 (col1 int, col2 string, col3 float," +
+    stmt.execute(s"CREATE TABLE $defaultSchema.test1rowtab6 (col1 int, col2 string, col3 float," +
         s" col4 short, col5 boolean) using row")
-    stmt.execute(s"insert into $defaultSchema.test1rowtab6 values (null,'adsf',null, 12, 0)")
-    stmt.execute(s"insert into $defaultSchema.test1rowtab6 values" +
+    stmt.execute(s"INSERT INTO $defaultSchema.test1rowtab6 VALUES(null,'adsf',null, 12, 0)")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1rowtab6 values" +
         s" (null,'xczadsf',232.1222, 11, null)")
-    stmt.execute(s"insert into $defaultSchema.test1rowtab6 values" +
+    stmt.execute(s"INSERT INTO $defaultSchema.test1rowtab6 values" +
         s" (null,null,333.333, null, 'true')")
 
     // data only in column batches - not in row buffers - nulls in data - column table
-    stmt.execute(s"create table $defaultSchema.test1coltab7 (col1 Bigint, col2 varchar(44), col3" +
-        s" double,col4 byte,col5 date)using column options(buckets '2',COLUMN_MAX_DELTA_ROWS '3')")
-    stmt.execute(s"insert into $defaultSchema.test1coltab7 values (9123372036812312307, 'asdfwerq334',123.123324, 12,'2019-03-20')")
-    stmt.execute(s"insert into $defaultSchema.test1coltab7 values (null, 'qewrqewr4',345.123324, 11,'2019-03-21')")
-    stmt.execute(s"insert into $defaultSchema.test1coltab7 values (8123372036812312307, 'asdfwerq334',null, null, null)")
+    stmt.execute(s"CREATE TABLE $defaultSchema.test1coltab7 (col1 Bigint, col2 varchar(44), col3" +
+        s" double,col4 byte,col5 date)USING COLUMN OPTIONS(buckets '2',COLUMN_MAX_DELTA_ROWS '3')")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1coltab7 VALUES(9123372036812312307, 'asdfwerq334',123.123324, 12,'2019-03-20')")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1coltab7 VALUES(null, 'qewrqewr4',345.123324, 11,'2019-03-21')")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1coltab7 VALUES(8123372036812312307, 'asdfwerq334',null, null, null)")
 
     // data in only row buffer of column table - nulls in data
-    stmt.execute(s"create table $defaultSchema.test1coltab8 (col1 Bigint, col2 varchar(44), col3" +
-        s" double,col4 byte,col5 date)using column options(BUCKETS '5',COLUMN_MAX_DELTA_ROWS '4')")
-    stmt.execute(s"insert into $defaultSchema.test1coltab8 values (9123372036812312307, null,123.123324, 12,null)")
-    stmt.execute(s"insert into $defaultSchema.test1coltab8 values (8123372036812312307, 'qewrwr4',345.123324, 11,'2019-03-21')")
-    stmt.execute(s"insert into $defaultSchema.test1coltab8 values (null, null,null, null, null)")
+    stmt.execute(s"CREATE TABLE $defaultSchema.test1coltab8 (col1 Bigint, col2 varchar(44), col3" +
+        s" double,col4 byte,col5 date)USING COLUMN OPTIONS(BUCKETS '5',COLUMN_MAX_DELTA_ROWS '4')")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1coltab8 VALUES(9123372036812312307, null,123.123324, 12,null)")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1coltab8 VALUES(8123372036812312307, 'qewrwr4',345.123324, 11,'2019-03-21')")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1coltab8 VALUES(null, null,null, null, null)")
 
     writeToFile("1,aaaa,11.11\n2,bbbb,222.2\n333,ccccc,333.33", "/tmp/test1_exttab1.csv")
     stmt.execute("create external table test1_exttab1 using csv" +
@@ -500,8 +500,8 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     var i = 0
 
     // todo : Refactor the code. Reuse variables where possible
-    val rs1 = stmtRec.executeQuery("select * from gemfire10.tesst1coltab1 order by col1")
-    logDebug("=== select * from tesst1coltab1 ===\n")
+    val rs1 = stmtRec.executeQuery("SELECT * FROM gemfire10.tesst1coltab1 ORDER BY col1")
+    logDebug("=== SELECT * FROM tesst1coltab1 ===\n")
     str.clear()
     arrBuf.clear()
     i = 0
@@ -513,8 +513,8 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
     rs1.close()
 
-    val rs5 = stmtRec.executeQuery("select * from tapp.test1coltab2")
-    logDebug("select * from tapp.test1coltab2")
+    val rs5 = stmtRec.executeQuery("SELECT * FROM tapp.test1coltab2")
+    logDebug("SELECT * FROM tapp.test1coltab2")
     str.clear()
     while (rs5.next()) {
       str ++= s"${rs5.getInt(2)}\t"
@@ -523,8 +523,8 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     rs5.close()
 
 
-    val rs6 = stmtRec.executeQuery("select * from tapp.test1rowtab3")
-    logDebug("select * from tapp.test1rowtab3")
+    val rs6 = stmtRec.executeQuery("SELECT * FROM tapp.test1rowtab3")
+    logDebug("SELECT * FROM tapp.test1rowtab3")
     str.clear()
     while (rs6.next()) { // should not go in the loop as the table is empty.
       str ++= s"${rs6.getInt(2).toString}"
@@ -552,8 +552,8 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     )
     rs2.close()
 
-    rs2 = stmtRec.executeQuery(s"show create table $tempTab")
-    logDebug(s"=== show create table $tempTab")
+    rs2 = stmtRec.executeQuery(s"show CREATE TABLE $tempTab")
+    logDebug(s"=== show CREATE TABLE $tempTab")
     str.clear()
     while (rs2.next()) {
       str ++= s"${rs2.getString(1)}\t"
@@ -597,8 +597,8 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     rs4.close()
 
     // custom diskstore test - column table
-    rs4 = stmtRec.executeQuery("select * from gemfire10.test1coltab4")
-    println("select * from gemfire10.test1coltab4;")
+    rs4 = stmtRec.executeQuery("SELECT * FROM gemfire10.test1coltab4")
+    println("SELECT * FROM gemfire10.test1coltab4;")
     while (rs4.next()) {
       // todo finish this
       s"${rs4.getInt(2).toString} ${rs4.getInt(2).toString}"
@@ -619,7 +619,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     rs4.close()
 
     // query view
-    rs4 = stmtRec.executeQuery("select col1,* from gemfire10.vw_tesst1coltab1 order by 1")
+    rs4 = stmtRec.executeQuery("select col1,* from gemfire10.vw_tesst1coltab1 ORDER BY 1")
     println("=== view : vw_tesst1coltab1===")
     arrBuf.clear()
     i = 0
@@ -632,8 +632,8 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     rs4.close()
 
     // custom diskstore test - row row table // todo : put proper assertion stmts
-    var rstest1rowtab5 = stmtRec.executeQuery("select * from gemfire10.test1rowtab5")
-    println("select * from gemfire10.test1rowtab5;")
+    var rstest1rowtab5 = stmtRec.executeQuery("SELECT * FROM gemfire10.test1rowtab5")
+    println("SELECT * FROM gemfire10.test1rowtab5;")
     while (rstest1rowtab5.next()) {
       println(s"row : ${rstest1rowtab5.getInt(1)}    ${rstest1rowtab5.getString(2)}")
     }
@@ -649,7 +649,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
     rs4.close()
 
-    rs4 = stmtRec.executeQuery("select col1, col2, col3, col4, col5 from gemfire10.test1coltab7 order by col1")
+    rs4 = stmtRec.executeQuery("select col1, col2, col3, col4, col5 from gemfire10.test1coltab7 ORDER BY col1")
     arrBuf.clear()
     i = 0
     arrBuf ++= ArrayBuffer("NULL,qewrqewr4,345.123324,11,2019-03-21", "8123372036812312307,asdfwerq334,NULL,NULL,NULL",
@@ -665,7 +665,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
     rs4.close()
 
-    rs4 = stmtRec.executeQuery("select * from gemfire10.test1coltab8 order by col1")
+    rs4 = stmtRec.executeQuery("SELECT * FROM gemfire10.test1coltab8 ORDER BY col1")
     arrBuf.clear()
     i = 0
     arrBuf ++= ArrayBuffer("9123372036812312307,null,123.123324,12,null", "8123372036812312307,qewrwr4,345.123324,11,2019-03-21", "null,null,null,null,null")
@@ -691,6 +691,110 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     // todo: with different file systems - hdfs, s3
     test_status = true
   }
+
+  def compareResultSet(fqtn: String, resultSet: ResultSet, isRecoveredDataRS: Boolean): Unit = {
+    val tableName = fqtn.replace(".", "_")
+    val dir = new File(workDirPath + File.separator + tableName)
+    if (!dir.exists() && !isRecoveredDataRS) {
+      dir.mkdir()
+    }
+    if (isRecoveredDataRS && !dir.exists()) {
+      // Since the directory is created every time in regular mode and re-used
+      // in recovery mode and deleted after the comparison.
+      throw new Exception(s"Directory for $tableName is not expected to exist.")
+    }
+    val stringBuilder = new mutable.StringBuilder()
+    val filePathOrg = dir.getAbsoluteFile + File.separator + tableName + "_ORG.txt"
+    val filePathRec = dir.getAbsoluteFile + File.separator + tableName + "_RECOVERED.txt"
+    if (!isRecoveredDataRS) {
+      logInfo(s"PP:creating org file at $filePathOrg")
+      val colCount = resultSet.getMetaData.getColumnCount
+      while (resultSet.next()) {
+        stringBuilder.clear()
+        (1 until colCount).foreach(i => {
+          resultSet.getObject(i) match {
+            case clob: ClientClob =>
+              stringBuilder ++= s"${
+                clob
+                    .getSubString(1L, clob.length().toInt)
+              },"
+            case _ =>
+              stringBuilder ++= s"${resultSet.getObject(i)},"
+          }
+        })
+        resultSet.getObject(colCount) match {
+          case clob: ClientClob =>
+            stringBuilder ++= s"${
+              clob.getSubString(1L, clob.length().toInt)
+            }"
+          case _ =>
+            stringBuilder ++= s"${resultSet.getObject(colCount)}"
+        }
+        // todo: can be improved using batching 100 rows
+        writeToFile(stringBuilder.toString(), filePathOrg, true)
+      }
+    } else {
+      logInfo(s"PP:creating rec file at $filePathRec")
+      val colCount: Int = resultSet.getMetaData.getColumnCount
+      while (resultSet.next()) {
+        stringBuilder.clear()
+        (1 until colCount).foreach(i => {
+          resultSet.getObject(i) match {
+            case clob: ClientClob =>
+              stringBuilder ++= s"${
+                clob
+                    .getSubString(1L, clob.length().toInt)
+              },"
+            case _ =>
+              stringBuilder ++= s"${resultSet.getObject(i)},"
+          }
+        })
+        resultSet.getObject(colCount) match {
+          case clob: ClientClob =>
+            stringBuilder ++= s"${
+              clob.getSubString(1L, clob.length().toInt)
+            }"
+          case _ =>
+            stringBuilder ++= s"${resultSet.getObject(colCount)}"
+        }
+        logInfo(s"PP: string added: ${stringBuilder.toString()}")
+
+        // todo: can be improved using batching 100 rows
+        writeToFile(stringBuilder.toString(), filePathRec, true)
+      }
+      //      val cmd = s"comm -3 $filePathOrg $filePathRec"
+      //      val diffRes = cmd.!! // todo won't work on windows. Should be done in code.!?
+      //      assert(diffRes.length === 0, "Recovered data does not match the original data.")
+
+      //       delete the directory after the job is done.
+      //          dir.listFiles().foreach(file => file.delete())
+      //          if(dir.listFiles().length == 0) dir.delete()
+    }
+    /*
+
+// create a file - gemfire10_test3tab1_org.txt
+// compareFiles(fqtn= "", resultSet = rs, recovered_data = false)
+0. create a dir for the table - db_table_dir if doesn't exist
+  1. if recovered data is false that means - orginal data
+  2. create a file for org data
+  3. write rs to file
+4. exit
+
+
+in recovered mode
+// compareFiles(fqtn= "", resultSet = rsRecovered, recovered_data = true)
+0. check if db_table_dir exists... if not something is wrong... throw excpetion
+1. if recovered data is true -
+2. create a recovery data file
+3. write rsRecovered to file
+4. use diff linux command to check difference or something else
+5. use assertion
+6. delete the directory
+7. exit
+
+*/
+  }
+
 
   test("test3 - All Data types at high volume") {
     // Focused particularly on checking if all data types can be
@@ -730,30 +834,30 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
 
     //    todo:  add binary and blob
     stmt.execute(
-      s"""create table gemfire10.test3tab1
-            (col1 BIGINT not null, col2 INT not null, col3 INTEGER not null,
-             col4 long not null, col5 short not null, col6 smallint not null,
-                col7 byte not null, c1 tinyint not null, c2 varchar(22) not null,
-                 c3 string not null, c5 boolean not null,c6 double not null, c8 timestamp not null,
-                  c9 date not null, c10 decimal(15,5) not null, c11 numeric(20,10) not null,
-                   c12 float not null,c13 real not null) using column
-                options (buckets '5', COLUMN_MAX_DELTA_ROWS '135');
+      s"""CREATE TABLE gemfire10.test3tab1
+            (col1 BIGINT NOT NULL, col2 INT NOT NULL, col3 INTEGER NOT NULL,
+             col4 long NOT NULL, col5 short NOT NULL, col6 smallint NOT NULL,
+                col7 byte NOT NULL, c1 tinyint NOT NULL, c2 varchar(22) NOT NULL,
+                 c3 string NOT NULL, c5 boolean NOT NULL,c6 double NOT NULL, c8 timestamp NOT NULL,
+                  c9 date NOT NULL, c10 decimal(15,5) NOT NULL, c11 numeric(20,10) NOT NULL,
+                   c12 float NOT NULL,c13 real not null) USING OOLUMN
+                OPTIONS (buckets '5', COLUMN_MAX_DELTA_ROWS '135');
                 """)
 
     stmt.execute(
-      s"""insert into gemfire10.test3tab1 values (9123372036854775807,2117483647,2116483647,
+      s"""INSERT INTO gemfire10.test3tab1 VALUES(9123372036854775807,2117483647,2116483647,
                   8223372036854775807,72,13,5,5,'qwerqwerqwer','qewrqewr',false,912384020490234.91928374997239749824,
                   '2019-02-18 15:31:55.333','2019-02-18',2233.67234,4020490234.7239749824,
                   912384020490234.91928374997239749824,920490234.9192837499724)""".stripMargin)
 
-    stmt.execute("insert into gemfire10.test3tab1 select id*100000000000000,id,id*100000000,id*100000000000000,id,id, cast(id as byte), cast(id as tinyint), cast(concat('var',id) as varchar(22)),  cast(concat('str',id) as string), cast(id%2 as Boolean), cast((id*701*7699 + id*1342341*2267)/2 as double), CURRENT_TIMESTAMP, CURRENT_DATE, cast(id*241/11 as Decimal(15,5)), cast(id*701/11 as Numeric(20,10)), cast(concat(id*100,'.',(id+1)*7699) as float), cast(concat(id*100000000000,'.',(id+1)*2267*7699) as real) from range(500);")
+    stmt.execute("INSERT INTO gemfire10.test3tab1 select id*100000000000000,id,id*100000000,id*100000000000000,id,id, cast(id as byte), cast(id as tinyint), cast(concat('var',id) as varchar(22)),  cast(concat('str',id) as string), cast(id%2 as Boolean), cast((id*701*7699 + id*1342341*2267)/2 as double), CURRENT_TIMESTAMP, CURRENT_DATE, cast(id*241/11 as Decimal(15,5)), cast(id*701/11 as Numeric(20,10)), cast(concat(id*100,'.',(id+1)*7699) as float), cast(concat(id*100000000000,'.',(id+1)*2267*7699) as real) from range(500);")
 
 
     //    todo: add not null here AND add binary and blob
-    val rsTest3tab1 = stmt.executeQuery("select * from gemfire10.test3tab1 order by col2")
+    val rsTest3tab1 = stmt.executeQuery("SELECT * FROM gemfire10.test3tab1 ORDER BY col2")
     compareResultSet("gemfire10.test3tab1", rsTest3tab1, false)
     stmt.execute(
-      s"""create table gemfire10.test3tab2
+      s"""CREATE TABLE gemfire10.test3tab2
                 (col1 BIGINT , col2 INT , col3 INTEGER , col4 long ,
                  col5 short , col6 smallint , col7 byte , c1 tinyint ,
                   c2 varchar(22) , c3 string , c5 boolean  ,c6 double ,
@@ -766,7 +870,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
 
     /*
         stmt.execute(
-          s"""create table gemfire10.test3tab2
+          s"""CREATE TABLE gemfire10.test3tab2
                 (col1 BIGINT , col2 INT , col3 INTEGER , col4 long ,
                  col5 short , col6 smallint , col7 byte , c1 tinyint ,
                   c2 varchar(22) , c3 string , c5 boolean ,c6 double ,
@@ -776,13 +880,13 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
                      """)
     */
     stmt.execute(
-      s"""insert into gemfire10.test3tab2 values (9123372036854775807,2117483647,2116483647,
+      s"""INSERT INTO gemfire10.test3tab2 VALUES(9123372036854775807,2117483647,2116483647,
                   8223372036854775807,72,13,5,5,'qwerqwerqwer','qewrqewr',false,912384020490234.91928374997239749824,
                   '2019-02-18 15:31:55.333','2019-02-18',2233.67234,4020490234.7239749824,
                   912384020490234.91928374997239749824,920490234.9192837499724)""".stripMargin)
 
     stmt.execute(
-      s"""insert into gemfire10.test3tab2 select id*100000000000000,id,id*100000000,id*100000000000000,id,id,
+      s"""INSERT INTO gemfire10.test3tab2 select id*100000000000000,id,id*100000000,id*100000000000000,id,id,
          | cast(id as byte),
          | cast(id as tinyint), cast(concat('var',id) as varchar(22)),  cast(concat('str',id) as string),
          |  cast(id%2 as Boolean), cast((id*701*7699 + id*1342341*2267)/2 as double), CURRENT_TIMESTAMP,
@@ -792,7 +896,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
          |     """.stripMargin)
 
 
-    val rsTest3tab2 = stmt.executeQuery("select * from gemfire10.test3tab2 order by col2")
+    val rsTest3tab2 = stmt.executeQuery("SELECT * FROM gemfire10.test3tab2 ORDER BY col2")
     compareResultSet("gemfire10.test3tab2", rsTest3tab2, false)
 
     // -- check replicated row table
@@ -800,7 +904,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     /*
      //    todo: add not null here AND add binary and blob
    stmt.execute(
-          s"""create table gemfire10.test3Reptab2
+          s"""CREATE TABLE gemfire10.test3Reptab2
                 (col1 BIGINT , col2 INT , col3 INTEGER ,col4 long ,
                  col5 short , col6 smallint , col7 byte , c1 tinyint ,
                   c2 varchar(22) , c3 string , c5 boolean , c6 double ,
@@ -811,7 +915,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     */
 
     stmt.execute(
-      s"""create table gemfire10.test3Reptab2
+      s"""CREATE TABLE gemfire10.test3Reptab2
             (col1 BIGINT , col2 INT , col3 INTEGER ,col4 long ,
              col5 short , col6 smallint , col7 byte , c1 tinyint ,
               c2 varchar(22) , c3 string , c5 boolean , c6 double ,
@@ -820,7 +924,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
                  options ();
                  """)
     stmt.execute(
-      s"""insert into gemfire10.test3Reptab2
+      s"""INSERT INTO gemfire10.test3Reptab2
                   select id*100000000000000, id, id*100000000, id*100000000000000,
                   id, id, cast(id as byte), cast(id as tinyint), cast(concat('var',id) as varchar(22)),
                   cast(concat('str',id) as string), cast(id%2 as Boolean),
@@ -830,67 +934,67 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
                   cast(concat(id*100000000000,'.',(id+1)*2267*7699) as real) from range(4);
                  """.stripMargin)
 
-    val rsTest3Reptab2 = stmt.executeQuery("select * from gemfire10.test3Reptab2 order by col2")
+    val rsTest3Reptab2 = stmt.executeQuery("SELECT * FROM gemfire10.test3Reptab2 ORDER BY col2")
     compareResultSet("gemfire10.test3Reptab2", rsTest3Reptab2, false)
 
     // enable once support is added for primary key and binary,clob,blob
     // 3. Random mix n match data types
-    //    stmt.execute("create table test3tab3 (col1 binary, col2 clob, col3 blob, col4 varchar(44), col5 int, primary key (col5)) using row")
-    //    stmt.execute("insert into test3tab3 select cast('a' as binary), cast('b' as clob), cast('1' as blob), 'adsf', 123")
+    //    stmt.execute("CREATE TABLE test3tab3 (col1 binary, col2 clob, col3 blob, col4 varchar(44), col5 int, primary key (col5)) using row")
+    //    stmt.execute("INSERT INTO test3tab3 select cast('a' as binary), cast('b' as clob), cast('1' as blob), 'adsf', 123")
 
     // with option - key_columns
-    stmt.execute("create table test3coltab4 (col1 int, col2 string, col3 float) using column options (key_columns 'col1')")
-    stmt.execute("insert into test3coltab4 values (1,'aaa',123.122)")
-    stmt.execute("insert into test3coltab4 values (2,'bbb',4444.55)")
+    stmt.execute("CREATE TABLE test3coltab4 (col1 int, col2 string, col3 float) USING COLUMN OPTIONS (key_columns 'col1')")
+    stmt.execute("INSERT INTO test3coltab4 VALUES(1,'aaa',123.122)")
+    stmt.execute("INSERT INTO test3coltab4 VALUES(2,'bbb',4444.55)")
 
     // row table - not null columns todo: add not null here
-    stmt.execute("create table test3rowtab5 (col1 FloaT, col2 TIMEstamp, col3 BOOLEAN , col4 varchar(1) , col5 integer ) using row")
-    stmt.execute("insert into test3rowtab5 values (123.12321, '2019-02-18 15:31:55.333', 0, 'a',12)")
-    stmt.execute("insert into test3rowtab5 values (222.12321, '2019-02-18 16:31:56.333', 0, 'b',13)")
-    stmt.execute("insert into test3rowtab5 values (3333.12321, '2019-02-18 17:31:57.333', 'true', 'c',14)")
+    stmt.execute("CREATE TABLE test3rowtab5 (col1 FloaT, col2 TIMEstamp, col3 BOOLEAN , col4 varchar(1) , col5 integer ) using row")
+    stmt.execute("INSERT INTO test3rowtab5 VALUES(123.12321, '2019-02-18 15:31:55.333', 0, 'a',12)")
+    stmt.execute("INSERT INTO test3rowtab5 VALUES(222.12321, '2019-02-18 16:31:56.333', 0, 'b',13)")
+    stmt.execute("INSERT INTO test3rowtab5 VALUES(3333.12321, '2019-02-18 17:31:57.333', 'true', 'c',14)")
 
-    stmt.execute("create table test3coltab6 (col1 BIGINT, col2 tinyint, col3 BOOLEAN) using column")
-    stmt.execute("insert into test3coltab6 values (100000000000001, 5, true)")
-    stmt.execute("insert into test3coltab6 values (200000000000001, 4, true)")
-    stmt.execute("insert into test3coltab6 values (300000000000001, 3, false)")
+    stmt.execute("CREATE TABLE test3coltab6 (col1 BIGINT, col2 tinyint, col3 BOOLEAN) using column")
+    stmt.execute("INSERT INTO test3coltab6 VALUES(100000000000001, 5, true)")
+    stmt.execute("INSERT INTO test3coltab6 VALUES(200000000000001, 4, true)")
+    stmt.execute("INSERT INTO test3coltab6 VALUES(300000000000001, 3, false)")
 
     // column table - not null columns todo: add not null here
-    stmt.execute("create table test3coltab7 (col1 decimal(15,9), col2 float , col3 BIGint, col4 date, col5 string ) using column")
-    stmt.execute("insert into test3coltab7 values (891012.312321314, 1434124.123434134, 193471498234123, '2019-02-18', 'ZXcabcdefg')")
-    stmt.execute("insert into test3coltab7 values (91012.312321314, 34124.12343413, 243471498234123, '2019-04-18', 'qewrabcdefg')")
-    stmt.execute("insert into test3coltab7 values (1012.312321314, 4124.1234341, 333471498234123, '2019-03-18', 'adfcdefg')")
+    stmt.execute("CREATE TABLE test3coltab7 (col1 decimal(15,9), col2 float , col3 BIGint, col4 date, col5 string ) using column")
+    stmt.execute("INSERT INTO test3coltab7 VALUES(891012.312321314, 1434124.123434134, 193471498234123, '2019-02-18', 'ZXcabcdefg')")
+    stmt.execute("INSERT INTO test3coltab7 VALUES(91012.312321314, 34124.12343413, 243471498234123, '2019-04-18', 'qewrabcdefg')")
+    stmt.execute("INSERT INTO test3coltab7 VALUES(1012.312321314, 4124.1234341, 333471498234123, '2019-03-18', 'adfcdefg')")
 
     // todo: Paresh: the peculiar case
-    stmt.execute("create table test3rowtab8 (col1 string, col2 int, col3 varchar(33), col4 boolean, col5 float);")
-    stmt.execute("insert into test3rowtab8 values ('qewradfs',111, 'asdfqewr', true, 123.1234);")
-    stmt.execute("insert into test3rowtab8 values ('adsffs',222, 'vzxcqewr', true, 4745.345345);")
-    stmt.execute("insert into test3rowtab8 values ('xzcvadfs',444, 'zxcvzv', false, 78768.34);")
+    stmt.execute("CREATE TABLE test3rowtab8 (col1 string, col2 int, col3 varchar(33), col4 boolean, col5 float);")
+    stmt.execute("INSERT INTO test3rowtab8 VALUES('qewradfs',111, 'asdfqewr', true, 123.1234);")
+    stmt.execute("INSERT INTO test3rowtab8 VALUES('adsffs',222, 'vzxcqewr', true, 4745.345345);")
+    stmt.execute("INSERT INTO test3rowtab8 VALUES('xzcvadfs',444, 'zxcvzv', false, 78768.34);")
 
     stmt.execute(
-      """create table gemfire10.test3rowtab9
+      """CREATE TABLE gemfire10.test3rowtab9
                                (col1 BIGINT , col2 INT , col3 INTEGER ,col4 long ,
                                 col5 short , col6 smallint , col7 byte , c1 tinyint ,
                                  c2 varchar(22) , c3 string , c5 boolean , c6 double ,
                                       c8 timestamp , c9 date , c10 decimal(15,5) ,
-                                       c11 numeric(20,10) , c12 float ,c13 real ) using row options()""")
+                                       c11 numeric(20,10) , c12 float ,c13 real ) USING ROW OPTIONS()""")
 
     stmt.execute(
-      """ insert into gemfire10.test3rowtab9 values (null,null,null,
+      """ INSERT INTO gemfire10.test3rowtab9 VALUES(null,null,null,
                    null,null,null,null,null,null,null,null,null,
                    null,null,null,null,
                    null,null)""")
 
     stmt.execute(
-      """create table gemfire10.test3coltab10
+      """CREATE TABLE gemfire10.test3coltab10
                                (col1 BIGINT , col2 INT , col3 INTEGER ,col4 long ,
                                 col5 short , col6 smallint , col7 byte , c1 tinyint ,
                                  c2 varchar(22) , c3 string , c5 boolean , c6 double ,
                                     c8 timestamp , c9 date , c10 decimal(15,5) ,
                                     c11 numeric(20,10) , c12 float ,c13 real )
-                                    using column options(buckets '2',COLUMN_MAX_DELTA_ROWS '3')""")
+                                    USING COLUMN OPTIONS(buckets '2',COLUMN_MAX_DELTA_ROWS '3')""")
 
     stmt.execute(
-      """insert into gemfire10.test3coltab10 values (null,null,null,
+      """INSERT INTO gemfire10.test3coltab10 VALUES(null,null,null,
                    null,null,null,null,null,null,null,null,null,
                    null,null,null,null,
                    null,null);""")
@@ -912,7 +1016,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     connRec = getConn(locNetPort, "gemfire10", "gemfire10")
     stmtRec = connRec.createStatement()
 
-    var rs1 = stmtRec.executeQuery("select * from gemfire10.test3tab1 where col1 = 9123372036854775807")
+    var rs1 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3tab1 where col1 = 9123372036854775807")
 
     if (rs1.next()) {
       assert(rs1.getLong(1) === 9123372036854775807L)
@@ -938,12 +1042,12 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
     rs1.close()
 
-    rs1 = stmtRec.executeQuery("select * from gemfire10.test3tab1 order by col2")
+    rs1 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3tab1 ORDER BY col2")
     compareResultSet("gemfire10.test3tab1", rs1, true)
     rs1.close()
 
 
-    var rs2 = stmtRec.executeQuery("select * from gemfire10.test3tab2 where col1 = 9123372036854775807")
+    var rs2 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3tab2 where col1 = 9123372036854775807")
     if (rs2.next()) {
       assert(rs2.getLong(1) === 9123372036854775807L)
       assert(rs2.getInt(2) === 2117483647)
@@ -967,8 +1071,8 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
     rs2.close()
 
-    rs2 = stmtRec.executeQuery("select * from gemfire10.test3tab2 order by col2")
-    val temprs3 = stmtRec.executeQuery("select * from gemfire10.test3tab2 order by col2")
+    rs2 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3tab2 ORDER BY col2")
+    val temprs3 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3tab2 ORDER BY col2")
     logInfo(s"PP: test: temprs3: ")
     while (temprs3.next()) {
       logInfo("PP:" + temprs3.getLong(1))
@@ -995,7 +1099,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
 
     // val rs3 = stmtRec.executeQuery("select col1, col2, col3 from gemfire10.test3tab3").. enable with the create stmt
 
-      val rs4 = stmtRec.executeQuery("select col1, col2, col3 from gemfire10.test3coltab4 order by col1")
+    val rs4 = stmtRec.executeQuery("select col1, col2, col3 from gemfire10.test3coltab4 ORDER BY col1")
     arrBuf.clear()
     i = 0
     arrBuf ++= ArrayBuffer("1,aaa,123.122", "2,bbb,4444.55")
@@ -1007,7 +1111,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
     rs4.close()
 
-    val rs5 = stmtRec.executeQuery("select col1, col3, col2 from gemfire10.test3coltab6 order by col1")
+    val rs5 = stmtRec.executeQuery("select col1, col3, col2 from gemfire10.test3coltab6 ORDER BY col1")
     arrBuf.clear()
     i = 0
     arrBuf ++= ArrayBuffer("100000000000001,5,true", "200000000000001,4,true", "300000000000001,3,false")
@@ -1020,7 +1124,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
 
 
     var rs6 = stmtRec.executeQuery("select count(*) rcount, c5 from gemfire10.test3tab1" +
-        " group by c5 having c5 = true order by c5;")
+        " group by c5 having c5 = true ORDER BY c5;")
     str.clear()
     while (rs6.next()) {
       str ++= s"${rs6.getInt("rcount")},${rs6.getBoolean("c5")}"
@@ -1041,12 +1145,12 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
     rs7.close()
 
-    rs7 = stmtRec.executeQuery("select * from gemfire10.test3Reptab2 order by col2;")
+    rs7 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3Reptab2 ORDER BY col2;")
     compareResultSet("gemfire10.test3Reptab2", rs7, true)
     rs7.close()
 
 
-    rs7 = stmtRec.executeQuery("select * from gemfire10.test3coltab7 order by col3;")
+    rs7 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3coltab7 ORDER BY col3;")
     arrBuf.clear()
     i = 0
     arrBuf ++= ArrayBuffer("891012.312321314,1434124.1,193471498234123,2019-02-18,ZXcabcdefg", "91012.312321314,34124.125,243471498234123,2019-04-18,qewrabcdefg", "1012.312321314,4124.1235,333471498234123,2019-03-18,adfcdefg")
@@ -1056,7 +1160,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
     rs7.close()
 
-    rs7 = stmtRec.executeQuery("select * from gemfire10.test3rowtab8 order by col2;")
+    rs7 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3rowtab8 ORDER BY col2;")
     // add assert stmt
     arrBuf.clear()
     i = 0
@@ -1075,40 +1179,35 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     test_status = true
   }
 
-  /*
-    test("test2 - Does all basic tests in non-secure mode(without LDAP).") {
-      // although ldap server is started before all, if ldap properties are not passed to conf,
-      // it should work in non-secure mode.
-      // basicOperationSetSnappyCluster can be used
-      // multiple VMs - multiple servers - like real world scenario
+  test("test2 - Does all basic tests in non-secure mode(without LDAP).") {
+    // although ldap server is started before all, if ldap properties are not passed to conf,
+    // it should work in non-secure mode.
+    // basicOperationSetSnappyCluster can be used
+    // multiple VMs - multiple servers - like real world scenario
 
 
-      // check for row and column type
-      // check if all the contents that are expected to be available to user is present for user to choose
+    // check for row and column type
+    // check if all the contents that are expected to be available to user is present for user to choose
 
-      // After the cluster has come up and ready to be used by user.
-      // check if all procedures available to user is working fine
+    // After the cluster has come up and ready to be used by user.
+    // check if all procedures available to user is working fine
     test_status = true
-    }
+  }
 
+  test("test4 - When partial cluster is not available/corrupted/deleted") {
+    // check for row and column type
 
-
-    test("test4 - When partial cluster is not available/corrupted/deleted") {
-      // check for row and column type
-
-      // 1. what if one of diskstores is deleted - not available.
-      // 2. what if some .crf files are missing
-      // 3. what if some .drf files are missing
-      // 4. what if some .krf files are missing
+    // 1. what if one of diskstores is deleted - not available.
+    // 2. what if some .crf files are missing
+    // 3. what if some .drf files are missing
+    // 4. what if some .krf files are missing
 
     test_status = true
-    }
-
-*/
+  }
 
   test("test5 -Recovery procedures / Data export performance check") {
 
-    //todo: Should be able to recover data and export to S3, hdfs, nfs and local file systems.
+    // todo: Should be able to recover data and export to S3, hdfs, nfs and local file systems.
     //    Check performance with large volume of data.
     //    Should be able to export into all spark supported formats
     //    Should be able to select table names and also be able to give “all tables” option.
@@ -1141,51 +1240,51 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     stmt = conn.createStatement()
     val rowNum = 500
 
-    stmt.execute("create table test5coltab1 (col1 float, col2 int, col3 string,col4 date," +
-        " col5 tinyint) using column options(buckets '1')")
-    stmt.execute("insert into test5coltab1 select id*433/37, id, concat('str_',id)," +
+    stmt.execute("CREATE TABLE test5coltab1 (col1 float, col2 int, col3 string,col4 date," +
+        " col5 tinyint) USING COLUMN OPTIONS(buckets '1')")
+    stmt.execute("INSERT INTO test5coltab1 select id*433/37, id, concat('str_',id)," +
         s" '2019-03-18', id%5 from range($rowNum);")
 
-    stmt.execute("create table test5coltab2 (col1 float, col2 bigint, col3 varchar(99)," +
-        " col4 date, col5 byte, col6 short) using column options(buckets '6')")
-    stmt.execute("insert into test5coltab2 select cast(id*433/37 as float),id*999999, concat('str_',id)," +
+    stmt.execute("CREATE TABLE test5coltab2 (col1 float, col2 bigint, col3 varchar(99)," +
+        " col4 date, col5 byte, col6 short) USING COLUMN OPTIONS(buckets '6')")
+    stmt.execute("INSERT INTO test5coltab2 select cast(id*433/37 as float),id*999999, concat('str_',id)," +
         s" '2019-03-18', cast(id as tinyint), id%32 from range(${rowNum * 100})")
 
-    stmt.execute("create table test5rowtab3 (col1 float , col2 int, col3 string ,col4 date," +
-        " col5 tinyint) using row options(partition_by 'col2,col5', buckets '1')")
-    stmt.execute("insert into test5rowtab3 select id*433/37, id, concat('str_',id)," +
+    stmt.execute("CREATE TABLE test5rowtab3 (col1 float , col2 int, col3 string ,col4 date," +
+        " col5 tinyint) USING ROW OPTIONS(partition_by 'col2,col5', buckets '1')")
+    stmt.execute("INSERT INTO test5rowtab3 select id*433/37, id, concat('str_',id)," +
         s" '2019-03-18', id%5 from range($rowNum);")
 
-    stmt.execute("create table gemfire10.test5rowtab4 (col1 float, col2 bigint , col3 varchar(99)," +
+    stmt.execute("CREATE TABLE gemfire10.test5rowtab4 (col1 float, col2 bigint , col3 varchar(99)," +
         " col4 date , col5 byte, col6 short) using row" +
         " options(partition_by 'col2,col6', buckets '6')")
-    stmt.execute(s"insert into gemfire10.test5rowtab4 select cast(id*433/37 as float),id*999999, concat('str_',id),'2019-03-18',cast(id as tinyint), id%32 from range(${rowNum * 100})")
+    stmt.execute(s"INSERT INTO gemfire10.test5rowtab4 select cast(id*433/37 as float),id*999999, concat('str_',id),'2019-03-18',cast(id as tinyint), id%32 from range(${rowNum * 100})")
 
     writeToFile("1,aaaa,11.11\n2,bbbb,222.2\n333,ccccc,333.33", "/tmp/test5_exttab1.csv")
     stmt.execute("create external table test5_exttab1 using csv" +
         " options(path '/tmp/test5_exttab1.csv')")
 
-    // case: create table as select * from ...
-    stmt.execute("create table test5coltab4 as select * from test5_exttab1")
+    // case: CREATE TABLE as SELECT * FROM ...
+    stmt.execute("CREATE TABLE test5coltab4 as SELECT * FROM test5_exttab1;")
 
     // column table - how nulls are reflected in the recovered data files.
-    stmt.execute("create table test5coltab5 (col1 timestamp, col2 integer, col3 varchar(33)," +
+    stmt.execute("CREATE TABLE test5coltab5 (col1 timestamp, col2 integer, col3 varchar(33)," +
         "col boolean) using column")
-    stmt.execute("insert into test5coltab5 values(null, 123, 'adsfqwer', 'true')")
-    stmt.execute("insert into test5coltab5 values(null, null, 'zxcvqwer', null)")
-    stmt.execute("insert into test5coltab5 values(null, 12345, 'ZXcwer', 'true')")
-    stmt.execute("insert into test5coltab5 values(null, 67653, null, null)")
+    stmt.execute("INSERT INTO test5coltab5 values(null, 123, 'adsfqwer', 'true')")
+    stmt.execute("INSERT INTO test5coltab5 values(null, null, 'zxcvqwer', null)")
+    stmt.execute("INSERT INTO test5coltab5 values(null, 12345, 'ZXcwer', 'true')")
+    stmt.execute("INSERT INTO test5coltab5 values(null, 67653, null, null)")
 
     // row table - how nulls reflect in the recovered data files.
     // todo: fix this:default fails in createSchemasMap method of RecoveryTestSuite
-    stmt.execute("create table test5rowtab6 (col1 int, col2 string default 'DEF_VAL', col3  long default -99999, col4 float default 0.0)")
-    //    stmt.execute("create table test5rowtab6 (col1 int, col2 string, col3  long, col4 float)")
-    stmt.execute("insert into test5rowtab6 values(null, 'afadsf', 134098245, 123.123)")
-    stmt.execute("insert into test5rowtab6 values(null, 'afadsf', 134098245, 123.123)")
-    stmt.execute("insert into test5rowtab6 values(null, null, null, null)")
-    stmt.execute("insert into test5rowtab6 (col1,col3) values(null, 134098245 )")
-    stmt.execute("insert into test5rowtab6 values(null, 'afadsf', 134098245 )")
-    stmt.execute("insert into test5rowtab6 (col1, col4) values(null, 345345.534)")
+    stmt.execute("CREATE TABLE test5rowtab6 (col1 int, col2 string default 'DEF_VAL', col3  long default -99999, col4 float default 0.0)")
+    //    stmt.execute("CREATE TABLE test5rowtab6 (col1 int, col2 string, col3  long, col4 float)")
+    stmt.execute("INSERT INTO test5rowtab6 values(null, 'afadsf', 134098245, 123.123)")
+    stmt.execute("INSERT INTO test5rowtab6 values(null, 'afadsf', 134098245, 123.123)")
+    stmt.execute("INSERT INTO test5rowtab6 values(null, null, null, null)")
+    stmt.execute("INSERT INTO test5rowtab6 (col1,col3) values(null, 134098245 )")
+    stmt.execute("INSERT INTO test5rowtab6 values(null, 'afadsf', 134098245 )")
+    stmt.execute("INSERT INTO test5rowtab6 (col1, col4) values(null, 345345.534)")
 
     stmt.execute("deploy package SPARKREDSHIFT 'com.databricks:spark-redshift_2.10:3.0.0-preview1' path '/home/ppatil/Testing/deploy_pkg_cache'")
     stmt.execute("deploy package sparkavrointegration 'com.databricks:spark-avro_2.11:4.0.0' path '/home/ppatil/Testing/deploy_pkg_cache';")
@@ -1206,7 +1305,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     connRec = getConn(locNetPort, "gemfire10", "gemfire10")
     stmtRec = connRec.createStatement()
     // todo: may be we can add S3,hdfs as export path
-    val rstemp = stmtRec.executeQuery("select * from test5rowtab6");
+    val rstemp = stmtRec.executeQuery("SELECT * FROM test5rowtab6");
     while (rstemp.next()) {
       println(rstemp.getObject(1))
     }
@@ -1249,7 +1348,12 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
 
 
   test("test6 - update, delete, complex data types") {
-
+    // Add test cases that has to fail
+    // Add test cases for sample tables
+    // Add test for S3, hdfs
+    // Add binary and blob in the tests
+    // Add not nulls to the tests
+    // Add assertion fo recover_ddl / recover_data output
     confDirPath = createConfDir("test6")
     val leadsNum = 1
     val locatorsNum = 1
@@ -1266,255 +1370,223 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
         s" $waitForInit $ldapConf", s"$confDirPath/leads")
     writeToFile(
-      s"""localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf
-         |""".stripMargin, s"$confDirPath/servers")
+      s"localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-1 " +
+          s"-client-port=$netPort2 $ldapConf".stripMargin, s"$confDirPath/servers")
 
     startSnappyCluster()
 
     val conn = getConn(locNetPort, "gemfire10", "gemfire10")
     val stmt = conn.createStatement()
     val defaultSchema = "gemfire10"
-/*
+    var fqtn: String = null
 
-    // todo: add not null to columns randomly to some tables
+    // todo: add NOT NULL to columns randomly to some tables
     // todo: Add nested complex data types tests
     // todo: null values not supported for complex data type columns - check
 
-    // ====== Column tables
-    // column batches only
+    // ========================================
+    // ==== Column tables column batch only ===
+    // ========================================
+    // 1: null and not null, atomic data only, 1 bucket
+    fqtn = "gemfire10.t1"
+    stmt.executeUpdate(
+      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,
+         |c3 integer) USING COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '4')""".stripMargin)
+    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 11)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 322222222222222222.22222222222222222222, 33)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (4, 422222222222222222.22222222222222222222, null)")
+
+    // 2: null and not null complex types 2 buckets
+    fqtn = "gemfire10.t2"
+    stmt.executeUpdate(
+      s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
+         |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
+         | USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '1')""".stripMargin)
+    stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
+        s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
+    stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
+        s" 2, 2.2, Array(2,22,222), Map(2,false), Struct(2.2, 2)")
 
 
-    // updates and deletes = primary data types - not null columns - large volume
-
-    // deletes only - primary data types - nulls in data - multi buckets
-
-    // complex data types - not null, w/ variable len datatypes, mixed data types
-
-
-    // updates only - including complex data types - nulls in data
-    //    java.lang.NullPointerException
-    //    at org.apache.spark.sql.execution.oplog.impl.OpLogRdd.org$apache$spark$sql$execution$oplog$impl$OpLogRdd$$getFromDVD$1(OpLogRdd.scala:257)
-
-    stmt.execute("CREATE TABLE gemfire10.tab6col1 (col1 Int, col2 Array<Decimal>)" +
-        " USING column options(buckets '6', COLUMN_MAX_DELTA_ROWS '4')")
-    stmt.execute("insert into gemfire10.tab6col1 " +
-        "select 1, Array(4.234,3454.345)")
-    stmt.execute("insert into gemfire10.tab6col1 " +
-        "select 2, Array(445.234,12354.345)")
-    stmt.execute("insert into gemfire10.tab6col1 " +
-        "select 3, Array(2134.4,34.345)")
-    stmt.execute("insert into gemfire10.tab6col1 " +
-        "select 4, Array(234.234)")
-    stmt.execute("update gemfire10.tab6col1" +
-        " set col2 = Array(342.14) where col1 = 1;")
-    stmt.execute("update gemfire10.tab6col1" +
-        " set col2 = Array(546.567657) where col1 = 2;")
-    stmt.execute(" update gemfire10.tab6col1 set col2 = null where col1 = 3;")
-
-    /*
-        // deletes only - including complex data types - nulls in data - multi buckets
-        // todo: uncomment once array<date> is working
-
-        stmt.execute("create table gemfire10.tab6col2 (col1 int, col2 Array<String>," +
-            " col3 Map<Int,Boolean>, col4 Struct<f1:float, f2:int, f3:short>, col5 Array<date>)" +
-            " USING column options(buckets '2', COLUMN_MAX_DELTA_ROWS '3')")
-        // todo: gives following error in regular mode. Enable following line once issue is fixed.
-        //    java.lang.ClassCastException: org.apache.spark.sql.catalyst.expressions.UnsafeArrayData
-        // cannot be cast to org.apache.spark.sql.catalyst.InternalRow
-
-        //    stmt.execute("insert into gemfire10.tab6col2 " +
-        //        "select 1,Array(11,3,4), Map(1,true), null, Array('2018-12-10')")
-        stmt.execute("insert into gemfire10.tab6col2 " +
-            "select 2,Array(22,4), Map(2,0), Struct(54.3454, 325546, 2), null")
-        // todo: exactly same case above
-        //    stmt.execute("insert into gemfire10.tab6col2 " +
-        //        "select null,Array(33,7,7,8,89,432,54,54,3,3,3,4), null, Struct(567.234, 657, 33)," +
-        //        " Array('2018-12-12')")
-    */
+    // ==========================================
+    // ====== Column tables row buffer only =====
+    // ==========================================
+    // 3: null and not null atomic data only 1 bucket
+    fqtn = "gemfire10.t3"
+    stmt.executeUpdate(
+      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,
+         |c3 integer) USING COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
+    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, null)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, 22)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 322222222222222222.22222222222222222222, 33)")
 
 
-    stmt.execute("create table gemfire10.tab6col3 ( col1 Array<varchar(44)> not null," +
-        " col2 string not null, col3 Map<String,Boolean>  not null, col4 Array<short>  not null," +
-        " col5 Struct<f1:float, f2: String, f3: Decimal(20,10)>  not null)" +
-        " using column options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')")
-    stmt.execute("insert into gemfire10.tab6col3 " +
-        "select Array('adsf','ewrewr','xcvcv'), 'abcdefgh', Map('aaa', true), Array(1,2,2,5,4,4)," +
-        " Struct(23.123, 'adfsre', 423423.6123354)")
-    stmt.execute("insert into gemfire10.tab6col3 " +
-        "select Array('qweqwe','adsfdghf','zxcvcvb'), 'qwerty', Map('bbb', 1)," +
-        " Array(4,4,7,8,1,9,9,9), Struct(67.23, 'xderfvfgrt', 78946132.6123)")
-    stmt.execute("insert into gemfire10.tab6col3 " +
-        "select Array('xcvcxv','adsdf','xadsfv'), 'abcdefgh', Map('ccc',false)," +
-        " Array(1,33,22,44,66), Struct(233.67879, 'xcvgfewr', 789456123.123456798)")
+    // 4: null and not null complex types 2 buckets
+    fqtn = "gemfire10.t4"
+    stmt.executeUpdate(
+      s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
+         |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
+         | USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '4')""".stripMargin)
+    stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
+        s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
+    stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
+        s" 2, 2.2, Array(2,22,222), Map(2,false), Struct(2.2, 2)")
+    stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
+        s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
 
 
-    // ====== Column tables
-    // row buffers and column batches
-    // updates only - including complex data types - nulls in data - 1 bucket
-
-    // deletes only - primary data types - nulls in data - multi buckets
-
-    // deletes only - including complex data types - nulls in data - multi buckets
-
-    // updates and deletes = complex data types - not null columns - constraints
-
-    // complex data types - nulls , not null, with fixed data types , mixed data types
-
-    stmt.execute("CREATE TABLE gemfire10.tab6col4 (col1 Int, col2 Array<Decimal>) USING column options(buckets '6', COLUMN_MAX_DELTA_ROWS '4')")
-
-    stmt.execute("insert into gemfire10.tab6col4 " +
-        "select 1, Array(4.234,3454.345)")
-    stmt.execute("insert into gemfire10.tab6col4 " +
-        "select 2, Array(445.234,12354.345)")
-    stmt.execute("insert into gemfire10.tab6col4 " +
-        "select 3, Array(2134.4,34.345)")
-    stmt.execute("insert into gemfire10.tab6col4 " +
-        "select 4, Array(234.234)")
-
-    /*
-    // todo: uncomment once array<date> is working
-
-        stmt.execute("create table gemfire10.tab6col5 (col1 int, col2 Array<String>, col3 Map<Int,Boolean>, col4 Struct<f1:float, f2:int, f3:short>, col5 Array<date>) USING column options(buckets '2', COLUMN_MAX_DELTA_ROWS '3')")
-
-        stmt.execute("insert into gemfire10.tab6col5 " +
-            "select 1,Array(11,3,4), Map(1,true), Struct(34.234, 34, 1), Array('2018-12-10')")
-        stmt.execute("insert into gemfire10.tab6col5 " +
-            "select 2,Array(22,4), Map(2,0), Struct(54.3454, 325546, 2), Array('2018-11-11')")
-        stmt.execute("insert into gemfire10.tab6col5 " +
-            "select 3,Array(33,7,7,8,89,432,54,54,3,3,3,4), Map(3,false), Struct(567.234, 657, 33), Array('2018-12-12')")
-    */
-
-    /*
-    // todo: uncomment once working :: java.lang.AssertionError: assertion failed: valueArraySize (0) should >= 8
-
-        stmt.execute("create table gemfire10.tab6col6 ( col1 Array<varchar(44)> not null, col2 string not null, col3 Map<String,Boolean>  not null, col4 Array<short>  not null, col5 Struct<f1:float, f2: String, f3: Decimal(20,10)>  not null) using column options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')")
-
-        stmt.execute("insert into gemfire10.tab6col6 " +
-            "select Array('adsf','ewrewr','xcvcv'), 'abcdefgh', Map('aaa', true), Array(1,2,2,5,4,4), Struct(23.123, 'adfsre', 423423.6123354)")
-        stmt.execute("insert into gemfire10.tab6col6 " +
-            "select Array('qweqwe','adsfdghf','zxcvcvb'), 'qwerty', Map('bbb', 1), Array(4,4,7,8,1,9,9,9), Struct(67.23, 'xderfvfgrt', 78946132.6123)")
-        stmt.execute("insert into gemfire10.tab6col6 " +
-            "select Array('xcvcxv','adsdf','xadsfv'), 'abcdefgh', Map('ccc',false), Array(1,33,22,44,66), Struct(233.67879, 'xcvgfewr', 789456123.123456798)")
-
-        stmt.execute("insert into gemfire10.tab6col6 " +
-            "select Array('xcvcxvqewr','ewrqewr','xadsfv'), 'abcdefgh', Map('ccc',false), Array(1,33,22,44,66), Struct(233.234879, 'erqewrwr', 789123.156798)")
-
-        stmt.execute("insert into gemfire10.tab6col6 " +
-            "select Array('xcvcxv','adsdf'), 'qewrdsfxcv', Map('ddd',false), Array(12,44,66), Struct(546.546779, 'xcvgfdsfewr', 946123.456798)")
-
-        stmt.execute("insert into gemfire10.tab6col6 " +
-            "select Array('xcvcxv','adsdf'), 'qewrdsfxcv', Map('ddd',false), Array(12,44,66), Struct(546.546779, 'xcvgfdsfewr', 946123.456798)")
-
-    */
-
-
-    // ====== Column tables
-    // row buffers only
-    // updates only - including complex data types - nulls in data - 1 bucket
-
-    // deletes only - primary data types - nulls in data - multi buckets
-
-    // deletes only - including complex data types - nulls in data - multi buckets
-
-    // updates and deletes = primary data types - not null columns - custom diskstore
-
-    // complex data types - not null, with fixed data types
-
-
-    stmt.execute("CREATE TABLE gemfire10.tab6col7 (col1 Int, col2 Array<Decimal>) USING column options(buckets '2', COLUMN_MAX_DELTA_ROWS '6')")
-
-    stmt.execute("insert into gemfire10.tab6col7 " +
-        "select 1, Array(4.234,3454.345)")
-    stmt.execute("insert into gemfire10.tab6col7 " +
-        "select 2, Array(445.234,12354.345)")
-    stmt.execute("insert into gemfire10.tab6col7 " +
-        "select 3, Array(2134.4,34.345)")
-    stmt.execute("insert into gemfire10.tab6col7 " +
-        "select 4, Array(234.234)")
-
-    /*
-    // todo: uncomment once array<date> is working
-        stmt.execute("create table gemfire10.tab6col8 (col1 int, col2 Array<String>, col3 Map<Int,Boolean>, col4 Struct<f1:float, f2:int, f3:short>, col5 Array<date>) USING column options(buckets '2', COLUMN_MAX_DELTA_ROWS '4')")
-
-        stmt.execute("insert into gemfire10.tab6col8 " +
-            "select 1,Array(11,3,4), Map(1,true), Struct(34.234, 34, 1), Array('2018-12-10')")
-        stmt.execute("insert into gemfire10.tab6col8 " +
-            "select 2,Array(22,4), Map(2,0), Struct(54.3454, 325546, 2), Array('2018-11-11')")
-        stmt.execute("insert into gemfire10.tab6col8 " +
-            "select 3,Array(33,7,7,8,89,432,54,54,3,3,3,4), Map(3,false), Struct(567.234, 657, 33), Array('2018-12-12')")
-    */
-
-    /*
-
-    // todo: uncomment once working :: java.lang.AssertionError: assertion failed: valueArraySize (0) should >= 8
-
-        stmt.execute("create table gemfire10.tab6col9 ( col1 Array<varchar(44)> not null, col2 string not null, col3 Map<String,Boolean>  not null, col4 Array<short>  not null, col5 Struct<f1:float, f2: String, f3: Decimal(20,10)>  not null) using column options (buckets '12', COLUMN_MAX_DELTA_ROWS '30')")
-
-        stmt.execute("insert into gemfire10.tab6col9 " +
-            "select Array('adsf','ewrewr','xcvcv'), 'abcdefgh', Map('aaa', true), Array(1,2,2,5,4,4), Struct(23.123, 'adfsre', 423423.6123354)")
-        stmt.execute("insert into gemfire10.tab6col9 " +
-            "select Array('qweqwe','adsfdghf','zxcvcvb'), 'qwerty', Map('bbb', 1), Array(4,4,7,8,1,9,9,9), Struct(67.23, 'xderfvfgrt', 78946132.6123)")
-        stmt.execute("insert into gemfire10.tab6col9 " +
-            "select Array('xcvcxv','adsdf','xadsfv'), 'abcdefgh', Map('ccc',false), Array(1,33,22,44,66), Struct(233.67879, 'xcvgfewr', 789456123.123456798)")
-    */
-
-
-    //  ====== Row tables - replicated
-    // updates only - primary data types
-
-    // updates only - including complex data types - nulls in data - 1 bucket
-
-    // deletes only - primary data types - nulls in data - multi buckets - constraints
-    // deletes only - including complex data types - nulls in data - multi buckets
-
-    // updates and deletes = primary data types - not null columns - replicated
-
-
-    //  ====== Row tables - partitioned
-    // updates only - primary data types
-
-    // updates only - including complex data types - nulls in data - 1 bucket
-
-    // deletes only - primary data types - nulls in data - multi buckets - constraints
-    // deletes only - including complex data types - nulls in data - multi buckets
-
-    // updates and deletes = primary data types - not null columns - replicated
     // =======================================================
-*/
+    // ======= Column tables row buffer and column batch =====
+    // =======================================================
+    // 5: null and not null atomic data only 1 bucket deletes (in both areas)
+    fqtn = "gemfire10.t5"
+    stmt.executeUpdate(
+      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer) USING
+         | COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
+    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, 2)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, null)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, 4)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, null)")
+    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
+    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 5")
 
-    // todo: add these into respective categories above
-    stmt.execute(s"create table $defaultSchema.test1 (col1 integer, col2 string) using column options();")
-    stmt.execute(s"insert into $defaultSchema.test1 values (1, 'one');")
-    stmt.execute(s"insert into $defaultSchema.test1 values (2, 'two');")
-    stmt.execute(s"insert into $defaultSchema.test1 values (3, 'three');")
-    stmt.execute(s"insert into $defaultSchema.test1 values (4, 'four');")
-    stmt.execute(s"update $defaultSchema.test1 set col1 = 11 where col1 = 1;")
-    stmt.execute(s"delete from $defaultSchema.test1 where col1 = 2")
+    /*
+    CREATE TABLE gemfire10.t5 (c1 integer, c2 double NOT NULL,c3 integer) USING
+ COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3');
+    INSERT INTO gemfire10.t5 VALUES (1, 111111111111111111.11111111111111111111, 1);
+    INSERT INTO gemfire10.t5 VALUES (2, 222222222222222222.22222222222222222222, 2);
+    INSERT INTO gemfire10.t5 VALUES (3, 333333333333333333.33333333333333333333, null);
+    INSERT INTO gemfire10.t5 VALUES (4, 444444444444444444.44444444444444444444, 4);
+    INSERT INTO gemfire10.t5 VALUES (5, 555555555555555555.55555555555555555555, null);
+    DELETE FROM gemfire10.t5 WHERE c1 = 2;
+    DELETE FROM gemfire10.t5 WHERE c1 = 5;
+     */
 
-    stmt.execute(s"create table $defaultSchema.test2 (col1 integer, col2 string) using row options(partition_by 'col1');")
-    stmt.execute(s"insert into $defaultSchema.test2 values (1, 'one');")
-    stmt.execute(s"alter table $defaultSchema.test2 add column col3 integer;")
-    stmt.execute(s"insert into $defaultSchema.test2 values (2, 'two', 22);")
-    stmt.execute(s"alter table $defaultSchema.test2 drop column col2;")
-    stmt.execute(s"update $defaultSchema.test2 set col3 = 222 where col1 = 2;")
-    stmt.execute(s"insert into $defaultSchema.test2 values (3, 33);")
-    stmt.execute(s"delete from $defaultSchema.test2 where col3 = 33;")
+    // 6: null and not null atomic data only 1 bucket deletes/updates (in both areas)
+    fqtn = "gemfire10.t6"
+    stmt.executeUpdate(
+      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer) USING
+         | COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
+    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, null)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, 5)")
+    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
+    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 5")
+    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
+    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 4")
 
-    println("--- describe test2")
-    val resttemp = stmt.executeQuery(s"describe $defaultSchema.test2")
-    while(resttemp.next()){
-      println(s"${resttemp.getString(1)}               ${resttemp.getString(2)}")
+    /*
+    CREATE TABLE gemfire10.t6 (c1 integer, c2 double NOT NULL,c3 integer) USING COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3');
+    INSERT INTO gemfire10.t6 VALUES (1, 111111111111111111.11111111111111111111, 1);
+    INSERT INTO gemfire10.t6 VALUES (2, 222222222222222222.22222222222222222222, null);
+    INSERT INTO gemfire10.t6 VALUES (3, 333333333333333333.33333333333333333333, 3);
+    INSERT INTO gemfire10.t6 VALUES (4, 444444444444444444.44444444444444444444, null);
+    INSERT INTO gemfire10.t6 VALUES (5, 555555555555555555.55555555555555555555, 5);
+    DELETE FROM gemfire10.t6 WHERE c1 = 2;
+    DELETE FROM gemfire10.t6 WHERE c1 = 5;
+    UPDATE gemfire10.t6 SET c3 = 0 WHERE c1 = 1;
+    UPDATE gemfire10.t6 SET c3 = 0 WHERE c1 = 4;
+     */
+
+
+    // 7: null and not null atomic data only 1 bucket updates (in both areas)
+    fqtn = "gemfire10.t7"
+    stmt.executeUpdate(
+      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer) USING
+         | COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
+    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, 4)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, null)")
+    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
+    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 4")
+
+    // 8: null and not null complex types 2 buckets
+    fqtn = "gemfire10.t8"
+    stmt.execute(
+      s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
+         |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
+         | USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '2')""".stripMargin)
+    stmt.execute(s"INSERT INTO $fqtn SELECT" +
+        s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
+    stmt.execute(s"INSERT INTO $fqtn SELECT" +
+        s" 2, 2.2, Array(2,22,222), Map(2,false), null")
+    stmt.execute(s"INSERT INTO $fqtn SELECT" +
+        s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
+
+
+    // ===================================
+    // ======= Row table partitioned =====
+    // ===================================
+    // 9: null and not null atomic data only 1 bucket update/delete alter add/drop/add
+    fqtn = "gemfire10.t9"
+    stmt.executeUpdate(
+      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer)
+         | USING row options (partition_by 'c1', buckets '1')""".stripMargin)
+    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, null)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, 5)")
+    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
+    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 4")
+    stmt.execute(s"ALTER TABLE $fqtn DROP COLUMN c2")
+    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
+    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 5")
+    stmt.execute(s"ALTER TABLE $fqtn ADD COLUMN c2 integer")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (9, 99, 999)")
+
+    // 10: null and not null complex types 2 buckets no alter
+    fqtn = "gemfire10.t10"
+    stmt.executeUpdate(
+      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer)
+         | USING row options (partition_by 'c1', buckets '2')""".stripMargin)
+    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, null)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, 5)")
+
+
+    // ===================================
+    // ======= Row table replicated ======
+    // ===================================
+    // 11: null and not null atomic data only update/delete alter add/drop/add
+    fqtn = "gemfire10.t11"
+    stmt.executeUpdate(
+      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer) USING row""".stripMargin)
+    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
+    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
+    stmt.execute(s"ALTER TABLE $fqtn DROP COLUMN c2")
+    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
+    stmt.execute(s"ALTER TABLE $fqtn ADD COLUMN c2 integer")
+    stmt.execute(s"INSERT INTO $fqtn VALUES (9, 99, 999)")
+
+    // 12: null and not null complex types no alter
+    //    fqtn = "gemfire10.t12"
+    //    stmt.execute(
+    //      s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
+    //         |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>) USING row""".stripMargin)
+    //    stmt.execute(s"INSERT INTO $fqtn SELECT" +
+    //        s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
+    //    stmt.execute(s"INSERT INTO $fqtn SELECT" +
+    //        s" 2, 2.2, Array(2,22,222), Map(2,false), null")
+    //    stmt.execute(s"INSERT INTO $fqtn SELECT" +
+    //        s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
+
+
+    println("--- describe t11")
+    val resttemp = stmt.executeQuery(s"describe $fqtn")
+    while (resttemp.next()) {
+      println(s"${resttemp.getString(1)} ${resttemp.getString(2)}")
     }
-
-    stmt.execute(s"create table $defaultSchema.test3 (col1 integer, col2 string);")
-    stmt.execute(s"insert into $defaultSchema.test3 values (1, 'one');")
-    stmt.execute(s"alter table $defaultSchema.test3 add column col3 integer;")
-    stmt.execute(s"insert into $defaultSchema.test3 values (2, 'two', 22);")
-    stmt.execute(s"alter table $defaultSchema.test3 drop column col1;")
-    stmt.execute(s"update $defaultSchema.test3 set col3 = 222 where col2 = 'two';")
-    stmt.execute(s"insert into $defaultSchema.test3 values ('three', 3);")
-    stmt.execute(s"delete from $defaultSchema.test3 where col3 = 3;")
-    // =======================================================
 
     stmt.close()
     conn.close()
@@ -1522,161 +1594,122 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     stopCluster()
     startSnappyRecoveryCluster()
 
-/*
-
     var connRec: Connection = null
     var stmtRec: Statement = null
     var str = new mutable.StringBuilder()
     val arrBuf: ArrayBuffer[String] = ArrayBuffer.empty
     var i = 0
 
-    println("=== Recovery mode ============\n")
-
     logInfo("=== Recovery mode ============\n")
     connRec = getConn(locNetPort, "gemfire10", "gemfire10")
     stmtRec = connRec.createStatement()
+    Thread.sleep(3000)
 
-    Thread.sleep(5000)
+    //    val rstemp = stmtRec.executeQuery("show tables in gemfire10")
+    //    println("--- tables ---")
+    //    while (rstemp.next()) {
+    //      println(rstemp.getString(2))
+    //    }
+    //    rstemp.close()
 
-
-    // todo: add assertions
-/*
-
-    val rstemp = stmtRec.executeQuery("show tables in gemfire10")
-    println("--- tables ---")
-    while (rstemp.next()) {
-      println(rstemp.getString(2))
+    // 1891
+    def getRecFromResultSet(rs: ResultSet, schemaStr: String): ListBuffer[Array[Any]] = {
+      var result = new ListBuffer[Array[Any]]()
+      while (rs.next()) {
+        var i = 1
+        val recArr = schemaStr.split(",").map(_.toLowerCase).map(f => {
+          val fValue = f match {
+            case "integer" | "int" =>
+              val ii = rs.getInt(i)
+              logInfo("element value is " + ii)
+              ii
+            case "double" => rs.getDouble(i)
+            case _ => ""
+          }
+          i += 1
+          if (rs.wasNull()) null else fValue
+        })
+        logInfo(s"recarr = ${recArr.toSeq}")
+        result += recArr
+      }
+      result
     }
 
-    var resSet = stmtRec.executeQuery("select count(*) from gemfire10.tab6col1")
-    println(" ===== gemfire10.tab6col1 ===== ")
-    while (resSet.next()) {
-      println("row: " + resSet.getInt(1))
-    }
-    resSet.close()
-
-    /*
-        resSet = stmtRec.executeQuery("select count(*) from gemfire10.tab6col2")
-        println(" ===== gemfire10.tab6col2 ===== ")
-        while (resSet.next()) {
-          println("row: " + resSet.getInt(1))
+    def compareResult(expectedResult: ListBuffer[Array[Any]],
+        result: ListBuffer[Array[Any]]): Unit = {
+      for (rec <- result) {
+        for (expRec <- expectedResult) {
+          if (expRec.sameElements(rec)) result.remove(result.indexOf(rec))
         }
-        resSet.close()
-    */
-
-    resSet = stmtRec.executeQuery("select count(*) from gemfire10.tab6col3")
-    println(" ===== gemfire10.tab6col3 ===== ")
-    while (resSet.next()) {
-      println("row: " + resSet.getInt(1))
+      }
+      assert(result.size == 0, s"result has extra records")
     }
-    resSet.close()
 
-    resSet = stmtRec.executeQuery("select count(*) from gemfire10.tab6col4")
-    println(" ===== gemfire10.tab6col4 ===== ")
-    while (resSet.next()) {
-      println("row: " + resSet.getInt(1))
-    }
-    resSet.close()
+    // *********************************************
+    // ******************testcase 1*****************
+    // *********************************************
+    val rs1 = stmtRec.executeQuery("select * from gemfire10.t1")
+    val expectedResult1: ListBuffer[Array[Any]] = ListBuffer(
+      Array(1, 111111111111111111.11111111111111111111, 11),
+      Array(2, 222222222222222222.22222222222222222222, null),
+      Array(3, 322222222222222222.22222222222222222222, 33),
+      Array(4, 422222222222222222.22222222222222222222, null)
+    )
+    compareResult(expectedResult1,
+      getRecFromResultSet(rs1, "integer,double,integer"))
+    rs1.close()
 
-    /*
-        resSet = stmtRec.executeQuery("select count(*) from gemfire10.tab6col5")
-        println(" ===== gemfire10.tab6col5 ===== ")
-        while (resSet.next()) {
-          println("row: " + resSet.getInt(1))
-        }
-        resSet.close()
-    */
+    // testcase 3
+    val rs3 = stmtRec.executeQuery("select * from gemfire10.t3")
+    val expectedResult3: ListBuffer[Array[Any]] = ListBuffer(
+      Array(1, 111111111111111111.11111111111111111111, null),
+      Array(2, 222222222222222222.22222222222222222222, 22),
+      Array(3, 322222222222222222.22222222222222222222, 33)
+    )
+    compareResult(expectedResult3,
+      getRecFromResultSet(rs3, "integer,double,integer"))
+    rs3.close()
 
-    /*
-        resSet = stmtRec.executeQuery("select count(*) from gemfire10.tab6col6")
-        println(" ===== gemfire10.tab6col6 ===== ")
-        while (resSet.next()) {
-          println("row: " + resSet.getInt(1))
-        }
-        resSet.close()
-    */
+    // testcase 5
+    val rs5 = stmtRec.executeQuery("select * from gemfire10.t5")
+    val expectedResult5: ListBuffer[Array[Any]] = ListBuffer(
+      Array(1, 111111111111111111.11111111111111111111, 1),
+      Array(3, 333333333333333333.33333333333333333333, null),
+      Array(4, 444444444444444444.44444444444444444444, 4)
+    )
+    compareResult(expectedResult5,
+      getRecFromResultSet(rs5, "integer,double,integer"))
+    rs5.close()
 
-    resSet = stmtRec.executeQuery("select count(*) from gemfire10.tab6col7")
-    println(" ===== gemfire10.tab6col7 ===== ")
-    while (resSet.next()) {
-      println("row: " + resSet.getInt(1))
-    }
-    resSet.close()
+    // testcase 6
+    val rs6 = stmtRec.executeQuery("select * from gemfire10.t6")
+    val expectedResult6: ListBuffer[Array[Any]] = ListBuffer(
+      Array(1, 111111111111111111.11111111111111111111, 0),
+      Array(3, 333333333333333333.33333333333333333333, 3),
+      Array(4, 444444444444444444.44444444444444444444, 0)
+    )
+    compareResult(expectedResult6,
+      getRecFromResultSet(rs6, "integer,double,integer"))
+    rs6.close()
 
-    /*
-        resSet = stmtRec.executeQuery("select count(*) from gemfire10.tab6col8")
-        println(" ===== gemfire10.tab6col8 ===== ")
-        while (resSet.next()) {
-          println("row: " + resSet.getInt(1))
-        }
-        resSet.close()
-    */
-
-    /*
-        resSet = stmtRec.executeQuery("select count(*) from gemfire10.tab6col9")
-        println(" ===== gemfire10.tab6col9 ===== ")
-        while (resSet.next()) {
-          println("row: " + resSet.getInt(1))
-        }
-        resSet.close()
-    */
-
-
-    //    ================================================================
-*/
-    val rstst1 = stmtRec.executeQuery("select * from gemfire10.test1 order by col1")
-    logDebug("=== select * from test1 ===")
-    str.clear()
-    arrBuf.clear()
-    i = 0
-    arrBuf ++= ArrayBuffer("3,three")
-    arrBuf ++= ArrayBuffer("4,four")
-    arrBuf ++= ArrayBuffer("11,one")
-
-    while (rstst1.next()) {
-      println(s"${rstst1.getInt("col1")},${rstst1.getString("col2")}")
-      assert((s"${rstst1.getInt("col1")},${rstst1.getString("col2")}")
-          .equalsIgnoreCase(arrBuf(i).toString))
-      i += 1
-    }
-    rstst1.close()
-
-    val rstst2 = stmtRec.executeQuery("select * from gemfire10.test2 order by col1")
-    logDebug("=== select * from test2 ===")
-    str.clear()
-    arrBuf.clear()
-    i = 0
-    arrBuf ++= ArrayBuffer("1,NULL")
-    arrBuf ++= ArrayBuffer("2,222")
-    while (rstst2.next()) {
-      println(s"${rstst2.getInt("col1")},${rstst2.getObject("col3")}")
-      assert((s"${rstst2.getInt("col1")},${rstst2.getObject("col3")}")
-          .equalsIgnoreCase(arrBuf(i)))
-      i += 1
-    }
-    rstst2.close()
-
-    val rstst3 = stmtRec.executeQuery("select * from gemfire10.test3 order by col1")
-    logDebug("=== select * from test3 ===")
-    str.clear()
-    arrBuf.clear()
-    i = 0
-    arrBuf ++= ArrayBuffer("'one',NULL")
-    arrBuf ++= ArrayBuffer("'two',222")
-    while (rstst3.next()) {
-      assert((s"${rstst3.getInt("col2")},${rstst3.getObject("col3")}")
-          .equalsIgnoreCase(arrBuf(i)))
-      i += 1
-    }
-    rstst3.close()
-    //    ================================================================
-
+    // 7: null and not null atomic data only 1 bucket updates (in both areas)
+    val rs7 = stmtRec.executeQuery("select * from gemfire10.t7")
+    val expectedResult7: ListBuffer[Array[Any]] = ListBuffer(
+      Array(1, 111111111111111111.11111111111111111111, 0),
+      Array(2, 222222222222222222.22222222222222222222, null),
+      Array(3, 333333333333333333.33333333333333333333, 3),
+      Array(4, 444444444444444444.44444444444444444444, 0),
+      Array(5, 555555555555555555.55555555555555555555, null)
+    )
+    compareResult(expectedResult7,
+      getRecFromResultSet(rs7, "integer,double,integer"))
+    rs7.close()
 
     stmtRec.execute("call sys.RECOVER_DDLS('./recover_ddls/');")
-
+    // todo hmeka Add assertion on recover_ddls output
     stmtRec.close()
     connRec.close()
-*/
+
     test_status = true
   }
 }
