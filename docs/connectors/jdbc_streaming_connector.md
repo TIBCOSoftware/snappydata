@@ -25,7 +25,7 @@ SnappyData core and SnappyData jdbc streaming connector maven dependencies would
 <dependency>
   <groupId>io.snappydata</groupId>
   <artifactId>snappydata-core_2.11</artifactId>
-  <version>1.1.0</version>
+  <version>1.1.1</version>
   <scope>compile</scope>
 </dependency>    
 ```

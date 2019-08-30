@@ -63,7 +63,7 @@ To install Tableau desktop:
 
 ### Step 3: Connect Tableau Desktop to SnappyData Server
 
-When using Tableau with the SnappyData ODBC Driver for the first time, you must add the **odbc-snappydata.tdc** file that is available in the downloaded **TIB_compute-odbc_1.1.0_win.zip**.
+When using Tableau with the SnappyData ODBC Driver for the first time, you must add the **odbc-snappydata.tdc** file that is available in the downloaded **TIB_compute-odbc_1.1.1_win.zip**.
 
 To connect the Tableau Desktop to the SnappyData Server:
 

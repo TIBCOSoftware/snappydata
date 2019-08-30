@@ -11,8 +11,10 @@ With the default value ("true") clients are automatically connected to a less-lo
 
 	- When load balancing is enabled, clients may not be able to connect to a specific server even if they provide that server's unique port number for client connections. As a best practice, clients should always request connections using a locator address and port when load balancing is enabled.
 
-With 1.1.0 release, the `load-balance` is set to **false**, by default, in the connection string. So now you must specify the connection details for a specific SnappyData member, other than a locator.
-If you want to connect the JDBC client to a locator, then set this property to true. The locator then redirects the client to a less-loaded server with which the client makes the connection.
+With 1.1.0 release, the load-balance is set to false by default, when you connect to a server's hostname:port. And it is set to true, when you connect to a locator's hostname:port. The locator then redirects the client to a less-loaded server with which the client makes the connection. With 1.1.1 release, same behavior is implemented for ODBC driver as well. 
+
+!!! Note 
+    You must specify load-balance=true in ODBC properties, if the locator address and port is provided.
 
 For example:
 
