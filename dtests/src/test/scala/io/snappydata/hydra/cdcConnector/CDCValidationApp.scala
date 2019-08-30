@@ -21,13 +21,11 @@ import java.io.{File, PrintWriter}
 import java.sql.{Connection, DriverManager, ResultSet}
 import java.util.Properties
 
-import breeze.numerics.abs
-import io.snappydata.hydra.SnappyTestUtils.{getTempDir, writeToFile}
+
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 import org.apache.spark.{SparkConf, SparkContext}
 
-import scala.collection.mutable
-import scala.io.Source
+
 import scala.util.{Failure, Random, Success, Try}
 
 
@@ -155,14 +153,15 @@ object CDCValidationApp {
             System.out.println("The sql query is " + sqlQ)
             val snappyQ = "SELECT * FROM "+ tableName +" WHERE "+ idNameArr(j) +" = " + idVal
             System.out.println("The snappy query is "+ snappyQ)
-            fullResultSetValidation(snc, connection, sqlQ, snappyQ, pw)
+            checkDataConsistency(endRange)
+            //fullResultSetValidation(snc, connection, sqlQ, snappyQ, pw)
             pw.println("=====================================================================================================================")
             // Match the difference :
             pw.println("=================================================Count Validation=====================================================")
             pw.println("For table " + tableName + " Present sqlServer cnt = " + sqlServerTableCnt + " Previous sqlServer cnt " + sqlServerTableCnt1Arr(j))
             pw.println("For table " + tableName + " Present snappy cnt = " + snappyTableCnt + " Previous snappy cnt " + snappyTableCnt1Arr(j))
-            val sqlServerCntDiff = abs(sqlServerTableCnt - sqlServerTableCnt1Arr(j).toLong)
-            val snappyCntDiff = abs(snappyTableCnt - snappyTableCnt1Arr(j).toLong)
+            val sqlServerCntDiff = sqlServerTableCnt - sqlServerTableCnt1Arr(j).toLong
+            val snappyCntDiff = snappyTableCnt - snappyTableCnt1Arr(j).toLong
 
             if (sqlServerCntDiff == snappyCntDiff) {
               pw.println(s"SUCCESS :$tableName in snappy cluster  has equal difference of $snappyCntDiff before and after ingestion ")
@@ -217,11 +216,13 @@ object CDCValidationApp {
       }
 
       //validation in case of updates:
-      def checkDataConsistency(): Unit = {
+      def checkDataConsistency(endRange : Integer): Unit = {
         // pw.println("Inside checkDataConsistency function")
+       // Random rnd = new Random()
         for (i <- 0 until tableNameArr.length - 1) {
           val tableName = tableNameArr(i)
-          val sqlServerQ = s"SELECT * FROM [testdatabase].[dbo].[$tableName]"
+          val idName = idNameArr(i)
+          val sqlServerQ = s"SELECT * FROM [testdatabase].[dbo].[$tableName] WHERE $idName > $endRange "
           pw.println("Query is " + sqlServerQ)
           val sqlServerResultSet = connection.createStatement().executeQuery(sqlServerQ)
           val snappyDF = snc.sql(s"SELECT * FROM $tableName")
