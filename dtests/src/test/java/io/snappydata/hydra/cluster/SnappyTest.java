@@ -2923,6 +2923,16 @@ public class SnappyTest implements Serializable {
   }
 
   /**
+   * Create and start snappy locator using snappy-locators.sh script.
+   */
+  public static synchronized void HydraTask_createAndStartSnappyLocator() {
+    int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.locatorsStarted);
+    if (num == 1) {
+      snappyTest.startSnappyLocator();
+    }
+  }
+
+  /**
    * Create and start snappy server.
    */
   public static synchronized void HydraTask_createAndStartSnappyServers() {
