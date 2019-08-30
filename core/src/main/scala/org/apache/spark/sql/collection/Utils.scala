@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -525,7 +525,7 @@ object Utils extends Logging {
           // if both baseTable and schema have been specified, then both
           // should have matching schema
           try {
-            val tablePlan = catalog.lookupRelation(
+            val tablePlan = catalog.resolveRelation(
               catalog.snappySession.tableIdentifier(baseTableName))
             val tableSchema = tablePlan.schema
             if (catalog.compatibleSchema(tableSchema, s)) {
@@ -552,7 +552,7 @@ object Utils extends Logging {
           try {
             // parquet and other such external tables may have different
             // schema representation so normalize the schema
-            val tablePlan = catalog.lookupRelation(
+            val tablePlan = catalog.resolveRelation(
               catalog.snappySession.tableIdentifier(baseTable))
             (tablePlan.schema, Some(tablePlan))
           } catch {

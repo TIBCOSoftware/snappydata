@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -66,16 +66,16 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   // all hive tables that are expected to be in DataDictionary
   // this will exclude external tables like parquet tables, stream tables
   private val GET_ALL_TABLES_MANAGED_IN_DD_UPPERCASE = 2
-  private val GET_ALL_HIVE_ENTRIES = 3
-  private val REMOVE_TABLE = 4
-  private val GET_COL_TABLE = 5
-  private val GET_TABLE = 6
-  private val GET_HIVE_TABLES = 7
-  private val GET_POLICIES = 8
-  private val GET_METADATA = 9
-  private val UPDATE_METADATA = 10
-  private val CLOSE_HMC = 11
-  private val REMOVE_TABLE_UNSAFE = 12
+  private val REMOVE_TABLE_IF_EXISTS = 3
+  private val GET_COL_TABLE = 4
+  private val GET_TABLE = 5
+  private val GET_HIVE_TABLES = 6
+  private val GET_POLICIES = 7
+  private val GET_METADATA = 8
+  private val UPDATE_METADATA = 9
+  private val CLOSE_HMC = 10
+  private val REMOVE_TABLE_UNSAFE = 11
+  private val GET_ALL_HIVE_ENTRIES = 12
 
   private val catalogQueriesExecutorService: ExecutorService = {
     val hmsThreadGroup = LogWriterImpl.createThreadGroup(THREAD_GROUP_NAME, Misc.getI18NLogWriter)
@@ -169,7 +169,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   }
 
   override def removeTableIfExists(schema: String, table: String, skipLocks: Boolean): Unit = {
-    val q = new CatalogQuery[Unit](REMOVE_TABLE, table, schema)
+    val q = new CatalogQuery[Unit](REMOVE_TABLE_IF_EXISTS, table, schema)
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
@@ -367,8 +367,15 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
         }.asInstanceOf[R]
       }
 
-      case REMOVE_TABLE => externalCatalog.dropTable(formattedSchema, formattedTable,
-        ignoreIfNotExists = true, purge = false).asInstanceOf[R]
+      case REMOVE_TABLE_IF_EXISTS => try {
+        externalCatalog.dropTable(formattedSchema, formattedTable,
+          ignoreIfNotExists = true, purge = false).asInstanceOf[R]
+      } catch {
+        case e: Exception =>
+          logError("Failure in DROP TABLE IF EXISTS " +
+              s"$formattedSchema.$formattedTable: ${e.getMessage}", e)
+          null.asInstanceOf[R]
+      }
 
       // this will only remove table from catalog but any policies, base tables related to table
       // and other catalog info related to it will remain and may cause issues
@@ -721,7 +728,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       val schema = request.getNames.get(0)
       val function = request.getNames.get(1)
       checkSchemaPermission(schema, function, user)
-      ContextJarUtils.removeFunctionArtifacts(externalCatalog, None, schema, function, true)
+      ContextJarUtils.removeFunctionArtifacts(externalCatalog, None, schema,
+        function, isEmbeddedMode = true)
       externalCatalog.dropFunction(schema, function)
 
     case snappydataConstants.CATALOG_RENAME_FUNCTION =>

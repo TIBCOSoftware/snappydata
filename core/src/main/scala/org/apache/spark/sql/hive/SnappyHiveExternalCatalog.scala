@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -60,6 +60,7 @@ import org.apache.spark.sql.internal.StaticSQLConf.{GLOBAL_TEMP_DATABASE, SCHEMA
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.sources.JdbcExtendedUtils.{toLowerCase, toUpperCase, normalizeSchema}
+import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.LongType
 import org.apache.spark.sql.{AnalysisException, _}
 import org.apache.spark.{SparkConf, SparkException}
@@ -239,7 +240,17 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   override def databaseExists(schema: String): Boolean = {
-    schema == SYS_SCHEMA || withHiveExceptionHandling(super.databaseExists(schema))
+    if (schema == SYS_SCHEMA) true
+    else {
+      // if cache is small enough then linearly search in it since hive call is expensive
+      if (cachedCatalogTables.size() <= 200) {
+        val itr = cachedCatalogTables.asMap().keySet().iterator()
+        while (itr.hasNext) {
+          if (itr.next()._1 == schema) return true
+        }
+      }
+      withHiveExceptionHandling(super.databaseExists(schema))
+    }
   }
 
   override def listDatabases(): Seq[String] = {
@@ -420,6 +431,10 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         withHiveExceptionHandling(super.dropTable(schema, table,
           ignoreIfNotExists = true, purge = true))
     }
+
+    SnappySession.clearAllCache(onlyQueryPlanCache = true)
+    CodeGeneration.clearAllCache()
+    invalidate(schema -> table)
   }
 
   override def dropTable(schema: String, table: String, ignoreIfNotExists: Boolean,
@@ -429,7 +444,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         if (ignoreIfNotExists) return else throw new TableNotFoundException(schema, table)
       case Some(t) => t
     }
-    withHiveExceptionHandling(super.dropTable(schema, table, ignoreIfNotExists = false, purge))
+    withHiveExceptionHandling(super.dropTable(schema, table, ignoreIfNotExists, purge))
 
     // drop all policies for the table
     if (Misc.getMemStoreBooting.isRLSEnabled) {

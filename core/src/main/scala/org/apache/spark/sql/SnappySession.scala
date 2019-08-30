@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -1613,10 +1613,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    */
   private[sql] def setCurrentSchema(schema: String, createIfNotExists: Boolean): Unit = {
     val schemaName = sessionCatalog.formatDatabaseName(schema)
-    if (createIfNotExists) {
-      sessionCatalog.createSchema(schemaName, ignoreIfExists = true, createInStore = false)
+    if (schemaName != getCurrentSchema) {
+      if (createIfNotExists) {
+        sessionCatalog.createSchema(schemaName, ignoreIfExists = true, createInStore = false)
+      }
+      sessionCatalog.setCurrentSchema(schemaName, force = true)
     }
-    sessionCatalog.setCurrentSchema(schemaName)
   }
 
   def getCurrentSchema: String = sessionCatalog.getCurrentSchema

@@ -14,9 +14,9 @@ For more information on the capabilities of the Community Edition and Enterprise
 <heading2>Download SnappyData Community Edition</heading2>
 
 
-Download the [SnappyData 1.1.0 Community Edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
+Download the [SnappyData 1.1.1 Community Edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
 
-* [**SnappyData 1.1.0 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.0/snappydata-1.1.0-bin.tar.gz)
+* [**SnappyData 1.1.1 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.1/snappydata-1.1.1-bin.tar.gz)
 
 
 <heading2>Download SnappyData Enterprise Edition</heading2> 
