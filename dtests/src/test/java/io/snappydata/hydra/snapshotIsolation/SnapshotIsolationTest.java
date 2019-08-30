@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -1001,7 +1001,7 @@ public class SnapshotIsolationTest extends SnappyTest {
       s.close();
       commit(conn);
     } catch (SQLException se) {
-      if (se.getSQLState().equals("X0Y68")) {
+      if (se.getSQLState().equals("X0Y68") || se.getSQLState().equals("42000")) {
         Log.getLogWriter().info("got schema existing exception if multiple threads" +
             " try to create schema, continuing tests");
       } else

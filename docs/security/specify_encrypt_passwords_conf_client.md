@@ -1,8 +1,8 @@
 # Specifying Encrypted Passwords in Conf Files or in Client Connections
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+<ent>This feature is available only in the Enterprise version of SnappyData </br></ent>
 
-SnappyData allows you to specify encrypted passwords, if you do not want to specify plain text passwords, in conf files or in JDBC/ODBC client connections URLs, while launching the SnappyData cluster in a secure mode.SnappyData provides a utility script called **snappy-encrypt-password.sh** to generate encrypted passwords of system users who launch the cluster.  This script is located under **sbin** directory of SnappyData product installation. 
+SnappyData allows you to specify encrypted passwords, if you do not want to specify plain text passwords, in conf files or in JDBC/ODBC client connections URLs, while launching the SnappyData cluster in a secure mode. SnappyData provides an utility script called **snappy-encrypt-password.sh** to generate encrypted passwords of system users who launch the cluster.  This script is located under **sbin** directory of SnappyData product installation. 
 
 You can generate encrypted passwords before starting the SnappyData cluster and use it in **conf** files of the SnappyData servers, locators and leads. 
 
@@ -30,11 +30,11 @@ Enter password for user1: user123 (atual password is not shown on the console)
 Re-enter password for user1: user123 (atual password is not shown on the console)
 Enter password for AUTH_LDAP_SEARCH_PW: admin123 (atual password is not shown on the console)
 Re-enter password for AUTH_LDAP_SEARCH_PW: admin123 (atual password is not shown on the console)
-Logs generated in /home/shirishd/snappyData/repo3/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-locator-1/snappylocator.log
+Logs generated in /home/xyz/<snappydata_install_dir>/work/localhost-locator-1/snappylocator.log
 SnappyData Locator pid: 2379 status: running
   Distributed system now has 1 members.
   Started DRDA server on: localhost/127.0.0.1[1527]
-SnappyData version 1.0.2.1 
+SnappyData version 1.1.1 
 snappy> Using CONNECTION0
 snappy> ENCRYPTED_PASSWORD                                                                                                              
 --------------------------------------------------------------------------------------------------------------------------------

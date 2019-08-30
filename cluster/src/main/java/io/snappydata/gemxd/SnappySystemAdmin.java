@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -32,7 +32,7 @@ import com.pivotal.gemfirexd.tools.GfxdSystemAdmin;
 
 public class SnappySystemAdmin extends GfxdSystemAdmin {
 
-  SnappySystemAdmin() {
+  private SnappySystemAdmin() {
     super();
     UTIL_Tools_DSProps = "UTIL_Snappy_Tools_DSProps";
     UTIL_DSProps_HelpPost = "UTIL_Snappy_Tools_DSProps_HelpPost";
@@ -91,31 +91,28 @@ public class SnappySystemAdmin extends GfxdSystemAdmin {
 
       super.invoke(args);
     } finally {
-      // remove zero-sized log-file
-      if (this.defaultLogFileName != null) {
-        try {
-          File logFile = new File(this.defaultLogFileName);
-          if (logFile.exists() && logFile.isFile() && logFile.length() == 0) {
-            logFile.delete();
-          }
-        } catch (Throwable t) {
-          // ignore at this point
+      // remove zero-sized generatedcode.log file
+      try {
+        File codeLogFile = new File("generatedcode.log");
+        if (codeLogFile.exists() && codeLogFile.isFile() && codeLogFile.length() == 0) {
+          codeLogFile.delete();
         }
+      } catch (Throwable t) {
+        // ignore at this point
       }
     }
   }
 
   public boolean handleVersion(String[] args) {
-    String cmd = null;
-    final ArrayList<String> cmdLine = new ArrayList<String>(Arrays.asList(args));
+    String cmd;
+    final ArrayList<String> cmdLine = new ArrayList<>(Arrays.asList(args));
     try {
       Iterator<String> it = cmdLine.iterator();
       while (it.hasNext()) {
         String arg = it.next();
         if (arg.startsWith("-")) {
           checkDashArg(null, arg, it);
-        }
-        else {
+        } else {
           break;
         }
       }
@@ -159,9 +156,8 @@ public class SnappySystemAdmin extends GfxdSystemAdmin {
     }
 
     if (cmd.equalsIgnoreCase("version")) {
-      Boolean optionOK = (cmdLine.size() == 0);
+      boolean optionOK = (cmdLine.size() == 0);
       if (cmdLine.size() == 1) {
-        optionOK = false;
         String option = cmdLine.get(0);
         if ("CREATE".equals(option) || "FULL".equalsIgnoreCase(option)) {
           optionOK = true;

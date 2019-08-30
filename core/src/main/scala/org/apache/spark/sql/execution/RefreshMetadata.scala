@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -24,12 +24,11 @@ import com.pivotal.gemfirexd.internal.engine.distributed.GfxdMessage
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.sql.execute.FunctionUtils
 import com.pivotal.gemfirexd.internal.engine.sql.execute.FunctionUtils.GetFunctionMembers
-import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.{LocalMode, SnappyContext, SnappyEmbeddedMode, SnappySession}
 
@@ -42,8 +41,8 @@ object RefreshMetadata extends Enumeration
   type Type = Value
   // list of various action types possible with this function
   // first argument to the execute() methods should be this
-  val SET_RELATION_DESTROY, FLUSH_ROW_BUFFER, REMOVE_CACHED_OBJECTS, CLEAR_CODEGEN_CACHE,
-  ADD_URIS_TO_CLASSLOADER = Value
+  val UPDATE_CATALOG_SCHEMA_VERSION, FLUSH_ROW_BUFFER, REMOVE_CACHED_OBJECTS, CLEAR_CODEGEN_CACHE,
+  ADD_URIS_TO_CLASSLOADER, REMOVE_FUNCTION_JAR, REMOVE_URIS_FROM_CLASSLOADER = Value
 
   override def getId: String = ID
 
@@ -73,8 +72,9 @@ object RefreshMetadata extends Enumeration
    * specifies whether execution has to be done in connector mode or not.
    */
   def executeOnAll(sc: SparkContext, action: Type, args: Any,
-      executeInConnector: Boolean = true, executeLocallyInConnector: Boolean = false): Unit = {
-    SnappyContext.getClusterMode(sc) match {
+      executeInConnector: Boolean = true): Unit = {
+    if (sc eq null) executeOnAllEmbedded(action, args)
+    else SnappyContext.getClusterMode(sc) match {
       case SnappyEmbeddedMode(_, _) => executeOnAllEmbedded(action, args)
       case LocalMode(_, _) => executeLocal(action, args)
       case _ => if (executeInConnector) {
@@ -83,24 +83,28 @@ object RefreshMetadata extends Enumeration
           executeLocal(action, args)
           Iterator.empty
         })
-      } else if (executeLocallyInConnector) {
-        executeLocal(action, args)
       }
     }
   }
 
   def executeLocal(action: Type, args: Any): Unit = {
     action match {
-      case SET_RELATION_DESTROY =>
+      case UPDATE_CATALOG_SCHEMA_VERSION =>
         SnappySession.clearAllCache(onlyQueryPlanCache = true)
         CodeGeneration.clearAllCache()
-        val (version, relation) = args.asInstanceOf[(Int, Option[QualifiedTableName])]
-        val myId = GemFireStore.getMyId
-        if (myId ne null) {
-          val profile = GemFireXDUtils.getGfxdProfile(myId)
-          if (profile ne null) profile.setRelationDestroyVersion(version)
+        if (args != null) {
+          val (version, relations) = args.asInstanceOf[(Long, Seq[(String, String)])]
+          // update the version stored in own profile
+          val profile = GemFireXDUtils.getMyProfile(false)
+          if (profile ne null) {
+            profile.updateCatalogSchemaVersion(version)
+          }
+          val catalog = SnappyHiveExternalCatalog.getInstance
+          if (catalog ne null) {
+            if (relations.isEmpty) catalog.invalidateAll()
+            else relations.foreach(catalog.invalidate)
+          }
         }
-        SnappyStoreHiveCatalog.clearCatalog(relation)
       case FLUSH_ROW_BUFFER =>
         GfxdSystemProcedures.flushLocalBuckets(args.asInstanceOf[String], true)
       case REMOVE_CACHED_OBJECTS =>
@@ -109,6 +113,12 @@ object RefreshMetadata extends Enumeration
         CodeGeneration.clearAllCache()
       case ADD_URIS_TO_CLASSLOADER =>
         ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(
+          args.asInstanceOf[Array[String]])
+      case REMOVE_FUNCTION_JAR =>
+        ToolsCallbackInit.toolsCallback.removeFunctionJars(
+          args.asInstanceOf[Array[String]])
+      case REMOVE_URIS_FROM_CLASSLOADER =>
+        ToolsCallbackInit.toolsCallback.removeURIsFromExecutorClassLoader(
           args.asInstanceOf[Array[String]])
     }
   }

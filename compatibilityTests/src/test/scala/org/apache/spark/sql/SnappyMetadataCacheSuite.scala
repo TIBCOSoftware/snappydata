@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,10 +19,4 @@ package org.apache.spark.sql
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyMetadataCacheSuite extends MetadataCacheSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "SPARK-16337 temporary view refresh",
-    "case sensitivity support in temporary view refresh"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

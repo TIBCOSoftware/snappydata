@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -49,6 +49,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
     ClusterManagerTestBase.stopNetworkServers()
     super.afterClass()
+    Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
+      "validateNoActiveSnapshotTX"))
     vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
   }
 

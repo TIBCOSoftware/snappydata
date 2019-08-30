@@ -1,3 +1,8 @@
+// INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/stopDerby.inc;
+
+ENDTASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_dumpStacks
+    clientNames = locator1;
+
 ENDTASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyCluster
     clientNames = locator1;
 

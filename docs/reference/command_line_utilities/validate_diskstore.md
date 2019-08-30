@@ -20,12 +20,12 @@ You can use this command:
 
 *	Before compacting an offline disk store, to determine whether it is worthwhile.
 *	Before restoring a disk store.
-*	Any time you want ensure the disk store is in good shape.
+*	Any time you want to ensure the disk store is in good shape.
 
 ## Example
 
 ```
- ./bin/snappy validate-disk-store GFXD-DEFAULT-DISKSTORE /home/alex/snappy/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-server-1
+ ./bin/snappy validate-disk-store GFXD-DEFAULT-DISKSTORE /home/xyz/<snappydata_install_dir>/work/localhost-server-1
 ```
 
 This command displays an output  as shown in the following example:

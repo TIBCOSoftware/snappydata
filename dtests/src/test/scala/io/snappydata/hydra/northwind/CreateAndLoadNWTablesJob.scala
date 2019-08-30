@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -29,7 +29,7 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
     val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadNWTablesJob.out"), true));
     Try {
       val snc = snSession.sqlContext
-      snc.sql("set spark.sql.shuffle.partitions=23")
+     // snc.sql("set spark.sql.shuffle.partitions=23")
       // scalastyle:off println
       println("jobConfig.entrySet().size() : " + jobConfig.entrySet().size())
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")

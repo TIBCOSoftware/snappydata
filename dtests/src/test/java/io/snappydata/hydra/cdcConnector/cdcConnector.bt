@@ -4,12 +4,14 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-  dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+  dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
   queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/selectOps.sql"
   deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDeleteTemp.sql"
   insertQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector"
   dataBaseName = testdatabase20G
-  threadCnt = 1
+  snappyFileLoc="$GEMFIRE/../snappy"
+  hostPort = "0"
+  threadCnt = 2
   coresPerStrmApp = 1
   sqlServerInstance = sqlServer1
   connectorJar="$GEMFIRE/../../../snappy-connectors/jdbc-stream-connector/build-artifacts/scala-2.11/libs/snappydata-jdbc-stream-connector_2.11-0.9.2.1.jar"
@@ -20,8 +22,6 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
   tableListPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/tableListTemp.txt"
   initStartRange=1000001
   initEndRange=1000050
-  totalTaskTimeSec=600
-  maxResultWaitSec=500
   numVMsToStop=1
 
  io/snappydata/hydra/cdcConnector/cdcHATest.conf
@@ -30,60 +30,64 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
    C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
    D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
    testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-   dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+   dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
    queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/pointqueries.sql"
-   deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDelete.sql"
-   insertQueryPath1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1"
+   deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDeleteTemp.sql"
+   insertQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector"
+   snappyFileLoc="$GEMFIRE/../snappy"
+   hostPort = "0"
    dataBaseName = testdatabase20G
-   threadCnt = 5
+   threadCnt = 2
    coresPerStrmApp = 2
    sqlServerInstance = sqlServer1
    connectorJar="$GEMFIRE/../../../snappy-connectors/jdbc-stream-connector/build-artifacts/scala-2.11/libs/snappydata-jdbc-stream-connector_2.11-0.9.2.1.jar"
    driverJar="/export/shared/QA_DATA/sqlServerJar/mssql-jdbc-6.1.0.jre8.jar"
-   pocJar="$GEMFIRE/../../../snappy-poc/cdc/target/original-cdc-test-0.0.1.jar"
-   connectionPropFile1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp2/cdc_source_connection.properties"
+   pocJar="$GEMFIRE/../../../snappy-poc/cdc/target/cdc-test-0.0.1.jar"
+   connectionPropFile1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/cdc_source_connection.properties"
    sourceDestFile="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/source_destination.properties"
-   tableListPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/tableListTemp.txt"  initStartRange=1000001
+   tableListPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/tableListTemp.txt"
+   initStartRange=1000001
    initEndRange=1000050
-   totalTaskTimeSec=3600
-   maxResultWaitSec=1200
    numVMsToStop=1
 
-/*
  io/snappydata/hydra/cdcConnector/cdcConnectorMultiSqlServerInstanceTest.conf
    A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=10
    testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-   dataFilesLocationCol="/export/shared/QA_DATA/TMG_Data/TMG_Cluster_Data"
-   dataFilesLocationRow="/export/shared/QA_DATA/TMG_Data/TMG_RowTable_Data"
+   dataFilesLocationCol="/export/shared/QA_DATA/USER2_Data/Cluster_Data"
+   dataFilesLocationRow="/export/shared/QA_DATA/USER2_Data/RowTable_Data"
    queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/pointLookUpQueries.sql"
    deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDelete.sql"
    insertQueryPath1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1"
    insertQueryPath2="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp2"
+   snappyFileLoc="$GEMFIRE/../snappy"
    threadCnt = 10
    coresPerStrmApp = 6
    dataBaseName = testdatabase
    connectorJar="$GEMFIRE/../../../snappy-connectors/jdbc-stream-connector/build-artifacts/scala-2.11/libs/snappydata-jdbc-stream-connector_2.11-0.9.2-SNAPSHOT.jar"
    driverJar="/export/shared/QA_DATA/sqlServerJar/mssql-jdbc-6.1.0.jre8.jar"
-   pocJar="$GEMFIRE/../../../snappy-poc/cdc/target/original-cdc-test-0.0.1.jar"
+   pocJar="$GEMFIRE/../../../snappy-poc/cdc/target/cdc-test-0.0.1.jar"
    connectionPropFile1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/cdc_source_connection.properties"
    sourceDestFile="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/source_destination_tables.properties"
    connectionPropFile2="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp2/cdc_source_connection.properties"
-   tableListPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/tableNameList.txt" initStartRange=65000000
+   tableListPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/tableNameList.txt"
    initStartRange=65000000
    initEndRange=65000010
-   totalTaskTimeSec=1800
-   maxResultWaitSec=600
 
  io/snappydata/hydra/cdcConnector/cdcConnectorLongRunningHAWithMultiSqlServer.conf
    A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=10
    testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-   dataFilesLocationCol="/export/shared/QA_DATA/TMG_Data_20G"
-   dataFilesLocationRow="/export/shared/QA_DATA/TMG_Data_20G"
+   dataFilesLocationCol="/export/shared/QA_DATA/USER2_Data/Cluster_Data"
+   dataFilesLocationRow="/export/shared/QA_DATA/USER2_Data/RowTable_Data"
    queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/pointLookUpQueries.sql"
    deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDelete.sql"
    updateQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/update.sql"
    insertQueryPath1="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1"
    insertQueryPath2="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp2"
+   snappyFileLoc="$GEMFIRE/../snappy"
+   node1="dev11"
+   node2="dev8"
+   node3="dev9"
+   node4="dev10"
    threadCnt = 10
    coresPerStrmApp = 6
    dataBaseName = testdatabase
@@ -96,7 +100,3 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
    tableListPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/tableNameList.txt"
    initStartRange=65000000
    initEndRange=65000010
-   totalTaskTimeSec=36000
-   maxResultWaitSec=36000
-   
-*/

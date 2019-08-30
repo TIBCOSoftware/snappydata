@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,20 +18,5 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.test.{DataFrameReaderWriterSuite, SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyDataFrameReaderWriterSuite
-    extends DataFrameReaderWriterSuite
-        with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "column nullability and comment - write and then read",
-    "saveAsTable with mode Append should not fail if the table not exists but a same-name temp view exist",
-    "saveAsTable with mode Append should not fail if the table already exists and a same-name temp view exist",
-    "saveAsTable with mode ErrorIfExists should not fail if the table not exists but a same-name temp view exist",
-    "saveAsTable with mode Overwrite should not drop the temp view if the table not exists but a same-name temp view exist",
-    "saveAsTable with mode Overwrite should not fail if the table already exists and a same-name temp view exist",
-    "saveAsTable with mode Ignore should create the table if the table not exists but a same-name temp view exist",
-    "SPARK-18899: append to a bucketed table using DataFrameWriter with mismatched bucketing",
-    "SPARK-18912: number of columns mismatch for non-file-based data source table",
-    "SPARK-18913: append to a table with special column names"
-  )
-}
+class SnappyDataFrameReaderWriterSuite extends DataFrameReaderWriterSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

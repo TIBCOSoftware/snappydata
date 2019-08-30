@@ -54,16 +54,19 @@ Requirements for each host:
 	* If you deploy SnappyData on a virtualized host, consult the documentation provided with the platform, for system requirements and recommended best practices, for running Java and latency-sensitive workloads.
 
 ## VSD Requirements
+
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
+
 - Install 32-bit libraries on 64-bit Linux:</br>
-	"yum install glibc.i686 libX11.i686" on RHEL/CentOS</br>
-	"apt-get install libc6:i386 libx11-6:i386" on Ubuntu/Debian like systems</br>
+	`yum install glibc.i686 libX11.i686` on RHEL/CentOS</br>
+	`apt-get install libc6:i386 libx11-6:i386` on Ubuntu/Debian like systems</br>
 
 - Locally running X server. For example, an X server implementation like, XQuartz for Mac OS, Xming for Windows OS, and Xorg which is installed by default for Linux systems.
 
 ## Python Integration using pyspark 
 -	The Python pyspark module has the same requirements as in Apache Spark. The numpy package is required by many modules of pyspark including the examples shipped with SnappyData. On recent Red Hat based systems, it can be installed using `sudo yum install numpy` or `sudo yum install python2-numpy` commands. Whereas, on Debian/Ubuntu based systems, you can install using the `sudo apt-get install python-numpy` command.
 
--	Some of the python APIs can use SciPy to optimize some algorithms (in linalg package), and some others need Pandas. On recent Red Hat based systems SciPy can be installed using `sudo yum install scipy` command. Whereas,  on Debian/Ubuntu based systems you can install using the `sudo apt-get install python-scipy` command.. Likewise, Pandas on recent Red Hat based systems can be installed using `sudo yum installed python-pandas` command, while on Debian/Ubuntu based systems it can be installed using the `sudo apt-get install python-pandas` command.
+-	Some of the python APIs can use SciPy to optimize some algorithms (in linalg package), and some others need Pandas. On recent Red Hat based systems SciPy can be installed using `sudo yum install scipy` command. Whereas,  on Debian/Ubuntu based systems you can install using the `sudo apt-get install python-scipy` command. Likewise, Pandas on recent Red Hat based systems can be installed using `sudo yum installed python-pandas` command, while on Debian/Ubuntu based systems it can be installed using the `sudo apt-get install python-pandas` command.
 
 -	On Red Hat based systems, some of the above Python packages may be available only after enabling the **EPEL** repository. If these are not available in the repositories for your OS version or if using **EPEL** is not an option, then you can use **pip**. Refer to the respective project documentation for details and alternative options such as Anaconda.
 

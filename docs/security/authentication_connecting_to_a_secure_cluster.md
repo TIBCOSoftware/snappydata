@@ -24,6 +24,7 @@ val conn = DriverManager.getConnection(url, props)
 ```pre
 connect client 'localhost:1527;user=user1;password=user123';
 ```
+For more information, refer [How to connect using JDBC driver](/howto/connect_using_jdbc_driver.md).
 
 ## Using ODBC Driver
 
@@ -48,7 +49,7 @@ val conf = new SparkConf()
     .setMaster(s"spark://$hostName:7077")
     .set("spark.executor.cores", TestUtils.defaultCores.toString)
     .set("spark.executor.extraClassPath",
-      getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+      getEnvironmentVariable("SNAPPY_HOME") + "/jars/*" )
     .set("snappydata.connection", snappydataLocatorURL)
     .set("spark.snappydata.store.user", username)
     .set("spark.snappydata.store.password", password)

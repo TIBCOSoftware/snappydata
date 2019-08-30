@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -49,37 +49,37 @@ class ValidateNWQueriesWithChangingConstantsJob extends SnappySQLJob {
       NWQueries.dataFilesLocation = dataFilesLocation
       // scalastyle:off println
       var startTime = System.currentTimeMillis()
-      pw.println(s"createAndLoadSparkTables Test started at : " + startTime)
+      pw.println(s"${SnappyTestUtils.logTime} createAndLoadSparkTables started.")
       NWTestUtil.createAndLoadSparkTables(sqlContext)
       var finishTime = System.currentTimeMillis()
-      var totalTime = (finishTime -startTime)/1000
-      pw.println(s"createAndLoadSparkTables completed successfully in :" + totalTime + " secs.")
+      var totalTime = (finishTime - startTime) / 1000
+      pw.println(s"${SnappyTestUtils.logTime} createAndLoadSparkTables completed successfully in " +
+          s"$totalTime secs.")
       pw.flush()
-      pw.println(s"ValidateQueriesFullResultSet for ${tableType} tables Queries Test started at" +
-          s" :  " + System.currentTimeMillis)
+      pw.println(s"${SnappyTestUtils.logTime} Validation for ${tableType} tables queries started..")
       startTime = System.currentTimeMillis()
       val failedQueries: String = NWTestUtil.executeAndValidateQueriesByChangingConstants(snc,
         tableType, pw, sqlContext)
       finishTime = System.currentTimeMillis()
-      totalTime = (finishTime -startTime)/1000
-            if (!failedQueries.isEmpty) {
+      totalTime = (finishTime - startTime) / 1000
+      if (!failedQueries.isEmpty) {
         println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. " +
             s"See ${getCurrentDirectory}/${outputFile}")
-        pw.println(s"Total execution took ${totalTime} seconds.")
-        pw.println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. ")
+        pw.println(s"${SnappyTestUtils.logTime} Total execution took ${totalTime} seconds.")
+        pw.println(s"${SnappyTestUtils.logTime} Validation failed for ${tableType} tables for " +
+            s"queries ${failedQueries}. ")
         pw.close()
-        throw new TestException(s"Validation task failed for ${tableType}. " +
+        throw new TestException(s"Validation failed for ${tableType}. " +
             s"See ${getCurrentDirectory}/${outputFile}")
       }
-      pw.println(s"ValidateQueries for ${tableType} tables Test completed  " +
-          s"successfully in : " + totalTime + " secs.")
-
+      pw.println(s"${SnappyTestUtils.logTime} ValidateQueries for $tableType tables completed " +
+          s"successfully in $totalTime secs.")
       pw.close()
     } match {
       case Success(v) => pw.close()
         s"See ${getCurrentDirectory}/${outputFile}"
       case Failure(e) => pw.close();
-        throw e;
+        throw new TestException(s"Validation failed. See ${getCurrentDirectory}/${outputFile}");
     }
   }
 

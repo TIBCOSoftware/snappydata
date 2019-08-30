@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,12 +16,11 @@
  */
 package org.apache.spark.sql.policy
 
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression, In, Literal, Not, Or}
 import org.apache.spark.sql.catalyst.plans.logical.Filter
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -33,14 +32,14 @@ object PolicyProperties {
   val expandedPolicyApplyTo = "expandedPolicyApplyTo"
   val policyOwner = "policyOwner" // should be same as table owner
   val rlsConditionString = "row-level-security"
-  val rlsConditionStringUtf8 = UTF8String.fromString(rlsConditionString)
+  val rlsConditionStringUtf8: UTF8String = UTF8String.fromString(rlsConditionString)
   val rlsAppliedCondition = EqualTo(Literal(rlsConditionString), Literal(rlsConditionString))
 
-  def createFilterPlan(filterExpression: Expression, targetTable: QualifiedTableName,
+  def createFilterPlan(filterExpression: Expression, targetTable: TableIdentifier,
       policyOwner: String, applyTo: Seq[String]):
   BypassRowLevelSecurity = {
     val expandedOwner = ExternalStoreUtils.
-        getExpandedGranteesIterator(Seq(policyOwner)).toSeq
+        getExpandedGranteesIterator(policyOwner :: Nil).toSeq
     /* if (isTargetExternalRelation) {
       BypassRowLevelSecurity(Filter(filterExpression, UnresolvedRelation(targetTable)))
     } else { */

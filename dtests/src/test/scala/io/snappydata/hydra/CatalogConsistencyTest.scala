@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,11 +18,12 @@ package io.snappydata.hydra
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
+import scala.util.{Failure, Success, Try}
+
 import com.typesafe.config.Config
+
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
-
-import scala.util.{Failure, Success, Try}
 
 class CatalogConsistencyTest extends SnappySQLJob {
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
@@ -35,12 +36,12 @@ class CatalogConsistencyTest extends SnappySQLJob {
     val sc = SparkContext.getOrCreate()
     val sqlContext = SQLContext.getOrCreate(sc)
     Try {
-      snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-        snc.snappySession.sessionCatalog.newQualifiedTableName("airline"), None)
+      snc.snappySession.sessionCatalog.dropTable(
+        snc.snappySession.tableIdentifier("airline"), ignoreIfNotExists = false, purge = false)
 
       try {
         snc.snappySession.sessionCatalog.lookupRelation(
-          snc.snappySession.sessionCatalog.newQualifiedTableName("airline"))
+          snc.snappySession.tableIdentifier("airline"))
       } catch {
         case t: TableNotFoundException =>
           // scalastyle:off println

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -35,6 +35,8 @@ class PolicyJdbcClientTest extends PolicyTestBase {
   val colTableName: String = s"$tableOwner.ColumnTable"
   val rowTableName: String = s"$tableOwner.RowTable"
   var ownerSession: SnappySession = _
+
+  override protected def systemUser: String = tableOwner
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -430,22 +432,22 @@ class PolicyJdbcClientTest extends PolicyTestBase {
         "POLICYFOR", "APPLYTO", "FILTER", "OWNER")
       val expectedResults = Map("TESTPOLICY1" -> (tableOwner.toUpperCase,
           colTableName.toUpperCase.substring(colTableName.indexOf('.') + 1),
-          "SELECT", "CURRENT_USER", "ID > 10",
+          "select", "current_user", "id > 10",
           tableOwner.toUpperCase),
         "TESTPOLICY2" -> (tableOwner.toUpperCase,
             rowTableName.toUpperCase.substring(rowTableName.indexOf('.') + 1),
-            "SELECT", "CURRENT_USER", "ID < 30",
+            "select", "current_user", "id < 30",
             tableOwner.toUpperCase),
         "TESTPOLICY3" -> (tableOwner.toUpperCase,
             rowTableName.toUpperCase.substring(rowTableName.indexOf('.') + 1),
-            "SELECT", "CURRENT_USER", "ID < 70",
+            "select", "current_user", "id < 70",
             tableOwner.toUpperCase)
       )
 
       // check using session
       val ds = ownerSession.sql("select * from sys.syspolicies")
       val rows = ds.collect()
-      assert(expectedColumns === ds.schema.map(_.name))
+      assert(expectedColumns === ds.schema.map(_.name.toUpperCase))
       assert(expectedResults.toSeq.sortBy(_._1).map(p => Row(p._1, p._2._1, p._2._2,
         p._2._3, p._2._4, p._2._5, p._2._6)) === rows.toSeq.sortBy(_.getString(0)))
 
@@ -620,12 +622,12 @@ class PolicyJdbcClientTest extends PolicyTestBase {
 
   // return true if a policy exists for a table else false
   private def checkIfPoliciesOnTableExist(tableName: String): Boolean = {
-    val policies = Misc.getMemStore.getExternalCatalog.getPolicies(true)
+    val policies = Misc.getMemStore.getExternalCatalog.getPolicies()
     val it = policies.listIterator()
     while (it.hasNext) {
       val p = it.next()
       //      println("Actual tablename:" + tableName + ", tableName in policy:" + p.tableName)
-      if ((p.schemaName + "." + p.tableName).equals(tableName.toUpperCase)) {
+      if ((p.schemaName + "." + p.tableName).equalsIgnoreCase(tableName)) {
         return true
       }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,7 +22,6 @@ import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.row.SnappyStoreClientDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext, TableNotFoundException}
 
@@ -70,7 +69,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     try {
       // table should not exist in the Hive catalog
       snc.snappySession.sessionCatalog.lookupRelation(
-        snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
+        snc.snappySession.tableIdentifier("column_table1"))
     } catch {
       case t: TableNotFoundException => // expected exception
       case unknown: Throwable => throw unknown
@@ -92,7 +91,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(result.collect.length == 5)
     // below call should not throw an exception
     snc.snappySession.sessionCatalog.lookupRelation(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("tweetsTable"))
+      snc.snappySession.tableIdentifier("tweetsTable"))
   }
 
   def testHiveStoreEntryMissingForTable(): Unit = {
@@ -109,12 +108,12 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     createTables(snc)
 
     // remove column_table1 entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"), None)
+    snc.snappySession.sessionCatalog.dropTable(
+      snc.snappySession.tableIdentifier("column_table1"), ignoreIfNotExists = false, purge = false)
 
     try {
       snc.snappySession.sessionCatalog.lookupRelation(
-        snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
+        snc.snappySession.tableIdentifier("column_table1"))
     } catch {
       case t: TableNotFoundException => // expected exception
       case unknown: Throwable => throw unknown
@@ -150,7 +149,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     routeQueryDisabledConn.createStatement().execute("drop table column_table1")
 
     // make sure that the table exists in Hive metastore
-    assert(JdbcExtendedUtils.tableExistsInMetaData("APP.COLUMN_TABLE1", routeQueryDisabledConn))
+    assert(JdbcExtendedUtils.tableExistsInMetaData("APP", "COLUMN_TABLE1", routeQueryDisabledConn))
 
     val connection = getClientConnection(netPort1)
     // repair the catalog
@@ -170,8 +169,8 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     createTables(snc)
     // remove column_table1 entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"), None)
+    snc.snappySession.sessionCatalog.dropTable(
+      snc.snappySession.tableIdentifier("column_table1"), ignoreIfNotExists = false, purge = false)
 
     // stop spark
     val sparkContext = SnappyContext.globalSparkContext
@@ -210,7 +209,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     routeQueryDisabledConn.createStatement().execute("drop table column_table1")
 
     // make sure that the table exists in Hive metastore
-    assert(JdbcExtendedUtils.tableExistsInMetaData("APP.COLUMN_TABLE1", routeQueryDisabledConn))
+    assert(JdbcExtendedUtils.tableExistsInMetaData("APP", "COLUMN_TABLE1", routeQueryDisabledConn))
 
     // stop spark
     val sparkContext = SnappyContext.globalSparkContext
@@ -277,8 +276,8 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     } catch {
       case ae: AnalysisException =>
         // Expected Exception and assert message
-        assert(ae.getMessage.equals("Object APP.ORDER_DETAILS_ROW cannot be dropped because of " +
-            "dependent objects: APP.EXEC_DETAILS_ROW;"))
+        assert(ae.getMessage.contains("app.order_details_row cannot be dropped because of " +
+            "dependent objects: app.exec_details_row"))
     }
 
     // stop spark
@@ -295,8 +294,8 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     } catch {
       case ae: AnalysisException =>
         // Expected Exception and assert message
-        assert(ae.getMessage.equals("Object APP.ORDER_DETAILS_ROW cannot be dropped because of " +
-            "dependent objects: APP.EXEC_DETAILS_ROW;"))
+        assert(ae.getMessage.contains("app.order_details_row cannot be dropped because of " +
+            "dependent objects: app.exec_details_row"))
     }
 
     snc.sql(s"drop table $colloactedColumnTable")

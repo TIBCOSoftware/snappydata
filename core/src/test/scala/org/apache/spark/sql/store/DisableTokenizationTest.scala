@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,16 +16,17 @@
  */
 package org.apache.spark.sql.store
 
+
 import io.snappydata.core.Data
-import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
+import io.snappydata.{Property, SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql._
 
 /**
-  * Tests for column tables in GFXD.
-  */
+ * Tests to check for tokenization disabled/enabled using session property.
+ */
 class DisableTokenizationTest
     extends SnappyFunSuite
         with Logging
@@ -33,14 +34,18 @@ class DisableTokenizationTest
         with BeforeAndAfterAll {
 
   val table = "my_table"
+  var planCaching : Boolean = false
 
   override def beforeAll(): Unit = {
     snc.sql(s"set snappydata.sql.tokenize = false")
+    planCaching = Property.PlanCaching.get(snc.sessionState.conf)
+    Property.PlanCaching.set(snc.sessionState.conf, true)
     super.beforeAll()
   }
 
   override def afterAll(): Unit = {
     snc.sql(s"set snappydata.sql.tokenize = true")
+    Property.PlanCaching.set(snc.sessionState.conf, true)
     super.afterAll()
   }
 
@@ -75,12 +80,12 @@ class DisableTokenizationTest
       dosleep: Boolean = false) = {
     val data = ((0 to numRows), (0 to numRows), (0 to numRows)).zipped.toArray
     val rdd = sc.parallelize(data, data.length)
-      .map(s => Data(s._1, s._2, s._3))
+        .map(s => Data(s._1, s._2, s._3))
     val dataDF = snc.createDataFrame(rdd)
 
     snc.sql(s"Drop Table if exists $name")
     snc.sql(s"Create Table $name (a INT, b INT, c INT) " +
-      "using column options()")
+        "using column options()")
     dataDF.write.insertInto(s"$name")
     // This sleep was necessary as it has some dependency on the region size
     // collector thread frequency. Can't remember right now.

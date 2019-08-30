@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -40,10 +40,10 @@ abstract class SnappyDataBaseDialect extends JdbcExtendedDialect {
 
   override def tableExists(table: String, conn: Connection,
       context: SQLContext): Boolean = {
-    if (table.equalsIgnoreCase("SYSIBM.SYSDUMMY1")) return true
+    if (table.equalsIgnoreCase(JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME)) return true
     val session = context.sparkSession
     val (schemaName, tableName) = JdbcExtendedUtils.getTableWithSchema(
-      table, conn, Some(() => session))
+      table, conn, Some(session))
     session.catalog.tableExists(schemaName, tableName)
   }
 
@@ -214,7 +214,7 @@ abstract class SnappyDataBaseDialect extends JdbcExtendedDialect {
     val (schema, table) = if (dotIndex > 0) {
       (tableName.substring(0, dotIndex), tableName.substring(dotIndex + 1))
     } else {
-      (Constant.DEFAULT_SCHEMA, tableName)
+      (conn.getSchema, tableName)
     }
     val stmt = conn.createStatement()
     val rs = stmt.executeQuery("select datapolicy from sys.systables where " +

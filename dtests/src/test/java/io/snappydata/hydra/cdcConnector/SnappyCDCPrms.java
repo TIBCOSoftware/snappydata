@@ -1,6 +1,9 @@
 package io.snappydata.hydra.cdcConnector;
 
+import hydra.BasePrms;
 import io.snappydata.hydra.cluster.SnappyPrms;
+
+import java.util.Vector;
 
 public class SnappyCDCPrms extends SnappyPrms {
 
@@ -10,13 +13,27 @@ public class SnappyCDCPrms extends SnappyPrms {
   public static Long dataLocation;
 
   /**
+   * Boolean value to determine if conf is to be modified
+   */
+  public static Long isModifyConf;
+
+  /**
    * Boolean value to determine if the query is a scan type query
    */
+
   public static Long isScanQuery;
+
+
+  /**
+   * Boolean value to determine if the test does backUp and recovery
+   */
+  public static Long isbackUpRecovery;
+
 
   /**
    * Boolean value to determine if the query is a pointLookUp type query
    */
+
   public static Long isPointLookUP;
 
   /**
@@ -40,13 +57,38 @@ public class SnappyCDCPrms extends SnappyPrms {
   public static Long isCDC;
 
   /**
+   * Boolean value to determine if result set validation is before restart or after restart
+   */
+  public static Long isBeforeRestart;
+
+  /**
+   * Boolean value to determine if its only individual node stop
+   */
+  public static Long isOnlyStop;
+
+  /**
+   * Boolean value to determine whether to only start the cluster or stop-start the cluster,default is only start
+   */
+  public static Long isStopStartCluster;
+
+
+  /**
    * Int value that determines the number of threads used for a particular application
    */
+
   public static Long threadCnt;
+
+
+  /**
+   * Int value that determines the number of nodes to be stopped
+   */
+  public static Long numNodesToStop;
+
 
   /**
    * Name of individual applications
    */
+
   public static Long appName;
 
   /**
@@ -57,7 +99,12 @@ public class SnappyCDCPrms extends SnappyPrms {
   /**
    * config file parameters for the node required during HA
    */
-  public static Long nodeInfoforHA;
+  public static Long nodeInfoForHA;
+
+  /**
+   * config file parameters for the node required during HA
+   */
+  public static Long nodeName;
 
   /**
    * File path that consists of the confs and cluster scripts
@@ -68,6 +115,18 @@ public class SnappyCDCPrms extends SnappyPrms {
    * Type of nodes(servers,leads,locators) for HA
    */
   public static Long nodeType;
+
+
+  /**
+   * HostName of the node
+   */
+  public static Long hostName;
+
+  /**
+   * Boolean value to determine if the new node be added in the beginning
+   */
+  public static Long isNewNodeFirst;
+
 
   /**
    * startRange is integer value used for giving
@@ -87,11 +146,21 @@ public class SnappyCDCPrms extends SnappyPrms {
    */
   public static Long sqlServerInstance;
 
-  public static String getNodeInfoforHA() {
-    String nodeInfo = tasktab().stringAt(nodeInfoforHA, tab().stringAt
-        (nodeInfoforHA, null));
+  /**
+   * Boolean value to determine whether to keep the original conf file or not
+   */
+  public static Long isKeepOrgConf;
+
+  public static String getNodeInfoForHA() {
+    String nodeInfo = tasktab().stringAt(nodeInfoForHA, tab().stringAt
+        (nodeInfoForHA, null));
     if (nodeInfo == null) return "";
     return nodeInfo;
+  }
+
+  public static Vector getNodeName() {
+    Long key = nodeName;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
 
   public static String getSnappyFileLoc() {
@@ -123,6 +192,13 @@ public class SnappyCDCPrms extends SnappyPrms {
     return nodeName;
   }
 
+  public static String getHostName() {
+    String nodeName = tasktab().stringAt(hostName, tab().stringAt
+        (hostName, null));
+    if (nodeName == null) return "";
+    return nodeName;
+  }
+
   public static String getDataBaseName() {
     String name = tasktab().stringAt(dataBaseName, tab().stringAt
         (dataBaseName, null));
@@ -134,8 +210,38 @@ public class SnappyCDCPrms extends SnappyPrms {
   public static String getSqlServerInstance() {
     String name = tasktab().stringAt(sqlServerInstance, tab().stringAt
         (sqlServerInstance, null));
-    if (name == null) return "sqlServer1";
+    if (name == null) return "";
     return name;
+  }
+
+  public static boolean getIsBeforeRestart() {
+    Long key = isBeforeRestart;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsModifyConf() {
+    Long key = isModifyConf;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsKeepOrgConf() {
+    Long key = isKeepOrgConf;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsBackUpRecovery() {
+    Long key = isbackUpRecovery;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsOnlyStop() {
+    Long key = isOnlyStop;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsStopStartCluster() {
+    Long key = isStopStartCluster;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
   public static boolean getIsScanQuery() {
@@ -145,6 +251,11 @@ public class SnappyCDCPrms extends SnappyPrms {
 
   public static boolean getIsBulkDelete() {
     Long key = isBulkDelete;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsNewNodeFirst() {
+    Long key = isNewNodeFirst;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
@@ -175,6 +286,11 @@ public class SnappyCDCPrms extends SnappyPrms {
 
   public static int getInitEndRange() {
     Long key = initEndRange;
+    return tasktab().intAt(key, tab().intAt(key, 1));
+  }
+
+  public static int getNumNodesToStop() {
+    Long key = numNodesToStop;
     return tasktab().intAt(key, tab().intAt(key, 1));
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,7 +19,8 @@ package org.apache.spark.sql.store
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.core.{Data, TestData2}
-import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
+import io.snappydata.{Property, SnappyFunSuite, SnappyTableStatsProviderService}
+import jdk.internal.org.objectweb.asm.tree.analysis.AnalyzerException
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
@@ -39,11 +40,14 @@ class TokenizationTest
   val table = "my_table"
   val table2 = "my_table2"
   val all_typetable = "my_table3"
+  var planCaching : Boolean = false
 
   override def beforeAll(): Unit = {
     // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
+    planCaching = Property.PlanCaching.get(snc.sessionState.conf)
+    Property.PlanCaching.set(snc.sessionState.conf, true)
     super.beforeAll()
   }
 
@@ -51,6 +55,7 @@ class TokenizationTest
     // System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
+    Property.PlanCaching.set(snc.sessionState.conf, planCaching)
     super.afterAll()
   }
 
@@ -65,6 +70,48 @@ class TokenizationTest
     snc.dropTable(s"$table2", ifExists = true)
     snc.dropTable(s"$all_typetable", ifExists = true)
     snc.dropTable(s"$colTableName", ifExists = true)
+  }
+
+  test("SNAP-2712") {
+    val r1 = snc.sql("select substr(soundex('laxtaxmax'), 1, 3), soundex('tax') from values 1 = 1")
+    val c1s = r1.columns
+    val arr1 = r1.collect()
+    val r2 = snc.sql("select substr(soundex('laxtaxmax'), 2, 5), soundex('tax') from values 1 = 1")
+    val arr2 = r2.collect()
+    val c2s = r2.columns
+    assert(!c1s.sameElements(c2s))
+    assert(!arr1.sameElements(arr2))
+    assert (arr1(0).getString(0) === "L23")
+    assert (arr1(0).getString(1) === "T200")
+    assert (arr2(0).getString(0) === "232")
+    assert (arr2(0).getString(1) === "T200")
+
+    // Only substr
+    val r3 = snc.sql("select substr('suoertest', 0, 5) from values 1 = 1")
+    val c3s = r3.columns
+    val arr3 = r3.collect()
+    val r4 = snc.sql("select substr('supertest', 0, 5) from values 1 = 1")
+    val c4s = r4.columns
+    val arr4 = r4.collect()
+    assert(!c3s.sameElements(c4s))
+    assert(!arr3.sameElements(arr4))
+    assert (arr3(0).getString(0) === "suoer")
+    assert (arr4(0).getString(0) === "super")
+
+    val r5 = snc.sql("select levenshtein('supriya','swati')")
+    val c5s = r5.columns
+    val arr5 = r5.collect()
+    val r6 = snc.sql("select levenshtein('swati','swati')")
+    val c6s = r6.columns
+    val arr6 = r6.collect()
+    val r7 = snc.sql("select levenshtein('swati','sonal')")
+    val c7s = r7.columns
+    val arr7 = r7.collect()
+    assert(!c5s.sameElements(c6s) && !c5s.sameElements(c7s))
+    assert(!arr5.sameElements(arr6) && !arr5.sameElements(arr7))
+    assert (arr5(0).getInt(0) === 5)
+    assert (arr6(0).getInt(0) === 0)
+    assert (arr7(0).getInt(0) === 4)
   }
 
   test("SNAP-2031 tpcds") {
@@ -109,9 +156,9 @@ class TokenizationTest
         s"GROUP BY ROLLUP (channel, id) ORDER BY channel, id LIMIT 100"
     try {
       snc.sql(sqlstr)
-      fail(s"this should have given TableNotFoundException")
+      fail("this should have given AnalysisException")
     } catch {
-      case tnfe: TableNotFoundException =>
+      case e: AnalysisException if e.message.contains("Table or view not found") =>
       case t: Throwable => fail(s"unexpected exception $t")
     }
   }
@@ -129,9 +176,9 @@ class TokenizationTest
         s"i_class, i_item_id, i_item_desc, revenueratio LIMIT 100"
     try {
       snc.sql(sqlstr)
-      fail(s"this should have given TableNotFoundException")
+      fail("this should have given AnalysisException")
     } catch {
-      case tnfe: TableNotFoundException =>
+      case e: AnalysisException if e.message.contains("Table or view not found") =>
       case t: Throwable => fail(s"unexpected exception $t")
     }
   }
@@ -236,7 +283,6 @@ class TokenizationTest
     res = snc.sql(s"select quartile, avg(c) as avgC, max(c) as maxC" +
         s" from (select c, ntile(4) over (order by c) as quartile from $table ) x " +
         s"group by quartile order by quartile").collect()
-    // res.foreach(println)
 
     // Unix timestamp
     val df = snc.sql(s"select * from $table where UNIX_TIMESTAMP('2015-01-01 12:00:00') > a")
@@ -261,6 +307,7 @@ class TokenizationTest
 
     // check caching for non-code generated JsonTuple
 
+    // RDDScanExec plans are not considered for plan caching
     checkAnswer(snc.sql(
       """
         |SELECT json_tuple(json, 'f1', 'f2')
@@ -277,7 +324,7 @@ class TokenizationTest
         |FROM (SELECT '{"f1": "value2", "f2": 10}' json) test
       """.stripMargin), Row("value2", "10") :: Nil)
 
-    assert(cacheMap.size() == 2)
+    assert(cacheMap.size() == 0)
 
     checkAnswer(snc.sql(
       """
@@ -290,7 +337,7 @@ class TokenizationTest
         |FROM (SELECT '{"f1": "value2", "f2": 10}' json) test
       """.stripMargin), Row("10") :: Nil)
 
-    assert(cacheMap.size() == 4)
+    assert(cacheMap.size() == 0)
   }
 
   test("SNAP-2566") {
@@ -355,7 +402,6 @@ class TokenizationTest
 
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert(cacheMap.size() == 1)
-
       newSession.sql(s"set snappydata.sql.planCaching=false").collect()
       assert(cacheMap.size() == 1)
 
@@ -368,11 +414,10 @@ class TokenizationTest
       assert(cacheMap.size() == 1)
 
       query = s"select * from $table where b = 1"
-      var res2 = newSession.sql(query).collect()
+      newSession.sql(query).collect()
       assert(cacheMap.size() == 1)
 
-      newSession.sql(s"set snappydata.sql.planCachingAll=false").collect()
-      assert(cacheMap.size() == 0)
+      cacheMap.clear()
 
       q.zipWithIndex.foreach { case (x, i) =>
         var result = newSession.sql(x).collect()
@@ -386,8 +431,7 @@ class TokenizationTest
       cacheMap.clear()
 
       val newSession2 = new SnappySession(snc.sparkSession.sparkContext)
-      newSession2.sql(s"set snappydata.sql.planCachingAll=true").collect()
-
+      Property.PlanCaching.set(newSession2.sessionState.conf, true)
       assert(cacheMap.size() == 0)
 
       q.zipWithIndex.foreach { case (x, i) =>
@@ -398,14 +442,15 @@ class TokenizationTest
         })
       }
 
-      assert(cacheMap.size() == 1)
+      assert(SnappySession.getPlanCache.asMap().size() == 1)
       newSession.clear()
       newSession2.clear()
       cacheMap.clear()
 
       val newSession3 = new SnappySession(snc.sparkSession.sparkContext)
-      newSession3.sql(s"set snappydata.sql.tokenize=false").collect()
-
+      newSession3.sql(s"set snappydata.sql.tokenize=false")
+      // check that SQLConf property names are case-insensitive
+      newSession3.sql(s"set snappydata.sql.plancaching=true")
       assert(cacheMap.size() == 0)
 
       q.zipWithIndex.foreach { case (x, i) =>
@@ -437,20 +482,18 @@ class TokenizationTest
         s"select * from $table where a = $x"
       }
       val start = System.currentTimeMillis()
-      // scalastyle:off println
       q.zipWithIndex.foreach  { case (x, i) =>
         var result = snc.sql(x).collect()
         assert(result.length === 1)
         result.foreach( r => {
-          println(s"${r.get(0)}, ${r.get(1)}, ${r.get(2)}, ${i}")
+          logInfo(s"${r.get(0)}, ${r.get(1)}, ${r.get(2)}, $i")
           assert(r.get(0) == r.get(1) && r.get(2) == i)
         })
       }
       val end = System.currentTimeMillis()
 
       // snc.sql(s"select * from $table where a = 1200").collect()
-      println("Time taken = " + (end - start))
-      // scalastyle:on println
+      logInfo("Time taken = " + (end - start))
 
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert( cacheMap.size() == 1)
@@ -580,40 +623,6 @@ class TokenizationTest
     logInfo("Successful")
   }
 
-  ignore("Test tokenize for all data types") {
-    val numRows = 10
-    createAllTypeTableAndPoupulateData(numRows, s"$all_typetable")
-
-    try {
-      val q = (0 until numRows).zipWithIndex.map { case (_, i) =>
-        s"select * from $all_typetable where s = 'abc$i'"
-      }
-      val start = System.currentTimeMillis()
-      q.zipWithIndex.foreach  { case (x, i) =>
-        var result = snc.sql(x).collect()
-        assert(result.length === 1)
-        result.foreach( r => {
-          assert(r.get(0) == i && r.get(4) == s"abc$i")
-        })
-      }
-      val end = System.currentTimeMillis()
-
-      // snc.sql(s"select * from $table where a = 1200").collect()
-      // println("Time taken = " + (end - start))
-
-      val cacheMap = SnappySession.getPlanCache.asMap()
-      assert( cacheMap.size() == 1)
-      val x = cacheMap.keySet().toArray()(0).asInstanceOf[CachedKey].sqlText
-      assert(x.equals(q(0)))
-      snc.sql(s"drop table $all_typetable")
-    } finally {
-      snc.sql("set spark.sql.caseSensitive = false")
-      snc.sql("set schema = APP")
-    }
-
-    logInfo("Successful")
-  }
-
   test("Test tokenize for sub-queries") {
     snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=1")
     snc.sql(s"set spark.sql.crossJoin.enabled=true")
@@ -663,9 +672,8 @@ class TokenizationTest
     var query = s"select * from $table t1, $table2 t2 where t1.a = t2.a and t1.b = 5 limit 2"
     // snc.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
     val result1 = snc.sql(query).collect()
-    // scalastyle:off println
     result1.foreach( r => {
-      println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
+      logInfo(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
           ", " + r.get(5))
     })
     val cacheMap = SnappySession.getPlanCache.asMap()
@@ -675,10 +683,9 @@ class TokenizationTest
     query = s"select * from $table t1, $table2 t2 where t1.a = t2.a and t1.b = 7 limit 2"
     val result2 = snc.sql(query).collect()
     result2.foreach( r => {
-      println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
+      logInfo(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
           ", " + r.get(5))
     })
-    // scalastyle:on println
     assert( cacheMap.size() == 1)
     assert(!result1.sameElements(result2))
     assert(result1.length > 0)
@@ -845,7 +852,6 @@ class TokenizationTest
 
       val rows1 = rs1.collect()
       assert(rows0.sameElements(rows1))
-      // rows1.foreach(println)
 
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert(cacheMap.size() == 0)
@@ -1027,12 +1033,20 @@ class TokenizationTest
     // null, non-null combinations of updates
 
     // implicit int to string cast will cause it to be null (SNAP-2039)
-    res2 = snc.sql(s"update $colTableName set DEST = DEST + 1000 where " +
-        "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
-    val numUpdated0 = res2.foldLeft(0L)(_ + _.getLong(0))
-    assert(numUpdated0 > 0)
-    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
-        "and airtime > 350 and dest is not null").collect().length === 0)
+    // Update [SNAP-2052]: this behavior is updated to fail the update query if a string expression is
+    // as part of arithmetic operator in update expression. Explicity casting the srring to int is a
+    // workaround. However, it is important to note that casting a non-numeric string value to int will
+    // still end up in a NULL.
+    try {
+      res2 = snc.sql(s"update $colTableName set DEST = DEST + 1000 where " +
+          "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
+      fail("AnalyzerException was expected here")
+    } catch {
+      case ex: AnalysisException =>
+        val expectedMessage = "Implicit type casting of string type to numeric type is not performed" +
+            " for update statements.;"
+        assertResult(expectedMessage)(ex.getMessage)
+    }
 
     // check null updates
     res2 = snc.sql(s"update $colTableName set DEST = null where " +

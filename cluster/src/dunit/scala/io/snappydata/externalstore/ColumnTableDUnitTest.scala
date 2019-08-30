@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -395,7 +395,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         "USING column " +
         "options " +
         "(" +
-        "PARTITION_BY 'Key1'," +
+        "PARTITION_BY 'Key1', buckets '2', " +
         "REDUNDANCY '2', COLUMN_BATCH_SIZE '100')")
 
     var data = Seq(Seq(1, 2, 3, 4), Seq(7, 8, 9, 4), Seq(9, 2, 3, 4),
@@ -451,7 +451,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(tableNameWithPartition, "column", dataDF.schema,
-      props + ("COLUMN_BATCH_SIZE" -> "100"))
+      props + ("COLUMN_BATCH_SIZE" -> "100") + ("buckets" -> "2"))
 
     data.map { r =>
       snc.insert(tableNameWithPartition, Row.fromSeq(r))
@@ -649,7 +649,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   def testSNAP1210(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
-    snc.sql(s"create table t1 using com.databricks.spark.csv options(path " +
+    snc.sql(s"create external table t1 using csv options(path " +
         s"'${getClass.getResource("/northwind/orders.csv").getPath}', header 'true', " +
         s"inferschema 'true', maxCharsPerColumn '4096')")
     snc.sql("select * from t1").printSchema()

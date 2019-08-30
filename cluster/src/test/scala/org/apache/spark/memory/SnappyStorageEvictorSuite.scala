@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -31,10 +31,10 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
 
   InitializeRun.setUp()
 
-  val struct = (new StructType())
-    .add(StructField("col1", IntegerType, true))
-    .add(StructField("col2", IntegerType, true))
-    .add(StructField("col3", IntegerType, true))
+  private val struct = new StructType()
+    .add(StructField("col1", IntegerType))
+    .add(StructField("col2", IntegerType))
+    .add(StructField("col3", IntegerType))
 
   val options = Map("PARTITION_BY" -> "col1",
     "EVICTION_BY" -> "LRUHEAPPERCENT",
@@ -47,8 +47,8 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
   val memoryMode = MemoryMode.ON_HEAP
 
   test("Test UnRollMemory") {
-    val sparkSession = createSparkSession(1, 0, 10000)
-    val snSession = new SnappySession(sparkSession.sparkContext)
+    val sparkSession = createSparkSession(1, 0)
+    new SnappySession(sparkSession.sparkContext) // initialize SnappyData components
     val memoryManager = SparkEnv.get.memoryManager
         .asInstanceOf[SnappyUnifiedMemoryManager]
     memoryManager.dropAllObjects(memoryMode)
@@ -58,12 +58,12 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
 
     assert(memoryManager.storageMemoryUsed == 500)
     val key = new MemoryOwner("_SPARK_CACHE_", memoryMode)
-    assert(memoryManager.memoryForObject.getLong(key) == 500)
+    assert(memoryManager.memoryForObject.get(key) == 500)
     memoryManager.releaseUnrollMemory(500, memoryMode)
 
     assert(memoryManager.getStoragePoolMemoryUsed(MemoryMode.OFF_HEAP) +
         memoryManager.getStoragePoolMemoryUsed(MemoryMode.ON_HEAP) == 0)
-    assert(memoryManager.memoryForObject.getLong(key) == 0)
+    assert(memoryManager.memoryForObject.get(key) == 0)
   }
 
 
@@ -85,7 +85,7 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
   }
 
   test("Test storage when storage can not borrow from execution memory") {
-    val sparkSession = createSparkSession(1, 0.5, sparkMemory = 1500L)
+    val sparkSession = createSparkSession(1, 0.5, sparkMemory = 1500000L)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     snSession.createTable("t1", "row", struct, options)
@@ -109,31 +109,30 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
 
     import scala.util.control.Breaks._
 
-    var rows = 0
+    var numRows = 0
     try {
       breakable {
         for (i <- 1 to 20) {
-          val row = Row(i, i, i)
-          snSession.insert("t1", row)
-          rows += 1
+          val rows = (1 to 1000).map(j => Row(i * 1000 + j, i, j))
+          snSession.insert("t1", rows: _*)
+          numRows += 1000
         }
         fail("Should not have reached here due to LowMemory")
       }
     } catch {
-      case e: Exception => {
+      case _: Exception =>
         assert(memoryIncreaseDuetoEviction > 0)
         assert(snappyMemoryManager.wrapperStats.getNumFailedEvictionRequest(false) > 1)
-      }
     }
     snappyMemoryManager.dropAllObjects(memoryMode)
     SparkEnv.get.memoryManager.releaseExecutionMemory(500L, taskAttemptId, memoryMode)
     val count = snSession.sql("select * from t1").count()
-    assert(count == rows)
+    assert(count >= numRows)
     snSession.dropTable("t1")
   }
 
   test("Test eviction when storage memory has borrowed some memory from execution") {
-    val sparkSession = createSparkSession(1, 0.5, 1500)
+    val sparkSession = createSparkSession(1, 0.5, 1500000L)
     val snSession = new SnappySession(sparkSession.sparkContext)
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
     snSession.createTable("t1", "row", struct, options)

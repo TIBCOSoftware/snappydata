@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,8 +20,9 @@ import scala.collection.mutable
 
 import com.gemstone.gnu.trove.{THashMap, THashSet}
 import io.snappydata.SnappyFunSuite
-import io.snappydata.collection.{ObjectObjectHashMap, OpenHashSet}
 import it.unimi.dsi.fastutil.objects.{Object2ObjectOpenHashMap, ObjectOpenHashSet}
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
+import org.eclipse.collections.impl.set.mutable.UnifiedSet
 
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
 import org.apache.spark.util.Benchmark
@@ -35,7 +36,7 @@ class MapTest extends SnappyFunSuite {
   private val INSERT = 2
   private val DELETE = 3
 
-  test("hash set comparison") {
+  ignore("hash set comparison") {
     val numEntries = 1000000
     val numOperations = 1000000
     val numIterations = 10
@@ -45,7 +46,7 @@ class MapTest extends SnappyFunSuite {
     var imap3: Map[Item, Item] = null
     val omap3 = new mutable.HashMap[Item, Item]
     val oset4 = new ObjectOpenHashSet[Item](numEntries)
-    val oset5 = new OpenHashSet[Item](numEntries)
+    val oset5 = new UnifiedSet[Item](numEntries)
 
     val rnd = new XORShiftRandom()
     val data = Array.fill(numEntries)(Item(rnd.nextLong(),
@@ -135,7 +136,7 @@ class MapTest extends SnappyFunSuite {
       }
       results += sum
     })
-    addCaseWithCleanup(benchmark, "Snappy OHS", numIterations,
+    addCaseWithCleanup(benchmark, "Eclipse Collections", numIterations,
       () => Unit, () => Unit, () => Unit, () => {
         oset5.clear()
         data.foreach(oset5.add)
@@ -143,11 +144,11 @@ class MapTest extends SnappyFunSuite {
       var sum = 0L
       for (op <- operations) {
         val item = op.operation match {
-          case GET => oset5.getKey(op).asInstanceOf[Item]
+          case GET => oset5.get(op)
           case INSERT =>
             oset5.add(op)
             op
-          case DELETE => oset5.removeKey(op).asInstanceOf[Item]
+          case DELETE => if (oset5.remove(op)) op else null
         }
         if (item ne null) {
           sum += item.l + item.s.length + item.d.toLong
@@ -197,7 +198,7 @@ class MapTest extends SnappyFunSuite {
       }
       results += sum
     })
-    addCaseWithCleanup(benchmark, "Snappy OHS", numIterations,
+    addCaseWithCleanup(benchmark, "Eclipse Collections", numIterations,
       () => data.foreach(oset5.add), oset5.clear, () => Unit)(_ => {
       var sum = 0L
       val iter = oset5.iterator()
@@ -278,12 +279,12 @@ class MapTest extends SnappyFunSuite {
       }
       results += sum
     })
-    addCaseWithCleanup(benchmark, "Snappy OHS", numIterations,
+    addCaseWithCleanup(benchmark, "Eclipse Collections", numIterations,
       () => data.foreach(oset5.add), oset5.clear, () => Unit)(_ => {
       var sum = 0L
       var i = 0
       while (i < numEntries) {
-        val item = oset5.getKey(data(i)).asInstanceOf[Item]
+        val item = oset5.get(data(i))
         sum += item.l + item.s.length + item.d.toLong
         i += 1
       }
@@ -310,7 +311,7 @@ class MapTest extends SnappyFunSuite {
     addCaseWithCleanup(benchmark, "FastUtil", numIterations,
       oset4.clear, () => Unit, oset4.clear)(
       _ => data.foreach(oset4.add))
-    addCaseWithCleanup(benchmark, "Snappy OHS", numIterations,
+    addCaseWithCleanup(benchmark, "Eclipse Collections", numIterations,
       oset5.clear, () => Unit, oset5.clear)(
       _ => data.foreach(oset5.add))
 
@@ -327,7 +328,7 @@ class MapTest extends SnappyFunSuite {
     var imap3: Map[Item, Item] = null
     val omap3 = new scala.collection.mutable.HashMap[Item, Item]()
     val omap4 = new Object2ObjectOpenHashMap[Item, Item](numEntries)
-    val omap5 = ObjectObjectHashMap.withExpectedSize[Item, Item](numEntries)
+    val omap5 = new UnifiedMap[Item, Item](numEntries)
 
     val rnd = new XORShiftRandom()
     val data = Array.fill(numEntries)(Item(rnd.nextLong(),
@@ -437,7 +438,7 @@ class MapTest extends SnappyFunSuite {
       }
       results += sum
     })
-    addCaseWithCleanup(benchmark, "Koloboke Map", numIterations,
+    addCaseWithCleanup(benchmark, "Eclipse Collections Map", numIterations,
       () => Unit, () => Unit, () => Unit, () => {
         omap5.clear()
         data.foreach(d => omap5.put(d, d))
@@ -504,7 +505,7 @@ class MapTest extends SnappyFunSuite {
       }
       results += sum
     })
-    addCaseWithCleanup(benchmark, "Koloboke Map", numIterations,
+    addCaseWithCleanup(benchmark, "Eclipse Collections Map", numIterations,
       () => data.foreach(d => omap5.put(d, d)), omap5.clear, () => Unit)(_ => {
       var sum = 0L
       val iter = omap5.keySet().iterator()
@@ -585,7 +586,7 @@ class MapTest extends SnappyFunSuite {
       }
       results += sum
     })
-    addCaseWithCleanup(benchmark, "Koloboke Map", numIterations,
+    addCaseWithCleanup(benchmark, "Eclipse Collections Map", numIterations,
       () => data.foreach(d => omap5.put(d, d)), omap5.clear, () => Unit)(_ => {
       var sum = 0L
       var i = 0
@@ -620,7 +621,7 @@ class MapTest extends SnappyFunSuite {
     addCaseWithCleanup(benchmark, "FastUtil", numIterations,
       omap4.clear, () => Unit, omap4.clear)(
       _ => data.foreach(d => omap4.put(d, d)))
-    addCaseWithCleanup(benchmark, "Koloboke Map", numIterations,
+    addCaseWithCleanup(benchmark, "Eclipse Collections Map", numIterations,
       omap5.clear, () => Unit, omap5.clear)(
       _ => data.foreach(d => omap5.put(d, d)))
 
@@ -639,7 +640,7 @@ class MapTest extends SnappyFunSuite {
     val omap4 = new java.util.concurrent.ConcurrentHashMap[String, String](32, 0.7f, 1)
     val omap5 = new scala.collection.concurrent.TrieMap[String, String]
     val omap6 = new Object2ObjectOpenHashMap[String, String](numEntries)
-    val omap7 = ObjectObjectHashMap.withExpectedSize[String, String](numEntries)
+    val omap7 = new UnifiedMap[String, String](numEntries)
 
     val rnd = new XORShiftRandom()
     val data = Array.fill(numEntries)(s"str${rnd.nextInt(100)}")
@@ -734,7 +735,7 @@ class MapTest extends SnappyFunSuite {
         loop += 1
       }
     })
-    benchmark.addCase("Koloboke Map", numIterations,
+    benchmark.addCase("Eclipse Collections Map", numIterations,
       () => data.foreach(d => omap7.put(d, d)), omap7.clear)(_ => {
       var loop = 0
       while (loop < numLoops) {

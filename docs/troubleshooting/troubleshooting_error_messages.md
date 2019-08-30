@@ -14,7 +14,11 @@ The following topics are covered in this section:
 * [Region {0} bucket {1} has persistent data that is no longer online stored at these locations: {2}](#persistent-data)
 
 * [ForcedDisconnectException Error: "No Data Store found in the distributed system for: {0}"](#no-data-store)
-* [Node went down or data no longer available while iterating the results](#queryfailiterate).
+* [Node went down or data no longer available while iterating the results](#queryfailiterate)
+* [SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.](#smartconnectorcatalog)
+* [Cannot parse config: String: 1: Expecting end of input or a comma, got ':'](#jobsubmitsnap)
+* [java.lang.IllegalStateException: Detected both log4j-over-slf4j.jar AND bound slf4j-log4j12.jar on the class path, preempting StackOverflowError](#javalangillegal)
+* [Bad `PutInto` performance even when input dataframe size is small.](#putintoperf)
 
 <a id="region0"></a>
 <error> **Error Message:** </error> 
@@ -32,7 +36,7 @@ The status of the member is displayed as *waiting* in such cases when you [check
 </diagnosis>
 
 <action> **Solution:** </br>
-The status of the waiting members change to online once all the members are online and the status of the waiting members is updated. Users can check whether the status is changed from *waiting* to *online* by using the `snappy-status-all.sh` command or by checking the [SnappyData Pulse UI](../monitoring/monitoring.md).
+The status of the waiting members change to online once all the members are online and the status of the waiting members is updated. Users can check whether the status is changed from *waiting* to *online* by using the `snappy-status-all.sh` command or by checking the [SnappyData Monitoring Console](../monitoring/monitoring.md).
 </action>
 
 <!-- --------------------------------------------------------------------------- -->
@@ -113,4 +117,168 @@ In cases where a node fails while a JDBC/ODBC client or job is consuming result 
 
 <action> **Solution:** </br>
 This is expected behaviour where the product does not retry, since partial results are already consumed by the application. Application must retry the entire query after discarding any changes due to partial results that are consumed.
+</action>
+
+<!-- --------------------------------------------------------------------------- -->
+
+<a id="smartconnectorcatalog"></a>
+<error> **Message:** </error> 
+<error-text>
+SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.
+</error-text>
+
+<diagnosis> **Diagnosis:**</br>
+In the Smart Connector mode, this error message is seen in the logs if TIBCO ComputeDB catalog is changed due to a DDL operation such as CREATE/DROP/ALTER. 
+For performance reasons, TIBCO ComputeDB Smart Connector caches the catalog in the Smart Connector cluster. If there is a catalog change in TIBCO ComputeDB embedded cluster, this error is logged to prevent unexpected errors due to schema changes.
+</diagnosis>
+
+<action> **Solution:** </br>
+If the user application is performing DataFrame/DataSet operations, you must recreate the DataFrame/DataSet and retry the operation. In such cases, application needs to catch exceptions of type **org.apache.spark.sql.execution.CatalogStaleException** and **java.sql.SQLException** (with SQLState=X0Z39) and retry the operation. Check the following code snippet to get a better understanding of how this scenario should be handled:
+
+```pre
+int retryCount = 0;
+int maxRetryAttempts = 5;
+while (true) {
+    try {
+        // dataset/dataframe operations goes here (e.g. deleteFrom, putInto)
+        return;
+    } catch (Exception ex) {
+        if (retryCount >= maxRetryAttempts || !isRetriableException(ex)) {
+            throw ex;
+        } else {
+            log.warn("Encountered a retriable exception. Will retry processing batch." +
+                " maxRetryAttempts:"+maxRetryAttempts+", retryCount:"+retryCount+"", ex);
+            retryCount++;
+        }
+    }
+}
+
+private boolean isRetriableException(Exception ex) {
+    Throwable cause = ex;
+    do {
+        if ((cause instanceof SQLException &&
+            ((SQLException)cause).getSQLState().equals("X0Z39"))
+            || cause instanceof CatalogStaleException
+            || (cause instanceof TaskCompletionListenerException && cause.getMessage()
+            .startsWith("java.sql.SQLException: (SQLState=X0Z39"))) {
+            return true;
+        }
+        cause = cause.getCause();
+    } while (cause != null);
+    return false;
+}
+```
+</action>
+<!-- --------------------------------------------------------------------------- -->
+<a id="jobsubmitsnap"></a>
+<error> **Error Message:** </error> 
+<error-text>
+Snappy job submission result:
+```
+{
+  "status": "ERROR",
+  "result": "Cannot parse config: String: 1: Expecting end of input or a comma, got ':' (if you intended ':' to be part of a key or string value, try enclosing the key or value in double quotes, or you may be able to rename the file .properties rather than .conf)"
+}
+```
+</error-text>
+
+<diagnosis> **Diagnosis:**</br>
+This error message is reported when snappy-job submission configuration parameter contains a colon `:`. The typesafe configuration parser (used by job-server) cannot handle `:` as part of key or value unless it is enclosed in double quotes.
+Sample job-submit command:
+
+```
+./snappy-job.sh submit  --app-name app1 --conf kafka-brokers=localhost:9091 --class Test --app-jar "/path/to/app-jar"
+```
+
+!!!Note
+	Note that the `kafka-brokers` config value (localhost:9091) is having a `:`
+</diagnosis>
+
+<action> **Solution:** </br>
+To avoid this issue enclose the value containing colon `:` with double quotes so that the typesafe config parser can parse it. Also since the parameter is passed to the bash script (snappy-job) the quotes needs to be escaped properly otherwise it will get ignored by bash. Check the following example for the correct method of passing this configuration:
+
+```
+./snappy-job.sh submit  --app-name app1 --conf kafka-brokers=\"localhost:9091\" --class Test --app-jar "/path/to/app-jar"
+```
+
+!!!Note
+	Check the value of `kafka-brokers` property enclosed in escaped double quotes: `\"localhost:9091\"`
+
+</action>
+
+<!-- --------------------------------------------------------------------------- -->
+<a id="javalangillegal"></a>
+<error> **Error Message:** </error> 
+<error-text>
+java.lang.IllegalStateException: Detected both log4j-over-slf4j.jar AND bound slf4j-log4j12.jar on the class path, preempting StackOverflowError
+</error-text>
+
+<diagnosis> **Diagnosis:**</br>
+This error message can be seen if application uses SnappyData JDBC driver shadow jar and the application has a dependency on **log4j-over-slf4j** package/jar. This is because, the SnappyData JDBC driver
+has a dependency on **slf4j-log4j12** which cannot co-exist with  'log4j-over-slf4j' package.
+</diagnosis>
+
+<action> **Solution:** </br>
+
+To avoid getting **log4j** and **slf4j-log4j12** dependencies in the driver, you can link the **non-fat** JDBC client jar (**snappydata-store-client*.jar**) in your application and exclude **log4j** and **slf4j-log4j12** dependencies from it.
+
+Note that the **snappydata-store-client** jar does not contain some of the SnappyData extensions (Scala imiplicits) that are required when SnappyData Spark-JDBC connector is used. That is when accessing SnappyData from another Spark cluster using JDBC dataframes as mentioned [here].(https://snappydatainc.github.io/snappydata/programming_guide/spark_jdbc_connector/#using-sql-dml-to-execute-ad-hoc-sql)). If these SnappyData extensions are to be used, then in addition to above mentioned jar, **snappydata-jdbc*-only.jar** dependency will be required. This is available on maven repo and can be accessed using classifier: 'only' along with snappydata-jdbc cordinates.
+
+Following is an example for adding this dependency using gradle:
+
+build.gradle example that uses **snappydata-store-client jar** and **snappydata-jdbc*only.jar**. The example uses 1.0.2.2 SnappyData version, replace it with the version required by the application.  
+
+**Example**
+
+```
+
+ dependencies {
+
+  compile group: 'io.snappydata', name: 'snappydata-jdbc_2.11', version: '1.0.2.2', classifier: 'only'
+
+  // https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client 
+  // SnappyData "no-fat" JDBC jar
+  compile group: 'io.snappydata', name: 'snappydata-store-client', version: '1.6.2.1'
+
+  // If users want to add his own 'log4j-over-slf4j' dependency
+  compile group: 'org.slf4j', name: 'log4j-over-slf4j', version: '1.7.26'
+}
+
+ // exclude the 'log4j' and 'slf4j-log4j12' dependencies
+ configurations.all {
+    exclude group: 'log4j', module: 'log4j'
+    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+ }
+
+
+```
+</action>
+<!-- --------------------------------------------------------------------------- -->
+
+<a id="putintoperf"></a>
+<error> **Error Message:** </error> 
+<error-text>
+Bad `PutInto` performance even when input dataframe size is small.
+</error-text>
+
+<diagnosis> **Diagnosis:**</br>
+`PutInto` operation internally performs join. If the input dataframe size is small (less than `spark.sql.autoBroadcastJoinThreshold` which defaults to 10 MB) then the join should ideally result into broadcast join giving better performance than short merge join (which will be chose otherwise).
+
+However, some sources doesn't provide size statistics and in that case the size of dataframe results into value of `spark.sql.defaultSizeInBytes` property which defaults to `Long.MaxValue`. In this case even if the actual size of the input dataframe is less than  that of `spark.sql.autoBroadcastJoinThreshold`, the `PutInto` operation will always end up using sort merge join resulting into poor performance.
+</diagnosis>
+
+<action> **Solution:** </br>
+Solution for this issue is to override default value of `spark.sql.defaultSizeInBytes` by setting it as part of session configuration with the value matching the approximate size of the actual input dataframe.
+
+The property can be set using the following SQL command:
+
+`set spark.sql.defaultSizeInBytes = <some long value>`
+
+For example, `set spark.sql.defaultSizeInBytes = 10000`
+
+Using a SnappySession instance this can be set as follows:
+
+`snappySession.sql(“set spark.sql.defaultSizeInBytes = 10000”)`
+
+Note that this is a session level property hence all the operation performed using the same session will end up using same overridden value.
 </action>

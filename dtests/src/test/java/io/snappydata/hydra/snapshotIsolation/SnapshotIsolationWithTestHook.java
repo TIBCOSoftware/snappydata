@@ -1,5 +1,7 @@
 package io.snappydata.hydra.snapshotIsolation;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -9,12 +11,13 @@ import java.util.Properties;
 import java.util.Random;
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl;
+import com.gemstone.gemfire.internal.shared.NativeCalls;
 import com.pivotal.gemfirexd.internal.engine.Misc;
-import hydra.HostHelper;
 import hydra.Log;
-import hydra.PortHelper;
+import hydra.blackboard.AnyCyclicBarrier;
 import io.snappydata.Server;
-import io.snappydata.ServerManager;
+import io.snappydata.ServiceManager;
+import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyTest;
 import util.TestException;
 
@@ -24,40 +27,76 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
 
   public static SnapshotIsolationWithTestHook testHookInstance;
 
-  public static void HydraTask_initializeTestHook() {
+  public static void HydraTask_startSnappyServerAPI() {
     if (testHookInstance == null) {
       testHookInstance = new SnapshotIsolationWithTestHook();
-      testHookInstance.initializeTestHook();
+      testHookInstance.startSnappyServerAPI();
     }
   }
 
-  public void initializeTestHook() {
-    String addr = HostHelper.getHostAddress();
-    int port = PortHelper.getRandomPort();
-    String endpoint = addr + ":" + port;
-    Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
+  public void startSnappyServerAPI() {
+    String path = "";
+    try{
+      path = new File(".").getCanonicalPath() + File.separator + "server" + getMyTid();
+    } catch(IOException ie){
+      throw new TestException("Got exception while accessing current directory", ie);
+    }
     Properties serverProps = new Properties();
     String locatorsList = SnappyTest.getLocatorsList("locators");
     serverProps.setProperty("locators", locatorsList);
-    serverProps.setProperty("mcast-port", "0");
-    Server server = ServerManager.getServerInstance();
+    //serverProps.setProperty("mcast-port", "0");
+    serverProps.setProperty("log-file", path + File.separator + "snappyStore.log");
+    serverProps.setProperty("log-level", "fine");
+    serverProps.setProperty("spark.executor.cores","8");
+    serverProps.setProperty("spark.memory.manager",
+        "org.apache.spark.memory.SnappyUnifiedMemoryManager");
+    serverProps.setProperty("sys-disk-dir",path);
+    startSnappyServer(serverProps);
+
+  }
+
+
+  public static void HydraTask_createTableAndInitialize() {
+    int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.snappyClusterStarted);
+    if (num == 1) {
+/*      String url = "jdbc:snappydata:";
+      String driver = "io.snappydata.jdbc.EmbeddedDriver";
+      loadDriver(driver);
+      try {
+        Properties props = new Properties();
+        props.setProperty("mcast-port", "0");
+        Connection conn = DriverManager.getConnection(url, props);
+        Log.getLogWriter().info("Obtained connection");
+        testHookInstance.createTables(conn, false);
+        testHookInstance.saveTableMetaDataToBB(conn);
+      } catch (SQLException se) {
+        throw new TestException("Got Exception while getting connection.", se);
+      }*/
+      testInstance.createSnappyTables();
+      HydraTask_initializeTablesMetaData();
+      /*
+    SparkContext sc = SnappyContext.globalSparkContext();
+    SnappyContext snc = new SnappyContext(sc);
+    Map<String,String> prop = new HashMap<>();
+    prop.put("PERSISTENT","async");
+    snc.createTable("orders", "column",  prop,true);
+    */
+    }
+  }
+
+
+  /**
+   * Start a snappy server. Any number of snappy servers can be started.
+   */
+  public void startSnappyServer(Properties props) {
+    NativeCalls.getInstance().setEnvironment("SPARK_LOCAL_IP", "localhost");
+    // bootProps.setProperty("log-level", "info");
+    Server server = ServiceManager.getServerInstance();
     try {
-      server.start(serverProps);
+      server.start(props);
+      ServiceManager.getServerInstance().startNetworkServer("localhost", -1, null);
     } catch (SQLException se) {
       throw new TestException("Error starting server.", se);
-    }
-    String url = "jdbc:snappydata:";
-    String driver =  "io.snappydata.jdbc.EmbeddedDriver";
-    loadDriver(driver);
-    try {
-      Properties props = new Properties();
-      props.setProperty("mcast-port", "0");
-      Connection conn = DriverManager.getConnection(url,props);
-      Log.getLogWriter().info("Obtained connection");
-      createTables(conn,false);
-      saveTableMetaDataToBB(conn);
-    } catch (SQLException se) {
-      throw new TestException("Got Exception while getting connection.", se);
     }
   }
 
@@ -70,8 +109,7 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
 
   public void performInsertUsingTestHook() {
     try {
-      String url = "jdbc:snappydata:";
-      Connection conn = DriverManager.getConnection(url);
+      Connection conn = getLocatorConnection();
       waitForBarrier(2);
       GemFireCacheImpl.getInstance().waitOnScanTestHook();
       int numRowsInserted = (int)SnapshotIsolationBB.getBB().getSharedCounters().read
@@ -146,8 +184,7 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
   public void executeQuery() {
 
     try {
-      String url = "jdbc:snappydata:";
-      Connection conn = DriverManager.getConnection(url);
+      Connection conn = getLocatorConnection();
       Misc.getGemFireCache().setRowScanTestHook(testHook);
       waitForBarrier(2);
       Thread.sleep(500);
@@ -182,6 +219,12 @@ public class SnapshotIsolationWithTestHook extends SnapshotIsolationTest {
     } catch(InterruptedException ie){
       throw new TestException("Got exception in sleep.", ie);
     }
+  }
+
+  protected void waitForBarrier(int numThreads, String groupID) {
+    AnyCyclicBarrier barrier = AnyCyclicBarrier.lookup(numThreads, groupID);
+    Log.getLogWriter().info("Waiting for " + numThreads + " to meet at barrier");
+    barrier.await();
   }
 
   class ScanTestHook implements GemFireCacheImpl.RowScanTestHook {
