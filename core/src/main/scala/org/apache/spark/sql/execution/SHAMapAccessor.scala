@@ -32,6 +32,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, Generic
 import org.apache.spark.sql.catalyst.util.GenericArrayData
 import org.apache.spark.sql.types.{BinaryType, StringType, _}
 import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.unsafe.types.UTF8String
 
 case class SHAMapAccessor(@transient session: SnappySession,
@@ -60,6 +61,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   val bigIntegerClass = classOf[java.math.BigInteger].getName
   val byteBufferClass = classOf[ByteBuffer].getName
   val unsafeClass = classOf[UnsafeRow].getName
+  val bbDataClass = classOf[ByteBufferData].getName
+  val shaMapClassName = classOf[SHAMap].getName
 
   def getBufferVars(dataTypes: Seq[DataType], varNames: Seq[String],
     currentValueOffsetTerm: String, isKey: Boolean, nullBitTerm: String,
@@ -133,6 +136,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
          |$currentValueOffsetTerm += $numBytesForNullBits;""".stripMargin
     }
   }
+
 
   private val readVarPartialFunction: PartialFunction[(String, Int, Int, String,
     DataType), String] = {
@@ -383,8 +387,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val tempValueData = ctx.freshName("tempValueData")
     val linkedListClass = classOf[java.util.LinkedList[SHAMap]].getName
     val exceptionName = classOf[BufferSizeLimitExceededException].getName
-    val bbDataClass = classOf[ByteBufferData].getName
-    val shaMapClassName = classOf[SHAMap].getName
+
     // val valueInit = valueInitCode + '\n'
     val insertDoneTerm = ctx.freshName("insertDone");
     /* generateUpdate(objVar, Nil,
@@ -1169,8 +1172,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 
     def generateCustomSHAMapClass(className: String, keyDataType: DataType): String = {
-      val shaMapClass = classOf[SHAMap].getName
-     // val byteArrayEqualsClass = classOf[ByteArrayMethods].getName
+      val byteArrayEqualsClass = classOf[ByteArrayMethods].getName
      // val params = Array.fill[String](numUtf8StringParams)(ctx.freshName("utf8param"))
       val paramName = ctx.freshName("param")
       val paramJavaType = ctx.javaType(keyDataType)
@@ -1178,7 +1180,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
       // val args = params.map(prm => s"$utf8StringClass $prm").mkString(",")
       val platformClass = classOf[Platform].getName
     // val columnEncodingClass = ColumnEncoding.getClass.getName + ".MODULE$"
-      val bbDataClass = classOf[ByteBufferData].getName
+
       val nullKeyBitsParamName = if (numBytesForNullKeyBits == 0) "" else ctx.freshName("nullKeyBits")
       val nullKeyBitsArg = if (numBytesForNullKeyBits == 0) ""
       else s", ${SHAMapAccessor.getNullBitsCastTerm(numBytesForNullKeyBits)}  $nullKeyBitsParamName"
@@ -1188,11 +1190,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
         s"""
            | public int putBufferIfAbsent($paramJavaType $paramName, int numKeyBytes, int numBytes,
            |  int hash, boolean isNull) {
-           |  Object mapKeyObject = keyData.baseObject;
-           |  long mapKeyBaseOffset = keyData.baseOffset;
-           |  int fixedKeySize = this.fixedKeySize;
-           |  int localMask = this.mask;
+           |  $bbDataClass kd = keyData();
+           |  $bbDataClass vd = valueData();
+           |  Object mapValueObject = vd.baseObject();
+           |  long mapValueOffset = vd.baseOffset();
+           |  Object mapKeyObject = kd.baseObject();
+           |  long mapKeyBaseOffset = kd.baseOffset();
+           |  int fixedKeySize = this.fixedKeySize();
+           |  int localMask = this.mask();
            |  int pos = hash & localMask;
+           |  Object valueDataObject =
            |  int delta = 1;
            |    while (true) {
            |      long mapKeyOffset = mapKeyBaseOffset + fixedKeySize * pos;
@@ -1202,8 +1209,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
            |        // first compare the hash codes followed by "equalsSize" that will
            |        // include the check for 4 bytes of numKeyBytes itself
            |        int valueStartOffset = (mapKey >>> 32L).toInt - 4;
-           |        if (hash == (int)mapKey && equalsSize(valueStartOffset,
-           |          $paramName, numKeyBytes, isNull)) {
+           |        if (hash == (int)mapKey && equalsSize(mapValueObject, mapValueOffset,
+           |            valueStartOffset, $paramName, numKeyBytes, isNull)) {
            |          return handleExisting(mapKeyObject, mapKeyOffset, valueStartOffset + 4)
            |        } else {
            |          // quadratic probing (increase delta)
@@ -1238,17 +1245,27 @@ case class SHAMapAccessor(@transient session: SnappySession,
       def generateEqualsSize(keyDataType: DataType): String = {
         val valueHolder = ctx.freshName("valueHolder")
         val valueStartOffset = ctx.freshName("valueStartOffset")
+        val mapValueBaseOffset = ctx.freshName("mapValueBaseOffset")
+        val valueOffset = ctx.freshName("valueOffset")
         val numKeyBytes = ctx.freshName("numKeyBytes")
         val isNull = ctx.freshName("isNull")
         val nullHolder = ctx.freshName("nullHolder")
         val lengthHolder = ctx.freshName("lengthHolder")
-        val getLengthCode = readVarPartialFunction(valueStartOffset, 0, 0, lengthHolder,
+        val getLengthCode = readVarPartialFunction(valueOffset, 0, 0, lengthHolder,
           IntegerType)
-        val getValueCode = readVarPartialFunction(valueStartOffset, 0, 0, valueHolder, keyDataType)
-        val getNullCode = readVarPartialFunction(valueStartOffset, 0, 0, nullHolder, ByteType)
-        val valueEqualityCode = if (SHAMapAccessor.isPrimitive(keyDataType)) {
+        val getValueCode = keyDataType match {
+          case StringType => ""
+          case  _ => readVarPartialFunction(valueOffset, 0, 0, valueHolder, keyDataType)
+        }
+        val getNullCode = readVarPartialFunction(valueOffset, 0, 0, nullHolder, ByteType)
+        val isPrimtive = SHAMapAccessor.isPrimitive(keyDataType)
+        val valueEqualityCode = if (isPrimtive) {
            s"return $valueHolder == $paramName;"
-        } else {
+        } else if (keyDataType.isInstanceOf[StringType]) {
+          s"""return $byteArrayEqualsClass.arrayEquals($vdBaseObjectTerm, $valueOffset,
+            $paramName.getBaseObject(), $paramName.getBaseOffset(), $numKeyBytes);"""
+        }
+        else {
           s"return $valueHolder.equals($paramName);"
         }
 
@@ -1267,7 +1284,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
         } else {
           s"""
              |$getLengthCode
-             |if ($lengthHolder == 1 + $numKeyBytes) {
+             |if ($lengthHolder == $numKeyBytes) {
              |  $getNullCode
              |  if (${SHAMapAccessor.getExpressionForNullEvalFromMask(0, 1,
                   nullHolder)}== $isNull) {
@@ -1284,15 +1301,30 @@ case class SHAMapAccessor(@transient session: SnappySession,
         }
 
         s"""
-           | public boolean equalsSize(int $valueStartOffset, $paramJavaType $paramName, int $numKeyBytes,
-           |  boolean $isNull) {
+           | public boolean equalsSize(Object $vdBaseObjectTerm, long $mapValueBaseOffset,
+           |   int $valueStartOffset, $paramJavaType $paramName, int $numKeyBytes,
+           | boolean $isNull) {
+           |    long $valueOffset = $mapValueBaseOffset + $valueStartOffset;
+           |    $paramJavaType $valueHolder = ${if (isPrimtive) "0;" else "null;"};
+           |    byte $nullHolder = 0;
+           |    int $lengthHolder = 0;
            |    $equalityCode
            |  }
          """.stripMargin
 
       }
 
-      ""
+      s"""
+         |static class $className extends $shaMapClassName {
+         |   public $className(int initialCapacity, int valueSize, int maxCapacity) {
+         |     super(initialCapacity, valueSize, maxCapacity);
+         |   }
+         |${generatePutIfAbsent()}
+         |${generateEqualsSize(keyDataType)}
+         |${generateCustomNewInsert()}
+
+         |}
+     """.stripMargin
    }
 
 
