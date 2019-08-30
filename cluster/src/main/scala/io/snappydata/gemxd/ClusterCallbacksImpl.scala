@@ -16,7 +16,7 @@
  */
 package io.snappydata.gemxd
 
-import java.io.{BufferedWriter, File, FileWriter, InputStream, PrintWriter}
+import java.io.{File, InputStream}
 import java.lang
 import java.util.{Iterator => JIterator}
 
@@ -139,7 +139,6 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def recoverData(connId: lang.Long, exportUri: String,
       formatType: String, tableNames: String, ignoreError: lang.Boolean): Unit = {
-    // todo: make sure tableNames are fully qualified... how?
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     val tablesArr = if (tableNames.equalsIgnoreCase("all")) {
       val catalogTables = session.externalCatalog.getAllTables()
@@ -171,13 +170,12 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
         tableData.write.mode(SaveMode.Overwrite).format(formatType)
             .save(filePath + File.separator + table.toUpperCase)
       } match {
-        case scala.util.Success(value) =>
-        case scala.util.Failure(exception) => {
+        case scala.util.Success(_) =>
+        case scala.util.Failure(exception) =>
           if (!ignoreError) {
             logInfo(s"Error recovering table: $table.")
             throw new Exception(exception)
           }
-        }
       }
     })
   }
@@ -192,10 +190,10 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     }
     val arrBuf: ArrayBuffer[String] = ArrayBuffer.empty
 
-    RecoveryService.getAllDDLs().foreach(ddl => {
+    RecoveryService.getAllDDLs.foreach(ddl => {
       arrBuf.append(ddl + ";\n")
     })
-    session.sparkContext.parallelize((arrBuf), 1).saveAsTextFile(filePath)
+    session.sparkContext.parallelize(arrBuf, 1).saveAsTextFile(filePath)
 
   }
 
