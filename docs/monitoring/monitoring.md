@@ -40,6 +40,8 @@ In cases where you cannot access the SnappyData Monitoring Console to analyse Jo
 
 On the top-right side of the SnappyData Monitoring Console page, you can view the version details of SnappyData Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.
 
+On the top of the dashboard, the date and time details about when the cluster is started are displayed. The period till when the cluster is running is also shown.
+
 ![](../Images/MonitoringUI/SnappyData-UI-About-Box1.png)
 
 <a id="dashboard"></a>
