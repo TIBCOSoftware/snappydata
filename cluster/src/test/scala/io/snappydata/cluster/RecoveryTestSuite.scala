@@ -203,10 +203,16 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     val file = UserDefinedFunctionsDUnitTest.createUDFClass("IntegerUDF", udfText)
     val jar = UserDefinedFunctionsDUnitTest.createJarFile(Seq(file))
 
-    stmt.execute(s"CREATE FUNCTION $defaultSchema.intudf AS IntegerUDF " +
+    stmt.execute(s"CREATE FUNCTION $defaultSchema.intudf1 AS IntegerUDF " +
         s"RETURNS Integer USING JAR " +
         s"'$jar'")
-
+    stmt.execute(s"CREATE FUNCTION $defaultSchema.intudf2 AS IntegerUDF " +
+        s"RETURNS Integer USING JAR " +
+        s"'$jar'")
+    stmt.execute(s"CREATE FUNCTION $defaultSchema.intudf3 AS IntegerUDF " +
+        s"RETURNS Integer USING JAR " +
+        s"'$jar'")
+    stmt.execute(s"drop function $defaultSchema.intudf2")
 
     // nulls in data - row table
     stmt.execute(s"CREATE TABLE $defaultSchema.test1rowtab6 (col1 int, col2 string, col3 float," +
@@ -579,10 +585,10 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     while (rs4.next()) {
       str ++= s"${rs4.getString("function")}\t"
     }
-    assert(str.toString().toUpperCase().contains("GEMFIRE10.INTUDF"))
+    assert(str.toString().toUpperCase().contains("GEMFIRE10.INTUDF1"))
     rs4.close()
 
-    rs4 = stmtRec.executeQuery(s"select *,intudf(col2) as newcol from GEMFIRE10.tesst1coltab1")
+    rs4 = stmtRec.executeQuery(s"select *,intudf1(col2) as newcol from GEMFIRE10.tesst1coltab1")
     if (rs4.next()) {
       assert(rs4.getInt("newcol") === 6)
     }
@@ -686,114 +692,9 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     stmtRec.close()
     connRec.close()
 
-    println("\n")
-    println("\n")
-    // todo: with different file systems - hdfs, s3
     test_status = true
   }
 
-  def compareResultSet(fqtn: String, resultSet: ResultSet, isRecoveredDataRS: Boolean): Unit = {
-    val tableName = fqtn.replace(".", "_")
-    val dir = new File(workDirPath + File.separator + tableName)
-    if (!dir.exists() && !isRecoveredDataRS) {
-      dir.mkdir()
-    }
-    if (isRecoveredDataRS && !dir.exists()) {
-      // Since the directory is created every time in regular mode and re-used
-      // in recovery mode and deleted after the comparison.
-      throw new Exception(s"Directory for $tableName is not expected to exist.")
-    }
-    val stringBuilder = new mutable.StringBuilder()
-    val filePathOrg = dir.getAbsoluteFile + File.separator + tableName + "_ORG.txt"
-    val filePathRec = dir.getAbsoluteFile + File.separator + tableName + "_RECOVERED.txt"
-    if (!isRecoveredDataRS) {
-      logInfo(s"PP:creating org file at $filePathOrg")
-      val colCount = resultSet.getMetaData.getColumnCount
-      while (resultSet.next()) {
-        stringBuilder.clear()
-        (1 until colCount).foreach(i => {
-          resultSet.getObject(i) match {
-            case clob: ClientClob =>
-              stringBuilder ++= s"${
-                clob
-                    .getSubString(1L, clob.length().toInt)
-              },"
-            case _ =>
-              stringBuilder ++= s"${resultSet.getObject(i)},"
-          }
-        })
-        resultSet.getObject(colCount) match {
-          case clob: ClientClob =>
-            stringBuilder ++= s"${
-              clob.getSubString(1L, clob.length().toInt)
-            }"
-          case _ =>
-            stringBuilder ++= s"${resultSet.getObject(colCount)}"
-        }
-        // todo: can be improved using batching 100 rows
-        writeToFile(stringBuilder.toString(), filePathOrg, true)
-      }
-    } else {
-      logInfo(s"PP:creating rec file at $filePathRec")
-      val colCount: Int = resultSet.getMetaData.getColumnCount
-      while (resultSet.next()) {
-        stringBuilder.clear()
-        (1 until colCount).foreach(i => {
-          resultSet.getObject(i) match {
-            case clob: ClientClob =>
-              stringBuilder ++= s"${
-                clob
-                    .getSubString(1L, clob.length().toInt)
-              },"
-            case _ =>
-              stringBuilder ++= s"${resultSet.getObject(i)},"
-          }
-        })
-        resultSet.getObject(colCount) match {
-          case clob: ClientClob =>
-            stringBuilder ++= s"${
-              clob.getSubString(1L, clob.length().toInt)
-            }"
-          case _ =>
-            stringBuilder ++= s"${resultSet.getObject(colCount)}"
-        }
-        logInfo(s"PP: string added: ${stringBuilder.toString()}")
-
-        // todo: can be improved using batching 100 rows
-        writeToFile(stringBuilder.toString(), filePathRec, true)
-      }
-      //      val cmd = s"comm -3 $filePathOrg $filePathRec"
-      //      val diffRes = cmd.!! // todo won't work on windows. Should be done in code.!?
-      //      assert(diffRes.length === 0, "Recovered data does not match the original data.")
-
-      //       delete the directory after the job is done.
-      //          dir.listFiles().foreach(file => file.delete())
-      //          if(dir.listFiles().length == 0) dir.delete()
-    }
-    /*
-
-// create a file - gemfire10_test3tab1_org.txt
-// compareFiles(fqtn= "", resultSet = rs, recovered_data = false)
-0. create a dir for the table - db_table_dir if doesn't exist
-  1. if recovered data is false that means - orginal data
-  2. create a file for org data
-  3. write rs to file
-4. exit
-
-
-in recovered mode
-// compareFiles(fqtn= "", resultSet = rsRecovered, recovered_data = true)
-0. check if db_table_dir exists... if not something is wrong... throw excpetion
-1. if recovered data is true -
-2. create a recovery data file
-3. write rsRecovered to file
-4. use diff linux command to check difference or something else
-5. use assertion
-6. delete the directory
-7. exit
-
-*/
-  }
 
 
   test("test3 - All Data types at high volume") {
@@ -840,7 +741,7 @@ in recovered mode
                 col7 byte NOT NULL, c1 tinyint NOT NULL, c2 varchar(22) NOT NULL,
                  c3 string NOT NULL, c5 boolean NOT NULL,c6 double NOT NULL, c8 timestamp NOT NULL,
                   c9 date NOT NULL, c10 decimal(15,5) NOT NULL, c11 numeric(20,10) NOT NULL,
-                   c12 float NOT NULL,c13 real not null) USING OOLUMN
+                   c12 float NOT NULL,c13 real not null) USING COLUMN
                 OPTIONS (buckets '5', COLUMN_MAX_DELTA_ROWS '135');
                 """)
 
@@ -1111,7 +1012,7 @@ in recovered mode
     }
     rs4.close()
 
-    val rs5 = stmtRec.executeQuery("select col1, col3, col2 from gemfire10.test3coltab6 ORDER BY col1")
+    val rs5 = stmtRec.executeQuery("SELECT col1, col2, col3 from gemfire10.test3coltab6 ORDER BY col1")
     arrBuf.clear()
     i = 0
     arrBuf ++= ArrayBuffer("100000000000001,5,true", "200000000000001,4,true", "300000000000001,3,false")
@@ -1179,31 +1080,31 @@ in recovered mode
     test_status = true
   }
 
-  test("test2 - Does all basic tests in non-secure mode(without LDAP).") {
-    // although ldap server is started before all, if ldap properties are not passed to conf,
-    // it should work in non-secure mode.
-    // basicOperationSetSnappyCluster can be used
-    // multiple VMs - multiple servers - like real world scenario
-
-
-    // check for row and column type
-    // check if all the contents that are expected to be available to user is present for user to choose
-
-    // After the cluster has come up and ready to be used by user.
-    // check if all procedures available to user is working fine
-    test_status = true
-  }
-
-  test("test4 - When partial cluster is not available/corrupted/deleted") {
-    // check for row and column type
-
-    // 1. what if one of diskstores is deleted - not available.
-    // 2. what if some .crf files are missing
-    // 3. what if some .drf files are missing
-    // 4. what if some .krf files are missing
-
-    test_status = true
-  }
+//  test("test2 - Does all basic tests in non-secure mode(without LDAP).") {
+//    // although ldap server is started before all, if ldap properties are not passed to conf,
+//    // it should work in non-secure mode.
+//    // basicOperationSetSnappyCluster can be used
+//    // multiple VMs - multiple servers - like real world scenario
+//
+//
+//    // check for row and column type
+//    // check if all the contents that are expected to be available to user is present for user to choose
+//
+//    // After the cluster has come up and ready to be used by user.
+//    // check if all procedures available to user is working fine
+//    test_status = true
+//  }
+//
+//  test("test4 - When partial cluster is not available/corrupted/deleted") {
+//    // check for row and column type
+//
+//    // 1. what if one of diskstores is deleted - not available.
+//    // 2. what if some .crf files are missing
+//    // 3. what if some .drf files are missing
+//    // 4. what if some .krf files are missing
+//
+//    test_status = true
+//  }
 
   test("test5 -Recovery procedures / Data export performance check") {
 
@@ -1286,9 +1187,19 @@ in recovered mode
     stmt.execute("INSERT INTO test5rowtab6 values(null, 'afadsf', 134098245 )")
     stmt.execute("INSERT INTO test5rowtab6 (col1, col4) values(null, 345345.534)")
 
-    stmt.execute("deploy package SPARKREDSHIFT 'com.databricks:spark-redshift_2.10:3.0.0-preview1' path '/home/ppatil/Testing/deploy_pkg_cache'")
-    stmt.execute("deploy package sparkavrointegration 'com.databricks:spark-avro_2.11:4.0.0' path '/home/ppatil/Testing/deploy_pkg_cache';")
-    stmt.execute("deploy jar snappyjar '/home/ppatil/Testing/deploy_pkg_cache/jars/org.xerial.snappy_snappy-java-1.0.5.jar'")
+    stmt.execute("deploy package SPARKREDSHIFT" +
+        " 'com.databricks:spark-redshift_2.10:3.0.0-preview1' path '/tmp/deploy_pkg_cache'")
+    stmt.execute("deploy package Sparkcassandra 'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7';")
+    stmt.execute("deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
+        " repos 'http://clojars.org/repo/'")
+    stmt.execute("deploy package mysql 'clj-mysql:clj-mysql:0.1.0'" +
+        " repos 'http://clojars.org/repo/' path '/tmp/deploy_pkg_cache'")
+    stmt.execute(s"deploy jar snappyjar '${RecoveryTestSuite.snappyHome}/jars/zkclient-0.8.jar'")
+    stmt.execute(s"deploy jar snappyjar2" +
+        s" '${RecoveryTestSuite.snappyHome}/jars/zookeeper-3.4.13.jar'")
+    stmt.execute("undeploy snappyjar")
+    stmt.execute("undeploy Sparkcassandra")
+
 
     stmt.close()
     conn.close()
@@ -1310,22 +1221,26 @@ in recovered mode
       println(rstemp.getObject(1))
     }
 
-    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_parquet','parquet','gemfire10.test5coltab1','true')")
+    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_parquet','parquet'," +
+        "'  gemfire10.test5coltab1   ','true')")
 
     logInfo(s"RECOVER_DATA called for test5coltab2 at ${System.currentTimeMillis}")
-    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_parquet','parquet','gemfire10.test5coltab2','true')")
+    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_parquet','parquet'," +
+        "'   gemfire10.test5coltab2','true')")
     logInfo(s"RECOVER_DATA ends for test5coltab2 at ${System.currentTimeMillis}")
 
 
     logInfo(s"RECOVER_DATA called for test5rowtab4 at ${System.currentTimeMillis}")
-    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_parquet','parquet','gemfire10.test5rowtab4','true')")
+    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_parquet','parquet'," +
+        "'gemfire10.test5rowtab4','true')")
     logInfo(s"RECOVER_DATA ends for test5rowtab4 at ${System.currentTimeMillis}")
 
     // checks ignore_error
     stmtRec.execute("call sys.RECOVER_DATA('./recover_data_parquet'," +
         "'parquet','gemfire10.test5coltab2,gemfire10.test5rowtab4, NonExistentTable','true')")
 
-    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_json','json','gemfire10.test5rowtab3','true')")
+    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_json','json'," +
+        "'gemfire10.test5rowtab3','true')")
 
     stmtRec.execute("call sys.RECOVER_DATA('./recover_data_all','csv','all','true')")
     // todo how to verify if the files are correct?
