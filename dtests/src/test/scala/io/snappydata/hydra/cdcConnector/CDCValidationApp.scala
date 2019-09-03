@@ -225,7 +225,7 @@ object CDCValidationApp {
           val sqlServerQ = s"SELECT * FROM [testdatabase].[dbo].[$tableName] WHERE $idName > $endRange "
           pw.println("Query is " + sqlServerQ)
           val sqlServerResultSet = connection.createStatement().executeQuery(sqlServerQ)
-          val snappyDF = snc.sql(s"SELECT * FROM $tableName")
+          val snappyDF = snc.sql(s"SELECT * FROM $tableName WHERE $idName > $endRange")
           //.collect()
           var cnt = 0
           val colName = idNameArr(i)
