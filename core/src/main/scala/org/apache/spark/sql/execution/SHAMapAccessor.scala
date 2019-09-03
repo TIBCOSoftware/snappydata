@@ -30,6 +30,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericInternalRow, UnsafeArrayData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.GenericArrayData
+import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.types.{BinaryType, StringType, _}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
@@ -52,6 +53,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   storedKeyNullBitsTerm: Option[String],
   aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String)
   extends CodegenSupport {
+  val unsafeArrayClass = classOf[UnsafeArrayData].getName
+  val unsafeRowClass = classOf[UnsafeRow].getName
   val plaformClass = classOf[Platform].getName
   val decimalClass = classOf[Decimal].getName
   val bigDecimalObjectClass = s"$decimalClass$$.MODULE$$"
@@ -137,6 +140,212 @@ case class SHAMapAccessor(@transient session: SnappySession,
     }
   }
 
+  private val writeVarPartialFunction: PartialFunction[(String, String, String, Int, Int, DataType),
+    String] = {
+    case (baseObjectTerm, offsetTerm, variable, nestingLevel, i, dt: AtomicType) =>
+      val snippet = typeOf(dt.tag) match {
+        case t if t =:= typeOf[Boolean] =>
+          s"""$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, $variable);
+             |$offsetTerm += ${dt.defaultSize};
+                """.stripMargin
+        case t if t =:= typeOf[Byte] =>
+          s"""$plaformClass.putByte($baseObjectTerm, $offsetTerm, $variable);
+             |$offsetTerm += ${dt.defaultSize};
+                """.stripMargin
+        case t if t =:= typeOf[Array[Byte]] =>
+          s"""$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.length);
+             |$offsetTerm += 4;
+             |$plaformClass.copyMemory($variable, ${Platform.BYTE_ARRAY_OFFSET},
+             |$baseObjectTerm, $offsetTerm, $variable.length);
+             |$offsetTerm += $variable.length;
+                """.stripMargin
+        case t if t =:= typeOf[Short] =>
+          s"""$plaformClass.putShort($baseObjectTerm, $offsetTerm, $variable);
+             |$offsetTerm += ${dt.defaultSize};
+                  """.stripMargin
+        case t if t =:= typeOf[Int] =>
+          s"""
+                  $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable);
+                 $offsetTerm += ${dt.defaultSize};
+                 """.stripMargin
+        case t if t =:= typeOf[Long] =>
+          s"""$plaformClass.putLong($baseObjectTerm, $offsetTerm, $variable);
+             |$offsetTerm += ${dt.defaultSize};
+                  """.stripMargin
+        case t if t =:= typeOf[Float] =>
+          s"""$plaformClass.putFloat($baseObjectTerm, $offsetTerm, $variable);
+             |$offsetTerm += ${dt.defaultSize};
+                  """.stripMargin
+        case t if t =:= typeOf[Double] =>
+          s"""$plaformClass.putDouble($baseObjectTerm, $offsetTerm, $variable);
+             |$offsetTerm += ${dt.defaultSize};
+                  """.stripMargin
+        case t if t =:= typeOf[Decimal] =>
+          val tempBigDecArrayTerm = ctx.freshName("tempBigDecArray")
+          s"""
+             |if (${dt.asInstanceOf[DecimalType].precision} != $variable.precision() ||
+             | ${dt.asInstanceOf[DecimalType].scale} != $variable.scale()) {
+             |  if (!$variable.changePrecision(${dt.asInstanceOf[DecimalType].precision},
+             |  ${dt.asInstanceOf[DecimalType].scale})) {
+             |    throw new java.lang.IllegalStateException("unable to change precision");
+             |  }
+             |}
+                   """.stripMargin +
+            (if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
+              s"""$plaformClass.putLong($baseObjectTerm, $offsetTerm,
+                 | $variable.toUnscaledLong());
+                     """.stripMargin
+            } else {
+              s"""byte[] $tempBigDecArrayTerm = $variable.toJavaBigDecimal().
+                 |unscaledValue().toByteArray();
+                 |assert ($tempBigDecArrayTerm.length <= 16);
+                 |$plaformClass.putLong($baseObjectTerm, $offsetTerm,0);
+                 |$plaformClass.putLong($baseObjectTerm, $offsetTerm + 8,0);
+                 |$plaformClass.copyMemory($tempBigDecArrayTerm,
+                 |$plaformClass.BYTE_ARRAY_OFFSET, $baseObjectTerm, $offsetTerm +
+                 |${dt.asInstanceOf[DecimalType].defaultSize} - $tempBigDecArrayTerm.length ,
+                 | $tempBigDecArrayTerm.length);
+                    """.stripMargin
+            }) +
+            s"""
+               |$offsetTerm += ${dt.defaultSize};
+                     """.stripMargin
+        case t if t =:= typeOf[UTF8String] =>
+          val tempLenTerm = ctx.freshName("tempLen")
+
+          val lengthWritingPart = if (nestingLevel > 0 || i != skipLenForAttribIndex) {
+            s"""$plaformClass.putInt($baseObjectTerm, $offsetTerm, $tempLenTerm);
+               |$offsetTerm += 4;""".stripMargin
+          } else ""
+
+          s"""int $tempLenTerm = $variable.numBytes();
+             |$lengthWritingPart
+             |$variable.writeToMemory($baseObjectTerm, $offsetTerm);
+             |$offsetTerm += $tempLenTerm;
+               """.stripMargin
+        case _ => throw new UnsupportedOperationException("unknown type " + dt)
+      }
+      snippet
+    case (baseObjectTerm, offsetTerm, variable, nestingLevel, i, st: StructType) =>
+      val (childExprCodes, childDataTypes) = getExplodedExprCodeAndDataTypeForStruct(variable,
+        st, nestingLevel)
+      val newNullBitTerm = SHAMapAccessor.generateNullKeysBitTermForStruct(variable)
+      val newNumBytesForNullBits = SHAMapAccessor.
+        calculateNumberOfBytesForNullBits(st.length)
+      val explodeStructSnipet =
+        s"""$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
+           |$offsetTerm += 1;
+           |${
+          writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
+            newNullBitTerm, newNumBytesForNullBits, true, false,
+            nestingLevel + 1)
+        }
+                 """.stripMargin
+      val unexplodedStructSnippet =
+        s"""|$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
+            |$offsetTerm += 1;
+            |$plaformClass.putInt($baseObjectTerm, $offsetTerm,
+            |(($unsafeRowClass)$variable).getSizeInBytes());
+            |$offsetTerm += 4;
+            |(($unsafeRowClass)$variable).writeToMemory($baseObjectTerm, $offsetTerm);
+            |$offsetTerm += (($unsafeRowClass)$variable).getSizeInBytes();
+                 """.stripMargin
+      if (alwaysExplode) {
+        explodeStructSnipet
+      } else {
+        s"""if (!($variable instanceof $unsafeRowClass)) {
+                  $explodeStructSnipet
+                } else {
+                  $unexplodedStructSnippet
+                }
+               """.stripMargin
+      }
+
+
+    case (baseObjectTerm, offsetTerm, variable, nestingLevel, i,
+    at@ArrayType(elementType, containsNull)) =>
+      val varWidthNullBitStartPos = ctx.freshName("nullBitBeginPos")
+      val varWidthNumNullBytes = ctx.freshName("numNullBytes")
+      val varWidthNullBits = ctx.freshName("nullBits")
+      val arrElement = ctx.freshName("arrElement")
+      val tempObj = ctx.freshName("temp")
+      val array = ctx.freshName("array")
+      val counter = ctx.freshName("counter")
+      val remainder = ctx.freshName("remainder")
+      val arrIndex = ctx.freshName("arrIndex")
+      val dataTypeAsJson = elementType.json
+      val strippedQuotesJson = dataTypeAsJson.substring(1, dataTypeAsJson.length - 1)
+      val dataType = ctx.freshName("dataType")
+      val dataTypeClass = classOf[DataType].getName
+      val elementWitingCode = writeKeyOrValue(baseObjectTerm, offsetTerm, Seq(elementType),
+        Seq(ExprCode("", "false", arrElement)), "", -1,
+        true, true, nestingLevel)
+      val explodeArraySnippet =
+        s"""|$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
+            |$offsetTerm += 1;
+            |$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numElements());
+            |$offsetTerm += 4;
+            |long $varWidthNullBitStartPos = $offsetTerm;
+            |int $varWidthNumNullBytes = $variable.numElements() / 8 +
+            |($variable.numElements() % 8 > 0 ? 1 : 0);
+            |byte[] $varWidthNullBits = null;
+            |${ if (containsNull) {
+          s"""
+             |$varWidthNullBits = new byte[$varWidthNumNullBytes];
+             |$offsetTerm += $varWidthNumNullBytes;
+                          """.stripMargin
+        } else ""
+        }
+
+            |$dataTypeClass $dataType = $dataTypeClass$$.MODULE$$.
+            |fromJson("\\"$strippedQuotesJson\\"");
+            |for( int $counter = 0; $counter < $variable.numElements(); ++$counter) {
+            |int $remainder = $counter % 8;
+            |int $arrIndex = $counter / 8;
+            |if ($variable.isNullAt($counter)) {
+            |if ($containsNull) {
+            |$varWidthNullBits[$arrIndex] |= (byte)((0x01 << $remainder));
+            |} else {
+            |  throw new IllegalStateException("Not null Array element contains null");
+            |}
+            |} else {
+            |${ctx.javaType(elementType)} $arrElement =
+            |(${ctx.boxedType(elementType)}) $variable.get($counter, $dataType);
+            |$elementWitingCode
+            |}
+            |}
+            |${ if (containsNull ) {
+          s"""
+             |$plaformClass.copyMemory($varWidthNullBits,
+             |${Platform.BYTE_ARRAY_OFFSET},
+             |$baseObjectTerm, $varWidthNullBitStartPos, $varWidthNumNullBytes);
+                         """.stripMargin
+        } else ""
+        }
+                """.stripMargin
+      val unexplodedArraySnippet =
+        s"""$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
+           |$offsetTerm += 1;
+           |$plaformClass.putInt($baseObjectTerm, $offsetTerm,
+           |(($unsafeArrayClass)$variable).getSizeInBytes());
+           |$offsetTerm += 4;
+           |(($unsafeArrayClass)$variable).writeToMemory($baseObjectTerm, $offsetTerm);
+           |$offsetTerm += (($unsafeArrayClass)$variable).getSizeInBytes();
+                 """.stripMargin
+
+      if (alwaysExplode) {
+        explodeArraySnippet
+      } else {
+        s"""if (!($variable instanceof $unsafeArrayClass)) {
+                       $explodeArraySnippet
+           |} else {
+                        $unexplodedArraySnippet
+           |}
+               """.stripMargin
+      }
+    case (baseObjectTerm, offsetTerm, variable, nestingLevel, i, dt) =>
+      throw new UnsupportedOperationException("unknown type " + dt)
+  }
 
   private val readVarPartialFunction: PartialFunction[(String, Int, Int, String,
     DataType), String] = {
@@ -598,11 +807,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
     nestingLevel: Int = 0): String = {
     // Move the offset at the end of num Null Bytes space, we will fill that space later
     // store the starting value of offset
-    val unsafeArrayClass = classOf[UnsafeArrayData].getName
-    val unsafeRowClass = classOf[UnsafeRow].getName
+
     val startingOffsetTerm = ctx.freshName("startingOffset")
     val tempBigDecArrayTerm = ctx.freshName("tempBigDecArray")
-    val plaformClass = classOf[Platform].getName
     val storeNullBitStartOffsetAndRepositionOffset = if (skipNullEvalCode) {
       ""
     } else {
@@ -614,209 +821,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
        |${dataTypes.zip(varsToWrite).zipWithIndex.map {
          case ((dt, expr), i) =>
           val variable = expr.value
-          val writingCode = (dt match {
-            case x: AtomicType =>
-              val snippet = typeOf(x.tag) match {
-                case t if t =:= typeOf[Boolean] =>
-                s"""$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, $variable);
-                    |$offsetTerm += ${dt.defaultSize};
-                """.stripMargin
-                case t if t =:= typeOf[Byte] =>
-                  s"""$plaformClass.putByte($baseObjectTerm, $offsetTerm, $variable);
-                     |$offsetTerm += ${dt.defaultSize};
-                """.stripMargin
-                case t if t =:= typeOf[Array[Byte]] =>
-                  s"""$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.length);
-                     |$offsetTerm += 4;
-                     |$plaformClass.copyMemory($variable, ${Platform.BYTE_ARRAY_OFFSET},
-                     |$baseObjectTerm, $offsetTerm, $variable.length);
-                     |$offsetTerm += $variable.length;
-                """.stripMargin
-                case t if t =:= typeOf[Short] =>
-                  s"""$plaformClass.putShort($baseObjectTerm, $offsetTerm, $variable);
-                     |$offsetTerm += ${dt.defaultSize};
-                  """.stripMargin
-                case t if t =:= typeOf[Int] =>
-                  s"""
-                  $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable);
-                 $offsetTerm += ${dt.defaultSize};
-                 """.stripMargin
-                case t if t =:= typeOf[Long] =>
-                  s"""$plaformClass.putLong($baseObjectTerm, $offsetTerm, $variable);
-                     |$offsetTerm += ${dt.defaultSize};
-                  """.stripMargin
-                case t if t =:= typeOf[Float] =>
-                  s"""$plaformClass.putFloat($baseObjectTerm, $offsetTerm, $variable);
-                     |$offsetTerm += ${dt.defaultSize};
-                  """.stripMargin
-                case t if t =:= typeOf[Double] =>
-                  s"""$plaformClass.putDouble($baseObjectTerm, $offsetTerm, $variable);
-                     |$offsetTerm += ${dt.defaultSize};
-                  """.stripMargin
-                case t if t =:= typeOf[Decimal] =>
-                  s"""
-                     |if (${dt.asInstanceOf[DecimalType].precision} != $variable.precision() ||
-                     | ${dt.asInstanceOf[DecimalType].scale} != $variable.scale()) {
-                     |  if (!$variable.changePrecision(${dt.asInstanceOf[DecimalType].precision},
-                     |  ${dt.asInstanceOf[DecimalType].scale})) {
-                     |    throw new java.lang.IllegalStateException("unable to change precision");
-                     |  }
-                     |}
-                   """.stripMargin +
-                    (if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
-                    s"""$plaformClass.putLong($baseObjectTerm, $offsetTerm,
-                       | $variable.toUnscaledLong());
-                     """.stripMargin
-                  } else {
-                    s"""byte[] $tempBigDecArrayTerm = $variable.toJavaBigDecimal().
-                       |unscaledValue().toByteArray();
-                       |assert ($tempBigDecArrayTerm.length <= 16);
-                       |$plaformClass.putLong($baseObjectTerm, $offsetTerm,0);
-                       |$plaformClass.putLong($baseObjectTerm, $offsetTerm + 8,0);
-                       |$plaformClass.copyMemory($tempBigDecArrayTerm,
-                       |$plaformClass.BYTE_ARRAY_OFFSET, $baseObjectTerm, $offsetTerm +
-                       |${dt.asInstanceOf[DecimalType].defaultSize} - $tempBigDecArrayTerm.length ,
-                       | $tempBigDecArrayTerm.length);
-                    """.stripMargin
-                  }) +
-                    s"""
-                       |$offsetTerm += ${dt.defaultSize};
-                     """.stripMargin
-                case t if t =:= typeOf[UTF8String] =>
-                  val tempLenTerm = ctx.freshName("tempLen")
-
-                  val lengthWritingPart = if (nestingLevel > 0 || i != skipLenForAttribIndex) {
-                    s"""$plaformClass.putInt($baseObjectTerm, $offsetTerm, $tempLenTerm);
-                        |$offsetTerm += 4;""".stripMargin
-                  } else ""
-
-                  s"""int $tempLenTerm = $variable.numBytes();
-                     |$lengthWritingPart
-                     |$variable.writeToMemory($baseObjectTerm, $offsetTerm);
-                     |$offsetTerm += $tempLenTerm;
-               """.stripMargin
-                case _ => throw new UnsupportedOperationException("unknown type " + dt)
-              }
-              snippet
-            case st: StructType => val (childExprCodes, childDataTypes) =
-              getExplodedExprCodeAndDataTypeForStruct(variable, st, nestingLevel)
-              val newNullBitTerm = SHAMapAccessor.generateNullKeysBitTermForStruct(variable)
-              val newNumBytesForNullBits = SHAMapAccessor.
-                calculateNumberOfBytesForNullBits(st.length)
-              val explodeStructSnipet =
-                s"""$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
-                   |$offsetTerm += 1;
-                   |${
-                      writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
-                      newNullBitTerm, newNumBytesForNullBits, true, false,
-                        nestingLevel + 1)
-                    }
-                 """.stripMargin
-              val unexplodedStructSnippet =
-               s"""|$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
-                   |$offsetTerm += 1;
-                   |$plaformClass.putInt($baseObjectTerm, $offsetTerm,
-                   |(($unsafeRowClass)$variable).getSizeInBytes());
-                   |$offsetTerm += 4;
-                   |(($unsafeRowClass)$variable).writeToMemory($baseObjectTerm, $offsetTerm);
-                   |$offsetTerm += (($unsafeRowClass)$variable).getSizeInBytes();
-                 """.stripMargin
-              if (alwaysExplode) {
-                explodeStructSnipet
-              } else {
-                s"""if (!($variable instanceof $unsafeRowClass)) {
-                  $explodeStructSnipet
-                } else {
-                  $unexplodedStructSnippet
-                }
-               """.stripMargin
-              }
-
-
-            case at@ArrayType(elementType, containsNull) =>
-              val varWidthNullBitStartPos = ctx.freshName("nullBitBeginPos")
-              val varWidthNumNullBytes = ctx.freshName("numNullBytes")
-              val varWidthNullBits = ctx.freshName("nullBits")
-              val arrElement = ctx.freshName("arrElement")
-              val tempObj = ctx.freshName("temp")
-              val array = ctx.freshName("array")
-              val counter = ctx.freshName("counter")
-              val remainder = ctx.freshName("remainder")
-              val arrIndex = ctx.freshName("arrIndex")
-              val dataTypeAsJson = elementType.json
-              val strippedQuotesJson = dataTypeAsJson.substring(1, dataTypeAsJson.length - 1)
-              val dataType = ctx.freshName("dataType")
-              val dataTypeClass = classOf[DataType].getName
-              val elementWitingCode = writeKeyOrValue(baseObjectTerm, offsetTerm, Seq(elementType),
-                Seq(ExprCode("", "false", arrElement)), "", -1,
-                true, true, nestingLevel)
-              val explodeArraySnippet =
-               s"""|$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
-                   |$offsetTerm += 1;
-                   |$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numElements());
-                   |$offsetTerm += 4;
-                   |long $varWidthNullBitStartPos = $offsetTerm;
-                   |int $varWidthNumNullBytes = $variable.numElements() / 8 +
-                   |($variable.numElements() % 8 > 0 ? 1 : 0);
-                   |byte[] $varWidthNullBits = null;
-                   |${ if (containsNull) {
-                         s"""
-                          |$varWidthNullBits = new byte[$varWidthNumNullBytes];
-                          |$offsetTerm += $varWidthNumNullBytes;
-                          """.stripMargin
-                       } else ""
-                    }
-
-                   |$dataTypeClass $dataType = $dataTypeClass$$.MODULE$$.
-                   |fromJson("\\"$strippedQuotesJson\\"");
-                   |for( int $counter = 0; $counter < $variable.numElements(); ++$counter) {
-                     |int $remainder = $counter % 8;
-                     |int $arrIndex = $counter / 8;
-                     |if ($variable.isNullAt($counter)) {
-                       |if ($containsNull) {
-                         |$varWidthNullBits[$arrIndex] |= (byte)((0x01 << $remainder));
-                       |} else {
-                       |  throw new IllegalStateException("Not null Array element contains null");
-                       |}
-                     |} else {
-                        |${ctx.javaType(elementType)} $arrElement =
-                        |(${ctx.boxedType(elementType)}) $variable.get($counter, $dataType);
-                        |$elementWitingCode
-                     |}
-                   |}
-                   |${ if (containsNull ) {
-                         s"""
-                          |$plaformClass.copyMemory($varWidthNullBits,
-                          |${Platform.BYTE_ARRAY_OFFSET},
-                          |$baseObjectTerm, $varWidthNullBitStartPos, $varWidthNumNullBytes);
-                         """.stripMargin
-                        } else ""
-                     }
-                """.stripMargin
-              val unexplodedArraySnippet =
-                s"""$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
-                   |$offsetTerm += 1;
-                   |$plaformClass.putInt($baseObjectTerm, $offsetTerm,
-                   |(($unsafeArrayClass)$variable).getSizeInBytes());
-                   |$offsetTerm += 4;
-                   |(($unsafeArrayClass)$variable).writeToMemory($baseObjectTerm, $offsetTerm);
-                   |$offsetTerm += (($unsafeArrayClass)$variable).getSizeInBytes();
-                 """.stripMargin
-
-              if (alwaysExplode) {
-                explodeArraySnippet
-              } else {
-                s"""if (!($variable instanceof $unsafeArrayClass)) {
-                       $explodeArraySnippet
-                    |} else {
-                        $unexplodedArraySnippet
-                    |}
-               """.stripMargin
-              }
-            case _ => throw new UnsupportedOperationException("unknown type " + dt)
-          }).trim
-
-
+          val writingCode = writeVarPartialFunction((baseObjectTerm, offsetTerm, variable,
+            nestingLevel, i, dt)).trim
           // Now do the actual writing based on whether the variable is null or not
           if (skipNullEvalCode) {
             writingCode
@@ -1174,13 +1180,14 @@ case class SHAMapAccessor(@transient session: SnappySession,
     def generateCustomSHAMapClass(className: String, keyDataType: DataType): String = {
       val byteArrayEqualsClass = classOf[ByteArrayMethods].getName
      // val params = Array.fill[String](numUtf8StringParams)(ctx.freshName("utf8param"))
+      val columnEncodingClass = ColumnEncoding.getClass.getName
       val paramName = ctx.freshName("param")
       val paramJavaType = ctx.javaType(keyDataType)
       val utf8StringClass = classOf[UTF8String].getName
       // val args = params.map(prm => s"$utf8StringClass $prm").mkString(",")
       val platformClass = classOf[Platform].getName
     // val columnEncodingClass = ColumnEncoding.getClass.getName + ".MODULE$"
-
+      val customNewInsertTerm = "customNewInsert"
       val nullKeyBitsParamName = if (numBytesForNullKeyBits == 0) "" else ctx.freshName("nullKeyBits")
       val nullKeyBitsArg = if (numBytesForNullKeyBits == 0) ""
       else s", ${SHAMapAccessor.getNullBitsCastTerm(numBytesForNullKeyBits)}  $nullKeyBitsParamName"
@@ -1222,7 +1229,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
            |          throw ByteBufferHashMap.bsle
            |        }
            |        // insert into the map and rehash if required
-           |        val relativeOffset = newInsert(baseObject, baseOffset, numKeyBytes, numBytes)
+           |        val relativeOffset = $customNewInsertTerm($paramName, numKeyBytes, numBytes)
            |        Platform.putLong(mapKeyObject, mapKeyOffset,
            |          (relativeOffset << 32L) | (hash & 0xffffffffL))
            |        try {
@@ -1240,9 +1247,51 @@ case class SHAMapAccessor(@transient session: SnappySession,
          """.stripMargin
 
 
+     def generateCustomNewInsert: String = {
+       val valueBaseObjectTerm = ctx.freshName("valueBaseObject")
+       val positionTerm = ctx.freshName("position")
+       val paramIsNull = ctx.freshName("isNull")
+       val keyWritingCode = writeVarPartialFunction((valueBaseObjectTerm, positionTerm, paramName,
+         0, 0, keyDataType))
+       val nullAndKeyWritingCode = if (numBytesForNullKeyBits == 0) {
+         keyWritingCode
+       } else {
+         s"""
+            |${writeVarPartialFunction(valueBaseObjectTerm, positionTerm,
+              s"$paramIsNull ? (byte)1 : 0", 0, 0, ByteType)}
+            | if (!$paramIsNull) {
+            |   $keyWritingCode
+            | }
+          """.stripMargin
+       }
+       s"""
+          | public boolean $customNewInsertTerm($paramJavaType $paramName, int numKeyBytes,
+          | boolean $paramIsNull, int numBytes) {
+          // write into the valueData ByteBuffer growing it if required
+             |long $positionTerm = valueDataPosition();
+             |Object valueDataObj = valueData();
+             |long dataSize = position - valueDataObj.baseOffset();
+             |if ($positionTerm + numBytes + 4 > valueDataObj.endPosition()) {
+               |int oldCapacity = valueDataObj.capacity();
+               |valueDataObj = valueDataObj.resize(numBytes + 4, allocator(), approxMaxCapacity());
+               |valueDataPosition(valueDataObj);
+               |$positionTerm = valueDataObj.baseOffset() + dataSize;
+               |acquireMemory(valueDataObj.capacity() - oldCapacity)
+               |_maxMemory(_maxMemory() + valueData.capacity - oldCapacity);
+             |}
+             |Object $valueBaseObjectTerm = valueDataObj.baseObject();
+             // write the key size followed by the full key+value bytes
+             |$columnEncodingClass.writeInt($valueBaseObjectTerm, $positionTerm, numKeyBytes);
+             |$positionTerm += 4;
+             |$nullAndKeyWritingCode
+             |valueDataPosition($positionTerm + numBytes - numKeyBytes);
+             |// return the relative offset to the start excluding numKeyBytes
+             |return (int) (dataSize + 4);
+          |}
+         """.stripMargin
+     }
 
-
-      def generateEqualsSize(keyDataType: DataType): String = {
+      def generateEqualsSize: String = {
         val valueHolder = ctx.freshName("valueHolder")
         val valueStartOffset = ctx.freshName("valueStartOffset")
         val mapValueBaseOffset = ctx.freshName("mapValueBaseOffset")
@@ -1251,8 +1300,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
         val isNull = ctx.freshName("isNull")
         val nullHolder = ctx.freshName("nullHolder")
         val lengthHolder = ctx.freshName("lengthHolder")
-        val getLengthCode = readVarPartialFunction(valueOffset, 0, 0, lengthHolder,
-          IntegerType)
+        val getLengthCode = s"""
+           $lengthHolder = $columnEncodingClass.readInt($vdBaseObjectTerm, $valueOffset);
+           $valueOffset += 4;
+        """
+
         val getValueCode = keyDataType match {
           case StringType => ""
           case  _ => readVarPartialFunction(valueOffset, 0, 0, valueHolder, keyDataType)
@@ -1320,8 +1372,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
          |     super(initialCapacity, valueSize, maxCapacity);
          |   }
          |${generatePutIfAbsent()}
-         |${generateEqualsSize(keyDataType)}
-         |${generateCustomNewInsert()}
+         |${generateEqualsSize}
+         |${generateCustomNewInsert}
 
          |}
      """.stripMargin
