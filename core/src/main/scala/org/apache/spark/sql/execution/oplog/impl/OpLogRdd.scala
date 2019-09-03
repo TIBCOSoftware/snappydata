@@ -308,7 +308,7 @@ class OpLogRdd(
     val rm = phdrRow.getRegionMap
     val regionMapEntries = rm.regionEntries()
     assert(rm != null, "regionMap for row placeHolderDiskRegion is null")
-    assert(regionMapEntries != null && !regionMapEntries.isEmpty,
+    assert(regionMapEntries != null,
       "regionMap entries for row placeHolderDiskRegion are null/empty")
     val regMapItr = regionMapEntries.iterator().asScala
     regMapItr.map { regEntry =>
@@ -652,13 +652,13 @@ class OpLogRdd(
     val schemaName = fqtn.split('.')(0)
     val tableName = fqtn.split('.')(1)
     val (numBuckets, isReplicated) = RecoveryService.getNumBuckets(schemaName, tableName)
-    logInfo(s"PP: getpartition: numbuckets $numBuckets isReplicated $isReplicated")
+//    logInfo(s"PP: getpartition: numbuckets $numBuckets isReplicated $isReplicated")
     val partition = (0 until numBuckets).map { p =>
       new Partition {
         override def index: Int = p
       }
     }.toArray[Partition]
-    logInfo(s"PP:oplogrdd:getPartition: no. of partitions ${partition.length}")
+//    logInfo(s"PP:oplogrdd:getPartition: no. of partitions ${partition.length}")
     partition.foreach(e => logInfo(s"PP: oplogrdd:getpartition: ${e.index}"))
     partition
   }
