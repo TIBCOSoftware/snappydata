@@ -20,25 +20,24 @@ package org.apache.spark.sql.hive
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import io.snappydata.Property
 import io.snappydata.Property.HashAggregateSize
-
 import org.apache.spark.Partition
-import org.apache.spark.sql.catalyst.analysis
+import org.apache.spark.sql.catalyst.{TableIdentifier, analysis}
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.{PromoteStrings, numericPrecedence}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, CleanupAliases, EliminateUnions, ResolveCreateNamedStruct, ResolveInlineTables, ResolveTableValuedFunctions, Star, SubstituteUnresolvedOrdinals, TimeWindowing, TypeCoercion, UnresolvedAttribute}
+import org.apache.spark.sql.catalyst.catalog.SimpleCatalogRelation
 import org.apache.spark.sql.catalyst.expressions.{And, BinaryArithmetic, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
-import org.apache.spark.sql.catalyst.plans.JoinType
+import org.apache.spark.sql.catalyst.plans.{JoinType, LeftOuter}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter => LogicalFilter, _}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
@@ -52,6 +51,8 @@ import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Strategy, _}
 import org.apache.spark.streaming.Duration
+
+import scala.collection.mutable
 
 
 /**
@@ -160,11 +161,15 @@ class SnappySessionState(val snappySession: SnappySession)
         throw new AnalysisException("Snappy Optimizations not applied")
       }
 
-      modified :+
+      var original_list = modified :+
           Batch("Streaming SQL Optimizers", Once, PushDownWindowLogicalPlan) :+
           Batch("Link buckets to RDD partitions", Once, new LinkPartitionsToBuckets) :+
           Batch("TokenizedLiteral Folding Optimization", Once, TokenizedLiteralFolding) :+
           Batch("Order join conditions ", Once, OrderJoinConditions)
+
+      var combinedViewRule = Batch("Full Relation replace ", Once, PushCombinedViewPlan)
+      // (original_list :+ combinedViewRule) ++: original_list
+      original_list :+ combinedViewRule
     }
   }
 
@@ -286,6 +291,157 @@ class SnappySessionState(val snappySession: SnappySession)
     }
   }
 
+  def changeProjectionList(projectList: Seq[NamedExpression],
+    otherTableName: String, parquetPlan: LogicalPlan): Seq[NamedExpression] = {
+    val newpl = projectList.map(ne => {
+      ne transform {
+        case af @ AttributeReference(name, _, _, _) =>
+          parquetPlan.resolve(Seq(name), analyzer.resolver).get
+      }
+    })
+    newpl.asInstanceOf[Seq[NamedExpression]]
+  }
+
+  def getKeyColumnJoinExpression(tableName: String, backedTableName: String,
+    keyColumns: Seq[String]): Expression = {
+    val conditions = keyColumns.map(s => {
+      s"$s = $s"
+    })
+    val cond = conditions.mkString(" and ")
+    sqlParser.parseExpression(cond)
+  }
+
+  def getRequiredProjectionLists(
+    origProjList: Seq[NamedExpression], columnRelation: LogicalPlan,
+    fullTablePlan: LogicalPlan, keyColumns: Seq[String]):
+  (Seq[NamedExpression], Seq[NamedExpression], Seq[NamedExpression]) = {
+    var listOfColNames: mutable.Seq[String] = new mutable.ArrayBuffer
+    val newpl = origProjList.map(ne => {
+      ne transform {
+        case af @ AttributeReference(name, _, _, _) =>
+          listOfColNames +: name
+          fullTablePlan.resolve(Seq(name), analyzer.resolver).get
+      }
+    }).asInstanceOf[Seq[NamedExpression]]
+
+    val keyColsNotInProjList = keyColumns.filterNot(k => {
+      listOfColNames.contains(k)
+    })
+
+    val reqProjOnColRelation = origProjList ++: (keyColsNotInProjList).map(name => {
+      columnRelation.resolve(Seq(name), analyzer.resolver).get
+    })
+
+    val reqProjOnOtherRelation = newpl ++: (keyColsNotInProjList).map(name => {
+      fullTablePlan.resolve(Seq(name), analyzer.resolver).get
+    })
+
+    (reqProjOnColRelation, reqProjOnOtherRelation, newpl.asInstanceOf[Seq[NamedExpression]])
+  }
+
+  object PushCombinedViewPlan extends Rule[LogicalPlan] {
+
+    def getCombinedPlan(leftPlan: LogicalPlan, filter: Option[LogicalFilter],
+       relation: LogicalRelation, fullDataRelation: LogicalPlan,
+       columnRelation: ColumnFormatRelation,
+       reqdProjOnColumnRelation: Seq[NamedExpression],
+       reqdProjOnOtherRelation: Seq[NamedExpression],
+       actualProjOnOtherRelation: Seq[NamedExpression]): LogicalPlan = {
+      val filterPlan = filter match {
+        case Some(f) => {
+          val condition = f.condition transform {
+            case af @ AttributeReference(name, _, _, _) => {
+              fullDataRelation.resolve(
+                Seq(name), analyzer.resolver).get
+            }
+          }
+          LogicalFilter(condition, fullDataRelation)
+        }
+        case None => fullDataRelation
+      }
+      val parquetName = s"${columnRelation.tableName}_p"
+      val baseTablePlan: LogicalPlan = Project(reqdProjOnOtherRelation, filterPlan)
+      val keyColumnForFilter = columnRelation.getKeyColumns(0)
+      val exceptFilterExpression = sqlParser.parseExpression(s"$keyColumnForFilter is null")
+      println(s"Before transform except filter: $exceptFilterExpression")
+      val exceptionFilter = exceptFilterExpression transform {
+        case ua @ UnresolvedAttribute(nameParts) =>
+          relation.output.filter(af => {
+            nameParts(0) == af.name
+          })(0)
+      }
+      println(s"transformed except filter: $exceptionFilter")
+      println(s"transformed new filter: $exceptionFilter")
+      val joinOnKeyColumnCondition = getKeyColumnJoinExpression(
+        columnRelation.tableName, parquetName, Seq(columnRelation.getKeyColumns(0)))
+
+      println(s"Before transform join condition: $joinOnKeyColumnCondition")
+      val joinCondition = joinOnKeyColumnCondition transform {
+        case eq @EqualTo(l: UnresolvedAttribute, r: UnresolvedAttribute) => {
+          val la = relation.output.filter(af => l.nameParts(0) == af.name)(0)
+          val ra = fullDataRelation.output.filter(af => r.nameParts(0) == af.name)(0)
+          EqualTo(la, ra)
+        }
+      }
+      println(s"transformed join condition: $joinCondition")
+      var modifiedColumnTablePlan = if (actualProjOnOtherRelation.length
+        == reqdProjOnColumnRelation.length) {
+        leftPlan
+      } else {
+        leftPlan match {
+          case Project(pl, x) => Project(reqdProjOnColumnRelation, x)
+        }
+      }
+      val leftJoin = Join(baseTablePlan, modifiedColumnTablePlan, LeftOuter, Some(joinCondition))
+      val rightPlanForUnion: LogicalPlan = Project(actualProjOnOtherRelation,
+        LogicalFilter(exceptionFilter, leftJoin))
+      val modifiedPlan = Union(leftPlan, rightPlanForUnion)
+      println(s"modified plan = $modifiedPlan")
+      modifiedPlan
+    }
+
+    def apply(plan: LogicalPlan): LogicalPlan = {
+      println("PushCombinedViewPlan.")
+      plan transformUp {
+        case x@Project(pl, filter@LogicalFilter(_, relation @ LogicalRelation(
+        cfr: ColumnFormatRelation, _, _))) if cfr.getPrimaryKeyColumns(snappySession).nonEmpty => {
+          val leftPlan: LogicalPlan = x
+          val parquetName = s"${cfr.tableName}_p"
+          val fullDataRelation = relation transform {
+            case lr @ LogicalRelation(
+            cfr: ColumnFormatRelation, _, _) => {
+              val resolvedRelation = catalog.resolveRelation(TableIdentifier(parquetName))
+              resolvedRelation
+            }
+          }
+          val keyColumns = cfr.getPrimaryKeyColumns(snappySession)
+          val (reqProjOnColRelation, reqdProjOnOtherRelation,
+            actualProjOnOtherRelation) = getRequiredProjectionLists(
+            pl, relation, fullDataRelation, keyColumns)
+          getCombinedPlan(leftPlan, Some(filter), relation, fullDataRelation,
+            cfr, reqProjOnColRelation, reqdProjOnOtherRelation,
+            actualProjOnOtherRelation)
+        }
+        case x@Project(pl, relation @ LogicalRelation(
+          cfr: ColumnFormatRelation, _, _)) => {
+          val leftPlan: LogicalPlan = x
+          val parquetName = s"${cfr.tableName}_p"
+          val fullDataRelation = catalog.resolveRelation(TableIdentifier(parquetName))
+          val keyColumns = cfr.getPrimaryKeyColumns(snappySession)
+          val (reqProjOnColRelation, reqdProjOnOtherRelation,
+          actualProjOnOtherRelation) = getRequiredProjectionLists(
+            pl, relation, fullDataRelation, keyColumns)
+          getCombinedPlan(leftPlan, None, relation, fullDataRelation, cfr,
+            reqProjOnColRelation, reqdProjOnOtherRelation, actualProjOnOtherRelation)
+        }
+//        case cfr: ColumnFormatRelation => {
+//          val leftPlan: LogicalPlan = null
+//          val rightPlan: LogicalPlan = null
+//          Union(leftPlan, rightPlan)
+//        }
+      }
+    }
+  }
   /**
    * This rule sets the flag at query level to link the partitions to
    * be created for tables to be the same as number of buckets. This will avoid

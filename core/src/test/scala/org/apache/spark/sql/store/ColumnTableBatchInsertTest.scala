@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.store
 
+import java.sql.DriverManager
+
 import io.snappydata.core.{Data, TestData}
 import io.snappydata.{ConcurrentOpsTests, SnappyFunSuite}
 import org.apache.spark.sql._
@@ -23,12 +25,14 @@ import org.apache.spark.{Logging, SparkContext}
 import org.scalatest.{Assertions, BeforeAndAfter}
 
 import scala.collection.mutable
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 class ColumnTableBatchInsertTest extends SnappyFunSuite
     with Logging
     with BeforeAndAfter {
 
-  val tableName: String = "ColumnTable"
+  val tableName: String = "columntable"
   val tableName2: String = "ColumnTable2"
   val tableName3: String = "ColumnTable3"
   val tableName4: String = "ColumnTable4"
@@ -42,27 +46,92 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     snc.dropTable(tableName4, ifExists = true)
   }
 
+  test("s1") {
+    val qArr = Seq(
+      " select sum(l_quantity) from lineitem where l_orderkey = 8996",
+      " select min(l_discount) from lineitem where l_orderkey = 9254",
+      " select l_returnflag, count(*) from lineitem where l_orderkey = 1607 group by l_returnflag",
+      " select l_suppkey, count(*) from lineitem where l_orderkey = 15202 group by l_suppkey",
+      " select l_linenumber, l_suppkey from lineitem where l_orderkey = 16709 and l_partkey = 317",
+      " select * from orders where o_orderkey = 993",
+      " select * from orders where o_orderkey = 1350 and o_orderstatus = 'F'",
+      " select ps_suppkey, count(*) from partsupp where ps_partkey = 120 group by ps_suppkey",
+      " select count(*) from partsupp where ps_partkey = 250 and ps_comment = 'es." +
+        " express frets nag." +
+        " pending packages haggle carefully across the final instructions. quickly ironic'",
+      " select * from part where p_partkey = 778 and p_brand = 'Brand#32'",
+      " select * from supplier where s_suppkey = 50",
+      " select * from nation where n_nationkey = 8 and n_name = 'INDIA'"
+    )
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val doQuery = () => Future {
+      val conn = DriverManager.getConnection("jdbc:snappydata://localhost:1527")
+      val stmt = conn.createStatement()
+      qArr.foreach(q => {
+        val start = System.currentTimeMillis()
+        val rs = stmt.executeQuery(q)
+        while(rs.next()){
+
+        }
+        val end = System.currentTimeMillis()
+        println(s"The time taken for query $q : ${end -start} ms")
+      })
+
+      stmt.close()
+      conn.close()
+    }
+
+    val queryTasks = Array.fill(8)(doQuery())
+
+    queryTasks.foreach(t => Await.result(t, Duration.Inf))
+  }
+
   test("test the shadow table creation") {
     snc.sql(s"DROP TABLE IF EXISTS $tableName")
+
     val df = snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
         "USING column " +
         "options " +
         "(" +
         "PARTITION_BY 'Col1'," +
+        "KEY_COLUMNS 'Col1'," +
         "BUCKETS '1')")
 
-    val result = snc.sql("SELECT * FROM " + tableName)
-    val r = result.collect
-    assert(r.length == 0)
+    snc.sql(s"insert into $tableName select id, 2*id, 3*id from range(2)")
 
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-    val dataDF = snc.createDataFrame(rdd)
+    val colDf = snc.sql(s"select * from $tableName")
+    println("colDf show Below")
+    colDf.show()
 
-    dataDF.write.insertInto(tableName)
-    val r2 = result.collect
-    assert(r2.length == 5)
-    logInfo("Successful")
+    //df2.write.parquet("/home/skumar/ctable")
+
+
+    snc.sql(s"create external table ${tableName}_p using parquet " +
+      s"options (path '/home/skumar/ctable')")
+
+    val pDf = snc.sql(s"select * from ${tableName}_p")
+    println("pDf show Below")
+    pDf.show()
+
+    // snc.sql("set spark.sql.crossJoin.enabled=true")
+    // val result_p = snc.sql(s"select col1, col2 from ${tableName}_p where col1 > 0")
+
+    // // var result = snc.sql(s"select sum(col1) from $tableName")
+    // var result = snc.sql(s"select col2 from $tableName")
+    // var result = snc.sql(s"select sum(col1) from $tableName where col1 > 1")
+    // var result = snc.sql(s"select sum(col1) from $tableName")
+    // var result = snc.sql(s"select col1, col2 from $tableName where col1 > 0")
+    var result = snc.sql(s"select col1 * 10, col2 * 2 + col1 from $tableName where col1 > 0")
+
+    // PROBLEMATIC var result = snc.sql(s"select cast(col2 as long) from $tableName")
+    result.show()
+
+
+
+    result.show()
+    // println("Result " + result.count())
+    println("Successful")
   }
 
   test("test the overwrite table after reading itself") {
