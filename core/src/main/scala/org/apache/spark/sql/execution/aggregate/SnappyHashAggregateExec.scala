@@ -712,7 +712,7 @@ case class SnappyHashAggregateExec(
 
     // generate variable name for hash map for use here and in consume
     hashMapTerm = ctx.freshName("hashMap")
-    val hashSetClassName = classOf[SHAMap].getName
+    val shaMapClassName = classOf[SHAMap].getName
 
     val  overflowHashMapsTerm = ctx.freshName("overflowHashMaps")
     val listClassName = classOf[java.util.List[SHAMap]].getName
@@ -821,7 +821,11 @@ case class SnappyHashAggregateExec(
          |${ if (keysToProcessSize.length > 0) s" - ($suffixSize)" else ""};""".stripMargin
     } else ""
 
-
+    val hashSetClassName = if (this.groupingAttributes.length == 1) {
+      ctx.freshName("CustomSHAMap")
+    } else {
+      shaMapClassName
+    }
     ctx.addMutableState(hashSetClassName, hashMapTerm, s"$hashMapTerm = null;")
     ctx.addMutableState(listClassName + s"<$hashSetClassName>", overflowHashMapsTerm,
       s"$overflowHashMapsTerm = null;")
@@ -860,7 +864,12 @@ case class SnappyHashAggregateExec(
       skipLenForAttrib, codeForLenOfSkippedTerm, valueDataCapacityTerm,
       if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None,
       if (cacheStoredKeyNullBits) Some(storedKeyNullBitsTerm) else None,
-      aggregateBufferVars, keyHolderCapacityTerm)
+      aggregateBufferVars, keyHolderCapacityTerm, hashSetClassName)
+
+    if (this.groupingAttributes.length == 1) {
+      ctx.addNewFunction(hashSetClassName, byteBufferAccessor.
+        generateCustomSHAMapClass(hashSetClassName, keysDataType.head))
+    }
 
     val maxMemory = ctx.freshName("maxMemory")
     val peakMemory = metricTerm(ctx, "peakMemory")
