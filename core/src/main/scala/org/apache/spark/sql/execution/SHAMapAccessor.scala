@@ -51,7 +51,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   skipLenForAttribIndex: Int, codeForLenOfSkippedTerm: String,
   valueDataCapacityTerm: String, storedAggNullBitsTerm: Option[String],
   storedKeyNullBitsTerm: Option[String],
-  aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String, shaMapClassName: String)
+  aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String,
+  shaMapClassName: String, useCustomHashMap: Boolean)
   extends CodegenSupport {
   val unsafeArrayClass = classOf[UnsafeArrayData].getName
   val unsafeRowClass = classOf[UnsafeRow].getName
@@ -602,7 +603,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     /* generateUpdate(objVar, Nil,
       valueInitVars, forKey = false, doCopy = false) */
 
-    val putBufferIfAbsentArgs = if (keyVars.size == 1) {
+    val putBufferIfAbsentArgs = if (useCustomHashMap) {
       s"""${keyVars.head.value}, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)},
          |${keyVars.head.isNull}""".stripMargin
     } else {
@@ -626,7 +627,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
         }
         // evaluate hash code of the lookup key
         |${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
-        |//  System.out.println("hash code for key = " +${hashVar(0)});
         |// get key size code
         |$numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)};
 
@@ -869,7 +869,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val byteBufferClass = classOf[ByteBuffer].getName
     val currentOffset = ctx.freshName("currentOffset")
     val plaformClass = classOf[Platform].getName
-    if (keyVars.size == 1) {
+    if (useCustomHashMap) {
       ""
     } else {
       s"""
@@ -1230,12 +1230,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
            |          throw $bbHashMapObject.bsle();
            |        }
            |        // insert into the map and rehash if required
-           |        int relativeOffset = $customNewInsertTerm($paramName, numKeyBytes, isNull,
+           |        long relativeOffset = $customNewInsertTerm($paramName, numKeyBytes, isNull,
            |         numBytes);
            |        $platformClass.putLong(mapKeyObject, mapKeyOffset,
            |          (relativeOffset << 32L) | (hash & 0xffffffffL));
            |        try {
-           |          return handleNew(mapKeyObject, mapKeyOffset, relativeOffset);
+           |          return handleNew(mapKeyObject, mapKeyOffset, (int)relativeOffset);
            |        } catch ($bsleExceptionClass bsle) {
            |            this.maxSizeReached_$$eq(true);
            |            $platformClass.putLong(mapKeyObject, mapKeyOffset, 0L);
@@ -1266,7 +1266,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           """.stripMargin
        }
        s"""
-          | public int $customNewInsertTerm($paramJavaType $paramName, int numKeyBytes,
+          | public long $customNewInsertTerm($paramJavaType $paramName, int numKeyBytes,
           | boolean $paramIsNull, int numBytes) {
           // write into the valueData ByteBuffer growing it if required
              |long $positionTerm = valueDataPosition();
@@ -1287,7 +1287,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
              |$nullAndKeyWritingCode
              |valueDataPosition_$$eq($positionTerm + numBytes - numKeyBytes);
              |// return the relative offset to the start excluding numKeyBytes
-             |return (int) (dataSize + 4);
+             |return (dataSize + 4);
           |}
          """.stripMargin
      }
@@ -1315,8 +1315,14 @@ case class SHAMapAccessor(@transient session: SnappySession,
         val valueEqualityCode = if (isPrimtive) {
            s"return $valueHolder == $paramName;"
         } else if (keyDataType.isInstanceOf[StringType]) {
-          s"""return $byteArrayEqualsClass.arrayEquals($vdBaseObjectTerm, $valueOffset,
-            $paramName.getBaseObject(), $paramName.getBaseOffset(), $numKeyBytes);"""
+          val stringLengthArg = if (numBytesForNullKeyBits == 0) {
+            numKeyBytes
+          } else {
+            s"$numKeyBytes - 1"
+          }
+          s"""
+              return $byteArrayEqualsClass.arrayEquals($vdBaseObjectTerm, $valueOffset,
+            $paramName.getBaseObject(), $paramName.getBaseOffset(), $stringLengthArg);"""
         }
         else {
           s"return $valueHolder.equals($paramName);"
@@ -1360,7 +1366,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
            |   int $valueStartOffset, $paramJavaType $paramName, int $numKeyBytes,
            | boolean $isNull) {
            |    long $valueOffset = $mapValueBaseOffset + $valueStartOffset;
-           |    $paramJavaType $valueHolder = ${if (isPrimtive) "0" else "null"};
+           |    $paramJavaType $valueHolder = ${ctx.defaultValue(keyDataType)};
            |    byte $nullHolder = 0;
            |    int $lengthHolder = 0;
            |    $equalityCode

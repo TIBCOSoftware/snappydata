@@ -820,8 +820,11 @@ case class SnappyHashAggregateExec(
          |(int)($localIterValueOffsetTerm - $localIterValueStartOffsetTerm)
          |${ if (keysToProcessSize.length > 0) s" - ($suffixSize)" else ""};""".stripMargin
     } else ""
+    val useCustomHashMap = groupingAttributes.size == 1 &&
+      (TypeUtilities.isFixedWidth(groupingAttributes.head.dataType) ||
+       groupingAttributes.head.dataType.isInstanceOf[StringType])
 
-    val hashSetClassName = if (this.groupingAttributes.length == 1) {
+    val hashSetClassName = if (useCustomHashMap) {
       ctx.freshName("CustomSHAMap")
     } else {
       shaMapClassName
@@ -864,9 +867,9 @@ case class SnappyHashAggregateExec(
       skipLenForAttrib, codeForLenOfSkippedTerm, valueDataCapacityTerm,
       if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None,
       if (cacheStoredKeyNullBits) Some(storedKeyNullBitsTerm) else None,
-      aggregateBufferVars, keyHolderCapacityTerm, hashSetClassName)
+      aggregateBufferVars, keyHolderCapacityTerm, hashSetClassName, useCustomHashMap)
 
-    if (this.groupingAttributes.length == 1) {
+    if (useCustomHashMap) {
       ctx.addNewFunction(hashSetClassName, byteBufferAccessor.
         generateCustomSHAMapClass(hashSetClassName, keysDataType.head))
     }
