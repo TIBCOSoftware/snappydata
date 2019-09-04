@@ -277,7 +277,7 @@ class OpLogRdd(
     val projectColumns: Array[String] = schema.fields.map(_.name)
     val complexSch = schemaOfVersion.filter(f =>
       f.dataType match {
-        case _: ArrayType | _: MapType | _: StructType => true
+        case _: ArrayType | _: MapType | _: StructType | _: StringType => true
         case _ => false
       }
     )
@@ -346,7 +346,7 @@ class OpLogRdd(
   def iterateColData(phdrCol: PlaceHolderDiskRegion): Iterator[Row] = {
     val regMap = phdrCol.getRegionMap
     assert(regMap != null, "region map for column batch is null")
-    if (regMap.regionEntries().size() <= 0) return Iterator.empty
+    if (regMap.regionEntries().isEmpty) return Iterator.empty
     regMap.keySet().iterator().asScala.flatMap {
       case k: ColumnFormatKey if k.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX =>
         // get required info about deletes
@@ -502,7 +502,6 @@ class OpLogRdd(
           // var adrUnescapePath = adrPath
           // unescapePRPath replaces _ in db or table name with /
           val wrongTablePattern = tableName.replace('_', '/')
-          // todo check if table has _continuing as size of map is
           if (tableName.contains('_') && adrUnescapePath.contains(wrongTablePattern)) {
             adrUnescapePath = adrUnescapePath
                 .replace(wrongTablePattern, tableName.replace('/', '_'))
