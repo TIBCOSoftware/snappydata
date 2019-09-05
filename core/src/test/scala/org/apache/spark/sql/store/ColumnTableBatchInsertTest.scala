@@ -123,6 +123,8 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     // var result = snc.sql(s"select sum(col1) from $tableName")
     // var result = snc.sql(s"select col1, col2 from $tableName where col1 > 0")
     var result = snc.sql(s"select col1 * 10, col2 * 2 + col1 from $tableName where col1 > 0")
+    //var result = snc.sql(s"select cast(col2 as long) from $tableName")
+    //var result = snc.sql(s"select * from $tableName where col1 > 0")
 
     // PROBLEMATIC var result = snc.sql(s"select cast(col2 as long) from $tableName")
     result.show()
@@ -133,6 +135,56 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     // println("Result " + result.count())
     println("Successful")
   }
+
+  test("test non operational table 2") {
+    snc.sql(s"DROP TABLE IF EXISTS $tableName")
+
+    val df = snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
+      "USING column " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'Col1'," +
+      "KEY_COLUMNS 'Col1'," +
+      "BUCKETS '1'," +
+      "non_operational_data_table 'columntable_p')")
+
+    snc.sql(s"insert into $tableName select id, 2*id, 3*id from range(2)")
+
+    snc.sql(s"create external table ${tableName}_p using parquet " +
+      s"options (path '/home/skumar/ctable')")
+
+    val colDf = snc.sql(s"select * from $tableName")
+    println("colDf show Below")
+    colDf.show()
+
+    //df2.write.parquet("/home/skumar/ctable")
+
+
+    val pDf = snc.sql(s"select * from ${tableName}_p")
+    println("pDf show Below")
+    pDf.show()
+
+    // snc.sql("set spark.sql.crossJoin.enabled=true")
+    // val result_p = snc.sql(s"select col1, col2 from ${tableName}_p where col1 > 0")
+
+    // var result = snc.sql(s"select sum(col1) from $tableName")
+    // var result = snc.sql(s"select col2 from $tableName")
+    // var result = snc.sql(s"select sum(col1) from $tableName where col1 > 1")
+    // var result = snc.sql(s"select sum(col1) from $tableName")
+    var result = snc.sql(s"select col1, col2 from $tableName where col1 > 0")
+    // var result = snc.sql(s"select col1, col2 from $tableName where col1 > 0 --+useNonOperationalData(true)\n")
+    // var result = snc.sql(s"select col1 * 10, col2 * 2 + col1 from $tableName where col1 > 0 --+useNonOperationalData(true)\n")
+    // var result = snc.sql(s"select cast(col2 as long) from $tableName")
+    // var result = snc.sql(s"select * from $tableName where col1 > 0")
+    // var result = snc.sql(s"select * from $tableName")
+
+    // PROBLEMATIC var result = snc.sql(s"select cast(col2 as long) from $tableName")
+
+    result.show()
+    // println("Result " + result.count())
+    println("Successful")
+  }
+
 
   test("test the overwrite table after reading itself") {
     snc.sql(s"DROP TABLE IF EXISTS $tableName")

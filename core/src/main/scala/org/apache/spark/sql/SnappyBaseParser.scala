@@ -397,7 +397,7 @@ object SnappyParserConsts {
    * Define the hints that need to be applied at plan-level and will be
    * wrapped by LogicalPlanWithHints
    */
-  final val allowedPlanHints: List[String] = List(QueryHint.JoinType.toString)
+  final val allowedPlanHints: List[String] = List(QueryHint.JoinType.toString, QueryHint.UseNonOperationalData.toString)
 
   // -10 in sequence will mean all arguments, -1 will mean all odd argument and
   // -2 will mean all even arguments. -3 will mean all arguments except those listed after it.

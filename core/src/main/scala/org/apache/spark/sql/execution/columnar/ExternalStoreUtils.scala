@@ -101,9 +101,14 @@ object ExternalStoreUtils {
   final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "column_max_delta_rows_transient"
   final val RELATION_FOR_SAMPLE = "relation_for_sample"
 
+  // property to indicate that the column table can refer to this non-cached
+  // table for data which is not in cache.
+  final val NON_OPERATIONAL_DATA_TABLE = "non_operational_data_table"
+
   val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
     COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
-    COLUMN_MAX_DELTA_ROWS_TRANSIENT, COMPRESSION_CODEC, RELATION_FOR_SAMPLE, KEY_COLUMNS)
+    COLUMN_MAX_DELTA_ROWS_TRANSIENT, COMPRESSION_CODEC, RELATION_FOR_SAMPLE, KEY_COLUMNS,
+    NON_OPERATIONAL_DATA_TABLE)
 
   registerBuiltinDrivers()
 
@@ -169,8 +174,6 @@ object ExternalStoreUtils {
     baseMap ++= map.map(kv => kv.copy(_1 = kv._1.toLowerCase))
 
     override def get(k: String): Option[T] = baseMap.get(k.toLowerCase)
-
-    override def put(k: String, v: T): Option[T] = baseMap.put(k.toLowerCase, v)
 
     override def remove(k: String): Option[T] = baseMap.remove(k.toLowerCase)
 
