@@ -39,6 +39,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     snc.sql(HiveMetaStoreUtils.setexternalHiveCatalog)
     dropBeelineTblsFromSnappy(snc, HiveMetaStoreUtils.dropTable)
     dropSnappyTbls(snc, HiveMetaStoreUtils.dropTable)
+    alterTableCheck(snc, pw)
     createHiveTblsAndLoadData(beelineConnection, dataLocation)
     createSnappyTblsAndLoadData(snc, dataLocation)
     for(index <- 0 to (HiveMetaStoreUtils.joinHiveSnappy.length-1)) {
@@ -207,7 +208,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
                          query1 : String, query2 : String, pw : PrintWriter, index : Int) : Unit = {
     var isDiff1  : Boolean = false
     var isDiff2 : Boolean = false
-    pw.println("Query1 : " + query1)
+    pw.println("Query" + index + " : " + query1)
     val df1 = snc.sql(query1)
     pw.println("Hive Join Snappy  Count: " + df1.count())
     val df2 = snc.sql(query2)
@@ -229,6 +230,31 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     }
     isDiff1 = false
     isDiff2 = false
+    pw.println("* * * * * * * * * * * * * * * * * * * * * * * * *")
+  }
+
+  def alterTableCheck(snc : SnappyContext, pw : PrintWriter): Unit = {
+    snc.sql(HiveMetaStoreUtils.dropTable + "default.Table1")
+    snc.sql(HiveMetaStoreUtils.dropTable  + "default.Table2")
+    snc.dropTable("default.Table1", true)
+    snc.dropTable("default.Table2", true)
+    snc.sql("create table if not exists default.Table1(id int, name String) using hive")
+    snc.sql("insert into default.Table1 select id, concat('TIBCO_',id) from range(100000)")
+    snc.sql("alter table default.Table1 rename to default.Table2")
+    val countDF = snc.sql("select count(*) as Total from default.Table2")
+    println("countDF : " + countDF.head())
+    val count = countDF.head().toString()
+      .replace( "[" , "")
+      .replace(  "]" , "").toLong
+    if(count.==(100000)) {
+      pw.println("Create the table in beeline from snappy," +
+        " \n insert data into it from snappy," +
+        " \n rename the table name from snappy," +
+        " \n count the no. of records from snappy and " +
+        "dropping the beeline table from snappy" +
+        "\n is sucessful")
+      pw.println("Alter table test passed.")
+    }
     pw.println("* * * * * * * * * * * * * * * * * * * * * * * * *")
   }
 }

@@ -31,8 +31,8 @@ object HiveMetaStoreUtils {
   val createDB: String =
     "create database "
 
-  val joinHiveSnappy = new Array[String](4)
-  val validateJoin = new Array[String](4)
+  val joinHiveSnappy = new Array[String](3)
+  val validateJoin = new Array[String](3)
 
   joinHiveSnappy(0) = "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID," +
     " o.OrderDate FROM default.hive_employees emp JOIN app.snappy_orders o ON " +
@@ -47,14 +47,15 @@ object HiveMetaStoreUtils {
     " (p.ProductID = od.ProductID)" +
     " GROUP BY p.ProductName" +
     " HAVING SUM(Quantity) >10 and SUM(Quantity) <100"
-  //  Query-3 takes > 55 minutes to execute not the validation.
-  joinHiveSnappy(3) = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
-    " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
-    " e.City as employeeCity, c.City as customerCity" +
-    " FROM snappy_employees e JOIN default.hive_customers c ON" +
-    " (e.City = c.City)" +
-    " GROUP BY e.City, c.City " +
-    " ORDER BY numEmployees DESC"
+//    Query-3 takes > 55 minutes to execute not the validation.
+//    Execuete this query on colo machines and check the time
+//  joinHiveSnappy(3) = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
+//    " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
+//    " e.City as employeeCity, c.City as customerCity" +
+//    " FROM snappy_employees e JOIN default.hive_customers c ON" +
+//    " (e.City = c.City)" +
+//    " GROUP BY e.City, c.City " +
+//    " ORDER BY numEmployees DESC"
 
     validateJoin(0) = "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID," +
     " o.OrderDate FROM snappy_employees emp JOIN snappy_orders o ON " +
@@ -69,11 +70,12 @@ object HiveMetaStoreUtils {
     " (p.ProductID = od.ProductID)" +
     " GROUP BY p.ProductName" +
     " HAVING SUM(Quantity) >10 and SUM(Quantity) <100"
-  validateJoin(3) = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
-    " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
-    " e.City as employeeCity, c.City as customerCity" +
-    " FROM snappy_employees e JOIN snappy_customers c ON" +
-    " (e.City = c.City)" +
-    " GROUP BY e.City, c.City " +
-    " ORDER BY numEmployees DESC"
+
+//  validateJoin(3) = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
+//    " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
+//    " e.City as employeeCity, c.City as customerCity" +
+//    " FROM snappy_employees e JOIN snappy_customers c ON" +
+//    " (e.City = c.City)" +
+//    " GROUP BY e.City, c.City " +
+//    " ORDER BY numEmployees DESC"
 }
