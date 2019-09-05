@@ -687,7 +687,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
     rs4.close()
 
-    stmtRec.execute("call sys.RECOVER_DDLS('./recover_ddls_test1/');")
+    stmtRec.execute("call sys.DUMP_DDLS('./recover_ddls_test1/');")
 
     stmtRec.close()
     connRec.close()
@@ -1074,7 +1074,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     // todo add assertion for gemfire10.test3rowtab9 and gemfire10.test3coltab10 ; once null issue
     // is fixed. - null comes out as 0  for few datatypesin recovery mode
 
-    stmtRec.execute("call sys.RECOVER_DDLS('./recover_ddls_test3/');")
+    stmtRec.execute("call sys.DUMP_DDLS('./recover_ddls_test3/');")
     stmtRec.close()
     conn.close()
     test_status = true
@@ -1221,28 +1221,28 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
       println(rstemp.getObject(1))
     }
 
-    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_parquet','parquet'," +
+    stmtRec.execute("call sys.DUMP_DATA('./recover_data_parquet','parquet'," +
         "'  gemfire10.test5coltab1   ','true')")
 
-    logInfo(s"RECOVER_DATA called for test5coltab2 at ${System.currentTimeMillis}")
-    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_parquet','parquet'," +
+    logInfo(s"DUMP_DATA called for test5coltab2 at ${System.currentTimeMillis}")
+    stmtRec.execute("call sys.DUMP_DATA('./recover_data_parquet','parquet'," +
         "'   gemfire10.test5coltab2','true')")
-    logInfo(s"RECOVER_DATA ends for test5coltab2 at ${System.currentTimeMillis}")
+    logInfo(s"DUMP_DATA ends for test5coltab2 at ${System.currentTimeMillis}")
 
 
-    logInfo(s"RECOVER_DATA called for test5rowtab4 at ${System.currentTimeMillis}")
-    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_parquet','parquet'," +
+    logInfo(s"DUMP_DATA called for test5rowtab4 at ${System.currentTimeMillis}")
+    stmtRec.execute("call sys.DUMP_DATA('./recover_data_parquet','parquet'," +
         "'gemfire10.test5rowtab4','true')")
-    logInfo(s"RECOVER_DATA ends for test5rowtab4 at ${System.currentTimeMillis}")
+    logInfo(s"DUMP_DATA ends for test5rowtab4 at ${System.currentTimeMillis}")
 
     // checks ignore_error
-    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_parquet'," +
+    stmtRec.execute("call sys.DUMP_DATA('./recover_data_parquet'," +
         "'parquet','gemfire10.test5coltab2,gemfire10.test5rowtab4, NonExistentTable','true')")
 
-    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_json','json'," +
+    stmtRec.execute("call sys.DUMP_DATA('./recover_data_json','json'," +
         "'gemfire10.test5rowtab3','true')")
 
-    stmtRec.execute("call sys.RECOVER_DATA('./recover_data_all','csv','all','true')")
+    stmtRec.execute("call sys.DUMP_DATA('./recover_data_all','csv','all','true')")
     // todo how to verify if the files are correct?
 
     // check DLLs - create table, diskstore, view, schema, external table, index,
@@ -1251,7 +1251,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     // - drop diskstore, index, table, external table, schema, rename
     // create function
 
-    stmtRec.execute("call sys.RECOVER_DDLS('./recover_ddls_test5');")
+    stmtRec.execute("call sys.DUMP_DDLS('./recover_ddls_test5');")
     // todo: add assertion for recover_ddls
 
     stmtRec.close()
@@ -1620,7 +1620,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
       getRecFromResultSet(rs7, "integer,double,integer"))
     rs7.close()
 
-    stmtRec.execute("call sys.RECOVER_DDLS('./recover_ddls/');")
+    stmtRec.execute("call sys.DUMP_DDLS('./recover_ddls/');")
     // todo hmeka Add assertion on recover_ddls output
     stmtRec.close()
     connRec.close()
