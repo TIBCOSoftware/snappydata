@@ -40,6 +40,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     dropBeelineTblsFromSnappy(snc, HiveMetaStoreUtils.dropTable)
     dropSnappyTbls(snc, HiveMetaStoreUtils.dropTable)
     alterTableCheck(snc, pw)
+    createAndDropSchemaCheck(snc, beelineConnection, dataLocation, pw)
     createHiveTblsAndLoadData(beelineConnection, dataLocation)
     createSnappyTblsAndLoadData(snc, dataLocation)
     for(index <- 0 to (HiveMetaStoreUtils.joinHiveSnappy.length-1)) {
@@ -236,8 +237,6 @@ class ExternalHiveMetaStore extends SnappySQLJob {
   def alterTableCheck(snc : SnappyContext, pw : PrintWriter): Unit = {
     snc.sql(HiveMetaStoreUtils.dropTable + "default.Table1")
     snc.sql(HiveMetaStoreUtils.dropTable  + "default.Table2")
-    snc.dropTable("default.Table1", true)
-    snc.dropTable("default.Table2", true)
     snc.sql("create table if not exists default.Table1(id int, name String) using hive")
     snc.sql("insert into default.Table1 select id, concat('TIBCO_',id) from range(100000)")
     snc.sql("alter table default.Table1 rename to default.Table2")
@@ -256,5 +255,60 @@ class ExternalHiveMetaStore extends SnappySQLJob {
       pw.println("Alter table test passed.")
     }
     pw.println("* * * * * * * * * * * * * * * * * * * * * * * * *")
+    snc.dropTable("default.Table1", true)
+    snc.dropTable("default.Table2", true)
+  }
+
+  def createAndDropSchemaCheck(snc : SnappyContext, beelineConnection : Connection,
+                               dataLocation : String, pw : PrintWriter): Unit = {
+    var isDiff1 = false
+    var isDiff2 = false
+    snc.sql(HiveMetaStoreUtils.dropTable + "hiveDB.hive_regions")
+    snc.sql(HiveMetaStoreUtils.dropTable + "snappyDB.staging_regions")
+    snc.sql(HiveMetaStoreUtils.dropTable + "snappyDB.snappy_regions")
+    snc.sql("drop database if exists hiveDB")
+    snc.sql("drop schema if exists snappyDB")
+    snc.sql("create database hiveDB")
+    snc.sql("create schema snappyDB")
+    createHiveTable("hiveDB.hive_regions(RegionID int,RegionDescription string)", beelineConnection)
+    loadDataToHiveTbls(dataLocation + "regions.csv", "hiveDB.hive_regions", beelineConnection)
+    snc.sql("create external table if not exists snappyDB.staging_regions using csv" +
+      " options(path '" + "file:///" + dataLocation + "regions.csv" + "',header 'true')")
+    snc.sql("create table if not exists snappyDB.snappy_regions using column" +
+      " options(BUCKETS '10') as select * from snappyDB.staging_regions")
+    val countDF1 : DataFrame = snc.sql("select * from hiveDB.hive_regions " +
+      "where RegionDescription <> 'RegionDescription'")
+    val countDF2 : DataFrame = snc.sql("select * from snappyDB.snappy_regions")
+    val df1 = snc.sql("select * from hiveDB.hive_regions " +
+      "where RegionDescription <> 'RegionDescription'")
+    pw.println("Hive Table Count : " + df1.count())
+    val df2 = snc.sql("select * from snappyDB.snappy_regions")
+    pw.println("Snappy Table Count : " + df2.count())
+    val diff1 = df1.except(df2)
+    if(diff1.count() > 0) {
+      diff1.write.csv("diff1_" + "HiveTable" + ".cvs")
+    } else {
+      isDiff1 = true
+    }
+    val diff2 = df2.except(df1)
+    if(diff2.count() > 0) {
+      diff1.write.csv("diff1_" + "SnappyTable" + ".cvs")
+    } else {
+      isDiff2 = true
+    }
+    if(isDiff1 && isDiff2) {
+      pw.println("Hive Table is same as Snappy Table")
+    }
+    else {
+      pw.println("Hive Table is not same as Snappy Table")
+    }
+    isDiff1 = false
+    isDiff2 = false
+    pw.println("* * * * * * * * * * * * * * * * * * * * * * * * *")
+    snc.sql(HiveMetaStoreUtils.dropTable + "hiveDB.hive_regions")
+    snc.sql(HiveMetaStoreUtils.dropTable + "snappyDB.staging_regions")
+    snc.sql(HiveMetaStoreUtils.dropTable + "snappyDB.snappy_regions")
+    snc.sql("drop database if exists hiveDB")
+    snc.sql("drop schema if exists snappyDB")
   }
 }
