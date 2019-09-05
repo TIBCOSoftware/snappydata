@@ -455,7 +455,7 @@ class OpLogRdd(
               }
 
               val updatedDecoder = updatedDecoders(colIndx)
-              val c1 = (updatedDecoder ne null)
+              val c1 = updatedDecoder ne null
               val c2 = c1 && !updatedDecoder.unchanged(i + currentDeleted )
               val c3 = c1 && updatedDecoder.readNotNull
               if (c1 && c2 && c3) {
@@ -474,7 +474,7 @@ class OpLogRdd(
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
-    logInfo(s"compute started execution for ${fqtn}")
+    logInfo(s"compute started execution for $fqtn")
     try {
       val diskStores = Misc.getGemFireCache.listDiskStores()
       var diskStrCol: DiskStoreImpl = null
@@ -657,8 +657,7 @@ class OpLogRdd(
         override def index: Int = p
       }
     }.toArray[Partition]
-//    logInfo(s"PP:oplogrdd:getPartition: no. of partitions ${partition.length}")
-    partition.foreach(e => logInfo(s"PP: oplogrdd:getpartition: ${e.index}"))
+    partition.foreach(e => logDebug(s"OpLogRDD:getpartition: ${e.index}"))
     partition
   }
 
