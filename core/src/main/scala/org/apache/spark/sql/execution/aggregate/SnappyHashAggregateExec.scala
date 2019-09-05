@@ -975,6 +975,7 @@ case class SnappyHashAggregateExec(
           """
       }
     } else ""
+
     s"""
       if (!$initAgg) {
         $initAgg = true;

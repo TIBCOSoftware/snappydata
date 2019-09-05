@@ -1191,18 +1191,37 @@ case class SHAMapAccessor(@transient session: SnappySession,
       val bsleExceptionClass = classOf[BufferSizeLimitExceededException].getName
       val customNewInsertTerm = "customNewInsert"
       val nullKeyBitsParamName = if (numBytesForNullKeyBits == 0) "" else ctx.freshName("nullKeyBits")
+
       val nullKeyBitsArg = if (numBytesForNullKeyBits == 0) ""
       else s", ${SHAMapAccessor.getNullBitsCastTerm(numBytesForNullKeyBits)}  $nullKeyBitsParamName"
+
       val nullKeyBitsParam = if (numBytesForNullKeyBits == 0) ""
       else s", $nullKeyBitsParamName"
-      def generatePutIfAbsent(): String =
+
+      val useHashCodeForEquality = keyDataType match {
+        case ByteType | ShortType | IntegerType => true
+        case _ => false
+      }
+
+      def generatePutIfAbsent(): String = {
+        val mapValueObjectTerm = ctx.freshName("mapValueObject")
+        val mapValueOffsetTerm = ctx.freshName("mapValueOffset")
+        val valueStartOffsetTerm = ctx.freshName("valueStartOffset")
+        val numKeyBytesTerm = ctx.freshName("numKeyBytes")
+        val isNullTerm = ctx.freshName("isNull")
+        val equalSizeMethodStr = if (useHashCodeForEquality) {
+          ""
+        } else {
+          s""" && equalsSize($mapValueObjectTerm, $mapValueOffsetTerm, $valueStartOffsetTerm,
+             | $paramName, $numKeyBytesTerm, $isNullTerm)""".stripMargin
+        }
         s"""
-           | public int putBufferIfAbsent($paramJavaType $paramName, int numKeyBytes, int numBytes,
-           |  int hash, boolean isNull) {
+           | public int putBufferIfAbsent($paramJavaType $paramName, int $numKeyBytesTerm,
+           |  int numBytes, int hash, boolean $isNullTerm) {
            |  $bbDataClass kd = keyData();
            |  $bbDataClass vd = valueData();
-           |  Object mapValueObject = vd.baseObject();
-           |  long mapValueOffset = vd.baseOffset();
+           |  Object $mapValueObjectTerm = vd.baseObject();
+           |  long $mapValueOffsetTerm = vd.baseOffset();
            |  Object mapKeyObject = kd.baseObject();
            |  long mapKeyBaseOffset = kd.baseOffset();
            |  int fixedKeySize = this.fixedKeySize();
@@ -1216,10 +1235,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
            |      if (mapKey != 0L) {
            |        // first compare the hash codes followed by "equalsSize" that will
            |        // include the check for 4 bytes of numKeyBytes itself
-           |        int valueStartOffset = (int)(mapKey >>> 32L) - 4;
-           |        if (hash == (int)mapKey && equalsSize(mapValueObject, mapValueOffset,
-           |            valueStartOffset, $paramName, numKeyBytes, isNull)) {
-           |          return handleExisting(mapKeyObject, mapKeyOffset, valueStartOffset + 4);
+           |        int $valueStartOffsetTerm = (int)(mapKey >>> 32L) - 4;
+           |        if (hash == (int)mapKey $equalSizeMethodStr) {
+           |          return handleExisting(mapKeyObject, mapKeyOffset, $valueStartOffsetTerm + 4);
            |        } else {
            |          // quadratic probing (increase delta)
            |          pos = (pos + delta) & localMask;
@@ -1230,8 +1248,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
            |          throw $bbHashMapObject.bsle();
            |        }
            |        // insert into the map and rehash if required
-           |        long relativeOffset = $customNewInsertTerm($paramName, numKeyBytes, isNull,
-           |         numBytes);
+           |        long relativeOffset = $customNewInsertTerm($paramName, $numKeyBytesTerm,
+           |         $isNullTerm, numBytes);
            |        $platformClass.putLong(mapKeyObject, mapKeyOffset,
            |          (relativeOffset << 32L) | (hash & 0xffffffffL));
            |        try {
@@ -1246,7 +1264,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
            |   // return 0; // not expected to reach
            |  }
          """.stripMargin
-
+      }
 
      def generateCustomNewInsert: String = {
        val valueBaseObjectTerm = ctx.freshName("valueBaseObject")
