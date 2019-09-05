@@ -1304,6 +1304,13 @@ public class SnappyTest implements Serializable {
       setConnPoolType();
     else
       connPoolType = (int) SnappyBB.getBB().getSharedMap().get("connPoolType");
+    boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+    Properties props = new Properties();
+    if(isSecurityEnabled)
+    {
+      props.setProperty("user","gemfire1");
+      props.setProperty("password","gemfire1");
+    }
 
     if (connPoolType == 0) {
       conn = HikariConnectionPool.getConnection();
@@ -1315,7 +1322,7 @@ public class SnappyTest implements Serializable {
       if (!runGemXDQuery) {
         String url = "jdbc:snappydata://" + endpoints.get(0);
         Log.getLogWriter().info("url is " + url);
-        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver",props);
       } else {
         String url = "jdbc:gemfirexd://" + endpoints.get(0);
         Log.getLogWriter().info("url is " + url);
