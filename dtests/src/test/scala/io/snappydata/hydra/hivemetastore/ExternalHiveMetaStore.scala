@@ -27,31 +27,32 @@ class ExternalHiveMetaStore extends SnappySQLJob {
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
     // scalastyle:off println
     println("External Hive MetaStore Embedded mode Job started...")
+    val diffPath : String = "file:///home/cbhatt/DiffDir/"
     val dataLocation = jobConfig.getString("dataFilesLocation")
     val outputFile = "ValidateJoinQuery" + "_" + "column" +
       System.currentTimeMillis() + jobConfig.getString("logFileName")
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
     val spark : SparkSession = SparkSession.builder().getOrCreate()
     val snc : SnappyContext = snappySession.sqlContext
-    val sqlContext : SQLContext = spark.sqlContext
+//    val sqlContext : SQLContext = spark.sqlContext
 
     val beelineConnection : Connection = connectToBeeline()
-    snc.sql(HiveMetaStoreUtils.setexternalHiveCatalog)
-    dropBeelineTblsFromSnappy(snc, HiveMetaStoreUtils.dropTable)
-    dropSnappyTbls(snc, HiveMetaStoreUtils.dropTable)
+    snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
+    dropBeelineTabelsFromSnappy(snc, HiveMetaStoreUtils.dropTable)
+    dropSnappyTables(snc, HiveMetaStoreUtils.dropTable)
     alterTableCheck(snc, pw)
-    createAndDropSchemaCheck(snc, beelineConnection, dataLocation, pw)
+    createAndDropSchemaCheck(snc, beelineConnection, dataLocation, pw, diffPath)
     createHiveTblsAndLoadData(beelineConnection, dataLocation)
     createSnappyTblsAndLoadData(snc, dataLocation)
     for(index <- 0 to (HiveMetaStoreUtils.joinHiveSnappy.length-1)) {
       executeJoinQueries(snc, spark, HiveMetaStoreUtils.joinHiveSnappy(index),
-        HiveMetaStoreUtils.validateJoin(index), pw, index)
+        HiveMetaStoreUtils.validateJoin(index), pw, index, diffPath)
     }
-    dropBeelineTblsFromSnappy(snc, HiveMetaStoreUtils.dropTable)
-    dropSnappyTbls(snc, HiveMetaStoreUtils.dropTable)
+    dropBeelineTabelsFromSnappy(snc, HiveMetaStoreUtils.dropTable)
+    dropSnappyTables(snc, HiveMetaStoreUtils.dropTable)
     pw.flush()
     pw.close()
-    println("Extenral Hive MetaStore Embedded mode job is successful")
+    println("External Hive MetaStore Embedded mode job is successful")
   }
 
   def connectToBeeline() : Connection = {
@@ -61,7 +62,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     beelineConnection
   }
 
-  def dropBeelineTblsFromSnappy(snc : SnappyContext, dropTable : String): Unit = {
+  def dropBeelineTabelsFromSnappy(snc : SnappyContext, dropTable : String): Unit = {
     snc.sql(dropTable + "default.hive_regions")
     snc.sql(dropTable + "default.hive_categories")
     snc.sql(dropTable + "default.hive_shippers")
@@ -75,7 +76,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     snc.sql(dropTable + "default.hive_employee_territories")
   }
 
-  def dropSnappyTbls(snc : SnappyContext, dropTable : String) : Unit = {
+  def dropSnappyTables(snc : SnappyContext, dropTable : String) : Unit = {
     snc.sql(dropTable + "app.staging_regions");
     snc.sql(dropTable + "app.snappy_regions");
     snc.sql(dropTable + "app.staging_categories");
@@ -188,13 +189,13 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     snc.sql("create table if not exists app.snappy_shippers using column" +
       " options(BUCKETS '10') as select * from app.staging_shippers")
     snc.sql("create table if not exists app.snappy_employees using column" +
-      " options(BUCKETS '10') as select * from app.staging_employees")
+      " options(BUCKETS '64') as select * from app.staging_employees")
     snc.sql("create table if not exists app.snappy_customers using column" +
-      " options(BUCKETS '10') as select * from app.staging_customers")
+      " options(BUCKETS '64') as select * from app.staging_customers")
     snc.sql("create table if not exists app.snappy_orders using column" +
-      " options(BUCKETS '10') as select * from app.staging_orders")
+      " options(BUCKETS '64') as select * from app.staging_orders")
     snc.sql("create table if not exists app.snappy_order_details using column" +
-      " options(BUCKETS '10') as select * from app.staging_order_details")
+      " options(BUCKETS '64') as select * from app.staging_order_details")
     snc.sql("create table if not exists app.snappy_products using column" +
       " options(BUCKETS '10') as select * from app.staging_products")
     snc.sql("create table if not exists app.snappy_suppliers using column" +
@@ -206,7 +207,8 @@ class ExternalHiveMetaStore extends SnappySQLJob {
   }
 
   def executeJoinQueries(snc : SnappyContext, spark : SparkSession,
-                         query1 : String, query2 : String, pw : PrintWriter, index : Int) : Unit = {
+                         query1 : String, query2 : String, pw : PrintWriter,
+                         index : Int, diffPath : String) : Unit = {
     var isDiff1  : Boolean = false
     var isDiff2 : Boolean = false
     pw.println("Query" + index + " : " + query1)
@@ -216,18 +218,21 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     pw.println("Snappy Join Snappy Count (Validation) : " + df2.count())
     val diff1 = df1.except(df2)
     if(diff1.count() > 0) {
-      diff1.write.csv("diff1_" + index + ".cvs")
+      diff1.write.csv(diffPath + "diff1_" + index + ".csv")
     } else {
       isDiff1 = true
     }
     val diff2 = df2.except(df1)
     if(diff2.count() > 0) {
-      diff1.write.csv("diff1_" + index + ".cvs")
+      diff2.write.csv( diffPath + "diff2_" + index + ".cvs")
     } else {
       isDiff2 = true
     }
     if(isDiff1 && isDiff2) {
       pw.println("For Query " + index + " Join between Hive and Snappy is successful")
+    }
+    else {
+      pw.println("For Query " + index + " Join between Hive and Snappy is not successful")
     }
     isDiff1 = false
     isDiff2 = false
@@ -251,7 +256,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
         " \n rename the table name from snappy," +
         " \n count the no. of records from snappy and " +
         "dropping the beeline table from snappy" +
-        "\n is sucessful")
+        "\n is successful")
       pw.println("Alter table test passed.")
     }
     pw.println("* * * * * * * * * * * * * * * * * * * * * * * * *")
@@ -260,7 +265,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
   }
 
   def createAndDropSchemaCheck(snc : SnappyContext, beelineConnection : Connection,
-                               dataLocation : String, pw : PrintWriter): Unit = {
+                               dataLocation : String, pw : PrintWriter, diffPath : String): Unit = {
     var isDiff1 = false
     var isDiff2 = false
     snc.sql(HiveMetaStoreUtils.dropTable + "hiveDB.hive_regions")
@@ -276,9 +281,6 @@ class ExternalHiveMetaStore extends SnappySQLJob {
       " options(path '" + "file:///" + dataLocation + "regions.csv" + "',header 'true')")
     snc.sql("create table if not exists snappyDB.snappy_regions using column" +
       " options(BUCKETS '10') as select * from snappyDB.staging_regions")
-    val countDF1 : DataFrame = snc.sql("select * from hiveDB.hive_regions " +
-      "where RegionDescription <> 'RegionDescription'")
-    val countDF2 : DataFrame = snc.sql("select * from snappyDB.snappy_regions")
     val df1 = snc.sql("select * from hiveDB.hive_regions " +
       "where RegionDescription <> 'RegionDescription'")
     pw.println("Hive Table Count : " + df1.count())
@@ -286,13 +288,13 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     pw.println("Snappy Table Count : " + df2.count())
     val diff1 = df1.except(df2)
     if(diff1.count() > 0) {
-      diff1.write.csv("diff1_" + "HiveTable" + ".cvs")
+      diff1.write.csv(diffPath + "diff1_HiveTable" + ".cvs")
     } else {
       isDiff1 = true
     }
     val diff2 = df2.except(df1)
     if(diff2.count() > 0) {
-      diff1.write.csv("diff1_" + "SnappyTable" + ".cvs")
+      diff1.write.csv(diffPath + "diff1_SnappyTable" + ".cvs")
     } else {
       isDiff2 = true
     }
