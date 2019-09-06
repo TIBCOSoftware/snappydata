@@ -52,7 +52,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   valueDataCapacityTerm: String, storedAggNullBitsTerm: Option[String],
   storedKeyNullBitsTerm: Option[String],
   aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String,
-  shaMapClassName: String, useCustomHashMap: Boolean)
+  shaMapClassName: String, useCustomHashMap: Boolean,
+  previousSinglePrimitiveKeyAndPositionTerm: Option[(String, String)])
   extends CodegenSupport {
   val unsafeArrayClass = classOf[UnsafeArrayData].getName
   val unsafeRowClass = classOf[UnsafeRow].getName
@@ -597,11 +598,14 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val tempValueData = ctx.freshName("tempValueData")
     val linkedListClass = classOf[java.util.LinkedList[SHAMap]].getName
     val exceptionName = classOf[BufferSizeLimitExceededException].getName
-
+    val skipLookupTerm = ctx.freshName("skipLookUp")
     // val valueInit = valueInitCode + '\n'
     val insertDoneTerm = ctx.freshName("insertDone");
     /* generateUpdate(objVar, Nil,
       valueInitVars, forKey = false, doCopy = false) */
+
+
+
 
     val putBufferIfAbsentArgs = if (useCustomHashMap) {
       s"""${keyVars.head.value}, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)},
@@ -610,6 +614,99 @@ case class SHAMapAccessor(@transient session: SnappySession,
       s"""$baseKeyObject, $baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
          | ${hashVar(0)}""".stripMargin
     }
+
+
+    val lookUpInsertCode =
+      s"""
+         |// insert or lookup
+
+         |if($overflowHashMapsTerm == null) {
+           |try {
+             |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($putBufferIfAbsentArgs);
+             |$keyExistedTerm = $valueOffsetTerm >= 0;
+             |if (!$keyExistedTerm) {
+               |$valueOffsetTerm = -1 * $valueOffsetTerm;
+               |if (($valueOffsetTerm + $numValueBytes + $numKeyBytesTerm) >=
+                 |$valueDataCapacityTerm) {
+                 |//$valueDataTerm = $tempValueData;
+                 |$valueDataTerm =  $hashMapTerm.getValueData();
+                 |$vdBaseObjectTerm = $valueDataTerm.baseObject();
+                 |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+                 |$valueDataCapacityTerm = $valueDataTerm.capacity();
+               |}
+             |}
+           |} catch ($exceptionName bsle) {
+             |$overflowHashMapsTerm = new $linkedListClass<$shaMapClassName>();
+             |$overflowHashMapsTerm.add($hashMapTerm);
+             |$hashMapTerm = new $shaMapClassName(
+             |${Property.initialCapacityOfSHABBMap.get(session.sessionState.conf)}, $keyValSize,
+             |${Property.ApproxMaxCapacityOfBBMap.get(session.sessionState.conf)});
+             |$overflowHashMapsTerm.add($hashMapTerm);
+             |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($putBufferIfAbsentArgs);
+             |$valueOffsetTerm = -1 * $valueOffsetTerm;
+             |$valueDataTerm =  $hashMapTerm.getValueData();
+             |$vdBaseObjectTerm = $valueDataTerm.baseObject();
+             |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+             |$keyExistedTerm = false;
+           |}
+         |} else {
+           |boolean $insertDoneTerm = false;
+           |for($shaMapClassName shaMap : $overflowHashMapsTerm ) {
+             |try {
+               |$valueOffsetTerm = shaMap.putBufferIfAbsent($putBufferIfAbsentArgs);
+               |$keyExistedTerm = $valueOffsetTerm >= 0;
+               |if (!$keyExistedTerm) {
+                 |$valueOffsetTerm = -1 * $valueOffsetTerm;
+               |}
+               |$hashMapTerm = shaMap;
+               |$valueDataTerm =  $hashMapTerm.getValueData();
+               |$vdBaseObjectTerm = $valueDataTerm.baseObject();
+               |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+               |$insertDoneTerm = true;
+               |break;
+             |} catch ($exceptionName bsle) {
+               |//ignore
+             |}
+           |}
+           |if (!$insertDoneTerm) {
+             |$hashMapTerm = new $shaMapClassName(
+              |${Property.initialCapacityOfSHABBMap.get(session.sessionState.conf)},
+              |$keyValSize,
+              | ${Property.ApproxMaxCapacityOfBBMap.get(session.sessionState.conf)});
+             |$overflowHashMapsTerm.add($hashMapTerm);
+             |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($putBufferIfAbsentArgs);
+             |$valueOffsetTerm = -1 * $valueOffsetTerm;
+             |$keyExistedTerm = false;
+             |$valueDataTerm =  $hashMapTerm.getValueData();
+             |$vdBaseObjectTerm = $valueDataTerm.baseObject();
+             |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+           |}
+         |}
+         |// position the offset to start of aggregate value
+         |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
+       """.stripMargin
+
+    val lookUpInsertCodeWithSkip = previousSinglePrimitiveKeyAndPositionTerm.map {
+      case (keyTerm, posTerm) =>
+        s"""
+           |boolean $skipLookupTerm = false;
+           |if ($posTerm != -1 && !${keyVars.head.isNull} && $keyTerm == ${keyVars.head.value}) {
+             |$skipLookupTerm = true;
+             |$valueOffsetTerm = $posTerm;
+             |$keyExistedTerm = true;
+           |}
+           if (!$skipLookupTerm) {
+             $lookUpInsertCode
+             if (${keyVars.head.isNull}) {
+               $posTerm = -1L;
+             } else {
+               $posTerm = $valueOffsetTerm;
+               $keyTerm = ${keyVars.head.value};
+             }
+           }
+         """.stripMargin
+    }.getOrElse(lookUpInsertCode)
+
     s"""|$valueInitCode
         |${SHAMapAccessor.resetNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
         |${SHAMapAccessor.resetNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
@@ -635,75 +732,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
            keyVars, keysDataType, aggregateDataTypes, valueInitVars)
           }
         |long $valueOffsetTerm = 0;
-        // insert or lookup
         |boolean $keyExistedTerm = false;
-        |if($overflowHashMapsTerm == null) {
-          |try {
-            |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($putBufferIfAbsentArgs);
-            |$keyExistedTerm = $valueOffsetTerm >= 0;
-            |if (!$keyExistedTerm) {
-              |$valueOffsetTerm = -1 * $valueOffsetTerm;
-              |if (($valueOffsetTerm + $numValueBytes + $numKeyBytesTerm) >=
-              |$valueDataCapacityTerm) {
-                |//$valueDataTerm = $tempValueData;
-                |$valueDataTerm =  $hashMapTerm.getValueData();
-                |$vdBaseObjectTerm = $valueDataTerm.baseObject();
-                |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
-                |$valueDataCapacityTerm = $valueDataTerm.capacity();
-              |}
-            |}
-          |} catch ($exceptionName bsle) {
-              |$overflowHashMapsTerm = new $linkedListClass<$shaMapClassName>();
-              |$overflowHashMapsTerm.add($hashMapTerm);
-              |$hashMapTerm = new $shaMapClassName(${Property.initialCapacityOfSHABBMap.get(
-      session.sessionState.conf)},
-              |$keyValSize,
-              |${Property.ApproxMaxCapacityOfBBMap.get(session.sessionState.conf)});
-              |$overflowHashMapsTerm.add($hashMapTerm);
-              |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($putBufferIfAbsentArgs);
-              |$valueOffsetTerm = -1 * $valueOffsetTerm;
-              |$valueDataTerm =  $hashMapTerm.getValueData();
-              |$vdBaseObjectTerm = $valueDataTerm.baseObject();
-              |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
-              |$keyExistedTerm = false;
-          |}
-        |} else {
-          |boolean $insertDoneTerm = false;
-          |for($shaMapClassName shaMap : $overflowHashMapsTerm ) {
-             |try {
-               |$valueOffsetTerm = shaMap.putBufferIfAbsent($putBufferIfAbsentArgs);
-               |$keyExistedTerm = $valueOffsetTerm >= 0;
-               |if (!$keyExistedTerm) {
-                  |$valueOffsetTerm = -1 * $valueOffsetTerm;
-               |}
-               |$hashMapTerm = shaMap;
-               |$valueDataTerm =  $hashMapTerm.getValueData();
-               |$vdBaseObjectTerm = $valueDataTerm.baseObject();
-               |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
-               |$insertDoneTerm = true;
-               |break;
-             |} catch ($exceptionName bsle) {
-                |//ignore
-             |}
-          |}
-          |if (!$insertDoneTerm) {
-            |$hashMapTerm = new $shaMapClassName(${Property.initialCapacityOfSHABBMap.get(
-             session.sessionState.conf)},
-            | $keyValSize,
-            | ${Property.ApproxMaxCapacityOfBBMap.get(session.sessionState.conf)});
-            |$overflowHashMapsTerm.add($hashMapTerm);
-            |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($putBufferIfAbsentArgs);
-            |$valueOffsetTerm = -1 * $valueOffsetTerm;
-            |$keyExistedTerm = false;
-            |$valueDataTerm =  $hashMapTerm.getValueData();
-            |$vdBaseObjectTerm = $valueDataTerm.baseObject();
-            |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
-          |}
-        |}
-        |
-        |
-        |// position the offset to start of aggregate value
-        |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
+        |$lookUpInsertCodeWithSkip
         |long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;""".stripMargin
 
   }
@@ -1209,11 +1239,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
         val valueStartOffsetTerm = ctx.freshName("valueStartOffset")
         val numKeyBytesTerm = ctx.freshName("numKeyBytes")
         val isNullTerm = ctx.freshName("isNull")
+        val valueEqualityFunctionStr = s""" equalsSize($mapValueObjectTerm, $mapValueOffsetTerm,
+              $valueStartOffsetTerm, $paramName, $numKeyBytesTerm, $isNullTerm)""".stripMargin
         val equalSizeMethodStr = if (useHashCodeForEquality) {
-          ""
+          s" && (!$isNullTerm || $valueEqualityFunctionStr)"
         } else {
-          s""" && equalsSize($mapValueObjectTerm, $mapValueOffsetTerm, $valueStartOffsetTerm,
-             | $paramName, $numKeyBytesTerm, $isNullTerm)""".stripMargin
+          s" && $valueEqualityFunctionStr"
         }
         s"""
            | public int putBufferIfAbsent($paramJavaType $paramName, int $numKeyBytesTerm,

@@ -856,6 +856,13 @@ case class SnappyHashAggregateExec(
        SHAMapAccessor.sizeForNullBits(numBytesForNullKeyBits)  + numValueBytes -
       (if (skipLenForAttrib != -1) 4 else 0)
 
+    val previousSinglePrimitiveKeyAndPositionTerm = if (useCustomHashMap &&
+      SHAMapAccessor.isPrimitive(keysDataType.head)) {
+      Some(ctx.freshName("previousPrimitiveSingleKey") ->
+        ctx.freshName("previousPrimitiveValuePosition"))
+    } else {
+      None
+    }
 
     byteBufferAccessor = SHAMapAccessor(session, ctx, groupingExpressions,
       aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm, overflowHashMapsTerm,
@@ -867,12 +874,15 @@ case class SnappyHashAggregateExec(
       skipLenForAttrib, codeForLenOfSkippedTerm, valueDataCapacityTerm,
       if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None,
       if (cacheStoredKeyNullBits) Some(storedKeyNullBitsTerm) else None,
-      aggregateBufferVars, keyHolderCapacityTerm, hashSetClassName, useCustomHashMap)
+      aggregateBufferVars, keyHolderCapacityTerm, hashSetClassName,
+      useCustomHashMap, previousSinglePrimitiveKeyAndPositionTerm)
 
     if (useCustomHashMap) {
       ctx.addNewFunction(hashSetClassName, byteBufferAccessor.
         generateCustomSHAMapClass(hashSetClassName, keysDataType.head))
     }
+
+
 
     val maxMemory = ctx.freshName("maxMemory")
     val peakMemory = metricTerm(ctx, "peakMemory")
@@ -895,6 +905,12 @@ case class SnappyHashAggregateExec(
            |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
            |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
            |int $valueDataCapacityTerm = $valueDataTerm.capacity();
+           |${previousSinglePrimitiveKeyAndPositionTerm.map{case(keyTerm, posTerm) =>
+             s"""
+                |${ctx.javaType(keysDataType.head)} $keyTerm =
+                | ${ctx.defaultValue(keysDataType.head)};
+                |long $posTerm = -1L;
+              """.stripMargin}.getOrElse("")}
            |${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
            |${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggsBits)}
            |${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
