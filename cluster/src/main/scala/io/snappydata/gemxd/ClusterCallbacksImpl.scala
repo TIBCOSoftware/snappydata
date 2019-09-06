@@ -137,11 +137,11 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     GemFireVersion.getClusterType
   }
 
-  override def recoverData(connId: lang.Long, exportUri: String,
+  override def dumpData(connId: lang.Long, exportUri: String,
       formatType: String, tableNames: String, ignoreError: lang.Boolean): Unit = {
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     val tablesArr = if (tableNames.equalsIgnoreCase("all")) {
-      val catalogTables = session.externalCatalog.getAllTables()
+      val catalogTables = RecoveryService.getTables
       val tablesArr = catalogTables.map(ct => {
         ct.identifier.database match {
           case Some(db) =>
@@ -180,7 +180,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     })
   }
 
-  override def recoverDDLs(connId: lang.Long, exportUri: String): Unit = {
+  override def dumpDDLs(connId: lang.Long, exportUri: String): Unit = {
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     val filePath = if (exportUri.endsWith(File.separator)) {
       exportUri.substring(0, exportUri.length - 1) +
