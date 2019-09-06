@@ -856,10 +856,11 @@ case class SnappyHashAggregateExec(
        SHAMapAccessor.sizeForNullBits(numBytesForNullKeyBits)  + numValueBytes -
       (if (skipLenForAttrib != -1) 4 else 0)
 
-    val previousSinglePrimitiveKeyAndPositionTerm = if (useCustomHashMap &&
-      SHAMapAccessor.isPrimitive(keysDataType.head)) {
-      Some(ctx.freshName("previousPrimitiveSingleKey") ->
-        ctx.freshName("previousPrimitiveValuePosition"))
+    val previousSingleKey_Position_LengthTerm = if (useCustomHashMap &&
+      (SHAMapAccessor.isPrimitive(keysDataType.head) ||
+        keysDataType.head.isInstanceOf[StringType])) {
+      Some((ctx.freshName("previousSingleKey"), ctx.freshName("previousValuePosition"),
+        ctx.freshName("previousKeyLength")))
     } else {
       None
     }
@@ -875,7 +876,7 @@ case class SnappyHashAggregateExec(
       if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None,
       if (cacheStoredKeyNullBits) Some(storedKeyNullBitsTerm) else None,
       aggregateBufferVars, keyHolderCapacityTerm, hashSetClassName,
-      useCustomHashMap, previousSinglePrimitiveKeyAndPositionTerm)
+      useCustomHashMap, previousSingleKey_Position_LengthTerm)
 
     if (useCustomHashMap) {
       ctx.addNewFunction(hashSetClassName, byteBufferAccessor.
@@ -905,10 +906,16 @@ case class SnappyHashAggregateExec(
            |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
            |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
            |int $valueDataCapacityTerm = $valueDataTerm.capacity();
-           |${previousSinglePrimitiveKeyAndPositionTerm.map{case(keyTerm, posTerm) =>
+           |${previousSingleKey_Position_LengthTerm.map{case(keyTerm, posTerm, lenTerm) =>
+             val paramDataType = if (SHAMapAccessor.isPrimitive(keysDataType.head)) {
+               ctx.javaType(keysDataType.head)
+             } else {
+               "int"
+             }
              s"""
-                |${ctx.javaType(keysDataType.head)} $keyTerm =
-                | ${ctx.defaultValue(keysDataType.head)};
+                |$paramDataType $keyTerm = ${if (keysDataType.head.isInstanceOf[StringType])
+                 {ctx.defaultValue(IntegerType)} else {ctx.defaultValue(keysDataType.head)}};
+                |int $lenTerm = 0;
                 |long $posTerm = -1L;
               """.stripMargin}.getOrElse("")}
            |${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}

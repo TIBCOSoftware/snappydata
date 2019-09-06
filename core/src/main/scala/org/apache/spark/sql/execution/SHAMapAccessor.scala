@@ -53,7 +53,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   storedKeyNullBitsTerm: Option[String],
   aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String,
   shaMapClassName: String, useCustomHashMap: Boolean,
-  previousSinglePrimitiveKeyAndPositionTerm: Option[(String, String)])
+  previousSingleKey_Position_LenTerm: Option[(String, String, String)])
   extends CodegenSupport {
   val unsafeArrayClass = classOf[UnsafeArrayData].getName
   val unsafeRowClass = classOf[UnsafeRow].getName
@@ -67,7 +67,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   val byteBufferClass = classOf[ByteBuffer].getName
   val unsafeClass = classOf[UnsafeRow].getName
   val bbDataClass = classOf[ByteBufferData].getName
-
+  val byteArrayEqualsClass = classOf[ByteArrayMethods].getName
 
   def getBufferVars(dataTypes: Seq[DataType], varNames: Seq[String],
     currentValueOffsetTerm: String, isKey: Boolean, nullBitTerm: String,
@@ -686,15 +686,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
          |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
        """.stripMargin
 
-    val lookUpInsertCodeWithSkip = previousSinglePrimitiveKeyAndPositionTerm.map {
-      case (keyTerm, posTerm) =>
-        s"""
-           |boolean $skipLookupTerm = false;
-           |if ($posTerm != -1 && !${keyVars.head.isNull} && $keyTerm == ${keyVars.head.value}) {
+    val lookUpInsertCodeWithSkip = previousSingleKey_Position_LenTerm.map {
+      case (keyTerm, posTerm, lenTerm) =>
+        if (SHAMapAccessor.isPrimitive(keysDataType.head)) {
+          s"""
+             |boolean $skipLookupTerm = false;
+             |if ($posTerm != -1 && !${keyVars.head.isNull} && $keyTerm == ${keyVars.head.value}) {
              |$skipLookupTerm = true;
              |$valueOffsetTerm = $posTerm;
              |$keyExistedTerm = true;
-           |}
+             |}
            if (!$skipLookupTerm) {
              $lookUpInsertCode
              if (${keyVars.head.isNull}) {
@@ -705,6 +706,33 @@ case class SHAMapAccessor(@transient session: SnappySession,
              }
            }
          """.stripMargin
+        } else {
+          val actualKeyLen = if (numBytesForNullKeyBits == 0) lenTerm else s"($lenTerm - 1)"
+          val equalityCheck = s"""$actualKeyLen == ${keyVars.head.value}.numBytes() &&
+               |$byteArrayEqualsClass.arrayEquals($vdBaseObjectTerm, $posTerm - $actualKeyLen,
+               |${keyVars.head.value}.getBaseObject(), ${keyVars.head.value}.getBaseOffset(),
+               | $actualKeyLen)
+             """.stripMargin
+          s"""
+             |boolean $skipLookupTerm = false;
+             |if ($posTerm != -1 && !${keyVars.head.isNull} && $keyTerm == ${hashVar(0)}
+             | && $equalityCheck) {
+             |$skipLookupTerm = true;
+             |$valueOffsetTerm = $posTerm;
+             |$keyExistedTerm = true;
+             |}
+           if (!$skipLookupTerm) {
+             $lookUpInsertCode
+             if (${keyVars.head.isNull}) {
+               $posTerm = -1L;
+             } else {
+               $posTerm = $valueOffsetTerm;
+               $keyTerm = ${hashVar(0)};
+               $lenTerm = $numKeyBytesTerm;
+             }
+           }
+         """.stripMargin
+        }
     }.getOrElse(lookUpInsertCode)
 
     s"""|$valueInitCode
@@ -1212,7 +1240,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 
     def generateCustomSHAMapClass(className: String, keyDataType: DataType): String = {
-      val byteArrayEqualsClass = classOf[ByteArrayMethods].getName
+
       val columnEncodingClassObject = ColumnEncoding.getClass.getName + ".MODULE$"
       val paramName = ctx.freshName("param")
       val paramJavaType = ctx.javaType(keyDataType)
