@@ -18,6 +18,8 @@ package io.snappydata.hydra.cluster;
 
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Vector;
 
 import hydra.BasePrms;
@@ -741,13 +743,10 @@ public class SnappyPrms extends BasePrms {
    */
   public static Long expectedExceptions;
 
-  public static String[] getExpectedExceptionList() {
+  public static List<String> getExpectedExceptionList() {
     Long key = expectedExceptions;
     Vector statements = tab().vecAt(key, new HydraVector());
-    String[] strArr = new String[statements.size()];
-    for (int i = 0; i < statements.size(); i++) {
-      strArr[i] = (String)statements.elementAt(i);
-    }
+    List<String> strArr = Collections.list(statements.elements());
     return strArr;
   }
 
@@ -757,13 +756,10 @@ public class SnappyPrms extends BasePrms {
    */
   public static Long expectedExceptionsForHA;
 
-  public static String[] getExpectedExceptionListForHA() {
+  public static List<String> getExpectedExceptionListForHA() {
     Long key = expectedExceptionsForHA;
     Vector statements = tab().vecAt(key, new HydraVector());
-    String[] strArr = new String[statements.size()];
-    for (int i = 0; i < statements.size(); i++) {
-      strArr[i] = (String)statements.elementAt(i);
-    }
+    List<String> strArr = Collections.list(statements.elements());
     return strArr;
   }
 

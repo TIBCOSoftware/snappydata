@@ -67,8 +67,7 @@ public class SnappyTest implements Serializable {
   protected static SnappyTest snappyTest;
   protected static HostDescription hd = TestConfig.getInstance().getMasterDescription()
       .getVmDescription().getHostDescription();
-  /*protected static HostDescription localhd = TestConfig.getInstance().getClientDescription
-      (RemoteTestModule.getMyClientName()).getVmDescription().getHostDescription();*/
+
   protected static char sep = hd.getFileSep();
   private static String gemfireHome = hd.getGemFireHome() + sep;
   protected static String productDir = gemfireHome + ".." + sep + "snappy" + sep;
@@ -2857,14 +2856,12 @@ public class SnappyTest implements Serializable {
     StringBuilder cmd = new StringBuilder();
     StringBuilder exceptedExcep = new StringBuilder();
 
-    String[] expectedExceptions = SnappyPrms.getExpectedExceptionList();
+    List<String> expectedExceptions = SnappyPrms.getExpectedExceptionList();
     if(cycleVms) {
-      List<String> exceptions = new ArrayList<String>(Arrays.asList(expectedExceptions));
-      exceptions.addAll(Arrays.asList(SnappyPrms.getExpectedExceptionListForHA()));
-      expectedExceptions = exceptions.toArray(expectedExceptions);
+      expectedExceptions.addAll(SnappyPrms.getExpectedExceptionListForHA());
     }
-    for (int i = 0; i < expectedExceptions.length; i++)
-      exceptedExcep.append(" | grep -v \"").append(expectedExceptions[i] + "\"");
+    for (int i = 0; i < expectedExceptions.size(); i++)
+      exceptedExcep.append(" | grep -v \"").append(expectedExceptions.get(i) + "\"");
 
     cmd.setLength(0);
     cmd.append("find " + getCurrentDirPath() + " -type f \\( -name \"*.log\" -not -iname " +
