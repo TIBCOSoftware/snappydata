@@ -83,25 +83,30 @@ object SnappyTestUtils {
     var validationFailed = false
     var snappyDF: DataFrame = null
     snappyDF = snc.sql(sqlString)
-    val count = snappyDF.count
+    val snappyDFCount = snappyDF.count
     // scalastyle:off println
     pw.println(s"\n${logTime} Executing Query $queryNum ...")
     println(s"Query $queryNum")
     snappyDF.explain(true)
     if (numRowsValidation) {
-      pw.println(s"${logTime} Query ${queryNum} returned ${count} rows for ${tableType} table")
-      if (count != numRows) {
-        pw.println(s"${logTime} Result mismatch for query ${queryNum}: found ${count} rows but " +
-            s"expected ${numRows} rows.")
+      pw.println(s"${logTime} Query ${queryNum} returned ${snappyDFCount} rows for ${tableType}")
+      if (snappyDFCount != numRows) {
+        pw.println(s"${logTime} Result mismatch for query ${queryNum} found ${snappyDFCount} rows" +
+            s"but expected ${numRows} rows.")
         validationFailed = true
       }
       pw.flush()
     }
     var fullRSValidationFailed: Boolean = false
     if (validateFullResultSet) {
-      var sparkDF = sqlContext.sql(sqlString)
+      val sparkDF = sqlContext.sql(sqlString)
+      val sparkDFCount = sparkDF.count()
+      if(snappyDFCount != sparkDFCount) {
+        pw.println(s"Count difference observed in snappy and spark resultset for query " +
+            s"${queryNum}. Snappy returned ${snappyDFCount} and spark returned ${sparkDFCount}.")
+        fullRSValidationFailed = true
+      }
       fullRSValidationFailed = assertQuery(snc, snappyDF, sparkDF, queryNum, pw)
-
     }
     if (validationFailed) {
       pw.println(s"\n${logTime} NumRows validation failed for query ${queryNum} on ${tableType} " +
@@ -132,26 +137,37 @@ object SnappyTestUtils {
         sparkQueryFileName
     // pw.println(s"Spark query results are at : ${sparkDest}")
     val sparkFile: File = new java.io.File(sparkDest)
-
     try {
       if (!snappyFile.exists()) {
         // val snap_col1 = snappyDF.schema.fieldNames(0)
         // val snap_col = snappyDF.schema.fieldNames.filter(!_.equals(snap_col1)).toSeq
-        val snappyDF1 = snappyDF.repartition(1) // .sortWithinPartitions(snap_col1, snap_col: _*)
-        writeToFile(snappyDF, snappyDest, snc)
-        // writeResultSetToCsv(snappyDF, snappyFile)
+        // snappyDF.repartition(1).sortWithinPartitions(snap_col1, snap_col: _*)
+        writeToFile(snappyDF.repartition((1)), snappyDest, snc)
         pw.println(s"${logTime} Snappy result collected in : ${snappyDest}")
       }
       if (!sparkFile.exists()) {
         // val col1 = sparkDF.schema.fieldNames(0)
         // val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
-        val sparkDF1 = sparkDF.repartition(1) // .sortWithinPartitions(col1, col: _*)
-        writeToFile(sparkDF, sparkDest, snc)
-        // writeResultSetToCsv(sparkDF, sparkFile)
+        // sparkDF.repartition(1).sortWithinPartitions(col1, col: _*)
+        writeToFile(sparkDF.repartition(1), sparkDest, snc)
         pw.println(s"${logTime} Spark result collected in : ${sparkDest}")
       }
-      fullRSValidationFailed = compareFiles(snappyFile, sparkFile, pw, queryNum,
-        fullRSValidationFailed)
+      val missingDF = sparkDF.except(snappyDF).collectAsList()
+      val unexpectedDF = snappyDF.except(sparkDF).collectAsList()
+      if(missingDF.size() > 0 || unexpectedDF.size() > 0) {
+        fullRSValidationFailed = true
+        pw.println("Found mismatch in resultset")
+        if(missingDF.size() > 0) {
+          pw.println(s"The following ${missingDF.size} rows were missing in snappyDF:\n " +
+              missingDF.forEach(println))
+        }
+        if(unexpectedDF.size() > 0) {
+          pw.println(s"The following ${unexpectedDF.size} rows were unexpected in snappyDF:\n" +
+              missingDF.forEach(println))
+        }
+      }
+      // fullRSValidationFailed
+      //    = compareFiles(snappyFile, sparkFile, pw, queryNum, fullRSValidationFailed)
     } catch {
       case ex: Exception => {
         fullRSValidationFailed = true
@@ -486,7 +502,6 @@ object SnappyTestUtils {
         val snap_col = snappyDF.schema.fieldNames.filter(!_.equals(snap_col1)).toSeq
         snappyDF = snappyDF.repartition(1).sortWithinPartitions(snap_col1, snap_col: _*)
         writeToFile(snappyDF, snappyDest, snc)
-        // writeResultSetToCsv(snappyDF, snappyFile)
         pw.println(s"${logTime} ${queryNum} Result Collected in file $snappyDest")
       }
       if (!goldenFile.exists()) {
@@ -501,7 +516,6 @@ object SnappyTestUtils {
         val col = goldenDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
         goldenDF = goldenDF.repartition(1).sortWithinPartitions(col1, col: _*)
         writeToFile(goldenDF, sortedGoldenDest, snc)
-        // writeResultSetToCsv(goldenDF, sortedGoldenFile)
         pw.println(s"${logTime} ${queryNum} Result Collected in file ${sortedGoldenDest}")
       } else {
         pw.println(s"${logTime} No results in query result file for $queryNum.")
