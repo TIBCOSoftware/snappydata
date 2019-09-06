@@ -454,7 +454,7 @@ class OpLogRdd(
               }
 
               val updatedDecoder = updatedDecoders(colIndx)
-              val c1 = (updatedDecoder ne null)
+              val c1 = updatedDecoder ne null
               val c2 = c1 && !updatedDecoder.unchanged(i + currentDeleted )
               val c3 = c1 && updatedDecoder.readNotNull
               if (c1 && c2 && c3) {

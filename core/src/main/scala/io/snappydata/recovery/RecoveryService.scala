@@ -66,9 +66,10 @@ object RecoveryService extends Logging {
       val snappyHiveExternalCatalog = HiveClientUtil.getOrCreateExternalCatalog(
         snappyContext.sparkContext, snappyContext.sparkContext.getConf)
 
-      val allTables = snappyHiveExternalCatalog.getAllTables()
+      val allTables = getTables
       var tblCounts: Seq[SnappyRegionStats] = Seq()
       allTables.foreach(table => {
+        logDebug(s"RecoveryService:getStats:table: $table")
         table.storage.locationUri match {
           case Some(_) =>
           case None =>
@@ -307,8 +308,7 @@ object RecoveryService extends Logging {
     val snappySession = new SnappySession(SnappyContext().sparkContext)
     val colParser = new SnappyParser(snappySession)
 
-    snappyHiveExternalCatalog.getAllTables().foreach(table => {
-      if (!table.tableType.name.equalsIgnoreCase("view")) {
+    getTables.foreach(table => {
         // Create statements
         var versionCnt = 1
         table.properties.get("schemaJson") match {
@@ -394,7 +394,6 @@ object RecoveryService extends Logging {
             })
           case None => ""
         }
-      }
     })
   }
 
@@ -415,6 +414,7 @@ object RecoveryService extends Logging {
   def collectViewsAndRecoverDDLs(): Unit = {
     // Send a message to all the servers and locators to send back their
     // respective persistent state information.
+    logDebug("Start Collect Views and Recover DDLs for cluster startup")
     val collector = new GfxdListResultCollector(null, true)
     val msg = new RecoveredMetadataRequestMessage(collector)
     msg.executeFunction()
@@ -489,7 +489,15 @@ object RecoveryService extends Logging {
     createSchemasMap(snappyHiveExternalCatalog)
   }
 
+  def getTables: Seq[CatalogTable] = {
+    val snappyContext = SnappyContext()
+    val snappyHiveExternalCatalog = HiveClientUtil
+        .getOrCreateExternalCatalog(snappyContext.sparkContext, snappyContext.sparkContext.getConf)
+    snappyHiveExternalCatalog.getAllTables().filter(!_.tableType.name.equalsIgnoreCase("view"))
+  }
+
   def getProvider(tableName: String): String = {
+    logDebug(s"RecoveryService: tableName: ${tableName}")
     val res = mostRecentMemberObject.getCatalogObjects.asScala.filter(x => {
       x.isInstanceOf[CatalogTableObject] && {
         val cbo = x.asInstanceOf[CatalogTableObject]
@@ -501,6 +509,7 @@ object RecoveryService extends Logging {
         fqtn.equalsIgnoreCase(tableName)
       }
     }).head.asInstanceOf[CatalogTableObject]
+    logDebug(s"Provider: ${res.getProvider}")
     res.getProvider
   }
 
