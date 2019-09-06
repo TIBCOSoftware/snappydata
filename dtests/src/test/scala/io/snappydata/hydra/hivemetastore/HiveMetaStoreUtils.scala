@@ -18,9 +18,9 @@ package io.snappydata.hydra.hivemetastore
 
 object HiveMetaStoreUtils {
 
-  val setexternalHiveCatalog: String =
+  val setExternalHiveCatalog: String =
     "set spark.sql.catalogImplementation=hive"
-  val setexternalInBuiltCatalog: String =
+  val setExternalInBuiltCatalog: String =
     "set spark.sql.catalogImplementation=in-memory"
   val showTblsApp: String =
     "show tables in app"
@@ -31,8 +31,8 @@ object HiveMetaStoreUtils {
   val createDB: String =
     "create database "
 
-  val joinHiveSnappy = new Array[String](3)
-  val validateJoin = new Array[String](3)
+  val joinHiveSnappy = new Array[String](7)
+  val validateJoin = new Array[String](7)
 
   joinHiveSnappy(0) = "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID," +
     " o.OrderDate FROM default.hive_employees emp JOIN app.snappy_orders o ON " +
@@ -47,8 +47,34 @@ object HiveMetaStoreUtils {
     " (p.ProductID = od.ProductID)" +
     " GROUP BY p.ProductName" +
     " HAVING SUM(Quantity) >10 and SUM(Quantity) <100"
-//    Query-3 takes > 55 minutes to execute not the validation.
-//    Execuete this query on colo machines and check the time
+  joinHiveSnappy(3) = "SELECT emp.EmployeeID,emp.FirstName,emp.LastName," +
+    "o.OrderID,o.OrderDate FROM" +
+    " snappy_employees emp JOIN default.hive_orders o ON " +
+    "(emp.EmployeeID = o.EmployeeID) " +
+    "where o.EmployeeID < 5 ORDER BY o.OrderDate"
+  joinHiveSnappy(4) = "SELECT o.OrderID,c.CompanyName,e.FirstName, e.LastName" +
+    " FROM default.hive_orders o JOIN default.hive_employees e " +
+    "ON (e.EmployeeID = o.EmployeeID) JOIN snappy_customers c " +
+    "ON (c.CustomerID = o.CustomerID) " +
+    "WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > Cast('1998-01-01' as TIMESTAMP) " +
+    "ORDER BY c.CompanyName"
+  joinHiveSnappy(5) = "SELECT e.FirstName, e.LastName, o.OrderID FROM " +
+    "snappy_employees e JOIN default.hive_orders o ON " +
+    "(e.EmployeeID = o.EmployeeID) " +
+    "WHERE o.RequiredDate < o.ShippedDate " +
+    "ORDER BY e.LastName, e.FirstName"
+  joinHiveSnappy(6) = "select distinct (a.ShippedDate) as ShippedDate,a.OrderID," +
+    "b.Subtotal,year(a.ShippedDate) as Year " +
+    "from snappy_orders a inner join" +
+    "(select distinct OrderID,sum(UnitPrice * Quantity * (1 - Discount)) as Subtotal " +
+    "from default.hive_order_details group by OrderID) b " +
+    "on a.OrderID = b.OrderID " +
+    "where a.ShippedDate is not null and " +
+    "a.ShippedDate > Cast('1996-12-24' as TIMESTAMP) and " +
+    "a.ShippedDate < Cast('1997-09-30' as TIMESTAMP) " +
+    "order by ShippedDate"
+//    Query takes > 55 minutes to execute not the validation.
+//    Execute this query on colo machines and check the time
 //  joinHiveSnappy(3) = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
 //    " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
 //    " e.City as employeeCity, c.City as customerCity" +
@@ -70,7 +96,32 @@ object HiveMetaStoreUtils {
     " (p.ProductID = od.ProductID)" +
     " GROUP BY p.ProductName" +
     " HAVING SUM(Quantity) >10 and SUM(Quantity) <100"
-
+  validateJoin(3) = "SELECT emp.EmployeeID,emp.FirstName,emp.LastName," +
+    "o.OrderID,o.OrderDate" +
+    " FROM snappy_employees emp JOIN snappy_orders o ON " +
+    "(emp.EmployeeID = o.EmployeeID) " +
+    "where o.EmployeeID < 5 ORDER BY o.OrderDate"
+  validateJoin(4) = "SELECT o.OrderID,c.CompanyName,e.FirstName, e.LastName" +
+    " FROM snappy_orders o JOIN snappy_employees e " +
+    "ON (e.EmployeeID = o.EmployeeID) JOIN snappy_customers c " +
+    "ON (c.CustomerID = o.CustomerID) " +
+    "WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > Cast('1998-01-01' as TIMESTAMP) " +
+    "ORDER BY c.CompanyName"
+  validateJoin(5) = "SELECT e.FirstName, e.LastName, o.OrderID FROM " +
+    "snappy_employees e JOIN snappy_orders o ON " +
+    "(e.EmployeeID = o.EmployeeID) " +
+    "WHERE o.RequiredDate < o.ShippedDate " +
+    "ORDER BY e.LastName, e.FirstName"
+  validateJoin(6) = "select distinct (a.ShippedDate) as ShippedDate,a.OrderID," +
+    "b.Subtotal,year(a.ShippedDate) as Year " +
+    "from snappy_orders a inner join" +
+    "(select distinct OrderID,sum(UnitPrice * Quantity * (1 - Discount)) as Subtotal " +
+    "from snappy_order_details group by OrderID) b " +
+    "on a.OrderID = b.OrderID " +
+    "where a.ShippedDate is not null and " +
+    "a.ShippedDate > Cast('1996-12-24' as TIMESTAMP) and " +
+    "a.ShippedDate < Cast('1997-09-30' as TIMESTAMP) " +
+    "order by ShippedDate"
 //  validateJoin(3) = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
 //    " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
 //    " e.City as employeeCity, c.City as customerCity" +
