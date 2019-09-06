@@ -329,7 +329,7 @@ class OpLogRdd(
       val schemaColId = getSchemaColumnId(fqtn.toLowerCase(), projectCol, versionNum)
       val colValue = if (projectColId == schemaColId) {
         // col is from latest schema not previous/dropped column
-        val colNamesArr = schStruct.fields.map(_.name)
+        val colNamesArr = schStruct.fields.map(_.name.toLowerCase())
         row(colNamesArr.indexOf(projectCol))
       } else null
       resArr(i) = colValue
@@ -422,7 +422,6 @@ class OpLogRdd(
           }
 
           var adjustedRowIndex = 0
-          logInfo(s"HM: going to loop till ${numOfRows} - ${deletedCount}")
           (0 until (numOfRows - deletedCount)).map { i =>
             while ((deleteDecoder ne null) && deleteDecoder.deleted(i + currentDeleted)) {
               // null counts should be added as we go even for deleted records
@@ -474,7 +473,6 @@ class OpLogRdd(
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
-    logInfo(s"compute started execution for ${fqtn}")
     try {
       val diskStores = Misc.getGemFireCache.listDiskStores()
       var diskStrCol: DiskStoreImpl = null
@@ -505,7 +503,6 @@ class OpLogRdd(
           if (tableName.contains('_') && adrUnescapePath.contains(wrongTablePattern)) {
             adrUnescapePath = adrUnescapePath
                 .replace(wrongTablePattern, tableName.replace('/', '_'))
-            logInfo(s"corrected adrUnescapePath = $adrUnescapePath")
           }
           if (adrUnescapePath.equals(colRegPath) && adr.isBucket) {
             diskStrCol = d
@@ -651,14 +648,11 @@ class OpLogRdd(
     val schemaName = fqtn.split('.')(0)
     val tableName = fqtn.split('.')(1)
     val (numBuckets, isReplicated) = RecoveryService.getNumBuckets(schemaName, tableName)
-//    logInfo(s"PP: getpartition: numbuckets $numBuckets isReplicated $isReplicated")
     val partition = (0 until numBuckets).map { p =>
       new Partition {
         override def index: Int = p
       }
     }.toArray[Partition]
-//    logInfo(s"PP:oplogrdd:getPartition: no. of partitions ${partition.length}")
-    partition.foreach(e => logInfo(s"PP: oplogrdd:getpartition: ${e.index}"))
     partition
   }
 
