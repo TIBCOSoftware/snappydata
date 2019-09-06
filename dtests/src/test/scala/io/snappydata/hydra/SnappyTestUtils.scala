@@ -158,12 +158,14 @@ object SnappyTestUtils {
         fullRSValidationFailed = true
         pw.println("Found mismatch in resultset")
         if(missingDF.size() > 0) {
-          pw.println(s"The following ${missingDF.size} rows were missing in snappyDF:\n " +
-              missingDF.forEach(println))
+          pw.println(s"The following ${missingDF.size} rows were missing in snappyDF:\n ")
+          for(i <- 0 to missingDF.size())
+            pw.println(missingDF.get(i))
         }
         if(unexpectedDF.size() > 0) {
-          pw.println(s"The following ${unexpectedDF.size} rows were unexpected in snappyDF:\n" +
-              missingDF.forEach(println))
+          pw.println(s"The following ${unexpectedDF.size} rows were unexpected in snappyDF:\n")
+          for(i <- 0 to unexpectedDF.size())
+            pw.println(unexpectedDF.get(i))
         }
       }
       // fullRSValidationFailed
@@ -441,7 +443,7 @@ object SnappyTestUtils {
     }
 
     // check if the mismatch is due to decimal, and can be ignored
-    if ((missing.size() > 0) && missing.size() == unexpected.size()) {
+    if ((missing.size() > 0) && (missing.size() == unexpected.size())) {
       Collections.sort(missing)
       Collections.sort(unexpected)
       for (i <- 0 until missing.size()) {
