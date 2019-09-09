@@ -390,14 +390,19 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         }
       }
     }
-
     try {
-      val catalogTable_ = if (catalogTable.properties.contains("schemaJson")) {
+      val catalogTable_ = if (catalogTable.properties.contains("schemaJson.size")) {
         // schemaJson is already added during preprocessed queue replay and hence we skip in lead
         catalogTable
       } else {
+        val schemaParts = catalogTable.schema.json.grouped(3500).toSeq
+        val schemaJsonMap = new mutable.HashMap[String, String]
+        schemaJsonMap += ("NoOfschemaParts" -> s"${schemaParts.size}")
+        schemaParts.zipWithIndex.foreach{ case(part, index) =>
+          schemaJsonMap += (s"part.$index" -> s"$part")}
+
         catalogTable.copy(properties =
-            catalogTable.properties ++ Map(s"schemaJson" -> s"${catalogTable.schema.json}"))
+            catalogTable.properties ++ schemaJsonMap)
       }
       withHiveExceptionHandling(super.createTable(catalogTable_, ifExists))
     } catch {

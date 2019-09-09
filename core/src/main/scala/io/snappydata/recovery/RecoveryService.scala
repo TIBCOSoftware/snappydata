@@ -309,91 +309,92 @@ object RecoveryService extends Logging {
     val colParser = new SnappyParser(snappySession)
 
     getTables.foreach(table => {
-        // Create statements
-        var versionCnt = 1
-        table.properties.get("schemaJson") match {
-          case Some(schemaJsonStr) =>
-            val fqtnKey = table.identifier.database match {
-              case Some(schName) => schName + "_" + table.identifier.table
-              case None => throw new Exception(
-                s"Schema name not found for the table ${table.identifier.table}")
-            }
-            var schema: StructType = DataType.fromJson(schemaJsonStr).asInstanceOf[StructType]
+      // Create statements
+      var versionCnt = 1
 
-            assert(schema != null, s"schemaJson read from catalog table is null " +
-                s"for ${table.identifier.table}")
-            schemaStructMap.put(s"$versionCnt#$fqtnKey", schema)
-            // for a table created with schema c1, c2 then c1 is dropped and then c1 is added
-            // the added c1 is a new column and we want to be able to differentiate between both c1
-            // so we assign ids to columns and new ids to columns from alter commands
-            // tableColumnIds = Map("1#fqtn" -> Array(0, 1), "2#fqtn" -> Array())
-            tableColumnIds.put(s"$versionCnt#$fqtnKey", schema.fields.indices.toArray)
-            versionMap.put(fqtnKey, versionCnt)
-            versionCnt += 1
+      val numOfSchemaParts = table.properties.getOrElse("NoOfschemaParts", null).toInt
+      assert(numOfSchemaParts != null, "Schema string not found.")
+      val schemaJsonStr = (0 until numOfSchemaParts)
+          .map { i => table.properties.getOrElse(s"part.$i", null) }.mkString
+      logInfo(s"PP: RecoveryService : create table properties : ${table.properties}")
+      logDebug(s"RecoveryService: createSchemaMap: Schema Json String : $schemaJsonStr")
 
-            // Alter statements
-            val altStmtKeys = table.properties.keys
-                .filter(_.contains(s"altTxt_")).toSeq
-                .sortBy(_.split("_")(1).toLong)
-            altStmtKeys.foreach(k => {
-              val stmt = table.properties(k).toUpperCase()
+      val fqtnKey = table.identifier.database match {
+        case Some(schName) => schName + "_" + table.identifier.table
+        case None => throw new Exception(
+          s"Schema name not found for the table ${table.identifier.table}")
+      }
+      var schema: StructType = DataType.fromJson(schemaJsonStr).asInstanceOf[StructType]
 
-              var alteredSchema: StructType = null
-              if (stmt.contains(" ADD COLUMN ")) {
-                // TODO replace ; at the end also add regex match instead of contains
-                val columnString = stmt.substring(stmt.indexOf("ADD COLUMN ") + 11)
-                val colNameAndType = (columnString.split("[ ]+")(0), columnString.split("[ ]+")(1))
-                val colString = if (columnString.toLowerCase().contains("not null")) {
-                  (s"(${colNameAndType._1} ${colNameAndType._2}) not null")
-                } else s"(${colNameAndType._1} ${colNameAndType._2})"
-                val field = colParser.parseSQLOnly(colString, colParser.tableSchemaOpt.run())
-                match {
-                  case Some(fieldSeq) =>
-                    val field = fieldSeq.head
-                    val builder = new MetadataBuilder
-                    builder.withMetadata(field.metadata)
-                        .putString("originalSqlType", colNameAndType._2.trim.toLowerCase())
-                    StructField(field.name, field.dataType, field.nullable, builder.build())
-                  case None => throw
-                      new IllegalArgumentException("alter statement contains no parsable field")
-                }
-                alteredSchema = new StructType((schema ++ new StructType(Array(field))).toArray)
+      assert(schema != null, s"schemaJson read from catalog table is null " +
+          s"for ${table.identifier.table}")
+      schemaStructMap.put(s"$versionCnt#$fqtnKey", schema)
+      // for a table created with schema c1, c2 then c1 is dropped and then c1 is added
+      // the added c1 is a new column and we want to be able to differentiate between both c1
+      // so we assign ids to columns and new ids to columns from alter commands
+      // tableColumnIds = Map("1#fqtn" -> Array(0, 1), "2#fqtn" -> Array())
+      tableColumnIds.put(s"$versionCnt#$fqtnKey", schema.fields.indices.toArray)
+      versionMap.put(fqtnKey, versionCnt)
+      versionCnt += 1
 
-              } else if (stmt.contains("DROP COLUMN ")) {
-                val dropColName = stmt.substring(stmt.indexOf("DROP COLUMN ") + 12).trim
-                // loop through schema and delete sruct field matching name and type
-                val indx = schema.fieldIndex(dropColName.toLowerCase())
-                alteredSchema = new StructType(schema.toArray.filter(
-                  field => !field.name.toUpperCase.equals(dropColName.toUpperCase)))
-              }
-              schema = alteredSchema
+      // Alter statements
+      val altStmtKeys = table.properties.keys
+          .filter(_.contains(s"altTxt_")).toSeq
+          .sortBy(_.split("_")(1).toLong)
+      altStmtKeys.foreach(k => {
+        val stmt = table.properties(k).toUpperCase()
 
-              assert(schema != null, s"schema for version $versionCnt is null")
-              schemaStructMap.put(s"$versionCnt#$fqtnKey", alteredSchema)
-              val idArray: Array[Int] = new Array[Int](alteredSchema.fields.length)
-              val prevSchema = schemaStructMap.getOrElse(s"${versionCnt - 1}#$fqtnKey", null)
-              val prevIdArray: Array[Int] =
-                tableColumnIds.getOrElse(s"${versionCnt - 1}#$fqtnKey", null)
+        var alteredSchema: StructType = null
+        if (stmt.contains(" ADD COLUMN ")) {
+          // TODO replace ; at the end also add regex match instead of contains
+          val columnString = stmt.substring(stmt.indexOf("ADD COLUMN ") + 11)
+          val colNameAndType = (columnString.split("[ ]+")(0), columnString.split("[ ]+")(1))
+          val colString = if (columnString.toLowerCase().contains("not null")) {
+            (s"(${colNameAndType._1} ${colNameAndType._2}) not null")
+          } else s"(${colNameAndType._1} ${colNameAndType._2})"
+          val field = colParser.parseSQLOnly(colString, colParser.tableSchemaOpt.run())
+          match {
+            case Some(fieldSeq) =>
+              val field = fieldSeq.head
+              val builder = new MetadataBuilder
+              builder.withMetadata(field.metadata)
+                  .putString("originalSqlType", colNameAndType._2.trim.toLowerCase())
+              StructField(field.name, field.dataType, field.nullable, builder.build())
+            case None => throw
+                new IllegalArgumentException("alter statement contains no parsable field")
+          }
+          alteredSchema = new StructType((schema ++ new StructType(Array(field))).toArray)
 
-              assert(prevSchema != null && prevIdArray != null)
-
-              for (i <- alteredSchema.fields.indices) {
-                val prevId = prevSchema.fields.indexOf(alteredSchema.fields(i))
-                idArray(i) = if (prevId == -1) {
-                  // Alter Add column case
-                  idArray(i - 1) + 1
-                } else {
-                  // Common column to previous schema
-                  prevIdArray(prevId)
-                }
-              }
-              // idArray contains column ids from alter statement
-              tableColumnIds.put(s"$versionCnt#$fqtnKey", idArray)
-              versionMap.put(fqtnKey, versionCnt)
-              versionCnt += 1
-            })
-          case None => ""
+        } else if (stmt.contains("DROP COLUMN ")) {
+          val dropColName = stmt.substring(stmt.indexOf("DROP COLUMN ") + 12).trim
+          // loop through schema and delete sruct field matching name and type
+          val indx = schema.fieldIndex(dropColName.toLowerCase())
+          alteredSchema = new StructType(schema.toArray.filter(
+            field => !field.name.toUpperCase.equals(dropColName.toUpperCase)))
         }
+        schema = alteredSchema
+        assert(schema != null, s"schema for version $versionCnt is null")
+        schemaStructMap.put(s"$versionCnt#$fqtnKey", alteredSchema)
+        val idArray: Array[Int] = new Array[Int](alteredSchema.fields.length)
+        val prevSchema = schemaStructMap.getOrElse(s"${versionCnt - 1}#$fqtnKey", null)
+        val prevIdArray: Array[Int] =
+          tableColumnIds.getOrElse(s"${versionCnt - 1}#$fqtnKey", null)
+        assert(prevSchema != null && prevIdArray != null)
+        for (i <- alteredSchema.fields.indices) {
+          val prevId = prevSchema.fields.indexOf(alteredSchema.fields(i))
+          idArray(i) = if (prevId == -1) {
+            // Alter Add column case
+            idArray(i - 1) + 1
+          } else {
+            // Common column to previous schema
+            prevIdArray(prevId)
+          }
+        }
+        // idArray contains column ids from alter statement
+        tableColumnIds.put(s"$versionCnt#$fqtnKey", idArray)
+        versionMap.put(fqtnKey, versionCnt)
+        versionCnt += 1
+      })
     })
   }
 
@@ -476,15 +477,15 @@ object RecoveryService extends Logging {
 
     RecoveryService.populateCatalog(catalogArr, snapCon.sparkContext)
 
-//    // may be remove the log line later -------- * /
-//    val dbList = snappyHiveExternalCatalog.listDatabases("*")
-//    val allFunctions = dbList.map(dbName => snappyHiveExternalCatalog.listFunctions(dbName, "*")
-//        .map(func => snappyHiveExternalCatalog.getFunction(dbName, func)))
-//    val allDatabases = dbList.map(snappyHiveExternalCatalog.getDatabase)
-//    logInfo("PP:RecoveryService: Catalog contents in recovery mode:\nTables\n"
-//        + snappyHiveExternalCatalog.getAllTables().toString() + "\nDatabases\n"
-//        + allDatabases.toString() + "\nFunctions\n" + allFunctions.toString())
-//    //    -------- * /
+    //    // may be remove the log line later -------- * /
+    //    val dbList = snappyHiveExternalCatalog.listDatabases("*")
+    //    val allFunctions = dbList.map(dbName => snappyHiveExternalCatalog.listFunctions(dbName, "*")
+    //        .map(func => snappyHiveExternalCatalog.getFunction(dbName, func)))
+    //    val allDatabases = dbList.map(snappyHiveExternalCatalog.getDatabase)
+    //    logInfo("PP:RecoveryService: Catalog contents in recovery mode:\nTables\n"
+    //        + snappyHiveExternalCatalog.getAllTables().toString() + "\nDatabases\n"
+    //        + allDatabases.toString() + "\nFunctions\n" + allFunctions.toString())
+    //    //    -------- * /
 
     createSchemasMap(snappyHiveExternalCatalog)
   }
