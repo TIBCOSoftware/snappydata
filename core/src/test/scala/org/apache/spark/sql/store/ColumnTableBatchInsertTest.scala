@@ -165,18 +165,18 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     pDf.show()
 
     // snc.sql("set spark.sql.crossJoin.enabled=true")
-    // val result_p = snc.sql(s"select col1, col2 from ${tableName}_p where col1 > 0")
+    // val result_p = snc.sql(s"select col1, col2 from ${tableName}_p where col1 > 0 --+useNonOperationalData(true) \n")
 
-    // var result = snc.sql(s"select sum(col1) from $tableName")
-    // var result = snc.sql(s"select col2 from $tableName")
-    // var result = snc.sql(s"select sum(col1) from $tableName where col1 > 1")
-    // var result = snc.sql(s"select sum(col1) from $tableName")
-    var result = snc.sql(s"select col1, col2 from $tableName where col1 > 0")
-    // var result = snc.sql(s"select col1, col2 from $tableName where col1 > 0 --+useNonOperationalData(true)\n")
+    // var result = snc.sql(s"select sum(col1) from $tableName --+useNonOperationalData(true) \n")
+    // var result = snc.sql(s"select col2 from $tableName --+useNonOperationalData(true) \n")
+    // var result = snc.sql(s"select sum(col1) from $tableName where col1 > 1 --+useNonOperationalData(true) \n")
+    // var result = snc.sql(s"select col1, col2 from $tableName where col1 > 0 --+useNonOperationalData(true) \n")
+    // var result = snc.sql(s"select col1, col2 from $tableName --+useNonOperationalData(true) \n where col1 > 0 ")
     // var result = snc.sql(s"select col1 * 10, col2 * 2 + col1 from $tableName where col1 > 0 --+useNonOperationalData(true)\n")
-    // var result = snc.sql(s"select cast(col2 as long) from $tableName")
-    // var result = snc.sql(s"select * from $tableName where col1 > 0")
-    // var result = snc.sql(s"select * from $tableName")
+    // var result = snc.sql(s"select cast(col2 as long) from $tableName --+useNonOperationalData(true) \n")
+    // var result = snc.sql(s"select * from $tableName where col1 > 0 --+useNonOperationalData(true) \n")
+    // var result = snc.sql(s"select * from $tableName --+useNonOperationalData(true)\n")
+    var result = snc.sql(s"select * from $tableName")
 
     // PROBLEMATIC var result = snc.sql(s"select cast(col2 as long) from $tableName")
 

@@ -169,8 +169,11 @@ class SnappySessionState(val snappySession: SnappySession)
           Batch("Order join conditions ", Once, OrderJoinConditions)
 
       val hint = snappySession.queryHints.get(QueryHint.UseNonOperationalData.toString)
-      if (true || hint != null && hint.equals("true")) {
-        var combinedViewRule = Batch("Full Relation replace ", Once, PushCombinedViewPlan)
+
+      // println("Current Parser " + snappySession.snappyParser + " hint: " + hint)
+      if (hint != null && hint.equals("true")) {
+        // var combinedViewRule = Batch("Full Relation replace ", Once, PushCombinedViewPlan)
+        var combinedViewRule = Batch("Full Relation replace ", Once, PushCombinedViewPlan2)
         // (original_list :+ combinedViewRule) ++: original_list
         original_list :+ combinedViewRule
       }
@@ -298,57 +301,58 @@ class SnappySessionState(val snappySession: SnappySession)
     }
   }
 
-  def changeProjectionList(projectList: Seq[NamedExpression],
-    otherTableName: String, parquetPlan: LogicalPlan): Seq[NamedExpression] = {
-    val newpl = projectList.map(ne => {
-      ne transform {
-        case af @ AttributeReference(name, _, _, _) =>
-          parquetPlan.resolve(Seq(name), analyzer.resolver).get
-      }
-    })
-    newpl.asInstanceOf[Seq[NamedExpression]]
-  }
-
-  def getKeyColumnJoinExpression(tableName: String, backedTableName: String,
-    keyColumns: Seq[String]): Expression = {
-    val conditions = keyColumns.map(s => {
-      s"$s = $s"
-    })
-    val cond = conditions.mkString(" and ")
-    sqlParser.parseExpression(cond)
-  }
-
-  def getRequiredProjectionLists(
-    origProjList: Seq[NamedExpression], columnRelation: LogicalPlan,
-    fullTablePlan: LogicalPlan, keyColumns: Seq[String]):
-  (Seq[NamedExpression], Seq[NamedExpression], Seq[NamedExpression]) = {
-    var listOfColNames = new mutable.ArrayBuffer[String]
-    val newpl = origProjList.map(ne => {
-      ne transform {
-        case af @ AttributeReference(name, _, _, _) =>
-          listOfColNames += name
-          fullTablePlan.resolve(Seq(name), analyzer.resolver).get
-        case af @ Alias(_, name) =>
-          fullTablePlan.resolve(Seq(name), analyzer.resolver).get
-      }
-    }).asInstanceOf[Seq[NamedExpression]]
-
-    val keyColsNotInProjList = keyColumns.filterNot(k => {
-      listOfColNames.contains(k)
-    })
-
-    val reqProjOnColRelation = origProjList ++: keyColsNotInProjList.map(name => {
-      columnRelation.resolve(Seq(name), analyzer.resolver).get
-    })
-
-    val reqProjOnOtherRelation = newpl ++: keyColsNotInProjList.map(name => {
-      fullTablePlan.resolve(Seq(name), analyzer.resolver).get
-    })
-
-    (reqProjOnColRelation, reqProjOnOtherRelation, newpl.asInstanceOf[Seq[NamedExpression]])
-  }
-
   object PushCombinedViewPlan extends Rule[LogicalPlan] {
+
+    def changeProjectionList(projectList: Seq[NamedExpression],
+      otherTableName: String, parquetPlan: LogicalPlan): Seq[NamedExpression] = {
+      val newpl = projectList.map(ne => {
+        ne transform {
+          case af @ AttributeReference(name, _, _, _) =>
+            parquetPlan.resolve(Seq(name), analyzer.resolver).get
+        }
+      })
+      newpl.asInstanceOf[Seq[NamedExpression]]
+    }
+
+    def getKeyColumnJoinExpression(tableName: String, backedTableName: String,
+                                   keyColumns: Seq[String]): Expression = {
+      val conditions = keyColumns.map(s => {
+        s"$s = $s"
+      })
+      val cond = conditions.mkString(" and ")
+      val sparkParser = new SparkSqlParser(snappySession.sessionState.conf)
+      sparkParser.parseExpression(cond)
+    }
+
+    def getRequiredProjectionLists(
+                                    origProjList: Seq[NamedExpression], columnRelation: LogicalPlan,
+                                    fullTablePlan: LogicalPlan, keyColumns: Seq[String]):
+    (Seq[NamedExpression], Seq[NamedExpression], Seq[NamedExpression]) = {
+      var listOfColNames = new mutable.ArrayBuffer[String]
+      val newpl = origProjList.map(ne => {
+        ne transform {
+          case af @ AttributeReference(name, _, _, _) =>
+            listOfColNames += name
+            fullTablePlan.resolve(Seq(name), analyzer.resolver).get
+          case af @ Alias(_, name) =>
+            fullTablePlan.resolve(Seq(name), analyzer.resolver).get
+        }
+      }).asInstanceOf[Seq[NamedExpression]]
+
+      val keyColsNotInProjList = keyColumns.filterNot(k => {
+        listOfColNames.contains(k)
+      })
+
+      val reqProjOnColRelation = origProjList ++: keyColsNotInProjList.map(name => {
+        columnRelation.resolve(Seq(name), analyzer.resolver).get
+      })
+
+      val reqProjOnOtherRelation = newpl ++: keyColsNotInProjList.map(name => {
+        fullTablePlan.resolve(Seq(name), analyzer.resolver).get
+      })
+
+      (reqProjOnColRelation, reqProjOnOtherRelation, newpl.asInstanceOf[Seq[NamedExpression]])
+    }
 
     def getCombinedPlan(leftPlan: LogicalPlan, filter: Option[LogicalFilter],
        relation: LogicalRelation, fullDataRelation: LogicalPlan,
@@ -368,23 +372,25 @@ class SnappySessionState(val snappySession: SnappySession)
         }
         case None => fullDataRelation
       }
-      val parquetName = s"${columnRelation.tableName}_p"
+      // val parquetName = s"${columnRelation.tableName}_p"
+      val parquetName = columnRelation.origOptions.get("NON_OPERATIONAL_DATA_TABLE").get
       val baseTablePlan: LogicalPlan = Project(reqdProjOnOtherRelation, filterPlan)
       val keyColumnForFilter = columnRelation.getKeyColumns(0)
-      val exceptFilterExpression = sqlParser.parseExpression(s"$keyColumnForFilter is null")
-      println(s"Before transform except filter: $exceptFilterExpression")
+      val sparkParser = new SparkSqlParser(snappySession.sessionState.conf)
+      val exceptFilterExpression = sparkParser.parseExpression(s"$keyColumnForFilter is null")
+      // println(s"Before transform except filter: $exceptFilterExpression")
       val exceptionFilter = exceptFilterExpression transform {
         case ua @ UnresolvedAttribute(nameParts) =>
           relation.output.filter(af => {
             nameParts(0) == af.name
           })(0)
       }
-      println(s"transformed except filter: $exceptionFilter")
-      println(s"transformed new filter: $exceptionFilter")
+      // println(s"transformed except filter: $exceptionFilter")
+      // println(s"transformed new filter: $exceptionFilter")
       val joinOnKeyColumnCondition = getKeyColumnJoinExpression(
         columnRelation.tableName, parquetName, Seq(columnRelation.getKeyColumns(0)))
 
-      println(s"Before transform join condition: $joinOnKeyColumnCondition")
+      // println(s"Before transform join condition: $joinOnKeyColumnCondition")
       val joinCondition = joinOnKeyColumnCondition transform {
         case eq @EqualTo(l: UnresolvedAttribute, r: UnresolvedAttribute) => {
           val la = relation.output.filter(af => l.nameParts(0) == af.name)(0)
@@ -392,7 +398,7 @@ class SnappySessionState(val snappySession: SnappySession)
           EqualTo(la, ra)
         }
       }
-      println(s"transformed join condition: $joinCondition")
+      // println(s"transformed join condition: $joinCondition")
       var modifiedColumnTablePlan = if (actualProjOnOtherRelation.length
         == reqdProjOnColumnRelation.length) {
         leftPlan
@@ -406,38 +412,37 @@ class SnappySessionState(val snappySession: SnappySession)
       val rightPlanForUnion: LogicalPlan = Project(actualProjOnOtherRelation,
         LogicalFilter(exceptionFilter, leftJoin))
       val modifiedPlan = Union(leftPlan, rightPlanForUnion)
-      println(s"modifiedPlan.analyzed = ${modifiedPlan.analyzed}")
-      println(s"modified plan = $modifiedPlan")
+      // println(s"modifiedPlan.analyzed = ${modifiedPlan.analyzed}")
+      // println(s"modified plan = $modifiedPlan")
       modifiedPlan
     }
 
     def apply(plan: LogicalPlan): LogicalPlan = {
-      println(s"PushCombinedViewPlan. $plan")
+      // println(s"PushCombinedViewPlan. $plan")
       plan transformUp {
-//        case x@Project(pl, filter@LogicalFilter(_, relation @ LogicalRelation(
-//        cfr: ColumnFormatRelation, _, _))) if (cfr.getPrimaryKeyColumns(snappySession).nonEmpty
-//          && cfr.origOptions.get(ExternalStoreUtils.NON_OPERATIONAL_DATA_TABLE).isDefined) => {
-//          val nonEmpty = cfr.getPrimaryKeyColumns(snappySession).nonEmpty
-//          val options =  cfr.origOptions.get(ExternalStoreUtils.NON_OPERATIONAL_DATA_TABLE).isDefined
-//          println(s"nonEmpty = $nonEmpty AND optionsDefined = $options")
-//          val leftPlan: LogicalPlan = x
-//          val nonOperationalTable = cfr.origOptions.get(
-//            ExternalStoreUtils.NON_OPERATIONAL_DATA_TABLE).get
-//          val fullDataRelation = relation transform {
-//            case lr @ LogicalRelation(
-//            cfr: ColumnFormatRelation, _, _) => {
-//              val resolvedRelation = catalog.resolveRelation(TableIdentifier(nonOperationalTable))
-//              resolvedRelation
-//            }
-//          }
-//          val keyColumns = cfr.getPrimaryKeyColumns(snappySession)
-//          val (reqProjOnColRelation, reqdProjOnOtherRelation,
-//            actualProjOnOtherRelation) = getRequiredProjectionLists(
-//            pl, relation, fullDataRelation, keyColumns)
-//          getCombinedPlan(leftPlan, Some(filter), relation, fullDataRelation,
-//            cfr, reqProjOnColRelation, reqdProjOnOtherRelation,
-//            actualProjOnOtherRelation)
-//        }
+        case x@Project(pl, Union(Seq(lf@LogicalFilter(
+        _, lr @ LogicalRelation(cfr: ColumnFormatRelation, _, _)), jp@Join(
+        lff @ LogicalFilter(_, ftr: LogicalRelation), lff2 @ LogicalFilter(
+        _, lr2: LogicalRelation), LeftOuter, joinCond))))
+          if (cfr.getPrimaryKeyColumns(snappySession).nonEmpty
+            && cfr.origOptions.get(ExternalStoreUtils.NON_OPERATIONAL_DATA_TABLE).isDefined) =>
+
+          val userGivenProjectionNames = pl.map(_.name)
+          val keyColumns = cfr.getPrimaryKeyColumns(snappySession)
+
+          val nplNamedExprs_ftr = ftr.output.filter(x => {
+            userGivenProjectionNames.contains(x.name) || keyColumns.contains(x.name)
+          })
+          val nplNamedExprs_cfr = lr.output.filter(x => {
+            userGivenProjectionNames.contains(x.name) || keyColumns.contains(x.name)
+          })
+          val nplNamedExprs_cfr2 = lr2.output.filter(x => {
+            userGivenProjectionNames.contains(x.name) || keyColumns.contains(x.name)
+          })
+          val newLeftJoinPlan = Project(nplNamedExprs_ftr, lff)
+          val newRightJoinPlan = Project(nplNamedExprs_cfr2, lff2)
+          Union(Seq(Project(nplNamedExprs_cfr, lf), Join(
+            newLeftJoinPlan, newRightJoinPlan, LeftOuter, joinCond)))
 
         case filter@LogicalFilter(_, Union(Seq(lr@LogicalRelation(
         cfr: ColumnFormatRelation, _, _), lj@Join(
@@ -504,6 +509,118 @@ class SnappySessionState(val snappySession: SnappySession)
       }
     }
   }
+
+  object PushCombinedViewPlan2 extends Rule[LogicalPlan] {
+
+    def changeProjectionList(projectList: Seq[NamedExpression],
+      otherTableName: String, parquetPlan: LogicalPlan): Seq[NamedExpression] = {
+      val newpl = projectList.map(ne => {
+        ne transform {
+          case af @ AttributeReference(name, _, _, _) =>
+            parquetPlan.resolve(Seq(name), analyzer.resolver).get
+        }
+      })
+      newpl.asInstanceOf[Seq[NamedExpression]]
+    }
+
+    def getBaseTableProjectionLists(
+      origProjList: Seq[NamedExpression], columnRelation: LogicalPlan,
+      fullTablePlan: LogicalPlan): Seq[NamedExpression] = {
+      origProjList.map(ne => {
+        ne transform {
+          case af @ AttributeReference(name, _, _, _) =>
+            fullTablePlan.resolve(Seq(name), analyzer.resolver).get
+          case af @ Alias(_, name) =>
+            fullTablePlan.resolve(Seq(name), analyzer.resolver).get
+        }
+      }).asInstanceOf[Seq[NamedExpression]]
+    }
+
+    def getCombinedPlan(leftPlan: LogicalPlan, filter: Option[LogicalFilter],
+                        relation: LogicalRelation, fullDataRelation: LogicalPlan,
+                        columnRelation: ColumnFormatRelation,
+                        reqdProjOnOtherRelation: Seq[NamedExpression]): LogicalPlan = {
+      val filterPlan = filter match {
+        case Some(f) => {
+          val condition = f.condition transform {
+            case af @ AttributeReference(name, _, _, _) => {
+              fullDataRelation.resolve(
+                Seq(name), analyzer.resolver).get
+            }
+          }
+          LogicalFilter(condition, fullDataRelation)
+        }
+        case None => fullDataRelation
+      }
+      val basePlanWithFilter: LogicalPlan = Project(reqdProjOnOtherRelation, filterPlan)
+
+      Union(leftPlan, basePlanWithFilter)
+    }
+
+    def apply(plan: LogicalPlan): LogicalPlan = {
+      // println(s"PushCombinedViewPlan. $plan")
+      plan transformUp {
+        case x@Project(pl, Union(Seq(lf@LogicalFilter(
+        _, lr @ LogicalRelation(cfr: ColumnFormatRelation, _, _)),
+        lff @ LogicalFilter(_, ftr: LogicalRelation))))
+          if (cfr.getPrimaryKeyColumns(snappySession).nonEmpty
+            && cfr.origOptions.get(ExternalStoreUtils.NON_OPERATIONAL_DATA_TABLE).isDefined) =>
+
+          val userGivenProjectionNames = pl.map(_.name)
+
+          val nplNamedExprs_ftr = ftr.output.filter(x => userGivenProjectionNames.contains(x.name))
+
+          val nplNamedExprs_cfr = lr.output.filter(x => userGivenProjectionNames.contains(x.name))
+
+          val newUnionRightPlan = Project(nplNamedExprs_ftr, lff)
+          val newUnionLeftPlan = Project(pl, lf)
+          Union(Seq(newUnionLeftPlan, newUnionRightPlan))
+
+        case filter@LogicalFilter(_, Union(Seq(lr@LogicalRelation(
+        cfr: ColumnFormatRelation, _, _), ftr: LogicalRelation)))
+          if (cfr.getPrimaryKeyColumns(snappySession).nonEmpty
+            && cfr.origOptions.get(ExternalStoreUtils.NON_OPERATIONAL_DATA_TABLE).isDefined) =>
+
+          val filterCfr = filter.condition transform {
+            case af @ AttributeReference(name, _, _, _) =>
+              lr.output.filter(_.name.equals(name)).head
+          }
+          val filterFtr = filter.condition transform {
+            case af @ AttributeReference(name, _, _, _) =>
+              ftr.output.filter(_.name.equals(name)).head
+          }
+
+          val newUnionRightPlan = LogicalFilter(filterFtr, ftr)
+          val newUnionLeftPlan = LogicalFilter(filterCfr, lr)
+          Union(Seq(newUnionLeftPlan, newUnionRightPlan))
+
+        case x@Project(pl, Union(Seq(lr@LogicalRelation(
+        cfr: ColumnFormatRelation, _, _), ftr: LogicalRelation)))
+          if (cfr.getPrimaryKeyColumns(snappySession).nonEmpty
+            && cfr.origOptions.get(ExternalStoreUtils.NON_OPERATIONAL_DATA_TABLE).isDefined) =>
+
+          val userGivenProjectionNames = pl.map(_.name)
+
+          val nplNamedExprs_ftr = ftr.output.filter(x => userGivenProjectionNames.contains(x.name))
+          Union(Seq(Project(pl, lr), Project(nplNamedExprs_ftr, ftr)))
+
+        case lr@LogicalRelation(cfr: ColumnFormatRelation, _, _)
+          if (cfr.getPrimaryKeyColumns(snappySession).nonEmpty
+            && cfr.origOptions.get(ExternalStoreUtils.NON_OPERATIONAL_DATA_TABLE).isDefined) => {
+
+          val leftPlan: LogicalPlan = lr
+          val nonOperationalTable = cfr.origOptions.get(
+            ExternalStoreUtils.NON_OPERATIONAL_DATA_TABLE).get
+          val fullDataRelation = catalog.resolveRelation(TableIdentifier(nonOperationalTable))
+          val keyColumns = cfr.getPrimaryKeyColumns(snappySession)
+          val reqdProjOnOtherRelation = getBaseTableProjectionLists(
+            lr.output, lr, fullDataRelation)
+          getCombinedPlan(leftPlan, None, lr, fullDataRelation, cfr, reqdProjOnOtherRelation)
+        }
+      }
+    }
+  }
+
   /**
    * This rule sets the flag at query level to link the partitions to
    * be created for tables to be the same as number of buckets. This will avoid
