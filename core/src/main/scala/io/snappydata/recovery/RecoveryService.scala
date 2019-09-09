@@ -71,7 +71,7 @@ object RecoveryService extends Logging {
       allTables.foreach(table => {
         logDebug(s"RecoveryService:getStats:table: $table")
         table.storage.locationUri match {
-          case Some(_) =>
+          case Some(_) => // external tables can be seen in show tables but filtered out in UI
           case None =>
             val recCount = snappySession.sql(s"SELECT count(1) FROM ${table.qualifiedName}")
                 .collect()(0).getLong(0)
@@ -250,12 +250,12 @@ object RecoveryService extends Logging {
     // check if the path exists else check path of column buffer.
     // also there could be no data in any.
     // check only row, only col, no data
-    if (regionViewSortedSet.contains(bucketPath)) {
-      Seq(regionViewSortedSet(bucketPath).lastKey.getExecutorHost)
-    } else {
-      // Seq("localhost")
-      null
-    }
+    assert (regionViewSortedSet.contains(bucketPath))
+    regionViewSortedSet(bucketPath).map( e => {
+      val hostCanonical = e.getExecutorHost
+      val host = hostCanonical.split('(').head
+      s"executor_${host}_$hostCanonical"
+    }).toSeq
   }
 
   /* Table type, PR or replicated, DStore name, numBuckets */
@@ -332,7 +332,8 @@ object RecoveryService extends Logging {
       // for a table created with schema c1, c2 then c1 is dropped and then c1 is added
       // the added c1 is a new column and we want to be able to differentiate between both c1
       // so we assign ids to columns and new ids to columns from alter commands
-      // tableColumnIds = Map("1#fqtn" -> Array(0, 1), "2#fqtn" -> Array())
+      // tableColumnIds = Map("1#fqtn" -> Array(0, 1)). Entry "2#fqtn" -> Array(1, 2)
+      // will be added when alter/add are identified for this table
       tableColumnIds.put(s"$versionCnt#$fqtnKey", schema.fields.indices.toArray)
       versionMap.put(fqtnKey, versionCnt)
       versionCnt += 1
