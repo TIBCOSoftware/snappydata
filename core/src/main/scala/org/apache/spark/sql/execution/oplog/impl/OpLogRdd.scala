@@ -18,7 +18,6 @@ package org.apache.spark.sql.execution.oplog.impl
 
 import java.sql.Timestamp
 
-import scala.annotation.meta.param
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.Breaks._
@@ -26,9 +25,7 @@ import scala.util.control.Breaks._
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache._
-import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.catalog.UUID
-import com.pivotal.gemfirexd.internal.client.am.Types
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store._
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.{ColumnDescriptor, ColumnDescriptorList}
@@ -249,7 +246,7 @@ class OpLogRdd(
 
     val tableKey = versionNum + "#" + fqtn.toLowerCase.replace(".", "_")
     assert(tableSchemas.contains(tableKey),
-      s"schema of table for Rowformatter version=$versionNum unavailable $tableKey ${tableSchemas.keySet.toSeq}")
+      s"schema of $fqtn for Rowformatter version=$versionNum unavailable")
     var schemaOfVersion = tableSchemas(tableKey)
     // todo: build a local cache = table ->rowformatters
     // todo: so we don't have to create rowformatters for every record
@@ -272,7 +269,7 @@ class OpLogRdd(
       }).toArray
       schemaOfVersion = StructType(correctedFields)
     }
-    val rowformatter = getRowFormatter(versionNum, schemaOfVersion)
+    val rowFormatter = getRowFormatter(versionNum, schemaOfVersion)
     val dvdArr = new Array[DataValueDescriptor](schemaOfVersion.length)
     val projectColumns: Array[String] = schema.fields.map(_.name)
     val complexSch = schemaOfVersion.filter(f =>
@@ -283,14 +280,14 @@ class OpLogRdd(
     )
 
     if (valueIsGrid) {
-      rowformatter.getColumns(
+      rowFormatter.getColumns(
         valueArr.asInstanceOf[Array[Array[Byte]]], dvdArr, (1 to schemaOfVersion.size).toArray)
       val row = Row.fromSeq(dvdArr.zipWithIndex.map { case (dvd, i) =>
         getFromDVD(schemaOfVersion, dvd, i, valueArr.asInstanceOf[Array[Array[Byte]]], complexSch)
       })
       formatFinalRow(row, projectColumns, versionNum, schemaOfVersion)
     } else {
-      rowformatter.getColumns(
+      rowFormatter.getColumns(
         valueArr.asInstanceOf[Array[Byte]], dvdArr, (1 to schemaOfVersion.size).toArray)
       val row = Row.fromSeq(dvdArr.zipWithIndex.map { case (dvd, i) =>
         getFromDVD(schemaOfVersion, dvd, i, null, null)
@@ -308,8 +305,7 @@ class OpLogRdd(
     val rm = phdrRow.getRegionMap
     val regionMapEntries = rm.regionEntries()
     assert(rm != null, "regionMap for row placeHolderDiskRegion is null")
-    assert(regionMapEntries != null,
-      "regionMap entries for row placeHolderDiskRegion are null/empty")
+    assert(regionMapEntries != null, "regionMap entries for row placeHolderDiskRegion is null")
     val regMapItr = regionMapEntries.iterator().asScala
     regMapItr.map { regEntry =>
       DiskEntry.Helper.readValueFromDisk(
@@ -329,7 +325,8 @@ class OpLogRdd(
       val schemaColId = getSchemaColumnId(fqtn.toLowerCase(), projectCol, versionNum)
       val colValue = if (projectColId == schemaColId) {
         // col is from latest schema not previous/dropped column
-        val colNamesArr = schStruct.fields.map(_.name.toLowerCase())
+        // todo remove case conversion
+        val colNamesArr = schStruct.fields.map(_.name.toLowerCase)
         row(colNamesArr.indexOf(projectCol))
       } else null
       resArr(i) = colValue
@@ -372,7 +369,7 @@ class OpLogRdd(
           }
           if (hasTombstone) null
           else {
-            var valueBuffer = entry._getValue().asInstanceOf[ColumnFormatValue]
+            val valueBuffer = entry._getValue().asInstanceOf[ColumnFormatValue]
                 .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
             val decoder = ColumnEncoding.getColumnDecoder(valueBuffer, field)
             val valueArray = if (valueBuffer == null || valueBuffer.isDirect) {
@@ -430,9 +427,9 @@ class OpLogRdd(
                 val decoderAndValue = decodersAndValues(colIndx)
                 val colDecoder = decoderAndValue._1
                 val colNextNullPosition = colDecoder.getNextNullPosition
-                if (i + currentDeleted  == colNextNullPosition) {
+                if (i + currentDeleted == colNextNullPosition) {
                   colNullCounts(colIndx) += 1
-                  val vvv = colDecoder.findNextNullPosition(
+                  colDecoder.findNextNullPosition(
                     decoderAndValue._2, colNextNullPosition, colNullCounts(colIndx))
                 }
               })
@@ -454,10 +451,8 @@ class OpLogRdd(
               }
 
               val updatedDecoder = updatedDecoders(colIndx)
-              val c1 = updatedDecoder ne null
-              val c2 = c1 && !updatedDecoder.unchanged(i + currentDeleted )
-              val c3 = c1 && updatedDecoder.readNotNull
-              if (c1 && c2 && c3) {
+              if ((updatedDecoder ne null) && !updatedDecoder.unchanged(i + currentDeleted) &&
+                  updatedDecoder.readNotNull) {
                 val uv = getUpdatedValue(updatedDecoder.getCurrentDeltaBuffer, schema(colIndx))
                 uv
               } else {
@@ -490,11 +485,9 @@ class OpLogRdd(
       var phdrRow: PlaceHolderDiskRegion = null
       var phdrCol: PlaceHolderDiskRegion = null
 
-      var i: Long = 0
       for (d <- diskStores.asScala) {
         val dskRegMap = d.getAllDiskRegions
         for ((_, adr) <- dskRegMap.asScala) {
-          i += 1
           val adrPath = adr.getFullPath
           var adrUnescapePath = PartitionedRegionHelper.unescapePRPath(adrPath)
           // var adrUnescapePath = adrPath
@@ -515,21 +508,9 @@ class OpLogRdd(
             diskStrRow = d
             phdrRow = adr.asInstanceOf[PlaceHolderDiskRegion]
           }
-          //          val replicatedRegionPath = '/' + fqtn.replace('.', '/')
-          //          adrUnescapePath match {
-          //            case `colRegPath` if (adr.isBucket) =>
-          //              diskStrCol = d
-          //              phdrCol = adr.asInstanceOf[PlaceHolderDiskRegion]
-          //            case `rowRegPath` =>
-          //              diskStrRow = d
-          //              phdrRow = adr.asInstanceOf[PlaceHolderDiskRegion]
-          //            case `replicatedRegionPath` if (!adr.isBucket) =>
-          //              diskStrRow = d
-          //              phdrRow = adr.asInstanceOf[PlaceHolderDiskRegion]
-          //          }
         }
       }
-      assert(diskStrRow != null, s"row disk store is null. row region path not found:$rowRegPath")
+      assert(diskStrRow != null, s"Row disk store is null. row region path not found:$rowRegPath")
       assert(phdrRow != null, s"PlaceHolderDiskRegion not found for regionPath=$rowRegPath")
       val rowIter: Iterator[Row] = iterateRowData(phdrRow)
 
@@ -647,7 +628,7 @@ class OpLogRdd(
   override protected def getPartitions: Array[Partition] = {
     val schemaName = fqtn.split('.')(0)
     val tableName = fqtn.split('.')(1)
-    val (numBuckets, isReplicated) = RecoveryService.getNumBuckets(schemaName, tableName)
+    val (numBuckets, _) = RecoveryService.getNumBuckets(schemaName, tableName)
     val partition = (0 until numBuckets).map { p =>
       new Partition {
         override def index: Int = p
