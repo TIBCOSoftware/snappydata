@@ -167,7 +167,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
       Try {
         val tableData = session.sql(s"select * from $table;")
         logDebug(s"Querying table $table.")
-        tableData.write.mode(SaveMode.Overwrite).format(formatType)
+        tableData.write.mode(SaveMode.Overwrite).option("header", "true").format(formatType)
             .save(filePath + File.separator + table.toUpperCase)
       } match {
         case scala.util.Success(_) =>

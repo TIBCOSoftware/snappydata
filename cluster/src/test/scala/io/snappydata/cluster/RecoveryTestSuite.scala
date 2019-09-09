@@ -1018,7 +1018,9 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     arrBuf ++= ArrayBuffer("100000000000001,5,true", "200000000000001,4,true", "300000000000001,3,false")
     while (rs5.next()) {
       assert(s"${rs5.getLong("col1")},${rs5.getShort("col2")},${rs5.getBoolean("col3")}"
-          .equalsIgnoreCase(arrBuf(i)))
+          .equalsIgnoreCase(arrBuf(i)),
+        s"Got: ${rs5.getLong("col1")}, ${rs5.getShort("col2")}," +
+            s" ${rs5.getBoolean("col3")}\nExpected: ${arrBuf(i)}")
       i += 1
     }
     rs5.close()
