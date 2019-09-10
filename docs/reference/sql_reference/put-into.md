@@ -47,8 +47,6 @@ PUT INTO TRADE.CUSTOMERS VALUES (1, 'User 1', '2001-10-12', 'ComputeDB', 1);
 PUT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR ,TID) VALUES (1, 'User 1' , 'ComputeDB', 1);
 
 ```
-!!! Warning
-	**PUT INTO VALUES (V1, V2,...Vn)** syntax do not work for column tables. Instead use **PUT INTO SELECT V1, V2,...,Vn**.
 
 **For API**
 
