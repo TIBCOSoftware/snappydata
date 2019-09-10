@@ -17,7 +17,9 @@
 package io.snappydata.hydra.hivemetastore
 
 import java.io.{File, FileOutputStream, PrintWriter}
+import java.nio.file.FileSystems
 import java.sql.{Connection, DriverManager}
+
 import com.typesafe.config.Config
 import org.apache.spark.sql._
 
@@ -27,26 +29,28 @@ class ExternalHiveMetaStore extends SnappySQLJob {
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
     // scalastyle:off println
     println("External Hive MetaStore Embedded mode Job started...")
-    val diffPath : String = "file:///home/cbhatt/DiffDir/"
+    val diffPath = "file:///home/cbhatt/DiffDir/"
     val dataLocation = jobConfig.getString("dataFilesLocation")
     val outputFile = "ValidateJoinQuery" + "_" + "column" +
       System.currentTimeMillis() + jobConfig.getString("logFileName")
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
     val spark : SparkSession = SparkSession.builder().getOrCreate()
     val snc : SnappyContext = snappySession.sqlContext
-//    val sqlContext : SQLContext = spark.sqlContext
 
     val beelineConnection : Connection = connectToBeeline()
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
     dropBeelineTabelsFromSnappy(snc, HiveMetaStoreUtils.dropTable)
     dropSnappyTables(snc, HiveMetaStoreUtils.dropTable)
     alterTableCheck(snc, pw)
+    pw.flush()
     createAndDropSchemaCheck(snc, beelineConnection, dataLocation, pw, diffPath)
+    pw.flush()
     createHiveTblsAndLoadData(beelineConnection, dataLocation)
     createSnappyTblsAndLoadData(snc, dataLocation)
     for(index <- 0 to (HiveMetaStoreUtils.joinHiveSnappy.length-1)) {
       executeJoinQueries(snc, spark, HiveMetaStoreUtils.joinHiveSnappy(index),
         HiveMetaStoreUtils.validateJoin(index), pw, index, diffPath)
+      pw.flush()
     }
     dropBeelineTabelsFromSnappy(snc, HiveMetaStoreUtils.dropTable)
     dropSnappyTables(snc, HiveMetaStoreUtils.dropTable)
@@ -183,27 +187,27 @@ class ExternalHiveMetaStore extends SnappySQLJob {
       "employee-territories.csv" + "',header 'true')")
 
     snc.sql("create table if not exists app.snappy_regions using column" +
-      " options(BUCKETS '10') as select * from app.staging_regions")
+      " options(BUCKETS '8') as select * from app.staging_regions")
     snc.sql("create table if not exists app.snappy_categories using column" +
-      " options(BUCKETS '10') as select * from app.staging_categories")
+      " options(BUCKETS '8') as select * from app.staging_categories")
     snc.sql("create table if not exists app.snappy_shippers using column" +
-      " options(BUCKETS '10') as select * from app.staging_shippers")
+      " options(BUCKETS '8') as select * from app.staging_shippers")
     snc.sql("create table if not exists app.snappy_employees using column" +
-      " options(BUCKETS '64') as select * from app.staging_employees")
+      " options(BUCKETS '8') as select * from app.staging_employees")
     snc.sql("create table if not exists app.snappy_customers using column" +
-      " options(BUCKETS '64') as select * from app.staging_customers")
+      " options(BUCKETS '8') as select * from app.staging_customers")
     snc.sql("create table if not exists app.snappy_orders using column" +
-      " options(BUCKETS '64') as select * from app.staging_orders")
+      " options(BUCKETS '8') as select * from app.staging_orders")
     snc.sql("create table if not exists app.snappy_order_details using column" +
-      " options(BUCKETS '64') as select * from app.staging_order_details")
+      " options(BUCKETS '8') as select * from app.staging_order_details")
     snc.sql("create table if not exists app.snappy_products using column" +
-      " options(BUCKETS '10') as select * from app.staging_products")
+      " options(BUCKETS '8') as select * from app.staging_products")
     snc.sql("create table if not exists app.snappy_suppliers using column" +
-      " options(BUCKETS '10') as select * from app.staging_suppliers")
+      " options(BUCKETS '8') as select * from app.staging_suppliers")
     snc.sql("create table if not exists app.snappy_territories using column" +
-      " options(BUCKETS '10') as select * from app.staging_territories")
+      " options(BUCKETS '8') as select * from app.staging_territories")
     snc.sql("create table if not exists app.snappy_employee_territories using column" +
-      " options(BUCKETS '10') as select * from app.staging_employee_territories")
+      " options(BUCKETS '8') as select * from app.staging_employee_territories")
   }
 
   def executeJoinQueries(snc : SnappyContext, spark : SparkSession,
@@ -218,7 +222,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     pw.println("Snappy Join Snappy Count (Validation) : " + df2.count())
     val diff1 = df1.except(df2)
     if(diff1.count() > 0) {
-      diff1.write.csv(diffPath + "diff1_" + index + ".csv")
+      diff1.write.csv(diffPath  +  "diff1_" + index + ".csv")
     } else {
       isDiff1 = true
     }

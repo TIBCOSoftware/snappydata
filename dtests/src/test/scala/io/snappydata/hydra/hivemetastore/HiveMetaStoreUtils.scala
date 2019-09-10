@@ -51,7 +51,7 @@ object HiveMetaStoreUtils {
     "o.OrderID,o.OrderDate FROM" +
     " snappy_employees emp JOIN default.hive_orders o ON " +
     "(emp.EmployeeID = o.EmployeeID) " +
-    "where o.EmployeeID < 5 ORDER BY o.OrderDate"
+    "where o.EmployeeID < 5 ORDER BY o.OrderID"
   joinHiveSnappy(4) = "SELECT o.OrderID,c.CompanyName,e.FirstName, e.LastName" +
     " FROM default.hive_orders o JOIN default.hive_employees e " +
     "ON (e.EmployeeID = o.EmployeeID) JOIN snappy_customers c " +
@@ -73,15 +73,6 @@ object HiveMetaStoreUtils {
     "a.ShippedDate > Cast('1996-12-24' as TIMESTAMP) and " +
     "a.ShippedDate < Cast('1997-09-30' as TIMESTAMP) " +
     "order by ShippedDate"
-//    Query takes > 55 minutes to execute not the validation.
-//    Execute this query on colo machines and check the time
-//  joinHiveSnappy(3) = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
-//    " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
-//    " e.City as employeeCity, c.City as customerCity" +
-//    " FROM snappy_employees e JOIN default.hive_customers c ON" +
-//    " (e.City = c.City)" +
-//    " GROUP BY e.City, c.City " +
-//    " ORDER BY numEmployees DESC"
 
     validateJoin(0) = "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID," +
     " o.OrderDate FROM snappy_employees emp JOIN snappy_orders o ON " +
@@ -100,7 +91,7 @@ object HiveMetaStoreUtils {
     "o.OrderID,o.OrderDate" +
     " FROM snappy_employees emp JOIN snappy_orders o ON " +
     "(emp.EmployeeID = o.EmployeeID) " +
-    "where o.EmployeeID < 5 ORDER BY o.OrderDate"
+    "where o.EmployeeID < 5 ORDER BY o.OrderID"
   validateJoin(4) = "SELECT o.OrderID,c.CompanyName,e.FirstName, e.LastName" +
     " FROM snappy_orders o JOIN snappy_employees e " +
     "ON (e.EmployeeID = o.EmployeeID) JOIN snappy_customers c " +
@@ -122,11 +113,4 @@ object HiveMetaStoreUtils {
     "a.ShippedDate > Cast('1996-12-24' as TIMESTAMP) and " +
     "a.ShippedDate < Cast('1997-09-30' as TIMESTAMP) " +
     "order by ShippedDate"
-//  validateJoin(3) = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
-//    " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
-//    " e.City as employeeCity, c.City as customerCity" +
-//    " FROM snappy_employees e JOIN snappy_customers c ON" +
-//    " (e.City = c.City)" +
-//    " GROUP BY e.City, c.City " +
-//    " ORDER BY numEmployees DESC"
 }
