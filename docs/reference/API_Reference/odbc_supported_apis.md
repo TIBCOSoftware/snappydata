@@ -3,7 +3,7 @@
 The following APIs are supported for ODBC in Snappy Driver:
 
 *	[Function APIs](#functionconfr)
-*	[Attribute APIs](attriconf)
+*	[Attribute APIs](#attriconf)
 
 <a id="functionconfr"></a>
 ## Function Conformance of ODBC Supported APIs in Snappy Driver
@@ -72,7 +72,7 @@ The following APIs are supported for ODBC in Snappy Driver:
 | SQLTables           | Core              | Yes                   	   ||
 
 
-<a id="attriconfr"></a>
+<a id="attriconf"></a>
 ## Attribute Conformance of ODBC Supported APIs in Snappy Driver
 
 ### ODBC Environment Attribute
