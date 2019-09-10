@@ -17,6 +17,7 @@ import hydra.RemoteTestModule;
 import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyStartUpTest;
 import io.snappydata.hydra.cluster.SnappyTest;
+import io.snappydata.hydra.dataExtractorTool.DataExtractorToolTestPrms;
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
 import org.apache.commons.io.FileUtils;
 import sql.sqlutil.ResultSetHelper;
@@ -287,9 +288,10 @@ public class SnappyCDCTest extends SnappyTest {
     int tableCnt = 0;
     Boolean isBeforeRestart = SnappyCDCPrms.getIsBeforeRestart();
     String fileName = SnappyCDCPrms.getDataLocation();
+    String schema = DataExtractorToolTestPrms.getSchemaName();
     try {
       Connection con = SnappyTest.getLocatorConnection();
-      String tableCntQry = "SELECT COUNT(*) FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='APP' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
+      String tableCntQry = "SELECT COUNT(*) FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='" +schema+ "' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
       ResultSet rs = con.createStatement().executeQuery(tableCntQry);
       while (rs.next())
         tableCnt = rs.getInt(1);
@@ -297,7 +299,7 @@ public class SnappyCDCTest extends SnappyTest {
       String[] tableArr = new String[tableCnt];
       Map<String, Integer> tableCntMap = new HashMap<>();
       int cnt = 0;
-      String tableQry = "SELECT TABLENAME FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='APP' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
+      String tableQry = "SELECT TABLENAME FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='" +schema+ "' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
       ResultSet rs1 = con.createStatement().executeQuery(tableQry);
       while (rs1.next()) {
         String tableName = rs1.getString("TABLENAME");
@@ -316,10 +318,11 @@ public class SnappyCDCTest extends SnappyTest {
         rs3.close();
       }
       SnappyBB.getBB().getSharedMap().put("tableCntMap", tableCntMap);
-      getResultSet(con, isBeforeRestart, fileName);
+     if(!isBeforeRestart)
+        getResultSet(con, isBeforeRestart, fileName);
       con.close();
     } catch (SQLException ex) {
-      Log.getLogWriter().info("Caught exception in storeDataCount() " + ex.getMessage() + " SQL State is " + ex.getSQLState());
+      throw new io.snappydata.test.util.TestException("Caught exception in storeDataCount() " + ex.getMessage() + " SQL State is " + ex.getSQLState());
     }
   }
 
@@ -334,7 +337,7 @@ public class SnappyCDCTest extends SnappyTest {
     Boolean isBeforeRestart = SnappyCDCPrms.getIsBeforeRestart();
     String fileName = SnappyCDCPrms.getDataLocation();
     Map<String, Integer> tableCntMap = (Map<String, Integer>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
-    Log.getLogWriter().info("tableCntMap size = " + tableCntMap.size());
+    Log.getLogWriter().info("tableCntMap size = " + tableCntMap.size() );
     try {
       Connection con = SnappyTest.getLocatorConnection();
       for (Map.Entry<String, Integer> val : tableCntMap.entrySet()) {
@@ -354,9 +357,9 @@ public class SnappyCDCTest extends SnappyTest {
       }
       getResultSet(con, isBeforeRestart, fileName);
     } catch (SQLException ex) {
-      Log.getLogWriter().info("ValidateDataCount got SQLException " + ex.getMessage());
+      throw new io.snappydata.test.util.TestException("ValidateDataCount got SQLException " + ex.getMessage());
     } catch (Exception ex) {
-      Log.getLogWriter().info("ValidateDataCount got exception " + ex.getMessage());
+      throw new io.snappydata.test.util.TestException("ValidateDataCount got exception " + ex.getMessage());
     }
   }
 
@@ -383,7 +386,10 @@ public class SnappyCDCTest extends SnappyTest {
         }
       }
     } catch (SQLException ex) {
-      Log.getLogWriter().info("Caught sqlException in getResultSet method " + ex.getMessage());
+      throw new io.snappydata.test.util.TestException("Caught sqlException in getResultSet method " + ex.getMessage());
+    }
+    catch (Exception ex) {
+      throw new io.snappydata.test.util.TestException("Caught exception in getResultSet " + ex.getMessage());
     }
   }
 
