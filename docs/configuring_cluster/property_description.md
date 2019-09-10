@@ -72,8 +72,8 @@ The following list of commonly used configuration properties can be set to confi
 
 |Property|Description|Components</br>|
 |-|-|-|
-|-J-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.|Server</br>Lead</br>Locator
-|-J-Dsnappydata.RESTRICT_TABLE_CREATION|Applicable when security is enabled in the cluster. If true, users cannot execute queries (including DDLs and DMLs) even in their default or own schema unless cluster admin explicitly grants them the required permissions using GRANT command. The default is false. |Server</br>Lead</br>Locator|
+|-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.|Server</br>Lead</br>Locator
+|-Dsnappydata.RESTRICT_TABLE_CREATION|Applicable when security is enabled in the cluster. If true, users cannot execute queries (including DDLs and DMLs) even in their default or own schema unless cluster admin explicitly grants them the required permissions using GRANT command. The default is false. |Server</br>Lead</br>Locator|
 |-spark.ssl.enabled<a id="ssl_spark_enabled"></a>|Enables or disables Spark layer encryption. The default is false. |Lead|
 |-spark.ssl.keyPassword<a id="ssl_spark_password"></a>|The password to the private key in the key store. |Lead|
 |-spark.ssl.keyStore<a id="ssl_spark_keystore"></a>|Path to the key store file. The path can be absolute or relative to the directory in which the process is started.|Lead|
