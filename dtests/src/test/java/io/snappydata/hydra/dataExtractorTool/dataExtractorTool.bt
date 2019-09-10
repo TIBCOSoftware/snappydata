@@ -1,0 +1,45 @@
+io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  snappyBinPath="$GEMFIRE/../snappy"
+  scriptName=createAndLoadTablesForDE.sql
+  dataFilesLocation="/home/supriya/Downloads"
+  dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DMLQueriesForDE.sql"
+  ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
+ // expectedExcptCnt = 5
+
+ /*io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf
+   A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+   snappyBinPath="$GEMFIRE/../snappy"
+   redundantCopies=0
+   scriptName=createAndLoadTablesWithCompForDE.sql
+   dataFilesLocation="/home/supriya/Downloads"
+   dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/patientQuery.sql"
+   ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
+   expectedExcptCnt = 4
+
+ io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf
+   A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+   snappyBinPath="$GEMFIRE/../snappy"
+   redundantCopies=0
+   scriptName=createAndLoadWideSchmeaTables.sql
+   dataFilesLocation="/home/supriya/Downloads"
+   dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/patientQuery.sql"
+   ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
+   expectedExcptCnt = 4*/
+
+/*io/snappydata/hydra/dataExtractor/dataExtractorToolWithRLSTest.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=client clientHosts=1 clientVMsPerHost=1 clientThreadsPerVM=1
+  snappyBinPath="$GEMFIRE/../snappy"
+  dataFilesLocation="/export/shared/QA_DATA/patients/SPD"
+  dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/patientQuery.sql"
+  ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
+  expectedExcptCnt = 4*/
