@@ -7,7 +7,7 @@
 
     | TIBCO ComputeDB Zeppelin Interpreter | Apache Zeppelin Binary Package | TIBCO ComputeDB Release|
 	|--------|--------|--------|
-    |[Version 0.7.3.5](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.5) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.1.1](https://edelivery.tibco.com)|
+    |[Version 0.7.3.6](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.6) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.1.1](https://edelivery.tibco.com)|
 
 2. [Configure the TIBCO ComputeDB Cluster](../configuring_cluster/configuring_cluster.md).
 
