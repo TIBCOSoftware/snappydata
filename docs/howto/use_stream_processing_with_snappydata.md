@@ -179,7 +179,7 @@ To support **CDC**, the source DataFrame must have the following:
 
 *	The target SnappyData table must have key columns defined for a column table or primary key defined for a row table.
 
-An example explaining the **CDC** use case is available [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StructuredStreamingCDCExample.scala).
+An example explaining the **CDC** use case is available [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CDCExample.scala).
 
 
 If the `_eventType` column is not provided as part of source dataframe, then the following is observed:</br> 
