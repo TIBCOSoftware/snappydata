@@ -399,7 +399,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         val schemaJsonMap = new mutable.HashMap[String, String]
         schemaJsonMap += ("NoOfschemaParts" -> s"${schemaParts.size}")
         schemaParts.zipWithIndex.foreach{ case(part, index) =>
-          schemaJsonMap += (s"part.$index" -> s"$part")}
+          schemaJsonMap += (s"schemaPart.$index" -> s"$part")}
 
         catalogTable.copy(properties =
             catalogTable.properties ++ schemaJsonMap)

@@ -1421,13 +1421,20 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         !Utils.toLowerCase(provider).contains("jdbc")) {
       CatalogTableType.MANAGED
     } else CatalogTableType.EXTERNAL
+    val orgSqlTextParts = orgSqlText.grouped(3500).toSeq
+    val sqlTextMap = mutable.Map(s"numPartsOrgSqlText_${System.currentTimeMillis()}"
+        -> orgSqlTextParts.size.toString)
+    orgSqlText.grouped(3500).toSeq.zipWithIndex.foreach{
+      case(part, index) => sqlTextMap += (s"sqlTextpart.$index" -> s"$part")
+    }
+
     val tableDesc = CatalogTable(
       identifier = resolvedName,
       tableType = tableType,
       storage = storage,
       schema = schema,
       provider = Some(provider),
-      properties = Map((s"orgSqlText_${System.currentTimeMillis()}" -> orgSqlText)),
+      properties = sqlTextMap.toMap,
       partitionColumnNames = partitionColumns,
       bucketSpec = bucketSpec)
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
@@ -1544,7 +1551,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case Some(str) => str
       case None => {
         if (isAddColumn) {
-          s"alter table ${tableIdent.table} add column ${column.name} ${getSQLType(column.dataType)}"
+          s"alter table ${tableIdent.table} add column ${column.name}" +
+              s" ${getSQLType(column.dataType)}"
         } else {
           s"alter table ${tableIdent.table} drop column ${column.name}"
         }
@@ -1555,7 +1563,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         ar.alterTable(tableIdent, isAddColumn, column, extensions)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
         sessionCatalog.alterTable(metadata.copy(schema = ar.schema,
-          properties = metadata.properties + (s"altTxt_${System.currentTimeMillis()}" -> orgSqlText)))
+          properties = metadata.properties +
+              (s"altTxt_${System.currentTimeMillis()}" -> orgSqlText)))
       case _ => throw new AnalysisException(
         s"ALTER TABLE ${tableIdent.unquotedString} supported only for row tables")
     }

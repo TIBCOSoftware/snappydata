@@ -153,14 +153,14 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     // covers case: data only in row buffers
     stmt.execute(
       s"""
-        CREATE TABLE $defaultSchema.tesst1coltab1 (
+        CREATE TABLE $defaultSchema.test1coltab1 (
           col1 Int, col2 String, col3 Decimal
         ) USING COLUMN OPTIONS (buckets '1', COLUMN_MAX_DELTA_ROWS '4')""")
-    stmt.execute(s"INSERT INTO $defaultSchema.tesst1coltab1 values(1,'aaaa',2.2)")
-    stmt.execute(s"INSERT INTO $defaultSchema.tesst1coltab1 values(2,'bbbb',3.3)")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1coltab1 values(1,'aaaa',2.2)")
+    stmt.execute(s"INSERT INTO $defaultSchema.test1coltab1 values(2,'bbbb',3.3)")
 
-    stmt.execute(s"CREATE VIEW $defaultSchema.vw_tesst1coltab1 AS " +
-        s"(SELECT * FROM $defaultSchema.tesst1coltab1)")
+    stmt.execute(s"CREATE VIEW $defaultSchema.vw_test1coltab1 AS " +
+        s"(SELECT * FROM $defaultSchema.test1coltab1)")
     stmt.execute("CREATE SCHEMA tapp")
 
     // empty column table & not null column
@@ -372,38 +372,15 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
         // todo: can be improved using batching 100 rows
         writeToFile(stringBuilder.toString(), filePathRec, true)
       }
-      //      val cmd = s"comm -3 $filePathOrg $filePathRec"
-      //      val diffRes = cmd.!! // todo won't work on windows. Should be done in code.!?
-      //      assert(diffRes.length === 0, "Recovered data does not match the original data.")
+            val cmd = s"comm -3 $filePathOrg $filePathRec"
+            val diffRes = cmd.!! // todo won't work on windows. Should be done in code.!?
+            assert(diffRes.length === 0, "Recovered data does not match the original data.")
 
       //       delete the directory after the job is done.
       //          dir.listFiles().foreach(file => file.delete())
       //          if(dir.listFiles().length == 0) dir.delete()
     }
 
-    /*
-
-    // create a file - gemfire10_test3tab1_org.txt
-    // compareFiles(fqtn= "", resultSet = rs, recovered_data = false)
-    0. create a dir for the table - db_table_dir if doesn't exist
-      1. if recovered data is false that means - orginal data
-      2. create a file for org data
-      3. write rs to file
-    4. exit
-
-
-    in recovered mode
-    // compareFiles(fqtn= "", resultSet = rsRecovered, recovered_data = true)
-    0. check if db_table_dir exists... if not something is wrong... throw excpetion
-    1. if recovered data is true -
-    2. create a recovery data file
-    3. write rsRecovered to file
-    4. use diff linux command to check difference or something else
-    5. use assertion
-    6. delete the directory
-    7. exit
-
-    */
   }
 
 
@@ -506,8 +483,8 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     var i = 0
 
     // todo : Refactor the code. Reuse variables where possible
-    val rs1 = stmtRec.executeQuery("SELECT * FROM gemfire10.tesst1coltab1 ORDER BY col1")
-    logDebug("=== SELECT * FROM tesst1coltab1 ===\n")
+    val rs1 = stmtRec.executeQuery("SELECT * FROM gemfire10.test1coltab1 ORDER BY col1")
+    logDebug("=== SELECT * FROM test1coltab1 ===\n")
     str.clear()
     arrBuf.clear()
     i = 0
@@ -548,13 +525,13 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
     val tempStr = str.toString().toUpperCase()
     // find better way to assert this case
-    assert(tempStr.contains("TESST1COLTAB1") &&
+    assert(tempStr.contains("TEST1COLTAB1") &&
         tempStr.contains("TEST1COLTAB4") &&
         tempStr.contains("TEST1COLTAB7") &&
         tempStr.contains("TEST1COLTAB8") &&
         tempStr.contains("TEST1ROWTAB5") &&
         tempStr.contains("TEST1ROWTAB6") &&
-        tempStr.contains("VW_TESST1COLTAB1")
+        tempStr.contains("VW_TEST1COLTAB1")
     )
     rs2.close()
 
@@ -588,7 +565,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     assert(str.toString().toUpperCase().contains("GEMFIRE10.INTUDF1"))
     rs4.close()
 
-    rs4 = stmtRec.executeQuery(s"select *,intudf1(col2) as newcol from GEMFIRE10.tesst1coltab1")
+    rs4 = stmtRec.executeQuery(s"select *,intudf1(col2) as newcol from GEMFIRE10.test1coltab1")
     if (rs4.next()) {
       assert(rs4.getInt("newcol") === 6)
     }
@@ -625,8 +602,8 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     rs4.close()
 
     // query view
-    rs4 = stmtRec.executeQuery("select col1,* from gemfire10.vw_tesst1coltab1 ORDER BY 1")
-    println("=== view : vw_tesst1coltab1===")
+    rs4 = stmtRec.executeQuery("select col1,* from gemfire10.vw_test1coltab1 ORDER BY 1")
+    println("=== view : vw_test1coltab1===")
     arrBuf.clear()
     i = 0
     arrBuf ++= ArrayBuffer("1,1,aaaa,2.200000000000000000", "2,2,bbbb,3.300000000000000000")
