@@ -171,38 +171,47 @@ object RecoveryService extends Logging {
       }
     })
 
-
     val tempViewBuffer: mutable.Buffer[String] = List.empty.toBuffer
     val tempTableBuffer: mutable.Buffer[(String, String)] = List.empty.toBuffer
 
     val allTables = snappyHiveExternalCatalog.getAllTables()
     allTables.foreach(table => {
-      // covers create, alter statements
-      val allkeys = table.properties.keys
-          .filter(f => f.contains("orgSqlText") || f.contains("altTxt"))
-          .toSeq.sortBy(_.split("_")(1).toLong)
+      val allkeys = table.properties.keys.toSeq
 
-      for (key <- allkeys) {
-        if (key.contains("orgSqlText")) {
-          tempTableBuffer append ((key, table.properties(key)))
-        } else if (key.contains("alt")) {
-          tempTableBuffer append ((key, table.properties(key)))
-        }
+      // ======= covers create statements ======================
+      logInfo(s"RecoveryService: getAllDDLs: table: $table")
+      val numPartsNTSKey = allkeys.filter(f => f.contains("numPartsOrgSqlText"))
+
+      if (!numPartsNTSKey.isEmpty) {
+        val numPartsnTS = numPartsNTSKey.head.split("_")
+        val numSqlTextParts = table.properties.getOrElse(numPartsNTSKey.head, null).toInt
+        assert(numSqlTextParts != null,
+          s"numPartsOrgSqlText key not found in catalog table properties for" +
+              s" table ${table.identifier}.")
+        val createTimestamp = numPartsnTS(1).toLong
+        val createTableString = (0 until numSqlTextParts).map { i =>
+          table.properties.getOrElse(s"sqlTextpart.$i", null)
+        }.mkString
+        tempTableBuffer append ((s"createTableString_$createTimestamp", createTableString))
       }
-      // covers create view statements
+      // ========== covers alter statements ================
+      allkeys.filter(f => f.contains("altTxt")).toSeq.foreach(key =>
+        tempTableBuffer append ((key, table.properties(key))))
+
+      // ============ covers view statements ============
       table.viewOriginalText match {
         case Some(ddl) => tempViewBuffer.append(s"create view ${table.identifier} as $ddl")
         case None => ""
       }
     })
 
-    // view ddls should be at the end so that tables
-    // on which these views depend are already captured.
-
-    ddlBuffer.appendAll(tempViewBuffer)
+    // the sorting is required to arrange statements amongst tables
     val sortedTempTableBuffer = tempTableBuffer.sortBy(tup => tup._1.split("_")(1).toLong).map(_._2)
     ddlBuffer.appendAll(sortedTempTableBuffer)
 
+    // view ddls should be at the end so that tables
+    // on which these views depend are already captured.
+    ddlBuffer.appendAll(tempViewBuffer)
 
     val biConsumer = new BiConsumer[String, String] {
       def accept(alias: String, cmd: String) = {
@@ -250,8 +259,8 @@ object RecoveryService extends Logging {
     // check if the path exists else check path of column buffer.
     // also there could be no data in any.
     // check only row, only col, no data
-    assert (regionViewSortedSet.contains(bucketPath))
-    regionViewSortedSet(bucketPath).map( e => {
+    assert(regionViewSortedSet.contains(bucketPath))
+    regionViewSortedSet(bucketPath).map(e => {
       val hostCanonical = e.getExecutorHost
       val host = hostCanonical.split('(').head
       s"executor_${host}_$hostCanonical"
@@ -315,8 +324,8 @@ object RecoveryService extends Logging {
       val numOfSchemaParts = table.properties.getOrElse("NoOfschemaParts", null).toInt
       assert(numOfSchemaParts != null, "Schema string not found.")
       val schemaJsonStr = (0 until numOfSchemaParts)
-          .map { i => table.properties.getOrElse(s"part.$i", null) }.mkString
-      logInfo(s"PP: RecoveryService : create table properties : ${table.properties}")
+          .map { i => table.properties.getOrElse(s"schemaPart.$i", null) }.mkString
+
       logDebug(s"RecoveryService: createSchemaMap: Schema Json String : $schemaJsonStr")
 
       val fqtnKey = table.identifier.database match {
@@ -351,7 +360,7 @@ object RecoveryService extends Logging {
           val columnString = stmt.substring(stmt.indexOf("ADD COLUMN ") + 11)
           val colNameAndType = (columnString.split("[ ]+")(0), columnString.split("[ ]+")(1))
           val colString = if (columnString.toLowerCase().contains("not null")) {
-            (s"(${colNameAndType._1} ${colNameAndType._2}) not null")
+            s"(${colNameAndType._1} ${colNameAndType._2}) not null"
           } else s"(${colNameAndType._1} ${colNameAndType._2})"
           val field = colParser.parseSQLOnly(colString, colParser.tableSchemaOpt.run())
           match {

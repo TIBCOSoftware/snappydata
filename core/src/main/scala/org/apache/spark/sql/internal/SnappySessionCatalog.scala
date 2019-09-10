@@ -335,7 +335,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
       val orgSqlText = snappySession.getContextObject[String]("orgSqlText") match {
         case Some(s) => s
         case None => ""
-      } // Map("orgSqlText" -> orgSqlText)
+      }
       super.createDatabase(CatalogDatabase(schemaName, schemaDescription(schemaName),
         getDefaultDBPath(schemaName), Map("orgSqlText" -> orgSqlText)), ignoreIfExists)
     }
