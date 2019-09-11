@@ -120,7 +120,7 @@ object Property extends Enumeration {
      "be specified for this.", None, Constant.SPARK_PREFIX)
 
   val DefaultCompilerFlags: SparkValue[String] = Val[String](
-    s"${Constant.PROPERTY_PREFIX}sql.compilerFlags",
+    s"${Constant.PROPERTY_PREFIX}sql.nativeCompilerFlags",
     "Default compiler flags for native (JNI) plan compilation when applicable.",
     Some("-O3 -fPIC -DPIC -march=native"), Constant.SPARK_PREFIX)
 

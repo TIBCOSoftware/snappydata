@@ -178,7 +178,7 @@ object CodeGeneration extends Logging {
            |  ${ColumnWriter.genCodeArrayWrite(ctx, a, encoder, cursor,
                 arr, "0")}
            |  // finish and set the bytes into the statement
-           |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor, 1)));
            |}
         """.stripMargin
       case m: MapType =>
@@ -197,7 +197,7 @@ object CodeGeneration extends Logging {
            |  long $cursor = $encoder.initialize($schema[$col], 1, false);
            |  ${ColumnWriter.genCodeMapWrite(ctx, m, encoder, cursor, map, "0")}
            |  // finish and set the bytes into the statement
-           |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor, 1)));
            |}
         """.stripMargin
       case s: StructType =>
@@ -217,7 +217,7 @@ object CodeGeneration extends Logging {
            |  ${ColumnWriter.genCodeStructWrite(ctx, s, encoder, cursor,
                 struct, "0")}
            |  // finish and set the bytes into the statement
-           |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor)));
+           |  $stmt.setBytes(${col + 1}, $utilsClass.toBytes($encoder.finish($cursor, 1)));
            |}
         """.stripMargin
       case _ =>
@@ -369,11 +369,11 @@ object CodeGeneration extends Logging {
            |${ColumnWriter.genCodeArrayWrite(ctx, a, encoderVar, cursor,
               arr, "0")}
            |if ($dosVar != null) {
-           |  final byte[] b = $utilsClass.toBytes($encoderVar.finish($cursor));
+           |  final byte[] b = $utilsClass.toBytes($encoderVar.finish($cursor, 1));
            |  InternalDataSerializer.writeByteArray(b, b.length, $dosVar);
            |  return null;
            |} else {
-           |  return $utilsClass.toBytes($encoderVar.finish($cursor));
+           |  return $utilsClass.toBytes($encoderVar.finish($cursor, 1));
            |}
         """.stripMargin
       case m: MapType =>
@@ -388,11 +388,11 @@ object CodeGeneration extends Logging {
            |${ColumnWriter.genCodeMapWrite(ctx, m, encoderVar, cursor,
               map, "0")}
            |if ($dosVar != null) {
-           |  final byte[] b = $utilsClass.toBytes($encoderVar.finish($cursor));
+           |  final byte[] b = $utilsClass.toBytes($encoderVar.finish($cursor, 1));
            |  InternalDataSerializer.writeByteArray(b, b.length, $dosVar);
            |  return null;
            |} else {
-           |  return $utilsClass.toBytes($encoderVar.finish($cursor));
+           |  return $utilsClass.toBytes($encoderVar.finish($cursor, 1));
            |}
         """.stripMargin
       case s: StructType =>
@@ -407,11 +407,11 @@ object CodeGeneration extends Logging {
            |${ColumnWriter.genCodeStructWrite(ctx, s, encoderVar, cursor,
               struct, "0")}
            |if ($dosVar != null) {
-           |  final byte[] b = $utilsClass.toBytes($encoderVar.finish($cursor));
+           |  final byte[] b = $utilsClass.toBytes($encoderVar.finish($cursor, 1));
            |  InternalDataSerializer.writeByteArray(b, b.length, $dosVar);
            |  return null;
            |} else {
-           |  return $utilsClass.toBytes($encoderVar.finish($cursor));
+           |  return $utilsClass.toBytes($encoderVar.finish($cursor, 1));
            |}
         """.stripMargin
       case _ => throw Utils.analysisException(

@@ -44,8 +44,8 @@ case class CountAdd(count: Expression, exprs: List[Expression]) extends Expressi
 
   private lazy val nullableChildren = exprs.filter(_.nullable)
 
-  private[aggregate] var countEv: ExprCode = _
-  private[aggregate] var genCtx: CodegenContext = _
+  @transient private[aggregate] var countEv: ExprCode = _
+  @transient private[aggregate] var genCtx: CodegenContext = _
   private[aggregate] var avg: AvgAdd = _
 
   override def makeCopy(newArgs: Array[AnyRef]): Expression = {

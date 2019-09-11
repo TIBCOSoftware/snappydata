@@ -20,7 +20,6 @@ import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.core.{Data, TestData2}
 import io.snappydata.{Property, SnappyFunSuite, SnappyTableStatsProviderService}
-import jdk.internal.org.objectweb.asm.tree.analysis.AnalyzerException
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
@@ -1033,18 +1032,18 @@ class TokenizationTest
     // null, non-null combinations of updates
 
     // implicit int to string cast will cause it to be null (SNAP-2039)
-    // Update [SNAP-2052]: this behavior is updated to fail the update query if a string expression is
-    // as part of arithmetic operator in update expression. Explicity casting the srring to int is a
-    // workaround. However, it is important to note that casting a non-numeric string value to int will
-    // still end up in a NULL.
+    // Update [SNAP-2052]: this behavior is updated to fail the update query if a string expression
+    // is as part of arithmetic operator in update expression. Explicitly casting the string to int
+    // is a workaround. However, it is important to note that casting a non-numeric string value
+    // to int will still end up in a NULL.
     try {
       res2 = snc.sql(s"update $colTableName set DEST = DEST + 1000 where " +
           "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
       fail("AnalyzerException was expected here")
     } catch {
       case ex: AnalysisException =>
-        val expectedMessage = "Implicit type casting of string type to numeric type is not performed" +
-            " for update statements.;"
+        val expectedMessage = "Implicit type casting of string type to numeric type is " +
+            "not performed for update statements.;"
         assertResult(expectedMessage)(ex.getMessage)
     }
 
