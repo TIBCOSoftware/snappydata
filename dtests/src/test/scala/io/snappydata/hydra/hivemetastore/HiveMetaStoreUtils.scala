@@ -17,7 +17,6 @@
 package io.snappydata.hydra.hivemetastore
 
 object HiveMetaStoreUtils {
-
   val setExternalHiveCatalog: String =
     "set spark.sql.catalogImplementation=hive"
   val setExternalInBuiltCatalog: String =
@@ -31,9 +30,197 @@ object HiveMetaStoreUtils {
   val createDB: String =
     "create database "
 
+  val beeLineQueries = new Array[String](4)
+  val snappyQueries = new Array[String] (4)
+  beeLineQueries(0) = "SELECT CategoryID,CategoryName,Description FROM hive_db.hive_categories" +
+    " where CategoryID is not null"
+  beeLineQueries(1) = "SELECT FirstName, LastName FROM hive_db.hive_employees " +
+    "where FirstName <> 'FIRSTNAME'  ORDER BY LastName "
+  beeLineQueries(2) = "SELECT FirstName, LastName FROM hive_db.hive_employees" +
+    " WHERE Title = 'Sales Representative'"
+  beeLineQueries(3) = "SELECT SUM(Quantity) AS TotalUnits FROM hive_db.hive_order_details" +
+    " WHERE ProductID=3"
+
+  snappyQueries(0) = "SELECT CategoryID,CategoryName,Description FROM tibco_db.snappy_categories"
+  snappyQueries(1) = "SELECT FirstName, LastName FROM tibco_db.snappy_employees ORDER BY LastName"
+  snappyQueries(2) = "SELECT FirstName, LastName FROM tibco_db.snappy_employees" +
+    " WHERE Title = 'Sales Representative'"
+  snappyQueries(3) = "SELECT SUM(Quantity) AS TotalUnits FROM tibco_db.snappy_order_details" +
+    " WHERE ProductID=3"
+
+  // SELECTing Specific Columns
+  val Q4: String = "SELECT FirstName, LastName FROM Employees"
+
+  // Sorting By Column Position
+  val Q6: String = "SELECT Title, FirstName, LastName" +
+    " FROM Employees" +
+    " ORDER BY 1,3"
+
+  // Ascending and Descending Sorts
+  val Q7: String = "SELECT Title, FirstName, LastName" +
+    " FROM Employees " +
+    " ORDER BY Title ASC, LastName DESC"
+
+
+  // Checking for Inequality
+  val Q9: String = "SELECT FirstName, LastName" +
+    " FROM Employees" +
+    " WHERE Title <> 'Sales Representative'"
+
+  // Checking for Greater or Less Than
+  val Q10: String = "SELECT FirstName, LastName" +
+    " FROM Employees " +
+    " WHERE LastName >= 'N'"
+
+  // Checking for NULL
+  val Q11: String = "SELECT FirstName, LastName" +
+    " FROM Employees " +
+    " WHERE Region IS NULL"
+
+  // WHERE and ORDER BY
+  val Q12: String = "SELECT FirstName, LastName" +
+    " FROM Employees" +
+    " WHERE LastName >= 'N'" +
+    " ORDER BY LastName DESC"
+
+  // Using the WHERE clause to check for equality or inequality
+  val Q13: String = "SELECT OrderDate, ShippedDate, CustomerID, Freight" +
+    " FROM Orders " +
+    " WHERE OrderDate = Cast('1997-05-19' as TIMESTAMP)"
+
+  // Using WHERE and ORDER BY Together
+  val Q14: String = "SELECT CompanyName, ContactName, Fax" +
+    " FROM Customers" +
+    " WHERE Fax IS NOT NULL" +
+    " ORDER BY CompanyName"
+
+  // The IN Operator
+  val Q15: String = "SELECT TitleOfCourtesy, FirstName, LastName" +
+    " FROM Employees" +
+    " WHERE TitleOfCourtesy IN ('Ms.','Mrs.')"
+
+  // The LIKE Operator
+  val Q16: String = "SELECT TitleOfCourtesy, FirstName, LastName" +
+    " FROM Employees" +
+    " WHERE TitleOfCourtesy LIKE 'M%'"
+
+  val Q17: String = "SELECT FirstName, LastName, BirthDate" +
+    " FROM Employees" +
+    " WHERE BirthDate BETWEEN Cast('1950-01-01' as TIMESTAMP) AND " +
+    "Cast('1959-12-31 23:59:59' as TIMESTAMP)"
+
+  val Q18: String = "SELECT CONCAT(FirstName, ' ', LastName)" +
+    " FROM Employees"
+
+  val Q19: String = "SELECT OrderID, Freight, Freight * 1.1 AS FreightTotal" +
+    " FROM Orders" +
+    " WHERE Freight >= 500"
+
+  val Q20: String = "SELECT SUM(Quantity) AS TotalUnits" +
+    " FROM Order_Details" +
+    " WHERE ProductID=3"
+
+  val Q21: String = "SELECT MIN(HireDate) AS FirstHireDate," +
+    " MAX(HireDate) AS LastHireDate" +
+    " FROM Employees"
+
+  val Q22: String = "SELECT City, COUNT(EmployeeID) AS NumEmployees" +
+    " FROM Employees " +
+    " WHERE Title = 'Sales Representative'" +
+    " GROUP BY City" +
+    " HAVING COUNT(EmployeeID) > 1" +
+    " ORDER BY NumEmployees"
+
+  val Q23: String = "SELECT COUNT(DISTINCT City) AS NumCities" +
+    " FROM Employees"
+
+  val Q24: String = "SELECT ProductID, AVG(UnitPrice) AS AveragePrice" +
+    " FROM Products " +
+    " GROUP BY ProductID " +
+    " HAVING AVG(UnitPrice) > 70" +
+    " ORDER BY AveragePrice"
+
+  val Q25: String = "SELECT CompanyName FROM Customers WHERE CustomerID = " +
+    "(SELECT CustomerID FROM Orders WHERE OrderID = 10290)"
+
+  val Q25_1: String = "SELECT CompanyName FROM Customers WHERE CustomerID = " +
+    "(SELECT CustomerID FROM Orders WHERE OrderID = 10295)"
+
+  val Q25_2: String = "SELECT CompanyName FROM Customers WHERE CustomerID = " +
+    "(SELECT CustomerID FROM Orders WHERE OrderID = 10391)"
+
+  val Q26: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
+    "FROM Orders WHERE OrderDate BETWEEN Cast('1997-01-01' as TIMESTAMP) AND " +
+    "Cast('1997-12-31' as TIMESTAMP))"
+
+  val Q26_1: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
+    "FROM Orders WHERE OrderDate BETWEEN Cast('1997-09-30' as TIMESTAMP) AND " +
+    "Cast('1997-12-24' as TIMESTAMP))"
+
+  val Q26_2: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
+    "FROM Orders WHERE OrderDate BETWEEN Cast('1997-10-01' as TIMESTAMP) AND " +
+    "Cast('1997-12-31' as TIMESTAMP))"
+
+  val Q27: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
+    " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
+    "('Exotic Liquids', 'Grandma Kellys Homestead', 'Tokyo Traders'))"
+
+  val Q27_1: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
+    " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
+    "('Pavlova Ltd.'))"
+
+  val Q27_2: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
+    " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
+    "('Pavlova Ltd.', 'Karkki Oy'))"
+
+  val Q27_3: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
+    " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
+    "('Grandma Kellys Homestead'))"
+
+  val Q27_4: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
+    " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
+    "('Exotic Liquids', 'Karkki Oy'))"
+
+  val Q28: String = "SELECT ProductName FROM Products WHERE CategoryID = (SELECT " +
+    "CategoryID FROM Categories WHERE CategoryName = 'Seafood')"
+
+  val Q28_1: String = "SELECT ProductName FROM Products WHERE CategoryID = (SELECT " +
+    "CategoryID FROM Categories WHERE CategoryName = 'Condiments')"
+
+  val Q28_2: String = "SELECT ProductName FROM Products WHERE CategoryID = (SELECT " +
+    "CategoryID FROM Categories WHERE CategoryName = 'Produce')"
+
+  val Q29: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN " +
+    "(SELECT SupplierID FROM Products WHERE CategoryID = 8)"
+
+  val Q29_1: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN " +
+    "(SELECT SupplierID FROM Products WHERE CategoryID = 5)"
+
+  val Q29_2: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN " +
+    "(SELECT SupplierID FROM Products WHERE CategoryID = 3)"
+
+  val Q30: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN (SELECT SupplierID" +
+    " FROM Products  WHERE CategoryID = (SELECT CategoryID FROM Categories" +
+    " WHERE CategoryName = 'Seafood'))"
+
+  val Q30_1: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN (SELECT SupplierID" +
+    " FROM Products  WHERE CategoryID = (SELECT CategoryID FROM Categories" +
+    " WHERE CategoryName = 'Condiments'))"
+
+  val Q30_2: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN (SELECT SupplierID" +
+    " FROM Products  WHERE CategoryID = (SELECT CategoryID FROM Categories" +
+    " WHERE CategoryName = 'Confections'))"
+
+
+
+
+
+
+
+
+
   val joinHiveSnappy = new Array[String](7)
   val validateJoin = new Array[String](7)
-
   joinHiveSnappy(0) = "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID," +
     " o.OrderDate FROM default.hive_employees emp JOIN app.snappy_orders o ON " +
     "(emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderID"
