@@ -63,10 +63,12 @@ object RecoveryService extends Logging {
     if (recoveryStats == null) {
       val snappyContext = SnappyContext()
       val snappySession: SnappySession = snappyContext.snappySession
-      snappySession.conf.set(Attribute.USERNAME_ATTR,
-        Misc.getMemStore.getBootProperty(Attribute.USERNAME_ATTR))
-      snappySession.conf.set(Attribute.PASSWORD_ATTR,
-        Misc.getMemStore.getBootProperty(Attribute.PASSWORD_ATTR))
+      if (Misc.isSecurityEnabled) {
+        snappySession.conf.set(Attribute.USERNAME_ATTR,
+          Misc.getMemStore.getBootProperty(Attribute.USERNAME_ATTR))
+        snappySession.conf.set(Attribute.PASSWORD_ATTR,
+          Misc.getMemStore.getBootProperty(Attribute.PASSWORD_ATTR))
+      }
       val allTables = getTables
       var tblCounts: Seq[SnappyRegionStats] = Seq()
       allTables.foreach(table => {
