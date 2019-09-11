@@ -62,10 +62,11 @@ object RecoveryService extends Logging {
   def getStats: (Seq[SnappyRegionStats], Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
     if (recoveryStats == null) {
       val snappyContext = SnappyContext()
-      val snappySession = snappyContext.snappySession
-      val snappyHiveExternalCatalog = HiveClientUtil.getOrCreateExternalCatalog(
-        snappyContext.sparkContext, snappyContext.sparkContext.getConf)
-
+      val snappySession: SnappySession = snappyContext.snappySession
+      snappySession.conf.set(Attribute.USERNAME_ATTR,
+        Misc.getMemStore.getBootProperty(Attribute.USERNAME_ATTR))
+      snappySession.conf.set(Attribute.PASSWORD_ATTR,
+        Misc.getMemStore.getBootProperty(Attribute.PASSWORD_ATTR))
       val allTables = getTables
       var tblCounts: Seq[SnappyRegionStats] = Seq()
       allTables.foreach(table => {
