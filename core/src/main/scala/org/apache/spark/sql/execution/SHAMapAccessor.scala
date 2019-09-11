@@ -28,9 +28,9 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericInternalRow, UnsafeArrayData, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, GenericInternalRow, UnsafeArrayData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.GenericArrayData
-import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoding, StringDictionary}
 import org.apache.spark.sql.types.{BinaryType, StringType, _}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
@@ -593,7 +593,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
    */
   def generateMapGetOrInsert(valueInitVars: Seq[ExprCode],
     valueInitCode: String, evaluatedInputCode: String, keyVars: Seq[ExprCode],
-    keysDataType: Seq[DataType], aggregateDataTypes: Seq[DataType]): String = {
+    keysDataType: Seq[DataType], aggregateDataTypes: Seq[DataType],
+    dictionaryCode: Option[DictionaryCode], dictionaryInitBoolean: String): String = {
     val hashVar = Array(ctx.freshName("hash"))
     val tempValueData = ctx.freshName("tempValueData")
     val linkedListClass = classOf[java.util.LinkedList[SHAMap]].getName
@@ -686,6 +687,28 @@ case class SHAMapAccessor(@transient session: SnappySession,
          |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
        """.stripMargin
 
+    val keysPrepCodeCode =
+      s"""
+         |    // evaluate key vars
+         |${evaluateVariables(keyVars)}
+         |${keyVars.zip(keysDataType).filter(_._2 match {
+        case x: StructType => true
+        case _ => false
+      }).map {
+        case (exprCode, dt) => explodeStruct(exprCode.value, exprCode.isNull,
+          dt.asInstanceOf[StructType])
+      }.mkString("\n")
+      }
+         | // evaluate hash code of the lookup key
+         |${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
+         |// get key size code
+         |$numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)};
+         |// prepare the key
+         |${generateKeyBytesHolderCodeOrEmptyString(numKeyBytesTerm, numValueBytes,
+        keyVars, keysDataType, aggregateDataTypes, valueInitVars)
+      }
+       """.stripMargin
+
     val lookUpInsertCodeWithSkip = previousSingleKey_Position_LenTerm.map {
       case (keyTerm, posTerm, lenTerm) =>
         if (SHAMapAccessor.isPrimitive(keysDataType.head)) {
@@ -706,7 +729,32 @@ case class SHAMapAccessor(@transient session: SnappySession,
              }
            }
          """.stripMargin
-        } else {
+        } else if (dictionaryCode.isDefined) {
+          s"""
+             |boolean $skipLookupTerm = false;
+             |
+             |if ($posTerm != -1 && !$dictionaryInitBoolean &&
+             |${dictionaryCode.map(_.dictionary.value).getOrElse("")}.size() !=
+             |${dictionaryCode.map(_.dictionaryIndex.value).getOrElse("")}  && $keyTerm ==
+             |${dictionaryCode.map(_.dictionaryIndex.value).getOrElse("")}) {
+             |$skipLookupTerm = true;
+             |$valueOffsetTerm = $posTerm;
+             |$keyExistedTerm = true;
+             |}
+           if (!$skipLookupTerm) {
+             $keysPrepCodeCode
+             $lookUpInsertCode
+             $dictionaryInitBoolean = false;
+             if (${keyVars.head.isNull}) {
+               $posTerm = -1L;
+             } else {
+               $posTerm = $valueOffsetTerm;
+               $keyTerm = ${dictionaryCode.map(_.dictionaryIndex.value).getOrElse("")};
+             }
+           }
+           """.stripMargin
+        }
+        else {
           val actualKeyLen = if (numBytesForNullKeyBits == 0) lenTerm else s"($lenTerm - 1)"
           val equalityCheck = s"""$actualKeyLen == ${keyVars.head.value}.numBytes() &&
                |$byteArrayEqualsClass.arrayEquals($vdBaseObjectTerm, $posTerm - $actualKeyLen,
@@ -735,32 +783,18 @@ case class SHAMapAccessor(@transient session: SnappySession,
         }
     }.getOrElse(lookUpInsertCode)
 
+
+
     s"""|$valueInitCode
         |${SHAMapAccessor.resetNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
         |${SHAMapAccessor.resetNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
           // evaluate input row vars
         |$evaluatedInputCode
-           // evaluate key vars
-        |${evaluateVariables(keyVars)}
-        |${keyVars.zip(keysDataType).filter(_._2 match {
-              case x: StructType => true
-              case _ => false
-            }).map {
-                case (exprCode, dt) => explodeStruct(exprCode.value, exprCode.isNull,
-                  dt.asInstanceOf[StructType])
-              }.mkString("\n")
-        }
-        // evaluate hash code of the lookup key
-        |${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
-        |// get key size code
-        |$numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)};
-
-        |// prepare the key
-        |${generateKeyBytesHolderCodeOrEmptyString(numKeyBytesTerm, numValueBytes,
-           keyVars, keysDataType, aggregateDataTypes, valueInitVars)
-          }
+        |${if (dictionaryCode.isEmpty) keysPrepCodeCode else ""}
         |long $valueOffsetTerm = 0;
         |boolean $keyExistedTerm = false;
+        |${dictionaryCode.map(dictCode => s"int ${dictCode.dictionaryIndex.value} = -1;").getOrElse("")}
+        |${dictionaryCode.map(_.evaluateIndexCode()).getOrElse("")}
         |$lookUpInsertCodeWithSkip
         |long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;""".stripMargin
 
@@ -1239,6 +1273,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }
 
 
+
     def generateCustomSHAMapClass(className: String, keyDataType: DataType): String = {
 
       val columnEncodingClassObject = ColumnEncoding.getClass.getName + ".MODULE$"
@@ -1651,6 +1686,48 @@ object SHAMapAccessor {
       case DoubleType => true
       case _ => false
     }
+  }
+
+  def initDictionaryCodeForSingleKeyCase(
+    input: Seq[ExprCode], keyExpressions: Seq[Expression],
+    output: Seq[Attribute], ctx: CodegenContext, session: SnappySession): Option[DictionaryCode] = {
+    // make a copy of input key variables if required since this is used
+    // only for lookup and the ExprCode's code should not be cleared
+   DictionaryOptimizedMapAccessor.checkSingleKeyCase(
+      keyExpressions, getExpressionVars(keyExpressions, input.map(_.copy()),
+        output, ctx), ctx, session)
+    /*
+    dictionaryKey match {
+      case Some(d@DictionaryCode(dictionary, _, _)) =>
+        // initialize or reuse the array at batch level for join
+        // null key will be placed at the last index of dictionary
+        // and dictionary index will be initialized to that by ColumnTableScan
+        ctx.addMutableState(classOf[StringDictionary].getName, dictionary.value, "")
+        ctx.addNewFunction(dictionaryArrayInit,
+          s"""
+             |public $className[] $dictionaryArrayInit() {
+             |  ${d.evaluateDictionaryCode()}
+             |  if (${dictionary.value} != null) {
+             |    return new $className[${dictionary.value}.size() + 1];
+             |  } else {
+             |    return null;
+             |  }
+             |}
+           """.stripMargin)
+        true
+      case None => false
+    } */
+  }
+
+  private def getExpressionVars(expressions: Seq[Expression],
+    input: Seq[ExprCode],
+    output: Seq[Attribute], ctx: CodegenContext): Seq[ExprCode] = {
+    ctx.INPUT_ROW = null
+    ctx.currentVars = input
+    val vars = ctx.generateExpressions(expressions.map(e =>
+      BindReferences.bindReference[Expression](e, output)))
+    ctx.currentVars = null
+    vars
   }
 
 }

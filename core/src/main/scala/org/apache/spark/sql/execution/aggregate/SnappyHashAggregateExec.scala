@@ -52,7 +52,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.catalyst.util.ArrayData
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoding, StringDictionary}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappySession, collection}
@@ -253,17 +253,25 @@ case class SnappyHashAggregateExec(
     // check for possible optimized dictionary code path;
     // below is a loose search while actual decision will be taken as per
     // availability of ExprCodeEx with DictionaryCode in doConsume
-   if (useByteBufferMapBasedAggregation) {
-     false
-   } else {
-     DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(
-       keyBufferAccessor.keyExpressions)
-   }
+   val keyExprs = if (useByteBufferMapBasedAggregation) byteBufferAccessor.keyExprs
+    else keyBufferAccessor.keyExpressions
+
+    DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(
+      keyExprs)
   }
 
   override def batchConsume(ctx: CodegenContext, plan: SparkPlan,
       input: Seq[ExprCode]): String = {
-    if (groupingExpressions.isEmpty || !canConsume(plan) ) ""
+    if (groupingExpressions.isEmpty || !canConsume(plan)) ""
+    else if (useByteBufferMapBasedAggregation) {
+      dictionaryInit = ctx.freshName("dictionaryInit")
+      dictionaryInitBoolean = ctx.freshName("dictionaryInitBoolean")
+      ctx.addNewFunction(dictionaryInit,
+        s"""
+           |private boolean $dictionaryInit() {}
+         """.stripMargin)
+      s"boolean $dictionaryInitBoolean = $dictionaryInit();"
+    }
     else {
       // create an empty method to populate the dictionary array
       // which will be actually filled with code in consume if the dictionary
@@ -473,6 +481,8 @@ case class SnappyHashAggregateExec(
   @transient private var maskTerm: String = _
   @transient private var dictionaryArrayTerm: String = _
   @transient private var dictionaryArrayInit: String = _
+  @transient private var dictionaryInit: String = _
+  @transient private var dictionaryInitBoolean: String = _
 
   /**
    * Generate the code for output.
@@ -1187,10 +1197,32 @@ case class SnappyHashAggregateExec(
       }
     }
 
-    val evaluatedInputCode = evaluateVariables(input)
+
+
     ctx.currentVars = input
     val keysExpr = ctx.generateExpressions(
       groupingExpressions.map(e => BindReferences.bindReference[Expression](e, child.output)))
+
+    val dictionaryCode = SHAMapAccessor.initDictionaryCodeForSingleKeyCase(input,
+      byteBufferAccessor.keyExprs, child.output, ctx, byteBufferAccessor.session)
+
+    dictionaryCode match {
+      case Some(d@DictionaryCode(dictionary, _, _)) =>
+        // initialize or reuse the array at batch level for join
+        // null key will be placed at the last index of dictionary
+        // and dictionary index will be initialized to that by ColumnTableScan
+        ctx.addMutableState(classOf[StringDictionary].getName, dictionary.value, "")
+        ctx.addNewFunction(dictionaryInit,
+          s"""
+             |public boolean $dictionaryInit() {
+             |  ${d.evaluateDictionaryCode()}
+             |   return true;
+             |}
+           """.stripMargin)
+      case None =>
+    }
+
+    val evaluatedInputCode = evaluateVariables(input)
     // generate class for key, buffer and hash code evaluation of key columns
     val inputAttr = aggregateBufferAttributesForGroup ++ child.output
     val initVars = ctx.generateExpressions(declFunctions.flatMap(
@@ -1206,7 +1238,7 @@ case class SnappyHashAggregateExec(
     val updateAttrs = AttributeSet(updateExpr)
     // evaluate map lookup code before updateEvals possibly modifies the keyVars
     val mapCode = byteBufferAccessor.generateMapGetOrInsert(initVars, initCode, evaluatedInputCode,
-      keysExpr, keysDataType, aggBuffDataTypes)
+      keysExpr, keysDataType, aggBuffDataTypes, dictionaryCode, dictionaryInitBoolean)
 
     val bufferVars = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
       byteBufferAccessor.aggregateBufferVars,
