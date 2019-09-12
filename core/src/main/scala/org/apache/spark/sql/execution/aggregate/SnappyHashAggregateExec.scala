@@ -674,7 +674,7 @@ case class SnappyHashAggregateExec(
 
     val sizeAndNumNotNullFuncForStringArr = ctx.freshName("calculateStringArrSizeAndNumNotNulls")
 
-    if (groupingAttributes.exists(attrib => attrib.dataType.existsRecursively {
+    if (groupingAttributes.exists(_.dataType.existsRecursively {
       case ArrayType(StringType, _) | ArrayType(_, true) => true
       case _ => false
     })) {

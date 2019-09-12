@@ -456,9 +456,9 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
       // transform aggregate functions to more optimal ones
       val aggregateExpressions = aggregateExprs.map { agg =>
         agg.aggregateFunction match {
-          case Average(c) => agg.copy(aggregateFunction = new AverageExp(c))
-          case Sum(c) => agg.copy(aggregateFunction = new SumExp(c))
-          case Count(c) => agg.copy(aggregateFunction = new CountExp(c))
+          case Average(c) => agg.copy(aggregateFunction = new AverageOpt(c))
+          case Sum(c) => agg.copy(aggregateFunction = new SumOpt(c))
+          case Count(c) => agg.copy(aggregateFunction = new CountOpt(c))
           case _ => agg
         }
       }

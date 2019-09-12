@@ -23,9 +23,9 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.types.{DataType, LongType}
 
 /**
- * Extends Spark's [[Count]] to reduce generated code.
+ * Optimizes Spark's [[Count]] to reduce generated code.
  */
-class CountExp(children: Seq[Expression]) extends Count(children) {
+class CountOpt(children: Seq[Expression]) extends Count(children) {
 
   override lazy val updateExpressions: Seq[Expression] = {
     CountAdd(aggBufferAttributes.head, children.toList) :: Nil
@@ -71,10 +71,12 @@ case class CountAdd(count: Expression, exprs: List[Expression]) extends Expressi
       val code = if (nullableChildren.isEmpty) s"${countEv.code}\n$countVar++;"
       else {
         val exprs = ctx.generateExpressions(nullableChildren)
-        countEv.code + exprs.map(_.code).mkString("\n", "\n", "\n") +
-            exprs.map("!" + _.isNull).mkString("if (", " || ", s") $countVar++;")
+        countEv.code + exprs.collect {
+          case e if !e.code.isEmpty => e.code
+        }.mkString("\n", "\n", "\n") +
+            exprs.map("!" + _.isNull).mkString("if (", " && ", s") $countVar++;")
       }
-      countEv = countEv.copy(code = code)
+      countEv = countEv.copy(code = code, isNull = "false")
     }
     countEv
   }

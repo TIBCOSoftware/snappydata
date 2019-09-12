@@ -18,86 +18,80 @@
 package org.apache.spark.sql.catalyst.expressions.aggregate
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Add, Expression}
-import org.apache.spark.sql.types.{ByteType, CalendarIntervalType, DecimalType, ShortType}
+import org.apache.spark.sql.catalyst.expressions.{Add, Cast, Expression}
+import org.apache.spark.sql.types._
 
 /**
- * Extends Spark's [[Average]] to reduce generated code.
+ * Optimizes Spark's [[Sum]] to reduce generated code.
  */
-class AverageExp(child: Expression) extends Average(child) with ImplicitCastForAdd {
+class SumOpt(child: Expression) extends Sum(child) with ImplicitCastForAdd {
 
-  override lazy val updateExpressions: Seq[Expression with Serializable] = {
+  override lazy val updateExpressions: Seq[Expression] = {
     val sum = aggBufferAttributes.head
     val sumDataType = sum.dataType
     val add = childWithCast(child, sumDataType)
-    val count = CountAdd(aggBufferAttributes(1), add :: Nil)
-    val avg = new AvgAdd(sum, add)
-    avg.count = count
-    count.avg = avg
-    avg :: count :: Nil
-  }
-
-  override lazy val mergeExpressions: Seq[Expression] = {
-    val sum = aggBufferAttributes.head
-    val count = aggBufferAttributes(1)
-    Seq(new SumAdd(sum.left, sum.right), new SumAdd(count.left, count.right))
+    new SumAdd(sum, add) :: Nil
   }
 }
 
-class AvgAdd(sum: Expression, add: Expression) extends Add(sum, add) {
+/**
+ * Common trait for aggregates that will do the required cast to result type
+ * either implicitly or in their generated code without an explicit CAST operator.
+ */
+trait ImplicitCastForAdd {
 
-  private[aggregate] var count: CountAdd = _
-
-  override def makeCopy(newArgs: Array[AnyRef]): Expression = {
-    val newExp = new AvgAdd(newArgs(0).asInstanceOf[Expression],
-      newArgs(1).asInstanceOf[Expression])
-    newExp.count = count
-    newExp.count.avg = newExp
-    newExp
+  def childWithCast(child: Expression, requiredType: DataType): Expression = {
+    // shave off unnecessary cast to long for integral types
+    val noCast = child match {
+      case Cast(c, LongType) if c.dataType.isInstanceOf[IntegralType] => c
+      case _ => child
+    }
+    // cast to double/long will happen implicitly in java code
+    noCast.dataType match {
+      case d if d == requiredType => noCast
+      case _: IntegralType if requiredType == DoubleType || requiredType == LongType => noCast
+      case _ => Cast(noCast, requiredType)
+    }
   }
+}
 
-  override def withNewChildren(newChildren: Seq[Expression]): Expression = {
-    val newExp = new AvgAdd(newChildren.head, newChildren(1))
-    newExp.count = count
-    newExp.count.avg = newExp
-    newExp
-  }
+class SumAdd(sum: Expression, add: Expression) extends Add(sum, add) {
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val sumEv = sum.genCode(ctx)
     val addEv = add.genCode(ctx)
     val sumVar = sumEv.value
     val addVar = addEv.value
-    val nonNullCode = dataType match {
+    val resultCode = dataType match {
       case _: DecimalType => s"$sumVar = $sumVar != null ? $sumVar.$$plus($addVar) : $addVar;"
       case ByteType | ShortType => s"$sumVar = (${ctx.javaType(dataType)})($sumVar + $addVar);"
       case CalendarIntervalType => s"$sumVar = $sumVar != null ? $sumVar.add($addVar) : $addVar;"
       case _ => s"$sumVar += $addVar;"
     }
-    // evaluate count inside and let "isNull" be determined from count
-    val countEv = count.count.genCode(ctx)
-    val countVar = countEv.value
+    val nonNullCode = if (sumEv.isNull == "false" || sumEv.isNull.indexOf(' ') != -1) resultCode
+    else {
+      s"""if (${sumEv.isNull}) {
+          ${sumEv.isNull} = false;
+          $sumVar = $addVar;
+        } else {
+          $resultCode
+        }"""
+    }
     val code = if (add.nullable) {
       s"""
         ${sumEv.code}
-        ${countEv.code}
         ${addEv.code}
         if (!${addEv.isNull}) {
           $nonNullCode
-          $countVar++;
         }
       """
     } else {
       s"""
         ${sumEv.code}
-        ${countEv.code}
         ${addEv.code}
         $nonNullCode
-        $countVar++;
       """
     }
-    count.countEv = countEv.copy(code = "")
-    count.genCtx = ctx
-    sumEv.copy(code = code, isNull = s"($countVar == 0)")
+    sumEv.copy(code = code)
   }
 }
