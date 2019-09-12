@@ -234,6 +234,7 @@ class CassandraSnappyDUnitTest(val s: String)
     doTestDeployPackageWithSnappyJob()
     doTestPackageViaSnappyJobCommand()
     doTestDeployPackageWithExternalTableInSnappyShell()
+    doTestSNAP3152()
   }
 
   def doTestPackageViaSnappyJobCommand(): Unit = {
@@ -452,5 +453,13 @@ class CassandraSnappyDUnitTest(val s: String)
       case e: Exception if e.getMessage.contains("Job failed with result:") => // expected
       case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
     }
+  }
+
+  def doTestSNAP3152(): Unit = {
+    logInfo("Running testSNAP3152")
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs." +
+        "CassandraSnappyConnectionJobWithDeployPkg",
+      "--conf spark.cassandra.connection.host=localhost")
+    logInfo("Job Completed Successfully")
   }
 }

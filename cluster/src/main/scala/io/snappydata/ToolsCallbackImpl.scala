@@ -117,6 +117,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
         case ite: InvocationTargetException => assert(ite.getCause.isInstanceOf[SecurityException])
       }
     }
+    Thread.currentThread().setContextClassLoader(lead.urlclassloader)
   }
 
   override def addURIsToExecutorClassLoader(jars: Array[String]): Unit = {
