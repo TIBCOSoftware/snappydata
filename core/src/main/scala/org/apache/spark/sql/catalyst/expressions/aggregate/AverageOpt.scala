@@ -75,9 +75,10 @@ class AvgAdd(sum: Expression, add: Expression) extends Add(sum, add) {
       case _ => s"$sumVar += $addVar;"
     }
     // evaluate count inside and let "isNull" be determined from count
-    val countEv = count.count.genCode(ctx)
     val countVar = ctx.freshName("avgCount")
     ctx.addMutableState("long", countVar, "")
+
+    val countEv = count.count.genCode(ctx)
     val countEvVar = countEv.value
     val code = if (add.nullable) {
       s"""
