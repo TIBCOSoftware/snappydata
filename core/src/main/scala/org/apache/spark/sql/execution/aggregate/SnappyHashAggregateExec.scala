@@ -261,22 +261,14 @@ case class SnappyHashAggregateExec(
   }
 
   override def batchConsume(ctx: CodegenContext, plan: SparkPlan,
-      input: Seq[ExprCode]): String = {
+      input: Seq[ExprCode]): String =
     if (groupingExpressions.isEmpty || !canConsume(plan)) ""
-    else if (useByteBufferMapBasedAggregation) {
-      dictionaryInit = ctx.freshName("dictionaryInit")
-      dictionaryInitBoolean = ctx.freshName("dictionaryInitBoolean")
-      ctx.addNewFunction(dictionaryInit,
-        s"""
-           |private boolean $dictionaryInit() {}
-         """.stripMargin)
-      s"boolean $dictionaryInitBoolean = $dictionaryInit();"
-    }
     else {
+      val className = if (useByteBufferMapBasedAggregation) "long"
+      else keyBufferAccessor.getClassName
       // create an empty method to populate the dictionary array
       // which will be actually filled with code in consume if the dictionary
       // optimization is possible using the incoming DictionaryCode
-      val className = keyBufferAccessor.getClassName
       // this array will be used at batch level for grouping if possible
       dictionaryArrayTerm = ctx.freshName("dictionaryArray")
       dictionaryArrayInit = ctx.freshName("dictionaryArrayInit")
@@ -288,7 +280,6 @@ case class SnappyHashAggregateExec(
          """.stripMargin)
       s"final $className[] $dictionaryArrayTerm = $dictionaryArrayInit();"
     }
-  }
 
   override def beforeStop(ctx: CodegenContext, plan: SparkPlan,
       input: Seq[ExprCode]): String = {
@@ -481,8 +472,7 @@ case class SnappyHashAggregateExec(
   @transient private var maskTerm: String = _
   @transient private var dictionaryArrayTerm: String = _
   @transient private var dictionaryArrayInit: String = _
-  @transient private var dictionaryInit: String = _
-  @transient private var dictionaryInitBoolean: String = _
+
 
   /**
    * Generate the code for output.
@@ -1211,12 +1201,13 @@ case class SnappyHashAggregateExec(
         // initialize or reuse the array at batch level for join
         // null key will be placed at the last index of dictionary
         // and dictionary index will be initialized to that by ColumnTableScan
+        // A 1 value return value means dictionary was initialized with not null, 0 means null
         ctx.addMutableState(classOf[StringDictionary].getName, dictionary.value, "")
-        ctx.addNewFunction(dictionaryInit,
+        ctx.addNewFunction(dictionaryArrayInit,
           s"""
-             |public boolean $dictionaryInit() {
+             |public long[] $dictionaryArrayInit() {
              |  ${d.evaluateDictionaryCode()}
-             |   return true;
+             |  return ${d.dictionary.isNull} ? null: new long[${d.dictionary.value}.size()];
              |}
            """.stripMargin)
       case None =>
@@ -1238,7 +1229,7 @@ case class SnappyHashAggregateExec(
     val updateAttrs = AttributeSet(updateExpr)
     // evaluate map lookup code before updateEvals possibly modifies the keyVars
     val mapCode = byteBufferAccessor.generateMapGetOrInsert(initVars, initCode, evaluatedInputCode,
-      keysExpr, keysDataType, aggBuffDataTypes, dictionaryCode, dictionaryInitBoolean)
+      keysExpr, keysDataType, aggBuffDataTypes, dictionaryCode, dictionaryArrayTerm)
 
     val bufferVars = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
       byteBufferAccessor.aggregateBufferVars,

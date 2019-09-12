@@ -594,7 +594,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   def generateMapGetOrInsert(valueInitVars: Seq[ExprCode],
     valueInitCode: String, evaluatedInputCode: String, keyVars: Seq[ExprCode],
     keysDataType: Seq[DataType], aggregateDataTypes: Seq[DataType],
-    dictionaryCode: Option[DictionaryCode], dictionaryInitBoolean: String): String = {
+    dictionaryCode: Option[DictionaryCode], dictionaryArrayTerm: String): String = {
     val hashVar = Array(ctx.freshName("hash"))
     val tempValueData = ctx.freshName("tempValueData")
     val linkedListClass = classOf[java.util.LinkedList[SHAMap]].getName
@@ -733,23 +733,23 @@ case class SHAMapAccessor(@transient session: SnappySession,
           s"""
              |boolean $skipLookupTerm = false;
              |
-             |if ($posTerm != -1 && !$dictionaryInitBoolean &&
-             |${dictionaryCode.map(_.dictionary.value).getOrElse("")}.size() !=
-             |${dictionaryCode.map(_.dictionaryIndex.value).getOrElse("")}  && $keyTerm ==
-             |${dictionaryCode.map(_.dictionaryIndex.value).getOrElse("")}) {
-             |$skipLookupTerm = true;
-             |$valueOffsetTerm = $posTerm;
-             |$keyExistedTerm = true;
+             |if ($dictionaryArrayTerm != null &&
+             |${dictionaryCode.map(_.dictionaryIndex.value).getOrElse("")} !=
+             |$dictionaryArrayTerm.length - 1 ) {
+               |$posTerm = $dictionaryArrayTerm[${dictionaryCode.map(_.dictionaryIndex.value).
+            getOrElse("")}];
+               |if ($posTerm > 0) {
+                 |$skipLookupTerm = true;
+                 |$valueOffsetTerm = $posTerm;
+                 |$keyExistedTerm = true;
+               |}
              |}
            if (!$skipLookupTerm) {
              $keysPrepCodeCode
              $lookUpInsertCode
-             $dictionaryInitBoolean = false;
-             if (${keyVars.head.isNull}) {
-               $posTerm = -1L;
-             } else {
-               $posTerm = $valueOffsetTerm;
-               $keyTerm = ${dictionaryCode.map(_.dictionaryIndex.value).getOrElse("")};
+             if (!${keyVars.head.isNull} && $dictionaryArrayTerm != null) {
+               $dictionaryArrayTerm[${dictionaryCode.map(_.dictionaryIndex.value).
+            getOrElse("")}] = $valueOffsetTerm;
              }
            }
            """.stripMargin
