@@ -810,15 +810,13 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
     // or if the plan is not a top-level one e.g. a subquery or inside
     // CollectAggregateExec (only top-level plan will catch and retry
     //   with disabled optimizations)
-    if (!topLevel || session.sessionState.disableStoreOptimizations ||
-        !Property.SparkFallback.get(session.sessionState.conf)) {
-      plan
-    } else plan match {
+    if (!topLevel || session.sessionState.disableStoreOptimizations) plan
+    else plan match {
       // TODO: disabled for StreamPlans due to issues but can it require fallback?
       case _: StreamPlan => plan
       case _: CollectAggregateExec => CodegenSparkFallback(plan, session)
       case _ if !Property.TestDisableCodeGenFlag.get(session.sessionState.conf) ||
-       session.sessionState.conf.contains("snappydata.connection") =>
+          session.sessionState.conf.contains("snappydata.connection") =>
         CodegenSparkFallback(plan, session)
       case _ => plan
     }

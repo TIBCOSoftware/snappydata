@@ -33,9 +33,9 @@ import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import org.slf4j.LoggerFactory
 
-import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkContext}
 /**
  * Base class for tests using Snappy ClusterManager. New utility methods
@@ -82,9 +82,6 @@ abstract class ClusterManagerTestBase(s: String)
   sysProps.setProperty("spark.memory.debugFill", "true")
   // reduce minimum compression size so that it happens for all the values for testing
   sysProps.setProperty(Constant.COMPRESSION_MIN_SIZE, "128")
-
-  // disable code generation fallback by default to ensure all tests work with Snappy plans
-  sysProps.setProperty(Property.SparkFallback.name, "false")
 
   sysProps.setProperty("gemfire.DISALLOW_CLUSTER_RESTART_CHECK", "true")
 

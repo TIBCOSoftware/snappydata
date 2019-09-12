@@ -26,6 +26,7 @@ import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.reflect.io.Path
 import scala.util.{Failure, Success, Try}
+
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.core.{TestData, TestData2}
@@ -33,6 +34,7 @@ import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import io.snappydata.util.TestUtils
 import io.snappydata.{ColumnUpdateDeleteTests, ConcurrentOpsTests, Property, SnappyTableStatsProviderService}
 import org.junit.Assert
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
@@ -255,7 +257,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     if (jars.count() > 0) {
       var str = msg
       jars.collect().foreach(x => str += s"$x,")
-      assert(false, str)
+      assert(assertion = false, str)
     }
   }
 
@@ -910,8 +912,8 @@ object SplitSnappyClusterDUnitTest
    * Returns the SnappyContext for external(compute) Spark cluster connected to
    * SnappyData cluster using the locator property
    */
-  override def getSnappyContextForConnector(locatorClientPort: Int, properties: Properties = null)
-  : SnappyContext = {
+  override def getSnappyContextForConnector(locatorClientPort: Int,
+      properties: Properties = null): SnappyContext = {
     val hostName = InetAddress.getLocalHost.getHostName
     //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
     val connectionURL = s"localhost:$locatorClientPort"
@@ -927,7 +929,14 @@ object SplitSnappyClusterDUnitTest
         .set("snappydata.connection", connectionURL)
         .set("snapptdata.sql.planCaching", random.nextBoolean().toString)
         .set(Property.TestDisableCodeGenFlag.name, "false")
-    logInfo("Spark conf:" + conf.getAll.toString)
+    if (properties ne null) {
+      val keys = properties.stringPropertyNames().iterator()
+      while (keys.hasNext) {
+        val key = keys.next()
+        conf.set(key, properties.getProperty(key))
+      }
+    }
+    logInfo("Spark conf: " + conf.getAll.mkString(" ; "))
 
     val sc = SparkContext.getOrCreate(conf)
     //      sc.setLogLevel("DEBUG")

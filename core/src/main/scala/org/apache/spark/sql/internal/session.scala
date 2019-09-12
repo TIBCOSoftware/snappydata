@@ -33,7 +33,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedRelation}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Contains, EndsWith, EqualTo, Expression, IfNull, Like, Literal, StartsWith}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Contains, EndsWith, EqualTo, Expression, Like, Literal, StartsWith}
 import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, InsertIntoTable, LogicalPlan, OverwriteOptions, Project, UnaryNode, Filter => LogicalFilter}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
@@ -616,18 +616,6 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
               "generates the same number of columns as its schema.")
       }
 
-    case i@InsertIntoTable(l@LogicalRelation(ir: RowInsertableRelation,
-    _, _), _, child, _, _) if l.resolved && child.resolved =>
-      // First, make sure the data to be inserted have the same number of
-      // fields with the schema of the relation.
-      val expectedOutput = l.output
-      if (expectedOutput.size != child.output.size) {
-        throw new AnalysisException(s"$l requires that the query in the " +
-            "SELECT clause of the PUT INTO statement " +
-            "generates the same number of columns as its schema.")
-      }
-      castAndRenameChildOutputForPut(i, expectedOutput, ir, l, child)
-
     // Check for PUT
     // Need to eliminate subqueries here. Unlike InsertIntoTable whose
     // subqueries have already been eliminated by special check in
@@ -698,11 +686,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
       case (expected, actual) =>
         if (expected.dataType.sameType(actual.dataType) &&
             expected.name == actual.name) {
-          // insert zeros for nulls and not CodegenContext's default
-          if (!expected.nullable && actual.nullable) {
-            Alias(new IfNull(actual, Literal.default(Utils.getSQLDataType(actual.dataType))),
-              expected.name)()
-          } else actual
+          actual
         } else {
           // avoid unnecessary copy+cast when inserting DECIMAL types
           // into column table

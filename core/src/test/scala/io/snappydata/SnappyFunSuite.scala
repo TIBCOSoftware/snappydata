@@ -72,9 +72,7 @@ abstract class SnappyFunSuite
     }
     else {
       cachedContext = null
-      val conf = newSparkConf(addOn)
-      conf.setIfMissing(Property.SparkFallback.name, "false")
-      new SparkContext(conf)
+      new SparkContext(newSparkConf(addOn))
     }
   }
 

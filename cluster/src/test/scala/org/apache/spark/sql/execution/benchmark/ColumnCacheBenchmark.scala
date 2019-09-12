@@ -209,14 +209,12 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   test("insert more than 64K data") {
     val snc = this.snc
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
-    Property.SparkFallback.set(snc.conf, true)
 
     createAndTestBigTable()
 
     createAndTestTableWithNulls(size = 20000, numCols = 300)
     createAndTestTableWithNulls(size = 100000, numCols = 20)
 
-    Property.SparkFallback.set(snc.conf, false)
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key,
       SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.defaultValueString)
   }

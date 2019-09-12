@@ -42,7 +42,7 @@ trait SharedSnappySessionContext extends SharedSQLContext {
         .set("spark.hadoop.fs.file.impl", classOf[DebugFilesystem].getName)
         .set("spark.sql.codegen.fallback", codegenFallback.toString)
         .set("snappydata.sql.planCaching.", random.nextBoolean().toString)
-        .set("snappydata.sql.disableCodegenFallback", "true")
+        .set("snappydata.sql.codegen.disableFallback", "true")
         .set("snappydata.sql.useOptimizedHashAggregateForSingleKey", "true"))
     session.setCurrentSchema("default")
     session

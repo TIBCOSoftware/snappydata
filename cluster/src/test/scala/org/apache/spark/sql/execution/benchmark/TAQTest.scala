@@ -22,7 +22,7 @@ import java.time.{ZoneId, ZonedDateTime}
 import scala.util.Random
 
 import com.typesafe.config.Config
-import io.snappydata.{Property, SnappyFunSuite}
+import io.snappydata.SnappyFunSuite
 import org.scalatest.Assertions
 
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
@@ -270,12 +270,11 @@ object TAQTest extends Logging with Assertions {
     System.runFinalization()
   }
 
-  val cores: Int = Option(System.getenv("TEST_CORES")).map(_.toInt).getOrElse(
-    math.min(16, Runtime.getRuntime.availableProcessors()))
-
   private val random = new Random()
 
   def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
+    val cores = Option(System.getenv("TEST_CORES")).map(_.toInt).getOrElse(
+      math.min(16, Runtime.getRuntime.availableProcessors()))
     val conf = new SparkConf()
         .setIfMissing("spark.master", s"local[$cores]")
         .setAppName("microbenchmark")
