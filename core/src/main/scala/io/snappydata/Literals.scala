@@ -294,7 +294,7 @@ object Property extends Enumeration {
     "Use the new ByteBufferMap based SnappyHashAggregateExec even for single column group by." +
         "The default value is false since the older implementation is substantially faster " +
         "for most of single column group by cases (except if number of groups is very large).",
-    Some(false))
+    Some(true))
 
   val ApproxMaxCapacityOfBBMap: SQLValue[Int] = SQLVal[Int](
     s"${Constant.PROPERTY_PREFIX}sql.approxMaxCapacityOfBBMap",
