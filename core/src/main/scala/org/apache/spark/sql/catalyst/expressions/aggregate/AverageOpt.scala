@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -77,7 +77,7 @@ class AvgAdd(sum: Expression, add: Expression) extends Add(sum, add) {
     // separate count variable required since count expression (in updateExpressions) can
     // get split into separate method so the local countEvVar will not be visible
     val countVar = ctx.freshName("avgCount")
-    ctx.addMutableState("long", countVar, "")
+    ctx.addMutableState("long", countVar, s"$countVar = 0L;")
 
     // evaluate count inside and let "isNull" be determined from count
     val countEv = count.count.genCode(ctx)
@@ -87,7 +87,9 @@ class AvgAdd(sum: Expression, add: Expression) extends Add(sum, add) {
         ${sumEv.code}
         ${countEv.code}
         ${addEv.code}
-        if (!${addEv.isNull}) {
+        if (${addEv.isNull}) {
+          $countVar = $countEvVar;
+        } else {
           $nonNullCode
           $countVar = ++$countEvVar;
         }

@@ -22,18 +22,17 @@ import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.gemxd.SnappySessionPerConnection
 import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
+import org.junit.Assert._
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.store.ColumnTableBatchInsertTest
-import org.junit.Assert._
-import org.apache.spark.SnappyJavaUtils.snappyJavaUtil
 
 class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
-  val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
-  var serverHostPort = ""
-  val tableName = "order_line_col"
+  private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
+  private var serverHostPort = ""
+  private val tableName = "order_line_col"
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -60,18 +59,17 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + serverHostPort)
 
-    val rows = (1 to numRows).toSeq
     val stmt = conn.createStatement()
     try {
       var i = 1
-      rows.foreach(d => {
+      for (_ <- 1 to numRows) {
         stmt.addBatch(s"insert into $tableName values($i, '1')")
         i += 1
         if (i % 1000 == 0) {
           stmt.executeBatch()
           i = 0
         }
-      })
+      }
       stmt.executeBatch()
       logInfo(s"committed $numRows rows")
     } finally {
@@ -108,25 +106,24 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
 
     insertRows(1000)
 
-    (1 to 5).foreach(d => query())
+    (1 to 5).foreach(_ => query())
   }
   def insertRows(tableName: String, numRows: Int, serverHostPort: String): Unit = {
 
     val conn: java.sql.Connection = DriverManager.getConnection(
       "jdbc:snappydata://" + serverHostPort)
 
-    val rows = (1 to numRows).toSeq
     val stmt: java.sql.Statement = conn.createStatement()
     try {
       var i = 1
-      rows.foreach(d => {
+      for (_ <- 1 to numRows) {
         stmt.addBatch(s"insert into $tableName values($i, $i, '$i')")
         i += 1
         if (i % 1000 == 0) {
           stmt.executeBatch()
           i = 0
         }
-      })
+      }
       stmt.executeBatch()
       logInfo(s"committed $numRows rows")
     } finally {
@@ -331,18 +328,17 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + serverHostPort)
 
-    val rows = (1 to numRows).toSeq
     val stmt = conn.createStatement()
     try {
       var i = 1
-      rows.foreach(d => {
+      for (_ <- 1 to numRows) {
         stmt.addBatch(s"insert into order_line_row_bool values(${i % 2 == 0}, $i)")
         i += 1
         if (i % 1000 == 0) {
           stmt.executeBatch()
           i = 0
         }
-      })
+      }
       stmt.executeBatch()
       logInfo(s"committed $numRows rows")
     } finally {
@@ -384,7 +380,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
 
     insertBooleanRows(1000)
 
-    (1 to 5).foreach(d => queryBooleanRows())
+    (1 to 5).foreach(_ => queryBooleanRows())
   }
 
   test("1737: Failure to convert UTF8String error with index") {
@@ -453,18 +449,14 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + serverHostPort)
 
-    val rows = (1 to numRows).toSeq
     val stmt = conn.createStatement()
     try {
-      var i = 1
-      rows.foreach(d => {
+      for (d <- 1 to numRows) {
         stmt.addBatch(s"insert into $tableName values($d, $d, '$d')")
-        i += 1
-        if (i % 1000 == 0) {
+        if (d % 1000 == 0) {
           stmt.executeBatch()
-          i = 0
         }
-      })
+      }
       stmt.executeBatch()
       logInfo(s"committed $numRows rows")
     } finally {
@@ -597,19 +589,15 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
 
   def insertRows2(tableName: String, numRows: Int): Unit = {
     val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
-    val rows = (1 to numRows).toSeq
     val stmt = conn.createStatement()
     try {
-      var i = 1
-      rows.foreach(d => {
+      for (d <- 1 to numRows) {
         val d1 = d + 1
         stmt.addBatch(s"insert into $tableName values($d, $d1, '$d1')")
-        i += 1
-        if (i % 1000 == 0) {
+        if (d % 1000 == 0) {
           stmt.executeBatch()
-          i = 0
         }
-      })
+      }
       stmt.executeBatch()
       logInfo(s"insertRows2: committed $numRows rows")
     } finally {
