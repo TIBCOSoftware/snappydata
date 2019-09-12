@@ -23,7 +23,6 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gnu.trove.TLongArrayList
 import io.snappydata.collection.{DictionaryMap, LongKey, ObjectHashSet}
 
-import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding.CACHED_DICTIONARY_LIMIT
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
@@ -181,6 +180,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
   private final var longMap: ObjectHashSet[LongIndexKey] = _
   private final var longArray: TLongArrayList = _
   private final var isIntMap: Boolean = _
+  private final var writeHeader: Boolean = true
 
   @transient private final var isShortDictionary: Boolean = _
 
@@ -215,6 +215,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
 
   override def initialize(dataType: DataType, nullable: Boolean, initSize: Int,
       withHeader: Boolean, allocator: BufferAllocator, minBufferSize: Int): Long = {
+    writeHeader = withHeader
     setAllocator(allocator)
     dataType match {
       case StringType =>
@@ -381,7 +382,7 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     cursor
   }
 
-  override def finish(indexCursor: Long, size: Int): ByteBuffer = {
+  override def finish(indexCursor: Long): ByteBuffer = {
     val numIndexBytes = (indexCursor - this.columnBeginPosition).toInt
     var numDictionaryElements: Int = 0
     val dictionarySize = if (stringMap ne null) {
@@ -393,8 +394,8 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
       else numDictionaryElements << 4
     }
     // create the final data array of exact size that is known at this point
-    val (numNullWords, numNulls) = getNumNullWords(size)
-    val numNullBytes = math.abs(numNullWords) << 3
+    val numNullWords = getNumNullWords
+    val numNullBytes = numNullWords << 3
     val dataSize = 4L /* dictionary size */ + dictionarySize + numIndexBytes
     val storageAllocator = this.storageAllocator
     val columnData = storageAllocator.allocateForStorage(ColumnEncoding
@@ -403,11 +404,16 @@ trait DictionaryEncoderBase extends ColumnEncoder with DictionaryEncoding {
     val columnBytes = storageAllocator.baseObject(columnData)
     val baseOffset = storageAllocator.baseOffset(columnData)
     var cursor = baseOffset
-    // typeId
-    ColumnEncoding.writeInt(columnBytes, cursor, typeId)
-    cursor += 4
+    if (writeHeader) {
+      // typeId
+      ColumnEncoding.writeInt(columnBytes, cursor, typeId)
+      cursor += 4
+      // number of nulls
+      ColumnEncoding.writeInt(columnBytes, cursor, numNullBytes)
+      cursor += 4
+    }
     // write the null bytes
-    cursor = writeNulls(columnBytes, cursor, numNullWords, numNulls)
+    cursor = writeNulls(columnBytes, cursor, numNullWords)
 
     // write the dictionary and then the indexes
 
@@ -455,9 +461,8 @@ final class StringDictionary(baseCursor: Long, positions: ByteBuffer,
     // for medium/large dictionaries, create objects on the fly rather than store
     // in dictionary to avoid GC issues with long-lived objects (SNAP-1877)
     this(cursor,
-      if (numElements > CACHED_DICTIONARY_LIMIT) allocator.allocate((numElements + 1) << 2,
-        "STRING_DICTIONARY") else null,
-      if (numElements <= CACHED_DICTIONARY_LIMIT) new Array[UTF8String](numElements + 1) else null,
+      if (numElements > 1000) allocator.allocate((numElements + 1) << 2, "STRING_DICTIONARY")
+      else null, if (numElements <= 1000) new Array[UTF8String](numElements + 1) else null,
       allocator, numElements)
   }
 

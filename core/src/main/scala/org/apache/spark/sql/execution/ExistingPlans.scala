@@ -487,9 +487,6 @@ class StratumInternalRow(val weight: Long) extends InternalRow {
 
 trait BatchConsumer extends CodegenSupport {
 
-  @transient final val (metricAdd, metricValue): (String => String, String => String) =
-    Utils.metricMethods
-
   /**
    * Returns true if the given plan returning batches of data can be consumed
    * by this plan.
@@ -506,7 +503,7 @@ trait BatchConsumer extends CodegenSupport {
    * depend on this being invoked since many scans will not be batched.
    */
   def batchConsume(ctx: CodegenContext, plan: SparkPlan,
-      input: Seq[ExprCode], numBatchRows: String): String
+      input: Seq[ExprCode]): String
 
   /**
    * Generate Java source code to do any processing before return after
@@ -520,8 +517,7 @@ trait BatchConsumer extends CodegenSupport {
  * Extended information for ExprCode variable to also hold the variable having
  * dictionary reference and its index when dictionary encoding is being used.
  */
-case class DictionaryCode(dictionary: ExprCode, byteBufferVar: String, bufferVar: String,
-    dictionaryIndex: ExprCode) {
+case class DictionaryCode(dictionary: ExprCode, bufferVar: String, dictionaryIndex: ExprCode) {
 
   private def evaluate(ev: ExprCode): String = {
     if (ev.code.isEmpty) ""

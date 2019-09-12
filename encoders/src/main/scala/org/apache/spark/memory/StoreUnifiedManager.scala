@@ -222,9 +222,6 @@ final class DefaultMemoryConsumer(taskMemoryManager: TaskMemoryManager,
     mode: MemoryMode = MemoryMode.ON_HEAP)
     extends MemoryConsumer(taskMemoryManager, taskMemoryManager.pageSizeBytes(), mode) {
 
-  def this(taskMemoryManager: TaskMemoryManager, offHeap: Boolean) =
-    this(taskMemoryManager, if (offHeap) MemoryMode.OFF_HEAP else MemoryMode.ON_HEAP)
-
   override def spill(size: Long, trigger: MemoryConsumer): Long = 0L
 
   override def getUsed: Long = this.used

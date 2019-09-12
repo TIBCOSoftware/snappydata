@@ -783,10 +783,3 @@ object ConnectionType extends Enumeration {
   type ConnectionType = Value
   val Embedded, Net, Unknown = Value
 }
-
-/**
- * Does not have SnappySession so only limited parsing possible that does not make use of session.
- */
-object SnappyRestrictedParser {
-  private[sql] val parser: SnappyParser = new SnappyParser(session = null)
-}

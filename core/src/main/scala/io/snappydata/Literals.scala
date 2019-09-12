@@ -119,8 +119,8 @@ object Property extends Enumeration {
      "It is recommended that hostname and client port of the locator " +
      "be specified for this.", None, Constant.SPARK_PREFIX)
 
-  val DefaultCompilerFlags: SparkValue[String] = Val[String](
-    s"${Constant.PROPERTY_PREFIX}sql.nativeCompilerFlags",
+  val NativeCompilerFlags: SparkValue[String] = Val[String](
+    s"${Constant.PROPERTY_PREFIX}sql.native.compilerFlags",
     "Default compiler flags for native (JNI) plan compilation when applicable.",
     Some("-O3 -fPIC -DPIC -march=native"), Constant.SPARK_PREFIX)
 

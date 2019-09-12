@@ -48,8 +48,6 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.collection.{SharedUtils, Utils}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec
-import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA
 import org.apache.spark.sql.execution.columnar.encoding._
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
@@ -337,12 +335,10 @@ private[sql] final case class ColumnTableScan(
     }
 
     val initRowTableDecoders = new StringBuilder
-    val nextNullPosDecls = new StringBuilder
     val bufferInitCodeBlocks = new ArrayBuffer[String]()
 
     val isWideSchema = output.length > MAX_SCHEMA_LENGTH
-    val beforeStop = new StringBuilder
-    val (batchConsumers, genShouldStop) = getBatchConsumers(parent, stop = true, forceStop = false)
+    val batchConsumers = getBatchConsumers(parent)
     // "key" columns for update/delete with reserved names in ColumnDelta.mutableKeyNames
     var columnBatchIdTerm: String = null
     var ordinalIdTerm: String = null
@@ -354,7 +350,6 @@ private[sql] final case class ColumnTableScan(
       val decoderLocal = s"${decoder}Local"
       val updatedDecoder = s"${decoder}Updated"
       val updatedDecoderLocal = s"${decoder}UpdatedLocal"
-      val nextNullPos = s"${decoder}NextNullPos"
       val numNullsVar = s"${decoder}NumNulls"
       val buffer = s"${decoder}Buffer"
       val bufferVar = s"${buffer}Object"
@@ -370,9 +365,6 @@ private[sql] final case class ColumnTableScan(
       else s"\n$updatedColumnCount.${metricAdd("1")};"
 
       ctx.addMutableState("java.nio.ByteBuffer", buffer, "")
-      if (isWideSchema) {
-        ctx.addMutableState("int", nextNullPos, "")
-      }
       ctx.addMutableState("int", numNullsVar, "")
 
       val rowDecoderCode =
@@ -436,16 +428,7 @@ private[sql] final case class ColumnTableScan(
 
         bufferInitCode.append(
           s"$bufferVar = ($buffer == null || $buffer.isDirect()) ? null : $buffer.array();\n")
-        if (attr.nullable) {
-          bufferInitCode.append(s"$nextNullPos = $decoder.getNextNullPosition();")
-        }
       } else {
-        if (attr.nullable) {
-          nextNullPosDecls.append(
-            s"""int $nextNullPos = $decoder.getNextNullPosition();
-                int $numNullsVar = this.$numNullsVar;""")
-          beforeStop.append(s"this.$numNullsVar = $numNullsVar;\n")
-        }
         bufferInitCode.append(
           s"""
              |final $decoderClass $decoderLocal = $decoder;
@@ -457,10 +440,10 @@ private[sql] final case class ColumnTableScan(
 
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
-          buffer, bufferVar, batchOrdinal, numNullsVar, nextNullPos, attr, weightVarName)
+          bufferVar, batchOrdinal, numNullsVar, attr, weightVarName)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
-          buffer, bufferVar, batchOrdinal, numNullsVar, nextNullPos, attr, weightVarName)
+          bufferVar, batchOrdinal, numNullsVar, attr, weightVarName)
         convertExprToMethodCall(ctx, ev, attr, index, batchOrdinal)
       }
     }
@@ -533,6 +516,7 @@ private[sql] final case class ColumnTableScan(
     val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
     val incrementBatchCount = if (columnBatchesSeen eq null) ""
     else s"$columnBatchesSeen.${metricAdd("1")};"
+    val countIndexInSchema = ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA
     val batchAssign =
       s"""
         final java.nio.ByteBuffer $colNextBytes = (java.nio.ByteBuffer)$colInput.next();
@@ -540,9 +524,9 @@ private[sql] final case class ColumnTableScan(
           $colNextBytes, $numColumnsInStatBlob);
         UnsafeRow $deltaStatsRow = ${SharedUtils.getClass.getName}.MODULE$$.toUnsafeRow(
           $colInput.getCurrentDeltaStats(), $numColumnsInStatBlob);
-        final int $numFullRows = $statsRow.getInt($COUNT_INDEX_IN_SCHEMA);
+        final int $numFullRows = $statsRow.getInt($countIndexInSchema);
         int $numDeltaRows = $deltaStatsRow != null ? $deltaStatsRow.getInt(
-          $COUNT_INDEX_IN_SCHEMA) : 0;
+          $countIndexInSchema) : 0;
         $numBatchRows = $numFullRows + $numDeltaRows;
         // TODO: don't have the update count here (only insert count)
         $numDeltaRows = $numBatchRows;
@@ -646,23 +630,11 @@ private[sql] final case class ColumnTableScan(
         """.stripMargin)
     else ("", "")
     val batchConsume = batchConsumers.map(_.batchConsume(ctx, this,
-      columnsInput, s"$numBatchRows - $deletedCount")).mkString("\n").trim
-    batchConsumers.foreach(c => beforeStop.append(c.beforeStop(ctx, this,
-      columnsInput)).append('\n'))
-    // avoid shouldStop() calls for common aggregation cases
-    val shouldStop = if (genShouldStop) {
-      s"""if (shouldStop()) {
-         |  ${beforeStop.toString.trim}
-         |  // increment index for return
-         |  $batchIndex = $batchOrdinal + 1;
-         |  return;
-         |}""".stripMargin
-    } else ""
+      columnsInput)).mkString("\n").trim
+    val beforeStop = batchConsumers.map(_.beforeStop(ctx, this,
+      columnsInput)).mkString("\n").trim
     val finallyCode = session match {
-      case Some(s) =>
-        val code = s.evaluateFinallyCode(ctx)
-        if (code.isEmpty) ""
-        else s"\n} finally {\n$code\n"
+      case Some(s) => s.evaluateFinallyCode(ctx)
       case _ => ""
     }
     val consumeCode = consume(ctx, columnsInput).trim
@@ -677,58 +649,47 @@ private[sql] final case class ColumnTableScan(
        |    $bufferInitCodeStr
        |    $assignBatchId
        |    $batchConsume
-       |    $deletedDeclaration$nextNullPosDecls
+       |    $deletedDeclaration
        |    final int $numRows = $numBatchRows$deletedCountCheck;
        |    for (int $batchOrdinal = $batchIndex; $batchOrdinal < $numRows;
        |         $batchOrdinal++) {
        |      $deletedCheck
        |      $assignOrdinalId
        |      $consumeCode
-       |      $shouldStop
+       |      if (shouldStop()) {
+       |        $beforeStop
+       |        // increment index for return
+       |        $batchIndex = $batchOrdinal + 1;
+       |        return;
+       |      }
        |    }
        |    $buffers = null;
        |  }
+       |} catch (java.io.IOException ioe) {
+       |  throw ioe;
        |} catch (RuntimeException re) {
        |  throw re;
        |} catch (Exception e) {
-       |  if (e instanceof java.io.IOException) throw (java.io.IOException)e;
-       |  else throw new java.io.IOException(e.toString(), e);$finallyCode
+       |  throw new java.io.IOException(e.toString(), e);
+       |} finally {
+       |  $finallyCode
        |}
     """.stripMargin
   }
 
-  /**
-   * Get any [[BatchConsumer]]s in the parent chain and invoke their code
-   * and also skip generating "shouldStop()" checks after every row of processing
-   * for the common case of simple or grouped aggregation query.
-   */
-  private def getBatchConsumers(parent: CodegenSupport,
-      stop: Boolean, forceStop: Boolean): (List[BatchConsumer], Boolean) = {
+  private def getBatchConsumers(parent: CodegenSupport): List[BatchConsumer] = {
     parent match {
-      case null => (Nil, stop | forceStop)
-      case b: BatchConsumer =>
-        val isAggregate = b.isInstanceOf[SnappyHashAggregateExec]
-        val (batchConsumers, doStop) = getBatchConsumers(
-          TypeUtilities.parentMethod.invoke(parent).asInstanceOf[CodegenSupport],
-          stop = forceStop | !isAggregate, forceStop = forceStop | !isAggregate)
-        (if (b.canConsume(this)) b :: batchConsumers else batchConsumers, doStop)
-      case p =>
-        val (doStop, doForceStop) = p match {
-          case _: WholeStageCodegenExec | _: CodegenSparkFallback |
-               _: FilterExec | _: ProjectExec => (stop, forceStop)
-          case _ => (true, true)
-        }
-        getBatchConsumers(TypeUtilities.parentMethod.invoke(parent)
-            .asInstanceOf[CodegenSupport], doStop, doForceStop)
+      case null => Nil
+      case b: BatchConsumer if b.canConsume(this) => b :: getBatchConsumers(
+        TypeUtilities.parentMethod.invoke(parent).asInstanceOf[CodegenSupport])
+      case _ => getBatchConsumers(TypeUtilities.parentMethod.invoke(parent)
+          .asInstanceOf[CodegenSupport])
     }
   }
 
-  // scalastyle:off
   private def genCodeColumnBuffer(ctx: CodegenContext, decoder: String, updateDecoder: String,
-      decoderGlobal: String, mutableDecoderGlobal: String, byteBuffer: String, buffer: String,
-      batchOrdinal: String, numNullsVar: String, nextNullPos: String, attr: Attribute,
-      weightVar: String): ExprCode = {
-    // scalastyle:on
+      decoderGlobal: String, mutableDecoderGlobal: String, buffer: String, batchOrdinal: String,
+      numNullsVar: String, attr: Attribute, weightVar: String): ExprCode = {
     val nonNullPosition = if (attr.nullable) s"$batchOrdinal - $numNullsVar" else batchOrdinal
     val col = ctx.freshName("col")
     val sqlType = Utils.getSQLDataType(attr.dataType)
@@ -751,7 +712,7 @@ private[sql] final case class ColumnTableScan(
         val dictionaryIndex = if (attr.nullable) {
           ExprCode(
             s"""
-               |${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar, nextNullPos)} {
+               |${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar)} {
                |  $dictionaryIndexVar = $updateDecoder == null
                |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
                |    : $updateDecoder.readDictionaryIndex();
@@ -768,7 +729,7 @@ private[sql] final case class ColumnTableScan(
           """.stripMargin, "false", dictionaryIndexVar)
         }
         session.foreach(_.addDictionaryCode(ctx, col,
-          DictionaryCode(dictionary, byteBuffer, buffer, dictionaryIndex)))
+          DictionaryCode(dictionary, buffer, dictionaryIndex)))
         "UTF8String"
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
         colAssign = s"$col = $decoder.readLongDecimal($buffer, ${d.precision}, " +
@@ -806,18 +767,16 @@ private[sql] final case class ColumnTableScan(
       val code =
         s"""
            |final $jt $col;
-           |final boolean $isNullVar;
+           |boolean $isNullVar = false;
            |if ($unchangedCode) {
-           |  ${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar, nextNullPos)} {
+           |  ${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar)} {
            |    $colAssign
-           |    $isNullVar = false;
            |  } else {
            |    $col = $defaultValue;
            |    $isNullVar = true;
            |  }
            |} else if ($updateDecoder.readNotNull()) {
            |  $updatedAssign
-           |  $isNullVar = false;
            |} else {
            |  $col = $defaultValue;
            |  $isNullVar = true;
@@ -838,21 +797,27 @@ private[sql] final case class ColumnTableScan(
     }
   }
 
-  private def genIfNonNullCode(ctx: CodegenContext, decoder: String, buffer: String,
-      batchOrdinal: String, numNulls: String, nextNullPos: String): String = {
+  private def genIfNonNullCode(ctx: CodegenContext, decoder: String,
+      buffer: String, batchOrdinal: String, numNullsVar: String): String = {
     // nextNullPosition is not updated immediately rather when batchOrdinal
     // goes just past because a column read code can be invoked multiple
     // times for the same batchOrdinal like in SNAP-2118;
-    // check below puts the conditions in a single check to minimize code
+    // check below crams in all the conditions in a single check to minimize code
     // repetition of non-null assignment call that is normally inlined by JVM
     // and besides this piece of code should get inlined in any case or else
     // it will be big performance hit for every column nullability check
+    val nextNullPosition = ctx.freshName("nextNullPosition")
     s"""
-       |if ($batchOrdinal < $nextNullPos ||
-       |    // update numNulls if ordinal has gone past nextNullPosition
-       |    ($batchOrdinal != $nextNullPos &&
-       |     ($numNulls = $decoder.moveToNextNull($buffer, $batchOrdinal, $numNulls)) != 0 &&
-       |     $batchOrdinal != ($nextNullPos = $decoder.getNextNullPosition())))""".stripMargin
+       |int $nextNullPosition = $decoder.getNextNullPosition();
+       |if ($batchOrdinal < $nextNullPosition ||
+       |    // check case when batchOrdinal has gone just past nextNullPosition
+       |    ($batchOrdinal == $nextNullPosition + 1 &&
+       |     $batchOrdinal < ($nextNullPosition = $decoder.findNextNullPosition(
+       |       $buffer, $nextNullPosition, $numNullsVar++))) ||
+       |    // check if batchOrdinal has moved ahead by more than one due to filters
+       |    ($batchOrdinal != $nextNullPosition && (($numNullsVar =
+       |       $decoder.numNulls($buffer, $batchOrdinal, $numNullsVar)) == 0 ||
+       |       $batchOrdinal != $decoder.getNextNullPosition())))""".stripMargin
   }
 }
 

@@ -78,6 +78,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   @transient private var dictionaryArrayTerm: String = _
   @transient private var dictionaryArrayInit: String = _
 
+  @transient val (metricAdd, _): (String => String, String => String) =
+    Utils.metricMethods
+
   override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"),
     "buildDataSize" -> SQLMetrics.createSizeMetric(sparkContext, "data size of build side"),
@@ -320,7 +323,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     mapAccessor = ObjectHashMapAccessor(session, ctx, buildSideKeys,
-      buildPlan.output, "LocalMap", Nil, hashMapTerm, mapDataTerm, maskTerm,
+      buildPlan.output, "LocalMap", hashMapTerm, mapDataTerm, maskTerm,
       multiMap = true, this, this.parent, buildPlan)
 
     val entryClass = mapAccessor.getClassName
@@ -466,8 +469,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       case LeftOuter | RightOuter | FullOuter | LeftAnti => true
       case _ => false
     }
-    val keyValueVars = mapAccessor.getColumnVars(entryVar, localValueVar,
-      onlyKeyVars = false, onlyValueVars = false, checkNullObj)
+    val (initCode, keyValueVars, nullMaskVars) = mapAccessor.getColumnVars(
+      entryVar, localValueVar, onlyKeyVars = false, onlyValueVars = false,
+      checkNullObj)
     val buildKeyVars = keyValueVars.take(buildSideKeys.length)
     val buildVars = keyValueVars.drop(buildSideKeys.length)
     val checkCondition = getJoinCondition(ctx, input, buildVars)
@@ -482,8 +486,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     }
     val streamKeyVars = ctx.generateExpressions(streamKeys)
 
-    mapAccessor.generateMapLookup(entryVar, localValueVar, mapSize, keyIsUniqueTerm,
-      initMap, initMapCode, numRowsTerm, checkCondition, streamSideKeys,
+    mapAccessor.generateMapLookup(entryVar, localValueVar,
+      mapSize, keyIsUniqueTerm, initMap, initMapCode, numRowsTerm,
+      nullMaskVars, initCode, checkCondition, streamSideKeys,
       streamKeyVars, streamedPlan.output, buildKeyVars, buildVars, input,
       resultVars, dictionaryArrayTerm, dictionaryArrayInit, joinType, buildSide)
   }
@@ -496,7 +501,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   }
 
   override def batchConsume(ctx: CodegenContext,
-      plan: SparkPlan, input: Seq[ExprCode], numBatchRows: String): String = {
+      plan: SparkPlan, input: Seq[ExprCode]): String = {
     if (!canConsume(plan)) return ""
     // create an empty method to populate the dictionary array
     // which will be actually filled with code in consume if the dictionary
@@ -507,11 +512,11 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     dictionaryArrayInit = ctx.freshName("dictionaryArrayInit")
     ctx.addNewFunction(dictionaryArrayInit,
       s"""
-         |private $className[] $dictionaryArrayInit(int numBatchRows) {
+         |private $className[] $dictionaryArrayInit() {
          |  return null;
          |}
          """.stripMargin)
-    s"final $className[] $dictionaryArrayTerm = $dictionaryArrayInit($numBatchRows);"
+    s"final $className[] $dictionaryArrayTerm = $dictionaryArrayInit();"
   }
 
   /**

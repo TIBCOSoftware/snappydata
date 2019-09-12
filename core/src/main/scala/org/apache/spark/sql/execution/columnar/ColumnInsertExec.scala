@@ -574,7 +574,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       "java.lang.String")
 
     val bufferLoopCode =
-      s"$buffers[i] = $encoderArrayTerm[i].finish($cursorArrayTerm[i], $batchSizeTerm);\n"
+      s"""$buffers[i] = $encoderArrayTerm[i].finish($cursorArrayTerm[i]);\n""".stripMargin
     val buffersCode = loop(bufferLoopCode, schema.length)
 
     val (statsSchema, stats) = columnStats.unzip
@@ -699,7 +699,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       val init = s"$cursorTerm = $encoderTerm.initialize(" +
           s"$schemaTerm.fields()[$i], $defaultBatchSizeTerm, true);"
       buffersCode.append(
-        s"$buffers[$i] = $encoderTerm.finish($cursorTerm, $batchSizeTerm);\n")
+        s"$buffers[$i] = $encoderTerm.finish($cursorTerm);\n")
       encoderCursorDeclarations.append(
         s"final $encoderClass $encoderTerm = this.$encoderTerm;\n")
 

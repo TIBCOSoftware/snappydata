@@ -21,8 +21,7 @@ import io.snappydata.collection.ObjectHashSet
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding.CACHED_DICTIONARY_LIMIT
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoding, StringDictionary}
+import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.types.StringType
 
 /**
@@ -70,8 +69,6 @@ import org.apache.spark.sql.types.StringType
  */
 object DictionaryOptimizedMapAccessor {
 
-  private[execution] val ENTRY_IS_NULL_DEFAULT: String = "entryIsNull"
-
   def canHaveSingleKeyCase(keyExpressions: Seq[Expression]): Boolean = {
     keyExpressions.length == 1 &&
         keyExpressions.head.dataType.isInstanceOf[StringType]
@@ -87,12 +84,10 @@ object DictionaryOptimizedMapAccessor {
 
   def dictionaryArrayGetOrInsert(ctx: CodegenContext, keyExpr: Seq[Expression],
       keyVar: ExprCode, keyDictVar: DictionaryCode, arrayVar: String,
-      arrayInitVar: String, resultVar: String, valueInit: String,
-      continueOnNull: Boolean, accessor: ObjectHashMapAccessor): String = {
-
+      resultVar: String, valueInit: String, continueOnNull: Boolean,
+      accessor: ObjectHashMapAccessor): String = {
     val key = ctx.freshName("dictionaryKey")
     val keyIndex = keyDictVar.dictionaryIndex.value
-    val dictionaryVar = keyDictVar.dictionary.value
     val keyNull = keyVar.isNull != "false"
     val keyEv = ExprCode("", if (keyNull) s"($key == null)" else "false", key)
     val className = accessor.getClassName
@@ -130,6 +125,7 @@ object DictionaryOptimizedMapAccessor {
     // if keyVar code has not been consumed, then use dictionary
     val keyAssign = if (keyVar.code.isEmpty) s"final UTF8String $key = ${keyVar.value};"
     else {
+      val dictionaryVar = keyDictVar.dictionary.value
       val stringAssignCode = ColumnEncoding.stringFromDictionaryCode(
         dictionaryVar, keyDictVar.bufferVar, keyIndex)
       s"final UTF8String $key = $stringAssignCode;"
@@ -140,52 +136,6 @@ object DictionaryOptimizedMapAccessor {
       s"int ${keyDictVar.dictionaryIndex.value} = -1;"
     }
 
-    // add function to initialize the dictionary array
-    val sizeVar = ctx.freshName("size")
-    // initialize or reuse the array at batch level for join
-    // null key will be placed at the last index of dictionary
-    // and dictionary index will be initialized to that by ColumnTableScan
-    ctx.addMutableState(classOf[StringDictionary].getName, dictionaryVar, "")
-    val buffer = keyDictVar.byteBufferVar
-    val bufferObj = keyDictVar.bufferVar
-    val hashMap = accessor.hashMapTerm
-    val stringAssignCode = ColumnEncoding.stringFromDictionaryCode(
-      dictionaryVar, bufferObj, keyIndex)
-    val mapLookupCode = accessor.mapLookup(resultVar, hash, keyExpr, Seq(keyEv), valueInit)
-    val entryIsNull = accessor.entryIsNullExpr
-    val entryIsNullInit = if (entryIsNull.isEmpty || entryIsNull.indexOf(' ') != -1) ""
-    else {
-      // start entry marked as null for groupBy
-      s"\n$resultVar.$entryIsNull = true;"
-    }
-    ctx.addNewFunction(arrayInitVar,
-      s"""
-         |public $className[] $arrayInitVar(int numBatchRows) {
-         |  ${keyDictVar.evaluateDictionaryCode()}
-         |  if ($dictionaryVar != null) {
-         |    final int $sizeVar = $dictionaryVar.size() + ${if (keyNull) "1" else "0"};
-         |    final $className[] $arrayVar = new $className[$sizeVar];
-         |    // populate the array right away if small enough
-         |    if ($sizeVar <= Math.max($CACHED_DICTIONARY_LIMIT, numBatchRows / 100)) {
-         |      final Object $bufferObj = ($buffer == null || $buffer.isDirect())
-         |          ? null : $buffer.array();
-         |      $className[] ${accessor.dataTerm} = ($className[])$hashMap.data();
-         |      int ${accessor.maskTerm} = $hashMap.mask();
-         |      for (int $keyIndex = 0; $keyIndex < $sizeVar; $keyIndex++) {
-         |        final UTF8String $key = $stringAssignCode;
-         |        final int $hash = $hashExprCode;
-         |        $className $resultVar;
-         |        $mapLookupCode
-         |        $arrayAssignFragment$entryIsNullInit
-         |      }
-         |    }
-         |    return $arrayVar;
-         |  } else {
-         |    return null;
-         |  }
-         |}
-      """.stripMargin)
-
     s"""
        |$dictionaryIndexInit
        |if ($arrayVar != null) {
@@ -194,7 +144,7 @@ object DictionaryOptimizedMapAccessor {
        |  ${nullCheck}if ($resultVar == null) {
        |    $keyAssign
        |    $hashExpr
-       |    $mapLookupCode
+       |    ${accessor.mapLookup(resultVar, hash, keyExpr, Seq(keyEv), valueInit)}
        |    $arrayAssignFragment
        |  }
        |}""".stripMargin

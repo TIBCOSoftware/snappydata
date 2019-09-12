@@ -46,13 +46,12 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
 
   override def isNullable: Boolean = false
 
-  override protected[sql] def getNumNullWords(size: Int): (Int, Int) = ColumnEncoding.NO_NULLS
+  override protected[sql] def getNumNullWords: Int = 0
 
   override protected[sql] def initializeNulls(initSize: Int): Int =
     throw new UnsupportedOperationException(s"initializeNulls for $toString")
 
-  override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
-      numWords: Int, numNulls: Int): Long =
+  override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long, numWords: Int): Long =
     throw new UnsupportedOperationException(s"writeNulls for $toString")
 
   override def writeIsNull(ordinal: Int): Unit =
@@ -204,7 +203,7 @@ final class ColumnDeleteEncoder extends ColumnEncoder {
     createFinalBuffer(position, numBaseRows)
   }
 
-  override def finish(cursor: Long, size: Int): ByteBuffer = {
+  override def finish(cursor: Long): ByteBuffer = {
     throw new UnsupportedOperationException(
       "ColumnDeleteEncoder.finish(cursor) not expected to be called")
   }

@@ -77,7 +77,7 @@ class SumAdd(sum: Expression, add: Expression) extends Add(sum, add) {
           $resultCode
         }"""
     }
-    val code = if (add.nullable && ctx.isPrimitiveType(add.dataType)) {
+    val code = if (add.nullable) {
       s"""
         ${sumEv.code}
         ${addEv.code}

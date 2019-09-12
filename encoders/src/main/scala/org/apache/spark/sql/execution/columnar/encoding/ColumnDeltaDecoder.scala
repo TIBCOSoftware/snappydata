@@ -34,13 +34,11 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
   private val (realDecoder, deltaBytes) =
     ColumnEncoding.getColumnDecoderAndBuffer(buffer, field, initialize)
 
-  private var positionStartCursor: Long = _
+  private var positionCursor: Long = _
   private var positionEndCursor: Long = _
 
   /** relative position being read currently in the underlying decoder */
   private var decoderPosition: Int = _
-  /** relative position of the next null value in the underlying decoder */
-  private var nextNullPos: Int = realDecoder.getNextNullPosition
   /** relative position of the current non-null value in the underlying decoder */
   private var nonNullPosition: Int = _
   private var notNull: Boolean = _
@@ -50,11 +48,12 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
     val numPositions = ColumnEncoding.readInt(columnBytes, cursor + 4)
 
     // initialize the start and end of mutated positions
-    positionStartCursor = cursor + 8
-    positionEndCursor = positionStartCursor + (numPositions << 2)
-    // relative position is one behind so point to current on increment
+    positionCursor = cursor + 8
+    // relative positions are one behind so point to current on increment
+    decoderPosition = -1
     nonNullPosition = -1
 
+    positionEndCursor = positionCursor + (numPositions << 2)
     // round to nearest word to get data start position
     ((positionEndCursor + 7) >> 3) << 3
   }
@@ -63,7 +62,7 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
    * Reads the current updated position in the column batch.
    */
   private[encoding] def readUpdatedPosition(): Int = {
-    val cursor = positionStartCursor + (decoderPosition << 2)
+    val cursor = positionCursor
     if (cursor < positionEndCursor) {
       ColumnEncoding.readInt(deltaBytes, cursor)
     } else {
@@ -77,17 +76,10 @@ final class ColumnDeltaDecoder(buffer: ByteBuffer, field: StructField) {
    * Move the cursor to enable reading next updated position.
    */
   private[encoding] def moveUpdatePositionCursor(): Unit = {
-    if (decoderPosition != nextNullPos) {
-      decoderPosition += 1
-      nonNullPosition += 1
-      notNull = true
-    } else {
-      realDecoder.moveToNextNull(deltaBytes, decoderPosition,
-        decoderPosition - nonNullPosition - 1)
-      decoderPosition += 1
-      nextNullPos = realDecoder.getNextNullPosition
-      notNull = false
-    }
+    positionCursor += 4
+    decoderPosition += 1
+    notNull = !realDecoder.isNullAt(deltaBytes, decoderPosition)
+    if (notNull) nonNullPosition += 1
   }
 
   @inline def readNotNull: Boolean = notNull

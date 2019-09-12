@@ -44,7 +44,7 @@ import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
-import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan}
+import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSession, Strategy, execution, sources}
 
 /**

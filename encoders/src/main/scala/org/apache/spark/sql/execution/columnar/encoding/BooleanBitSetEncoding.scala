@@ -142,8 +142,8 @@ trait BooleanBitSetEncoderBase
     byteCursor
   }
 
-  override abstract def finish(mask: Long, size: Int): ByteBuffer = {
-    super.finish(flushWithoutFinish(mask), size)
+  override abstract def finish(mask: Long): ByteBuffer = {
+    super.finish(flushWithoutFinish(mask))
   }
 
   override def encodedSize(mask: Long, dataBeginPosition: Long): Long = {
