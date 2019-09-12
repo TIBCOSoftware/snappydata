@@ -733,7 +733,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           s"""
              |boolean $skipLookupTerm = false;
              |
-             |if ($dictionaryArrayTerm != null &&
+             |if ($dictionaryArrayTerm != null && $overflowHashMapsTerm == null &&
              |${dictionaryCode.map(_.dictionaryIndex.value).getOrElse("")} !=
              |$dictionaryArrayTerm.length - 1 ) {
                |$posTerm = $dictionaryArrayTerm[${dictionaryCode.map(_.dictionaryIndex.value).
