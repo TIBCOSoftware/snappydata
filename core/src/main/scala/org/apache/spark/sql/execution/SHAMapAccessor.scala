@@ -594,7 +594,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   def generateMapGetOrInsert(valueInitVars: Seq[ExprCode],
     valueInitCode: String, evaluatedInputCode: String, keyVars: Seq[ExprCode],
     keysDataType: Seq[DataType], aggregateDataTypes: Seq[DataType],
-    dictionaryCode: Option[DictionaryCode], dictionaryArrayTerm: String): String = {
+    dictionaryCode: Option[DictionaryCode], dictionaryArrayTerm: String,
+    aggFuncDependentOnGroupByKey: Boolean): String = {
     val hashVar = Array(ctx.freshName("hash"))
     val tempValueData = ctx.freshName("tempValueData")
     val linkedListClass = classOf[java.util.LinkedList[SHAMap]].getName
@@ -732,7 +733,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
         } else if (dictionaryCode.isDefined) {
           s"""
              |boolean $skipLookupTerm = false;
-             |
+             |${if (aggFuncDependentOnGroupByKey) keysPrepCodeCode else ""}
              |if ($dictionaryArrayTerm != null && $overflowHashMapsTerm == null &&
              |${dictionaryCode.map(_.dictionaryIndex.value).getOrElse("")} !=
              |$dictionaryArrayTerm.length - 1 ) {
@@ -745,7 +746,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                |}
              |}
            if (!$skipLookupTerm) {
-             $keysPrepCodeCode
+             ${if (!aggFuncDependentOnGroupByKey) keysPrepCodeCode else ""}
              $lookUpInsertCode
              if (!${keyVars.head.isNull} && $dictionaryArrayTerm != null) {
                $dictionaryArrayTerm[${dictionaryCode.map(_.dictionaryIndex.value).

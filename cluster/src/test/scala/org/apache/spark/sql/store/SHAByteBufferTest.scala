@@ -71,6 +71,25 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     System.clearProperty("spark.testing")
   }
 
+  test("single key string group by column with aggregagte function using grouping key") {
+    val snc1 = snc.newSession()
+    snc1.setConf("snappydata.sql.useOptimizedHashAggregateForSingleKey", "true")
+    snc1.sql("drop table if exists test1")
+    snc1.sql("create table test1 (col1 int, col2 int, col3 int, col4 String) " +
+      "using column ")
+    val conn = getSqlConnection
+    val st = conn.createStatement()
+    st.execute("insert into test1 values (1,1,1,'asif1')")
+    st.execute("insert into test1 values (2,2,2,'asif1')")
+    val rs = snc1.sql("select col4, sum(length(col4)) as summ1 " +
+      " from test1 group by col4")
+    val results = rs.collect()
+    assertEquals(1, results.size)
+    assertEquals(10, results(0).getLong(1))
+    assertEquals("asif1", results(0).getString(0))
+    snc.dropTable("test1")
+  }
+
   test("simple aggregate query") {
     snc
     snc.sql("drop table if exists test1")
