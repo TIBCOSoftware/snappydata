@@ -96,179 +96,8 @@ object HiveMetaStoreUtils {
   snappyQueries(10) = "SELECT ProductID,Productname,unitprice,unitsinstock " +
     "from hive_db.hive_products where productname like 'M%' order by productname"
 
-  // SELECTing Specific Columns
-  val Q4: String = "SELECT FirstName, LastName FROM Employees"
-
-  // Sorting By Column Position
-  val Q6: String = "SELECT Title, FirstName, LastName" +
-    " FROM Employees" +
-    " ORDER BY 1,3"
-
-  // Ascending and Descending Sorts
-  val Q7: String = "SELECT Title, FirstName, LastName" +
-    " FROM Employees " +
-    " ORDER BY Title ASC, LastName DESC"
-
-
-  // Checking for Inequality
-  val Q9: String = "SELECT FirstName, LastName" +
-    " FROM Employees" +
-    " WHERE Title <> 'Sales Representative'"
-
-  // Checking for Greater or Less Than
-  val Q10: String = "SELECT FirstName, LastName" +
-    " FROM Employees " +
-    " WHERE LastName >= 'N'"
-
-  // Checking for NULL
-  val Q11: String = "SELECT FirstName, LastName" +
-    " FROM Employees " +
-    " WHERE Region IS NULL"
-
-  // WHERE and ORDER BY
-  val Q12: String = "SELECT FirstName, LastName" +
-    " FROM Employees" +
-    " WHERE LastName >= 'N'" +
-    " ORDER BY LastName DESC"
-
-  // Using the WHERE clause to check for equality or inequality
-  val Q13: String = "SELECT OrderDate, ShippedDate, CustomerID, Freight" +
-    " FROM Orders " +
-    " WHERE OrderDate = Cast('1997-05-19' as TIMESTAMP)"
-
-  // Using WHERE and ORDER BY Together
-  val Q14: String = "SELECT CompanyName, ContactName, Fax" +
-    " FROM Customers" +
-    " WHERE Fax IS NOT NULL" +
-    " ORDER BY CompanyName"
-
-  // The IN Operator
-  val Q15: String = "SELECT TitleOfCourtesy, FirstName, LastName" +
-    " FROM Employees" +
-    " WHERE TitleOfCourtesy IN ('Ms.','Mrs.')"
-
-  // The LIKE Operator
-  val Q16: String = "SELECT TitleOfCourtesy, FirstName, LastName" +
-    " FROM Employees" +
-    " WHERE TitleOfCourtesy LIKE 'M%'"
-
-  val Q17: String = "SELECT FirstName, LastName, BirthDate" +
-    " FROM Employees" +
-    " WHERE BirthDate BETWEEN Cast('1950-01-01' as TIMESTAMP) AND " +
-    "Cast('1959-12-31 23:59:59' as TIMESTAMP)"
-
-  val Q18: String = "SELECT CONCAT(FirstName, ' ', LastName)" +
-    " FROM Employees"
-
-  val Q19: String = "SELECT OrderID, Freight, Freight * 1.1 AS FreightTotal" +
-    " FROM Orders" +
-    " WHERE Freight >= 500"
-
-  val Q20: String = "SELECT SUM(Quantity) AS TotalUnits" +
-    " FROM Order_Details" +
-    " WHERE ProductID=3"
-
-  val Q21: String = "SELECT MIN(HireDate) AS FirstHireDate," +
-    " MAX(HireDate) AS LastHireDate" +
-    " FROM Employees"
-
-  val Q22: String = "SELECT City, COUNT(EmployeeID) AS NumEmployees" +
-    " FROM Employees " +
-    " WHERE Title = 'Sales Representative'" +
-    " GROUP BY City" +
-    " HAVING COUNT(EmployeeID) > 1" +
-    " ORDER BY NumEmployees"
-
-  val Q23: String = "SELECT COUNT(DISTINCT City) AS NumCities" +
-    " FROM Employees"
-
-  val Q24: String = "SELECT ProductID, AVG(UnitPrice) AS AveragePrice" +
-    " FROM Products " +
-    " GROUP BY ProductID " +
-    " HAVING AVG(UnitPrice) > 70" +
-    " ORDER BY AveragePrice"
-
-  val Q25: String = "SELECT CompanyName FROM Customers WHERE CustomerID = " +
-    "(SELECT CustomerID FROM Orders WHERE OrderID = 10290)"
-
-  val Q25_1: String = "SELECT CompanyName FROM Customers WHERE CustomerID = " +
-    "(SELECT CustomerID FROM Orders WHERE OrderID = 10295)"
-
-  val Q25_2: String = "SELECT CompanyName FROM Customers WHERE CustomerID = " +
-    "(SELECT CustomerID FROM Orders WHERE OrderID = 10391)"
-
-  val Q26: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
-    "FROM Orders WHERE OrderDate BETWEEN Cast('1997-01-01' as TIMESTAMP) AND " +
-    "Cast('1997-12-31' as TIMESTAMP))"
-
-  val Q26_1: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
-    "FROM Orders WHERE OrderDate BETWEEN Cast('1997-09-30' as TIMESTAMP) AND " +
-    "Cast('1997-12-24' as TIMESTAMP))"
-
-  val Q26_2: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
-    "FROM Orders WHERE OrderDate BETWEEN Cast('1997-10-01' as TIMESTAMP) AND " +
-    "Cast('1997-12-31' as TIMESTAMP))"
-
-  val Q27: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
-    " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
-    "('Exotic Liquids', 'Grandma Kellys Homestead', 'Tokyo Traders'))"
-
-  val Q27_1: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
-    " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
-    "('Pavlova Ltd.'))"
-
-  val Q27_2: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
-    " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
-    "('Pavlova Ltd.', 'Karkki Oy'))"
-
-  val Q27_3: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
-    " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
-    "('Grandma Kellys Homestead'))"
-
-  val Q27_4: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
-    " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
-    "('Exotic Liquids', 'Karkki Oy'))"
-
-  val Q28: String = "SELECT ProductName FROM Products WHERE CategoryID = (SELECT " +
-    "CategoryID FROM Categories WHERE CategoryName = 'Seafood')"
-
-  val Q28_1: String = "SELECT ProductName FROM Products WHERE CategoryID = (SELECT " +
-    "CategoryID FROM Categories WHERE CategoryName = 'Condiments')"
-
-  val Q28_2: String = "SELECT ProductName FROM Products WHERE CategoryID = (SELECT " +
-    "CategoryID FROM Categories WHERE CategoryName = 'Produce')"
-
-  val Q29: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN " +
-    "(SELECT SupplierID FROM Products WHERE CategoryID = 8)"
-
-  val Q29_1: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN " +
-    "(SELECT SupplierID FROM Products WHERE CategoryID = 5)"
-
-  val Q29_2: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN " +
-    "(SELECT SupplierID FROM Products WHERE CategoryID = 3)"
-
-  val Q30: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN (SELECT SupplierID" +
-    " FROM Products  WHERE CategoryID = (SELECT CategoryID FROM Categories" +
-    " WHERE CategoryName = 'Seafood'))"
-
-  val Q30_1: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN (SELECT SupplierID" +
-    " FROM Products  WHERE CategoryID = (SELECT CategoryID FROM Categories" +
-    " WHERE CategoryName = 'Condiments'))"
-
-  val Q30_2: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN (SELECT SupplierID" +
-    " FROM Products  WHERE CategoryID = (SELECT CategoryID FROM Categories" +
-    " WHERE CategoryName = 'Confections'))"
-
-
-
-
-
-
-
-
-
-  val joinHiveSnappy = new Array[String](7)
-  val validateJoin = new Array[String](7)
+  val joinHiveSnappy = new Array[String](10)
+  val validateJoin = new Array[String](10)
   joinHiveSnappy(0) = "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID," +
     " o.OrderDate FROM default.hive_employees emp JOIN app.snappy_orders o ON " +
     "(emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderID"
@@ -308,6 +137,28 @@ object HiveMetaStoreUtils {
     "a.ShippedDate > Cast('1996-12-24' as TIMESTAMP) and " +
     "a.ShippedDate < Cast('1997-09-30' as TIMESTAMP) " +
     "order by ShippedDate"
+  joinHiveSnappy(7) = "select distinct a.CategoryID,a.CategoryName,b.ProductName," +
+    "sum(c.ExtendedPrice) as ProductSales from app.snappy_categories a " +
+    "inner join default.hive_products b on a.CategoryID = b.CategoryID " +
+    "inner join " +
+    "(select distinct y.OrderID,y.ProductID,x.ProductName,y.UnitPrice,y.Quantity,y.Discount," +
+    "round(y.UnitPrice * y.Quantity * (1 - y.Discount), 2) as ExtendedPrice from " +
+    "default.hive_products x " +
+    "inner join app.snappy_order_details y on x.ProductID = y.ProductID " +
+    "order by y.OrderID) c on c.ProductID = b.ProductID " +
+    "inner join default.hive_orders d on d.OrderID =c.OrderID " +
+    "where d.OrderDate > Cast('1997-01-01' as TIMESTAMP) and " +
+    "d.OrderDate < Cast('1997-12-31' as TIMESTAMP) " +
+    "group by a.CategoryID, a.CategoryName, b.ProductName " +
+    "order by a.CategoryName, b.ProductName, ProductSales"
+  joinHiveSnappy(8) = "select s.supplierid,s.companyname,p.productid,p.productname from " +
+    "app.snappy_suppliers s join app.snappy_products p on(s.supplierid= p.supplierid) " +
+    "and s.companyname IN('Grandma Kellys Homestead','Tokyo Traders','Exotic Liquids') " +
+    "order by companyname,productname"
+  joinHiveSnappy(9) = "SELECT ShipCountry,Sum(hive_order_details.UnitPrice * Quantity * Discount)" +
+    " AS ProductSales FROM app.snappy_orders INNER JOIN default.hive_order_details " +
+    "ON snappy_orders.OrderID = hive_order_details.OrderID " +
+    "where snappy_orders.OrderID > 11000 GROUP BY ShipCountry order by ProductSales"
 
     validateJoin(0) = "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID," +
     " o.OrderDate FROM snappy_employees emp JOIN snappy_orders o ON " +
@@ -348,4 +199,25 @@ object HiveMetaStoreUtils {
     "a.ShippedDate > Cast('1996-12-24' as TIMESTAMP) and " +
     "a.ShippedDate < Cast('1997-09-30' as TIMESTAMP) " +
     "order by ShippedDate"
+  validateJoin(7) = "select distinct a.CategoryID,a.CategoryName,b.ProductName," +
+    "sum(c.ExtendedPrice) as ProductSales from app.snappy_categories a " +
+    "inner join app.snappy_products b on a.CategoryID = b.CategoryID " +
+    "inner join " +
+    "(select distinct y.OrderID,y.ProductID,x.ProductName,y.UnitPrice,y.Quantity,y.Discount," +
+    "round(y.UnitPrice * y.Quantity * (1 - y.Discount), 2) as ExtendedPrice " +
+    "from app.snappy_products x inner join app.snappy_order_details y " +
+    "on x.ProductID = y.ProductID order by y.OrderID) c on c.ProductID = b.ProductID " +
+    "inner join app.snappy_orders d on d.OrderID =c.OrderID " +
+    "where d.OrderDate > Cast('1997-01-01' as TIMESTAMP) and " +
+    "d.OrderDate < Cast('1997-12-31' as TIMESTAMP) " +
+    "group by a.CategoryID, a.CategoryName, b.ProductName " +
+    "order by a.CategoryName, b.ProductName, ProductSales"
+  validateJoin(8) = "select s.supplierid,s.companyname,p.productid,p.productname from " +
+    "app.snappy_suppliers s join app.snappy_products p on(s.supplierid= p.supplierid) " +
+    "and s.companyname IN('Grandma Kellys Homestead','Tokyo Traders','Exotic Liquids') " +
+    "order by companyname,productname"
+  validateJoin(9) = "SELECT ShipCountry,Sum(snappy_order_details.UnitPrice * Quantity * Discount)" +
+    " AS ProductSales FROM app.snappy_orders INNER JOIN app.snappy_order_details " +
+    "ON snappy_orders.OrderID = snappy_order_details.OrderID " +
+    "where snappy_orders.OrderID > 11000 GROUP BY ShipCountry order by ProductSales"
 }
