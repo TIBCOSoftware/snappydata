@@ -131,10 +131,8 @@ object HiveClientUtil extends Logging {
           !(Misc.getMemStore.getMyVMKind.isLocator || Misc.getMemStore.getMyVMKind.isStore)) {
         logInfo("Using derby as hive metastore.")
         logDebug("Spark conf being used for SnappyHiveExternalCatalog: " + sparkConf.toDebugString)
-        val extCatalog = SnappyHiveExternalCatalog.getInstance(sparkConf, new SnappyHiveConf)
-        extCatalog
-      }
-      else {
+        SnappyHiveExternalCatalog.getInstance(sparkConf, new SnappyHiveConf)
+      } else {
         SnappyHiveExternalCatalog.getInstance(sparkConf, metadataConf)
       }
     } finally {
