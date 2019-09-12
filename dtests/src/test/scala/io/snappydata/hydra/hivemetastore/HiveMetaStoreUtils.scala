@@ -30,8 +30,8 @@ object HiveMetaStoreUtils {
   val createDB: String =
     "create database "
 
-  val beeLineQueries = new Array[String](4)
-  val snappyQueries = new Array[String] (4)
+  val beeLineQueries = new Array[String](11)
+  val snappyQueries = new Array[String] (11)
   beeLineQueries(0) = "SELECT CategoryID,CategoryName,Description FROM hive_db.hive_categories" +
     " where CategoryID is not null"
   beeLineQueries(1) = "SELECT FirstName, LastName FROM hive_db.hive_employees " +
@@ -40,6 +40,30 @@ object HiveMetaStoreUtils {
     " WHERE Title = 'Sales Representative'"
   beeLineQueries(3) = "SELECT SUM(Quantity) AS TotalUnits FROM hive_db.hive_order_details" +
     " WHERE ProductID=3"
+  beeLineQueries(4) = "SELECT OrderID, Freight, Freight * 1.1 AS FreightTotal " +
+    "FROM hive_db.hive_orders WHERE Freight >= 500"
+  beeLineQueries(5) = "SELECT City, COUNT(EmployeeID) AS NumEmployees " +
+    "FROM hive_db.hive_employees " +
+    "WHERE Title = 'Sales Representative' " +
+    "GROUP BY City HAVING COUNT(EmployeeID) > 1 ORDER BY NumEmployees"
+  beeLineQueries(6) = "SELECT ProductID, AVG(UnitPrice) AS AveragePrice " +
+    "FROM hive_db.hive_products GROUP BY ProductID " +
+    "HAVING AVG(UnitPrice) > 70 ORDER BY AveragePrice"
+  beeLineQueries(7) = "SELECT CompanyName FROM hive_db.hive_customers WHERE CustomerID = " +
+    "(SELECT CustomerID FROM hive_db.hive_orders WHERE OrderID = 687792)"
+  beeLineQueries(8) = "SELECT ProductName, SupplierID FROM hive_db.hive_products " +
+    "WHERE SupplierID IN " +
+    "(SELECT SupplierID FROM hive_db.hive_suppliers " +
+    "WHERE CompanyName IN ('Exotic Liquids', 'Grandma Kellys Homestead', 'Tokyo Traders')) " +
+    "order by SupplierID,ProductName"
+  beeLineQueries(9) = "SELECT CompanyName FROM hive_db.hive_suppliers " +
+    "WHERE SupplierID IN " +
+    "(SELECT SupplierID FROM hive_db.hive_products  " +
+    "WHERE CategoryID = " +
+    "(SELECT CategoryID FROM hive_db.hive_categories " +
+    "WHERE CategoryName = 'Seafood')) order by CompanyName"
+  beeLineQueries(10) = "SELECT ProductID,Productname,unitprice,unitsinstock " +
+    "from hive_db.hive_products where productname like 'M%' order by productname"
 
   snappyQueries(0) = "SELECT CategoryID,CategoryName,Description FROM tibco_db.snappy_categories"
   snappyQueries(1) = "SELECT FirstName, LastName FROM tibco_db.snappy_employees ORDER BY LastName"
@@ -47,6 +71,30 @@ object HiveMetaStoreUtils {
     " WHERE Title = 'Sales Representative'"
   snappyQueries(3) = "SELECT SUM(Quantity) AS TotalUnits FROM tibco_db.snappy_order_details" +
     " WHERE ProductID=3"
+  snappyQueries(4) = "SELECT OrderID, Freight, Freight * 1.1 AS FreightTotal " +
+    "FROM tibco_db.snappy_orders WHERE Freight >= 500"
+  snappyQueries(5) = "SELECT City, COUNT(EmployeeID) AS NumEmployees " +
+    "FROM tibco_db.snappy_employees " +
+    "WHERE Title = 'Sales Representative' " +
+    "GROUP BY City HAVING COUNT(EmployeeID) > 1 ORDER BY NumEmployees;"
+  snappyQueries(6) = "SELECT ProductID, AVG(UnitPrice) AS AveragePrice " +
+    "FROM tibco_db.snappy_products GROUP BY ProductID " +
+    "HAVING AVG(UnitPrice) > 70 ORDER BY AveragePrice"
+  snappyQueries(7) = "SELECT CompanyName FROM tibco_db.snappy_customers WHERE CustomerID = " +
+    "(SELECT CustomerID FROM tibco_db.snappy_orders WHERE OrderID = 687792)"
+  snappyQueries(8) = "SELECT ProductName, SupplierID FROM tibco_db.snappy_products " +
+    "WHERE SupplierID IN " +
+    "(SELECT SupplierID FROM tibco_db.snappy_suppliers " +
+    "WHERE CompanyName IN ('Exotic Liquids', 'Grandma Kellys Homestead', 'Tokyo Traders')) " +
+    "order by SupplierID,ProductName"
+  snappyQueries(9) = "SELECT CompanyName FROM tibco_db.snappy_suppliers " +
+    "WHERE SupplierID IN " +
+    "(SELECT SupplierID FROM tibco_db.snappy_products  " +
+    "WHERE CategoryID = " +
+    "(SELECT CategoryID FROM tibco_db.snappy_categories " +
+    "WHERE CategoryName = 'Seafood')) order by CompanyName"
+  snappyQueries(10) = "SELECT ProductID,Productname,unitprice,unitsinstock " +
+    "from hive_db.hive_products where productname like 'M%' order by productname"
 
   // SELECTing Specific Columns
   val Q4: String = "SELECT FirstName, LastName FROM Employees"

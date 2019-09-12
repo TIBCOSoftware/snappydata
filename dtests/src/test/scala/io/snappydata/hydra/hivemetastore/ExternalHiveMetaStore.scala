@@ -229,9 +229,19 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     var isDiff2: Boolean = false
     pw.println("Query" + index + " : " + query1)
     val df1 = snc.sql(query1)
-    pw.println("Hive Join Snappy  Count: " + df1.count())
+    if(id == 0) {
+      pw.println("Hive Query executed from Snappy count: " + df1.count())
+    }
+    if(id ==1) {
+      pw.println("Hive Join Snappy  Count: " + df1.count())
+    }
     val df2 = snc.sql(query2)
-    pw.println("Snappy Join Snappy Count (Validation) : " + df2.count())
+    if(id == 0) {
+      pw.println("Snappy Query Count (Validation) : " + df2.count())
+    }
+    if(id == 1) {
+      pw.println("Snappy Join Snappy Count (Validation) : " + df2.count())
+    }
     val diff1 = df1.except(df2)
     if (diff1.count() > 0) {
       diff1.write.csv(diffPath + "diff1_" + id + "_" + index + ".csv")
@@ -245,10 +255,20 @@ class ExternalHiveMetaStore extends SnappySQLJob {
       isDiff2 = true
     }
     if (isDiff1 && isDiff2) {
-      pw.println("For Query " + index + " Join between Hive and Snappy is successful")
+      if (id == 0) {
+        pw.println("For Query " + index + " Hive query Passed.")
+      }
+      if(id == 1) {
+        pw.println("For Query " + index + " Join between Hive and Snappy is Passed.")
+      }
     }
     else {
-      pw.println("For Query " + index + " Join between Hive and Snappy is not successful")
+      if (id == 0) {
+        pw.println("For Query " + index + " Hive Query execution is not successful")
+      }
+      if(id == 1) {
+        pw.println("For Query " + index + " Join between Hive and Snappy is not successful")
+      }
     }
     isDiff1 = false
     isDiff2 = false
