@@ -350,11 +350,12 @@ object RecoveryService extends Logging {
       versionMap.put(fqtnKey, versionCnt)
       versionCnt += 1
 
-      // Alter statements
-      val altStmtKeys = table.properties.keys
+      // Alter statements contains original sql with timestamp in keys to find sequence. for example
+      // Properties: [k1=v1, altTxt_1568129777251=<alter command>, k3=v3]
+      val altStmtKeysSorted = table.properties.keys
           .filter(_.contains(s"altTxt_")).toSeq
           .sortBy(_.split("_")(1).toLong)
-      altStmtKeys.foreach(k => {
+      altStmtKeysSorted.foreach(k => {
         val stmt = table.properties(k).toUpperCase()
 
         var alteredSchema: StructType = null
@@ -362,6 +363,7 @@ object RecoveryService extends Logging {
           // TODO replace ; at the end also add regex match instead of contains
           val columnString = stmt.substring(stmt.indexOf("ADD COLUMN ") + 11)
           val colNameAndType = (columnString.split("[ ]+")(0), columnString.split("[ ]+")(1))
+          // along with not null other column definitions should be handled
           val colString = if (columnString.toLowerCase().contains("not null")) {
             s"(${colNameAndType._1} ${colNameAndType._2}) not null"
           } else s"(${colNameAndType._1} ${colNameAndType._2})"
@@ -377,13 +379,12 @@ object RecoveryService extends Logging {
                 new IllegalArgumentException("alter statement contains no parsable field")
           }
           alteredSchema = new StructType((schema ++ new StructType(Array(field))).toArray)
-
         } else if (stmt.contains("DROP COLUMN ")) {
           val dropColName = stmt.substring(stmt.indexOf("DROP COLUMN ") + 12).trim
           // loop through schema and delete sruct field matching name and type
-          val indx = schema.fieldIndex(dropColName.toLowerCase())
-          alteredSchema = new StructType(schema.toArray.filter(
-            field => !field.name.toUpperCase.equals(dropColName.toUpperCase)))
+
+          alteredSchema = new StructType(
+            schema.toArray.filter(!_.name.equalsIgnoreCase(dropColName)))
         }
         schema = alteredSchema
         assert(schema != null, s"schema for version $versionCnt is null")
@@ -394,13 +395,13 @@ object RecoveryService extends Logging {
           tableColumnIds.getOrElse(s"${versionCnt - 1}#$fqtnKey", null)
         assert(prevSchema != null && prevIdArray != null)
         for (i <- alteredSchema.fields.indices) {
-          val prevId = prevSchema.fields.indexOf(alteredSchema.fields(i))
-          idArray(i) = if (prevId == -1) {
+          val prevFieldIndex = prevSchema.fields.indexOf(alteredSchema.fields(i))
+          idArray(i) = if (prevFieldIndex == -1) {
             // Alter Add column case
             idArray(i - 1) + 1
           } else {
             // Common column to previous schema
-            prevIdArray(prevId)
+            prevIdArray(prevFieldIndex)
           }
         }
         // idArray contains column ids from alter statement
@@ -489,16 +490,6 @@ object RecoveryService extends Logging {
     })
 
     RecoveryService.populateCatalog(catalogArr, snapCon.sparkContext)
-
-    //    // may be remove the log line later -------- * /
-    //    val dbList = snappyHiveExternalCatalog.listDatabases("*")
-    //    val allFunctions = dbList.map(dbName => snappyHiveExternalCatalog.listFunctions(dbName, "*")
-    //        .map(func => snappyHiveExternalCatalog.getFunction(dbName, func)))
-    //    val allDatabases = dbList.map(snappyHiveExternalCatalog.getDatabase)
-    //    logInfo("PP:RecoveryService: Catalog contents in recovery mode:\nTables\n"
-    //        + snappyHiveExternalCatalog.getAllTables().toString() + "\nDatabases\n"
-    //        + allDatabases.toString() + "\nFunctions\n" + allFunctions.toString())
-    //    //    -------- * /
 
     createSchemasMap(snappyHiveExternalCatalog)
   }

@@ -391,7 +391,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       }
     }
     try {
-      val catalogTable_ = if (catalogTable.properties.contains("schemaJson.size")) {
+      val catalogTable_ = if (catalogTable.properties.contains("schemaPart.0")) {
         // schemaJson is already added during preprocessed queue replay and hence we skip in lead
         catalogTable
       } else {
@@ -399,8 +399,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         val schemaJsonMap = new mutable.HashMap[String, String]
         schemaJsonMap += ("NoOfschemaParts" -> s"${schemaParts.size}")
         schemaParts.zipWithIndex.foreach{ case(part, index) =>
-          schemaJsonMap += (s"schemaPart.$index" -> s"$part")}
-
+          schemaJsonMap += (s"schemaPart.$index" -> s"$part")
+        }
         catalogTable.copy(properties =
             catalogTable.properties ++ schemaJsonMap)
       }
