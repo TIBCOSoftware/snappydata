@@ -17,9 +17,8 @@
 
 package org.apache.spark.sql.catalyst.expressions.aggregate
 
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Add, Expression}
-import org.apache.spark.sql.types.{ByteType, CalendarIntervalType, DecimalType, ShortType}
 
 /**
  * Optimizes Spark's [[Average]] to reduce generated code.
@@ -44,7 +43,7 @@ class AverageOpt(child: Expression) extends Average(child) with ImplicitCastForA
   }
 }
 
-class AvgAdd(sum: Expression, add: Expression) extends Add(sum, add) {
+class AvgAdd(sum: Expression, add: Expression) extends SumAdd(sum, add) {
 
   private[aggregate] var count: CountAdd = _
 
@@ -66,14 +65,7 @@ class AvgAdd(sum: Expression, add: Expression) extends Add(sum, add) {
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val sumEv = sum.genCode(ctx)
     val addEv = add.genCode(ctx)
-    val sumVar = sumEv.value
-    val addVar = addEv.value
-    val nonNullCode = dataType match {
-      case _: DecimalType => s"$sumVar = $sumVar != null ? $sumVar.$$plus($addVar) : $addVar;"
-      case ByteType | ShortType => s"$sumVar = (${ctx.javaType(dataType)})($sumVar + $addVar);"
-      case CalendarIntervalType => s"$sumVar = $sumVar != null ? $sumVar.add($addVar) : $addVar;"
-      case _ => s"$sumVar += $addVar;"
-    }
+    val nonNullCode = genCodeForNonNullAdditive(ctx, dataType, sumEv, addEv.value, "false")
     // separate count variable required since count expression (in updateExpressions) can
     // get split into separate method so the local countEvVar will not be visible
     val countVar = ctx.freshName("avgCount")
@@ -82,7 +74,7 @@ class AvgAdd(sum: Expression, add: Expression) extends Add(sum, add) {
     // evaluate count inside and let "isNull" be determined from count
     val countEv = count.count.genCode(ctx)
     val countEvVar = countEv.value
-    val code = if (add.nullable) {
+    val code = if (add.nullable && addEv.isNull != "false") {
       s"""
         ${sumEv.code}
         ${countEv.code}
