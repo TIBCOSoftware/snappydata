@@ -62,17 +62,17 @@ class SumAdd(sum: Expression, add: Expression) extends Add(sum, add) {
     val resultFalse =
       if (resultIsNull == "false" || resultIsNull.indexOf(' ') != -1) ""
       else s"$resultIsNull = false;\n"
-    val resultCode = resultFalse + (dataType match {
+    val resultCode = dataType match {
       case _: DecimalType => s"$sumVar = $sumVar.$$plus($addVar);"
       case ByteType | ShortType => s"$sumVar = (${ctx.javaType(dataType)})($sumVar + $addVar);"
       case CalendarIntervalType => s"$sumVar = $sumVar.add($addVar);"
       case _ => s"$sumVar += $addVar;"
-    })
-    if (sumEv.isNull == "false") resultCode
+    }
+    if (sumEv.isNull == "false") resultFalse + resultCode
     else {
       val resultNullCheck = if (resultIsNull == "false") "" else s" || $resultIsNull"
-      s"""if (${sumEv.isNull}$resultNullCheck) {
-          $resultFalse$sumVar = $addVar;
+      s"""${resultFalse}if (${sumEv.isNull}$resultNullCheck) {
+          $sumVar = $addVar;
         } else {
           $resultCode
         }"""
@@ -82,10 +82,12 @@ class SumAdd(sum: Expression, add: Expression) extends Add(sum, add) {
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val sumEv = sum.genCode(ctx)
     val addEv = add.genCode(ctx)
-    val nonNullCode = genCodeForNonNullAdditive(ctx, dataType, sumEv, addEv.value, ev.isNull)
+    val (evIsNull, isNullCode) =
+      if (nullable) ev.isNull -> s"boolean ${ev.isNull} = true;\n" else "false" -> ""
+    val nonNullCode = genCodeForNonNullAdditive(ctx, dataType, sumEv, addEv.value, evIsNull)
     val code = if (add.nullable && addEv.isNull != "false") {
       s"""
-        ${sumEv.code}
+        $isNullCode${sumEv.code}
         ${addEv.code}
         if (!${addEv.isNull}) {
           $nonNullCode
@@ -93,11 +95,11 @@ class SumAdd(sum: Expression, add: Expression) extends Add(sum, add) {
       """
     } else {
       s"""
-        ${sumEv.code}
+        $isNullCode${sumEv.code}
         ${addEv.code}
         $nonNullCode
       """
     }
-    ev.copy(code = code, value = sumEv.value)
+    ev.copy(code = code, isNull = evIsNull, value = sumEv.value)
   }
 }
