@@ -1190,7 +1190,7 @@ case class SnappyHashAggregateExec(
     val aggFuncDependentOnGroupByKey = !updateExpr.flatMap(_.references).
       intersect(this.groupingExpressions.flatMap(_.references)).isEmpty
 
-
+    val evaluatedInputCode = evaluateVariables(input)
 
     ctx.currentVars = input
     val keysExpr = ctx.generateExpressions(
@@ -1216,7 +1216,7 @@ case class SnappyHashAggregateExec(
       case None =>
     }
 
-    val evaluatedInputCode = evaluateVariables(input)
+
     // generate class for key, buffer and hash code evaluation of key columns
     val inputAttr = aggregateBufferAttributesForGroup ++ child.output
     val initVars = ctx.generateExpressions(declFunctions.flatMap(
@@ -1232,7 +1232,8 @@ case class SnappyHashAggregateExec(
     val updateAttrs = AttributeSet(updateExpr)
     // evaluate map lookup code before updateEvals possibly modifies the keyVars
     val mapCode = byteBufferAccessor.generateMapGetOrInsert(initVars, initCode, evaluatedInputCode,
-      keysExpr, keysDataType, aggBuffDataTypes, dictionaryCode, dictionaryArrayTerm, aggFuncDependentOnGroupByKey)
+      keysExpr, keysDataType, aggBuffDataTypes, dictionaryCode, dictionaryArrayTerm,
+      aggFuncDependentOnGroupByKey)
 
     val bufferVars = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
       byteBufferAccessor.aggregateBufferVars,
@@ -1288,7 +1289,6 @@ case class SnappyHashAggregateExec(
        | // common sub-expressions
        |$inputCodes
        |$effectiveCodes
-       |
        |// evaluate aggregate functions
        |${evaluateVariables(updateEvals)}
        |// generate update

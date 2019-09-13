@@ -601,14 +601,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val linkedListClass = classOf[java.util.LinkedList[SHAMap]].getName
     val exceptionName = classOf[BufferSizeLimitExceededException].getName
     val skipLookupTerm = ctx.freshName("skipLookUp")
-    // val valueInit = valueInitCode + '\n'
     val insertDoneTerm = ctx.freshName("insertDone");
-    /* generateUpdate(objVar, Nil,
-      valueInitVars, forKey = false, doCopy = false) */
-
-
-
-
     val putBufferIfAbsentArgs = if (useCustomHashMap) {
       s"""${keyVars.head.value}, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)},
          |${keyVars.head.isNull}""".stripMargin
@@ -617,11 +610,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
          | ${hashVar(0)}""".stripMargin
     }
 
-
     val lookUpInsertCode =
       s"""
          |// insert or lookup
-
          |if($overflowHashMapsTerm == null) {
            |try {
              |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($putBufferIfAbsentArgs);
@@ -690,7 +681,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
     val keysPrepCodeCode =
       s"""
-         |    // evaluate key vars
+         |// evaluate key vars
          |${evaluateVariables(keyVars)}
          |${keyVars.zip(keysDataType).filter(_._2 match {
         case x: StructType => true
@@ -732,13 +723,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
          """.stripMargin
         } else if (dictionaryCode.isDefined) {
           s"""
+             |${dictionaryCode.map(dictCode => s"int ${dictCode.dictionaryIndex.value} = -1;").get}
+             |if ($dictionaryArrayTerm != null) {
+               |${dictionaryCode.map(_.evaluateIndexCode()).get}
+             |}
              |boolean $skipLookupTerm = false;
              |${if (aggFuncDependentOnGroupByKey) keysPrepCodeCode else ""}
              |if ($dictionaryArrayTerm != null && $overflowHashMapsTerm == null &&
-             |${dictionaryCode.map(_.dictionaryIndex.value).getOrElse("")} !=
-             |$dictionaryArrayTerm.length - 1 ) {
-               |$posTerm = $dictionaryArrayTerm[${dictionaryCode.map(_.dictionaryIndex.value).
-            getOrElse("")}];
+             |${dictionaryCode.map(_.dictionaryIndex.value).get} < $dictionaryArrayTerm.length &&
+             |${dictionaryCode.map(_.dictionaryIndex.value).get} >= 0) {
+               |$posTerm = $dictionaryArrayTerm[${dictionaryCode.map(_.dictionaryIndex.value).get}];
                |if ($posTerm > 0) {
                  |$skipLookupTerm = true;
                  |$valueOffsetTerm = $posTerm;
@@ -749,8 +743,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
              ${if (!aggFuncDependentOnGroupByKey) keysPrepCodeCode else ""}
              $lookUpInsertCode
              if (!${keyVars.head.isNull} && $dictionaryArrayTerm != null) {
-               $dictionaryArrayTerm[${dictionaryCode.map(_.dictionaryIndex.value).
-            getOrElse("")}] = $valueOffsetTerm;
+               $dictionaryArrayTerm[${dictionaryCode.map(_.dictionaryIndex.value).get}]
+                = $valueOffsetTerm;
              }
            }
            """.stripMargin
@@ -784,8 +778,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
         }
     }.getOrElse(lookUpInsertCode)
 
-
-
     s"""|$valueInitCode
         |${SHAMapAccessor.resetNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
         |${SHAMapAccessor.resetNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
@@ -794,11 +786,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
         |${if (dictionaryCode.isEmpty) keysPrepCodeCode else ""}
         |long $valueOffsetTerm = 0;
         |boolean $keyExistedTerm = false;
-        |${dictionaryCode.map(dictCode => s"int ${dictCode.dictionaryIndex.value} = -1;").getOrElse("")}
-        |${dictionaryCode.map(_.evaluateIndexCode()).getOrElse("")}
         |$lookUpInsertCodeWithSkip
         |long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;""".stripMargin
-
   }
 
   // handle arraydata , map , object
@@ -857,12 +846,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     }
     $explodedStructCode
      """.stripMargin
-
   }
-
-
-
-
 
   def generateUpdate(bufferVars: Seq[ExprCode], aggBufferDataType: Seq[DataType]): String = {
     val plaformClass = classOf[Platform].getName
@@ -877,7 +861,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
       }
       """.stripMargin
     }).getOrElse("")
-
 
     s"""
        |$setStoredAggNullBitsTerm
@@ -1676,18 +1659,22 @@ object SHAMapAccessor {
     }
   }
 
-  def isPrimitive(dataType: DataType): Boolean = {
-    dataType match {
-      case BooleanType => true
-      case ByteType => true
-      case ShortType => true
-      case IntegerType => true
-      case LongType => true
-      case FloatType => true
-      case DoubleType => true
-      case _ => false
-    }
-  }
+  def isPrimitive(dataType: DataType): Boolean =
+     dataType match {
+       case at: AtomicType =>
+         typeOf(at.tag) match {
+           case t if t =:= typeOf[Boolean] => true
+           case t if t =:= typeOf[Byte] => true
+           case t if t =:= typeOf[Short] => true
+           case t if t =:= typeOf[Int] => true
+           case t if t =:= typeOf[Long] => true
+           case t if t =:= typeOf[Float] => true
+           case t if t =:= typeOf[Double] => true
+           case _ => false
+         }
+       case _ => false
+     }
+
 
   def initDictionaryCodeForSingleKeyCase(
     input: Seq[ExprCode], keyExpressions: Seq[Expression],
