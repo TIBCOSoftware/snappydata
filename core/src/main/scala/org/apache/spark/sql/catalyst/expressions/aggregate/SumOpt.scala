@@ -63,16 +63,16 @@ class SumAdd(sum: Expression, add: Expression) extends Add(sum, add) {
     val sumVar = sumEv.value
     val addVar = addEv.value
     val resultCode = dataType match {
-      case _: DecimalType => s"$sumVar = $sumVar != null ? $sumVar.$$plus($addVar) : $addVar;"
+      case _: DecimalType => s"$sumVar = $sumVar.$$plus($addVar);"
       case ByteType | ShortType => s"$sumVar = (${ctx.javaType(dataType)})($sumVar + $addVar);"
-      case CalendarIntervalType => s"$sumVar = $sumVar != null ? $sumVar.add($addVar) : $addVar;"
+      case CalendarIntervalType => s"$sumVar = $sumVar.add($addVar);"
       case _ => s"$sumVar += $addVar;"
     }
-    val nonNullCode = if (sumEv.isNull == "false" || sumEv.isNull.indexOf(' ') != -1) resultCode
+    val nonNullCode = if (sumEv.isNull == "false") resultCode
     else {
+      val isNullFalse = if (sumEv.isNull.indexOf(' ') == -1) s"${sumEv.isNull} = false;\n" else ""
       s"""if (${sumEv.isNull}) {
-          ${sumEv.isNull} = false;
-          $sumVar = $addVar;
+          $isNullFalse$sumVar = $addVar;
         } else {
           $resultCode
         }"""
