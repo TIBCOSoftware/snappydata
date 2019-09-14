@@ -65,7 +65,8 @@ object HiveMetaStoreUtils {
   beeLineQueries(10) = "SELECT ProductID,Productname,unitprice,unitsinstock " +
     "from hive_db.hive_products where productname like 'M%' order by productname"
 
-  snappyQueries(0) = "SELECT CategoryID,CategoryName,Description FROM tibco_db.snappy_categories"
+  snappyQueries(0) = "SELECT CategoryID,CategoryName,Description FROM hive_db.hive_categories " +
+    "where CategoryID is not null"
   snappyQueries(1) = "SELECT FirstName, LastName FROM tibco_db.snappy_employees ORDER BY LastName"
   snappyQueries(2) = "SELECT FirstName, LastName FROM tibco_db.snappy_employees" +
     " WHERE Title = 'Sales Representative'"
