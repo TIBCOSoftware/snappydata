@@ -59,9 +59,7 @@ class SumAdd(sum: Expression, add: Expression) extends Add(sum, add) {
   protected def genCodeForNonNullAdditive(ctx: CodegenContext, dataType: DataType,
       sumEv: ExprCode, addVar: String, resultIsNull: String): String = {
     val sumVar = sumEv.value
-    val resultFalse =
-      if (resultIsNull == "false" || resultIsNull.indexOf(' ') != -1) ""
-      else s"$resultIsNull = false;\n"
+    val resultFalse = if (resultIsNull == "false") "" else s"$resultIsNull = false;\n"
     val resultCode = dataType match {
       case _: DecimalType => s"$sumVar = $sumVar.$$plus($addVar);"
       case ByteType | ShortType => s"$sumVar = (${ctx.javaType(dataType)})($sumVar + $addVar);"
@@ -83,11 +81,11 @@ class SumAdd(sum: Expression, add: Expression) extends Add(sum, add) {
     val sumEv = sum.genCode(ctx)
     val addEv = add.genCode(ctx)
     val (evIsNull, isNullCode) =
-      if (nullable) ev.isNull -> s"boolean ${ev.isNull} = true;\n" else "false" -> ""
+      if (nullable) ev.isNull -> s"boolean ${ev.isNull} = ${sumEv.isNull};\n" else "false" -> ""
     val nonNullCode = genCodeForNonNullAdditive(ctx, dataType, sumEv, addEv.value, evIsNull)
     val code = if (add.nullable && addEv.isNull != "false") {
       s"""
-        $isNullCode${sumEv.code}
+        ${sumEv.code}$isNullCode
         ${addEv.code}
         if (!${addEv.isNull}) {
           $nonNullCode
@@ -95,7 +93,7 @@ class SumAdd(sum: Expression, add: Expression) extends Add(sum, add) {
       """
     } else {
       s"""
-        $isNullCode${sumEv.code}
+        ${sumEv.code}$isNullCode
         ${addEv.code}
         $nonNullCode
       """
