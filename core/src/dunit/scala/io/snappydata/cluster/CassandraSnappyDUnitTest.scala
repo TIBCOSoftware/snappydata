@@ -458,8 +458,9 @@ class CassandraSnappyDUnitTest(val s: String)
   def doTestSNAP3152(): Unit = {
     logInfo("Running testSNAP3152")
     submitAndWaitForCompletion("io.snappydata.cluster.jobs." +
-        "CassandraSnappyConnectionJobWithDeployPkg",
-      "--conf spark.cassandra.connection.host=localhost")
+        "SNAP3152TestJob",
+      s"--conf spark.cassandra.connection.host=localhost" +
+          s" --conf connectorJar=$cassandraConnectorJarLoc")
     logInfo("Job Completed Successfully")
   }
 }
