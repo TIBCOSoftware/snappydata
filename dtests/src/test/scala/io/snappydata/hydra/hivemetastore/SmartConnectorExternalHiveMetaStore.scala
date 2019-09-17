@@ -25,9 +25,8 @@ import org.apache.spark.sql.{SnappyContext, SparkSession}
 object SmartConnectorExternalHiveMetaStore {
   def main(args: Array[String]): Unit = {
     // scalastyle:off println
-    println("Smart Connector External Hive MetaStore Embedded mode Job started...")
+    println("Smart Connector External Hive MetaStore Job started...")
     val dataLocation = args(0)
-    val diffPath = "file:///home/cbhatt/DiffDir/"
     val outputFile = "ValidateJoinQuery" + "_" + "column" +
       System.currentTimeMillis() + "_sparkApp"
     val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
@@ -52,15 +51,15 @@ object SmartConnectorExternalHiveMetaStore {
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
     alterTableCheck(snc, pw)
     pw.flush()
-    createAndDropSchemaCheck(snc, beelineConnection, dataLocation, pw, diffPath)
+    createAndDropSchemaCheck(snc, beelineConnection, dataLocation, pw)
     pw.flush()
-    executeQueriesOnHiveTables(snc, spark, beelineConnection, dataLocation, pw, diffPath)
-    executeJoinQueriesOnHiveAndSnappy(snc, spark, beelineConnection, dataLocation, pw, diffPath)
+    executeQueriesOnHiveTables(snc, spark, beelineConnection, dataLocation, pw)
+    executeJoinQueriesOnHiveAndSnappy(snc, spark, beelineConnection, dataLocation, pw)
     dropBeelineTablesFromSnappy(snc, HiveMetaStoreUtils.dropTable, "HIVE_DB")
     dropSnappyTables(snc, HiveMetaStoreUtils.dropTable, "TIBCO_DB")
     pw.flush()
     pw.close()
-    println("Smart Connector External Hive MetaStore Embedded mode job is successful")
+    println("Smart Connector External Hive MetaStore job is successful finished.")
   }
 
   def connectToBeeline(): Connection = {
@@ -228,7 +227,7 @@ object SmartConnectorExternalHiveMetaStore {
 
   def executeQueries(snc: SnappyContext, spark: SparkSession,
                      query1: String, query2: String, pw: PrintWriter,
-                     index: Int, diffPath: String, id : Int): Unit = {
+                     index: Int, id : Int): Unit = {
     var isDiff1: Boolean = false
     var isDiff2: Boolean = false
     pw.println("Query" + index + " : " + query1)
@@ -248,13 +247,15 @@ object SmartConnectorExternalHiveMetaStore {
     }
     val diff1 = df1.except(df2)
     if (diff1.count() > 0) {
-      diff1.write.csv(diffPath + "diff1_" + id + "_" + index + ".csv")
+      diff1.write.csv("file:///" +
+        System.getProperty("user.dir") + "/diff1_" + id + "_" + index + ".csv")
     } else {
       isDiff1 = true
     }
     val diff2 = df2.except(df1)
     if (diff2.count() > 0) {
-      diff2.write.csv(diffPath + "diff2_" + id + "_" +  index + ".cvs")
+      diff2.write.csv("file:///" +
+        System.getProperty("user.dir") + "/diff2_" + id + "_" +  index + ".cvs")
     } else {
       isDiff2 = true
     }
@@ -305,7 +306,7 @@ object SmartConnectorExternalHiveMetaStore {
   }
 
   def createAndDropSchemaCheck(snc: SnappyContext, beelineConnection: Connection,
-                               dataLocation: String, pw: PrintWriter, diffPath: String): Unit = {
+                               dataLocation: String, pw: PrintWriter): Unit = {
     var isDiff1 = false
     var isDiff2 = false
     snc.sql(HiveMetaStoreUtils.dropTable + "hiveDB.hive_regions")
@@ -331,13 +332,15 @@ object SmartConnectorExternalHiveMetaStore {
     pw.println("Snappy Table Count : " + df2.count())
     val diff1 = df1.except(df2)
     if (diff1.count() > 0) {
-      diff1.write.csv(diffPath + "diff1_HiveTable" + ".cvs")
+      diff1.write.csv("file:///" +
+        System.getProperty("user.dir") + "/diff1_HiveTable" + ".cvs")
     } else {
       isDiff1 = true
     }
     val diff2 = df2.except(df1)
     if (diff2.count() > 0) {
-      diff1.write.csv(diffPath + "diff1_SnappyTable" + ".cvs")
+      diff1.write.csv("file:///" +
+        System.getProperty("user.dir") + "/diff1_SnappyTable" + ".cvs")
     } else {
       isDiff2 = true
     }
@@ -361,8 +364,7 @@ object SmartConnectorExternalHiveMetaStore {
 
   def executeQueriesOnHiveTables(snc : SnappyContext,
                                  spark : SparkSession, beelineConnection : Connection,
-                                 dataLocation : String, pw : PrintWriter,
-                                 diffPath : String): Unit = {
+                                 dataLocation : String, pw : PrintWriter): Unit = {
     beelineConnection.createStatement().execute(HiveMetaStoreUtils.createDB + "HIVE_DB")
     snc.sql(HiveMetaStoreUtils.setExternalInBuiltCatalog)
     snc.sql(HiveMetaStoreUtils.createDB + "TIBCO_DB")
@@ -371,7 +373,7 @@ object SmartConnectorExternalHiveMetaStore {
     createSnappyTblsAndLoadData(snc, dataLocation, "TIBCO_DB")
     for(index <- 0 to HiveMetaStoreUtils.beeLineQueries.length-1) {
       executeQueries(snc, spark, HiveMetaStoreUtils.beeLineQueries(index),
-        HiveMetaStoreUtils.snappyQueries(index), pw, index, diffPath, 0)
+        HiveMetaStoreUtils.snappyQueries(index), pw, index, 0)
     }
     dropBeelineTablesFromSnappy(snc, HiveMetaStoreUtils.dropTable, "HIVE_DB")
     dropSnappyTables(snc, HiveMetaStoreUtils.dropTable, "TIBCO_DB")
@@ -383,17 +385,15 @@ object SmartConnectorExternalHiveMetaStore {
 
   def executeJoinQueriesOnHiveAndSnappy(snc : SnappyContext,
                                         spark : SparkSession, beelineConnection : Connection,
-                                        dataLocation : String, pw : PrintWriter,
-                                        diffPath : String) : Unit = {
+                                        dataLocation : String, pw : PrintWriter) : Unit = {
     createHiveTblsAndLoadData(beelineConnection, dataLocation)
     createSnappyTblsAndLoadData(snc, dataLocation)
-    for (index <- 0 to (HiveMetaStoreUtils.joinHiveSnappy.length - 1)) {
-      executeQueries(snc, spark, HiveMetaStoreUtils.joinHiveSnappy(index),
-        HiveMetaStoreUtils.validateJoin(index), pw, index, diffPath, 1)
+    for (index <- 0 to 4) {
+       executeQueries(snc, spark, HiveMetaStoreUtils.joinHiveSnappy(index),
+        HiveMetaStoreUtils.validateJoin(index), pw, index, 1)
       pw.flush()
     }
     dropBeelineTablesFromSnappy(snc, HiveMetaStoreUtils.dropTable)
     dropSnappyTables(snc, HiveMetaStoreUtils.dropTable)
   }
-
 }
