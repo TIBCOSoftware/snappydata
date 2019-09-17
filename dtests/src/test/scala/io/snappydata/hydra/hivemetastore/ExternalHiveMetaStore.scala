@@ -28,7 +28,6 @@ class ExternalHiveMetaStore extends SnappySQLJob {
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
     // scalastyle:off println
     println("External Hive MetaStore Embedded mode Job started...")
-//    val diffPath = "file:///home/cbhatt/DiffDir/"
     val dataLocation = jobConfig.getString("dataFilesLocation")
     val outputFile = "ValidateJoinQuery" + "_" + "column" +
       System.currentTimeMillis() + jobConfig.getString("logFileName")
@@ -48,9 +47,9 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
     alterTableCheck(snc, pw)
     pw.flush()
-    createAndDropSchemaCheck(snc, beelineConnection, dataLocation, pw) // , diffPath)
+    createAndDropSchemaCheck(snc, beelineConnection, dataLocation, pw)
     pw.flush()
-    executeQueriesOnHiveTables(snc, spark, beelineConnection, dataLocation, pw) //, diffPath)
+    executeQueriesOnHiveTables(snc, spark, beelineConnection, dataLocation, pw)
     executeJoinQueriesOnHiveAndSnappy(snc, spark, beelineConnection, dataLocation, pw)
     dropBeelineTablesFromSnappy(snc, HiveMetaStoreUtils.dropTable, "HIVE_DB")
     dropSnappyTables(snc, HiveMetaStoreUtils.dropTable, "TIBCO_DB")
@@ -227,8 +226,6 @@ class ExternalHiveMetaStore extends SnappySQLJob {
                      index: Int, id : Int): Unit = {
     var isDiff1: Boolean = false
     var isDiff2: Boolean = false
-//    var fileName = ""
-//    val pwDiff : PrintWriter = new PrintWriter(new FileOutputStream(new File(fileName), true))
     pw.println("Query" + index + " : " + query1)
     val df1 = snc.sql(query1)
     if(id == 0) {
@@ -246,8 +243,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     }
     val diff1 = df1.except(df2)
     if (diff1.count() > 0) {
-      println("Current Dir : " + System.getProperty("user.dir"))
-      diff1.write.csv("file:///" +
+        diff1.write.csv("file:///" +
         System.getProperty("user.dir") + "/diff1_" + id + "_" + index + ".csv")
     } else {
       isDiff1 = true
