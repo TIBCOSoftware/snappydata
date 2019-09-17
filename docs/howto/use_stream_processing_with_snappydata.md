@@ -279,6 +279,10 @@ Hence to reset a streaming query, the following actions must be taken to clean t
 	*	[state_table_schema] is the schema passed as part of “stateTableSchema” option of snappy sink. It should be skipped if “stateTableSchema” option was not provided while defining snappy sink. 
 	*	`<query_name>` is the name of the query provided while defining the sink.
 
+### Best Practices for Structured Streaming 
+
+Refer to the [Structured Streaming Considerations](/best_practices/structured_streaming_best_practices.md) section in the [Best Practices](../best_practices.md) topic.
+
 ### Limitations
 Limitations of **Snappy Sink** are as follows:
 

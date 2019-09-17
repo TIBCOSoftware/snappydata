@@ -155,3 +155,4 @@ Here is a stream + Transactions + Analytics use case example to illustrate the S
 ## Contributing to TIBCO ComputeDB
 
 If you are interested in contributing, please visit the [community page](http://www.snappydata.io/community) for ways in which you can help.
+
