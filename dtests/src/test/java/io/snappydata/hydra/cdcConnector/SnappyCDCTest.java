@@ -318,7 +318,7 @@ public class SnappyCDCTest extends SnappyTest {
         rs3.close();
       }
       SnappyBB.getBB().getSharedMap().put("tableCntMap", tableCntMap);
-     if(!isBeforeRestart)
+   //  if(!isBeforeRestart)
         getResultSet(con, isBeforeRestart, fileName);
       con.close();
     } catch (SQLException ex) {
