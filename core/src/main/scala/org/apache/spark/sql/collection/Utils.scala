@@ -819,6 +819,8 @@ object Utils extends Logging {
 
   def getActiveSession: Option[SparkSession] = SparkSession.getActiveSession
 
+  def clearActiveSparkContext(): Unit = SparkContext.clearActiveContext()
+
   def sqlInternal(snappy: SnappySession, sqlText: String): CachedDataFrame =
     snappy.sqInternal(sqlText)
 

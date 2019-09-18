@@ -67,11 +67,11 @@ abstract class SnappyFunSuite
 
   protected def sc(addOn: SparkConf => SparkConf): SparkContext = {
     val ctx = SnappyContext.globalSparkContext
-    if (ctx != null && !ctx.isStopped) {
+    if ((ctx ne null) && !ctx.isStopped) {
       ctx
-    }
-    else {
+    } else {
       cachedContext = null
+      Utils.clearActiveSparkContext()
       new SparkContext(newSparkConf(addOn))
     }
   }

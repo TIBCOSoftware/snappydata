@@ -940,10 +940,9 @@ object SnappyContext extends Logging {
   }
 
   /** Returns the current SparkContext or null */
-  def globalSparkContext: SparkContext = try {
-    SparkContext.getOrCreate(INVALID_CONF)
-  } catch {
-    case _: IllegalStateException => null
+  def globalSparkContext: SparkContext = SparkContext.getActive match {
+    case Some(sc) => sc
+    case _ => null
   }
 
   private def initMemberBlockMap(sc: SparkContext): Unit = {

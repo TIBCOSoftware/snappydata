@@ -184,7 +184,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
-   private[sql] def sqInternal(sqlText: String): CachedDataFrame = {
+  private[sql] def sqInternal(sqlText: String): CachedDataFrame = {
     snappyContextFunctions.sql(SnappySession.sqlPlan(this, sqlText))
   }
 
