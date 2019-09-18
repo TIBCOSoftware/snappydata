@@ -106,6 +106,22 @@ class UDAFValidation extends SnappySQLJob {
     }
     snc.sql(dropUDAF)
 
+    try {
+      snc.sql(createUDAF)
+      val sncDF1 = snc.sql(query_1_UDAF)
+      val sncDF2 = snc.sql(query_1_Snappy)
+      validateResultSet(snc, sncDF1, sncDF2, pw, query_1_UDAF)
+      snc.sql(dropUDAF)
+      val sncDF3 = snc.sql(query_2_UDAF)
+    } catch {
+      case e : Exception => {
+        pw.println("Without creating the UDAF, call the UDAF produce -> " + e.getMessage)
+        pw.println("*     *     *     *     *     *     *     *     *     *")
+        pw.flush()
+      }
+    }
+
+
     snc.sql(dropStagingStudent)
     snc.sql(dropStudent)
     pw.println("UDAF validation ends successfully...")
