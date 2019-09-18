@@ -268,6 +268,10 @@ Limitations of **Snappy Sink** are as follows:
 
 *	The default **Snappy Sink** implementation does not support partial records for updates. Which means that there is no support to merge updates on a few columns into the store. For all update events, the incoming records must provide values into all the columns of the target table.
 
+### Best Practices for Structured Streaming 
+
+Refer to the [Structured Streaming Considerations](/best_practices/structured_streaming_best_practices.md) section in the [Best Practices](../best_practices.md) topic.
+
 ### Resetting a Streaming Query
 
 Progress of a streaming query is saved as part of the checkpoint directory by Spark. On top of this **Snappy Sink** also maintains an internal state as part of the state table to ensure idempotency of the sink. 
