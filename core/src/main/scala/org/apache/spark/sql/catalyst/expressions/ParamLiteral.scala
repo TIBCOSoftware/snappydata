@@ -73,7 +73,12 @@ trait DynamicReplacableConstant extends Expression {
     val termValues = if (addMutableState) {
       val literalValueRef = ctx.addReferenceObj("literal", this,
         classOf[DynamicReplacableConstant].getName)
-      val isNull = ctx.freshName("isNull")
+      // assume nullable cannot change for ParamLiteral or others with change of underlying
+      // value which is ensured by SnappyParser which never tokenizes NULL constant
+      // whereas DynamicFoldableExpression will be nullable depending on the expression type
+      // (e.g. CAST from string to date will be nullable whereas CAST between primitive
+      // types will depend on underlying ParamLiteral being nullable)
+      val isNull = if (nullable) ev.isNull else "false"
       val valueTerm = ctx.freshName("value")
       val tv = TermValues(literalValueRef, isNull, valueTerm)
       termMap.put(ctx, tv)
@@ -86,25 +91,23 @@ trait DynamicReplacableConstant extends Expression {
     // temporary variable for storing value() result for cases where it can be
     // potentially expensive (e.g. for DynamicFoldableExpression)
     val valueResult = ctx.freshName("valueResult")
-    val isNullLocal = ev.isNull
     val valueLocal = ev.value
     val dataType = Utils.getSQLDataType(this.dataType)
     val javaType = ctx.javaType(dataType)
     // get values from map
     val isNull = termValues.isNull
     val valueTerm = termValues.valueTerm
-    val literalValueRef = termValues.literalValueRef
-    val initCode =
-      s"""
-         |final boolean $isNullLocal = $isNull;
-         |final $javaType $valueLocal = $valueTerm;
-      """.stripMargin
+    val valueRef = termValues.literalValueRef
+    val initCode = s"final $javaType $valueLocal = $valueTerm;"
 
     if (!addMutableState) {
       // use the already added fields
-      return ev.copy(initCode, isNullLocal, valueLocal)
+      return ev.copy(initCode, isNull, valueLocal)
     }
-    val valueRef = literalValueRef
+    val setIsNull = if (isNull == "false") "" else {
+      ctx.addMutableState("boolean", isNull, "")
+      s"\n$isNull = $valueResult == null;"
+    }
     val box = ctx.boxedType(javaType)
 
     val unbox = dataType match {
@@ -139,8 +142,8 @@ trait DynamicReplacableConstant extends Expression {
         val consumerClass = classOf[DirectStringConsumer].getName
         ctx.addMutableState(javaType, valueTerm,
           s"""
-             |Object $valueResult = $valueRef.value();
-             |if (($isNull = ($valueResult == null))) {
+             |Object $valueResult = $valueRef.value();$setIsNull
+             |if ($isNull) {
              |  $valueTerm = ${ctx.defaultValue(dataType)};
              |} else {
              |  $valueTerm = ($box)$valueResult;
@@ -159,16 +162,14 @@ trait DynamicReplacableConstant extends Expression {
         null.asInstanceOf[String]
       case _ => ""
     }
-    ctx.addMutableState("boolean", isNull, "")
     if (unbox ne null) {
       ctx.addMutableState(javaType, valueTerm,
         s"""
-           |Object $valueResult = $valueRef.value();
-           |$isNull = $valueResult == null;
+           |Object $valueResult = $valueRef.value();$setIsNull
            |$valueTerm = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueResult)$unbox;
         """.stripMargin)
     }
-    ev.copy(initCode, isNullLocal, valueLocal)
+    ev.copy(initCode, isNull, valueLocal)
   }
 }
 
@@ -361,6 +362,8 @@ final class RefParamLiteral(val param: ParamLiteral, _value: Any, _dataType: Dat
     extends ParamLiteral(_value, _dataType, _pos, execId = param.execId) {
 
   assert(!param.isInstanceOf[RefParamLiteral])
+
+  override def nullable: Boolean = param.nullable
 
   private[sql] def referenceEquals(p: ParamLiteral): Boolean = {
     if (param eq p) {

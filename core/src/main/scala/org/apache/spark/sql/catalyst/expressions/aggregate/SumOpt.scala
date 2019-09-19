@@ -68,8 +68,7 @@ class SumAdd(sum: Expression, add: Expression) extends Add(sum, add) {
     }
     if (sumEv.isNull == "false") resultFalse + resultCode
     else {
-      val resultNullCheck = if (resultIsNull == "false") "" else s" || $resultIsNull"
-      s"""${resultFalse}if (${sumEv.isNull}$resultNullCheck) {
+      s"""${resultFalse}if (${sumEv.isNull}) {
           $sumVar = $addVar;
         } else {
           $resultCode
