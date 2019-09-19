@@ -33,6 +33,17 @@ class UDAFValidation extends SnappySQLJob {
       "returns double " +
       "using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/MeanMarkUDAF.jar'"
 
+    val createCleverUDAF = "create function cleverstudent_udaf " +
+      "as io.snappydata.hydra.CleverStudent " +
+      "returns double using jar " +
+      "'/home/cbhatt/TestWork/out/artifacts/TestWork_jar/cleverStudent.jar'"
+
+    val createDullUDAF = "create function dullstudent_udaf as " +
+      "io.snappydata.hydra.DullStudent " +
+      "returns double using jar " +
+      "'/home/cbhatt/TestWork/out/artifacts/TestWork_jar/dullStudent.jar'"
+
+
     val createUDAFWithDifferentFunctionality = "create function mean_udaf " +
       "as io.snappydata.hydra.CleverStudent returns double " +
       "using jar '/home/cbhatt/TestWork/MeanMarkUDAF.jar'"
@@ -80,6 +91,9 @@ class UDAFValidation extends SnappySQLJob {
     val query_3_Snappy = "select class,count(maths) from student" +
       " where maths >= 95.0 group by class order by class"
 
+    val query_mulitple_UDAF = "select class, mean_udaf(maths,class), " +
+      "cleverstudent_udaf(maths), test_udaf(maths,0,0) from student group by class order by class"
+
 
     /**
       * Create UDAF, test it, drop the function
@@ -87,6 +101,8 @@ class UDAFValidation extends SnappySQLJob {
       *  Result should be the same.
       */
     pw.println("Create UDAF, test it, drop the function and repeat it.")
+    snc.sql("drop function if exists cleverstudent_udaf")
+    snc.sql("drop function if exists dullstudent_udaf")
     snc.sql(dropUDAF)
     snc.sql(dropStagingStudent)
     snc.sql(dropStudent)
@@ -203,8 +219,31 @@ class UDAFValidation extends SnappySQLJob {
         pw.println("*     *     *     *     *     *     *     *     *     *")
         pw.flush()
       }
+   }
+    snc.sql(dropUDAF)
+
+    try {
+      pw.println("Testing : Multiple UDF in select statement")
       snc.sql(dropUDAF)
+      snc.sql("drop function if exists cleverstudent_udaf")
+      snc.sql("drop function if exists dullstudent_udaf")
+      snc.sql(createUDAF)
+      snc.sql(createCleverUDAF)
+      snc.sql(createDullUDAF)
+      val sncDF1 = snc.sql(query_mulitple_UDAF)
+      sncDF1.show()
+      pw.println("Muliple UDF testing OK")
+    } catch {
+      case e : Exception => {
+        pw.println("Exception in multiple UDF -> " + e.getMessage)
+        pw.println("*     *     *     *     *     *     *     *     *     *")
+        pw.flush()
+      }
     }
+
+    snc.sql(dropUDAF)
+    snc.sql("drop function if exists cleverstudent_udaf")
+    snc.sql("drop function if exists dullstudent_udaf")
 
     snc.sql(dropStagingStudent)
     snc.sql(dropStudent)
