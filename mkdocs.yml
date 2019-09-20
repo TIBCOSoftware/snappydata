@@ -44,7 +44,8 @@ pages:
 - 'Concepts': 'install/concepts.md'
 - 'Concepts':
     - 'Core Components': 'architecture/core_components.md'
-    - 'SnappyData Cluster Architecture': 'architecture/cluster_architecture.md'  
+    - 'SnappyData Cluster Architecture': 'architecture/cluster_architecture.md'
+    - 'Hybrid Cluster Manager': 'architecture/hybrid_cluster_manager.md'  
     - 'Distributed Transactions': 'consistency/transactions_about.md'
     - 'Distributed Transactions':
         - 'How Transactions Work for Row Tables': 'consistency/using_transactions_row.md' 
@@ -53,12 +54,9 @@ pages:
     - 'Affinity Modes': 
         - 'Local Mode': 'affinity_modes/local_mode.md'
         - 'Embedded SnappyData Store Mode': 'affinity_modes/embedded_mode.md'
-        - 'SnappyData Smart Connector Mode': 'affinity_modes/connector_mode.md'
-    - 'Data Ingestion Pipeline': 'architecture/data_ingestion_pipeline.md'
-    - 'Hybrid Cluster Manager': 'architecture/hybrid_cluster_manager.md'  
+        - 'SnappyData Smart Connector Mode': 'affinity_modes/connector_mode.md'        
 #    - 'List of Properties':    (to be updated later)
 #        - 'Property Details': 'configuring_cluster/property_details.md'
-    - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
 - 'How Tos': 'howto.md'
 - 'How Tos': 
     - 'How to Start a SnappyData Cluster': 'howto/start_snappy_cluster.md'
@@ -162,7 +160,8 @@ pages:
         - 'CPU Usage': 'vsd/vsd_cpu.md'
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
-    - 'Configure Cluster': 'configuring_cluster/configuring_cluster.md'
+    - 'Configuration Reference': 'configuring_cluster/configuring_cluster.md'
+    - 'List of Properties': 'configuring_cluster/property_description.md'
     - 'SQL Reference Guide': 'sql_reference.md'
     - 'SQL Reference Guide':
         - 'ALTER TABLE': 'reference/sql_reference/alter-table.md'    
@@ -244,7 +243,6 @@ pages:
         - 'run': 'reference/interactive_commands/run.md'
         - 'set connection': 'reference/interactive_commands/set_connection.md'
         - 'show': 'reference/interactive_commands/show.md'
-    - 'List of Properties': 'configuring_cluster/property_description.md'
     - 'Configuration Parameters': 'reference/configuration_parameters/config_parameters.md'
     - 'Configuration Parameters':         
         - 'ack-severe-alert-threshold': 'reference/configuration_parameters/ack-severe-alert-threshold.md'
@@ -327,6 +325,7 @@ pages:
 - 'Doc Archives': prev_doc_ver.md
 - 'Contact and Support': techsupport.md
 - 'License': LICENSE.md
+- 'Important Information': imp_info.md
 
 theme: readthedocs
 theme_dir: 'docs/custom_theme'

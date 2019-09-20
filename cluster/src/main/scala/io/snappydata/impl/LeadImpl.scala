@@ -324,6 +324,11 @@ class LeadImpl extends ServerImpl with Lead
         checkAndStartZeppelinInterpreter(zeppelinEnabled, bootProperties)
       }
 
+      // If recovery mode then initialize the recovery service
+      if(Misc.getGemFireCache.isSnappyRecoveryMode) {
+        RecoveryService.collectViewsAndRecoverDDLs()
+      }
+
       if (jobServerWait) {
         // mark RUNNING after job server, hive server and zeppelin initialization if so configured
         markLauncherRunning(if (startupString ne null) s"Started $startupString" else null)
@@ -333,10 +338,6 @@ class LeadImpl extends ServerImpl with Lead
     try {
       internalStart(() => storeProperties)
       Await.result(initServices, Duration.Inf)
-      // If recovery mode then initialize the recovery service
-      if(Misc.getGemFireCache.isSnappyRecoveryMode) {
-        RecoveryService.collectViewsAndRecoverDDLs();
-      }
       // mark status as RUNNING at the end in any case
       markRunning()
     } catch {

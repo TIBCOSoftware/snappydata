@@ -32,6 +32,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentState
 import com.pivotal.gemfirexd.internal.engine.sql.execute.RecoveredMetadataRequestMessage
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.mutable
+import scala.util.Random
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
@@ -182,7 +183,7 @@ object RecoveryService extends Logging {
       val allkeys = table.properties.keys.toSeq
 
       // ======= covers create statements ======================
-      logInfo(s"RecoveryService: getAllDDLs: table: $table")
+      logDebug(s"RecoveryService: getAllDDLs: table: $table")
       val numPartsNTSKey = allkeys.filter(f => f.contains("numPartsOrgSqlText"))
 
       if (!numPartsNTSKey.isEmpty) {
@@ -252,7 +253,6 @@ object RecoveryService extends Logging {
     val schemaName = fqtn.split('.')(0)
     val tableName = fqtn.split('.')(1)
     val (_, isReplicated) = getNumBuckets(schemaName, tableName)
-
     val tablePath = '/' + fqtn.replace(".", "/")
     var bucketPath = tablePath
     if (!isReplicated) {
@@ -262,12 +262,23 @@ object RecoveryService extends Logging {
     // check if the path exists else check path of column buffer.
     // also there could be no data in any.
     // check only row, only col, no data
-    assert(regionViewSortedSet.contains(bucketPath))
-    regionViewSortedSet(bucketPath).map(e => {
-      val hostCanonical = e.getExecutorHost
-      val host = hostCanonical.split('(').head
-      s"executor_${host}_$hostCanonical"
-    }).toSeq
+    if (regionViewSortedSet.contains(bucketPath)) {
+      assert(regionViewSortedSet.contains(bucketPath))
+      regionViewSortedSet(bucketPath).map(e => {
+        val hostCanonical = e.getExecutorHost
+        val host = hostCanonical.split('(').head
+        s"executor_${host}_$hostCanonical"
+      }).toSeq
+    } else {
+      getRandomExecutorHost()
+    }
+  }
+
+  def getRandomExecutorHost(): Seq[String] = {
+    val e = Random.shuffle(regionViewSortedSet.toList).head._2.firstKey
+    val hostCanonical = e.getExecutorHost
+    val host = hostCanonical.split('(').head
+    Seq(s"executor_${host}_$hostCanonical")
   }
 
   /* Table type, PR or replicated, DStore name, numBuckets */
@@ -319,7 +330,6 @@ object RecoveryService extends Logging {
   def createSchemasMap(snappyHiveExternalCatalog: SnappyHiveExternalCatalog): Unit = {
     val snappySession = new SnappySession(SnappyContext().sparkContext)
     val colParser = new SnappyParser(snappySession)
-
     getTables.foreach(table => {
       // Create statements
       var versionCnt = 1
@@ -471,8 +481,6 @@ object RecoveryService extends Logging {
     val regionView = regionViewSortedSet(regionToConsider).lastKey
     val memberToConsider = regionView.getMember
     memberObject = persistentObjectMemberMap(memberToConsider)
-    for ((k, v) <- persistentObjectMemberMap) {
-    }
     mostRecentMemberObject = persistentObjectMemberMap(memberToConsiderForHiveCatalog)
     val catalogObjects = mostRecentMemberObject.getCatalogObjects
     import scala.collection.JavaConverters._
@@ -488,10 +496,24 @@ object RecoveryService extends Logging {
             catalogMetadataDetails.setCatalogTable(catTabObj), snapCon.sparkSession)._1
       }
     })
-
     RecoveryService.populateCatalog(catalogArr, snapCon.sparkContext)
-
     createSchemasMap(snappyHiveExternalCatalog)
+
+    // temp log line for testing purpose -------- * /
+    val dbList = snappyHiveExternalCatalog.listDatabases("*")
+    val allFunctions = dbList.map(dbName =>
+      snappyHiveExternalCatalog.listFunctions(dbName, "*")
+          .map(func => snappyHiveExternalCatalog.getFunction(dbName, func)))
+    val allDatabases = dbList.map(snappyHiveExternalCatalog.getDatabase)
+    logInfo(
+      s"""PP:RecoveryService: Catalog contents in recovery mode:
+         |Tables:
+         |${snappyHiveExternalCatalog.getAllTables().toString()}
+         |Databases:
+         |${allDatabases.toString()}
+         |Functions:
+         |${allFunctions.toString()}""".stripMargin)
+    //    -------- * /
   }
 
   def getTables: Seq[CatalogTable] = {
@@ -538,13 +560,13 @@ object RecoveryService extends Logging {
         extCatalog.createFunction(catFunc.identifier.database
             .getOrElse(Constant.DEFAULT_SCHEMA), catFunc)
         logInfo(s"Inserting catalog function: ${
-          catFunc.identifier.funcName
+          catFunc.identifier
         } in the catalog.")
       case catTab: CatalogTable =>
         val opLogTable = catTab.copy(provider = Option("oplog"))
         extCatalog.createTable(opLogTable, ignoreIfExists = true)
         logInfo(s"Inserting catalog table: ${
-          catTab.identifier.table
+          catTab.identifier
         } in the catalog.")
     }
   }
