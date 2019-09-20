@@ -33,6 +33,9 @@ import com.pivotal.gemfirexd.internal.iapi.types.{DataType => _, _}
 import scala.annotation.meta.param
 import scala.io.Source
 
+import com.gemstone.gemfire.internal.cache.DiskEntry.Helper
+import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
+import com.gemstone.gemfire.internal.offheap.ByteSource
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.client.am.Types
 import io.snappydata.recovery.RecoveryService
@@ -335,6 +338,32 @@ class OpLogRdd(
     Row.fromSeq(resArr.toSeq)
   }
 
+  def getValueInVMOrDiskWithoutFaultIn(phdr: PlaceHolderDiskRegion, entry: RegionEntry): Any = {
+    val regEntry = phdr.getDiskEntry(entry.getKey)
+    val rawValue = false
+    val faultin = false
+    var v = DiskEntry.Helper.getValueRetain(regEntry, phdr, rawValue)
+    val isRemovedFromDisk = Token.isRemovedFromDisk(v)
+    if ((v == null || isRemovedFromDisk) /* && !phdrCol.isIndexCreationThread() */ ) {
+      regEntry.synchronized {
+        v = DiskEntry.Helper.getValueRetain(regEntry, phdr, rawValue)
+        if (v == null) {
+          v = Helper.getOffHeapValueOnDiskOrBuffer(
+            regEntry, phdr.getDiskRegionView, phdr, faultin, rawValue)
+        }
+      }
+    }
+    if (isRemovedFromDisk) v = null else if (v.isInstanceOf[ByteSource]) {
+      val bs = v.asInstanceOf[ByteSource]
+      val deserVal = bs.getDeserializedForReading
+      if (deserVal ne v) {
+        bs.release()
+        v = deserVal
+      }
+    }
+    return v
+  }
+
   /**
    * Reads data from col buffer regions and appends result to provided ArrayBuffer
    *
@@ -356,7 +385,6 @@ class OpLogRdd(
               .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
           valueBuffer -> new ColumnDeleteDecoder(valueBuffer)
         } else (null, null)
-
         // get required info about columns
         var columnIndex = 1
         var hasTombstone = false
@@ -369,8 +397,9 @@ class OpLogRdd(
           }
           if (hasTombstone) null
           else {
-            val valueBuffer = entry._getValue().asInstanceOf[ColumnFormatValue]
-                .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
+            val value = getValueInVMOrDiskWithoutFaultIn(phdrCol, entry)
+                .asInstanceOf[ColumnFormatValue]
+            val valueBuffer = value.getValueRetain(FetchRequest.DECOMPRESS).getBuffer
             val decoder = ColumnEncoding.getColumnDecoder(valueBuffer, field)
             val valueArray = if (valueBuffer == null || valueBuffer.isDirect) {
               null
