@@ -252,7 +252,6 @@ object RecoveryService extends Logging {
     val schemaName = fqtn.split('.')(0)
     val tableName = fqtn.split('.')(1)
     val (_, isReplicated) = getNumBuckets(schemaName, tableName)
-
     val tablePath = '/' + fqtn.replace(".", "/")
     var bucketPath = tablePath
     if (!isReplicated) {
@@ -319,7 +318,6 @@ object RecoveryService extends Logging {
   def createSchemasMap(snappyHiveExternalCatalog: SnappyHiveExternalCatalog): Unit = {
     val snappySession = new SnappySession(SnappyContext().sparkContext)
     val colParser = new SnappyParser(snappySession)
-
     getTables.foreach(table => {
       // Create statements
       var versionCnt = 1
@@ -471,8 +469,6 @@ object RecoveryService extends Logging {
     val regionView = regionViewSortedSet(regionToConsider).lastKey
     val memberToConsider = regionView.getMember
     memberObject = persistentObjectMemberMap(memberToConsider)
-    for ((k, v) <- persistentObjectMemberMap) {
-    }
     mostRecentMemberObject = persistentObjectMemberMap(memberToConsiderForHiveCatalog)
     val catalogObjects = mostRecentMemberObject.getCatalogObjects
     import scala.collection.JavaConverters._
@@ -488,9 +484,7 @@ object RecoveryService extends Logging {
             catalogMetadataDetails.setCatalogTable(catTabObj), snapCon.sparkSession)._1
       }
     })
-
     RecoveryService.populateCatalog(catalogArr, snapCon.sparkContext)
-
     createSchemasMap(snappyHiveExternalCatalog)
   }
 
