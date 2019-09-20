@@ -117,6 +117,7 @@ public class DataExtractorToolTest extends SnappyTest {
     } catch (Exception ex) {
       throw new io.snappydata.test.util.TestException("Task HydraTask_ExtractData failed with : \n" + ex.getMessage());
     }
+    closeConnection(conn);
   }
 
   public static void HydraTask_startClusterInRecoveryMode() {
