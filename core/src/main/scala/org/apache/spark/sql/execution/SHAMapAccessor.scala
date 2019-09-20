@@ -730,7 +730,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
              |boolean $skipLookupTerm = false;
              |${if (aggFuncDependentOnGroupByKey) keysPrepCodeCode else ""}
              |if ($dictionaryArrayTerm != null && $overflowHashMapsTerm == null &&
-             |${dictionaryCode.map(_.dictionaryIndex.value).get} < $dictionaryArrayTerm.length &&
+             |${dictionaryCode.map(_.dictionaryIndex.value).get} <
+             | ${dictionaryCode.map(_.dictionary.value).get}.size() &&
              |${dictionaryCode.map(_.dictionaryIndex.value).get} >= 0) {
                |$posTerm = $dictionaryArrayTerm[${dictionaryCode.map(_.dictionaryIndex.value).get}];
                |if ($posTerm > 0) {

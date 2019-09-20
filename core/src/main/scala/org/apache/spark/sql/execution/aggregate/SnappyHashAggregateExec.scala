@@ -264,21 +264,33 @@ case class SnappyHashAggregateExec(
       input: Seq[ExprCode]): String =
     if (groupingExpressions.isEmpty || !canConsume(plan)) ""
     else {
-      val className = if (useByteBufferMapBasedAggregation) "long"
-      else keyBufferAccessor.getClassName
+      dictionaryArrayInit = ctx.freshName("dictionaryArrayInit")
+      if (useByteBufferMapBasedAggregation) {
+        ctx.addNewFunction(dictionaryArrayInit,
+          s"""
+             |private void $dictionaryArrayInit() {
+             |}
+         """.stripMargin)
+        s"$dictionaryArrayInit();"
+      } else {
+        dictionaryArrayTerm = ctx.freshName("dictionaryArray")
+        val className = keyBufferAccessor.getClassName
+        ctx.addNewFunction(dictionaryArrayInit,
+          s"""
+             |private $className[] $dictionaryArrayInit() {
+             |  return null;
+             |}
+         """.stripMargin)
+        s"$className $dictionaryArrayTerm = $dictionaryArrayInit();"
+      }
+
       // create an empty method to populate the dictionary array
       // which will be actually filled with code in consume if the dictionary
       // optimization is possible using the incoming DictionaryCode
       // this array will be used at batch level for grouping if possible
-      dictionaryArrayTerm = ctx.freshName("dictionaryArray")
-      dictionaryArrayInit = ctx.freshName("dictionaryArrayInit")
-      ctx.addNewFunction(dictionaryArrayInit,
-        s"""
-           |private $className[] $dictionaryArrayInit() {
-           |  return null;
-           |}
-         """.stripMargin)
-      s"final $className[] $dictionaryArrayTerm = $dictionaryArrayInit();"
+
+
+
     }
 
   override def beforeStop(ctx: CodegenContext, plan: SparkPlan,
@@ -472,6 +484,7 @@ case class SnappyHashAggregateExec(
   @transient private var maskTerm: String = _
   @transient private var dictionaryArrayTerm: String = _
   @transient private var dictionaryArrayInit: String = _
+
 
 
   /**
@@ -1206,11 +1219,24 @@ case class SnappyHashAggregateExec(
         // and dictionary index will be initialized to that by ColumnTableScan
         // A 1 value return value means dictionary was initialized with not null, 0 means null
         ctx.addMutableState(classOf[StringDictionary].getName, dictionary.value, "")
+        dictionaryArrayTerm = ctx.freshName("dictionaryArrayTerm")
+        ctx.addMutableState("long []", dictionaryArrayTerm, s"$dictionaryArrayTerm = null;")
         ctx.addNewFunction(dictionaryArrayInit,
           s"""
-             |public long[] $dictionaryArrayInit() {
+             |public void $dictionaryArrayInit() {
              |  ${d.evaluateDictionaryCode()}
-             |  return ${d.dictionary.isNull} ? null: new long[${d.dictionary.value}.size()];
+             |  if (${d.dictionary.isNull}) {
+             |    $dictionaryArrayTerm = null;
+             |  } else {
+             |    if ($dictionaryArrayTerm == null ||
+             |    $dictionaryArrayTerm.length < ${d.dictionary.value}.size()) {
+             |      $dictionaryArrayTerm = new long[${d.dictionary.value}.size()];
+             |    } else {
+             |       for (int i = 0; i < ${d.dictionary.value}.size(); ++i) {
+             |         $dictionaryArrayTerm[i] = 0;
+             |       }
+             |    }
+             |  }
              |}
            """.stripMargin)
       case None =>
