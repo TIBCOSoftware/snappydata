@@ -62,6 +62,8 @@ class UDAFValidation extends SnappySQLJob {
       "using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/MeanMarkUDAF.jar'"
 
     val dropUDAF = "drop function if exists mean_udaf"
+    val dropCleverUDAF = "drop function if exists cleverstudent_udaf"
+    val dropDullUDAF = "drop function if exists dullstudent_udaf";
 
     val createStagingStudent = "create external table if not exists staging_student" +
       "(studentid int,name string,class int," +
@@ -74,6 +76,7 @@ class UDAFValidation extends SnappySQLJob {
       "student using column as select * from staging_student"
 
     val dropStudent = "drop table if exists Student"
+
 
     val outputFile = "ValidateUDAF_" +  System.currentTimeMillis()
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), true))
@@ -92,7 +95,8 @@ class UDAFValidation extends SnappySQLJob {
       " where maths >= 95.0 group by class order by class"
 
     val query_mulitple_UDAF = "select class, mean_udaf(maths,class), " +
-      "cleverstudent_udaf(maths), test_udaf(maths,0,0) from student group by class order by class"
+      "cleverstudent_udaf(maths), dullstudent_udaf(maths,0,0) " +
+      "from student group by class order by class"
 
 
     /**
@@ -203,7 +207,7 @@ class UDAFValidation extends SnappySQLJob {
       *  Test that jar  gets undeployed cleanly from cluster.
       */
     try {
-      pw.println("Test UDAF : jar gets undeployed clearnly from cluster.")
+      pw.println("Test UDAF : jar gets undeployed cleanly from cluster.")
       snc.sql(createUDAF)
       val sncDF1 = snc.sql(query_1_UDAF)
       val sncDF2 = snc.sql(query_1_Snappy)
@@ -225,25 +229,49 @@ class UDAFValidation extends SnappySQLJob {
     try {
       pw.println("Testing : Multiple UDF in select statement")
       snc.sql(dropUDAF)
-      snc.sql("drop function if exists cleverstudent_udaf")
-      snc.sql("drop function if exists dullstudent_udaf")
+      snc.sql(dropCleverUDAF)
+      snc.sql(dropDullUDAF)
       snc.sql(createUDAF)
       snc.sql(createCleverUDAF)
       snc.sql(createDullUDAF)
       val sncDF1 = snc.sql(query_mulitple_UDAF)
       sncDF1.show()
-      pw.println("Muliple UDF testing OK")
-    } catch {
+      val validateDF1 = sncDF1.select(sncDF1("class"), sncDF1("meanmarks(maths, class)"))
+      val validateDF2 = sncDF1.select(sncDF1("class"), sncDF1("cleverstudent(maths)"))
+      val validateDF3 = sncDF1.select(sncDF1("class"), sncDF1("dullstudent(maths, 0, 0)"))
+      val validateDF4 = snc.sql("select class,avg(maths) " +
+        "from student group by class order by class")
+      val validateDF5 = snc.sql("select class,count(maths) " +
+        "from student where maths >= 95.0 group by class order by class")
+      val validateDF6 = snc.sql("select class,count(maths) " +
+        "from student where maths < 30.0 group by class order by class")
+      val diff1 = validateDF1.except(validateDF4)
+      val diff2 = validateDF2.except(validateDF5)
+      val diff3 = validateDF3.except(validateDF6)
+      val diff4 = validateDF4.except(validateDF1)
+      val diff5 = validateDF5.except(validateDF2)
+      val diff6 = validateDF6.except(validateDF3)
+
+      if((diff1.count() == 0 && diff4.count() == 0) &&
+          (diff2.count() == 0 && diff5.count() == 0) &&
+          (diff3.count() == 0 && diff6.count() == 0)) {
+        pw.println("Select statement with multiple UDAF executed successfully.")
+      } else {
+        pw.println("Select statement with multiple UDAF failed.")
+      }
+      pw.println("*     *     *     *     *     *     *     *     *     *")
+      pw.flush()
+
+     } catch {
       case e : Exception => {
         pw.println("Exception in multiple UDF -> " + e.getMessage)
         pw.println("*     *     *     *     *     *     *     *     *     *")
         pw.flush()
       }
     }
-
     snc.sql(dropUDAF)
-    snc.sql("drop function if exists cleverstudent_udaf")
-    snc.sql("drop function if exists dullstudent_udaf")
+    snc.sql(dropCleverUDAF)
+    snc.sql(dropDullUDAF)
 
     snc.sql(dropStagingStudent)
     snc.sql(dropStudent)
