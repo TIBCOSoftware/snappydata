@@ -335,7 +335,7 @@ class LeadImpl extends ServerImpl with Lead
       Await.result(initServices, Duration.Inf)
       // If recovery mode then initialize the recovery service
       if(Misc.getGemFireCache.isSnappyRecoveryMode) {
-        RecoveryService.collectViewsAndRecoverDDLs();
+        RecoveryService.collectViewsAndRecoverDDLs()
       }
       // mark status as RUNNING at the end in any case
       markRunning()
