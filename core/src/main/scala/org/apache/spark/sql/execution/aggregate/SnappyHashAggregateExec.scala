@@ -281,7 +281,7 @@ case class SnappyHashAggregateExec(
              |  return null;
              |}
          """.stripMargin)
-        s"$className $dictionaryArrayTerm = $dictionaryArrayInit();"
+        s"$className[] $dictionaryArrayTerm = $dictionaryArrayInit();"
       }
 
       // create an empty method to populate the dictionary array
