@@ -25,7 +25,7 @@ By default, the cluster uses the following ports:
 |Server |**1528** (Port used by ODBC or JDBC clients)  |**4 GB**|
 
 !!!Note 
-	By default, the locator uses **1527** port to listen for client connections and the servers that are running on the same machine use subsequent port numbers. Therefore, **1528** port is used by the single server that is launched by the above command. But, if the server was launched on a different machine it would listen on **1527** also.
+	By default, the locator uses **1527** port to listen for client connections and the servers that are running on the same machine use subsequent port numbers. Therefore, **1528** port is used by the single server that is launched by the above command. But, if the server was launched on a different machine it would listen on **1527**.
 
 All the artifacts created such as the server - logs, metrics, and the database files are all stored in a folder called **work** in the product home directory. Click the individual member URLs on the dashboard to view the logs.
 
@@ -88,7 +88,7 @@ For example, when running on **8 core** servers, configure JVM heap to be **8 GB
 By default, **50%** of the off-heap memory is available as computational memory. While, you may not need this much computational capacity when large off-heap is configured, it is still recommended for reserving enough capacity if working with large data sets. 
 
 
-More complex the analytical processing, especially large aggregations, greater the space requirement in off-heap. For example, if your per server off-heap storage need is **100 GB** then, allocate an additional **30 GB** of off-heap for computations. Even if your data set is small, you must still allocated at least a few Gigabytes of off-heap storage for computations.
+More complex the analytical processing, especially large aggregations, greater the space requirement in off-heap. For example, if your per server off-heap storage need is **100 GB** then, allocate an additional **30 GB** of off-heap for computations. Even if your data set is small, you must still allocate at least a few Gigabytes of off-heap storage for computations.
 
 ### Step 2: Configure Core Cluster Component Properties 
 
@@ -162,13 +162,13 @@ node2_hostname -dir=/nfs/opt/snappy-db1/server4 -heap-size=8g -memory-size=42g
 
 ```
 
-## Configuring Cluster Components
+## Configuration Reference
 
-Refer to [Configuring Cluster Components](/configuring_cluster/configuring_cluster.md) section for more details. 
+See [Configuration Reference](/configuring_cluster/configuring_cluster.md) section for more details. 
 
 ##  List of Properties
 
-Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
+Refer [SnappyData properties](property_description.md) for complete list of properties.
 
 
 
