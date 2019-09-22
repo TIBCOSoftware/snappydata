@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,7 +25,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference,
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
-import org.apache.spark.sql.sources.{DestroyRelation, JdbcExtendedUtils}
+import org.apache.spark.sql.sources.{DestroyRelation, JdbcExtendedUtils, NativeTableRowLevelSecurityRelation}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, SparkSupport, ThinClientConnectorMode}
@@ -55,6 +55,21 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor
   protected def opType: String
 
   protected def isInsert: Boolean = false
+
+  def catalogSchemaVersion: Long = {
+    if (!onExecutor) {
+      val catalogVersion: Option[Long] = Utils.executeIfSmartConnector(sqlContext.sparkContext) {
+        relation match {
+          case Some(r: NativeTableRowLevelSecurityRelation) => r.relationInfo.catalogSchemaVersion
+          case _ =>
+            -1
+        }
+      }
+      catalogVersion.getOrElse(-1)
+    } else {
+      -1
+    }
+  }
 
   override lazy val output: Seq[Attribute] =
     AttributeReference("count", LongType, nullable = false)() :: Nil

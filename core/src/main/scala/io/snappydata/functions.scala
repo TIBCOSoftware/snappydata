@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,12 +22,14 @@ import io.snappydata.sql.catalog.SnappyExternalCatalog
 
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{ExpressionDescription, LeafExpression, Nondeterministic}
+import org.apache.spark.sql.catalyst.expressions.{CurrentDatabase, Expression, ExpressionDescription, ExpressionInfo, LeafExpression, Nondeterministic}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.policy.{CurrentUser, LdapGroupsOfCurrentUser}
 import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.sql.types.{DataType, StringType}
+import org.apache.spark.sql.types.{ArrayType, DataType, StringType}
 import org.apache.spark.sql.{SnappyContext, SparkSupport, ThinClientConnectorMode}
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -35,6 +37,51 @@ import org.apache.spark.unsafe.types.UTF8String
  * Helper functions for execution in embedded as well as smart connector mode.
  */
 object SnappyDataFunctions {
+
+  val stringArrayType: DataType = ArrayType(StringType)
+
+  /**
+   * List all the additional builtin functions here.
+   */
+  val builtin: Seq[(String, ExpressionInfo, FunctionBuilder)] = Seq(
+    buildZeroArgExpression("dsid", classOf[DSID], DSID),
+    // add current_schema() as an alias for current_database()
+    buildZeroArgExpression("current_schema", classOf[CurrentDatabase], CurrentDatabase),
+    buildZeroArgExpression("current_user", classOf[CurrentUser], CurrentUser),
+    buildZeroArgExpression("current_user_ldap_groups", classOf[LdapGroupsOfCurrentUser],
+      LdapGroupsOfCurrentUser)
+  )
+
+  def expressionInfo(name: String, fnClass: Class[_]): ExpressionInfo = {
+    val df = fnClass.getAnnotation(classOf[ExpressionDescription])
+    if (df ne null) {
+      new ExpressionInfo(fnClass.getCanonicalName, null, name, df.usage(), df.extended())
+    } else {
+      new ExpressionInfo(fnClass.getCanonicalName, name)
+    }
+  }
+
+  def buildZeroArgExpression(name: String, fnClass: Class[_],
+      fn: () => Expression): (String, ExpressionInfo, FunctionBuilder) = {
+    (name, expressionInfo(name, fnClass), e => {
+      if (e.nonEmpty) {
+        throw Utils.analysisException(s"Argument(s) passed for zero argument function $name")
+      }
+      fn()
+    })
+  }
+
+  def buildOneArgExpression(name: String, fnClass: Class[_],
+      fn: Expression => Expression): (String, ExpressionInfo, FunctionBuilder) = {
+    (name, expressionInfo(name, fnClass), e => {
+      if (e.length == 1) {
+        fn(e.head)
+      } else {
+        throw Utils.analysisException("Invalid number of arguments for function " +
+            s"$name: got ${e.length} but expected 1")
+      }
+    })
+  }
 
   lazy val defaultConnectionProps: ConnectionProperties = SnappyContext.getClusterMode(
     SnappyContext.globalSparkContext) match {
@@ -67,7 +114,13 @@ object SnappyDataFunctions {
  * Expression that returns the dsid of the server containing the row.
  */
 @ExpressionDescription(
-  usage = "_FUNC_() - Returns the dsid of the server containing the row.")
+  usage = "_FUNC_() - Returns the unique distributed member ID of executor fetching current row.",
+  extended =
+      """
+    Examples:
+      > SELECT _FUNC_();
+       localhost(1831)<v2>:18165
+  """)
 case class DSID() extends LeafExpression with Nondeterministic with SparkSupport {
 
   override def nullable: Boolean = false

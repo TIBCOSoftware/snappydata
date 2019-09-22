@@ -49,7 +49,7 @@ import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunction
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.ui.{SQLTab, SnappySQLListener}
-import org.apache.spark.sql.hive.{SnappyHiveCatalogBase, SnappyHiveExternalCatalog}
+import org.apache.spark.sql.hive.{HiveConditionalRule, SnappyAnalyzer, SnappyHiveCatalogBase, SnappyHiveExternalCatalog, SnappySessionState}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources.{BaseRelation, Filter, ResolveQueryHints}
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
@@ -549,7 +549,9 @@ class Spark210Internals extends SparkInternals {
   }
 
   override def newPreWriteCheck(sessionState: SnappySessionState): LogicalPlan => Unit = {
-    PreWriteCheck(sessionState.conf, sessionState.catalog)
+    // we pass wrapper catalog to make sure LogicalRelation
+    // is passed in PreWriteCheck
+    PreWriteCheck(sessionState.conf, sessionState.wrapperCatalog)
   }
 
   override def newCacheManager(): CacheManager = {
@@ -661,7 +663,7 @@ class SmartConnectorExternalCatalog210(override val session: SparkSession)
     dropDatabaseImpl(schema, ignoreIfNotExists, cascade)
 
   override def alterDatabase(schemaDefinition: CatalogDatabase): Unit =
-    alterDatabaseImpl(schemaDefinition)
+    throw new UnsupportedOperationException("Schema definitions cannot be altered")
 
   override def createTable(table: CatalogTable, ignoreIfExists: Boolean): Unit =
     createTableImpl(table, ignoreIfExists)
@@ -703,7 +705,8 @@ class SnappySessionCatalog21(override val snappySession: SnappySession,
     override val globalTempViewManager: GlobalTempViewManager,
     override val functionResourceLoader: FunctionResourceLoader,
     override val functionRegistry: FunctionRegistry, override val parser: SnappySqlParser,
-    override val sqlConf: SQLConf, hadoopConf: Configuration)
+    override val sqlConf: SQLConf, hadoopConf: Configuration,
+    override val wrappedCatalog: Option[SnappySessionCatalog])
     extends SessionCatalog(snappyExternalCatalog, globalTempViewManager, functionResourceLoader,
       functionRegistry, sqlConf, hadoopConf) with SnappySessionCatalog {
 
@@ -731,36 +734,36 @@ class SnappySessionState21(override val snappySession: SnappySession)
 
   self =>
 
-  override def catalogBuilder(): SnappySessionCatalog = {
+  override def catalogBuilder(wrapped: Option[SnappySessionCatalog]): SnappySessionCatalog = {
     new SnappySessionCatalog21(snappySession,
-      snappySharedState.getExternalCatalogInstance(snappySession),
+      snappySession.sharedState.getExternalCatalogInstance(snappySession),
       snappySession.sharedState.globalTempViewManager,
-      functionResourceLoader, functionRegistry, sqlParser, conf, newHadoopConf())
+      functionResourceLoader, functionRegistry, sqlParser, conf, newHadoopConf(), wrapped)
   }
 
-  override protected[sql] def getExtendedResolutionRules(
-      analyzer: Analyzer): Seq[Rule[LogicalPlan]] = {
-    AnalyzeCreateTable(snappySession) ::
-        new PreprocessTable(this) ::
-        ResolveRelationsExtended ::
-        ResolveAliasInGroupBy ::
-        new FindDataSourceTable(snappySession) ::
-        DataSourceAnalysis(conf) ::
-        AnalyzeMutableOperations(snappySession, analyzer) ::
-        ResolveQueryHints(snappySession) ::
-        RowLevelSecurity ::
-        ExternalRelationLimitFetch ::
-        (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
-            Nil else Nil)
-  }
+  override def analyzerBuilder(): Analyzer = new Analyzer(catalog, conf) with SnappyAnalyzer {
 
-  override protected[sql] def getPostHocResolutionRules(
-      analyzer: Analyzer): Seq[Rule[LogicalPlan]] = Nil
+    override def session: SnappySession = snappySession
 
-  override def analyzerBuilder(): Analyzer = new Analyzer(catalog, conf) {
+    private def state: SnappySessionState = snappySession.sessionState
 
-    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      getExtendedResolutionRules(this)
+    override lazy val baseAnalyzerInstance: Analyzer = new Analyzer(catalog, conf)
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = {
+      val extensions = session.contextFunctions.getExtendedResolutionRules
+      new HiveConditionalRule(_.catalog.ParquetConversions, state) ::
+          new HiveConditionalRule(_.catalog.OrcConversions, state) ::
+          AnalyzeCreateTable(snappySession) ::
+          new PreprocessTable(state) ::
+          ResolveAliasInGroupBy ::
+          new FindDataSourceTable(snappySession) ::
+          DataSourceAnalysis(conf) ::
+          AnalyzeMutableOperations(snappySession, this) ::
+          ResolveQueryHints(snappySession) ::
+          RowLevelSecurity ::
+          ExternalRelationLimitFetch ::
+          (if (conf.runSQLonFile) new ResolveDataSource(session) :: extensions else extensions)
+    }
 
     override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
   }
@@ -773,7 +776,7 @@ class SnappySessionState21(override val snappySession: SnappySession)
 
   override lazy val conf: SQLConf = new SnappyConf(snappySession)
 
-  override lazy val sqlParser: SnappySqlParser = new SnappySqlParser(snappySession)
+  override lazy val sqlParser: SnappySqlParser = snappySession.contextFunctions.newSQLParser()
 
   override lazy val streamingQueryManager: StreamingQueryManager = {
     // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,7 +22,7 @@ import java.time.{ZoneId, ZonedDateTime}
 import scala.util.Random
 
 import com.typesafe.config.Config
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, SnappyFunSuite}
 import org.scalatest.Assertions
 
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
@@ -285,6 +285,7 @@ object TAQTest extends Logging with Assertions {
         .set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
         .set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
         .set("snappydata.sql.planCaching", random.nextBoolean().toString)
+
     if (addOn != null) {
       addOn(conf)
     }

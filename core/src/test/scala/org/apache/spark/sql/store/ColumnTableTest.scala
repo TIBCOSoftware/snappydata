@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -30,6 +30,7 @@ import io.snappydata.sql.catalog.CatalogObjectType
 import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyFunSuite}
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.hive.ql.parse.ParseDriver
+import org.junit.Assert._
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
@@ -38,11 +39,10 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-import org.junit.Assert._
 
 /**
-  * Tests for column tables in GFXD.
-  */
+ * Tests for column tables in GFXD.
+ */
 class ColumnTableTest
     extends SnappyFunSuite
         with Logging
@@ -93,9 +93,9 @@ class ColumnTableTest
     snc.sql(String.format(pattern, "app"))
     try {
       df.write.insertInto(tableName)
-      fail("expected TableNotFoundException")
+      fail("expected AnalysisException")
     } catch {
-      case _: TableNotFoundException => // expected
+      case e: AnalysisException if e.message.contains("Table or view not found") => // expected
         assert(result.collect().length === count)
     }
     // check that write using qualified name should work
@@ -109,18 +109,11 @@ class ColumnTableTest
     val tempView = s"TABLE_VIEW_$tableName"
     df.createOrReplaceTempView(tempView)
 
-    // check failure with quoted schema but case as passed
+    // check success with quoted schema but case as passed since table names are case-insensitive
     snc.sql("set spark.sql.caseSensitive = true")
     snc.sql(String.format(pattern, "`" + schemaName + "`"))
-    try {
-      snc.sql(s"insert into $tableName select * from $tempView")
-      // TODO: SW: correct case-sensitivity
-      // fail("expected TableNotFoundException")
-      count += size
-    } catch {
-      case _: TableNotFoundException => // expected
-        assert(result.collect().length === count)
-    }
+    snc.sql(s"insert into $tableName select * from $tempView")
+    count += size
     // check the same with quoted schema with upper case as stored
     snc.sql(String.format(pattern, "`" + schemaName.toUpperCase + "`"))
     snc.sql(s"insert into $tableName select * from $tempView")
@@ -129,15 +122,8 @@ class ColumnTableTest
     result = snc.sql(s"SELECT * FROM `${tableName.toUpperCase}`")
     assert(result.collect().length === count)
 
-    // finally check quoted table too but incorrect case
-    try {
-      result = snc.sql(s"SELECT * FROM `$tableName`")
-      // TODO: SW: fix case-sensitivity
-      // fail("expected TableNotFoundException")
-    } catch {
-      case _: TableNotFoundException => // expected
-        assert(result.collect().length === count)
-    }
+    // finally check quoted table too but incorrect case should also be fine
+    result = snc.sql(s"SELECT * FROM `$tableName`")
 
     count
   }
@@ -1145,7 +1131,6 @@ class ColumnTableTest
       elapsed = (end - start) / 1000000.0
       println(s"Time taken by Hive parser = ${elapsed}ms " +
           s"average=${elapsed / timedRuns}ms")
-
     } finally {
       conn.getLanguageConnection.popCompilerContext(cc)
       conn.restoreContextStack()

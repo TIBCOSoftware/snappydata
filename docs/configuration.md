@@ -8,24 +8,18 @@ Also, each component can be configured individually using configuration files. I
 
 The following topics are covered in this section:
 
-* [Configuration Files](configuring_cluster/configuring_cluster.md#configuration-files)
-
+*	[Configuring and Launching a SnappyData Cluster](configuring_cluster/configure_launch_cluster.md)
+*	[Configuring and Launching a Multi-node SnappyData Cluster](configuring_cluster/configure_launch_cluster_multinode.md)
+*	[Configuration Files](configuring_cluster/configuring_cluster.md#configuration-files)
 	- [Configuring Locators](configuring_cluster/configuring_cluster.md#locator)
-
 	- [Configuring Leads](configuring_cluster/configuring_cluster.md#lead)
-	
 	- [Configuring Data Servers](configuring_cluster/configuring_cluster.md#dataserver)
-
 	- [Configuring SnappyData Smart Connector](configuring_cluster/configuring_cluster.md#configure-smart-connector)
-
 	- [Environment Settings](configuring_cluster/configuring_cluster.md#environment)
-
 	 	- [Hadoop Provided Settings](configuring_cluster/configuring_cluster.md#hadoop-setting)
-
 	 	- [SnappyData Command Line Utility](configuring_cluster/configuring_cluster.md#command-line)
-
 	- [Logging](configuring_cluster/configuring_cluster.md#logging)
 
-* [List of Properties](configuring_cluster/property_description.md)
+*	[List of Properties](configuring_cluster/property_description.md)
 
-* [Firewalls and Connections](configuring_cluster/firewalls_connections.md)
+*	[Firewalls and Connections](configuring_cluster/firewalls_connections.md)

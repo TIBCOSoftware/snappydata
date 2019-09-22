@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -96,7 +96,7 @@ trait SmartConnectorExternalCatalog extends SnappyExternalCatalog with Connector
       val schemaObj = result.getCatalogSchema
       internals.newCatalogDatabase(schemaObj.getName, schemaObj.getDescription,
         schemaObj.getLocationUri, schemaObj.getProperties.asScala.toMap)
-    } else throw schemaNotFoundException(schema)
+    } else throw SnappyExternalCatalog.schemaNotFoundException(schema)
   }
 
   override def databaseExists(schema: String): Boolean = {
@@ -127,6 +127,10 @@ trait SmartConnectorExternalCatalog extends SnappyExternalCatalog with Connector
 
   override def setCurrentDatabase(schema: String): Unit = synchronized {
     connectorHelper.setCurrentSchema(schema)
+  }
+
+  override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
+    throw new UnsupportedOperationException("Schema/database definitions cannot be altered")
   }
 
   protected def createTableImpl(table: CatalogTable, ignoreIfExists: Boolean): Unit = {
@@ -210,8 +214,7 @@ trait SmartConnectorExternalCatalog extends SnappyExternalCatalog with Connector
     } else {
       assert(schema.length > 0)
       ConnectorExternalCatalog.getRelationInfo(schema -> table, catalog = this) match {
-        case None => throw new TableNotFoundException(schema, table, Some(new RuntimeException(
-          "RelationInfo for the table is missing. Its region may have been destroyed.")))
+        case None => throw new TableNotFoundException(schema, s"RealtionInfo for $table")
         case Some(r) => r -> None
       }
     }

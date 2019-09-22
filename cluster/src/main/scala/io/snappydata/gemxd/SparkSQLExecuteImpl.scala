@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -75,7 +75,7 @@ class SparkSQLExecuteImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setCurrentSchema(schema)
+  Utils.setCurrentSchema(session, schema, createIfNotExists = true)
 
   session.setPreparedQuery(preparePhase = false, pvs)
 
@@ -288,7 +288,11 @@ object SparkSQLExecuteImpl {
       if (dotIdx > 0) {
         val tableName = fn.substring(0, dotIdx)
         val fullTableName = if (tableName.indexOf('.') > 0) tableName
-        else session.getCurrentSchema + '.' + tableName
+        else {
+          // JDBC spec allows returning empty string for getSchemaName so the code
+          // should do the same instead of returning current schema which can be incorrect
+          "." + tableName
+        }
         (fullTableName, a.nullable)
       } else {
         ("", a.nullable)
@@ -474,28 +478,30 @@ object SparkSQLExecuteImpl {
 
 object SnappySessionPerConnection {
 
-  private val connectionIdMap =
+  private[this] val connectionIdMap =
     new java.util.concurrent.ConcurrentHashMap[java.lang.Long, SnappySession]()
 
   def getSnappySessionForConnection(connId: Long): SnappySession = {
-    val connectionID = Long.box(connId)
-    val session = connectionIdMap.get(connectionID)
-    if (session != null) session
-    else {
-      val session = SnappyContext.globalSparkContext match {
-        // use a CancelException to force failover by client to another lead if available
-        case null => throw new CacheClosedException("No SparkContext ...")
-        case sc => new SnappySession(sc)
-      }
-      Property.PlanCaching.set(session.sessionState.conf, true)
-      val oldSession = connectionIdMap.putIfAbsent(connectionID, session)
-      if (oldSession == null) session else oldSession
-    }
+    connectionIdMap.computeIfAbsent(Long.box(connId), CreateNewSession)
   }
 
   def getAllSessions: Seq[SnappySession] = connectionIdMap.values().asScala.toSeq
 
   def removeSnappySession(connectionID: java.lang.Long): Unit = {
-    connectionIdMap.remove(connectionID)
+    val session = connectionIdMap.remove(connectionID)
+    if (session ne null) session.clear()
+  }
+}
+
+object CreateNewSession extends java.util.function.Function[java.lang.Long, SnappySession] {
+  override def apply(connId: java.lang.Long): SnappySession = {
+    val session = SnappyContext.globalSparkContext match {
+      // use a CancelException to force failover by client to another lead if available
+      case null => throw new CacheClosedException("No SparkContext ...")
+      case sc => new SnappySession(sc)
+    }
+    Utils.getLocalProperties(session.sparkContext).clear()
+    Property.PlanCaching.set(session.sessionState.conf, true)
+    session
   }
 }

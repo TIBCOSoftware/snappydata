@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -442,10 +442,13 @@ object StoreUtils {
           v.equalsIgnoreCase("synchronous")) {
         sb.append(s"$GEM_PERSISTENT SYNCHRONOUS ")
       } else if (v.equalsIgnoreCase("none")) {
+        if (isShadowTable) {
+          throw Utils.analysisException(s"Column tables do not support $PERSISTENCE = none")
+        }
         isPersistent = false
         sb
       } else {
-        throw Utils.analysisException(s"Invalid value for option " +
+        throw Utils.analysisException("Invalid value for option " +
             s"$PERSISTENCE = $v (expected one of: sync, async, none, " +
             s"synchronous, asynchronous)")
       }

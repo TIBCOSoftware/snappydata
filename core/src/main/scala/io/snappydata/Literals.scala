@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,6 +17,9 @@
 package io.snappydata
 
 import scala.reflect.ClassTag
+
+import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
+import com.pivotal.gemfirexd.internal.engine.GfxdConstants
 
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
@@ -93,10 +96,15 @@ object Property extends Enumeration {
         "embedded HiveServer2 with thrift access will be started in foreground. Default is true " +
         "but starts the service in background.", Some(true), prefix = null)
 
-  val HiveCompatible: SQLValue[Boolean] = SQLVal(
-    s"${Constant.PROPERTY_PREFIX}sql.hiveCompatible", "Property on SnappySession to make " +
-        "it more hive compatible (like for 'show tables') rather than Spark SQL. Default is false.",
-    Some(false), prefix = null)
+  val HiveCompatibility: SQLValue[String] = SQLVal(
+    s"${Constant.PROPERTY_PREFIX}sql.hiveCompatibility", "Property on SnappySession to make " +
+        "alter the hive compatibility level. The 'default' level is Spark compatible except for " +
+        "CREATE TABLE which defaults to row tables. A value of 'spark' makes it fully Spark " +
+        s"compatible where CREATE TABLE defaults to hive tables when catalogImplementation is " +
+        "'hive' for the session.  When set to 'full' then in addition to the behaviour " +
+        "with 'spark', it makes the behavior hive compatible for statements like SHOW TABLES " +
+        "rather than being compatible with Spark SQL. Default is 'default'.",
+    Some("default"), prefix = null)
 
   val HiveServerUseHiveSession: SparkValue[Boolean] = Val(
     s"${Constant.PROPERTY_PREFIX}hiveServer.useHiveSession", "If true, then the session " +
@@ -181,6 +189,19 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.planCaching",
     "Property to set/unset plan caching", Some(false))
 
+  val SerializeWrites: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.serializeWrites",
+    "Property to set/unset serialized writes on column table." +
+      "There will be a global lock which will ensure that at a time only" +
+      "one write operation is active on the column table.", Some(true))
+
+  val SerializedWriteLockTimeOut: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.serializedWriteLockTimeOut",
+    "Property to specify the lock timeout for write ops in seconds. If the" +
+      " write operation doesn't get lock for write within this time period" +
+      s" then operation will fail. Default value is ${GfxdConstants.MAX_LOCKWAIT_DEFAULT/1000} sec",
+    Some(GfxdConstants.MAX_LOCKWAIT_DEFAULT/1000))
+
   val Tokenize: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.tokenize",
     "Property to enable/disable tokenization", Some(true))
@@ -211,8 +232,6 @@ object Property extends Enumeration {
     s"${Constant.SPARK_PREFIX}sql.aqp.numBootStrapTrials",
     "Number of bootstrap trials to do for calculating error bounds. Default value is 100.",
     Some(100))
-
-  // TODO: check with suyog  Why are we having two different error defaults one as 1 & other as .2?
 
   val MaxErrorAllowed: SQLValue[Double] = SQLVal[Double](
     s"${Constant.SPARK_PREFIX}sql.aqp.maxErrorAllowed",
@@ -259,6 +278,39 @@ object Property extends Enumeration {
       "The putInto inner join would be cached if the result of " +
           "join with incoming Dataset is of size less " +
           "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some("100m"))
+
+  val TestExplodeComplexDataTypeInSHA: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.explodeStructInSHA",
+    "Explodes the Struct or Array Field in Group By Keys even if the struct object is " +
+      "UnsafeRow or UnsafeArrayData", Some(false))
+
+  val UseOptimzedHashAggregate: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.optimizedHashAggregate",
+    "Enables the use of ByteBufferMap based SnappyHashAggregateExec",
+    Some(true))
+
+  val UseOptimizedHashAggregateForSingleKey: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.useOptimizedHashAggregateForSingleKey",
+    "Use the new ByteBufferMap based SnappyHashAggregateExec even for single column group by." +
+        "The default value is false since the older implementation is substantially faster " +
+        "for most of single column group by cases (except if number of groups is very large).",
+    Some(false))
+
+  val ApproxMaxCapacityOfBBMap: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.approxMaxCapacityOfBBMap",
+    s"The max capacity of value byte array in ByteBufferHashMap. " +
+      s"Default value is ${Integer.MAX_VALUE}",
+    Some(((Integer.MAX_VALUE -DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD - 7) >>> 3) << 3))
+
+  val initialCapacityOfSHABBMap: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.initialCapacityOfSHABBMap",
+    s"The initial capacity of SHAMap. " +
+      s"Default value is 8192", Some(8192))
+
+  val TestDisableCodeGenFlag: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.disableCodegenFallback",
+    s"The test flag if set to true will throw Exception instead of creating CodegenSparkFallback " +
+      s"Default value is false", Some(false))
 }
 
 // extractors for properties
@@ -369,7 +421,7 @@ object QueryHint extends Enumeration {
    * Example:<br>
    * SELECT * FROM t1 --+ complexTypeAsJson(0)
    */
-  val ComplexTypeAsJson = HintValue(Constant.COMPLEX_TYPE_AS_JSON_HINT, Vector.empty)
+  val ComplexTypeAsJson: Type = HintValue(Constant.COMPLEX_TYPE_AS_JSON_HINT, Vector.empty)
 
   /**
    * Query hint followed by table to override optimizer choice of index per table.
@@ -379,7 +431,7 @@ object QueryHint extends Enumeration {
    * Example:<br>
    * SELECT * FROM t1 /`*`+ index(xxx) *`/`, t2 --+ withIndex(yyy)
    */
-  val Index = HintValue("index", Vector.empty)
+  val Index: Type = HintValue("index", Vector.empty)
 
   /**
    * Query hint after FROM clause to indicate following tables have join order fixed and
@@ -390,7 +442,7 @@ object QueryHint extends Enumeration {
    * Example:<br>
    * SELECT * FROM /`*`+ joinOrder(fixed) *`/` t1, t2
    */
-  val JoinOrder = HintValue("joinOrder", Vector(HintName.JoinOrder_Fixed,
+  val JoinOrder: Type = HintValue("joinOrder", Vector(HintName.JoinOrder_Fixed,
     HintName.JoinOrder_ContinueOptimizations, HintName.JoinOrder_IncludeGeneratedPaths))
 
   /**
@@ -404,7 +456,7 @@ object QueryHint extends Enumeration {
    * Example:<br>
    * SELECT * FROM t1 /`*`+ joinType(broadcast) -- broadcast t1 *`/`, t2 where ...
    */
-  val JoinType = HintValue("joinType", Vector(HintName.JoinType_Broadcast,
+  val JoinType: Type = HintValue("joinType", Vector(HintName.JoinType_Broadcast,
     HintName.JoinType_Hash, HintName.JoinType_Sort))
 
   /**
@@ -419,5 +471,5 @@ object QueryHint extends Enumeration {
    * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(addr)
    * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(*)
    */
-  val ColumnsAsClob = HintValue("columnsAsClob", Vector.empty)
+  val ColumnsAsClob: Type = HintValue("columnsAsClob", Vector.empty)
 }

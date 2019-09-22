@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,17 +25,21 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 
+import org.apache.spark.sql.SnappySession
+
 /**
  * Base class for start and stop of LDAP Server
  */
 object ClusterManagerLDAPTestBase {
   val securityProperties: Properties = new Properties()
-  val thriftPort = AvailablePortHelper.getRandomAvailableUDPPort
+  val thriftPort: Int = AvailablePortHelper.getRandomAvailableUDPPort
+  var admin: String = ""
 }
 
 abstract class ClusterManagerLDAPTestBase(s: String, val adminUser: String = "gemfire10")
     extends ClusterManagerTestBase(s) with Serializable {
 
+  ClusterManagerLDAPTestBase.admin = adminUser
   // start embedded thrift server on lead
   bootProps.setProperty("snappydata.hiveServer.enabled", "true")
   bootProps.setProperty("hive.server2.thrift.bind.host", "localhost")
@@ -72,6 +76,14 @@ abstract class ClusterManagerLDAPTestBase(s: String, val adminUser: String = "ge
         ldapServer.stopService()
       }
       ClusterManagerLDAPTestBase.securityProperties.clear()
+    }
+  }
+
+  override protected def initSessionForCleanup(session: SnappySession): Unit = {
+    val admin = ClusterManagerLDAPTestBase.admin
+    if (admin ne null) {
+      session.conf.set(Attribute.USERNAME_ATTR, admin)
+      session.conf.set(Attribute.PASSWORD_ATTR, admin)
     }
   }
 

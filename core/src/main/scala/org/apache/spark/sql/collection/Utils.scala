@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -69,7 +69,7 @@ import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
 
-object Utils extends SparkSupport {
+object Utils extends Logging with SparkSupport {
 
   final val EMPTY_STRING_ARRAY = SharedUtils.EMPTY_STRING_ARRAY
   final val WEIGHTAGE_COLUMN_NAME = "snappy_sampler_weightage"
@@ -568,6 +568,11 @@ object Utils extends SparkSupport {
     }
   }
 
+  def setCurrentSchema(session: SnappySession, schema: String, createIfNotExists: Boolean): Unit =
+    session.setCurrentSchema(schema, createIfNotExists)
+
+  def getLocalProperties(sc: SparkContext): java.util.Properties = sc.getLocalProperties
+
   def getDriverClassName(url: String): String = DriverManager.getDriver(url) match {
     case wrapper: DriverWrapper => wrapper.wrapped.getClass.getCanonicalName
     case driver => driver.getClass.getCanonicalName
@@ -682,7 +687,9 @@ object Utils extends SparkSupport {
           propName.startsWith(Constant.PROPERTY_PREFIX) ||
           propName.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) ||
           propName.startsWith("zeppelin.") ||
-          propName.startsWith("hive.")) {
+          propName.startsWith("hive.") ||
+          propName.startsWith("hadoop.") ||
+          propName.startsWith("javax.jdo.")) {
         entry.getValue match {
           case v: String => conf.set(propName, v)
           case _ =>
@@ -851,6 +858,26 @@ object Utils extends SparkSupport {
       -1
     }
   }
+
+  def executeIfSmartConnector[T](sc: SparkContext)(f: => T): Option[T] = {
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) => Option(f)
+      case _ => None
+    }
+  }
+
+  def isSmartConnectorMode(sc: SparkContext): Boolean = {
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) => true
+      case _ => false
+    }
+  }
+
+  override def logInfo(msg: => String): Unit = super.logInfo(msg)
+
+  override def logWarning(msg: => String): Unit = super.logWarning(msg)
+
+  override def logError(msg: => String): Unit = super.logError(msg)
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
@@ -1064,17 +1091,17 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def hashCode(): Int = idx
 }
 
-object ToolsCallbackInit extends Logging {
+object ToolsCallbackInit {
   final val toolsCallback: ToolsCallback = {
     try {
       val c = org.apache.spark.util.Utils.classForName(
         "io.snappydata.ToolsCallbackImpl$")
       val tc = c.getField("MODULE$").get(null).asInstanceOf[ToolsCallback]
-      logInfo("toolsCallback initialized")
+      Utils.logInfo("toolsCallback initialized")
       tc
     } catch {
       case _: ClassNotFoundException =>
-        logWarning("ToolsCallback couldn't be INITIALIZED. " +
+        Utils.logWarning("ToolsCallback couldn't be INITIALIZED. " +
             "DriverURL won't get published to others.")
         null
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,8 +25,6 @@ trait ToolsCallback {
 
   def updateUI(sc: SparkContext): Unit
 
-  def removeAddedJar(sc: SparkContext, jarName: String): Unit
-
   /**
    * Callback to spark Utils to fetch file
    * Download a file or directory to target directory. Supports fetching the file in a variety of
@@ -48,13 +46,19 @@ trait ToolsCallback {
 
   def setSessionDependencies(sparkContext: SparkContext,
       appName: String,
-      classLoader: ClassLoader): Unit = {
+      classLoader: ClassLoader, addAllJars: Boolean): Unit = {
   }
 
   def addURIs(alias: String, jars: Array[String],
       deploySql: String, isPackage: Boolean = true): Unit
 
+  def removeURIs(uris: Array[String], isPackage: Boolean = true): Unit
+
   def addURIsToExecutorClassLoader(jars: Array[String]): Unit
+
+  def removeURIsFromExecutorClassLoader(jars: Array[String]): Unit
+
+  def removeFunctionJars(args: Array[String]): Unit
 
   def getAllGlobalCmnds: Array[String]
 

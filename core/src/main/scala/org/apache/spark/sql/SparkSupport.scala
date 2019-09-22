@@ -56,6 +56,19 @@ object SparkSupport extends Logging {
     GemFireVersion.isEnterpriseEdition
   }
 
+  lazy val aqpOverridesClass: Option[Class[_]] = {
+    if (isEnterpriseEdition) {
+      try {
+        Some(Utils.classForName("org.apache.spark.sql.execution.SnappyContextAQPFunctions"))
+      } catch {
+        case NonFatal(e) =>
+          // Let the user know if it failed to load AQP classes.
+          logWarning(s"Failed to load AQP classes in Enterprise edition: $e")
+          None
+      }
+    } else None
+  }
+
   /**
    * Get the appropriate [[SparkInternals]] for current SparkContext version.
    */
@@ -78,18 +91,7 @@ object SparkSupport extends Logging {
           case "2.3.2" => s"$INTERNAL_PACKAGE.Spark232Internals"
           case v => throw new SparkException(s"Unsupported Spark version $v")
         }
-        // try to load AQP version first
-        val implClass: Class[_] = if (isEnterpriseEdition) {
-          try {
-            Utils.classForName(implClassName.replace("Internals", "AQPInternals"))
-          } catch {
-            case NonFatal(e) =>
-              // Let the user know if it failed to load AQP classes.
-              logWarning(s"Failed to load AQP classes in Enterprise edition: $e")
-              Utils.classForName(implClassName)
-          }
-        } else Utils.classForName(implClassName)
-
+        val implClass: Class[_] = Utils.classForName(implClassName)
         internalImpl = implClass.newInstance().asInstanceOf[SparkInternals]
         internalImpl
       }
