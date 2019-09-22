@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,6 +26,7 @@ class CreateTableInSnappyJob extends SnappySQLJob{
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
+    val tableName = jobConfig.getString("tableName")
     val isRowTable: Boolean = jobConfig.getBoolean("isRowTable")
     val withKeyColumn: Boolean = jobConfig.getBoolean("withKeyColumn")
     val outputFile = "CreateTablesJob_output.txt"
@@ -50,7 +51,7 @@ class CreateTableInSnappyJob extends SnappySQLJob{
     def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id)"
     else ""
     options = options + ")"
-    val s = s"create table persoon (" +
+    val s = s"create table $tableName (" +
         s"id long, " +
         s"firstName varchar(30), " +
         s"middleName varchar(30), " +
@@ -59,18 +60,26 @@ class CreateTableInSnappyJob extends SnappySQLJob{
         s"address varchar(40), " +
         s"country varchar(10), " +
         s"phone varchar(12), " +
-        s"dateOfBirth varchar(15), " +
+        s"dateOfBirth date, " +
+        s"birthTime timestamp, " +
         s"age int, " +
         s"status varchar(10), " +
         s"email varchar(30), " +
         s"education varchar(20), " +
-        s"occupation varchar(15) " +
+        s"gender varchar(12)," +
+        s"weight double," +
+        s"height double," +
+        s"bloodGrp varchar(3)," +
+        s"occupation varchar(15), " +
+        s"hasChildren boolean," +
+        s"numChild int," +
+        s"hasSiblings boolean" +
         s" $primaryKey" +
         s") using $provider $options"
     pw.println(s"Creating table $s")
     pw.flush()
     snc.sql(s)
-    pw.println("created table.")
+    pw.println("Created table.")
     pw.flush()
   }
 

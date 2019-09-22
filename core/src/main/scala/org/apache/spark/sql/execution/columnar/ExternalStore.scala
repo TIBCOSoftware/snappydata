@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -36,6 +36,8 @@ trait ExternalStore extends Serializable with Logging {
   final val columnPrefix = "COL_"
 
   def tableName: String
+
+  def withTable(tableName: String, numPartitions: Int): ExternalStore
 
   def storeColumnBatch(tableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Long, maxDeltaRows: Int,

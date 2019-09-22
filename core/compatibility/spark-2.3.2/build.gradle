@@ -19,6 +19,8 @@ apply plugin: 'scala'
 
 compileScala.options.encoding = 'UTF-8'
 
+sourceSets.main.java.srcDirs = []
+
 dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
@@ -36,7 +38,7 @@ dependencies {
 
   compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
 
-  compile (project(":snappy-core_${scalaBinaryVersion}")) {
+  compileOnly (project(":snappy-core_${scalaBinaryVersion}")) {
     exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
@@ -46,6 +48,15 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-8_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+
+    exclude(module: ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
   }
 }
 

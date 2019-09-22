@@ -1,5 +1,7 @@
 # Client Connections
 
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
+
 SnappyData provides several statistics to help you determine the frequency and duration of client connections to the distributed system.
 
 The following tables describe some commonly-used connection statistics. Examine the VSD output for information about additional connection statistics.

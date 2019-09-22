@@ -34,40 +34,8 @@ dependencies {
   compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
   compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
 
-  compile (project(coreProjectName)) {
-    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
-    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
-  }
-  compile (project(":snappy-core_${scalaBinaryVersion}:spark${sparkVersion}")) {
-    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
-  }
-  testCompile (project(path: coreProjectName, configuration: 'testOutput')) {
-    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
-    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
-  }
-
   if (new File(rootDir, 'spark/build.gradle').exists()) {
+    compile project(':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
@@ -87,6 +55,7 @@ dependencies {
     testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
         configuration: 'testOutput')
   } else {
+    compile 'io.snappydata:snappy-spark-unsafe_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-core_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-catalyst_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-sql_' + scalaBinaryVersion + ':' + snappySparkVersion
@@ -105,6 +74,44 @@ dependencies {
 
     testCompile group: 'io.snappydata', name: 'snappy-spark-sql_' + scalaBinaryVersion,
                 version: snappySparkVersion, classifier: 'tests'
+  }
+
+  compile (project(coreProjectName)) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+  }
+  compile (project(":snappy-core_${scalaBinaryVersion}:compat-spark${sparkVersion}")) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+  }
+
+  testCompile (project(path: coreProjectName, configuration: 'testOutput')) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {

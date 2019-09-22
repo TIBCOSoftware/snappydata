@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -41,6 +41,14 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
   }
 
   override protected def newSparkConf(addOn: SparkConf => SparkConf): SparkConf = {
+    /**
+     * Pls do not change the flag values of Property.TestDisableCodeGenFlag.name
+     * and Property.UseOptimizedHashAggregateForSingleKey.name
+     * They are meant to suppress CodegenFallback Plan so that optimized
+     * byte buffer code path is tested & prevented from false passing.
+     * If your test needs CodegenFallback, then override the newConf function
+     * & clear the flag from the conf of the test locally.
+     */
     val conf = new SparkConf()
     conf.setIfMissing("spark.master", "local[*]")
         .setAppName(getClass.getName)
@@ -51,6 +59,8 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
     conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+    conf.set(io.snappydata.Property.TestDisableCodeGenFlag.name, "true")
+    conf.set(io.snappydata.Property.UseOptimizedHashAggregateForSingleKey.name, "true")
     conf
   }
 

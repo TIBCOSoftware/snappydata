@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -66,6 +66,9 @@ class PreparedQueryRoutingDUnitTest(val s: String)
 
     // (1 to 5).foreach(d => query())
     query_test1(tableName)
+    // fire queries on views
+    snc.sql(s"create view $tableName" + s"_view as select * from $tableName")
+    query_test1(tableName + "_view")
   }
 
   def insertRows_test1(numRows: Int, tableName: String): Unit = {
@@ -803,5 +806,106 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     for ( t <- 0 until i) allThreads(t).start()
     for ( t <- 0 until i) allThreads(t).join(180000)
     assert(keepRunning.get())
+  }
+
+
+  def testSNAP2254(): Unit = {
+    serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"testSNAP2254: network server started at $serverHostPort")
+    // scalastyle:on println
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + serverHostPort)
+
+    // scalastyle:off println
+    println(s"testSNAP2254: Connected to $serverHostPort")
+    val stmt = conn.createStatement()
+
+    viewQueryTest1(conn, stmt)
+    viewQueryTest2(conn, stmt)
+  }
+
+  private def viewQueryTest1(conn: Connection, stmt: Statement): Unit = {
+    stmt.execute("create table t1 (col1 int, col2 string, col3 date) using row")
+    val ps1 = conn.prepareStatement("insert into t1 values (?, ?, ?)")
+    for (i <- 1 to 100) {
+      ps1.setInt(1, i)
+      ps1.setString(2, s"$i")
+      ps1.setString(3, "2019-06-09")
+      ps1.addBatch()
+    }
+    ps1.executeBatch()
+    ps1.close()
+
+    stmt.execute("create view t1view as select col1 as c1, col2 as c2 from t1")
+
+    val ps2 = conn.prepareStatement("select c1, c2 from t1view where c1 = ? and c2 = ?")
+    val parameterMetaData = ps2.getParameterMetaData
+    assert(parameterMetaData.getParameterCount == 2)
+    assert(parameterMetaData.getParameterType(1) == java.sql.Types.INTEGER)
+    assert(parameterMetaData.getParameterType(2) == java.sql.Types.CLOB)
+    ps2.setInt(1, 5)
+    ps2.setString(2, "5")
+
+    val rs1 = ps2.executeQuery()
+    val resultSetMetaData = rs1.getMetaData
+    assert(resultSetMetaData.getColumnCount == 2)
+    assert(resultSetMetaData.getColumnName(1).equalsIgnoreCase("c1"))
+    assert(resultSetMetaData.getColumnName(2).equalsIgnoreCase("c2"))
+    assert(resultSetMetaData.getColumnType(1) == java.sql.Types.INTEGER)
+    assert(resultSetMetaData.getColumnType(2) == java.sql.Types.CLOB)
+    assert(rs1.next())
+    assert(rs1.getInt(1) == 5)
+    assert(rs1.getString(2).equals("5"))
+    rs1.close()
+    ps2.close()
+  }
+
+  private def viewQueryTest2(conn: Connection, stmt: Statement): Unit = {
+    stmt.execute("create table t2 (col21 int, col22 string, col23 timestamp, col24 boolean)")
+    stmt.execute("create table t3 (col31 int, col32 string, col33 timestamp, col34 boolean)")
+    stmt.execute("create view view2 as select t2.col21 as c1, t2.col22 as c2, t2.col23 as" +
+        " c3 from t2 join t3 on t2.col21 = t3.col31")
+
+    def insertData(table: String): Unit = {
+      val ps1 = conn.prepareStatement(s"insert into $table values (?, ?, ?)")
+      for (i <- 1 to 100) {
+        ps1.setInt(1, i)
+        ps1.setString(2, s"$i")
+        ps1.setString(3, "2019-06-09 04:04:10")
+        ps1.addBatch()
+      }
+      ps1.executeBatch()
+      ps1.close()
+    }
+
+    insertData("t2")
+    insertData("t3")
+
+
+    val ps3 = conn.prepareStatement("select * from view2 where c1 = ? and c3 = ?")
+    val parameterMetaData = ps3.getParameterMetaData
+    assert(parameterMetaData.getParameterCount == 2)
+    assert(parameterMetaData.getParameterType(1) == java.sql.Types.INTEGER)
+    assert(parameterMetaData.getParameterType(2) == java.sql.Types.TIMESTAMP)
+    ps3.setInt(1, 5)
+    ps3.setString(2, "2019-06-09 04:04:10.0")
+
+    val rs1 = ps3.executeQuery()
+    val resultSetMetaData = rs1.getMetaData
+    assert(resultSetMetaData.getColumnCount == 3)
+    assert(resultSetMetaData.getColumnName(1).equalsIgnoreCase("c1"))
+    assert(resultSetMetaData.getColumnName(2).equalsIgnoreCase("c2"))
+    assert(resultSetMetaData.getColumnName(3).equalsIgnoreCase("c3"))
+    assert(resultSetMetaData.getColumnType(1) == java.sql.Types.INTEGER)
+    assert(resultSetMetaData.getColumnType(2) == java.sql.Types.CLOB)
+    assert(resultSetMetaData.getColumnType(3) == java.sql.Types.TIMESTAMP)
+    assert(rs1.next())
+    assert(rs1.getInt(1) == 5)
+    assert(rs1.getString(2).equals("5"))
+    assert(rs1.getString(3).equals("2019-06-09 04:04:10.0"))
+    rs1.close()
+    ps3.close()
   }
 }

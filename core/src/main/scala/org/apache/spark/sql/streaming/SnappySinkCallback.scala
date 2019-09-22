@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,19 +20,19 @@ package org.apache.spark.sql.streaming
 import java.sql.{DriverManager, SQLException}
 import java.util.NoSuchElementException
 
-import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.LOGIN_FAILED
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.{LOGIN_FAILED, SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH}
 import io.snappydata.Property._
 import io.snappydata.util.ServiceUtils
-import org.apache.log4j.Logger
 
+import org.apache.spark.Logging
+import org.apache.spark.sql._
+import org.apache.spark.sql.execution.CatalogStaleException
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.streaming.Sink
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
-import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.{TEST_FAILBATCH_OPTION, log}
 import org.apache.spark.sql.streaming.SnappyStoreSinkProvider.EventType._
 import org.apache.spark.sql.streaming.SnappyStoreSinkProvider._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappyContext, SnappySession, _}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
 
@@ -115,15 +115,17 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
 private[streaming] object SnappyStoreSinkProvider {
 
   val EVENT_TYPE_COLUMN = "_eventType"
-  val SINK_STATE_TABLE = "SNAPPYSYS_INTERNAL____SINK_STATE_TABLE"
+  val SINK_STATE_TABLE = "snappysys_internal____sink_state_table"
   val TABLE_NAME = "tableName"
   val QUERY_NAME = "queryName"
   val SINK_CALLBACK = "sinkCallback"
   val STATE_TABLE_SCHEMA = "stateTableSchema"
   val CONFLATION = "conflation"
-  val EVENT_COUNT_COLUMN = "SNAPPYSYS_INTERNAL____EVENT_COUNT"
+  val EVENT_COUNT_COLUMN = "snappysys_internal____event_count"
   val QUERY_ID_COLUMN = "stream_query_id"
   val BATCH_ID_COLUMN = "batch_id"
+  val TEST_FAILBATCH_OPTION = "internal___failBatch"
+  val ATTEMPTS = "internal___attempts"
 
   object EventType {
     val INSERT = 0
@@ -136,20 +138,20 @@ private[streaming] object SnappyStoreSinkProvider {
 }
 
 case class SnappyStoreSink(snappySession: SnappySession, parameters: Map[String, String],
-    sinkCallback: SnappySinkCallback) extends Sink with SparkSupport {
+    sinkCallback: SnappySinkCallback) extends Sink with Logging with SparkSupport {
 
   override def addBatch(batchId: Long, data: Dataset[Row]): Unit = {
     val message = s"queryName must be specified for ${SnappyContext.SNAPPY_SINK_NAME}."
     val queryName = snappySession.sessionCatalog
         .formatName(parameters.getOrElse(QUERY_NAME, throw new IllegalStateException(message)))
-    val possibleDuplicate = updateStateTable(queryName, batchId)
     val hashAggregateSizeIsDefault = HashAggregateSize.get(snappySession.sessionState.conf)
         .equals(HashAggregateSize.defaultValue.get)
     if (hashAggregateSizeIsDefault) {
       HashAggregateSize.set(snappySession.sessionState.conf, "10m")
     }
     try {
-      sinkCallback.process(snappySession, parameters, batchId, convert(data), possibleDuplicate)
+      processBatchWithRetries(batchId, data, queryName,
+        parameters.getOrElse(ATTEMPTS, "10").toInt)
     } finally {
       if (hashAggregateSizeIsDefault) {
         HashAggregateSize.set(snappySession.sessionState.conf, HashAggregateSize.defaultValue.get)
@@ -157,7 +159,35 @@ case class SnappyStoreSink(snappySession: SnappySession, parameters: Map[String,
     }
   }
 
-  def updateStateTable(queryName: String, batchId: Long): Boolean = {
+  private def processBatchWithRetries(batchId: Long, data: Dataset[Row], queryName: String,
+      totalAttempts: Int = 10, attempt: Int = 0): Unit = {
+    try {
+      val possibleDuplicate = isPossibleDuplicate(queryName, batchId)
+      sinkCallback.process(snappySession, parameters, batchId, convert(data), possibleDuplicate)
+    } catch {
+      case ex: Exception if attempt >= totalAttempts - 1 || !isRetriableException(ex) => throw ex
+      case ex: Exception =>
+        val sleepTime = attempt * 100
+        logWarning(s"Encountered a retriable exception. Will retry processing batch after" +
+            s" $sleepTime millis. Attempts left: ${totalAttempts - (attempt + 1)}", ex)
+        Thread.sleep(sleepTime)
+        processBatchWithRetries(batchId, data, queryName, totalAttempts, attempt + 1)
+    }
+  }
+
+  private def isRetriableException(ex: Throwable): Boolean = {
+    if ((ex.isInstanceOf[SQLException] &&
+        SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH.equals(ex.asInstanceOf[SQLException].getSQLState))
+        || ex.isInstanceOf[CatalogStaleException]) {
+      true
+    } else if (ex.getCause == null) {
+      false
+    } else {
+      isRetriableException(ex.getCause)
+    }
+  }
+
+  private def isPossibleDuplicate(queryName: String, batchId: Long): Boolean = {
     val stateTableSchema = parameters.get(STATE_TABLE_SCHEMA)
     val updated = snappySession.sql(s"update ${stateTable(stateTableSchema)} " +
         s"set $BATCH_ID_COLUMN=$batchId where $QUERY_ID_COLUMN='$queryName' " +
@@ -187,24 +217,19 @@ case class SnappyStoreSink(snappySession: SnappySession, parameters: Map[String,
    * SPARK-16020-td18118.html
    * for a detailed discussion.
    */
-  def convert(ds: DataFrame): DataFrame = {
+  private def convert(ds: DataFrame): DataFrame = {
     internals.internalCreateDataFrame(snappySession,
       ds.queryExecution.toRdd,
       StructType(ds.schema.fields))
   }
 }
 
-object DefaultSnappySinkCallback {
-  private val log = Logger.getLogger(classOf[DefaultSnappySinkCallback].getName)
-  private val TEST_FAILBATCH_OPTION = "internal___failBatch"
-}
-
 import org.apache.spark.sql.snappy._
 
-class DefaultSnappySinkCallback extends SnappySinkCallback {
+class DefaultSnappySinkCallback extends SnappySinkCallback with Logging {
   def process(snappySession: SnappySession, parameters: Map[String, String],
       batchId: Long, df: Dataset[Row], posDup: Boolean) {
-    log.debug(s"Processing batchId $batchId with parameters $parameters ...")
+    logDebug(s"Processing batchId $batchId with parameters $parameters ...")
     val tableName = snappySession.sessionCatalog.formatTableName(parameters(TABLE_NAME))
     val keyColumns = snappySession.sessionCatalog.getKeyColumnsAndPositions(tableName)
     val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
@@ -215,7 +240,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       throw new IllegalStateException(msg)
     }
 
-    log.debug(s"keycolumns: '${keyColumns.map(p => s"${p._1.name}(${p._2})").mkString(",")}'" +
+    logDebug(s"keycolumns: '${keyColumns.map(p => s"${p._1.name}(${p._2})").mkString(",")}'" +
         s", eventTypeColumnAvailable:$eventTypeColumnAvailable,possible duplicate: $posDup")
 
     if (keyColumns.nonEmpty) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.sql.{Connection, PreparedStatement, Types}
+import java.sql.{Connection, PreparedStatement, SQLException, Statement, Types}
 import java.util.Properties
 import javax.naming.NameNotFoundException
 
@@ -33,6 +33,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.authentication.{AuthenticationSe
 import com.pivotal.gemfirexd.internal.impl.sql.execute.GranteeIterator
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.sql.catalog.SnappyExternalCatalog
+import io.snappydata.thrift.internal.ClientStatement
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
 
@@ -71,7 +72,8 @@ object ExternalStoreUtils extends SparkSupport {
         // reduce defaults for localhost-only cluster too
         case Some(s) if s.startsWith("localhost:") || s.startsWith("localhost[") ||
             s.startsWith("127.0.0.1") || s.startsWith("::1[") =>
-          val result = math.min(32, math.max(SnappyContext.totalCoreCount.get() << 1, 8)).toString
+          val result = math.min(32,
+            math.max(SnappyContext.totalPhysicalCoreCount.get() << 1, 8)).toString
           (result, result)
         case _ => ("128", "64")
       }
@@ -164,6 +166,8 @@ object ExternalStoreUtils extends SparkSupport {
 
     override def get(k: String): Option[T] = baseMap.get(k.toLowerCase)
 
+    override def put(k: String, v: T): Option[T] = baseMap.put(k.toLowerCase, v)
+
     override def remove(k: String): Option[T] = baseMap.remove(k.toLowerCase)
 
     override def iterator: Iterator[(String, T)] = baseMap.iterator
@@ -216,13 +220,13 @@ object ExternalStoreUtils extends SparkSupport {
 
   def getLdapGroupsForUser(userId: String): Array[String] = {
     val auth = Misc.getMemStoreBooting.getDatabase.getAuthenticationService.
-      asInstanceOf[AuthenticationServiceBase].getAuthenticationScheme
+        asInstanceOf[AuthenticationServiceBase].getAuthenticationScheme
 
     auth match {
       case x: LDAPAuthenticationSchemeImpl => x.getLdapGroupsOfUser(userId).
-        toArray[String](Array.empty)
+          toArray[String](Array.empty)
       case _ => throw new NameNotFoundException("Require LDAP authentication scheme for " +
-        "LDAP group support but is " + auth)
+          "LDAP group support but is " + auth)
     }
   }
 
@@ -724,6 +728,46 @@ object ExternalStoreUtils extends SparkSupport {
   def defaultColumnMaxDeltaRows(session: SparkSession): Int = {
     checkPositiveNum(Property.ColumnMaxDeltaRows.get(session.sessionState.conf),
       Property.ColumnMaxDeltaRows.name)
+  }
+
+  def setSchemaVersionOnConnection(catalogVersion: Long, conn: Connection): Unit = {
+    var clientStmt: Option[Statement] = None
+    if (catalogVersion != -1) {
+      try {
+        clientStmt = Option(conn.createStatement())
+        clientStmt match {
+          case Some(c: ClientStatement) =>
+            val clientConn = c.getConnection
+            clientConn.setCommonStatementAttributes(
+              new io.snappydata.thrift.StatementAttrs().setCatalogVersion(catalogVersion))
+          case _ =>
+        }
+      } catch {
+        case sqle: SQLException =>
+          throw new java.io.IOException(sqle.toString, sqle)
+      } finally {
+        clientStmt.foreach(s => s.close())
+      }
+    }
+  }
+
+  def resetSchemaVersionOnConnection(catalogVersion: Long, conn: Connection): Unit = {
+    var clientStmt: Option[Statement] = None
+    if (catalogVersion != -1) {
+      try {
+        clientStmt = Option(conn.createStatement())
+        clientStmt match {
+          case Some(c: ClientStatement) =>
+            c.getConnection.setCommonStatementAttributes(null)
+          case _ =>
+        }
+      } catch {
+        case _: SQLException => // ignored
+      }
+      finally {
+        clientStmt.foreach(s => s.close())
+      }
+    }
   }
 }
 

@@ -28,6 +28,10 @@ sourceSets.test.java.srcDirs = []
 
 def osName = org.gradle.internal.os.OperatingSystem.current()
 
+configurations {
+  connector
+}
+
 dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
@@ -54,10 +58,22 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
+
     compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+    testCompile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+
+    testCompile project(path: ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion, configuration: 'testOutput')
+    testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion, configuration: 'testOutput')
+    testCompile project(path: ':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion, configuration: 'testOutput')
   } else {
     compileOnly coreLibraries.spark
     testCompile coreLibraries.spark
+
+    testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
+    testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
+    testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
+    testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
+    testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
@@ -74,19 +90,21 @@ dependencies {
   compile project(":snappy-jdbc_${scalaBinaryVersion}")
   compile project(":snappy-encoders_${scalaBinaryVersion}")
 
+  connector project(":snappy-core_${scalaBinaryVersion}:compat-spark${sparkConnectorVersion}")
+
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
-  testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
-  testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
-  testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
-  testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
-  testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
-  testCompile project(":snappy-core_${scalaBinaryVersion}:spark${sparkConnectorVersion}")
+  testCompile project(":snappy-core_${scalaBinaryVersion}:compat-spark${sparkConnectorVersion}")
 
   testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
+  testCompile(project(path: ':snappy-examples_' + scalaBinaryVersion, configuration: 'testOutput')) {
+    exclude(group: 'io.snappydata', module: 'snappy-cluster_' + scalaBinaryVersion)
+    exclude(group: 'io.snappydata', module: 'snappy-aqp_' + scalaBinaryVersion)
+    exclude(group: 'io.snappydata', module: 'gemfire-core')
+  }
 }
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
@@ -166,69 +184,69 @@ if (rootProject.hasProperty('snappydata.enterprise')) {
 
 archivesBaseName = "snappydata-core-spark${sparkConnectorVersion}_${scalaBinaryVersion}"
 
-subprojects {
-  shadowJar {
-    zip64 = true
-    // avoid conflict with the 0.9.2 version in stock Spark
-    relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
-    // relocate koloboke for possible conflicts with user dependencies
-    relocate 'com.koloboke', 'io.snappydata.com.koloboke'
-    // relocate the guava's com.google packages
-    relocate 'com.google.common', 'io.snappydata.com.google.common'
+shadowJar {
+  zip64 = true
+  // avoid conflict with the 0.9.2 version in stock Spark
+  relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
+  // relocate koloboke for possible conflicts with user dependencies
+  relocate 'com.koloboke', 'io.snappydata.com.koloboke'
+  // relocate the guava's com.google packages
+  relocate 'com.google.common', 'io.snappydata.com.google.common'
 
-    mergeServiceFiles()
-    exclude 'log4j.properties'
+  configurations = [ project.configurations.runtime, project.configurations.connector ]
 
-    if (rootProject.hasProperty('enablePublish')) {
-      createdBy = 'SnappyData Build Team'
-    } else {
-      createdBy = System.getProperty('user.name')
-    }
-    manifest {
-      attributes(
-        'Manifest-Version'  : '1.0',
-        'Created-By'        : createdBy,
-        'Title'             : archivesBaseName,
-        'Version'           : version,
-        'Vendor'            : vendorName
-      )
-    }
+  mergeServiceFiles()
+  exclude 'log4j.properties'
+
+  if (rootProject.hasProperty('enablePublish')) {
+    createdBy = 'SnappyData Build Team'
+  } else {
+    createdBy = System.getProperty('user.name')
   }
+  manifest {
+    attributes(
+      'Manifest-Version'  : '1.0',
+      'Created-By'        : createdBy,
+      'Title'             : archivesBaseName,
+      'Version'           : version,
+      'Vendor'            : vendorName
+    )
+  }
+}
 
-  // write the POM for spark-package
-  task sparkPackagePom(dependsOn: shadowJar) { doLast {
-    file("${rootProject.buildDir}/distributions").mkdirs()
-    pom {
-      project {
-        groupId 'SnappyDataInc'
-        artifactId 'snappydata'
-        version "${version}-s_${scalaBinaryVersion}"
-        licenses {
-          license {
-            name 'The Apache Software License, Version 2.0'
-            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-            distribution 'repo'
-          }
+// write the POM for spark-package
+task sparkPackagePom(dependsOn: shadowJar) { doLast {
+  file("${rootProject.buildDir}/distributions").mkdirs()
+  pom {
+    project {
+      groupId 'SnappyDataInc'
+      artifactId 'snappydata'
+      version "${version}-s_${scalaBinaryVersion}"
+      licenses {
+        license {
+          name 'The Apache Software License, Version 2.0'
+          url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+          distribution 'repo'
         }
       }
-      whenConfigured { p -> p.dependencies.clear() }
-    }.writeTo("${rootProject.buildDir}/distributions/${sparkPackageName}.pom")
-    copy {
-      from "${buildDir}/libs"
-      into "${rootProject.buildDir}/distributions"
-      include "${shadowJar.archiveName}"
-      rename { filename -> "${sparkPackageName}.jar" }
     }
-  } }
+    whenConfigured { p -> p.dependencies.clear() }
+  }.writeTo("${rootProject.buildDir}/distributions/${sparkPackageName}.pom")
+  copy {
+    from "${buildDir}/libs"
+    into "${rootProject.buildDir}/distributions"
+    include "${shadowJar.archiveName}"
+    rename { filename -> "${sparkPackageName}.jar" }
+  }
+} }
 
-  task sparkPackage(type: Zip, dependsOn: sparkPackagePom) {
-    archiveName = "${sparkPackageName}.zip"
-    destinationDir = file("${rootProject.buildDir}/distributions")
-    outputs.upToDateWhen { false }
+task sparkPackage(type: Zip, dependsOn: sparkPackagePom) {
+  archiveName = "${sparkPackageName}.zip"
+  destinationDir = file("${rootProject.buildDir}/distributions")
+  outputs.upToDateWhen { false }
 
-    from ("${rootProject.buildDir}/distributions") {
-      include "${sparkPackageName}.jar"
-      include "${sparkPackageName}.pom"
-    }
+  from ("${rootProject.buildDir}/distributions") {
+    include "${sparkPackageName}.jar"
+    include "${sparkPackageName}.pom"
   }
 }

@@ -51,7 +51,7 @@ import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
 import org.apache.spark.sql.execution.ui.{SQLAppStatusListener, SQLAppStatusStore, SnappySQLAppListener}
 import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
-import org.apache.spark.sql.hive.{HiveSessionResourceLoader, SnappyHiveCatalogBase, SnappyHiveExternalCatalog}
+import org.apache.spark.sql.hive.{HiveConditionalRule, HiveSessionResourceLoader, SnappyAnalyzer, SnappyHiveCatalogBase, SnappyHiveExternalCatalog, SnappySessionState}
 import org.apache.spark.sql.sources.{BaseRelation, Filter, ResolveQueryHints}
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
@@ -487,15 +487,7 @@ class Spark232Internals extends SparkInternals {
   }
 
   override def newSnappySessionState(snappySession: SnappySession): SnappySessionState = {
-    // TODO: SW:
-  }
-
-  // TODO: SW: move to session state impl
-  private def newSparkOptimizer(sessionState: SnappySessionState): SparkOptimizer = {
-    new SparkOptimizer(sessionState.catalog, sessionState.experimentalMethods)
-        with DefaultOptimizer {
-      override def state: SnappySessionState = sessionState
-    }
+    new SnappySessionStateBuilder23(snappySession).build()
   }
 
   override def newPreWriteCheck(sessionState: SnappySessionState): LogicalPlan => Unit = {
@@ -644,7 +636,7 @@ final class SmartConnectorExternalCatalog23(override val session: SparkSession)
       cascade: Boolean): Unit = dropDatabaseImpl(schema, ignoreIfNotExists, cascade)
 
   override protected def doAlterDatabase(schemaDefinition: CatalogDatabase): Unit =
-    alterDatabaseImpl(schemaDefinition)
+    throw new UnsupportedOperationException("Schema definitions cannot be altered")
 
   override protected def doCreateTable(table: CatalogTable, ignoreIfExists: Boolean): Unit =
     createTableImpl(table, ignoreIfExists)
@@ -696,7 +688,8 @@ class SnappySessionCatalog23(override val snappySession: SnappySession,
     override val globalTempViewManager: GlobalTempViewManager,
     override val functionResourceLoader: FunctionResourceLoader,
     override val functionRegistry: FunctionRegistry, override val parser: SnappySqlParser,
-    override val sqlConf: SQLConf, hadoopConf: Configuration)
+    override val sqlConf: SQLConf, hadoopConf: Configuration,
+    override val wrappedCatalog: Option[SnappySessionCatalog])
     extends SessionCatalog(snappyExternalCatalog, globalTempViewManager, functionRegistry,
       sqlConf, hadoopConf, parser, functionResourceLoader) with SnappySessionCatalog {
 
@@ -730,13 +723,15 @@ class SnappySessionCatalog23(override val snappySession: SnappySession,
 class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[SessionState] = None)
     extends BaseSessionStateBuilder(session, parentState) {
 
+  self =>
+
   override protected val conf: SQLConf = {
     val conf = parentState.map(_.conf.clone()).getOrElse(new SnappyConf(session))
     mergeSparkConf(conf, session.sparkContext.conf)
     conf
   }
 
-  override protected lazy val sqlParser: SnappySqlParser = new SnappySqlParser(session)
+  override protected lazy val sqlParser: SnappySqlParser = session.contextFunctions.newSQLParser()
 
   protected val externalCatalog: SnappyExternalCatalog =
     session.sharedState.getExternalCatalogInstance(session)
@@ -746,7 +741,7 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
     case _ => new SessionResourceLoader(session)
   }
 
-  override protected lazy val catalog: SnappySessionCatalog = {
+  private def createCatalog(wrapped: Option[SnappySessionCatalog]): SnappySessionCatalog = {
     val catalog = new SnappySessionCatalog23(
       session,
       externalCatalog,
@@ -755,23 +750,46 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
       functionRegistry,
       sqlParser,
       conf,
-      SessionState.newHadoopConf(session.sparkContext.hadoopConfiguration, conf))
+      SessionState.newHadoopConf(session.sparkContext.hadoopConfiguration, conf),
+      wrapped)
     parentState.foreach(_.catalog.copyStateTo(catalog))
     catalog
   }
 
-  override protected def analyzer: Analyzer = new Analyzer(catalog, conf) {
+  override protected lazy val catalog: SnappySessionCatalog = createCatalog(wrapped = None)
+
+  override protected def analyzer: Analyzer = new Analyzer(catalog, conf) with SnappyAnalyzer {
+
+    override def session: SnappySession = self.session
 
     private def state: SnappySessionState = session.sessionState
 
-    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      state.getExtendedResolutionRules(this)
+    override lazy val baseAnalyzerInstance: Analyzer = new Analyzer(catalog, conf)
 
-    override val postHocResolutionRules: Seq[Rule[LogicalPlan]] =
-      state.getPostHocResolutionRules(this)
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = {
+      val extensions = session.contextFunctions.getExtendedResolutionRules
+      (new HiveConditionalRule(_.catalog.ParquetConversions, state) ::
+          new HiveConditionalRule(_.catalog.OrcConversions, state) ::
+          new PreprocessTable(state) ::
+          state.ResolveAliasInGroupBy ::
+          new FindDataSourceTable(session) ::
+          new ResolveSQLOnFile(session) ::
+          extensions) ++ customResolutionRules
+    }
+
+    override val postHocResolutionRules: Seq[Rule[LogicalPlan]] = {
+      (PreprocessTableCreation(session) ::
+          PreprocessTableInsertion(conf) ::
+          DataSourceAnalysis(conf) ::
+          state.AnalyzeMutableOperations(session, analyzer) ::
+          ResolveQueryHints(session) ::
+          state.RowLevelSecurity ::
+          state.ExternalRelationLimitFetch ::
+          Nil) ++ customPostHocResolutionRules
+    }
 
     override val extendedCheckRules: Seq[LogicalPlan => Unit] =
-      state.getExtendedCheckRules ++ (PreReadCheck +: HiveOnlyCheck +: customCheckRules)
+      state.getExtendedCheckRules ++ (PreReadCheck +: customCheckRules)
   }
 
   override protected def optimizer: Optimizer = {
@@ -803,31 +821,21 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
 
       override val snappySession: SnappySession = session
 
-      override protected[sql] def getExtendedResolutionRules(
-          analyzer: Analyzer): Seq[Rule[LogicalPlan]] = {
-        (new PreprocessTable(this) ::
-            ResolveRelationsExtended ::
-            ResolveAliasInGroupBy ::
-            new FindDataSourceTable(session) ::
-            new ResolveSQLOnFile(session) ::
-            Nil) ++ customResolutionRules
+      override def catalogBuilder(wrapped: Option[SnappySessionCatalog]): SessionCatalog = {
+        wrapped match {
+          case None => self.catalog
+          case _ => self.createCatalog(wrapped)
+        }
       }
 
-      override protected[sql] def getPostHocResolutionRules(
-          analyzer: Analyzer): Seq[Rule[LogicalPlan]] = {
-        (PreprocessTableCreation(session) ::
-            PreprocessTableInsertion(conf) ::
-            DataSourceAnalysis(conf) ::
-            AnalyzeMutableOperations(session, analyzer) ::
-            ResolveQueryHints(session) ::
-            RowLevelSecurity ::
-            ExternalRelationLimitFetch ::
-            Nil) ++ customPostHocResolutionRules
-      }
+      def analyzerBuilder(): Analyzer = self.analyzer
+
+      def optimizerBuilder(): Optimizer = self.optimizer
     }
   }
 
-  override protected def newBuilder: NewBuilder = new SnappySessionStateBuilder23(_, _)
+  override protected def newBuilder: NewBuilder = (session, optState) =>
+    new SnappySessionStateBuilder23(session.asInstanceOf[SnappySession], optState)
 }
 
 final class CodegenSparkFallback23(child: SparkPlan,

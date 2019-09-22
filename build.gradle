@@ -26,7 +26,7 @@ buildscript {
   dependencies {
     classpath 'io.snappydata:gradle-scalatest:0.23'
     classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.9.0'
-    classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.3'
+    classpath 'com.github.jengelman.gradle.plugins:shadow:5.1.0'
     classpath 'de.undercouch:gradle-download-task:3.4.3'
     classpath 'net.rdrei.android.buildtimetracker:gradle-plugin:0.11.+'
     classpath 'com.netflix.nebula:gradle-ospackage-plugin:5.2.+'
@@ -72,7 +72,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.1.0-HF-1'
+  version = '1.1.1'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -108,19 +108,18 @@ allprojects {
     vendorName = 'TIBCO Software Inc.'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
-    sparkVersion = '2.1.1'
 
     spark210Version = '2.1.0'
     spark211Version = '2.1.1'
     spark232Version = '2.3.2'
 
+    sparkVersion = spark211Version
     sparkConnectorVersion = rootProject.hasProperty('spark.connector.version')
         ? rootProject.property('spark.connector.version') : sparkVersion
-    snappySparkVersion = '2.1.1.6'
+    snappySparkVersion = '2.1.1.7'
     coreProjectName = sparkVersion == sparkConnectorVersion
         ? ":snappy-core_${scalaBinaryVersion}" : ":snappy-core-product_${scalaBinaryVersion}"
-    aqpProjectName = sparkVersion == sparkConnectorVersion
-        ? ":snappy-aqp_${scalaBinaryVersion}" : ":snappy-aqp-product_${scalaBinaryVersion}"
+    aqpProjectName = ":snappy-aqp_${scalaBinaryVersion}"
     sparkPackageName = "snappydata-${version}_${sparkConnectorVersion}-s_${scalaBinaryVersion}"
 
     sparkConnectorDistName = "spark-${sparkConnectorVersion}-bin-hadoop2.7"
@@ -166,10 +165,10 @@ allprojects {
     antlr2Version = '2.7.7'
 
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.3'
+    snappyStoreVersion = '1.6.4'
     snappydataVersion = version
     pulseVersion = '1.5.1'
-    zeppelinInterpreterVersion = '0.7.3.5'
+    zeppelinInterpreterVersion = '0.7.3.6'
 
     buildFlags = ''
     createdBy = System.getProperty('user.name')
@@ -182,7 +181,7 @@ allprojects {
     jdkVersion = System.getProperty('java.version')
     clusterType = ''
 
-    sparkJobServerVersion = '0.6.2.9'
+    sparkJobServerVersion = '0.6.2.10'
     eclipseCollectionsVersion = '9.2.0'
     fastutilVersion = '8.2.2'
 
@@ -745,7 +744,7 @@ gradle.taskGraph.whenReady { graph ->
           if (dunitSingle == null || dunitSingle.length() == 0) {
             def dunitTests = testClassesDirs.asFileTree.matching {
               includes = [ '**/*DUnitTest.class', '**/*DUnit.class' ]
-              excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class',
+              excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/*HDFS*DUnit*.class',
                   '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
                   '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class' ]
             }
@@ -757,7 +756,7 @@ gradle.taskGraph.whenReady { graph ->
 
             int begin = dunitFrom != -1 ? dunitFrom : 0
             int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
-            def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+            def filteredSet = includeTestFiles.drop(begin).take(end - begin + 1).collect {f -> "**/" + f.name}
             if (begin != 0 || end != includeTestFiles.size()) {
               println("Picking tests :")
               filteredSet.each { a -> println(a) }
@@ -784,7 +783,7 @@ gradle.taskGraph.whenReady { graph ->
 
             int begin = dunitFrom != -1 ? dunitFrom : 0
             int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
-            def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+            def filteredSet = includeTestFiles.drop(begin).take(end - begin + 1).collect {f -> "**/" + f.name}
             if (begin != 0 || end != includeTestFiles.size()) {
               println("Picking tests :")
               filteredSet.each { a -> println(a) }
@@ -887,7 +886,8 @@ task publishMaven {
 
 task product(type: Zip) {
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
-  dependsOn ":snappy-core_${scalaBinaryVersion}:spark${sparkVersion}:jar"
+  dependsOn ":snappy-core_${scalaBinaryVersion}:jar"
+  dependsOn ":snappy-core_${scalaBinaryVersion}:compat-spark${sparkVersion}:jar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:sparkProduct"
   dependsOn ':snappy-launcher:jar'
@@ -895,18 +895,12 @@ task product(type: Zip) {
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def launcherProject = project(':snappy-launcher')
-  def aqpCompatProjectName = ":snappy-aqp_${scalaBinaryVersion}:aqp-spark${sparkVersion}"
   def targetProject = clusterProject
 
   if (isEnterpriseProduct) {
     if (hasAqpProject) {
       dependsOn "${aqpProjectName}:jar"
-      dependsOn "${aqpCompatProjectName}:jar"
-      if (sparkVersion == sparkConnectorVersion) {
-        targetProject = project(aqpCompatProjectName)
-      } else {
-        targetProject = aqpProject
-      }
+      targetProject = aqpProject
     }
 
     if (hasJdbcConnectorProject){
@@ -1287,22 +1281,20 @@ task jdbcJar {
   }
 }
 
-String connectorProjectName = ":snappy-core_${scalaBinaryVersion}:spark${sparkConnectorVersion}"
-
 task copyShadowJars {
   dependsOn jdbcJar
-  dependsOn connectorProjectName + ':shadowJar'
+  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
 
   doLast {
-    def connectorProject = project(connectorProjectName)
+    def coreProject = project(":snappy-core_${scalaBinaryVersion}")
     String connectorName = "snappydata-spark${sparkConnectorVersion}_${scalaBinaryVersion}-${version}.jar"
     if (isEnterpriseProduct) {
       connectorName = "TIB_compute-spark${sparkConnectorVersion}_${scalaBinaryVersion}-${version}.jar"
     }
     copy {
-      from connectorProject.shadowJar.destinationDir
+      from coreProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"
-      include connectorProject.shadowJar.archiveName
+      include coreProject.shadowJar.archiveName
       rename { filename -> connectorName }
     }
   }
@@ -1316,7 +1308,8 @@ task distInstallers {
 
 // use the task below to prepare final release bits
 task distProduct {
-  dependsOn product, distTar, distZip dependsOn distInstallers
+  dependsOn product, distTar, distZip
+  dependsOn distInstallers
   dependsOn copyShadowJars
 }
 
@@ -1353,10 +1346,14 @@ task generateSources {
 task cleanAll {
   dependsOn getTasksByName('clean', true).collect { it.path }
 }
+def taskFilter(Task p) {
+  !p.path.matches('.*compat-spark.*') || p.path.matches(".*compat-spark${sparkConnectorVersion}.*")
+}
 task buildAll {
-  dependsOn getTasksByName('assemble', true).collect { it.path }
-  dependsOn getTasksByName('product', true).collect { it.path }
-  dependsOn getTasksByName('testClasses', true).collect { it.path }
+  dependsOn getTasksByName('assemble', true).findAll { taskFilter(it) }.collect { it.path }
+  dependsOn getTasksByName('product', true).findAll { taskFilter(it) }.collect { it.path }
+  dependsOn getTasksByName('testClasses', true).findAll { taskFilter(it) }.collect { it.path }
+  dependsOn ':copyShadowJars'
   mustRunAfter cleanAll
 }
 task buildDtests {
@@ -1531,7 +1528,7 @@ void createVersionPropertiesTask(Project proj, String propertiesFile, String pro
 }
 
 task sparkPackage {
-  dependsOn "${connectorProjectName}:sparkPackage"
+  dependsOn ":snappy-core_${scalaBinaryVersion}:sparkPackage"
 }
 
 packagePulse.mustRunAfter product
@@ -1593,11 +1590,19 @@ task docs(type: ScalaDoc) {
   })
   destinationDir = file("${rootProject.buildDir}/docs")
 }
+
+task buildSqlFuncDocs(type: Exec) {
+  dependsOn product
+  //on linux
+  commandLine "${rootProject.projectDir}/spark/sql/create-docs.sh"
+}
+
 task publishDocs(type:Exec) {
-  dependsOn docs
+  dependsOn docs, buildSqlFuncDocs
   //on linux
   commandLine './publish-site.sh'
 }
+
 
 // It runs test script from product dir. Hence if running the target individually make sure
 // to run product target first

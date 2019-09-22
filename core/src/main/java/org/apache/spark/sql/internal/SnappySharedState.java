@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -53,7 +53,11 @@ public final class SnappySharedState extends SharedState {
    */
   private final boolean initialized;
 
-  private static final String CATALOG_IMPLEMENTATION = "spark.sql.catalogImplementation";
+  private static final String CATALOG_IMPLEMENTATION =
+      StaticSQLConf.CATALOG_IMPLEMENTATION().key();
+
+  private static final String WAREHOUSE_DIR =
+      StaticSQLConf.WAREHOUSE_PATH().key();
 
   /**
    * Create Snappy's SQL Listener instead of SQLListener (before SharedState creation).
@@ -92,10 +96,13 @@ public final class SnappySharedState extends SharedState {
   public static synchronized SnappySharedState create(SparkContext sparkContext) {
     // force in-memory catalog to avoid initializing external hive catalog at this point
     final String catalogImpl = sparkContext.conf().get(CATALOG_IMPLEMENTATION, null);
+    final String warehouseDir = sparkContext.conf().get(WAREHOUSE_DIR, null);
     // there is a small thread-safety issue in that if multiple threads
     // are initializing normal concurrently SparkSession vs SnappySession
     // then former can land up with in-memory catalog too
     sparkContext.conf().set(CATALOG_IMPLEMENTATION, "in-memory");
+    // always use default local path for warehouse dir (not used by SD but required by hive client)
+    sparkContext.conf().set(WAREHOUSE_DIR, StaticSQLConf.WAREHOUSE_PATH().defaultValueString());
 
     createListenerAndUI(sparkContext);
 
@@ -103,11 +110,16 @@ public final class SnappySharedState extends SharedState {
     // new Spark versions initialize the UI listener in constructor which is updated next
     sharedState.createListenerAndUI();
 
-    // reset the catalog implementation to original
+    // reset the temporary confs to original
     if (catalogImpl != null) {
       sparkContext.conf().set(CATALOG_IMPLEMENTATION, catalogImpl);
     } else {
       sparkContext.conf().remove(CATALOG_IMPLEMENTATION);
+    }
+    if (warehouseDir != null) {
+      sparkContext.conf().set(WAREHOUSE_DIR, warehouseDir);
+    } else {
+      sparkContext.conf().remove(WAREHOUSE_DIR);
     }
     return sharedState;
   }
@@ -120,7 +132,7 @@ public final class SnappySharedState extends SharedState {
    */
   public SnappyExternalCatalog getExternalCatalogInstance(SnappySession session) {
     if (!this.initialized) {
-      throw new IllegalStateException("getExternalCatalogInstance unexpected invocation " +
+      throw new IllegalStateException("getExternalCatalogInstance: unexpected invocation " +
           "from within SnappySharedState constructor");
     } else if (this.embedCatalog != null) {
       return this.embedCatalog;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,11 +25,10 @@ import com.pivotal.gemfirexd.internal.engine.diag.SysVTIs
 import io.snappydata.SnappyFunSuite
 import org.scalatest.Assertions
 
-import org.apache.spark.sql.catalyst.analysis.{NoSuchDatabaseException, NoSuchTableException}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnPartitionResolver
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Dataset, Row}
+import org.apache.spark.sql.{AnalysisException, Dataset, Row, TableNotFoundException}
 
 /**
  * Tests for meta-data queries using Spark SQL.
@@ -178,7 +177,7 @@ object MetadataTest extends Assertions {
     // check schema of the returned Dataset
     assert(ds.schema === StructType(sysSchemasColumns.map(p =>
       StructField(p._1, StringType, nullable = false, getMetadata(p._1, p._2, p._3)))))
-    val expectedDefaultSchemas = List("APP", "NULLID", "SNAPPY_HIVE_METASTORE", "SQLJ",
+    val expectedDefaultSchemas = List("APP", "DEFAULT", "NULLID", "SNAPPY_HIVE_METASTORE", "SQLJ",
       "SYS", "SYSCAT", "SYSCS_DIAG", "SYSCS_UTIL", "SYSFUN", "SYSIBM", "SYSPROC", "SYSSTAT")
     assert(rs.length === expectedDefaultSchemas.length,
       s"Got ${rs.map(_.getString(1)).mkString(", ")}")
@@ -408,7 +407,7 @@ object MetadataTest extends Assertions {
     assert(rs.sortBy(_.getString(1)) === filtered.map(n => Row("sys", n, false)))
 
     // also check hive compatible output
-    executeSQL("set snappydata.sql.hiveCompatible=true")
+    executeSQL("set snappydata.sql.hiveCompatibility=full")
 
     rs = executeSQL("show tables from sys").collect()
     assert(rs.length === allSYSTables.length)
@@ -418,13 +417,13 @@ object MetadataTest extends Assertions {
     assert(rs.length === filtered.length)
     assert(rs.sortBy(_.getString(0)) === filtered.map(Row(_)))
 
-    executeSQL("set snappydata.sql.hiveCompatible=false")
+    executeSQL("set snappydata.sql.hiveCompatibility=default")
 
     // system schemas other than SYS should not be visible
     try {
       rs = executeSQL("show tables in sysibm").collect()
     } catch {
-      case _: NoSuchDatabaseException => rs = Array.empty
+      case ae: AnalysisException if ae.getMessage().contains("Schema 'sysibm'") => rs = Array.empty
       case se: SQLException if se.getSQLState == "42000" => rs = Array.empty
     }
     assert(rs.length === 0)
@@ -447,7 +446,7 @@ object MetadataTest extends Assertions {
       rs = executeSQL("show columns in sysTables from app").collect()
       fail("Expected error due to non-existent table")
     } catch {
-      case _: NoSuchTableException => // expected
+      case _: TableNotFoundException => // expected
       case se: SQLException if se.getSQLState == "42000" => // expected
     }
     try {
@@ -578,7 +577,7 @@ object MetadataTest extends Assertions {
       Row("app", "columntable2", false), Row("app", "rowtable1", false)))
 
     // also check hive compatible output
-    executeSQL("set snappydata.sql.hiveCompatible=true")
+    executeSQL("set snappydata.sql.hiveCompatibility=full")
 
     rs = executeSQL("show tables").collect()
     assert(rs.length === 2)
@@ -590,7 +589,7 @@ object MetadataTest extends Assertions {
     assert(rs.sortBy(_.getString(0)) === Array(
       Row("columntable2"), Row("rowtable1")))
 
-    executeSQL("set snappydata.sql.hiveCompatible=false")
+    executeSQL("set snappydata.sql.hiveCompatibility=default")
 
     // ----- check DESCRIBE and SHOW COLUMNS for user tables -----
 
@@ -772,7 +771,7 @@ object MetadataTest extends Assertions {
     assert(rs(0) === Row("schema2", "rowtable2", false))
 
     // also check hive compatible output
-    executeSQL("set snappydata.sql.hiveCompatible=true")
+    executeSQL("set snappydata.sql.hiveCompatibility=full")
 
     rs = executeSQL("show tables in schema1").collect()
     assert(rs.length === 1)
@@ -781,7 +780,7 @@ object MetadataTest extends Assertions {
     assert(rs.length === 1)
     assert(rs(0) === Row("rowtable2"))
 
-    executeSQL("set snappydata.sql.hiveCompatible=false")
+    executeSQL("set snappydata.sql.hiveCompatibility=default")
 
     // ----- check DESCRIBE and SHOW COLUMNS for user tables -----
 

@@ -36,8 +36,8 @@ import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.Exchange
 import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, RowDataSourceScanExec, SparkPlan, WholeStageCodegenExec}
-import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
-import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SharedState, SnappySessionState}
+import org.apache.spark.sql.hive.{SnappyHiveExternalCatalog, SnappySessionState}
+import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SharedState}
 import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.streaming.LogicalDStreamPlan
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}

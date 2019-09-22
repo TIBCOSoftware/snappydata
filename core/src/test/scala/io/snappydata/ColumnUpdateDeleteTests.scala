@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -72,10 +72,13 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     assert(session.table("checkTable1").count() === numElements)
 
 
-    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
+    session.sql(
+      s"""update updateTable set id = cast((id + ($numElements / 2)) as int)
+         | where id <> 73""".stripMargin)
     logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
-
-    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
+    session.sql(
+      s"""update updateTable set id = cast((id + ($numElements / 2)) as int)
+         | where id <> 73""".stripMargin)
     logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     assert(session.table("updateTable").count() === numElements)
@@ -313,10 +316,13 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
       "concat('addr', cast(id as string))",
       "case when (id % 2) = 0 then true else false end").write.insertInto("checkTable2")
 
-    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
+    session.sql(
+      s"""update updateTable set id = cast( (id + ($numElements / 2)) as int)
+         | where id <> 73""".stripMargin)
     logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
-
-    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
+    session.sql(
+      s"""update updateTable set id = cast( (id + ($numElements / 2)) as int)
+         | where id <> 73""".stripMargin)
     logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     assert(session.table("updateTable").count() === (numElements * 9) / 10)
@@ -526,7 +532,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
         barrier.await()
         waited = true
-        res = snappy.sql(s"update updateTable set id = $idUpdate, " +
+        res = snappy.sql(s"update updateTable set id = cast( $idUpdate as int), " +
             s"addr = concat('addrUpd', cast(($idUpdate) as string)) " +
             s"where (id % $step) = $i").collect()
         assert(res.map(_.getLong(0)).sum > 0)

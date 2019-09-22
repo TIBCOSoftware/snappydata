@@ -20,7 +20,7 @@ $ docker run hello-world
 A sample Dockerfile is provided which you can use to create your own Docker image of SnappyData.
 
 Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) and
-[start](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/start) script and place them into a single directory. This Dockerfile uses the SnappyData 1.1.0 build.
+[start](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/start) script and place them into a single directory. This Dockerfile uses the SnappyData 1.1.1 build.
 
 Move to that directory and run the following commands with appropriate details:
 
@@ -29,8 +29,8 @@ Move to that directory and run the following commands with appropriate details:
 
     For example:
 
-    $ docker build -t snappydatainc/snappydata:1.1.0 -f Dockerfile .
-    $ docker push snappydatainc/snappydata:1.1.0
+    $ docker build -t snappydatainc/snappydata:1.1.1 -f Dockerfile .
+    $ docker push snappydatainc/snappydata:1.1.1
 
 
 ## Launch SnappyData</br>

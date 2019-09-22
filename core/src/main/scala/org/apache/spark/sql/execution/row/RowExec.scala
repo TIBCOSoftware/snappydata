@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,6 +21,7 @@ import java.sql.Connection
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Expression, NamedExpression}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.TableExec
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.sources.ConnectionProperties
@@ -37,6 +38,7 @@ trait RowExec extends TableExec {
   @transient protected var stmt: String = _
   @transient protected var rowCount: String = _
   @transient protected var result: String = _
+
 
   def resolvedName: String
 
@@ -59,21 +61,53 @@ trait RowExec extends TableExec {
       val utilsClass = ExternalStoreUtils.getClass.getName
       connTerm = internals.addClassField(ctx, connectionClass, "connection")
       val props = ctx.addReferenceObj("connectionProperties", connProps)
-      val initCode =
-        s"""
-           |$connTerm = $utilsClass.MODULE$$.getConnection(
-           |    "$resolvedName", $props, true);""".stripMargin
-      val endCode =
-        s""" finally {
-           |  try {
-           |    $connTerm.commit();
-           |    $connTerm.close();
-           |  } catch (java.sql.SQLException sqle) {
-           |    // ignore exception in close
-           |  }
-           |}""".stripMargin
+      val catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
+      val initCode: String = getInitCode(utilsClass, props, catalogVersion)
+      val endCode = getEndCode(utilsClass, catalogVersion)
       (initCode, s"", endCode)
     }
+  }
+
+  private def getInitCode(utilsClass: String, props: String, catalogVersion: String): String = {
+   val initCode = if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
+     // for smart connector, set connection attributes so that catalog schema version can be checked
+     s"""
+        |$connTerm = $utilsClass.MODULE$$.getConnection(
+        |    "$resolvedName", $props, true);
+        |$utilsClass.MODULE$$.setSchemaVersionOnConnection($catalogVersion, $connTerm);
+        |""".stripMargin
+    } else {
+     s"""
+        |$connTerm = $utilsClass.MODULE$$.getConnection(
+        |    "$resolvedName", $props, true);
+        |""".stripMargin
+   }
+    initCode
+  }
+
+  private def getEndCode(utilsClass: String, catalogVersion: String): String = {
+    val endCode = if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
+      // for smart connector, reset connection attributes
+      s""" finally {
+         |  $utilsClass.MODULE$$.resetSchemaVersionOnConnection($catalogVersion, $connTerm);
+         |  try {
+         |    $connTerm.commit();
+         |    $connTerm.close();
+         |  } catch (java.sql.SQLException sqle) {
+         |    // ignore exception in close
+         |  }
+         |}""".stripMargin
+    } else {
+      s""" finally {
+         |  try {
+         |    $connTerm.commit();
+         |    $connTerm.close();
+         |  } catch (java.sql.SQLException sqle) {
+         |    // ignore exception in close
+         |  }
+         |}""".stripMargin
+    }
+    endCode
   }
 
   protected def executeBatchCode(numOperations: String,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,11 +16,12 @@
  */
 package org.apache.spark.sql
 
-import java.io.{File, FileOutputStream, PrintStream}
-import java.sql.PreparedStatement
+import java.io.{File, FileOutputStream, PrintStream, PrintWriter}
+import java.sql.{Connection, Date, DriverManager, PreparedStatement, ResultSet}
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
+import io.snappydata.benchmark.TPCH_Queries.createQuery
 import io.snappydata.benchmark.snappy.tpch.QueryExecutor
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable, TPCH_Queries}
 import io.snappydata.cluster.ClusterManagerTestBase
@@ -58,7 +59,6 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
   def testSnappy(): Unit = {
     val snc = SnappyContext(sc)
-
     // create table randomly either using smart connector or
     // from embedded mode
     if ((System.currentTimeMillis() % 2) == 0) {
@@ -76,6 +76,293 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     vm3.invoke(classOf[SmartConnectorFunctions],
       "queryValidationOnConnector", locatorNetPort)
   }
+
+  def testSnappy_PrepStatement(): Unit = {
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"testSnappy_PrepStatement: network server started at $serverHostPort")
+    // scalastyle:on println
+
+    val snc = SnappyContext(sc)
+    logInfo("CREATING TABLES ")
+    TPCHUtils.createAndLoadTables(snc, isSnappy = true)
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + serverHostPort)
+    runQueriesUsingPrepStatement(conn, snc)
+  }
+
+  def runQueriesUsingPrepStatement(conn: Connection, snc: SnappyContext): Unit = {
+    val tpchQueries: Array[Int] = (1 to 22).toArray
+    val isDynamic: Boolean = false
+
+    // scalastyle:off println
+    for (query <- tpchQueries) {
+      var prepStatement: PreparedStatement = null
+      query match {
+        case 1 => {
+          println("Executing query#1")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery1)
+          val parameters = TPCH_Queries.getQ1Parameter(isDynamic)
+          prepStatement.setInt(1, parameters(0).toInt)
+        }
+        case 2 => {
+          println("Executing query#2")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery2ForPrepStatement)
+          val parameters = TPCH_Queries.getQ2Parameter(isDynamic)
+          prepStatement.setString(1, parameters(0))
+          prepStatement.setInt(2, parameters(1).toInt)
+          prepStatement.setString(3, "%" + parameters(2))
+          prepStatement.setString(4, parameters(3))
+        }
+        case 3 => {
+          println("Executing query#3")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery3ForPrepStatement)
+          val parameters = TPCH_Queries.getQ3Parameter(isDynamic)
+          prepStatement.setString(1, parameters(0))
+          prepStatement.setDate(2, Date.valueOf(parameters(1)))
+          prepStatement.setDate(3, Date.valueOf(parameters(2)))
+        }
+        case 4 => {
+          println("Executing query#4")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery4ForPrepStatement)
+          val parameters = TPCH_Queries.getQ4Parameter(isDynamic)
+          prepStatement.setDate(1, Date.valueOf(parameters(0)))
+          prepStatement.setDate(2, Date.valueOf(parameters(1)))
+        }
+        case 5 => {
+          println("Executing query#5")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery5ForPrepStatement)
+          var parameters = TPCH_Queries.getQ5Parameter(isDynamic)
+          prepStatement.setString(1, parameters(0))
+          prepStatement.setString(2, parameters(1))
+          prepStatement.setString(3, parameters(2))
+          prepStatement.executeQuery()
+        }
+        case 6 => {
+          println("Executing query#6")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery6ForPrepStatement)
+          var parameters = TPCH_Queries.getQ6Parameter(isDynamic)
+          prepStatement.setString(1, parameters(0))
+          prepStatement.setString(2, parameters(1))
+          prepStatement.setString(3, parameters(2))
+          prepStatement.setString(4, parameters(3))
+          prepStatement.setString(5, parameters(4))
+        }
+        case 7 => {
+          println("Executing query#7")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery7ForPrepStatement)
+          val parameters = TPCH_Queries.getQ7Parameter(isDynamic)
+          prepStatement.setString(1, parameters(0))
+          prepStatement.setString(2, parameters(1))
+          prepStatement.setString(3, parameters(2))
+          prepStatement.setString(4, parameters(3))
+        }
+        case 8 => {
+          println("Executing query#8")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery8ForPrepStatement)
+          var parameters = TPCH_Queries.getQ8Parameter(isDynamic)
+          prepStatement.setString(1, parameters(0))
+          prepStatement.setString(2, parameters(1))
+          prepStatement.setString(3, parameters(2))
+        }
+        case 9 => {
+          println("Executing query#9")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery9ForPrepStatement)
+          val parameters = TPCH_Queries.getQ9Parameter(isDynamic)
+          prepStatement.setString(1, "%" + parameters(0) + "%")
+        }
+        case 10 => {
+          println("Executing query#10")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery10ForPrepStatement)
+          val parameters = TPCH_Queries.getQ10Parameter(isDynamic)
+          prepStatement.setDate(1, Date.valueOf(parameters(0)))
+          prepStatement.setDate(2, Date.valueOf(parameters(1)))
+        }
+        case 11 => {
+          println("Executing query#11")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery11ForPrepStatement)
+          val parameters = TPCH_Queries.getQ11Parameter(isDynamic)
+          prepStatement.setString(1, parameters(0))
+          prepStatement.setString(2, parameters(1))
+        }
+        case 12 => {
+          println("Executing query#12")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery12ForPrepStatement)
+          val parameters = TPCH_Queries.getQ12Parameter(isDynamic)
+          prepStatement.setString(1, parameters(0))
+          prepStatement.setString(2, parameters(1))
+          prepStatement.setString(3, parameters(2))
+          prepStatement.setString(4, parameters(3))
+        }
+        case 13 => {
+          println("Executing query#13")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery13ForPrepStatement)
+          val parameters = TPCH_Queries.getQ13Parameter(isDynamic)
+          prepStatement.setString(1, "%" + parameters(0) + "%" + parameters(1) + "%")
+        }
+        case 14 => {
+          println("Executing query#14")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery14ForPrepStatement)
+          var parameters = TPCH_Queries.getQ14Parameter(isDynamic)
+          prepStatement.setString(1, parameters(0))
+          prepStatement.setString(2, parameters(1))
+        }
+        case 15 => {
+          println("Executing query#15")
+          // create a temp view required for Q15
+          val queryToBeExecuted =
+            createQuery(TPCH_Queries.getQuery15_Temp, TPCH_Queries.getQ15TempParameter(isDynamic))
+          val result = snc.sql(queryToBeExecuted)
+          result.createGlobalTempView("revenue")
+          // prepare Q15
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery15)
+        }
+        case 16 => {
+          println("Executing query#16")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery16ForPrepStatement)
+          val parameters = TPCH_Queries.getQ16Parameter(isDynamic)
+          prepStatement.setString(1, "Brand#" + parameters(0) + parameters(1))
+          prepStatement.setString(2, parameters(2) + "%")
+          prepStatement.setInt(3, parameters(3).toInt)
+          prepStatement.setInt(4, parameters(4).toInt)
+          prepStatement.setInt(5, parameters(5).toInt)
+          prepStatement.setInt(6, parameters(6).toInt)
+          prepStatement.setInt(7, parameters(7).toInt)
+          prepStatement.setInt(8, parameters(8).toInt)
+          prepStatement.setInt(9, parameters(9).toInt)
+          prepStatement.setInt(10, parameters(10).toInt)
+        }
+        case 17 => {
+          println("Executing query#17")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery17ForPrepStatement)
+          val parameters = TPCH_Queries.getQ17Parameter(isDynamic)
+          prepStatement.setString(1, "Brand#" + parameters(0) + parameters(1))
+          prepStatement.setString(2, parameters(2))
+        }
+        case 18 => {
+          println("Executing query#18")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery18ForPrepStatement)
+          val parameters = TPCH_Queries.getQ18Parameter(isDynamic)
+          prepStatement.setString(1, parameters(0))
+        }
+        case 19 => {
+          println("Executing query#19")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery19ForPrepStatement)
+          val parameters = TPCH_Queries.getQ19Parameter(isDynamic)
+          prepStatement.setString(1, "Brand#" + parameters(0))
+          prepStatement.setInt(2, parameters(1).toInt)
+          prepStatement.setInt(3, parameters(2).toInt)
+          prepStatement.setString(4, "Brand#" + parameters(3))
+          prepStatement.setInt(5, parameters(4).toInt)
+          prepStatement.setInt(6, parameters(5).toInt)
+          prepStatement.setString(7, "Brand#" + parameters(6))
+          prepStatement.setInt(8, parameters(7).toInt)
+          prepStatement.setInt(9, parameters(8).toInt)
+        }
+        case 20 => {
+          println("Executing query#20")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery20ForPrepStatement)
+          val parameters = TPCH_Queries.getQ20Parameter(isDynamic)
+          prepStatement.setString(1, parameters(0) + "%")
+          prepStatement.setString(2, parameters(1))
+          prepStatement.setString(3, parameters(2))
+          prepStatement.setString(4, parameters(3))
+        }
+        case 21 => {
+          println("Executing query#21")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery21ForPrepStatement)
+          var parameters = TPCH_Queries.getQ21Parameter(isDynamic)
+          prepStatement.setString(1, parameters(0))
+        }
+        case 22 => {
+          println("Executing query#22")
+          prepStatement = conn.prepareStatement(TPCH_Queries.getQuery22ForPrepStatement)
+          var parameters = TPCH_Queries.getQ22Parameter(isDynamic)
+          prepStatement.setInt(1, parameters(0).toInt)
+          prepStatement.setInt(2, parameters(1).toInt)
+          prepStatement.setInt(3, parameters(2).toInt)
+          prepStatement.setInt(4, parameters(3).toInt)
+          prepStatement.setInt(5, parameters(4).toInt)
+          prepStatement.setInt(6, parameters(5).toInt)
+          prepStatement.setInt(7, parameters(6).toInt)
+          prepStatement.setInt(8, parameters(7).toInt)
+          prepStatement.setInt(9, parameters(8).toInt)
+          prepStatement.setInt(10, parameters(9).toInt)
+          prepStatement.setInt(11, parameters(10).toInt)
+          prepStatement.setInt(12, parameters(11).toInt)
+          prepStatement.setInt(13, parameters(12).toInt)
+          prepStatement.setInt(14, parameters(13).toInt)
+        }
+      }
+      if (prepStatement != null) {
+        val rs = prepStatement.executeQuery()
+        verifyTPCHQueryResult(rs, query)
+        rs.close()
+        prepStatement.close()
+      }
+
+      }
+    // scalastyle:on println
+    }
+
+  private def verifyTPCHQueryResult(rs: ResultSet, queryNumber: Int): Unit = {
+    val rsmd = rs.getMetaData
+    val columnsNumber = rsmd.getColumnCount
+    var count = 0
+    val result = scala.collection.mutable.ArrayBuffer.empty[String]
+    val queryResultsFileName = s"JDBCPrepStmtResult_query$queryNumber.txt"
+    val writer = new PrintWriter(new File(queryResultsFileName))
+    while (rs.next()) {
+      count += 1
+      var row: String = ""
+      for (i <- 1 to columnsNumber) {
+        if (i > 1) row += ","
+        if (rsmd.getColumnType(i) == java.sql.Types.DOUBLE) {
+          // eliminating mismtach due to minor difference in fractional parts
+          row = row + rs.getDouble(i).ceil.formatted("%.0f")
+        } else {
+          row = row + rs.getString(i)
+        }
+      }
+      result += row
+      // scalastyle:off println
+      writer.println(row)
+      // scalastyle:on println
+    }
+    writer.close()
+    // scalastyle:off println
+    println(s"Number of rows : $count")
+    // scalastyle:on println
+
+    val actualFile = sc.textFile(queryResultsFileName)
+    val expectedFile = sc.textFile(getClass.getResource(
+      s"/TPCH/RESULT/JDBC/ExpectedJDBCPrepStmtResult_query$queryNumber.txt").getPath)
+
+    val expectedLineSet = expectedFile.collect().toList.sorted
+    val actualLineSet = actualFile.collect().toList.sorted
+
+    val expectedNoOfLines = expectedFile.collect().length
+    assert(count == expectedNoOfLines, s"For query $queryNumber " +
+        s"result count mismatch observed with " +
+        s"expected number of rows: ${expectedLineSet.size}" +
+        s" and actual number of rows: ${actualLineSet.size}")
+
+    var resultMismatchFound = false
+    for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
+      if (!expectedLine.equals(actualLine)) {
+        resultMismatchFound = true
+        // scalastyle:off println
+        println(s"For query $queryNumber result mismatch observed")
+        println(s"Expected  : $expectedLine")
+        println(s"Found     : $actualLine")
+        println(s"-------------------------------------")
+        // scalastyle:on println
+      }
+    }
+    assert(!resultMismatchFound, s"For query $queryNumber result mismatch observed")
+  }
+
 
   /*
     TODO : Kishor

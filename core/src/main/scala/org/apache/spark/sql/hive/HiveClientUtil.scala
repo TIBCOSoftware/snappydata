@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,15 +16,18 @@
  */
 package org.apache.spark.sql.hive
 
+import java.nio.file.Paths
+import java.util.Properties
+
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import io.snappydata.Constant
+import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.impl.SnappyHiveConf
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars
 
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.execution.HiveTableScanExec
@@ -39,7 +42,18 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
  */
 object HiveClientUtil extends Logging {
 
+  val HIVE_TMPDIR = "./hive"
+
+  val HIVE_DEFAULT_SETTINGS = Map(ConfVars.SCRATCHDIR -> hivePath("scratch"),
+    ConfVars.LOCALSCRATCHDIR -> hivePath("local_scratch"),
+    ConfVars.DOWNLOADED_RESOURCES_DIR -> hivePath("resources"),
+    ConfVars.HIVEHISTORYFILELOC -> hivePath("query_logs"),
+    ConfVars.HIVE_SERVER2_LOGGING_OPERATION_LOG_LOCATION -> hivePath("operation_logs"))
+
   ExternalStoreUtils.registerBuiltinDrivers()
+
+  private def hivePath(name: String): String =
+    Paths.get(s"$HIVE_TMPDIR/$name").toAbsolutePath.toString
 
   /**
    * Create a SnappyHiveExternalCatalog appropriate for the cluster.
@@ -52,18 +66,21 @@ object HiveClientUtil extends Logging {
     val metadataConf = new SnappyHiveConf
     // make a copy of SparkConf since it is to be updated later
     val sparkConf = conf.clone()
-    val (user, password) = Utils.getUserPassword(sparkConf) match {
-      case None =>
-        // check store boot properties
-        val bootProperties = Misc.getMemStore.getBootProperties
-        bootProperties.get(USERNAME_ATTR) match {
-          case null => None -> None
-          case u => bootProperties.get(PASSWORD_ATTR) match {
-            case null => Some(u) -> Some("")
-            case p => Some(u) -> Some(p)
-          }
-        }
-      case Some((u, p)) => Some(u) -> Some(p)
+    var user = sparkConf.getOption(SPARK_STORE_PREFIX + USERNAME_ATTR)
+    var password = sparkConf.getOption(SPARK_STORE_PREFIX + PASSWORD_ATTR)
+    if (user.isEmpty) {
+      user = sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
+      password = sparkConf.getOption(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
+    }
+    // check store boot properties
+    if (user.isEmpty) {
+      val bootProperties = Misc.getMemStoreBooting.getBootProperties
+      bootProperties.get(USERNAME_ATTR).asInstanceOf[String] match {
+        case null =>
+        case u =>
+          user = Some(u)
+          password = Option(bootProperties.get(PASSWORD_ATTR).asInstanceOf[String])
+      }
     }
     var logURL = dbURL
     val secureDbURL = if (user.isDefined && password.isDefined) {
@@ -80,7 +97,7 @@ object HiveClientUtil extends Logging {
     metadataConf.setVar(ConfVars.METASTORECONNECTURLKEY, secureDbURL)
     metadataConf.setVar(ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
 
-    initCommonHiveMetaStoreProperties(metadataConf)
+    val props = initCommonHiveMetaStoreProperties(metadataConf)
 
     // set warehouse directory as per Spark's default
     val warehouseDir = sparkConf.get(WAREHOUSE_PATH)
@@ -95,6 +112,9 @@ object HiveClientUtil extends Logging {
     sparkConf.set("spark.sql.hive.metastore.isolation", "false")
     sparkConf.set(HiveUtils.HIVE_METASTORE_SHARED_PREFIXES, Seq(
       "io.snappydata.jdbc", "com.pivotal.gemfirexd.jdbc"))
+    for ((hiveVar, dirName) <- HiveClientUtil.HIVE_DEFAULT_SETTINGS) {
+      sparkConf.set(hiveVar.varname, dirName)
+    }
 
     val skipFlags = GfxdDataDictionary.SKIP_CATALOG_OPS.get()
     val oldSkipCatalogCalls = skipFlags.skipHiveCatalogCalls
@@ -103,6 +123,11 @@ object HiveClientUtil extends Logging {
       SnappyHiveExternalCatalog.getInstance(sparkConf, metadataConf)
     } finally {
       skipFlags.skipHiveCatalogCalls = oldSkipCatalogCalls
+      // clear the system properties set for hive
+      val propertyNames = props.stringPropertyNames.iterator()
+      while (propertyNames.hasNext) {
+        System.clearProperty(propertyNames.next())
+      }
     }
   }
 
@@ -113,7 +138,7 @@ object HiveClientUtil extends Logging {
    * <p>
    * Should be called after all other properties have been filled in.
    */
-  private def initCommonHiveMetaStoreProperties(metadataConf: SnappyHiveConf): Unit = {
+  private def initCommonHiveMetaStoreProperties(metadataConf: SnappyHiveConf): Properties = {
     metadataConf.set("datanucleus.mapping.Schema", Misc.SNAPPY_HIVE_METASTORE)
     // Tomcat pool has been shown to work best but does not work in split mode
     // because upstream spark does not ship with it (and the one in snappydata-core
@@ -124,8 +149,6 @@ object HiveClientUtil extends Logging {
     // The DBCP 1.x versions are thoroughly outdated and should not be used but
     // the expectation is that the one bundled in datanucleus will be in better shape.
     metadataConf.setVar(ConfVars.METASTORE_CONNECTION_POOLING_TYPE, "dbcp-builtin")
-    // set the scratch dir inside current working directory (unused but created)
-    setDefaultPath(metadataConf, ConfVars.SCRATCHDIR, "./hive")
     metadataConf.setVar(ConfVars.HADOOPFS, "file:///")
     metadataConf.set("datanucleus.connectionPool.testSQL", "VALUES(1)")
 
@@ -136,7 +159,8 @@ object HiveClientUtil extends Logging {
     val propertyNames = props.stringPropertyNames.iterator()
     while (propertyNames.hasNext) {
       val name = propertyNames.next()
-      System.setProperty(name, props.getProperty(name))
+      val value = props.getProperty(name)
+      if (value ne null) System.setProperty(name, value)
     }
 
     // set integer properties after the system properties have been used by
@@ -150,16 +174,8 @@ object HiveClientUtil extends Logging {
     metadataConf.set("datanucleus.connectionPool.minIdle", "0")
     // throw pool exhausted exception after 30s
     metadataConf.set("datanucleus.connectionPool.maxWait", "30000")
-  }
 
-  private def setDefaultPath(metadataConf: SnappyHiveConf, v: ConfVars, path: String): String = {
-    var pathUsed = metadataConf.get(v.varname)
-    if ((pathUsed eq null) || pathUsed.isEmpty || pathUsed.equals(v.getDefaultExpr)) {
-      // set the path to provided
-      pathUsed = new java.io.File(path).getAbsolutePath
-      metadataConf.setVar(v, pathUsed)
-    }
-    pathUsed
+    props
   }
 
   private def resolveMetaStoreDBProps(clusterMode: ClusterMode): (String, String) = {

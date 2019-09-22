@@ -112,7 +112,7 @@ public class DerbyTestUtils {
         resetDerbyConnection.set(false);
       }
     } catch (NullPointerException npe) {
-      // /in case of sub threads
+      Log.getLogWriter().info("Caught NPE..." + npe.getMessage());
     } catch (Exception e) {
       throw new TestException("Exception while getting derby connection " + " : " + e.getMessage());
     }
@@ -134,10 +134,6 @@ public class DerbyTestUtils {
   }
 
   public static void HydraTask_shutDownDerbyDB() {
-    testInstance.shutDownDiscDB();
-  }
-
-  protected void shutDownDiscDB() {
     if (hasDerbyServer) {
       ClientDiscDBManager.shutDownDB();
     }
