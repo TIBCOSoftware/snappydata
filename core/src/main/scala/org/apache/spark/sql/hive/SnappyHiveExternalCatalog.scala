@@ -474,7 +474,7 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
         if (ignoreIfNotExists) return else throw new TableNotFoundException(schema, table)
       case Some(t) => t
     }
-    withHiveExceptionHandling(baseDropTable(schema, table, ignoreIfNotExists = false, purge))
+    withHiveExceptionHandling(baseDropTable(schema, table, ignoreIfNotExists, purge))
 
     // drop all policies for the table
     if (Misc.getMemStoreBooting.isRLSEnabled) {

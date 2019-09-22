@@ -42,6 +42,7 @@ import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange}
 import org.apache.spark.sql.execution.sources.PhysicalScan
 import org.apache.spark.sql.hive.SnappySessionState
 import org.apache.spark.sql.internal.{JoinQueryPlanning, SQLConf}
+import org.apache.spark.sql.sources.SamplingRelation
 import org.apache.spark.sql.streaming._
 
 /**
@@ -334,6 +335,7 @@ private[sql] trait SnappyStrategies {
       new SnappyAggregationStrategy(planner).apply(plan)
     }
   }
+
 }
 
 private[sql] object JoinStrategy extends SparkSupport {
@@ -369,8 +371,12 @@ private[sql] object JoinStrategy extends SparkSupport {
    */
   def canBroadcast(plan: LogicalPlan, conf: SQLConf): Boolean = {
     val stats = getStats(plan)
-    internals.isBroadcastable(plan) ||
-        stats.sizeInBytes <= conf.autoBroadcastJoinThreshold
+    plan.find {
+      case lr: LogicalRelation if lr.relation.isInstanceOf[SamplingRelation] => true
+      case _ => false
+    }.isEmpty && (
+        internals.isBroadcastable(plan) ||
+            stats.sizeInBytes <= conf.autoBroadcastJoinThreshold)
   }
 
   def getMaxHashJoinSize(conf: SQLConf): Long = {
@@ -396,7 +402,8 @@ private[sql] object JoinStrategy extends SparkSupport {
     plan match {
       case PhysicalScan(_, _, child) => child match {
         case lr: LogicalRelation if lr.relation.isInstanceOf[PartitionedDataSourceScan] =>
-          !lr.relation.asInstanceOf[PartitionedDataSourceScan].isPartitioned
+          !lr.relation.asInstanceOf[PartitionedDataSourceScan].isPartitioned &&
+              !lr.relation.isInstanceOf[SamplingRelation]
         case _: Filter | _: Project | _: LocalLimit => allowsReplicatedJoin(child.children.head)
         case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
           allowsReplicatedJoin(left) && allowsReplicatedJoin(right) &&
@@ -806,7 +813,7 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
       case _: StreamPlan => plan
       case _: CollectAggregateExec => internals.newCodegenSparkFallback(plan, session)
       case _ if !Property.TestDisableCodeGenFlag.get(session.sessionState.conf) ||
-       session.sessionState.conf.contains("snappydata.connection") =>
+          session.sessionState.conf.contains("snappydata.connection") =>
         internals.newCodegenSparkFallback(plan, session)
       case _ => plan
     }
