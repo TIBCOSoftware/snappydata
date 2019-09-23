@@ -452,14 +452,18 @@ case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
 case class DescribeSnappyTableCommand(table: TableIdentifier, partitionSpec: TablePartitionSpec,
     isExtended: Boolean, isFormatted: Boolean) extends RunnableCommand with SparkSupport {
 
+  private[this] val describeCmd = internals.newDescribeTableCommand(
+    table, partitionSpec, isExtended, isFormatted)
+
+  override def output: Seq[Attribute] = describeCmd.output
+
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val catalog = sparkSession.asInstanceOf[SnappySession].sessionCatalog
     catalog.synchronized {
       // set the flag to return CharType/VarcharType if present
       catalog.convertCharTypesInMetadata = true
       try {
-        internals.newDescribeTableCommand(table, partitionSpec,
-          isExtended, isFormatted).run(sparkSession)
+        describeCmd.run(sparkSession)
       } finally {
         catalog.convertCharTypesInMetadata = false
       }

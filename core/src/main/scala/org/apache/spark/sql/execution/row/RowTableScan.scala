@@ -28,7 +28,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan}
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan, SparkPlan}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 
@@ -66,8 +66,9 @@ private[sql] final case class RowTableScan(
     }
   }
 
-  override def equals(obj: Any): Boolean = obj match {
-    case r: RowTableScan => r.table == table && r.numBuckets == numBuckets && r.schema == schema
+  override def sameResult(plan: SparkPlan): Boolean = plan match {
+    case r: RowTableScan => r.tableIdentifier == tableIdentifier &&
+        r.numBuckets == numBuckets && r.schema == schema
     case _ => false
   }
 

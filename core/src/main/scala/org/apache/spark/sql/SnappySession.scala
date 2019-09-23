@@ -1484,7 +1484,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
     }
     sessionCatalog.resolveRelation(tableIdent) match {
       case lr: LogicalRelation if lr.relation.isInstanceOf[AlterableRelation] =>
-        val ar = lr.asInstanceOf[AlterableRelation]
+        val ar = lr.relation.asInstanceOf[AlterableRelation]
         ar.alterTable(tableIdent, isAddColumn, column, extensions)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
         sessionCatalog.alterTable(metadata.copy(schema = lr.relation.schema))
