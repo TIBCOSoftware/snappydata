@@ -16,80 +16,150 @@
  */
 package org.apache.spark.sql
 
+import java.util.concurrent.ConcurrentHashMap
+
+import scala.collection.mutable
+
 import io.snappydata.SnappyDataFunctions
 import io.snappydata.sql.catalog.CatalogObjectType
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.catalog.CatalogTable
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
+import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
+import org.apache.spark.sql.execution.{CollapseCodegenStages, PlanLater, QueryExecution, SparkPlan, TopK, python}
+import org.apache.spark.sql.hive.{OptimizeSortAndFilePlans, SnappyAnalyzer}
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
 
-class SnappyContextFunctions {
+class SnappyContextFunctions(val session: SnappySession) extends SparkSupport {
+
+  /**
+   * Temporary sample dataFrames registered using stratifiedSample API that do not go
+   * in external catalog.
+   */
+  protected[sql] val mainDFToSamples =
+    new ConcurrentHashMap[LogicalPlan, mutable.ArrayBuffer[(LogicalPlan, String)]]()
+
+  protected final lazy val queryPreparationsTopLevel: Seq[Rule[SparkPlan]] =
+    createQueryPreparations(topLevel = true)
+
+  protected final lazy val queryPreparationsNode: Seq[Rule[SparkPlan]] =
+    createQueryPreparations(topLevel = false)
 
   def clear(): Unit = {}
 
   def clearStatic(): () => Unit = () => {}
 
-  def postRelationCreation(relation: Option[BaseRelation], session: SnappySession): Unit = {}
+  def postRelationCreation(relation: Option[BaseRelation]): Unit = {}
 
-  def registerSnappyFunctions(session: SnappySession): Unit = {
+  def registerSnappyFunctions(): Unit = {
     val registry = session.sessionState.functionRegistry
     SnappyDataFunctions.builtin.foreach(fn => registry.registerFunction(fn._1, fn._2, fn._3))
   }
 
-  def createTopK(session: SnappySession, tableName: String,
-      keyColumnName: String, schema: StructType,
-      topkOptions: Map[String, String], ifExists: Boolean): Boolean =
-    throw new UnsupportedOperationException("missing aqp jar")
+  private def missingAQPException(): AnalysisException =
+    new AnalysisException("requires AQP support")
 
-  def dropTopK(session: SnappySession, topKName: String): Unit =
-    throw new UnsupportedOperationException("missing aqp jar")
+  def setQueryExecutor(qe: Option[QueryExecution]): Unit = throw missingAQPException()
 
-  def insertIntoTopK(session: SnappySession, rows: RDD[Row],
-      topKName: String, time: Long): Unit =
-    throw new UnsupportedOperationException("missing aqp jar")
+  def getQueryExecution: Option[QueryExecution] = throw missingAQPException()
 
-  def queryTopK(session: SnappySession, topKName: String,
-      startTime: String, endTime: String, k: Int): DataFrame =
-    throw new UnsupportedOperationException("missing aqp jar")
+  def addSampleDataFrame(base: LogicalPlan, sample: LogicalPlan, name: String): Unit =
+    throw missingAQPException()
 
-  def queryTopK(session: SnappySession, topK: String,
-      startTime: Long, endTime: Long, k: Int): DataFrame =
-    throw new UnsupportedOperationException("missing aqp jar")
+  /**
+   * Return the set of temporary samples for a given table that are not tracked in catalog.
+   */
+  def getSamples(base: LogicalPlan): Seq[LogicalPlan] = throw missingAQPException()
 
-  def queryTopKRDD(session: SnappySession, topK: String,
-      startTime: String, endTime: String, schema: StructType): RDD[InternalRow] =
-    throw new UnsupportedOperationException("missing aqp jar")
+  /**
+   * Return the set of samples for a given table that are tracked in catalog and are not temporary.
+   */
+  def getSampleRelations(baseTable: TableIdentifier): Seq[(LogicalPlan, String)] =
+    throw missingAQPException()
 
-  protected[sql] def collectSamples(session: SnappySession, rows: RDD[Row],
-      aqpTables: Seq[String], time: Long): Unit =
-    throw new UnsupportedOperationException("missing aqp jar")
+  def postCreateTable(table: CatalogTable): Unit = {}
 
-  def createSampleDataFrameContract(session: SnappySession, df: DataFrame,
-      logicalPlan: LogicalPlan): SampleDataFrameContract =
-    throw new UnsupportedOperationException("missing aqp jar")
+  def dropTemporaryTable(tableIdent: TableIdentifier): Unit = {}
 
-  def convertToStratifiedSample(options: Map[String, Any], session: SnappySession,
-      logicalPlan: LogicalPlan): LogicalPlan =
-    throw new UnsupportedOperationException("missing aqp jar")
+  def dropFromTemporaryBaseTable(table: CatalogTable): Unit = {}
 
-  def isStratifiedSample(logicalPlan: LogicalPlan): Boolean =
-    throw new UnsupportedOperationException("missing aqp jar")
+  def createTopK(tableName: String, keyColumnName: String, schema: StructType,
+      topkOptions: Map[String, String], ifExists: Boolean): Boolean = throw missingAQPException()
+
+  def dropTopK(topKName: String): Unit = throw missingAQPException()
+
+  def insertIntoTopK(rows: RDD[Row], topKName: String, time: Long): Unit =
+    throw missingAQPException()
+
+  def queryTopK(topKName: String, startTime: String, endTime: String, k: Int): DataFrame =
+    throw missingAQPException()
+
+  def queryTopK(topK: String, startTime: Long, endTime: Long, k: Int): DataFrame =
+    throw missingAQPException()
+
+  def queryTopKRDD(topK: String, startTime: String, endTime: String,
+      schema: StructType): RDD[InternalRow] = throw missingAQPException()
+
+  def lookupTopK(topKName: String): Option[(AnyRef, RDD[(Int, TopK)])] =
+    throw missingAQPException()
+
+  def registerTopK(topK: AnyRef, rdd: RDD[(Int, TopK)], ifExists: Boolean,
+      overwrite: Boolean): Boolean = throw missingAQPException()
+
+  def unregisterTopK(topKName: String): Unit = throw missingAQPException()
+
+  protected[sql] def collectSamples(rows: RDD[Row], aqpTables: Seq[String],
+      time: Long): Unit = throw missingAQPException()
+
+  def createSampleDataFrameContract(df: DataFrame,
+      logicalPlan: LogicalPlan): SampleDataFrameContract = throw missingAQPException()
+
+  def convertToStratifiedSample(options: Map[String, Any],
+      logicalPlan: LogicalPlan): LogicalPlan = throw missingAQPException()
+
+  def isStratifiedSample(logicalPlan: LogicalPlan): Boolean = throw missingAQPException()
 
   def withErrorDataFrame(df: DataFrame, error: Double,
-      confidence: Double, behavior: String): DataFrame =
-    throw new UnsupportedOperationException("missing aqp jar")
+      confidence: Double, behavior: String): DataFrame = throw missingAQPException()
 
-  def newSQLParser(snappySession: SnappySession): SnappySqlParser =
-    new SnappySqlParser(snappySession)
+  def newSQLParser(): SnappySqlParser = new SnappySqlParser(session)
 
-  def aqpTablePopulator(session: SnappySession): Unit = {
+  def aqpTablePopulator(): Unit = {
     // register blank tasks for the stream tables so that the streams start
     session.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](
       CatalogObjectType.Stream).foreach(_.rowStream.foreachRDD(_ => Unit))
   }
+
+  def createSampleSnappyCase(): PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+    case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
+    case BypassRowLevelSecurity(child) => PlanLater(child) :: Nil
+    case _ => Nil
+  }
+
+  def getExtendedResolutionRules: List[Rule[LogicalPlan]] = Nil
+
+  protected def createQueryPreparations(
+      topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq[Rule[SparkPlan]](
+    python.ExtractPythonUDFs,
+    TokenizeSubqueries(session),
+    EnsureRequirements(session.sessionState.conf),
+    OptimizeSortAndFilePlans(session.sessionState.snappyConf),
+    CollapseCollocatedPlans(session),
+    CollapseCodegenStages(session.sessionState.conf),
+    InsertCachedPlanFallback(session, topLevel),
+    ReuseExchange(session.sessionState.conf))
+
+  def queryPreparations(topLevel: Boolean): Seq[Rule[SparkPlan]] =
+    if (topLevel) queryPreparationsTopLevel else queryPreparationsNode
+
+  def executePlan(analyzer: SnappyAnalyzer, plan: LogicalPlan): LogicalPlan =
+    analyzer.baseExecute(plan)
 
   def sql[T](fn: => T): T = fn
 }

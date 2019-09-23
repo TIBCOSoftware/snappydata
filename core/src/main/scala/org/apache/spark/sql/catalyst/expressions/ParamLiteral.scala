@@ -30,6 +30,7 @@ import org.json4s.JsonAST.JField
 
 import org.apache.spark.memory.{MemoryMode, TaskMemoryManager}
 import org.apache.spark.serializer.StructTypeSerializer
+import org.apache.spark.sql.SparkSupport
 import org.apache.spark.sql.catalyst.CatalystTypeConverters._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
@@ -41,7 +42,7 @@ case class TermValues(literalValueRef: String, isNull: String, valueTerm: String
 
 // A marker interface to extend usage of Literal case matching.
 // A literal that can change across multiple query execution.
-trait DynamicReplacableConstant extends Expression {
+trait DynamicReplacableConstant extends Expression with SparkSupport {
 
   @transient private lazy val termMap =
     java.util.Collections.synchronizedMap(new util.HashMap[CodegenContext, TermValues]())
@@ -58,7 +59,7 @@ trait DynamicReplacableConstant extends Expression {
     value
   }
 
-  override final def deterministic: Boolean = true
+  override final lazy val deterministic: Boolean = true
 
   private def checkValueType(value: Any, expectedClass: Class[_]): Unit = {
     val valueClass = if (value != null) value.getClass else null
@@ -137,7 +138,7 @@ trait DynamicReplacableConstant extends Expression {
         val memoryManagerClass = classOf[TaskMemoryManager].getName
         val memoryModeClass = classOf[MemoryMode].getName
         val consumerClass = classOf[DirectStringConsumer].getName
-        ctx.addMutableState(javaType, valueTerm,
+        internals.addClassField(ctx, javaType, valueTerm, _ =>
           s"""
              |Object $valueResult = $valueRef.value();
              |if (($isNull = ($valueResult == null))) {
@@ -154,19 +155,19 @@ trait DynamicReplacableConstant extends Expression {
              |    }
              |  }
              |}
-          """.stripMargin)
+          """.stripMargin, forceInline = true, useFreshName = false)
         // indicate that code for valueTerm has already been generated
         null.asInstanceOf[String]
       case _ => ""
     }
-    ctx.addMutableState("boolean", isNull, "")
+    internals.addClassField(ctx, "boolean", isNull, forceInline = true, useFreshName = false)
     if (unbox ne null) {
-      ctx.addMutableState(javaType, valueTerm,
+      internals.addClassField(ctx, javaType, valueTerm, _ =>
         s"""
            |Object $valueResult = $valueRef.value();
            |$isNull = $valueResult == null;
            |$valueTerm = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueResult)$unbox;
-        """.stripMargin)
+        """.stripMargin, forceInline = true, useFreshName = false)
     }
     ev.copy(initCode, isNullLocal, valueLocal)
   }
@@ -408,12 +409,12 @@ object TokenLiteral {
 
   def isConstant(expression: Expression): Boolean = expression match {
     case _: DynamicReplacableConstant | _: Literal => true
-    case Cast(child, dataType) =>
-      val isConstant = child match {
+    case c: Cast =>
+      val isConstant = c.child match {
         case _: DynamicReplacableConstant | _: Literal => true
         case _ => false
       }
-      isConstant & dataType.isInstanceOf[AtomicType]
+      isConstant && c.dataType.isInstanceOf[AtomicType]
     case _ => false
   }
 

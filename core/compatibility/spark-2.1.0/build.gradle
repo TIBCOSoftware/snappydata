@@ -1,0 +1,75 @@
+/*
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
+apply plugin: 'scala'
+
+compileScala.options.encoding = 'UTF-8'
+
+sourceSets.main.scala.srcDir 'specific/scala'
+sourceSets.main.java.srcDirs = []
+
+dependencies {
+  compileOnly 'org.scala-lang:scala-library:' + scalaVersion
+  compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
+
+  compileOnly 'org.slf4j:slf4j-api:' + slf4jVersion
+  compileOnly 'org.slf4j:slf4j-log4j12:' + slf4jVersion
+  compileOnly 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
+  compileOnly 'org.slf4j:jul-to-slf4j:' + slf4jVersion
+
+  compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${spark210Version}")
+  compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${spark210Version}")
+  compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${spark210Version}")
+  compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${spark210Version}")
+  compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${spark210Version}")
+
+  compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+
+  compileOnly (project(":snappy-core_${scalaBinaryVersion}")) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-8_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+
+    exclude(module: ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion)
+    exclude(module: ':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
+  }
+}
+
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+  classifier = 'javadoc'
+  from scaladoc
+}
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources
+  }
+}
+
+archivesBaseName = "snappydata-core-compat-spark${spark210Version}_${scalaBinaryVersion}"
+sparkPackageName = "snappydata-${version}_${spark210Version}-s_${scalaBinaryVersion}"

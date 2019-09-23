@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql
 
+import scala.collection.mutable
+
 import io.snappydata.Constant
 
 import org.apache.spark.sql.SampleDataFrameContract.ErrorRow
@@ -23,10 +25,7 @@ import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.MultiColumnOpenHashMap
 import org.apache.spark.sql.execution.QueryExecution
-
 import org.apache.spark.sql.sources.StatCounter
-
-import scala.collection.mutable
 
 final class SampleDataFrame(@transient val snappySession: SnappySession,
     @transient override val logicalPlan: LogicalPlan)
@@ -48,8 +47,7 @@ final class SampleDataFrame(@transient val snappySession: SnappySession,
     implementor.errorEstimateAverage(columnName, confidence, groupByColumns)
 
   private def createSampleDataFrameContract =
-    snappySession.snappyContextFunctions.createSampleDataFrameContract(snappySession,
-      this, logicalPlan)
+    snappySession.contextFunctions.createSampleDataFrameContract(this, logicalPlan)
 }
 
 final class DataFrameWithTime(_snappySession: SnappySession,
@@ -59,13 +57,12 @@ final class DataFrameWithTime(_snappySession: SnappySession,
 
 case class AQPDataFrame(@transient snappySession: SnappySession,
     @transient qe: QueryExecution) extends DataFrame(snappySession, qe,
-    DataFrameUtil.encoder(snappySession, qe)) {
+  DataFrameUtil.encoder(snappySession, qe)) {
 
   def withError(error: Double,
       confidence: Double = Constant.DEFAULT_CONFIDENCE,
       behavior: String = Constant.DEFAULT_BEHAVIOR): DataFrame =
-    snappySession.snappyContextFunctions.withErrorDataFrame(this, error,
-      confidence, behavior)
+    snappySession.contextFunctions.withErrorDataFrame(this, error, confidence, behavior)
 }
 
 object DataFrameUtil {

@@ -28,18 +28,24 @@ sourceSets.test.java.srcDirs = []
 
 def osName = org.gradle.internal.os.OperatingSystem.current()
 
+configurations {
+  connector
+}
+
 dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
 
-  compile 'org.slf4j:slf4j-api:' + slf4jVersion
-  compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
-  compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
-  compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
-  compile group: 'org.codehaus.janino', name: 'janino', version: janinoVersion
+  compile coreLibraries.common
   compile("org.apache.thrift:libthrift:${thriftVersion}") {
     exclude(group: 'org.slf4j', module: 'slf4j-api')
   }
+  compile("org.parboiled:parboiled_${scalaBinaryVersion}:${parboiledVersion}") {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+  compileOnly "com.rabbitmq:amqp-client:${rabbitMqVersion}"
 
   // always use stock spark so that snappy extensions don't get accidently
   // included here in snappy-core code.
@@ -60,33 +66,14 @@ dependencies {
     testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion, configuration: 'testOutput')
     testCompile project(path: ':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion, configuration: 'testOutput')
   } else {
-    compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}")
+    compileOnly coreLibraries.spark
+    testCompile coreLibraries.spark
 
-    compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
-
-    testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
-    testCompile("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
-    testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
-    testCompile("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
-    testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
-    testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
-    testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
-    testCompile("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}")
-
-    testCompile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
-
-    testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}:tests")
-    testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}:tests")
-    testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
-    testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests")
-    testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
+    testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
+    testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
+    testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
+    testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
+    testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
@@ -103,25 +90,13 @@ dependencies {
   compile project(":snappy-jdbc_${scalaBinaryVersion}")
   compile project(":snappy-encoders_${scalaBinaryVersion}")
 
-  compile("org.parboiled:parboiled_${scalaBinaryVersion}:${parboiledVersion}") {
-    exclude(group: 'org.scala-lang', module: 'scala-library')
-    exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    exclude(group: 'org.scala-lang', module: 'scala-compiler')
-  }
-  compile "org.apache.tomcat:tomcat-juli:${tomcatJdbcVersion}"
-  compile "org.apache.tomcat:tomcat-jdbc:${tomcatJdbcVersion}"
-  compile "com.zaxxer:HikariCP:${hikariCPVersion}"
-  compile "org.twitter4j:twitter4j-stream:${twitter4jVersion}"
-  compile "org.objenesis:objenesis:${objenesisVersion}"
-  compile "com.esotericsoftware:kryo-shaded:${kryoVersion}"
-  compile "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}"
-  compile "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
-
-  compileOnly "com.rabbitmq:amqp-client:${rabbitMqVersion}"
+  connector project(":snappy-core_${scalaBinaryVersion}:compat-spark${sparkConnectorVersion}")
 
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
+
+  testCompile project(":snappy-core_${scalaBinaryVersion}:compat-spark${sparkConnectorVersion}")
 
   testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
@@ -193,7 +168,7 @@ def taskGetApacheSparkDist(String ver, String distName, String prodDir) {
 }
 
 task getApacheSparkDist {
-  dependsOn taskGetApacheSparkDist(sparkVersion, sparkDistName, sparkProductDir)
+  dependsOn taskGetApacheSparkDist(sparkConnectorVersion, sparkConnectorDistName, sparkConnectorProductDir)
   dependsOn taskGetApacheSparkDist(sparkCurrentVersion, sparkCurrentDistName, sparkCurrentProductDir)
 }
 
@@ -207,16 +182,18 @@ if (rootProject.hasProperty('snappydata.enterprise')) {
   check.dependsOn dunitSecurityTest
 }
 
+archivesBaseName = "snappydata-core-spark${sparkConnectorVersion}_${scalaBinaryVersion}"
 
-archivesBaseName = 'snappydata-core_' + scalaBinaryVersion
 shadowJar {
   zip64 = true
   // avoid conflict with the 0.9.2 version in stock Spark
   relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
-  // relocate eclipse collections for possible conflicts with user dependencies
-  relocate 'org.eclipse.collections', 'io.snappydata.org.eclipse.collections'
+  // relocate koloboke for possible conflicts with user dependencies
+  relocate 'com.koloboke', 'io.snappydata.com.koloboke'
   // relocate the guava's com.google packages
   relocate 'com.google.common', 'io.snappydata.com.google.common'
+
+  configurations = [ project.configurations.runtime, project.configurations.connector ]
 
   mergeServiceFiles()
   exclude 'log4j.properties'
@@ -230,7 +207,7 @@ shadowJar {
     attributes(
       'Manifest-Version'  : '1.0',
       'Created-By'        : createdBy,
-      'Title'             : "snappydata-core_${scalaBinaryVersion}",
+      'Title'             : archivesBaseName,
       'Version'           : version,
       'Vendor'            : vendorName
     )
@@ -238,8 +215,6 @@ shadowJar {
 }
 
 // write the POM for spark-package
-String sparkPackageName = "snappydata-${version}-s_${scalaBinaryVersion}"
-
 task sparkPackagePom(dependsOn: shadowJar) { doLast {
   file("${rootProject.buildDir}/distributions").mkdirs()
   pom {
@@ -264,8 +239,9 @@ task sparkPackagePom(dependsOn: shadowJar) { doLast {
     rename { filename -> "${sparkPackageName}.jar" }
   }
 } }
+
 task sparkPackage(type: Zip, dependsOn: sparkPackagePom) {
-  archiveName "${sparkPackageName}.zip"
+  archiveName = "${sparkPackageName}.zip"
   destinationDir = file("${rootProject.buildDir}/distributions")
   outputs.upToDateWhen { false }
 

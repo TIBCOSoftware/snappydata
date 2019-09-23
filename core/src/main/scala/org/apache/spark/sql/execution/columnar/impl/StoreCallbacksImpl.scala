@@ -52,7 +52,7 @@ import org.apache.spark.Logging
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodeGenerator, CodegenContext}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, expressions}
 import org.apache.spark.sql.collection.{SharedUtils, ToolsCallbackInit, Utils}
@@ -65,7 +65,7 @@ import org.apache.spark.sql.store.{CodeGeneration, StoreHashFunction}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
-object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
+object StoreCallbacksImpl extends StoreCallbacks with SparkSupport with Logging with Serializable {
 
   private val partitioner = new StoreHashFunction
 
@@ -227,8 +227,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     val ctx = new CodegenContext
     val rowClass = classOf[UnsafeRow].getName
     // create the code snippet for applying the filters
-    val numRows = ctx.freshName("numRows")
-    ctx.addMutableState("int", numRows, "")
+    val numRows = internals.addClassField(ctx, "int", "numRows")
     val filterFunction = ColumnTableScan.generateStatPredicate(ctx, isColumnTable = true,
       schemaAttrs, batchFilterExprs, numRows, metricTerm = null, metricAdd = null)
     val filterPredicate = if (filterFunction.isEmpty) null
@@ -271,7 +270,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
       CodeGeneration.logDebug(s"\n${CodeFormatter.format(cleanedSource)}")
 
-      val clazz = CodeGenerator.compile(cleanedSource)
+      val clazz = internals.compile(cleanedSource)
       clazz.generate(ctx.references.toArray).asInstanceOf[StatsPredicate]
     }
     val batchIterator = ColumnBatchIterator(region, bucketIds, projection,

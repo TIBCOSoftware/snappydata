@@ -129,13 +129,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
     // use an array of delta encoders and cursors
-    val deltaEncoders = ctx.freshName("deltaEncoders")
-    val cursors = ctx.freshName("cursors")
     val index = ctx.freshName("index")
-    batchOrdinal = ctx.freshName("batchOrdinal")
-    val lastColumnBatchId = ctx.freshName("lastColumnBatchId")
-    val lastBucketId = ctx.freshName("lastBucketId")
-    val lastNumRows = ctx.freshName("lastNumRows")
     finishUpdate = ctx.freshName("finishUpdate")
     val initializeEncoders = ctx.freshName("initializeEncoders")
 
@@ -152,17 +146,18 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     val encoderClass = classOf[ColumnEncoder].getName
     val columnBatchClass = classOf[ColumnBatch].getName
 
-    ctx.addMutableState(s"$deltaEncoderClass[]", deltaEncoders, "")
-    ctx.addMutableState("long[]", cursors,
+    val deltaEncoders = internals.addClassField(ctx, s"$deltaEncoderClass[]", "deltaEncoders")
+    val cursors = internals.addClassField(ctx, "long[]", "cursors", v =>
       s"""
          |$deltaEncoders = new $deltaEncoderClass[$numColumns];
-         |$cursors = new long[$numColumns];
+         |$v = new long[$numColumns];
          |$initializeEncoders();
       """.stripMargin)
-    ctx.addMutableState("int", batchOrdinal, "")
-    ctx.addMutableState("long", lastColumnBatchId, s"$lastColumnBatchId = $invalidUUID;")
-    ctx.addMutableState("int", lastBucketId, "")
-    ctx.addMutableState("int", lastNumRows, "")
+    batchOrdinal = internals.addClassField(ctx, "int", "batchOrdinal")
+    val lastColumnBatchId = internals.addClassField(ctx, "long", "lastColumnBatchId",
+      v => s"$v = $invalidUUID;")
+    val lastBucketId = internals.addClassField(ctx, "int", "lastBucketId")
+    val lastNumRows = internals.addClassField(ctx, "int", "lastNumRows")
 
     // last three columns in keyColumns should be internal ones
     val keyCols = keyColumns.takeRight(4)

@@ -25,18 +25,15 @@ import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
-import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{Cache, CacheBuilder}
-import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.TypeId
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
-import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
+import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
@@ -44,12 +41,13 @@ import org.eclipse.collections.impl.map.mutable.UnifiedMap
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.scheduler.SparkListenerEvent
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, UnresolvedStar}
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTable, CatalogTableType}
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, TokenLiteral}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, ParamLiteral, PlanExpression, ScalarSubquery, SortDirection, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{Command, Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
@@ -63,7 +61,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{CreateTable, DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.BroadcastExchangeExec
 import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNestedLoopJoinExec}
-import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLPlanExecutionEnd, SparkListenerSQLPlanExecutionStart}
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappySessionState}
 import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect, SnappySessionCatalog, SnappySharedState, StaticSQLConf}
@@ -77,8 +75,7 @@ import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Logging, ShuffleDependency, SparkContext, SparkEnv}
 
-
-class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
+class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSupport {
 
   self =>
 
@@ -108,24 +105,23 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * functions, and everything else that accepts a [[org.apache.spark.sql.internal.SQLConf]].
    */
   @transient
-  override lazy val sessionState: SnappySessionState = {
-    SnappySession.aqpSessionStateClass match {
-      case Some(aqpClass) => aqpClass.getConstructor(classOf[SnappySession]).
-          newInstance(self).asInstanceOf[SnappySessionState]
-      case None => new SnappySessionState(self)
-    }
+  override lazy val sessionState: SnappySessionState = internals.newSnappySessionState(self)
+
+  @transient
+  final val contextFunctions: SnappyContextFunctions = SparkSupport.aqpOverridesClass match {
+    case None => new SnappyContextFunctions(self)
+    case Some(c) => c.getConstructor(classOf[SnappySession]).newInstance(self)
+        .asInstanceOf[SnappyContextFunctions]
   }
 
-  def sessionCatalog: SnappySessionCatalog = sessionState.catalog
+  final def sessionCatalog: SnappySessionCatalog = sessionState.catalog
 
-  def externalCatalog: SnappyExternalCatalog = sessionState.catalog.externalCatalog
+  final def externalCatalog: SnappyExternalCatalog = sessionState.catalog.snappyExternalCatalog
 
-  def snappyParser: SnappyParser = sessionState.sqlParser.sqlParser
-
-  private[spark] def snappyContextFunctions = sessionState.contextFunctions
+  final def snappyParser: SnappyParser = sessionState.snappySqlParser.sqlParser
 
   SnappyContext.initGlobalSnappyContext(sparkContext, this)
-  snappyContextFunctions.registerSnappyFunctions(this)
+  contextFunctions.registerSnappyFunctions()
 
   /**
    * A wrapped version of this session in the form of a [[SQLContext]],
@@ -185,7 +181,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
    private[sql] def sqInternal(sqlText: String): CachedDataFrame = {
-    snappyContextFunctions.sql(SnappySession.sqlPlan(this, sqlText))
+    contextFunctions.sql(SnappySession.sqlPlan(this, sqlText))
   }
 
   @DeveloperApi
@@ -193,17 +189,17 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     if (planCaching) {
       planCaching = false
       try {
-        snappyContextFunctions.sql(super.sql(sqlText))
+        contextFunctions.sql(super.sql(sqlText))
       } finally {
         planCaching = Property.PlanCaching.get(sessionState.conf)
       }
     } else {
-      snappyContextFunctions.sql(super.sql(sqlText))
+      contextFunctions.sql(super.sql(sqlText))
     }
   }
 
   final def prepareSQL(sqlText: String, skipPromote: Boolean = false): LogicalPlan = {
-    val logical = sessionState.sqlParser.parsePlan(sqlText, clearExecutionData = true)
+    val logical = sessionState.snappySqlParser.parsePlan(sqlText, clearExecutionData = true)
     SparkSession.setActiveSession(this)
     val ap: Analyzer = sessionState.analyzer
     // logInfo(s"KN: Batches ${ap.batches.filter(
@@ -518,10 +514,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       newUpdateSubQuery
     } finally {
       lockOption match {
-        case Some(lock) => {
+        case Some(lock) =>
           logDebug(s"Adding the lock object $lock to the context")
           addContextObject(SnappySession.PUTINTO_LOCK, lock)
-        }
         case None => // do nothing
       }
     }
@@ -598,7 +593,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
               s"app ${sqlContext.sparkContext.appName}")
           }
           catch {
-            case sqle: SQLException => {
+            case sqle: SQLException =>
               logDebug("Got exception while taking lock", sqle)
               if (sqle.getMessage.contains("Couldn't acquire lock")) {
                 throw sqle
@@ -607,13 +602,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
                   throw sqle
                 }
               }
-            }
-            case e: Throwable => {
+            case e: Throwable =>
               logDebug("Got exception while taking lock", e)
               if (retrycount == 2) {
                 throw e
               }
-            }
           }
           finally {
             retrycount = retrycount + 1
@@ -653,10 +646,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           unlocked = rs.getBoolean(1)
           ps.close()
         } catch {
-          case t: Throwable => {
+          case t: Throwable =>
             logWarning(s"Caught exception while unlocking the $lock", t)
             throw t
-          }
         }
         finally {
           conn.close()
@@ -685,7 +677,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     clearContext()
     clearQueryData()
     clearPlanCache()
-    snappyContextFunctions.clear()
+    contextFunctions.clear()
   }
 
   /** Close the session which will be unusable after this call. */
@@ -728,20 +720,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       } else {
         rdd.asInstanceOf[RDD[Row]]
       }
-      snappyContextFunctions.collectSamples(this, rddRows, aqpTables,
-        time.milliseconds)
+      contextFunctions.collectSamples(rddRows, aqpTables, time.milliseconds)
     })
   }
 
-  def tableIdentifier(table: String): TableIdentifier = {
-    // hive meta-store is case-insensitive so always use upper case names for object names
-    val fullName = sessionCatalog.formatTableName(table)
-    val dotIndex = fullName.indexOf('.')
-    if (dotIndex > 0) {
-      new TableIdentifier(fullName.substring(dotIndex + 1),
-        Some(fullName.substring(0, dotIndex)))
-    } else new TableIdentifier(fullName, None)
-  }
+  def tableIdentifier(table: String, resolve: Boolean = false): TableIdentifier =
+    SnappySession.tableIdentifier(table, sessionCatalog, resolve)
 
   /**
    * Append dataframe to cache table in Spark.
@@ -816,9 +800,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     Dataset.ofRows(self, logicalPlan)
   }
 
-  override def internalCreateDataFrame(catalystRows: RDD[InternalRow],
-      schema: StructType): DataFrame = super.internalCreateDataFrame(catalystRows, schema)
-
   /**
    * Create a stratified sample table.
    *
@@ -837,7 +818,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
+      addBaseTableOption(baseTable, samplingOptions), isExternal = false)
   }
 
   /**
@@ -879,7 +860,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       Some(JdbcExtendedUtils.normalizeSchema(schema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
+      addBaseTableOption(baseTable, samplingOptions), isExternal = false)
   }
 
   /**
@@ -924,7 +905,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       Some(JdbcExtendedUtils.normalizeSchema(inputDataSchema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       addBaseTableOption(baseTable, topkOptions) +
-          ("key" -> keyColumnName), isBuiltIn = true)
+          ("key" -> keyColumnName), isExternal = false)
   }
 
   /**
@@ -968,7 +949,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       addBaseTableOption(baseTable, topkOptions) +
-          ("key" -> keyColumnName), isBuiltIn = true)
+          ("key" -> keyColumnName), isExternal = false)
   }
 
   /**
@@ -1020,7 +1001,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       allowExisting: Boolean): DataFrame = {
     createTableInternal(tableIdentifier(tableName), provider, userSpecifiedSchema = None,
       schemaDDL = None, if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      options, isBuiltIn = true)
+      options, isExternal = false)
   }
 
   /**
@@ -1041,7 +1022,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       allowExisting: Boolean): DataFrame = {
     createTableInternal(tableIdentifier(tableName), provider, userSpecifiedSchema = None,
       schemaDDL = None, if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      options, isBuiltIn = false)
+      options, isExternal = false)
   }
 
   /**
@@ -1130,7 +1111,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       allowExisting: Boolean = false): DataFrame = {
     createTableInternal(tableIdentifier(tableName), provider,
       Some(JdbcExtendedUtils.normalizeSchema(schema)), schemaDDL = None,
-      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, options, isBuiltIn = true)
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, options, isExternal = false)
   }
 
   /**
@@ -1154,7 +1135,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       options: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
     createTableInternal(tableIdentifier(tableName), provider, Some(schema), schemaDDL = None,
-      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, options, isBuiltIn = false)
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, options, isExternal = true)
   }
 
   /**
@@ -1276,7 +1257,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     createTableInternal(tableIdentifier(tableName), provider, userSpecifiedSchema = None,
       Some(schemaStr), if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      options, isBuiltIn = true)
+      options, isExternal = false)
   }
 
   /**
@@ -1346,13 +1327,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       schemaDDL: Option[String],
       mode: SaveMode,
       options: Map[String, String],
-      isBuiltIn: Boolean,
+      isExternal: Boolean,
       partitionColumns: Array[String] = Utils.EMPTY_STRING_ARRAY,
       bucketSpec: Option[BucketSpec] = None,
       query: Option[LogicalPlan] = None): DataFrame = {
     val providerIsBuiltIn = SnappyContext.isBuiltInProvider(provider)
     if (providerIsBuiltIn) {
-      if (!isBuiltIn) {
+      if (isExternal) {
         throw new AnalysisException(s"CREATE EXTERNAL TABLE or createExternalTable API " +
             s"used for inbuilt provider '$provider'")
       }
@@ -1387,7 +1368,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case None => options
       case Some(ddl) =>
         // check that the DataSource should implement ExternalSchemaRelationProvider
-        if (!ExternalStoreUtils.isExternalSchemaRelationProvider(provider)) {
+        if (!ExternalStoreUtils.isExternalSchemaRelationProvider(provider, this)) {
           throw new AnalysisException(s"Provider '$provider' should implement " +
               s"ExternalSchemaRelationProvider to use a custom schema string in CREATE TABLE")
         }
@@ -1416,7 +1397,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       storage = storage,
       schema = schema,
       provider = Some(provider),
-      partitionColumnNames = partitionColumns,
+      partitionColumnNames = partitionColumns.toSeq,
       bucketSpec = bucketSpec)
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
     sessionState.executePlan(plan).toRdd
@@ -1424,7 +1405,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val relation = df.queryExecution.analyzed.collectFirst {
       case l: LogicalRelation => l.relation
     }
-    snappyContextFunctions.postRelationCreation(relation, this)
+    contextFunctions.postRelationCreation(relation)
     df
   }
 
@@ -1502,10 +1483,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
     sessionCatalog.resolveRelation(tableIdent) match {
-      case LogicalRelation(ar: AlterableRelation, _, _) =>
+      case lr: LogicalRelation if lr.relation.isInstanceOf[AlterableRelation] =>
+        val ar = lr.relation.asInstanceOf[AlterableRelation]
         ar.alterTable(tableIdent, isAddColumn, column, extensions)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
-        sessionCatalog.alterTable(metadata.copy(schema = ar.schema))
+        sessionCatalog.alterTable(metadata.copy(schema = lr.relation.schema))
       case _ => throw new AnalysisException(
         s"ALTER TABLE ${tableIdent.unquotedString} supported only for row tables")
     }
@@ -1527,8 +1509,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
 
     plan match {
-      case LogicalRelation(rls: RowLevelSecurityRelation, _, _) =>
-        rls.enableOrDisableRowLevelSecurity(tableIdent, enableRls)
+      case lr: LogicalRelation if lr.relation.isInstanceOf[RowLevelSecurityRelation] =>
+        lr.relation.asInstanceOf[RowLevelSecurityRelation].enableOrDisableRowLevelSecurity(
+            tableIdent, enableRls)
         externalCatalog.invalidateCaches(tableIdent.database.get -> tableIdent.table :: Nil)
       case _ =>
         throw new AnalysisException("ALTER TABLE enable/disable Row Level Security " +
@@ -1708,8 +1691,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         s"Could not find $tableIdent in catalog")
     }
     sessionCatalog.resolveRelation(tableIdent) match {
-      case LogicalRelation(ir: IndexableRelation, _, _) =>
-        ir.createIndex(indexIdent,
+      case lr: LogicalRelation if lr.relation.isInstanceOf[IndexableRelation] =>
+        lr.relation.asInstanceOf[IndexableRelation].createIndex(indexIdent,
           tableIdent,
           indexColumns,
           options)
@@ -1753,11 +1736,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       dropRowStoreIndex(sessionCatalog.resolveTableIdentifier(indexName).unquotedString, ifExists)
     } else {
       sessionCatalog.resolveRelation(indexIdent) match {
-        case LogicalRelation(ir: IndexColumnFormatRelation, _, _) =>
+        case lr: LogicalRelation if lr.relation.isInstanceOf[IndexColumnFormatRelation] =>
           // Remove the index from the bse table props
-          val baseTableIdent = tableIdentifier(ir.baseTable.get)
+          val baseTableIdent = tableIdentifier(
+            lr.relation.asInstanceOf[IndexColumnFormatRelation].baseTable.get)
           sessionCatalog.resolveRelation(baseTableIdent) match {
-            case LogicalRelation(cr: ColumnFormatRelation, _, _) =>
+            case lr: LogicalRelation if lr.relation.isInstanceOf[ColumnFormatRelation] =>
+              val cr = lr.relation.asInstanceOf[ColumnFormatRelation]
               cr.dropIndex(indexIdent, baseTableIdent, ifExists)
             case _ => throw new AnalysisException(
               s"No index ${indexName.unquotedString} on ${baseTableIdent.unquotedString}")
@@ -1812,7 +1797,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @DeveloperApi
   def insert(tableName: String, rows: Row*): Int = {
     sessionCatalog.resolveRelation(tableIdentifier(tableName)) match {
-      case LogicalRelation(r: RowInsertableRelation, _, _) => r.insert(rows)
+      case lr: LogicalRelation if lr.relation.isInstanceOf[RowInsertableRelation] =>
+        lr.relation.asInstanceOf[RowInsertableRelation].insert(rows)
       case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
     }
@@ -1834,7 +1820,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   def insert(tableName: String, rows: java.util.ArrayList[java.util.ArrayList[_]]): Int = {
     val convertedRowSeq: Seq[Row] = rows.asScala.map(row => convertListToRow(row))
     sessionCatalog.resolveRelation(tableIdentifier(tableName)) match {
-      case LogicalRelation(r: RowInsertableRelation, _, _) => r.insert(convertedRowSeq)
+      case lr: LogicalRelation if lr.relation.isInstanceOf[RowInsertableRelation] =>
+        lr.relation.asInstanceOf[RowInsertableRelation].insert(convertedRowSeq)
       case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
     }
@@ -1853,8 +1840,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @DeveloperApi
   def put(tableName: String, rows: Row*): Int = {
     sessionCatalog.resolveRelation(tableIdentifier(tableName)) match {
-      case LogicalRelation(r: RowPutRelation, _, _) => r.put(rows)
-      case _ => throw new AnalysisException(
+      case lr: LogicalRelation if lr.relation.isInstanceOf[RowPutRelation] =>
+        lr.relation.asInstanceOf[RowPutRelation].put(rows)
+        case _ => throw new AnalysisException(
         s"$tableName is not a row upsertable table")
     }
   }
@@ -1877,8 +1865,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   def update(tableName: String, filterExpr: String, newColumnValues: Row,
       updateColumns: String*): Int = {
     sessionCatalog.resolveRelation(tableIdentifier(tableName)) match {
-      case LogicalRelation(u: UpdatableRelation, _, _) =>
-        u.update(filterExpr, newColumnValues, updateColumns)
+      case lr: LogicalRelation if lr.relation.isInstanceOf[UpdatableRelation] =>
+        lr.relation.asInstanceOf[UpdatableRelation].update(filterExpr,
+          newColumnValues, updateColumns)
       case _ => throw new AnalysisException(
         s"$tableName is not an updatable table")
     }
@@ -1902,8 +1891,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   def update(tableName: String, filterExpr: String, newColumnValues: java.util.ArrayList[_],
       updateColumns: java.util.ArrayList[String]): Int = {
     sessionCatalog.resolveRelation(tableIdentifier(tableName)) match {
-      case LogicalRelation(u: UpdatableRelation, _, _) =>
-        u.update(filterExpr, convertListToRow(newColumnValues), updateColumns.asScala)
+      case lr: LogicalRelation if lr.relation.isInstanceOf[UpdatableRelation] =>
+        lr.relation.asInstanceOf[UpdatableRelation].update(filterExpr,
+          convertListToRow(newColumnValues), updateColumns.asScala)
       case _ => throw new AnalysisException(
         s"$tableName is not an updatable table")
     }
@@ -1923,8 +1913,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @Experimental
   def put(tableName: String, rows: java.util.ArrayList[java.util.ArrayList[_]]): Int = {
     sessionCatalog.resolveRelation(tableIdentifier(tableName)) match {
-      case LogicalRelation(r: RowPutRelation, _, _) =>
-        r.put(rows.asScala.map(row => convertListToRow(row)))
+      case lr: LogicalRelation if lr.relation.isInstanceOf[RowPutRelation] =>
+        lr.relation.asInstanceOf[RowPutRelation].put(
+          rows.asScala.map(row => convertListToRow(row)))
       case _ => throw new AnalysisException(
         s"$tableName is not a row upsertable table")
     }
@@ -1941,7 +1932,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @DeveloperApi
   def delete(tableName: String, filterExpr: String): Int = {
     sessionCatalog.resolveRelation(tableIdentifier(tableName)) match {
-      case LogicalRelation(d: DeletableRelation, _, _) => d.delete(filterExpr)
+      case lr: LogicalRelation if lr.relation.isInstanceOf[DeletableRelation] =>
+        lr.relation.asInstanceOf[DeletableRelation].delete(filterExpr)
       case _ => throw new AnalysisException(
         s"$tableName is not a deletable table")
     }
@@ -1985,11 +1977,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   def queryApproxTSTopK(topKName: String,
       startTime: String = null, endTime: String = null,
       k: Int = -1): DataFrame =
-    snappyContextFunctions.queryTopK(this, topKName, startTime, endTime, k)
+    contextFunctions.queryTopK(topKName, startTime, endTime, k)
 
   def queryApproxTSTopK(topK: String,
       startTime: Long, endTime: Long, k: Int): DataFrame =
-    snappyContextFunctions.queryTopK(this, topK, startTime, endTime, k)
+    contextFunctions.queryTopK(topK, startTime, endTime, k)
 
   def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit =
     snappyParser.setPreparedQuery(preparePhase, paramSet)
@@ -2066,24 +2058,18 @@ object SnappySession extends Logging {
   private val unresolvedColRegex =
     """(cannot resolve '`)(\w+).(\w+).(\w+)(.*given input columns.*)""".r
 
-  lazy val isEnterpriseEdition: Boolean = {
-    GemFireCacheImpl.setGFXDSystem(true)
-    GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
-    GemFireVersion.isEnterpriseEdition
-  }
-
-  private lazy val aqpSessionStateClass: Option[Class[_]] = {
-    if (isEnterpriseEdition) {
-      try {
-        Some(org.apache.spark.util.Utils.classForName(
-          "org.apache.spark.sql.internal.SnappyAQPSessionState"))
-      } catch {
-        case NonFatal(e) =>
-          // Let the user know if it failed to load AQP classes.
-          logWarning(s"Failed to load AQP classes in Enterprise edition: $e")
-          None
-      }
-    } else None
+  def tableIdentifier(table: String, catalog: SnappySessionCatalog,
+      resolve: Boolean): TableIdentifier = {
+    // hive meta-store is case-insensitive so use lower case names for object names consistently
+    val fullName =
+      if (catalog ne null) catalog.formatTableName(table) else JdbcExtendedUtils.toLowerCase(table)
+    val dotIndex = fullName.indexOf('.')
+    if (dotIndex > 0) {
+      new TableIdentifier(fullName.substring(dotIndex + 1),
+        Some(fullName.substring(0, dotIndex)))
+    } else if (resolve && (catalog ne null)) {
+      new TableIdentifier(fullName, Some(catalog.getCurrentSchema))
+    } else new TableIdentifier(fullName, None)
   }
 
   private[sql] def findShuffleDependencies(rdd: RDD[_]): List[Int] = {
@@ -2312,7 +2298,7 @@ object SnappySession extends Logging {
   def getPlanCache: Cache[CachedKey, CachedDataFrame] = planCache
 
   def sqlPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
-    val parser = session.sessionState.sqlParser
+    val parser = session.sessionState.snappySqlParser
     val sqlShortText = CachedDataFrame.queryStringShortForm(sqlText)
     val plan = parser.parsePlan(sqlText, clearExecutionData = true)
     val planCaching = session.planCaching
@@ -2519,7 +2505,7 @@ final class CachedKey(val session: SnappySession,
   }
 }
 
-object CachedKey {
+object CachedKey extends SparkSupport {
   def apply(session: SnappySession, currschema: String, plan: LogicalPlan, sqlText: String,
       paramLiterals: Array[ParamLiteral], forCaching: Boolean): CachedKey = {
 
@@ -2533,8 +2519,9 @@ object CachedKey {
         throw new IllegalStateException("scalar subquery should not have been present")
       case e: Exists =>
         e.copy(plan = e.plan.transformAllExpressions(normalizeExprIds), exprId = ExprId(-1))
-      case p: PredicateSubquery =>
-        p.copy(plan = p.plan.transformAllExpressions(normalizeExprIds), exprId = ExprId(-1))
+      case p if internals.isPredicateSubquery(p) =>
+        internals.copyPredicateSubquery(p, p.asInstanceOf[PlanExpression[LogicalPlan]].plan
+            .transformAllExpressions(normalizeExprIds), ExprId(-1))
       case l: ListQuery =>
         l.copy(plan = l.plan.transformAllExpressions(normalizeExprIds), exprId = ExprId(-1))
     }
@@ -2556,6 +2543,20 @@ object CachedKey {
     new CachedKey(session, currschema, normalizedPlan, sqlText, session.queryHints.hashCode())
   }
 }
+
+/**
+ * A new event that is fired when a plan is executed to get an RDD.
+ */
+case class SparkListenerSQLPlanExecutionStart(
+    executionId: Long,
+    description: String,
+    details: String,
+    physicalPlanDescription: String,
+    sparkPlanInfo: SparkPlanInfo,
+    time: Long)
+    extends SparkListenerEvent
+
+case class SparkListenerSQLPlanExecutionEnd(executionId: Long) extends SparkListenerEvent
 
 private object UnionCommands {
   def unapply(plan: SparkPlan): Option[Boolean] = plan match {

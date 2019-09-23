@@ -76,7 +76,7 @@ dependencies {
                 version: snappySparkVersion, classifier: 'tests'
   }
 
-  compile (project(':snappy-core_' + scalaBinaryVersion)) {
+  compile (project(coreProjectName)) {
     exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
@@ -88,7 +88,20 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }
-  testCompile (project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')) {
+  compile (project(":snappy-core_${scalaBinaryVersion}:compat-spark${sparkVersion}")) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+  }
+
+  testCompile (project(path: coreProjectName, configuration: 'testOutput')) {
     exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
@@ -138,36 +151,15 @@ dependencies {
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
   if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
-    testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
+    testRuntime project(aqpProjectName)
   }
   testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 
 // Creates the version properties file and writes it to the resources dir
-task createVersionPropertiesFile(dependsOn: 'processResources') {
-  def propertiesDir = file("${sourceSets.main.scala.outputDir}/io/snappydata")
-  outputs.file "${propertiesDir}/SnappyDataVersion.properties"
-  inputs.file "${rootProject.projectDir}/build.gradle"
-
-  doLast {
-
-    def props = [
-      'Product-Name'      : productName,
-      'Product-Version'   : version,
-      'Build-Id'          : buildIdPrefix + buildNumber,
-      'Build-Date'        : buildDate,
-      'Build-Platform'    : osName.getName() + osVersion + osArch,
-      'Build-Java-Version': jdkVersion,
-      'Source-Date'       : sourceDate,
-      'Source-Revision'   : commitId,
-      'Source-Repository' : gitBranch,
-    ]
-
-   writeProperties(propertiesDir, 'SnappyDataVersion.properties',
-        "Properties that control what version ${productName} will think it is. Changing these values may cause ${productName} to no longer function.", props)
-  }
-}
+createVersionPropertiesTask(project, 'SnappyDataVersion.properties', productName,
+    sourceDate, commitId, gitBranch)
 
 compileJava.dependsOn createVersionPropertiesFile
 

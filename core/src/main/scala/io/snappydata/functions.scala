@@ -30,11 +30,11 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.policy.{CurrentUser, LdapGroupsOfCurrentUser}
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.{ArrayType, DataType, StringType}
-import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
+import org.apache.spark.sql.{SnappyContext, SparkSupport, ThinClientConnectorMode}
 import org.apache.spark.unsafe.types.UTF8String
 
 /**
- * This will contain all the functions specific to snappydata
+ * Helper functions for execution in embedded as well as smart connector mode.
  */
 object SnappyDataFunctions {
 
@@ -115,12 +115,13 @@ object SnappyDataFunctions {
  */
 @ExpressionDescription(
   usage = "_FUNC_() - Returns the unique distributed member ID of executor fetching current row.",
-  extended = """
+  extended =
+      """
     Examples:
       > SELECT _FUNC_();
        localhost(1831)<v2>:18165
   """)
-case class DSID() extends LeafExpression with Nondeterministic {
+case class DSID() extends LeafExpression with Nondeterministic with SparkSupport {
 
   override def nullable: Boolean = false
 
@@ -140,8 +141,9 @@ case class DSID() extends LeafExpression with Nondeterministic {
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val connPropsRef = ctx.addReferenceObj("connProps", connectionProps,
       classOf[ConnectionProperties].getName)
-    ctx.addMutableState("UTF8String", ev.value, s"${ev.value} = UTF8String" +
-        s".fromString(io.snappydata.SnappyDataFunctions.getDSID($connPropsRef));")
-    ev.copy(code = "", isNull = "false")
+    val dsidVar = internals.addClassField(ctx, "UTF8String", "dsid",
+      varName => s"$varName = UTF8String.fromString(" +
+          s"io.snappydata.SnappyDataFunctions.getDSID($connPropsRef));")
+    ev.copy(code = "", isNull = "false", value = dsidVar)
   }
 }

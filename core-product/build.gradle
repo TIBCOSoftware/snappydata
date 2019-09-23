@@ -1,0 +1,51 @@
+/*
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
+apply plugin: 'scala'
+
+compileScala.options.encoding = 'UTF-8'
+// fix scala+java mix to all use compileScala which uses correct dependency order
+sourceSets.main.scala.srcDirs = [ '../core/src/main/java', '../core/src/main/scala' ]
+sourceSets.main.java.srcDirs = []
+
+dependencies {
+  compileOnly 'org.scala-lang:scala-library:' + scalaVersion
+  compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
+
+  compile coreLibraries.common
+  compile("org.apache.thrift:libthrift:${thriftVersion}") {
+    exclude(group: 'org.slf4j', module: 'slf4j-api')
+  }
+  compile("org.parboiled:parboiled_${scalaBinaryVersion}:${parboiledVersion}") {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+  compileOnly "com.rabbitmq:amqp-client:${rabbitMqVersion}"
+
+  // always use stock spark so that snappy extensions don't get accidently
+  // included here in snappy-core code.
+  compileOnly coreLibraries.sparkProduct
+
+  compile project(':snappy-store:snappydata-store-client')
+  compile project(':snappy-store:snappydata-store-core')
+  compile project(':snappy-store:snappydata-store-tools')
+  compile project(":snappy-jdbc_${scalaBinaryVersion}")
+  compile project(":snappy-encoders_${scalaBinaryVersion}")
+}
+
+archivesBaseName = "snappydata-core-spark${sparkVersion}_${scalaBinaryVersion}"

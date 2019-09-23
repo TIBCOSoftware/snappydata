@@ -17,6 +17,7 @@
 
 package org.apache.spark.sql.catalyst.expressions
 
+import org.apache.spark.sql.SparkSupport
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 
 /**
@@ -24,7 +25,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
  * change dynamically in executions.
  */
 case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
-    extends UnaryExpression with Predicate {
+    extends UnaryExpression with Predicate with SparkSupport {
 
   require((hset ne null) && hset.nonEmpty, "hset cannot be null or empty")
   // all expressions must be constant types
@@ -66,12 +67,10 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
     val exprClass = classOf[Expression].getName
     val elements = new Array[AnyRef](hset.length)
     val childGen = child.genCode(ctx)
-    val hsetTerm = ctx.freshName("hset")
     val elementsTerm = ctx.freshName("elements")
     val idxTerm = ctx.freshName("idx")
     val idx = ctx.references.length
     ctx.references += elements
-    val hasNullTerm = ctx.freshName("hasNull")
 
     for (i <- hset.indices) {
       val e = hset(i)
@@ -82,16 +81,16 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
       elements(i) = v
     }
 
-    ctx.addMutableState("boolean", hasNullTerm, "")
-    ctx.addMutableState(setName, hsetTerm,
+    val hasNullTerm = internals.addClassField(ctx, "boolean", "hasNull")
+    val hsetTerm = internals.addClassField(ctx, setName, "hset", hsetVar =>
       s"""
          |Object[] $elementsTerm = (Object[])references[$idx];
-         |$hsetTerm = new $setName($elementsTerm.length, 0.7f);
+         |$hsetVar = new $setName($elementsTerm.length, 0.7f);
          |for (int $idxTerm = 0; $idxTerm < $elementsTerm.length; $idxTerm++) {
          |  Object e = $elementsTerm[$idxTerm];
          |  if (e instanceof $exprClass) e = (($exprClass)e).eval(null);
          |  if (e != null) {
-         |    $hsetTerm.put(e, e);
+         |    $hsetVar.put(e, e);
          |  } else if (!$hasNullTerm) {
          |    $hasNullTerm = true;
          |  }

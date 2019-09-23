@@ -22,13 +22,13 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.{IterableLike, mutable}
 import scala.util.hashing.MurmurHash3
 
-import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, GeneratedClass}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, GeneratedClass}
 import org.apache.spark.sql.collection.MultiColumnOpenHashSet.ColumnHandler
 import org.apache.spark.sql.execution.BufferedRowIterator
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Row, SparkSupport}
 import org.apache.spark.util.collection.BitSet
 
 /**
@@ -1178,24 +1178,27 @@ object QCSSQLColumnHandler {
 
   def newSqlHandler(qcsPlan: (CodeAndComment, ArrayBuffer[Any], Array[DataType], Array[DataType]),
       hashColHandler: ColumnHandler): ColumnHandler = {
-    new QCSSQLColumnHandler( (CodeGenerator.compile(qcsPlan._1), qcsPlan._2, qcsPlan._3, qcsPlan._4), hashColHandler)
+    new QCSSQLColumnHandler((SparkSupport.internals.compile(qcsPlan._1),
+        qcsPlan._2, qcsPlan._3, qcsPlan._4), hashColHandler)
   }
 
-  val func: (Int, Iterator[InternalRow], GeneratedClass, ArrayBuffer[Any]) => Iterator[InternalRow] = {
+  val func: (Int, Iterator[InternalRow],
+      GeneratedClass, ArrayBuffer[Any]) => Iterator[InternalRow] = {
     (index, iter, clazz, bufferArr) =>
       val buffer = clazz.generate(bufferArr.toArray).asInstanceOf[BufferedRowIterator]
       buffer.init(index, Array(iter))
       new Iterator[InternalRow] {
 
-        override def hasNext(): Boolean =   buffer.hasNext
+        override def hasNext(): Boolean = buffer.hasNext
 
-        override def next: InternalRow =buffer.next
+        override def next: InternalRow = buffer.next
       }
   }
 
   val iter = new Iterator[InternalRow]() {
-    def next: InternalRow =  RowToInternalRow
-    def hasNext = RowToInternalRow.rowHolder.get() != null
+    def hasNext: Boolean = RowToInternalRow.rowHolder.get() != null
+
+    def next(): InternalRow = RowToInternalRow
   }
 }
 
@@ -1211,7 +1214,8 @@ object RowToInternalRow extends BaseGenericInternalRow {
     converters(ordinal)(row.getAs(ordinal))
   }
 
-  override def copy(): InternalRow = throw new UnsupportedOperationException("Not implemented")
+  override def copy(): GenericInternalRow =
+    throw new UnsupportedOperationException("Not implemented")
 
   override def setNullAt(i: Int): Unit = {}
 

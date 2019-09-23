@@ -828,7 +828,7 @@ object SnappyContext extends Logging {
   val RABBITMQ_STREAM_SOURCE = "rabbitmq_stream"
   val SNAPPY_SINK_NAME = "snappySink"
 
-  private val builtinSources = new CaseInsensitiveMutableHashMap[
+  private lazy val builtinSources = new CaseInsensitiveMutableHashMap[
       (String, CatalogObjectType.Type)](Map(
     ParserConsts.COLUMN_SOURCE ->
         (classOf[execution.columnar.impl.DefaultSource].getCanonicalName ->
@@ -854,11 +854,6 @@ object SnappyContext extends Logging {
     SAMPLE_SOURCE -> (SAMPLE_SOURCE_CLASS -> CatalogObjectType.Sample),
     TOPK_SOURCE -> (TOPK_SOURCE_CLASS -> CatalogObjectType.TopK)
   ))
-
-  private[this] val INVALID_CONF = new SparkConf(loadDefaults = false) {
-    override def getOption(key: String): Option[String] =
-      throw new IllegalStateException("Invalid SparkConf")
-  }
 
   private[this] val storeToBlockMap: ConcurrentHashMap[String, BlockAndExecutorId] =
     new ConcurrentHashMap[String, BlockAndExecutorId](16, 0.7f, 1)
@@ -925,7 +920,7 @@ object SnappyContext extends Logging {
     SnappySession.clearAllCache()
   }
 
-  val membershipListener = new MembershipListener {
+  val membershipListener: MembershipListener = new MembershipListener {
     override def quorumLost(failures: java.util.Set[InternalDistributedMember],
         remaining: java.util.List[InternalDistributedMember]): Unit = {}
 
@@ -940,10 +935,9 @@ object SnappyContext extends Logging {
   }
 
   /** Returns the current SparkContext or null */
-  def globalSparkContext: SparkContext = try {
-    SparkContext.getOrCreate(INVALID_CONF)
-  } catch {
-    case _: IllegalStateException => null
+  def globalSparkContext: SparkContext = SparkContext.getActive match {
+    case Some(c) => c
+    case None => null
   }
 
   private def initMemberBlockMap(sc: SparkContext): Unit = {
@@ -1098,7 +1092,7 @@ object SnappyContext extends Logging {
         if (!_globalSNContextInitialized) {
           initGlobalSparkContext(sc)
           _sharedState = SnappySharedState.create(sc)
-          _globalClear = session.snappyContextFunctions.clearStatic()
+          _globalClear = session.contextFunctions.clearStatic()
           // replay global sql commands
           if (ToolsCallbackInit.toolsCallback ne null) {
             SnappyContext.getClusterMode(sc) match {
@@ -1258,7 +1252,6 @@ object SnappyContext extends Logging {
             ServiceUtils.invokeStopFabricServer(sc, props)
           }
       }
-
       // clear static objects on the driver
       clearStaticArtifacts()
 
@@ -1274,6 +1267,8 @@ object SnappyContext extends Logging {
         }
       }
       MemoryManagerCallback.resetMemoryManager()
+    } else {
+      SparkSupport.clear()
     }
     contextLock.synchronized {
       _clusterMode = null
@@ -1289,7 +1284,7 @@ object SnappyContext extends Logging {
     ConnectionPool.clear()
     CodeGeneration.clearAllCache(skipTypeCache = false)
     HashedObjectCache.close()
-    SparkSession.sqlListener.set(null)
+    SparkSupport.clear()
     ServiceUtils.clearStaticArtifacts()
   }
 

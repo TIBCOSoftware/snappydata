@@ -18,26 +18,17 @@ package org.apache.spark.sql.internal;
 
 import com.pivotal.gemfirexd.internal.engine.Misc;
 import io.snappydata.sql.catalog.SnappyExternalCatalog;
-import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.ClusterMode;
-import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.SnappyContext;
-import org.apache.spark.sql.SnappyEmbeddedMode;
 import org.apache.spark.sql.SnappySession;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.SparkSupport$;
 import org.apache.spark.sql.ThinClientConnectorMode;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalog;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.CacheManager;
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
-import org.apache.spark.sql.execution.ui.SQLListener;
-import org.apache.spark.sql.execution.ui.SQLTab;
-import org.apache.spark.sql.execution.ui.SnappySQLListener;
 import org.apache.spark.sql.hive.HiveClientUtil$;
 import org.apache.spark.sql.hive.SnappyHiveExternalCatalog;
-import org.apache.spark.storage.StorageLevel;
-import org.apache.spark.ui.SparkUI;
 
 /**
  * Overrides Spark's SharedState to enable setting up own ExternalCatalog.
@@ -48,7 +39,7 @@ import org.apache.spark.ui.SparkUI;
 public final class SnappySharedState extends SharedState {
 
   /**
-   * Instance of {@link SnappyCacheManager} to enable clearing cached plans.
+   * Instance of SnappyData extended {@link CacheManager} to enable clearing cached plans.
    */
   private final CacheManager snappyCacheManager;
 
@@ -69,57 +60,17 @@ public final class SnappySharedState extends SharedState {
       StaticSQLConf.WAREHOUSE_PATH().key();
 
   /**
-   * Simple extension to CacheManager to enable clearing cached plan on cache create/drop.
+   * Create Snappy's SQL Listener instead of SQLListener (before SharedState creation).
    */
-  private static final class SnappyCacheManager extends CacheManager {
-
-    @Override
-    public void cacheQuery(Dataset<?> query, scala.Option<String> tableName,
-        StorageLevel storageLevel) {
-      super.cacheQuery(query, tableName, storageLevel);
-      // clear plan cache since cached representation can change existing plans
-      ((SnappySession)query.sparkSession()).clearPlanCache();
-    }
-
-    @Override
-    public void uncacheQuery(SparkSession session, LogicalPlan plan, boolean blocking) {
-      super.uncacheQuery(session, plan, blocking);
-      // clear plan cache since cached representation can change existing plans
-      ((SnappySession)session).clearPlanCache();
-    }
-
-    @Override
-    public void recacheByPlan(SparkSession session, LogicalPlan plan) {
-      super.recacheByPlan(session, plan);
-      // clear plan cache since cached representation can change existing plans
-      ((SnappySession)session).clearPlanCache();
-    }
-
-    public void recacheByPath(SparkSession session, String resourcePath) {
-      super.recacheByPath(session, resourcePath);
-      // clear plan cache since cached representation can change existing plans
-      ((SnappySession)session).clearPlanCache();
-    }
+  private static void createListenerAndUI(SparkContext sc) {
+    SparkSupport$.MODULE$.internals(sc).createAndAttachSQLListener(sc);
   }
 
   /**
-   * Create Snappy's SQL Listener instead of SQLListener
+   * Create Snappy's SQL Listener instead of SQLListener (post SharedState creation).
    */
-  private static void createListenerAndUI(SparkContext sc) {
-    SQLListener initListener = ExternalStoreUtils.getSQLListener().get();
-    if (initListener == null) {
-      SnappySQLListener listener = new SnappySQLListener(sc.conf());
-      if (ExternalStoreUtils.getSQLListener().compareAndSet(null, listener)) {
-        sc.addSparkListener(listener);
-        scala.Option<SparkUI> ui = sc.ui();
-        // embedded mode attaches SQLTab later via ToolsCallbackImpl that also
-        // takes care of injecting any authentication module if configured
-        if (ui.isDefined() &&
-            !(SnappyContext.getClusterMode(sc) instanceof SnappyEmbeddedMode)) {
-          new SQLTab(listener, ui.get());
-        }
-      }
-    }
+  private void createListenerAndUI() {
+    SparkSupport$.MODULE$.internals(sparkContext()).createAndAttachSQLListener(this);
   }
 
   private SnappySharedState(SparkContext sparkContext) {
@@ -128,7 +79,7 @@ public final class SnappySharedState extends SharedState {
     // avoid inheritance of activeSession
     SparkSession.clearActiveSession();
 
-    this.snappyCacheManager = new SnappyCacheManager();
+    this.snappyCacheManager = SparkSupport$.MODULE$.internals(sparkContext).newCacheManager();
     ClusterMode clusterMode = SnappyContext.getClusterMode(sparkContext);
     if (clusterMode instanceof ThinClientConnectorMode) {
       this.embedCatalog = null;
@@ -156,6 +107,8 @@ public final class SnappySharedState extends SharedState {
     createListenerAndUI(sparkContext);
 
     final SnappySharedState sharedState = new SnappySharedState(sparkContext);
+    // new Spark versions initialize the UI listener in constructor which is updated next
+    sharedState.createListenerAndUI();
 
     // reset the temporary confs to original
     if (catalogImpl != null) {
@@ -186,7 +139,8 @@ public final class SnappySharedState extends SharedState {
     } else {
       // create a new connector catalog instance for connector mode
       // each instance has its own set of credentials for authentication
-      return new SmartConnectorExternalCatalog(session);
+      return SparkSupport$.MODULE$.internals(session.sparkContext())
+          .newSmartConnectorExternalCatalog(session);
     }
   }
 
@@ -203,7 +157,8 @@ public final class SnappySharedState extends SharedState {
   @Override
   public ExternalCatalog externalCatalog() {
     if (this.initialized) {
-      return this.embedCatalog;
+      // noinspection RedundantCast
+      return (ExternalCatalog)this.embedCatalog;
     } else {
       // in super constructor, no harm in returning super's value at this point
       return super.externalCatalog();

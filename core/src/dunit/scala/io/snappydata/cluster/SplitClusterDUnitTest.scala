@@ -763,7 +763,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     logInfo(output)
     output = output.replaceAll("NoSuchObjectException", "NoSuchObject")
     output = output.replaceAll("java.lang.ClassNotFoundException: " +
-        "org.apache.spark.sql.internal.SnappyAQPSessionState", "AQP missing")
+        "org.apache.spark.sql.execution.SnappyContextAQPFunctions", "AQP missing")
     assert(!output.contains("Exception"),
       s"Some exception stacktrace seen on spark-shell console: $output")
     assert(!output.contains("Error"), s"Some error seen on spark-shell console: $output")

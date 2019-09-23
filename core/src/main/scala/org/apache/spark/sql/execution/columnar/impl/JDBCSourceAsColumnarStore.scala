@@ -48,12 +48,12 @@ import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
-import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedUtils}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{SnappySession, SparkSession}
+import org.apache.spark.sql.{SnappySession, SparkSession, SparkSupport}
 import org.apache.spark.util.TaskCompletionListener
 import org.apache.spark.{Partition, TaskContext, TaskKilledException}
 
@@ -62,7 +62,7 @@ import org.apache.spark.{Partition, TaskContext, TaskKilledException}
  */
 class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionProperties,
     var numPartitions: Int, private var _tableName: String, var schema: StructType)
-    extends ExternalStore with KryoSerializable {
+    extends ExternalStore with KryoSerializable with SparkSupport {
 
   self =>
 
@@ -609,7 +609,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           // this is only used for local code generation while its RDD
           // semantics and related methods are all ignored
           val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
-            WholeStageCodegenExec(insertPlan), insertPlan)
+            internals.newWholeStagePlan(insertPlan), insertPlan)
           val references = ctx.references
           // also push the index of connection reference at the end which
           // will be used below to update connection before execution
@@ -796,7 +796,7 @@ final class SmartConnectorColumnRDD(
 
   private var serializedFilters: Array[Byte] = _
 
-  private var preferHostName = SmartConnectorHelper.preferHostName(session)
+  private var preferHostName = SmartConnectorHelper.preferHostName
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[ByteBuffer] = {
@@ -919,7 +919,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _filters, _partEval, _partitionPruner, _commitTx, _delayRollover,
     projection = Array.emptyIntArray, None) {
 
-  private var preferHostName = SmartConnectorHelper.preferHostName(session)
+  private var preferHostName = SmartConnectorHelper.preferHostName
 
   override def commitTxBeforeTaskCompletion(conn: Option[Connection],
       context: TaskContext): Unit = {

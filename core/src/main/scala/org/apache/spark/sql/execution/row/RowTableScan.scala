@@ -22,6 +22,8 @@ import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, ResultWasNull}
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
@@ -55,8 +57,18 @@ private[sql] final case class RowTableScan(
 
   override val nodeName: String = "RowTableScan"
 
+  lazy val tableIdentifier: Option[TableIdentifier] = baseRelation match {
+    case null => None
+    case r => sqlContext match {
+      case null => Some(SnappySession.tableIdentifier(r.table, catalog = null, resolve = false))
+      case c =>
+        Some(c.sparkSession.asInstanceOf[SnappySession].tableIdentifier(r.table, resolve = true))
+    }
+  }
+
   override def sameResult(plan: SparkPlan): Boolean = plan match {
-    case r: RowTableScan => r.table == table && r.numBuckets == numBuckets && r.schema == schema
+    case r: RowTableScan => r.tableIdentifier == tableIdentifier &&
+        r.numBuckets == numBuckets && r.schema == schema
     case _ => false
   }
 
@@ -64,9 +76,8 @@ private[sql] final case class RowTableScan(
     // a parent plan may set a custom input (e.g. HashJoinExec)
     // for that case no need to add the "shouldStop()" calls
     // PartitionedPhysicalRDD always has one input
-    val input = ctx.freshName("input")
-    ctx.addMutableState("scala.collection.Iterator",
-      input, s"$input = inputs[0];")
+    val input = internals.addClassField(ctx, "scala.collection.Iterator", "input",
+      v => s"$v = inputs[0];")
     val numOutputRows = if (sqlContext eq null) null
     else metricTerm(ctx, "numOutputRows")
     ctx.currentVars = null

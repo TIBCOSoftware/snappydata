@@ -28,7 +28,6 @@ import io.snappydata.{Constant, Property}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Descending, Expression, SortDirection}
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier, analysis}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -68,7 +67,7 @@ abstract class BaseColumnFormatRelation(
     _userSchema: StructType,
     val schemaExtensions: String,
     val ddlExtensionForShadowTable: String,
-    _origOptions: CaseInsensitiveMap,
+    _origOptions: CaseInsensitiveMutableHashMap[String],
     _externalStore: ExternalStore,
     val partitioningColumns: Seq[String],
     _context: SQLContext,
@@ -275,7 +274,7 @@ abstract class BaseColumnFormatRelation(
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val lockOption = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
       SnappySession.PUTINTO_LOCK) match {
-      case None if (Property.SerializeWrites.get(snc.sessionState.conf)) =>
+      case None if Property.SerializeWrites.get(snc.sessionState.conf) =>
         snc.grabLock(table, schemaName, connProperties)
       case _ => None // Do nothing as putInto will release lock
     }
@@ -302,10 +301,9 @@ abstract class BaseColumnFormatRelation(
     }
     finally {
       lockOption match {
-        case Some(lock) => {
+        case Some(lock) =>
           logDebug(s"Releasing the $lock object in InsertRows")
           snc.releaseLock(lock)
-        }
         case None => // do Nothing
       }
     }
@@ -317,7 +315,7 @@ abstract class BaseColumnFormatRelation(
 
     val lockOption = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
       SnappySession.PUTINTO_LOCK) match {
-      case None if (Property.SerializeWrites.get(snc.sessionState.conf)) =>
+      case None if Property.SerializeWrites.get(snc.sessionState.conf) =>
         snc.grabLock(table, schemaName, connProperties)
       case _ => None // Do nothing as putInto will release lock
     }
@@ -326,11 +324,10 @@ abstract class BaseColumnFormatRelation(
     }
     finally {
       lockOption match {
-        case Some(lock) => {
+        case Some(lock) =>
           logDebug(s"Added the $lock object to the context for $table")
           snc.addContextObject(
             SnappySession.BULKWRITE_LOCK, lock)
-        }
         case None => // do nothing
       }
     }
@@ -482,7 +479,7 @@ class ColumnFormatRelation(
     _userSchema: StructType,
     _schemaExtensions: String,
     _ddlExtensionForShadowTable: String,
-    _origOptions: CaseInsensitiveMap,
+    _origOptions: CaseInsensitiveMutableHashMap[String],
     _externalStore: ExternalStore,
     _partitioningColumns: Seq[String],
     _context: SQLContext,
@@ -517,8 +514,8 @@ class ColumnFormatRelation(
       cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext,
       _relationInfoAndRegion)
     newRelation.delayRollover = true
-    relation.copy(relation = newRelation,
-      expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
+    internals.newLogicalRelation(newRelation, Some(relation.output ++
+        ColumnDelta.mutableKeyAttributes), relation.catalogTable, isStreaming = false)
   }
 
   override def dropIndex(indexIdent: TableIdentifier,
@@ -600,7 +597,7 @@ class ColumnFormatRelation(
       indexTblName,
       "column",
       tableRelation.schema,
-      indexOptions)
+      indexOptions.toMap)
   }
 
   override def createIndex(indexIdent: TableIdentifier,
@@ -662,7 +659,7 @@ class IndexColumnFormatRelation(
     _userSchema: StructType,
     _schemaExtensions: String,
     _ddlExtensionForShadowTable: String,
-    _origOptions: CaseInsensitiveMap,
+    _origOptions: CaseInsensitiveMutableHashMap[String],
     _externalStore: ExternalStore,
     _partitioningColumns: Seq[String],
     _context: SQLContext,
@@ -693,15 +690,16 @@ class IndexColumnFormatRelation(
       cr.externalStore, cr.partitioningColumns, cr.sqlContext, baseTableName,
       _relationInfoAndRegion)
     newRelation.delayRollover = true
-    relation.copy(relation = newRelation,
-      expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
+    internals.newLogicalRelation(newRelation, Some(relation.output ++
+        ColumnDelta.mutableKeyAttributes), relation.catalogTable, isStreaming = false)
   }
 
   def getBaseTableRelation: ColumnFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val catalog = session.sessionState.catalog
     catalog.resolveRelation(session.tableIdentifier(baseTableName)) match {
-      case LogicalRelation(cr: ColumnFormatRelation, _, _) => cr
+      case lr: LogicalRelation if lr.relation.isInstanceOf[ColumnFormatRelation] =>
+        lr.relation.asInstanceOf[ColumnFormatRelation]
       case _ =>
         throw new UnsupportedOperationException("Index scan other than Column table unsupported")
     }

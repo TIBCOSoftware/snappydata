@@ -37,14 +37,15 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.Entity.{INDEX, INDEX_RELATION, TABLE}
-import org.apache.spark.sql.{AnalysisException, SnappySession}
+import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSupport}
 
-object RuleUtils extends PredicateHelper {
+object RuleUtils extends PredicateHelper with SparkSupport {
 
   private def getIndex(catalog: SnappySessionCatalog, table: CatalogTable): Option[INDEX] = {
     val relation = catalog.resolveRelation(table.identifier)
     relation match {
-      case LogicalRelation(_: IndexColumnFormatRelation, _, _) => Some(relation)
+      case lr: LogicalRelation if lr.relation.isInstanceOf[IndexColumnFormatRelation] =>
+        Some(relation)
       case _ => None
     }
   }
@@ -53,10 +54,10 @@ object RuleUtils extends PredicateHelper {
       table: LogicalPlan): Seq[(LogicalPlan, Seq[LogicalPlan])] = {
     val catalog = snappySession.sessionCatalog
     table.collect {
-      case l@LogicalRelation(p: PartitionedDataSourceScan, _, _) =>
+      case lr: LogicalRelation if lr.relation.isInstanceOf[PartitionedDataSourceScan] =>
         val (schemaName, table) = JdbcExtendedUtils.getTableWithSchema(
-          p.table, null, Some(snappySession))
-        (l.asInstanceOf[LogicalPlan], catalog.externalCatalog.getDependentsFromProperties(
+          lr.relation.asInstanceOf[PartitionedDataSourceScan].table, null, Some(snappySession))
+        (lr.asInstanceOf[LogicalPlan], catalog.snappyExternalCatalog.getDependentsFromProperties(
           schemaName, table, includeTypes = CatalogObjectType.Index :: Nil)
             .flatMap(getIndex(catalog, _)))
     }
@@ -87,7 +88,7 @@ object RuleUtils extends PredicateHelper {
           case expressions.EqualNullSafe(l, r) if canEvaluate(l, right) && canEvaluate(r, left) =>
             Some((Coalesce(Seq(r, Literal.default(r.dataType))),
                 Coalesce(Seq(l, Literal.default(l.dataType)))))
-          case other => None
+          case _ => None
         }
   }
 
@@ -96,8 +97,8 @@ object RuleUtils extends PredicateHelper {
       replicatedReachablePaths: Seq[List[LogicalPlan]]): Boolean = {
 
     if (source.isEmpty) {
-      return false
-    } else if (source.exists(_ == target)) {
+      false
+    } else if (source.contains(target)) {
       true
     } else if (replicatedReachablePaths.isEmpty) {
       false
@@ -109,10 +110,10 @@ object RuleUtils extends PredicateHelper {
           case ((otherKey, current), plan) =>
             plan match {
               case l :: r :: o if o.isEmpty & (l == rep1) =>
-                ((otherKey ++ Some(r)), current.filterNot(_ == plan))
+                (otherKey ++ Some(r), current.filterNot(_ == plan))
               case l :: r :: o if o.isEmpty & (r == rep1) =>
-                ((otherKey ++ Some(l)), current.filterNot(_ == plan))
-              case _ => ((otherKey, current))
+                (otherKey ++ Some(l), current.filterNot(_ == plan))
+              case _ => (otherKey, current)
             }
         }
 
@@ -124,7 +125,7 @@ object RuleUtils extends PredicateHelper {
     }
   }
 
-  protected[sql] def applyDefaultAction[A](entity: (PartialPlan, A), withFilters: Boolean)
+  private[sql] def applyDefaultAction[A](entity: (PartialPlan, A), withFilters: Boolean)
       (implicit snappySession: SnappySession, addToDefault: (PartialPlan, A) => PartialPlan):
   PartialPlan = entity match {
     // handles replicated & non-colocated logical plan
@@ -177,7 +178,7 @@ object RuleUtils extends PredicateHelper {
       addToDefault(newPlan, replacement.asInstanceOf[A])
   }
 
-  protected[sql] def createJoin(curPlan: LogicalPlan,
+  private[sql] def createJoin(curPlan: LogicalPlan,
       planToAdd: LogicalPlan, toJoinWith: Seq[Expression]) = if (curPlan == null) {
     planToAdd
   } else {
@@ -186,18 +187,18 @@ object RuleUtils extends PredicateHelper {
     Join(curPlan, planToAdd, Inner, toJoinWith.reduceLeftOption(expressions.And))
   }
 
-  protected[sql] def partitionBy(allColumns: AttributeSet, expressions: Seq[Expression]):
+  private[sql] def partitionBy(allColumns: AttributeSet, expressions: Seq[Expression]):
   (Seq[Expression], Seq[Expression]) = expressions.partition(e =>
     e.references.subsetOf(allColumns) && !SubqueryExpression.hasCorrelatedSubquery(e))
 
-  protected[sql] def returnPlan(partial: PartialPlan) = {
+  private[sql] def returnPlan(partial: PartialPlan) = {
     val input = if (partial.curPlan == null) partial.input
     else Seq(partial.curPlan) ++ partial.input
     CompletePlan(ReorderJoin.createOrderedJoin(input.map((_, Inner)),
       partial.conditions), partial.replaced ++ partial.input.map(t => Replacement(t, t)))
   }
 
-  protected[sql] def chooseIndexForFilter(child: LogicalPlan, conditions: Seq[Expression])
+  private[sql] def chooseIndexForFilter(child: LogicalPlan, conditions: Seq[Expression])
       (implicit snappySession: SnappySession) = {
 
     val columnGroups = conditions.collect {
@@ -214,26 +215,28 @@ object RuleUtils extends PredicateHelper {
         cols.collect { case a if a.nonEmpty => a.get })
     }
 
+    var ir: IndexColumnFormatRelation = null
     val currentSchema = snappySession.getCurrentSchema
     val satisfyingPartitionColumns = for {
       (table, indexes) <- RuleUtils.fetchIndexes(snappySession, child)
       filterCols <- columnGroups.collectFirst {
         case (t, predicates) if predicates.nonEmpty =>
           table match {
-            case LogicalRelation(b: ColumnFormatRelation, _, _)
-              if b.table.equalsIgnoreCase(t) || b.table.equalsIgnoreCase(s"$currentSchema.$t") =>
-              predicates
-            case SubqueryAlias(alias, _, _) if alias.equalsIgnoreCase(t) =>
-              predicates
+            case lr: LogicalRelation if lr.relation.isInstanceOf[ColumnFormatRelation] &&
+                (lr.relation.asInstanceOf[ColumnFormatRelation].table.equalsIgnoreCase(t) ||
+                    lr.relation.asInstanceOf[ColumnFormatRelation].table.equalsIgnoreCase(
+                      s"$currentSchema.$t")) => predicates
+            case s: SubqueryAlias if s.alias.equalsIgnoreCase(t) => predicates
             case _ => Nil
           }
       } if filterCols.nonEmpty
 
       matchedIndexes = indexes.collect {
-        case idx@LogicalRelation(ir: IndexColumnFormatRelation, _, _)
-          if ir.partitionColumns.length <= filterCols.length &
-              ir.partitionColumns.forall(p => filterCols.exists(f =>
-                f.name.equalsIgnoreCase(p))) =>
+        case idx: LogicalRelation if idx.relation.isInstanceOf[IndexColumnFormatRelation] &&
+            (ir = idx.relation.asInstanceOf[IndexColumnFormatRelation]).isInstanceOf[Unit] &&
+            ir.partitionColumns.length <= filterCols.length &
+            ir.partitionColumns.forall(p => filterCols.exists(f =>
+              f.name.equalsIgnoreCase(p))) =>
           (ir.partitionColumns.length, idx.asInstanceOf[LogicalPlan])
       } if matchedIndexes.nonEmpty
 
@@ -245,7 +248,7 @@ object RuleUtils extends PredicateHelper {
       None
     } else {
       Some(satisfyingPartitionColumns.maxBy {
-        r => r.index.statistics.sizeInBytes
+        r => internals.getStatistics(r.index).sizeInBytes
       })
     }
   }
@@ -276,10 +279,11 @@ object Entity {
 
   def unwrapBaseColumnRelation(
       plan: LogicalPlan): Option[BaseColumnFormatRelation] = plan collectFirst {
-    case LogicalRelation(relation: BaseColumnFormatRelation, _, _) =>
-      relation
-    case SubqueryAlias(alias, LogicalRelation(relation: BaseColumnFormatRelation, _, _), _) =>
-      relation
+    case lr: LogicalRelation if lr.relation.isInstanceOf[BaseColumnFormatRelation] =>
+      lr.relation.asInstanceOf[BaseColumnFormatRelation]
+    case s: SubqueryAlias if s.child.isInstanceOf[LogicalRelation] &&
+        s.child.asInstanceOf[LogicalRelation].relation.isInstanceOf[BaseColumnFormatRelation] =>
+      s.child.asInstanceOf[LogicalRelation].relation.asInstanceOf[BaseColumnFormatRelation]
   }
 
   private def findR(p: Any) = p match {
@@ -311,7 +315,7 @@ object Entity {
   }
 }
 
-object HasColocatedEntities {
+object HasColocatedEntities extends SparkSupport {
 
   type ReturnType = (
       Seq[(INDEX_RELATION, INDEX_RELATION)], Seq[ReplacementSet]
@@ -356,7 +360,7 @@ object HasColocatedEntities {
     //      assert(leftRightEntityMapping.size <= 1)
 
     val mappings = leftRightEntityMapping.flatMap { mappedElements =>
-      val (leftTable, rightTable) = mappedElements(0) // first pairing is always (table, table)
+      val (leftTable, rightTable) = mappedElements.head // first pairing is always (table, table)
       for {
         (leftPlan, rightPlan) <- mappedElements
         leftRelation = Entity.unwrapBaseColumnRelation(leftPlan) if leftRelation.nonEmpty
@@ -365,13 +369,13 @@ object HasColocatedEntities {
       } yield {
         val leftReplacement = leftTable match {
           case _: LogicalRelation => Replacement(leftTable, leftPlan)
-          case subquery@SubqueryAlias(alias, _, v) =>
-            Replacement(subquery, SubqueryAlias(alias, leftPlan, None))
+          case subquery: SubqueryAlias =>
+            Replacement(subquery, internals.newSubqueryAlias(subquery.alias, leftPlan))
         }
         val rightReplacement = rightTable match {
           case _: LogicalRelation => Replacement(rightTable, rightPlan)
-          case subquery@SubqueryAlias(alias, _, _) =>
-            Replacement(subquery, SubqueryAlias(alias, rightPlan, None))
+          case subquery: SubqueryAlias =>
+            Replacement(subquery, internals.newSubqueryAlias(subquery.alias, rightPlan))
         }
         ((leftRelation.get, rightRelation.get),
             ReplacementSet(ArrayBuffer(leftReplacement, rightReplacement), Nil))
@@ -391,38 +395,42 @@ object HasColocatedEntities {
  * Table to table or Table to index replacement.
  */
 case class Replacement(table: TABLE, index: INDEX, isPartitioned: Boolean = true)
-    extends PredicateHelper {
+    extends PredicateHelper with SparkSupport {
 
   def isReplacable: Boolean = table != index
 
 
-  val indexAttributes = index.output.collect { case ar: AttributeReference => ar }
+  private[sql] val indexAttributes = index.output.collect { case ar: AttributeReference => ar }
 
-  val tableToIndexAttributeMap = AttributeMap(table.output.map {
+  private[sql] val tableToIndexAttributeMap = AttributeMap(table.output.map {
     case f: AttributeReference =>
       val newA = indexAttributes.find(_.name.equalsIgnoreCase(f.name)).
           getOrElse(throw new IllegalStateException(
-            s"Field $f not found in ${indexAttributes}"))
+            s"Field $f not found in $indexAttributes"))
       (f, newA)
-    case a => throw new AssertionError(s"UnHandled Attribute ${a} in table" +
+    case a => throw new IllegalStateException(s"Unhandled Attribute $a in table" +
         s" ${table.output.mkString(",")}")
   })
 
-  private var _replacedEntity: LogicalPlan = null
+  private var _replacedEntity: LogicalPlan = _
 
   def numPartitioningCols: Int = index match {
-    case LogicalRelation(b: BaseColumnFormatRelation, _, _) => b.partitionColumns.length
+    case lr: LogicalRelation if lr.relation.isInstanceOf[BaseColumnFormatRelation] =>
+      lr.relation.asInstanceOf[BaseColumnFormatRelation].partitionColumns.length
     case _ => 0
   }
 
   override def toString: String = {
     "" + (table match {
-      case LogicalRelation(b: BaseColumnFormatRelation, _, _) => b.table
+      case lr: LogicalRelation if lr.relation.isInstanceOf[BaseColumnFormatRelation] =>
+        lr.relation.asInstanceOf[BaseColumnFormatRelation].table
       case _ => table.toString()
     }) + " ----> " +
         (index match {
-          case LogicalRelation(b: BaseColumnFormatRelation, _, _) => b.table
-          case LogicalRelation(r: RowFormatRelation, _, _) => r.table
+          case lr: LogicalRelation if lr.relation.isInstanceOf[BaseColumnFormatRelation] =>
+            lr.relation.asInstanceOf[BaseColumnFormatRelation].table
+          case lr: LogicalRelation if lr.relation.isInstanceOf[RowFormatRelation] =>
+            lr.relation.asInstanceOf[RowFormatRelation].table
           case _ => index.toString()
         })
   }
@@ -430,7 +438,7 @@ case class Replacement(table: TABLE, index: INDEX, isPartitioned: Boolean = true
   def mappedConditions(conditions: Seq[Expression]): Seq[Expression] =
     conditions.map(Entity.replaceAttribute(_, tableToIndexAttributeMap))
 
-  protected[sources] def replacedPlan(conditions: Seq[Expression]): LogicalPlan = {
+  private[sources] def replacedPlan(conditions: Seq[Expression]): LogicalPlan = {
     if (_replacedEntity == null) {
       val tableConditions = conditions.filter(canEvaluate(_, table))
       _replacedEntity = if (tableConditions.isEmpty) {
@@ -443,8 +451,7 @@ case class Replacement(table: TABLE, index: INDEX, isPartitioned: Boolean = true
   }
 
   def estimatedSize(conditions: Seq[Expression]): BigInt =
-    replacedPlan(conditions).statistics.sizeInBytes
-
+    internals.getStatistics(replacedPlan(conditions)).sizeInBytes
 }
 
 /**
@@ -458,16 +465,16 @@ case class Replacement(table: TABLE, index: INDEX, isPartitioned: Boolean = true
  */
 case class ReplacementSet(chain: ArrayBuffer[Replacement],
     conditions: Seq[Expression])
-    extends Ordered[ReplacementSet] with PredicateHelper {
+    extends Ordered[ReplacementSet] with PredicateHelper with SparkSupport {
 
   lazy val bestJoinOrder: Seq[Replacement] = {
     val (part, rep) = chain.partition(_.isPartitioned)
     // pick minimum number of replicated tables required to fulfill colocated join order.
     val feasibleJoinPlan = Seq.range(0, chain.length - part.length + 1).flatMap(elem =>
       rep.combinations(elem).map(part ++ _).
-        flatMap(_.permutations).filter(hasJoinConditions)).filter(_.nonEmpty)
+          flatMap(_.permutations).filter(hasJoinConditions)).filter(_.nonEmpty)
 
-    if(feasibleJoinPlan.isEmpty) {
+    if (feasibleJoinPlan.isEmpty) {
       Nil
     } else {
       val all = feasibleJoinPlan.sortBy { jo =>
@@ -478,9 +485,9 @@ case class ReplacementSet(chain: ArrayBuffer[Replacement],
     }
   }
 
-  lazy val bestPlanEstimatedSize = estimateSize(bestJoinOrder)
+  private[sql] lazy val bestPlanEstimatedSize = estimateSize(bestJoinOrder)
 
-  lazy val bestJoinOrderConditions = joinConditions(bestJoinOrder)
+  private[sql] lazy val bestJoinOrderConditions = joinConditions(bestJoinOrder)
 
   private def joinConditions(joinOrder: Seq[Replacement]) = {
     val refs = joinOrder.map(_.table.outputSet).reduce(_ ++ _)
@@ -497,8 +504,8 @@ case class ReplacementSet(chain: ArrayBuffer[Replacement],
     }
 
     val sz = joinOrder.map(_.replacedPlan(conditions)).zipWithIndex.foldLeft(BigInt(0)) {
-      case (tot, (table, depth)) if depth == 2 => tot + table.statistics.sizeInBytes
-      case (tot, (table, depth)) => tot + (table.statistics.sizeInBytes * depth)
+      case (tot, (table, depth)) if depth == 2 => tot + internals.getStatistics(table).sizeInBytes
+      case (tot, (table, depth)) => tot + (internals.getStatistics(table).sizeInBytes * depth)
     }
 
     sz
@@ -560,7 +567,7 @@ object ExtractFiltersAndInnerJoins extends PredicateHelper {
       val (plans, conditions) = flattenJoin(left)
       (plans ++ Seq(right), conditions ++ cond.toSeq)
 
-    case plans.logical.Filter(filterCondition, j@Join(left, right, Inner, joinCondition)) =>
+    case plans.logical.Filter(filterCondition, j@Join(_, _, Inner, _)) =>
       val (plans, conditions) = flattenJoin(j)
       (plans, conditions ++ splitConjunctivePredicates(filterCondition))
 
@@ -570,11 +577,11 @@ object ExtractFiltersAndInnerJoins extends PredicateHelper {
   def unapply(plan: LogicalPlan):
   // tables, joinConditions, filterConditions
   Option[(Seq[LogicalPlan], Seq[Expression])] = plan match {
-    case f@plans.logical.Filter(filterCondition, j@Join(_, _, Inner, _)) =>
+    case f@plans.logical.Filter(_, Join(_, _, Inner, _)) =>
       Some(flattenJoin(f))
     case j@Join(_, _, Inner, _) =>
       Some(flattenJoin(j))
-    case f@plans.logical.Filter(filterCondition, child) =>
+    case plans.logical.Filter(filterCondition, child) =>
       Some(Seq(child), splitConjunctivePredicates(filterCondition))
     case _ => None
   }

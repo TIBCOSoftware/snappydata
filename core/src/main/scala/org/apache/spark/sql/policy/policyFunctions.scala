@@ -38,7 +38,8 @@ import org.apache.spark.unsafe.types.UTF8String
 @ExpressionDescription(
   usage = "_FUNC_() - Returns the name of the user that owns the session executing the " +
       "current SQL statement.",
-  extended = """
+  extended =
+      """
     Examples:
       > SELECT _FUNC_();
        USER1
@@ -51,7 +52,9 @@ case class CurrentUser() extends LeafExpression with CodegenFallback {
 
   override def dataType: DataType = StringType
 
-  override def eval(input: InternalRow): Any = {
+  override def prettyName: String = "CURRENT_USER"
+
+  private val userName: UTF8String = {
     val snappySession = SparkSession.getActiveSession.getOrElse(
       throw new IllegalStateException("SnappySession unavailable")).asInstanceOf[SnappySession]
     val owner = snappySession.conf.get(Attribute.USERNAME_ATTR, Constant.DEFAULT_SCHEMA)
@@ -59,16 +62,19 @@ case class CurrentUser() extends LeafExpression with CodegenFallback {
     UTF8String.fromString(IdUtil.getUserAuthorizationId(owner))
   }
 
-  override def prettyName: String = "current_user"
+  override def eval(input: InternalRow): Any = userName
 }
 
 /**
  * Get the LDAP groups of the current user executing the function.
+ *
+ * There is no code generation since this expression should get constant folded by the optimizer.
  */
 @ExpressionDescription(
   usage = "_FUNC_() - Returns all the ldap groups as an ARRAY to which the user " +
       "who is executing the current SQL statement belongs.",
-  extended = """
+  extended =
+      """
     Examples:
       > SELECT array_contains(_FUNC_(), 'GROUP1');
        true

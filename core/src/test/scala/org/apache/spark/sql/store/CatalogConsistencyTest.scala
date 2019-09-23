@@ -88,7 +88,7 @@ class CatalogConsistencyTest
     snc.createTable("column_table1", "column", dataDF.schema, props)
 
     // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "column_table1",
+    snc.snappySession.sessionCatalog.snappyExternalCatalog.dropTable("app", "column_table1",
       ignoreIfNotExists = false, purge = false)
 
     // should throw an exception since the table has been removed from Hive store
@@ -114,7 +114,7 @@ class CatalogConsistencyTest
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
 
     // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "column_table1",
+    snc.snappySession.sessionCatalog.snappyExternalCatalog.dropTable("app", "column_table1",
       ignoreIfNotExists = false, purge = false)
 
     // repair the catalog
@@ -154,7 +154,7 @@ class CatalogConsistencyTest
     routeQueryDisabledConn.createStatement().execute("drop table " +
         ColumnFormatRelation.columnBatchTableName("app.column_table1"))
     // remove the table entry from Hive store
-    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "column_table1",
+    snc.snappySession.sessionCatalog.snappyExternalCatalog.dropTable("app", "column_table1",
       ignoreIfNotExists = false, purge = false)
 
     // make sure that the table does not exist in Hive metastore
@@ -256,7 +256,7 @@ class CatalogConsistencyTest
     snc.createTable("row_table1", "row", dataDF.schema, props)
 
     // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "row_table1",
+    snc.snappySession.sessionCatalog.snappyExternalCatalog.dropTable("app", "row_table1",
       ignoreIfNotExists = false, purge = false)
 
     // should throw an exception since the table has been removed from Hive store
@@ -277,7 +277,7 @@ class CatalogConsistencyTest
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table2")
 
     // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "row_table1",
+    snc.snappySession.sessionCatalog.snappyExternalCatalog.dropTable("app", "row_table1",
       ignoreIfNotExists = false, purge = false)
 
     // repair the catalog

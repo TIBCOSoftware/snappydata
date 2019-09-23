@@ -26,9 +26,9 @@ import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{And, Ascending, Attribute, Descending, EqualTo, Expression, In, SortDirection}
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -49,7 +49,7 @@ class RowFormatRelation(
     _mode: SaveMode,
     _userSpecifiedString: String,
     _parts: Array[Partition],
-    _origOptions: CaseInsensitiveMap,
+    _origOptions: CaseInsensitiveMutableHashMap[String],
     _context: SQLContext)
     extends JDBCMutableRelation(_connProperties,
       _table,

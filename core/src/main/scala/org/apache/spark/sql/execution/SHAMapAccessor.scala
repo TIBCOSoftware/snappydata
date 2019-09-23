@@ -22,8 +22,7 @@ import scala.reflect.runtime.universe._
 
 import com.gemstone.gemfire.internal.shared.{BufferSizeLimitExceededException, ClientResolverUtils}
 import io.snappydata.Property
-import io.snappydata.collection.{ByteBufferData, SHAMap}
-
+import io.snappydata.collection.SHAMap
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
@@ -84,9 +83,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
       s"${org.apache.spark.sql.types.TypeUtilities.getClass.getName}.MODULE$$"
     val bigDecimalClass = classOf[java.math.BigDecimal].getName
     val bigIntegerClass = classOf[java.math.BigInteger].getName
-    val byteBufferClass = classOf[ByteBuffer].getName
     val unsafeClass = classOf[UnsafeRow].getName
-    val castTerm = SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
     dataTypes.zip(varNames).zipWithIndex.map { case ((dt, varName), i) =>
       val nullVar = if (isKey) {
         if (nestingLevel == 0 && skipNullBitsCode) {
@@ -152,7 +149,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
              | $varName, ${Platform.BYTE_ARRAY_OFFSET}, $varName.length);
              | $currentValueOffsetTerm += $varName.length;
                """.stripMargin
-        case x: AtomicType => {
+        case x: AtomicType =>
           (typeOf(x.tag) match {
             case t if t =:= typeOf[Boolean] =>
               s"""$varName = $plaformClass.getBoolean($vdBaseObjectTerm, $currentValueOffsetTerm);
@@ -184,23 +181,21 @@ case class SHAMapAccessor(@transient session: SnappySession,
               } else {
                 val tempByteArrayTerm = ctx.freshName("tempByteArray")
 
-                val len = ctx.freshName("len")
                 s"""
-                   |byte[] $tempByteArrayTerm = new byte[${dt.asInstanceOf[DecimalType].
-                  defaultSize}];
+                   |byte[] $tempByteArrayTerm =
+                   |  new byte[${dt.asInstanceOf[DecimalType].defaultSize}];
                    |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
                    |$tempByteArrayTerm, ${Platform.BYTE_ARRAY_OFFSET} , $tempByteArrayTerm.length);
                    |$varName = $bigDecimalObjectClass.apply(new $bigDecimalClass(
                    |new $bigIntegerClass($tempByteArrayTerm),
-                   |${dt.asInstanceOf[DecimalType].scale},
-                   | $typeUtiltiesObjectClass.mathContextCache()[${dt.asInstanceOf[DecimalType].precision - 1}]));
+                   |  ${dt.asInstanceOf[DecimalType].scale}, $typeUtiltiesObjectClass.
+                   |  mathContextCache()[${dt.asInstanceOf[DecimalType].precision - 1}]));
                    """.stripMargin
               }
 
             case _ => throw new UnsupportedOperationException("unknown type " + dt)
           }) +
             s"""$currentValueOffsetTerm += ${dt.defaultSize};"""
-        }
         case ArrayType(elementType, containsNull) =>
           val isExploded = ctx.freshName("isExplodedArray")
           val arraySize = ctx.freshName("arraySize")
@@ -212,8 +207,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
           val objectClass = classOf[Object].getName
           val counter = ctx.freshName("counter")
           val readingCodeExprs = getBufferVars(Seq(elementType), Seq(s"$objectArray[$counter]"),
-            currentValueOffsetTerm, true, "", -1,
-            true, nestingLevel)
+            currentValueOffsetTerm, isKey = true, "", -1,
+            skipNullBitsCode = true, nestingLevel)
           val varWidthNumNullBytes = ctx.freshName("numNullBytes")
           val varWidthNullBits = ctx.freshName("nullBits")
           val remainder = ctx.freshName("remainder")
@@ -260,7 +255,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
         case st: StructType =>
           val objectArray = ctx.freshName("objectArray")
           val byteBufferClass = classOf[ByteBuffer].getName
-          val currentOffset = ctx.freshName("currentOffset")
           val nullBitSetTermForStruct = SHAMapAccessor.generateNullKeysBitTermForStruct(
             varName)
           val numNullKeyBytesForStruct = SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length)
@@ -297,8 +291,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
                  }
                  ${
                    getBufferVars(st.map(_.dataType), keyVarNamesWithStructFlags.unzip._1,
-                   currentValueOffsetTerm, true, nullBitSetTermForStruct,
-                   numNullKeyBytesForStruct, false, nestingLevel + 1).
+                   currentValueOffsetTerm, isKey = true, nullBitSetTermForStruct,
+                   numNullKeyBytesForStruct, skipNullBitsCode = false, nestingLevel + 1).
                      map(_.code).mkString("\n")
                  }
                 //add child Internal Rows to parent struct's object array
@@ -379,8 +373,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }.mkString("\n")
 
   def declareNullVarsForAggBuffer(varNames: Seq[String]): String =
-    varNames.map(varName => s"boolean ${varName}${SHAMapAccessor.nullVarSuffix} = false;").
+    varNames.map(varName => s"boolean $varName${SHAMapAccessor.nullVarSuffix} = false;").
       mkString("\n")
+
   /**
    * Generate code to lookup the map or insert a new key, value if not found.
    */
@@ -391,10 +386,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val tempValueData = ctx.freshName("tempValueData")
     val linkedListClass = classOf[java.util.LinkedList[SHAMap]].getName
     val exceptionName = classOf[BufferSizeLimitExceededException].getName
-    val bbDataClass = classOf[ByteBufferData].getName
     val shaMapClassName = classOf[SHAMap].getName
     // val valueInit = valueInitCode + '\n'
-    val insertDoneTerm = ctx.freshName("insertDone");
+    val insertDoneTerm = ctx.freshName("insertDone")
     /* generateUpdate(objVar, Nil,
       valueInitVars, forKey = false, doCopy = false) */
 
@@ -406,7 +400,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
            // evaluate key vars
         |${evaluateVariables(keyVars)}
         |${keyVars.zip(keysDataType).filter(_._2 match {
-              case x: StructType => true
+              case _: StructType => true
               case _ => false
             }).map {
                 case (exprCode, dt) => explodeStruct(exprCode.value, exprCode.isNull,
@@ -446,9 +440,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
           |} catch ($exceptionName bsle) {
               |$overflowHashMapsTerm = new $linkedListClass<$shaMapClassName>();
               |$overflowHashMapsTerm.add($hashMapTerm);
-              |$hashMapTerm = new $shaMapClassName(${Property.initialCapacityOfSHABBMap.get(session.sessionState.conf)},
-              |$keyValSize,
-              |${Property.ApproxMaxCapacityOfBBMap.get(session.sessionState.conf)});
+              |$hashMapTerm = new $shaMapClassName(
+              |  ${Property.initialCapacityOfSHABBMap.get(session.sessionState.conf)}, $keyValSize,
+              |  ${Property.ApproxMaxCapacityOfBBMap.get(session.sessionState.conf)});
               |$overflowHashMapsTerm.add($hashMapTerm);
               |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject,
               |$baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
@@ -481,9 +475,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
              |}
           |}
           |if (!$insertDoneTerm) {
-            |$hashMapTerm = new $shaMapClassName(${Property.initialCapacityOfSHABBMap.get(session.sessionState.conf)},
-            | $keyValSize,
-            | ${Property.ApproxMaxCapacityOfBBMap.get(session.sessionState.conf)});
+            |$hashMapTerm = new $shaMapClassName(
+            |  ${Property.initialCapacityOfSHABBMap.get(session.sessionState.conf)}, $keyValSize,
+            |  ${Property.ApproxMaxCapacityOfBBMap.get(session.sessionState.conf)});
             |$overflowHashMapsTerm.add($hashMapTerm);
             |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject,
             |$baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
@@ -567,7 +561,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 
   def generateUpdate(bufferVars: Seq[ExprCode], aggBufferDataType: Seq[DataType]): String = {
-    val plaformClass = classOf[Platform].getName
     val setStoredAggNullBitsTerm = storedAggNullBitsTerm.map(storedNullBit => {
       s"""// If key did not exist, make cachedAggBit -1 , so that the update will always write
       // the right state of agg bit , else it will be that stored Agg Bit will match the
@@ -587,13 +580,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
       ${
       writeKeyOrValue(vdBaseObjectTerm, currentOffSetForMapLookupUpdt,
         aggBufferDataType, bufferVars, nullAggsBitsetTerm, numBytesForNullAggBits,
-        false, false)
+        isKey = false, skipNullEvalCode = false)
      }
     """.stripMargin
-
   }
-
-
 
   def writeKeyOrValue(baseObjectTerm: String, offsetTerm: String,
     dataTypes: Seq[DataType], varsToWrite: Seq[ExprCode], nullBitsTerm: String,
@@ -711,8 +701,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
                    |$offsetTerm += 1;
                    |${
                       writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
-                      newNullBitTerm, newNumBytesForNullBits, true, false,
-                        nestingLevel + 1)
+                      newNullBitTerm, newNumBytesForNullBits, isKey = true,
+                        skipNullEvalCode = false, nestingLevel + 1)
                     }
                  """.stripMargin
               val unexplodedStructSnippet =
@@ -736,13 +726,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
               }
 
 
-            case at@ArrayType(elementType, containsNull) =>
+            case ArrayType(elementType, containsNull) =>
               val varWidthNullBitStartPos = ctx.freshName("nullBitBeginPos")
               val varWidthNumNullBytes = ctx.freshName("numNullBytes")
               val varWidthNullBits = ctx.freshName("nullBits")
               val arrElement = ctx.freshName("arrElement")
-              val tempObj = ctx.freshName("temp")
-              val array = ctx.freshName("array")
               val counter = ctx.freshName("counter")
               val remainder = ctx.freshName("remainder")
               val arrIndex = ctx.freshName("arrIndex")
@@ -752,7 +740,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
               val dataTypeClass = classOf[DataType].getName
               val elementWitingCode = writeKeyOrValue(baseObjectTerm, offsetTerm, Seq(elementType),
                 Seq(ExprCode("", "false", arrElement)), "", -1,
-                true, true, nestingLevel)
+                isKey = true, skipNullEvalCode = true, nestingLevel)
               val explodeArraySnippet =
                s"""|$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
                    |$offsetTerm += 1;
@@ -883,9 +871,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
         long $currentOffset = $baseKeyHolderOffset;
         // first write key data
-        ${ writeKeyOrValue(baseKeyObject, currentOffset, keysDataType, keyVars,
-          nullKeysBitsetTerm, numBytesForNullKeyBits, true, numBytesForNullKeyBits == 0)
-        }
+        ${writeKeyOrValue(baseKeyObject, currentOffset, keysDataType, keyVars, nullKeysBitsetTerm,
+          numBytesForNullKeyBits, isKey = true, skipNullEvalCode = numBytesForNullKeyBits == 0)}
        // write value data
        ${"" /* writeKeyOrValue(baseKeyObject, currentOffset, aggregatesDataType, valueInitVars,
           nullAggsBitsetTerm, numBytesForNullAggBits, false, false) */
@@ -948,7 +935,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
             }
             )
 
-          case at@ArrayType(elementType, containsNull) =>
+          case ArrayType(elementType, containsNull) =>
             // The array serialization format is following
             /**
              *           Boolean (exploded or not)
@@ -1182,22 +1169,20 @@ case class SHAMapAccessor(@transient session: SnappySession,
 object SHAMapAccessor {
 
   val nullVarSuffix = "_isNull"
-  val supportedDataTypes: DataType => Boolean = dt =>
-    dt match {
-      case _: MapType => false
-      case _: UserDefinedType[_] => false
-      case CalendarIntervalType => false
-      case NullType => false
-      case _: ObjectType => false
-      case ArrayType(elementType, _) => elementType match {
-        case _: StructType => false
-        case _ => true
-      }
+  val supportedDataTypes: DataType => Boolean = {
+    case _: MapType => false
+    case _: UserDefinedType[_] => false
+    case CalendarIntervalType => false
+    case NullType => false
+    case _: ObjectType => false
+    case ArrayType(elementType, _) => elementType match {
+      case _: StructType => false
       case _ => true
-
-      // includes atomic types, string type, array type
-      // ( depends on element type) , struct type ( depends on fields)
     }
+    case _ => true
+    // includes atomic types, string type, array type
+    // ( depends on element type) , struct type ( depends on fields)
+  }
 
   def initNullBitsetCode(nullBitsetTerm: String,
     numBytesForNullBits: Int): String = if (numBytesForNullBits == 0) {
@@ -1349,5 +1334,4 @@ object SHAMapAccessor {
       }
     }
   }
-
 }

@@ -40,7 +40,7 @@ public abstract class SnappyHiveCatalogBase extends HiveExternalCatalog {
   }
 
   @Override
-  public HiveClient client() {
+  public final HiveClient client() {
     return this.hiveClient;
   }
 }

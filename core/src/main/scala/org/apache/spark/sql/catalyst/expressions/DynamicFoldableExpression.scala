@@ -68,7 +68,7 @@ case class DynamicFoldableExpression(var expr: Expression) extends UnaryExpressi
 
   override def toString: String = {
     def removeCast(expr: Expression): Expression = expr match {
-      case Cast(child, _) => removeCast(child)
+      case c: Cast => removeCast(c.child)
       case _ => expr
     }
 

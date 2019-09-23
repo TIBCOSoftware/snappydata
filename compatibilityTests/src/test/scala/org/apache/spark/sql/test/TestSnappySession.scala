@@ -38,6 +38,7 @@ private[sql] class TestSnappySession(sc: SparkContext) extends SnappySession(sc)
     this(new SparkConf)
   }
 
+  // Make sure we start with the default test configs even after clear
   override private[sql] def overrideConfs: Map[String, String] = TestSQLContext.overrideConfs
 
   // Needed for Java tests

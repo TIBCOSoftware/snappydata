@@ -69,12 +69,10 @@ trait ColumnExec extends RowExec {
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val listenerClass = classOf[SnapshotConnectionListener].getName
     val storeClass = classOf[JDBCSourceAsColumnarStore].getName
-    taskListener = ctx.freshName("taskListener")
-    connTerm = ctx.freshName("connection")
     val getContext = Utils.genTaskContextFunction(ctx)
 
-    ctx.addMutableState(listenerClass, taskListener, "")
-    ctx.addMutableState(connectionClass, connTerm, "")
+    taskListener = internals.addClassField(ctx, listenerClass, "taskListener")
+    connTerm = internals.addClassField(ctx, connectionClass, "connection")
 
     val initCode =
       s"""

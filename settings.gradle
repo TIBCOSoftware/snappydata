@@ -15,7 +15,10 @@
  * LICENSE file.
  */
 
-def scalaBinaryVersion = '2.11'
+String scalaBinaryVersion = '2.11'
+String sparkVersion = '2.1.1'
+String sparkConnectorVersion = rootProject.hasProperty('spark.connector.version')
+    ? rootProject.property('spark.connector.version') : sparkVersion
 rootProject.name = 'snappydata_' + scalaBinaryVersion
 
 include ':snappy-jdbc_' + scalaBinaryVersion
@@ -28,6 +31,11 @@ include ':snappy-dtests_' + scalaBinaryVersion
 include ':snappy-compatibility-tests_' + scalaBinaryVersion
 include ':snappy-encoders_' + scalaBinaryVersion
 
+// compatibility modules for all supported Spark releases
+include ":snappy-core_${scalaBinaryVersion}:compat-spark2.1.0"
+include ":snappy-core_${scalaBinaryVersion}:compat-spark2.1.1"
+include ":snappy-core_${scalaBinaryVersion}:compat-spark2.3.2"
+
 project(':snappy-jdbc_' + scalaBinaryVersion).projectDir = "$rootDir/jdbc" as File
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
 project(':snappy-cluster_' + scalaBinaryVersion).projectDir = "$rootDir/cluster" as File
@@ -36,6 +44,15 @@ project(':snappy-examples_' + scalaBinaryVersion).projectDir = "$rootDir/example
 project(':snappy-dtests_' + scalaBinaryVersion).projectDir = "$rootDir/dtests" as File
 project(':snappy-compatibility-tests_' + scalaBinaryVersion).projectDir = "$rootDir/compatibilityTests" as File
 project(':snappy-encoders_' + scalaBinaryVersion).projectDir = "$rootDir/encoders" as File
+
+project(":snappy-core_${scalaBinaryVersion}:compat-spark2.1.0").projectDir = "$rootDir/core/compatibility/spark-2.1.0" as File
+project(":snappy-core_${scalaBinaryVersion}:compat-spark2.1.1").projectDir = "$rootDir/core/compatibility/spark-2.1.1" as File
+project(":snappy-core_${scalaBinaryVersion}:compat-spark2.3.2").projectDir = "$rootDir/core/compatibility/spark-2.3.2" as File
+
+if (sparkConnectorVersion != sparkVersion) {
+  include ':snappy-core-product_' + scalaBinaryVersion
+  project(':snappy-core-product_' + scalaBinaryVersion).projectDir = "$rootDir/core-product" as File
+}
 
 if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark'

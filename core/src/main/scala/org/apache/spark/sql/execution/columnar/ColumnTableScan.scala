@@ -42,10 +42,10 @@ import io.snappydata.ResultSetWithNull
 
 import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{SharedUtils, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.encoding._
@@ -86,8 +86,21 @@ private[sql] final case class ColumnTableScan(
     else "ColumnTableScan"
   }
 
+  @transient private lazy val session: Option[SnappySession] = sqlContext match {
+    case null => None
+    case c => Some(c.sparkSession.asInstanceOf[SnappySession])
+  }
+
+  lazy val tableIdentifier: Option[TableIdentifier] = baseRelation match {
+    case null => None
+    case r => session match {
+      case Some(s) => Some(s.tableIdentifier(r.table, resolve = true))
+      case None => Some(SnappySession.tableIdentifier(r.table, catalog = null, resolve = false))
+    }
+  }
+
   override def sameResult(plan: SparkPlan): Boolean = plan match {
-    case r: ColumnTableScan => r.baseRelation.table == baseRelation.table &&
+    case r: ColumnTableScan => r.tableIdentifier == tableIdentifier &&
         r.numBuckets == numBuckets && r.schema == schema
     case _ => false
   }
@@ -135,10 +148,6 @@ private[sql] final case class ColumnTableScan(
 
   private lazy val otherRDDsPartitionIndex = rdd.getNumPartitions
 
-
-  @transient private val session =
-    Option(sqlContext).map(_.sparkSession.asInstanceOf[SnappySession])
-
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     allRDDs.asInstanceOf[RDD[InternalRow]] :: Nil
   }
@@ -162,8 +171,7 @@ private[sql] final case class ColumnTableScan(
   def convertExprToMethodCall(ctx: CodegenContext, expr: ExprCode,
       attr: Attribute, index: Int, batchOrdinal: String): ExprCode = {
     val retValName = ctx.freshName(s"col$index")
-    val nullVarForCol = ctx.freshName(s"nullVarForCol$index")
-    ctx.addMutableState("boolean", nullVarForCol, "")
+    val nullVarForCol = internals.addClassField(ctx, "boolean", s"nullVarForCol$index")
     val sqlType = Utils.getSQLDataType(attr.dataType)
     val jt = ctx.javaType(sqlType)
     val name = s"readValue_$index"
@@ -194,31 +202,30 @@ private[sql] final case class ColumnTableScan(
     // It returns an iterator of iterators (row + column)
     // except when doing union with multiple RDDs where other
     // RDDs return iterator of UnsafeRows.
-    val rowInput = ctx.freshName("rowInput")
-    val colInput = ctx.freshName("colInput")
-    val rowInputSRR = ctx.freshName("rowInputSRR")
-    val input = ctx.freshName("input")
-    val inputIsRow = s"${input}IsRow"
-    val inputIsRowSRR = s"${input}IsRowSRR"
-    val inputIsOtherRDD = s"${input}IsOtherRDD"
-    val rs = ctx.freshName("resultSet")
+    var rowInput: String = null
+    var colInput: String = null
+    var rowInputSRR: String = null
+    var input: String = null
+    var inputIsRow: String = null
+    var inputIsRowSRR: String = null
+    var inputIsOtherRDD: String = null
+    var rs: String = null
     val rsIterClass = classOf[ResultSetTraversal].getName
-    val unsafeHolder = if (otherRDDs.isEmpty && !isForSampleReservoirAsRegion) null
+    var unsafeHolder = if (otherRDDs.isEmpty && !isForSampleReservoirAsRegion) null
     else ctx.freshName("unsafeHolder")
     val updatedColumnCount = metricTerm(ctx, "updatedColumnCount")
     val deletedBatchCount = metricTerm(ctx, "deletedBatchCount")
     val unsafeHolderClass = classOf[UnsafeRowHolder].getName
     val stratumRowClass = classOf[StratumInternalRow].getName
 
-    // TODO [sumedh]: Asif, why this special treatment for weightage column
+    // TODO [sumedh]: why this special treatment for weightage column
     // in the code here? Why not as a normal AttributeReference in the plan
     // (or an extension of it if some special treatment is required)?
     val wrappedRow = if (isForSampleReservoirAsRegion) ctx.freshName("wrappedRow")
     else null
     val (weightVarName, weightAssignCode) = if (output.exists(_.name.equalsIgnoreCase(
         Utils.WEIGHTAGE_COLUMN_NAME))) {
-      val varName = ctx.freshName("weightage")
-      ctx.addMutableState("long", varName, s"$varName = 0;")
+      val varName = internals.addClassField(ctx, "long", "weightage", v => s"$v = 0;")
       (varName, s"$varName = $wrappedRow.weight();")
     } else ("", "")
 
@@ -227,35 +234,35 @@ private[sql] final case class ColumnTableScan(
     else classOf[ColumnBatchIteratorOnRS].getName
     if (otherRDDs.isEmpty) {
       if (isForSampleReservoirAsRegion) {
-        ctx.addMutableState(iteratorClass, rowInputSRR,
-          s"$rowInputSRR = ($iteratorClass)inputs[0].next();")
-        ctx.addMutableState(unsafeHolderClass, unsafeHolder,
-          s"$unsafeHolder = new $unsafeHolderClass();")
-        ctx.addMutableState("boolean", inputIsRowSRR, s"$inputIsRowSRR = true;")
+        rowInputSRR = internals.addClassField(ctx, iteratorClass, "rowInputSRR",
+          v => s"$v = ($iteratorClass)inputs[0].next();")
+        unsafeHolder = internals.addClassField(ctx, unsafeHolderClass, "unsafeHolder",
+          v => s"$v = new $unsafeHolderClass();")
+        inputIsRowSRR = internals.addClassField(ctx, "boolean", "inputIsRowSRR",
+          v => s"$v = true;")
       }
-      ctx.addMutableState(iteratorClass, rowInput,
-        s"$rowInput = ($iteratorClass)inputs[0].next();")
-      ctx.addMutableState(colIteratorClass, colInput,
-        s"$colInput = ($colIteratorClass)inputs[0].next();")
-      ctx.addMutableState("java.sql.ResultSet", rs,
-        s"$rs = (($rsIterClass)$rowInput).rs();")
+      rowInput = internals.addClassField(ctx, iteratorClass, "rowInput",
+        v => s"$v = ($iteratorClass)inputs[0].next();")
+      colInput = internals.addClassField(ctx, colIteratorClass, "colInput",
+        v => s"$v = ($colIteratorClass)inputs[0].next();")
+      rs = internals.addClassField(ctx, "java.sql.ResultSet", "resultSet",
+        v => s"$v = (($rsIterClass)$rowInput).rs();")
     } else {
-      ctx.addMutableState("boolean", inputIsOtherRDD,
-        s"$inputIsOtherRDD = (partitionIndex >= $otherRDDsPartitionIndex);")
-      ctx.addMutableState(iteratorClass, rowInput,
-        s"$rowInput = $inputIsOtherRDD ? inputs[0] " +
+      inputIsOtherRDD = internals.addClassField(ctx, "boolean", "inputIsOtherRDD",
+        v => s"$v = (partitionIndex >= $otherRDDsPartitionIndex);")
+      rowInput = internals.addClassField(ctx, iteratorClass, "rowInput",
+        v => s"$v = $inputIsOtherRDD ? inputs[0] " +
             s": ($iteratorClass)inputs[0].next();")
-      ctx.addMutableState(colIteratorClass, colInput,
-        s"$colInput = $inputIsOtherRDD ? null : ($colIteratorClass)inputs[0].next();")
-      ctx.addMutableState("java.sql.ResultSet", rs,
-        s"$rs = $inputIsOtherRDD ? null : (($rsIterClass)$rowInput).rs();")
-      ctx.addMutableState(unsafeHolderClass, unsafeHolder,
-        s"$unsafeHolder = new $unsafeHolderClass();")
+      colInput = internals.addClassField(ctx, colIteratorClass, "colInput",
+        v => s"$v = $inputIsOtherRDD ? null : ($colIteratorClass)inputs[0].next();")
+      rs = internals.addClassField(ctx, "java.sql.ResultSet", "resultSet",
+        v => s"$v = $inputIsOtherRDD ? null : (($rsIterClass)$rowInput).rs();")
+      unsafeHolder = internals.addClassField(ctx, unsafeHolderClass, "unsafeHolder",
+        v => s"$v = new $unsafeHolderClass();")
     }
-    ctx.addMutableState(iteratorClass, input,
-      if (isForSampleReservoirAsRegion) s"$input = $rowInputSRR;"
-      else s"$input = $rowInput;")
-    ctx.addMutableState("boolean", inputIsRow, s"$inputIsRow = true;")
+    input = internals.addClassField(ctx, iteratorClass, "input",
+      v => if (isForSampleReservoirAsRegion) s"$v = $rowInputSRR;" else s"$v = $rowInput;")
+    inputIsRow = internals.addClassField(ctx, "boolean", "inputIsRow", v => s"$v = true;")
 
     ctx.currentVars = null
     val encodingClass = ColumnEncoding.encodingClassName
@@ -266,25 +273,20 @@ private[sql] final case class ColumnTableScan(
     val rowDecoderClass = classOf[UnsafeRowDecoder].getName
     val deletedDecoderClass = classOf[ColumnDeleteDecoder].getName
     val batch = ctx.freshName("batch")
-    val numBatchRows = s"${batch}NumRows"
     val numFullRows = s"${batch}NumFullRows"
     val numDeltaRows = s"${batch}NumDeltaRows"
-    val batchIndex = s"${batch}Index"
-    val buffers = s"${batch}Buffers"
     val numRows = ctx.freshName("numRows")
     val batchOrdinal = ctx.freshName("batchOrdinal")
-    val deletedDecoder = s"${batch}Deleted"
-    val deletedDecoderLocal = s"${deletedDecoder}Local"
+    val deletedDecoderLocal = ctx.freshName("deletedDecoderLocal")
     var deletedDeclaration = ""
     var deletedCheck = ""
-    val deletedCount = ctx.freshName("deletedCount")
     var deletedCountCheck = ""
 
-    ctx.addMutableState("java.nio.ByteBuffer", buffers, "")
-    ctx.addMutableState("int", numBatchRows, "")
-    ctx.addMutableState("int", batchIndex, "")
-    ctx.addMutableState(deletedDecoderClass, deletedDecoder, "")
-    ctx.addMutableState("int", deletedCount, "")
+    val buffers = internals.addClassField(ctx, "java.nio.ByteBuffer", "buffers")
+    val numBatchRows = internals.addClassField(ctx, "int", "numBatchRows")
+    val batchIndex = internals.addClassField(ctx, "int", "batchIndex")
+    val deletedDecoder = internals.addClassField(ctx, deletedDecoderClass, "deletedDecoder")
+    val deletedCount = internals.addClassField(ctx, "int", "deletedCount")
 
     // need DataType and nullable to get decoder in generated code
     // shipping as StructType for efficient serialization
@@ -346,49 +348,44 @@ private[sql] final case class ColumnTableScan(
 
     // this mapper is for the physical columns in the table
     val columnsInputMapper = (attr: Attribute, index: Int, rsIndex: Int) => {
-      val decoder = ctx.freshName("decoder")
-      val decoderLocal = s"${decoder}Local"
-      val updatedDecoder = s"${decoder}Updated"
-      val updatedDecoderLocal = s"${decoder}UpdatedLocal"
-      val numNullsVar = s"${decoder}NumNulls"
-      val buffer = s"${decoder}Buffer"
-      val bufferVar = s"${buffer}Object"
+      val decoderLocal = ctx.freshName("decoderLocal")
+      val updatedDecoderLocal = ctx.freshName("decoderUpdatedLocal")
+      val buffer = internals.addClassField(ctx, "java.nio.ByteBuffer", "buffer")
+      val numNullsVar = internals.addClassField(ctx, "int", "numNulls")
       val initBufferFunction = s"${buffer}Init"
-      val closeDecoderFunction = s"${decoder}Close"
-      if (isWideSchema) {
-        ctx.addMutableState("Object", bufferVar, "")
-      }
+      val bufferVar = if (isWideSchema) {
+        internals.addClassField(ctx, "Object", "bufferObject")
+      } else s"${buffer}Object"
       // projections are not pushed in embedded mode for optimized access
       val baseIndex = Utils.fieldIndex(schemaAttributes, attr.name, caseSensitive)
       val rsPosition = if (embedded) baseIndex + 1 else rsIndex + 1
       val incrementUpdatedColumnCount = if (updatedColumnCount eq null) ""
       else s"\n$updatedColumnCount.${metricAdd("1")};"
 
-      ctx.addMutableState("java.nio.ByteBuffer", buffer, "")
-      ctx.addMutableState("int", numNullsVar, "")
-
-      val rowDecoderCode =
+      val rowDecoderCode: String => String = decoder =>
         s"$decoder = new $rsDecoderClass(($rsWithNullClass)$rs, $rsPosition);"
-      if (otherRDDs.isEmpty) {
+      val decoder = if (otherRDDs.isEmpty) {
         if (isForSampleReservoirAsRegion) {
-          ctx.addMutableState(decoderClass, decoder,
-            s"$decoder = new $rowDecoderClass($unsafeHolder, $baseIndex);")
-          initRowTableDecoders.append(rowDecoderCode).append('\n')
+          val decoderVar = internals.addClassField(ctx, decoderClass, "decoder",
+            v => s"$v = new $rowDecoderClass($unsafeHolder, $baseIndex);")
+          initRowTableDecoders.append(rowDecoderCode(decoderVar)).append('\n')
+          decoderVar
         } else {
-          ctx.addMutableState(decoderClass, decoder, rowDecoderCode)
+          internals.addClassField(ctx, decoderClass, "decoder", rowDecoderCode)
         }
       } else {
-        ctx.addMutableState(decoderClass, decoder,
+        internals.addClassField(ctx, decoderClass, "decoder", decoder =>
           s"""
             if ($inputIsOtherRDD) {
               $decoder = new $rowDecoderClass($unsafeHolder, $baseIndex);
             } else {
-              $rowDecoderCode
+              ${rowDecoderCode(decoder)}
             }
           """
         )
       }
-      ctx.addMutableState(updatedDecoderClass, updatedDecoder, "")
+      val updatedDecoder = internals.addClassField(ctx, updatedDecoderClass, "updatedDecoder")
+      val closeDecoderFunction = s"${decoder}Close"
 
       ctx.addNewFunction(initBufferFunction,
         s"""

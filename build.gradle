@@ -24,9 +24,9 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath 'io.snappydata:gradle-scalatest:0.23'
+    classpath 'io.snappydata:gradle-scalatest:0.25'
     classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.9.0'
-    classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.3'
+    classpath 'com.github.jengelman.gradle.plugins:shadow:5.1.0'
     classpath 'de.undercouch:gradle-download-task:3.4.3'
     classpath 'net.rdrei.android.buildtimetracker:gradle-plugin:0.11.+'
     classpath 'com.netflix.nebula:gradle-ospackage-plugin:5.2.+'
@@ -104,13 +104,26 @@ allprojects {
     } else {
       productName = 'SnappyData'
     }
+    aqpProductName = 'TIBCO ComputeDB AQP'
     vendorName = 'TIBCO Software Inc.'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
-    sparkVersion = '2.1.1'
+
+    spark210Version = '2.1.0'
+    spark211Version = '2.1.1'
+    spark232Version = '2.3.2'
+
+    sparkVersion = spark211Version
+    sparkConnectorVersion = rootProject.hasProperty('spark.connector.version')
+        ? rootProject.property('spark.connector.version') : sparkVersion
     snappySparkVersion = '2.1.1.7'
-    sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
-    sparkCurrentVersion = '2.3.2'
+    coreProjectName = sparkVersion == sparkConnectorVersion
+        ? ":snappy-core_${scalaBinaryVersion}" : ":snappy-core-product_${scalaBinaryVersion}"
+    aqpProjectName = ":snappy-aqp_${scalaBinaryVersion}"
+    sparkPackageName = "snappydata-${version}_${sparkConnectorVersion}-s_${scalaBinaryVersion}"
+
+    sparkConnectorDistName = "spark-${sparkConnectorVersion}-bin-hadoop2.7"
+    sparkCurrentVersion = '2.4.4'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.25'
@@ -141,6 +154,7 @@ allprojects {
     jodaTimeVersion = '2.10.1'
     slickVersion = '2.1.0'
     h2Version = '1.3.176'
+    commonsCollectionsVersion = '3.2.2'
     commonsIoVersion = '2.6'
     commonsPoolVersion = '1.6'
     dbcpVersion = '1.4'
@@ -165,6 +179,8 @@ allprojects {
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
+    clusterType = ''
+
     sparkJobServerVersion = '0.6.2.10'
     eclipseCollectionsVersion = '9.2.0'
     fastutilVersion = '8.2.2'
@@ -176,7 +192,7 @@ allprojects {
     buildIdPrefix = System.env.USER + ' '
 
     sparkDistDir = "${project.gradle.gradleUserHomeDir}/sparkDist"
-    sparkProductDir = "${sparkDistDir}/${sparkDistName}"
+    sparkConnectorProductDir = "${sparkDistDir}/${sparkConnectorDistName}"
     sparkCurrentProductDir = "${sparkDistDir}/${sparkCurrentDistName}"
   }
 
@@ -191,13 +207,57 @@ allprojects {
   }
   if (rootProject.hasProperty('sparkDistDir')) {
     sparkDistDir = rootProject.property('sparkDistDir')
-    sparkProductDir = "${sparkDistDir}/${sparkDistName}"
+    sparkConnectorProductDir = "${sparkDistDir}/${sparkConnectorDistName}"
     sparkCurrentProductDir = "${sparkDistDir}/${sparkCurrentDistName}"
+  }
+  if (rootProject.hasProperty('clusterType')) {
+    clusterType = rootProject.property('clusterType')
   }
 
   ext {
     testResultsBase = "${rootProject.buildDir}/tests/snappy"
     snappyProductDir = "${rootProject.buildDir}/snappy"
+
+    // common libraries used in core and core-product modules
+    coreLibraries = [
+      common: [
+        "org.slf4j:slf4j-api:${slf4jVersion}",
+        "org.slf4j:slf4j-log4j12:${slf4jVersion}",
+        "org.slf4j:jcl-over-slf4j:${slf4jVersion}",
+        "org.slf4j:jul-to-slf4j:${slf4jVersion}",
+        "org.codehaus.janino:janino:${janinoVersion}",
+        "org.apache.tomcat:tomcat-juli:${tomcatJdbcVersion}",
+        "org.apache.tomcat:tomcat-jdbc:${tomcatJdbcVersion}",
+        "com.zaxxer:HikariCP:${hikariCPVersion}",
+        "org.twitter4j:twitter4j-stream:${twitter4jVersion}",
+        "org.objenesis:objenesis:${objenesisVersion}",
+        "com.esotericsoftware:kryo-shaded:${kryoVersion}",
+        "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}",
+        "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
+      ],
+      spark: [
+        "org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+      ],
+      sparkProduct: [
+        "org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}",
+        "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+      ]
+    ]
   }
 
   // force same output directory for IDEA and gradle
@@ -217,7 +277,7 @@ allprojects {
 
 
 def hasAqpProject = new File(rootDir, 'aqp/build.gradle').exists()
-def aqpProject = isEnterpriseProduct ? project(":snappy-aqp_${scalaBinaryVersion}") : null
+def aqpProject = isEnterpriseProduct ? project(aqpProjectName) : null
 def hasJdbcConnectorProject = new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
 def hasGemFireConnectorProject = new File(rootDir, 'snappy-connectors/gemfire-connector/build.gradle').exists()
 
@@ -288,7 +348,7 @@ task cleanDUnit { doLast {
   file(workingDir).mkdirs()
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
-  delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
+  delete "${sparkConnectorProductDir}/work", "${sparkConnectorProductDir}/logs"
   delete "${sparkCurrentProductDir}/work", "${sparkCurrentProductDir}/logs"
 } }
 task cleanSecurityDUnit { doLast {
@@ -297,7 +357,7 @@ task cleanSecurityDUnit { doLast {
   file(workingDir).mkdirs()
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
-  delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
+  delete "${sparkConnectorProductDir}/work", "${sparkConnectorProductDir}/logs"
   delete "${sparkCurrentProductDir}/work", "${sparkCurrentProductDir}/logs"
 } }
 task cleanAllReports { doLast {
@@ -327,8 +387,7 @@ subprojects {
   }
 
   task scalaTest(type: Test) {
-    def factory = new com.github.maiflai.BackwardsCompatibleJavaExecActionFactory(gradle.gradleVersion)
-    actions = [ new com.github.maiflai.ScalaTestAction(factory) ]
+    actions = [ new com.github.maiflai.ScalaTestAction() ]
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
     maxParallelForks = 1
@@ -696,7 +755,7 @@ gradle.taskGraph.whenReady { graph ->
 
             int begin = dunitFrom != -1 ? dunitFrom : 0
             int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
-            def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+            def filteredSet = includeTestFiles.drop(begin).take(end - begin + 1).collect {f -> "**/" + f.name}
             if (begin != 0 || end != includeTestFiles.size()) {
               println("Picking tests :")
               filteredSet.each { a -> println(a) }
@@ -723,7 +782,7 @@ gradle.taskGraph.whenReady { graph ->
 
             int begin = dunitFrom != -1 ? dunitFrom : 0
             int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
-            def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+            def filteredSet = includeTestFiles.drop(begin).take(end - begin + 1).collect {f -> "**/" + f.name}
             if (begin != 0 || end != includeTestFiles.size()) {
               println("Picking tests :")
               filteredSet.each { a -> println(a) }
@@ -746,7 +805,7 @@ gradle.taskGraph.whenReady { graph ->
         }
 
         environment 'SNAPPY_HOME': snappyProductDir,
-          'APACHE_SPARK_HOME': sparkProductDir,
+          'APACHE_SPARK_HOME': sparkConnectorProductDir,
           'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
           'SPARK_TESTING': '1',
           'SNAPPY_DIST_CLASSPATH': test.classpath.asPath
@@ -826,6 +885,8 @@ task publishMaven {
 
 task product(type: Zip) {
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
+  dependsOn ":snappy-core_${scalaBinaryVersion}:jar"
+  dependsOn ":snappy-core_${scalaBinaryVersion}:compat-spark${sparkVersion}:jar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:sparkProduct"
   dependsOn ':snappy-launcher:jar'
@@ -837,7 +898,7 @@ task product(type: Zip) {
 
   if (isEnterpriseProduct) {
     if (hasAqpProject) {
-      dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
+      dependsOn "${aqpProjectName}:jar"
       targetProject = aqpProject
     }
 
@@ -1225,15 +1286,15 @@ task copyShadowJars {
 
   doLast {
     def coreProject = project(":snappy-core_${scalaBinaryVersion}")
-    String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
+    String connectorName = "snappydata-spark${sparkConnectorVersion}_${scalaBinaryVersion}-${version}.jar"
     if (isEnterpriseProduct) {
-      coreName = "TIB_compute-core-${scalaBinaryVersion}_${version}.jar"
+      connectorName = "TIB_compute-spark${sparkConnectorVersion}_${scalaBinaryVersion}-${version}.jar"
     }
     copy {
       from coreProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"
       include coreProject.shadowJar.archiveName
-      rename { filename -> coreName }
+      rename { filename -> connectorName }
     }
   }
 }
@@ -1284,10 +1345,14 @@ task generateSources {
 task cleanAll {
   dependsOn getTasksByName('clean', true).collect { it.path }
 }
+def taskFilter(Task p) {
+  !p.path.matches('.*compat-spark.*') || p.path.matches(".*compat-spark${sparkConnectorVersion}.*")
+}
 task buildAll {
-  dependsOn getTasksByName('assemble', true).collect { it.path }
-  dependsOn getTasksByName('product', true).collect { it.path }
-  dependsOn getTasksByName('testClasses', true).collect { it.path }
+  dependsOn getTasksByName('assemble', true).findAll { taskFilter(it) }.collect { it.path }
+  dependsOn getTasksByName('product', true).findAll { taskFilter(it) }.collect { it.path }
+  dependsOn getTasksByName('testClasses', true).findAll { taskFilter(it) }.collect { it.path }
+  dependsOn ':copyShadowJars'
   mustRunAfter cleanAll
 }
 task buildDtests {
@@ -1429,6 +1494,37 @@ task packageVSD { doLast {
     println "Skipping VSD due to unwritable ${vsdDistDir}"
   }
 } }
+
+// Creates a task to write the version properties file to the resources dir
+void createVersionPropertiesTask(Project proj, String propertiesFile, String projProductName,
+    String projSourceDate, String projCommitId, String projGitBranch) {
+  proj.tasks.create('createVersionPropertiesFile') {
+    dependsOn 'processResources'
+
+    def propertiesDir = file("${proj.sourceSets.main.scala.outputDir}/io/snappydata")
+    outputs.file "${propertiesDir}/${propertiesFile}"
+    inputs.file "${rootProject.projectDir}/build.gradle"
+
+    doLast {
+      def props = [
+        'Product-Name'      : projProductName,
+        'Product-Version'   : version,
+        'Build-Id'          : buildIdPrefix + buildNumber,
+        'Build-Date'        : buildDate,
+        'Build-Platform'    : osName.getName() + osVersion + osArch,
+        'Build-Java-Version': jdkVersion,
+        'Source-Date'       : projSourceDate,
+        'Source-Revision'   : projCommitId,
+        'Source-Repository' : projGitBranch,
+        'Cluster-Type'      : clusterType
+      ]
+
+      writeProperties(propertiesDir, propertiesFile,
+          "Properties that control what version ${projProductName} will think it is. " +
+          "Changing these values may cause ${projProductName} to no longer function.", props)
+    }
+  }
+}
 
 task sparkPackage {
   dependsOn ":snappy-core_${scalaBinaryVersion}:sparkPackage"

@@ -18,7 +18,6 @@
 package org.apache.spark.sql.execution
 
 import java.io.File
-import java.lang
 import java.nio.file.{Files, Paths}
 import java.util.Map.Entry
 import java.util.function.Consumer
@@ -45,7 +44,7 @@ import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
-import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, SetCommand, ShowTablesCommand}
+import org.apache.spark.sql.execution.command.{DropTableCommand, RunnableCommand, SetCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, ContextJarUtils, StaticSQLConf}
@@ -66,13 +65,13 @@ case class CreateTableUsingCommand(
     partitionColumns: Array[String],
     bucketSpec: Option[BucketSpec],
     query: Option[LogicalPlan],
-    isBuiltIn: Boolean) extends RunnableCommand {
+    isExternal: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val session = sparkSession.asInstanceOf[SnappySession]
     val allOptions = session.addBaseTableOption(baseTable, options)
     session.createTableInternal(tableIdent, provider, userSpecifiedSchema,
-      schemaDDL, mode, allOptions, isBuiltIn, partitionColumns, bucketSpec, query)
+      schemaDDL, mode, allOptions, isExternal, partitionColumns, bucketSpec, query)
     Nil
   }
 }
@@ -450,9 +449,13 @@ case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
 /**
  * This extends Spark's describe to add support for CHAR and VARCHAR types.
  */
-class DescribeSnappyTableCommand(table: TableIdentifier,
-    partitionSpec: TablePartitionSpec, isExtended: Boolean, isFormatted: Boolean)
-    extends DescribeTableCommand(table, partitionSpec, isExtended, isFormatted) {
+case class DescribeSnappyTableCommand(table: TableIdentifier, partitionSpec: TablePartitionSpec,
+    isExtended: Boolean, isFormatted: Boolean) extends RunnableCommand with SparkSupport {
+
+  private[this] val describeCmd = internals.newDescribeTableCommand(
+    table, partitionSpec, isExtended, isFormatted)
+
+  override def output: Seq[Attribute] = describeCmd.output
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val catalog = sparkSession.asInstanceOf[SnappySession].sessionCatalog
@@ -460,7 +463,7 @@ class DescribeSnappyTableCommand(table: TableIdentifier,
       // set the flag to return CharType/VarcharType if present
       catalog.convertCharTypesInMetadata = true
       try {
-        super.run(sparkSession)
+        describeCmd.run(sparkSession)
       } finally {
         catalog.convertCharTypesInMetadata = false
       }
@@ -484,11 +487,11 @@ case class DeployCommand(
     alias: String,
     repos: Option[String],
     jarCache: Option[String],
-    restart: Boolean) extends RunnableCommand {
+    restart: Boolean) extends RunnableCommand with SparkSupport {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     try {
-      val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates, repos, jarCache)
+      val jarsstr = internals.resolveMavenCoordinates(coordinates, repos, jarCache, Nil)
       if (jarsstr.nonEmpty) {
         val jars = jarsstr.split(",")
         val sc = sparkSession.sparkContext

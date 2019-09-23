@@ -23,7 +23,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.hive.SnappyAnalyzer
 import org.apache.spark.sql.types.{DataType, DecimalType, FloatType, IntegerType, LongType, StringType}
-import org.apache.spark.sql.{AnalysisException, Row}
+import org.apache.spark.sql.{AnalysisException, Row, SnappySession}
 
 class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfterAll
     with BeforeAndAfter {
@@ -186,10 +186,18 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
   }
 
   test("SnappyAnalyzer rules matches the rules from upstream Analyzer") {
-    val analyzer = new Analyzer(snc.sessionState.catalog, snc.sessionState.conf)
-    val snappyAnalyzer = new SnappyAnalyzer(snc.sessionState)
+    val snappySession = snc.snappySession
+    val state = snappySession.sessionState
+    val analyzer = new Analyzer(state.catalog, state.conf)
+    val snappyAnalyzer = new Analyzer(state.catalog, state.conf)
+        with SnappyAnalyzer {
+
+      override def session: SnappySession = snappySession
+
+      override lazy val baseAnalyzerInstance: Analyzer = analyzer
+    }
     assertEquals(analyzer.batches.size, snappyAnalyzer.batches.size)
-    for ((expBatch, actBatch) <- analyzer.batches zip snappyAnalyzer.ruleBatches) {
+    for ((expBatch, actBatch) <- analyzer.batches zip snappyAnalyzer.baseAnalyzerInstance.batches) {
       assertEquals(expBatch.name, actBatch.name)
       assertEquals(expBatch.strategy.toString, actBatch.strategy.toString)
       for ((exp, act) <- expBatch.rules zip actBatch.rules) {

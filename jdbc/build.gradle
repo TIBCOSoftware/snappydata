@@ -30,6 +30,7 @@ dependencies {
   compile("org.apache.thrift:libthrift:${thriftVersion}") {
     exclude(group: 'org.slf4j', module: 'slf4j-api')
   }
+  compile 'commons-collections:commons-collections:' + commonsCollectionsVersion
 
   // always use stock spark so that snappy extensions don't get accidently
   // included here in snappy-jdbc code.
@@ -80,6 +81,7 @@ shadowJar {
 
   // avoid conflict with the 0.9.2 version in stock Spark
   relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
+  // avoid conflict with spark-unsafe in Spark >= 2.4.0
   relocate 'org.apache.spark.unsafe', 'io.snappydata.org.apache.spark.unsafe'
 
   mergeServiceFiles()

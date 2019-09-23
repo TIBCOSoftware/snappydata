@@ -36,7 +36,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.types.{Metadata, StructField, StructType, TypeUtilities}
-import org.apache.spark.sql.{AnalysisException, DataFrame, Dataset, QueryTest, Row, SnappySession}
+import org.apache.spark.sql.{AnalysisException, DataFrame, Dataset, QueryTest, Row, SnappySession, SparkSupport}
 // scalastyle:off
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome, Retries}
 // scalastyle:on
@@ -206,7 +206,7 @@ abstract class SnappyFunSuite
     SnappyFunSuite.checkAnswer(df, expectedAnswer)
 }
 
-object SnappyFunSuite extends Assertions {
+object SnappyFunSuite extends Assertions with SparkSupport {
   def checkAnswer(df: => DataFrame, expectedAnswer: Seq[Row]): Unit = {
     val analyzedDF = try df catch {
       case ae: AnalysisException =>
@@ -256,7 +256,7 @@ object SnappyFunSuite extends Assertions {
       val schema = StructType(JdbcUtils.getSchema(rs, SnappyStoreDialect).map(f => StructField(
         f.name.toLowerCase, f.dataType, f.nullable, withName(f.name.toLowerCase, f.metadata))))
       val rows = Utils.resultSetToSparkInternalRows(rs, schema).map(_.copy()).toSeq
-      session.internalCreateDataFrame(session.sparkContext.makeRDD(rows), schema)
+      internals.internalCreateDataFrame(session, session.sparkContext.makeRDD(rows), schema)
     } else {
       implicit val encoder: ExpressionEncoder[Row] = RowEncoder(StructType(Nil))
       session.createDataset[Row](Nil)

@@ -220,12 +220,12 @@ case object ApplyRest extends JoinOrderStrategy {
   * This doesn't require any alteration to joinOrder as such.
   */
 case object ContinueOptimizations extends JoinOrderStrategy {
-  override def shortName: String = ""// JOS.ContinueOptimizations
+  override def shortName: String = ""// HintNames.JoinOrder_ContinueOptimizations
 }
 
 /**
   * This hint too doesn't require any implementation as such.
   */
 case object IncludeGeneratedPaths extends JoinOrderStrategy {
-  override def shortName: String = ""// JOS.IncludeGeneratedPaths
+  override def shortName: String = ""// HintNames.JoinOrder_IncludeGeneratedPaths
 }

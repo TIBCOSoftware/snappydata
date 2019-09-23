@@ -36,7 +36,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
-import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
+import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, LogicalRelation, RefreshTable}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
@@ -46,7 +46,7 @@ import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
 
 abstract class SnappyDDLParser(session: SnappySession)
-    extends SnappyBaseParser(session) {
+    extends SnappyBaseParser(session) with SparkSupport {
 
   // reserved keywords
   final def ALL: Rule0 = rule { keyword(Consts.ALL) }
@@ -322,7 +322,7 @@ abstract class SnappyDDLParser(session: SnappySession)
         // check if a relation supporting free-form schema has been used that supports
         // syntax beyond Spark support
         val (userSpecifiedSchema, schemaDDL) = if (schemaString.length > 0) {
-          if (ExternalStoreUtils.isExternalSchemaRelationProvider(provider)) {
+          if (ExternalStoreUtils.isExternalSchemaRelationProvider(provider, session)) {
             None -> Some(schemaString)
           } else synchronized {
             // parse the schema string expecting Spark SQL format
@@ -336,7 +336,7 @@ abstract class SnappyDDLParser(session: SnappySession)
         // the save mode will be ignore.
         val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
         CreateTableUsingCommand(tableIdent, None, userSpecifiedSchema, schemaDDL,
-          provider, mode, options, remaining._3, remaining._4, remaining._5, external == None)
+          provider, mode, options, remaining._3, remaining._4, remaining._5, external != None)
       }
     }
   }
@@ -374,14 +374,11 @@ abstract class SnappyDDLParser(session: SnappySession)
               case _ => IdUtil.getUserAuthorizationId(SnappyParserConsts.LDAPGROUP.lower) +
                   ':' + IdUtil.getUserAuthorizationId(id)
             })
-        ). + (commaSep) ~> {
-        (policyTo: Any) => policyTo.asInstanceOf[Seq[String]].map(_.trim)
-          }).? ~> { (toOpt: Any) =>
-      toOpt match {
-        case Some(x) => x.asInstanceOf[Seq[String]]
-        case _ => SnappyParserConsts.CURRENT_USER.lower :: Nil
-      }
-    }
+        ). + (commaSep) ~> ((policyTo: Any) => policyTo.asInstanceOf[Seq[String]].map(_.trim))
+    ).? ~> ((toOpt: Any) => toOpt match {
+      case Some(x) => x.asInstanceOf[Seq[String]]
+      case _ => SnappyParserConsts.CURRENT_USER.lower :: Nil
+    })
   }
 
   protected def createPolicy: Rule1[LogicalPlan] = rule {
@@ -673,7 +670,7 @@ abstract class SnappyDDLParser(session: SnappySession)
         val specifiedSchema = schema.asInstanceOf[Option[Seq[StructField]]]
             .map(fields => StructType(fields))
         // check that the provider is a stream relation
-        val clazz = DataSource.lookupDataSource(provider)
+        val clazz = internals.lookupDataSource(provider, session.sessionState.conf)
         if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
           throw Utils.analysisException(s"CREATE STREAM provider $provider" +
               " does not implement StreamPlanProvider")
@@ -683,7 +680,7 @@ abstract class SnappyDDLParser(session: SnappySession)
         val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
         CreateTableUsingCommand(streamIdent, None, specifiedSchema, None,
           provider, mode, opts, partitionColumns = Utils.EMPTY_STRING_ARRAY,
-          bucketSpec = None, query = None, isBuiltIn = true)
+          bucketSpec = None, query = None, isExternal = false)
     }
   }
 
@@ -700,6 +697,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def checkExists(resource: FunctionResource): Unit = {
+    // TODO: SW: why only local "jar" type resources supported?
     if (!new File(resource.uri).exists()) {
       throw Utils.analysisException(s"No file named ${resource.uri} exists")
     }
@@ -715,25 +713,23 @@ abstract class SnappyDDLParser(session: SnappySession)
    * }}}
    */
   protected def createFunction: Rule1[LogicalPlan] = rule {
-    CREATE ~ (TEMPORARY ~ push(true)).? ~ FUNCTION ~ functionIdentifier ~ AS ~
-        qualifiedName ~ RETURNS ~ columnDataType ~ USING ~ resourceType ~>
-        { (te: Any, functionIdent: FunctionIdentifier, className: String,
-            t: DataType, funcResource : FunctionResource) =>
+    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ (TEMPORARY ~ push(true)).? ~ FUNCTION ~
+        ifNotExists ~ functionIdentifier ~ AS ~ qualifiedName ~ RETURNS ~ columnDataType ~
+        USING ~ (resourceType + commaSep) ~>
+        { (replace: Any, te: Any, ignoreIfExists: Boolean, functionIdent: FunctionIdentifier,
+            className: String, t: DataType, resources: Any) =>
 
           val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
-          val funcResources = Seq(funcResource)
+          val funcResources = resources.asInstanceOf[Seq[FunctionResource]]
           funcResources.foreach(checkExists)
           val catalogString = t match {
             case VarcharType(Int.MaxValue) => "string"
             case _ => t.catalogString
           }
           val classNameWithType = className + "__" + catalogString
-          CreateFunctionCommand(
-            functionIdent.database,
-            functionIdent.funcName,
-            classNameWithType,
-            funcResources,
-            isTemp)
+          internals.newCreateFunctionCommand(functionIdent.database,
+            functionIdent.funcName, classNameWithType, funcResources, isTemp,
+            ignoreIfExists, replace != None)
         }
   }
 
@@ -838,7 +834,7 @@ abstract class SnappyDDLParser(session: SnappySession)
                 case Some(true) => (true, false)
                 case Some(false) => (false, true)
               }
-              new DescribeSnappyTableCommand(tableIdent, Map.empty[String, String],
+              DescribeSnappyTableCommand(tableIdent, Map.empty[String, String],
                 isExtended, isFormatted)
             })
     )
@@ -860,13 +856,14 @@ abstract class SnappyDDLParser(session: SnappySession)
     UNCACHE ~ TABLE ~ ifExists ~ tableIdentifier ~>
         ((ifExists: Boolean, tableIdent: TableIdentifier) =>
           UncacheTableCommand(tableIdent, ifExists)) |
-    CLEAR ~ CACHE ~> (() => ClearCacheCommand)
+    CLEAR ~ CACHE ~> (() => internals.newClearCacheCommand())
   }
 
   protected def set: Rule1[LogicalPlan] = rule {
     SET ~ (
         CURRENT.? ~ (SCHEMA | DATABASE) ~ '='.? ~ ws ~ identifier ~>
             ((schemaName: String) => SetSchemaCommand(schemaName)) |
+        // noinspection ScalaUnnecessaryParentheses
         capture(ANY.*) ~> { (rest: String) =>
           val separatorIndex = rest.indexOf('=')
           if (separatorIndex >= 0) {
@@ -992,7 +989,6 @@ abstract class SnappyDDLParser(session: SnappySession)
 }
 
 case class DMLExternalTable(child: LogicalPlan, command: String) extends UnaryNode {
-
   override lazy val resolved: Boolean = child.resolved
   override lazy val output: Seq[Attribute] = AttributeReference("count", IntegerType)() :: Nil
 }

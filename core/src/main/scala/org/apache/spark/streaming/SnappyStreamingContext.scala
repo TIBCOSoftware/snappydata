@@ -79,7 +79,8 @@ class SnappyStreamingContext protected[spark](
 
   /**
    * Create a SnappyStreamingContext using an existing SparkContext.
-   * @param sparkContext existing SparkContext
+   *
+   * @param sparkContext  existing SparkContext
    * @param batchDuration the time interval at which streaming data will be divided into batches
    */
   def this(sparkContext: SparkContext, batchDuration: Duration) = {
@@ -93,7 +94,8 @@ class SnappyStreamingContext protected[spark](
   /**
    * Create a SnappyStreamingContext by providing the configuration necessary
    * for a new SparkContext.
-   * @param conf a org.apache.spark.SparkConf object specifying Spark parameters
+   *
+   * @param conf          a org.apache.spark.SparkConf object specifying Spark parameters
    * @param batchDuration the time interval at which streaming data will be divided into batches
    */
   def this(conf: SparkConf, batchDuration: Duration) = {
@@ -103,7 +105,8 @@ class SnappyStreamingContext protected[spark](
 
   /**
    * Recreate a SnappyStreamingContext from a checkpoint file.
-   * @param path Path to the directory that was specified as the checkpoint directory
+   *
+   * @param path       Path to the directory that was specified as the checkpoint directory
    * @param hadoopConf Optional, configuration object if necessary for reading from
    *                   HDFS compatible filesystems
    */
@@ -112,13 +115,15 @@ class SnappyStreamingContext protected[spark](
 
   /**
    * Recreate a SnappyStreamingContext from a checkpoint file.
+   *
    * @param path Path to the directory that was specified as the checkpoint directory
    */
   def this(path: String) = this(path, SparkHadoopUtil.get.conf)
 
   /**
    * Recreate a SnappyStreamingContext from a checkpoint file using an existing SparkContext.
-   * @param path Path to the directory that was specified as the checkpoint directory
+   *
+   * @param path         Path to the directory that was specified as the checkpoint directory
    * @param sparkContext Existing SparkContext
    */
   def this(path: String, sparkContext: SparkContext) = {
@@ -139,7 +144,7 @@ class SnappyStreamingContext protected[spark](
     if (getState() == StreamingContextState.INITIALIZED) {
       registerStreamTables()
       // register population of AQP tables from stream tables
-      snappySession.snappyContextFunctions.aqpTablePopulator(snappySession)
+      snappySession.contextFunctions.aqpTablePopulator()
     }
     SnappyStreamingContext.setActiveContext(self)
     super.start()
@@ -330,11 +335,11 @@ object SnappyStreamingContext extends Logging {
       creatingFunc: () => SnappyStreamingContext,
       hadoopConf: Configuration = SparkHadoopUtil.get.conf,
       createOnError: Boolean = false
-      ): SnappyStreamingContext = {
+  ): SnappyStreamingContext = {
     val checkpointOption = CheckpointReader.read(
       checkpointPath, new SparkConf(), hadoopConf, createOnError)
     checkpointOption.map(new SnappyStreamingContext(null, _, null)).
-      getOrElse(creatingFunc())
+        getOrElse(creatingFunc())
   }
 
   /**
@@ -354,19 +359,17 @@ object SnappyStreamingContext extends Logging {
    *                       thrown on error.
    */
   def getOrCreateWithUseCredential(
-                   checkpointPath: String,
-                   creatingFunc: () => SnappyStreamingContext,
-                   currentSession: SnappySession,
-                   hadoopConf: Configuration = SparkHadoopUtil.get.conf,
-                   createOnError: Boolean = false
-                 ): SnappyStreamingContext = {
+      checkpointPath: String,
+      creatingFunc: () => SnappyStreamingContext,
+      currentSession: SnappySession,
+      hadoopConf: Configuration = SparkHadoopUtil.get.conf,
+      createOnError: Boolean = false
+  ): SnappyStreamingContext = {
     val checkpointOption = CheckpointReader.read(
       checkpointPath, new SparkConf(), hadoopConf, createOnError)
     checkpointOption.map(new SnappyStreamingContext(null, _, null, None, Option(currentSession))).
-      getOrElse(creatingFunc())
-
+        getOrElse(creatingFunc())
   }
-
 }
 
 
@@ -376,8 +379,7 @@ private class SnappyStreamingContextPythonHelper {
    */
   def tryRecoverFromCheckpoint(checkpointPath: String): Option[SnappyStreamingContext] = {
     val checkpointOption = CheckpointReader.read(
-      checkpointPath, new SparkConf(), SparkHadoopUtil.get.conf,
-      ignoreReadError = false)
+      checkpointPath, new SparkConf(), SparkHadoopUtil.get.conf)
     checkpointOption.map(new SnappyStreamingContext(null, _, null))
   }
 }

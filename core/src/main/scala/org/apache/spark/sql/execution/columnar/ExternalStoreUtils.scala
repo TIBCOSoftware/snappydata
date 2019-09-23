@@ -18,7 +18,6 @@ package org.apache.spark.sql.execution.columnar
 
 import java.sql.{Connection, PreparedStatement, SQLException, Statement, Types}
 import java.util.Properties
-import java.util.concurrent.atomic.AtomicReference
 import javax.naming.NameNotFoundException
 
 import scala.collection.JavaConverters._
@@ -44,12 +43,9 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, DynamicInSet, Expression, TokenLiteral}
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
-import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
-import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool, RefreshMetadata}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.SnappyStoreDialect
@@ -61,7 +57,7 @@ import org.apache.spark.util.{Utils => SparkUtils}
 /**
  * Utility methods used by external storage layers.
  */
-object ExternalStoreUtils {
+object ExternalStoreUtils extends SparkSupport {
 
   private[spark] final lazy val (defaultTableBuckets, defaultSampleTableBuckets) = {
     val sc = Option(SnappyContext.globalSparkContext)
@@ -219,7 +215,7 @@ object ExternalStoreUtils {
         case None => // Do nothing
       }
     })
-    new CaseInsensitiveMap(optMap.toMap)
+    internals.newCaseInsensitiveMap(optMap.toMap)
   }
 
   def getLdapGroupsForUser(userId: String): Array[String] = {
@@ -416,10 +412,10 @@ object ExternalStoreUtils {
   }
 
   /** check if the DataSource implements ExternalSchemaRelationProvider */
-  def isExternalSchemaRelationProvider(provider: String): Boolean = {
+  def isExternalSchemaRelationProvider(provider: String, session: SparkSession): Boolean = {
     try {
       classOf[ExternalSchemaRelationProvider].isAssignableFrom(
-        DataSource.lookupDataSource(provider))
+        internals.lookupDataSource(provider, session.sessionState.conf))
     } catch {
       case NonFatal(_) => false
     }
@@ -732,10 +728,6 @@ object ExternalStoreUtils {
   def defaultColumnMaxDeltaRows(session: SparkSession): Int = {
     checkPositiveNum(Property.ColumnMaxDeltaRows.get(session.sessionState.conf),
       Property.ColumnMaxDeltaRows.name)
-  }
-
-  def getSQLListener: AtomicReference[SQLListener] = {
-    SparkSession.sqlListener
   }
 
   def setSchemaVersionOnConnection(catalogVersion: Long, conn: Connection): Unit = {

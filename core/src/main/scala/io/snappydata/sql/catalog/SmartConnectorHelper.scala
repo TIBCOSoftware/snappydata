@@ -37,7 +37,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.collection.{SharedUtils, SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.{Logging, Partition, SparkContext}
+import org.apache.spark.{Logging, Partition, SparkContext, SparkEnv}
 
 class SmartConnectorHelper(session: SparkSession, jdbcUrl: String) extends Logging {
 
@@ -160,6 +160,17 @@ object SmartConnectorHelper {
   private[this] val urlSuffix: String = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
       ClientAttribute.LOAD_BALANCE + "=false"
 
+  lazy val preferHostName: Boolean = SparkEnv.get match {
+    case null => false
+    case env =>
+      // check if Spark executors are using IP addresses or host names
+      val executors = env.blockManager.master.getStorageStatus
+      if (executors.length > 0 && executors(0).blockManagerId.executorId != "driver") {
+        val host = executors(0).blockManagerId.host
+        host.indexOf('.') == -1 && host.indexOf("::") == -1
+      } else false
+  }
+
   /**
    * Get pair of TXId and (host, network server URL) pair.
    */
@@ -196,20 +207,6 @@ object SmartConnectorHelper {
     partitions
   }
 
-  def preferHostName(session: SparkSession): Boolean = {
-    // check if Spark executors are using IP addresses or host names
-    Utils.executorsListener(session.sparkContext) match {
-      case Some(l) =>
-        val preferHost = l.activeStorageStatusList.collectFirst {
-          case status if status.blockManagerId.executorId != "driver" =>
-            val host = status.blockManagerId.host
-            host.indexOf('.') == -1 && host.indexOf("::") == -1
-        }
-        preferHost.isDefined && preferHost.get
-      case _ => false
-    }
-  }
-
   private def getNetUrl(server: String, preferHost: Boolean, urlPrefix: String,
       urlSuffix: String, availableNetUrls: UnifiedMap[String, String]): (String, String) = {
     val hostAddressPort = returnHostPortFromServerString(server)
@@ -226,7 +223,7 @@ object SmartConnectorHelper {
       session: SparkSession): Array[ArrayBuffer[(String, String)]] = {
     if (!buckets.isEmpty) {
       // check if Spark executors are using IP addresses or host names
-      val preferHost = preferHostName(session)
+      val preferHost = preferHostName
       val preferPrimaries = session.conf.getOption(Property.PreferPrimariesInQuery.name) match {
         case None => Property.PreferPrimariesInQuery.defaultValue.get
         case Some(p) => p.toBoolean
@@ -278,7 +275,7 @@ object SmartConnectorHelper {
   def setReplicasToServerMappingInfo(replicaNodes: java.util.List[String],
       session: SparkSession): Array[ArrayBuffer[(String, String)]] = {
     // check if Spark executors are using IP addresses or host names
-    val preferHost = preferHostName(session)
+    val preferHost = preferHostName
     val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +

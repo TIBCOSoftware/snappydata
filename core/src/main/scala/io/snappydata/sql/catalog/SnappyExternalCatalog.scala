@@ -31,6 +31,7 @@ import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
 
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable, CatalogTableType, ExternalCatalog, SessionCatalog}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -40,9 +41,9 @@ import org.apache.spark.sql.hive.HiveExternalCatalog
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{AnalysisException, RuntimeConfig, SnappyContext, SnappyParserConsts, TableNotFoundException}
+import org.apache.spark.sql.{AnalysisException, RuntimeConfig, SnappyContext, SnappyParserConsts, SparkSupport, TableNotFoundException}
 
-trait SnappyExternalCatalog extends ExternalCatalog {
+trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
 
   // Overrides for better exceptions that say "schema" instead of "database"
 
@@ -69,7 +70,7 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     }
   }
 
-  override def getTable(schema: String, table: String): CatalogTable = {
+  protected def getTableImpl(schema: String, table: String): CatalogTable = {
     if (schema == SYS_SCHEMA) {
       // check for a system table/VTI in store
       val session = Utils.getActiveSession
@@ -103,10 +104,13 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     }
   }
 
+  def getTableIfExists(schema: String, table: String): Option[CatalogTable] =
+    SnappyExternalCatalog.getTableIfExists(this, schema, table)
+
   protected def getCachedCatalogTable(schema: String, table: String): CatalogTable
 
   def systemSchemaDefinition: CatalogDatabase =
-    CatalogDatabase(SYS_SCHEMA, "System schema", SYS_SCHEMA, Map.empty) // path is dummy
+    internals.newCatalogDatabase(SYS_SCHEMA, "System schema", SYS_SCHEMA, Map.empty) // dummy path
 
   /**
    * Get RelationInfo for given table with underlying region in embedded mode.
@@ -160,7 +164,7 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     val dependents = new mutable.ArrayBuffer[CatalogTable]
     for (dep <- allDependents) {
       val (depSchema, depTable) = getTableWithSchema(dep, schema)
-      getTableOption(depSchema, depTable) match {
+      getTableIfExists(depSchema, depTable) match {
         case None => // skip tables no longer present
         case Some(t) =>
           val tableType = CatalogObjectType.getTableType(t)
@@ -197,10 +201,13 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     }
   }
 
-  override def alterTableSchema(schemaName: String, table: String, schema: StructType): Unit = {
+  protected def alterTableSchemaImpl(schemaName: String, table: String,
+      newSchema: StructType): Unit = {
     val catalogTable = getTable(schemaName, table)
-    alterTable(catalogTable.copy(schema = schema))
+    alterTableImpl(catalogTable.copy(schema = newSchema))
   }
+
+  protected def alterTableImpl(table: CatalogTable): Unit
 
   /**
    * Get all the tables in the catalog skipping given schema names. By default
@@ -326,6 +333,15 @@ object SnappyExternalCatalog {
     } else defaultUser
   }
 
+  def getTableIfExists(catalog: ExternalCatalog, schema: String,
+      table: String): Option[CatalogTable] = {
+    try {
+      Some(catalog.getTable(schema, table))
+    } catch {
+      case _: NoSuchTableException => None
+    }
+  }
+
   /**
    * Get all the tables in the catalog skipping given schema names. By default
    * the inbuilt SYS schema is skipped.
@@ -333,7 +349,7 @@ object SnappyExternalCatalog {
   def getAllTables(catalog: ExternalCatalog, skipSchemas: Seq[String]): Seq[CatalogTable] = {
     catalog.listDatabases().flatMap(schema =>
       if (skipSchemas.nonEmpty && skipSchemas.contains(schema)) Nil
-      else catalog.listTables(schema).flatMap(table => catalog.getTableOption(schema, table)))
+      else catalog.listTables(schema).flatMap(table => getTableIfExists(catalog, schema, table)))
   }
 
   def schemaNotFoundException(schema: String): AnalysisException = {

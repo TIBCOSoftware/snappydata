@@ -21,7 +21,6 @@ import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.internal.cache.LocalRegion
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.{RDD, ZippedPartitionsBaseRDD}
-import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
 import org.apache.spark.sql.catalyst.plans.physical._
@@ -30,12 +29,12 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, Table
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnarStorePartitionedRDD, IndexColumnFormatRelation, SmartConnectorColumnRDD}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
-import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchange}
+import org.apache.spark.sql.execution.exchange.ReusedExchangeExec
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
 import org.apache.spark.sql.execution.row.{RowFormatRelation, RowFormatScanRDD, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
+import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession, SparkSupport}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
 
@@ -56,7 +55,8 @@ private[sql] abstract class PartitionedPhysicalScan(
     @transient override val relation: BaseRelation,
     // not used currently (if need to use then get from relation.table)
     override val metastoreTableIdentifier: Option[TableIdentifier] = None)
-    extends DataSourceScanExec with CodegenSupportOnExecutor {
+    extends DataSourceScanExec with CodegenSupportOnExecutor
+        with NonRecursivePlans with SparkSupport {
 
   def getMetrics: Map[String, SQLMetric] = {
     if (sqlContext eq null) Map.empty
@@ -65,6 +65,8 @@ private[sql] abstract class PartitionedPhysicalScan(
   }
 
   override lazy val metrics: Map[String, SQLMetric] = getMetrics
+
+  override def metadata: Map[String, String] = Map.empty
 
   private lazy val extraInformation = if (relation != null) {
     relation.toString
@@ -89,10 +91,6 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     rdd :: Nil
-  }
-
-  protected override def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(this).execute()
   }
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
@@ -225,8 +223,13 @@ private[sql] object PartitionedPhysicalScan {
 
     val simpleString = SnappySession.replaceParamLiterals(
       plan.simpleString, paramLiterals, paramsId)
+    val metadata = plan match {
+      case s: FileSourceScanExec => s.metadata
+      case s: RowDataSourceScanExec => s.metadata
+      case _ => Map.empty[String, String]
+    }
     new SparkPlanInfo(plan.nodeName, simpleString,
-      children.map(getSparkPlanInfo(_, paramLiterals, paramsId)), plan.metadata, metrics)
+      children.map(getSparkPlanInfo(_, paramLiterals, paramsId)), metadata, metrics)
   }
 
   private[sql] def updatePlanInfo(planInfo: SparkPlanInfo,
@@ -345,13 +348,14 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
     basePartKeys: Seq[Expression],
     otherPlan: SparkPlan,
-    otherPartKeys: Seq[Expression]) extends SparkPlan with CodegenSupport {
+    otherPartKeys: Seq[Expression]) extends SparkPlan with CodegenSupport
+    with NonRecursivePlans with SparkSupport {
 
   private var consumedCode: String = _
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
   private val inputCode = basePlan.asInstanceOf[CodegenSupport]
 
-  private val withShuffle = ShuffleExchange(HashPartitioning(
+  private val withShuffle = internals.newShuffleExchange(HashPartitioning(
     ClusteredDistribution(otherPartKeys)
         .clustering, inputCode.inputRDDs().head.getNumPartitions), otherPlan)
 
@@ -365,8 +369,8 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val child1Produce = inputCode.produce(ctx, this)
-    val input = ctx.freshName("input")
-    ctx.addMutableState("scala.collection.Iterator", input, s" $input = inputs[1]; ")
+    val input = internals.addClassField(ctx, "scala.collection.Iterator", "input",
+      v => s"$v = inputs[1];")
 
     val row = ctx.freshName("row")
     val columnsInputEval = otherPlan.output.zipWithIndex.map { case (ref, ordinal) =>
@@ -405,10 +409,6 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
     consumeInput + "\n" + consumedCode
   }
 
-  override protected def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
-    WholeStageCodegenExec(this).execute()
-  }
-
   override def output: Seq[Attribute] = basePlan.output
 }
 
@@ -440,7 +440,7 @@ class StratumInternalRow(val weight: Long) extends InternalRow {
 
   def copy(): InternalRow = throw new UnsupportedOperationException("not implemented")
 
-  def anyNull: Boolean = throw new UnsupportedOperationException("not implemented")
+  override def anyNull: Boolean = throw new UnsupportedOperationException("not implemented")
 
   def isNullAt(ordinal: Int): Boolean = throw new UnsupportedOperationException("not implemented")
 

@@ -64,7 +64,7 @@ object ExecutorInitiator extends Logging {
     private[cluster] val testLock = new Object()
     @volatile private[cluster] var testStartDone = false
 
-    val membershipListener: MembershipListener = new MembershipListener {
+    private val membershipListener: MembershipListener = new MembershipListener {
       override def quorumLost(failures: util.Set[InternalDistributedMember],
           remaining: util.List[InternalDistributedMember]): Unit = {}
 
@@ -160,7 +160,7 @@ object ExecutorInitiator extends Logging {
                     val port = executorConf.getInt("spark.executor.port", 0)
                     val (ioEncryptionKey, props) =
                       SparkCallbacks.fetchDriverProperty(memberId, executorHost,
-                      executorConf, port, url)
+                        executorConf, port, url)
 
                     val driverConf = Utils.newClusterSparkConf()
                     Utils.setDefaultSerializerAndCodec(driverConf)

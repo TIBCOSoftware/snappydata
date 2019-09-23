@@ -39,7 +39,6 @@ trait RowExec extends TableExec {
   @transient protected var rowCount: String = _
   @transient protected var result: String = _
 
-
   def resolvedName: String
 
   def connProps: ConnectionProperties
@@ -49,17 +48,17 @@ trait RowExec extends TableExec {
 
   protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     val connectionClass = classOf[Connection].getName
-    connTerm = ctx.freshName("connection")
     // onExecutor will never be true in case of ColumnDelete/Update
     if (onExecutor) {
       // actual connection will be filled into references before execution
       connRef = ctx.references.length
       // connObj position in the array is connRef
       val connObj = ctx.addReferenceObj("conn", null, connectionClass)
+      connTerm = ctx.freshName("connection")
       (s"final $connectionClass $connTerm = $connObj;", "", "")
     } else {
       val utilsClass = ExternalStoreUtils.getClass.getName
-      ctx.addMutableState(connectionClass, connTerm, "")
+      connTerm = internals.addClassField(ctx, connectionClass, "connection")
       val props = ctx.addReferenceObj("connectionProperties", connProps)
       val catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
       val initCode: String = getInitCode(utilsClass, props, catalogVersion)
@@ -123,19 +122,17 @@ trait RowExec extends TableExec {
 
   protected def doProduce(ctx: CodegenContext, pstmtStr: String,
       produceAddonCode: () => String = () => ""): String = {
+
+    stmt = internals.addClassField(ctx, "java.sql.PreparedStatement", "statement")
+    result = internals.addClassField(ctx, "long", "result", v => s"$v = -1L;")
+    rowCount = internals.addClassField(ctx, "long", "rowCount")
+
     val (initCode, commitCode, endCode) = connectionCodes(ctx)
-    result = ctx.freshName("result")
-    stmt = ctx.freshName("statement")
-    rowCount = ctx.freshName("rowCount")
-    val numOpRowsMetric = if (onExecutor) null
-    else metricTerm(ctx, s"num${opType}Rows")
+    val numOpRowsMetric = if (onExecutor) null else metricTerm(ctx, s"num${opType}Rows")
     val numOperations = ctx.freshName("numOperations")
     val childProduce = doChildProduce(ctx)
     val mutateTable = ctx.freshName("mutateTable")
 
-    ctx.addMutableState("java.sql.PreparedStatement", stmt, "")
-    ctx.addMutableState("long", result, s"$result = -1L;")
-    ctx.addMutableState("long", rowCount, "")
     ctx.addNewFunction(mutateTable,
       s"""
          |private void $mutateTable() throws java.io.IOException, java.sql.SQLException {
@@ -177,10 +174,9 @@ trait RowExec extends TableExec {
   protected def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       schema: StructType): String = {
     val schemaTerm = ctx.addReferenceObj("schema", schema)
-    val schemaFields = ctx.freshName("schemaFields")
     val structFieldClass = classOf[StructField].getName
-    ctx.addMutableState(s"$structFieldClass[]", schemaFields,
-      s"$schemaFields = $schemaTerm.fields();")
+    val schemaFields = internals.addClassField(ctx, s"$structFieldClass[]", "schemaFields",
+      v => s"$v = $schemaTerm.fields();")
     val batchSize = connProps.executorConnProps
         .getProperty("batchsize", "1000").toInt
     val numOpRowsMetric = if (onExecutor) null

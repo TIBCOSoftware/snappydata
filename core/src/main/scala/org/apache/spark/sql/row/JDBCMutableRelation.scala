@@ -26,11 +26,10 @@ import kafka.client.ClientUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.execution.row.{RowDeleteExec, RowInsertExec, RowUpdateExec}
@@ -54,7 +53,7 @@ abstract case class JDBCMutableRelation(
     mode: SaveMode,
     userSpecifiedString: String,
     parts: Array[Partition],
-    origOptions: CaseInsensitiveMap,
+    origOptions: CaseInsensitiveMutableHashMap[String],
     @transient override val sqlContext: SQLContext)
     extends BaseRelation
     with PrunedUnsafeFilteredScan
@@ -67,6 +66,7 @@ abstract case class JDBCMutableRelation(
     with IndexableRelation
     with AlterableRelation
     with NativeTableRowLevelSecurityRelation
+    with SparkSupport
     with Logging {
 
   override val needConversion: Boolean = false
@@ -192,11 +192,11 @@ abstract case class JDBCMutableRelation(
     // use the Insert plan for best performance
     // that will use the getInsertPlan above (in StoreStrategy)
     sqlContext.sessionState.executePlan(
-      new Insert(
+      internals.newInsertPlanWithCountOutput(
         table = LogicalRelation(this),
         partition = Map.empty[String, Option[String]],
         child = data.logicalPlan,
-        OverwriteOptions(overwrite),
+        overwrite,
         ifNotExists = false)).toRdd
   }
 

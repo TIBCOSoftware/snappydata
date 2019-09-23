@@ -32,7 +32,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd}
 import org.apache.spark.sql.catalog.Column
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
@@ -1186,7 +1185,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     ds.collect()
 
     // check UI timings and plan details
-    val listener = ExternalStoreUtils.getSQLListener.get
+    val listener = SparkSession.sqlListener.get()
     // last one should be the query above
     val queryUIData = listener.getCompletedExecutions.last
     val duration = queryUIData.completionTime.get - queryUIData.submissionTime

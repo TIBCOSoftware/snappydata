@@ -22,7 +22,7 @@ import com.gemstone.gemfire.internal.shared.SystemProperties
  * Constant names suggested per naming convention
  * http://docs.scala-lang.org/style/naming-conventions.html
  *
- * we decided to use upper case with underscore word separator.
+ * SnappyData uses upper case with underscore word separator.
  */
 object Constant {
 
@@ -49,6 +49,8 @@ object Constant {
   val SPARK_SNAPPY_PREFIX: String = SPARK_PREFIX + PROPERTY_PREFIX
 
   val SPARK_STORE_PREFIX: String = SPARK_PREFIX + STORE_PROPERTY_PREFIX
+
+  val HIVE_TYPE_STRING = "HIVE_TYPE_STRING"
 
   val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 
@@ -123,13 +125,6 @@ object Constant {
   val MAX_VARCHAR_SIZE = 32672
 
   val MAX_CHAR_SIZE = 254
-
-  // allowed values for QueryHint.JoinType
-  val JOIN_TYPE_BROADCAST = "broadcast"
-  val JOIN_TYPE_HASH = "hash"
-  val JOIN_TYPE_SORT = "sort"
-  val ALLOWED_JOIN_TYPE_HINTS: List[String] =
-    List(JOIN_TYPE_BROADCAST, JOIN_TYPE_HASH, JOIN_TYPE_SORT)
 
   /**
    * Limit the maximum number of rows in a column batch (applied before

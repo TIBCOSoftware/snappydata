@@ -283,8 +283,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   }
 
   override def doProduce(ctx: CodegenContext): String = {
-    initMap = ctx.freshName("initMap")
-    ctx.addMutableState("boolean", initMap, s"$initMap = false;")
+    initMap = internals.addClassField(ctx, "boolean", "initMap", v => s"$v = false;")
 
     val createMap = ctx.freshName("createMap")
     val createMapClass = ctx.freshName("CreateMap")
@@ -295,9 +294,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val numOutputRows = metricTerm(ctx, "numOutputRows")
 
     // generate variable name for hash map for use here and in consume
-    hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
-    ctx.addMutableState(hashSetClassName, hashMapTerm, "")
+    hashMapTerm = internals.addClassField(ctx, hashSetClassName, "hashMap")
 
     // using the expression IDs is enough to ensure uniqueness
     val buildCodeGen = buildPlan.asInstanceOf[CodegenSupport]
@@ -314,9 +312,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
     // generate local variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
-    maskTerm = ctx.freshName("hashMapMask")
-    mapSize = ctx.freshName("mapSize")
-    keyIsUniqueTerm = ctx.freshName("keyIsUnique")
+    maskTerm = internals.addClassField(ctx, "int", "hashMapMask")
+    mapSize = internals.addClassField(ctx, "int", "mapSize", v => s"$v = -1;")
+    keyIsUniqueTerm = internals.addClassField(ctx, "boolean", "keyIsUnique", v => s"$v = true;")
     numRowsTerm = ctx.freshName("numRows")
 
     // generate the map accessor to generate key/value class
@@ -327,10 +325,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       multiMap = true, this, this.parent, buildPlan)
 
     val entryClass = mapAccessor.getClassName
-    ctx.addMutableState(s"$entryClass[]", mapDataTerm, "")
-    ctx.addMutableState("int", maskTerm, "")
-    ctx.addMutableState("int", mapSize, s"$mapSize = -1;")
-    ctx.addMutableState("boolean", keyIsUniqueTerm, s"$keyIsUniqueTerm = true;")
+    internals.addClassField(ctx, s"$entryClass[]", mapDataTerm,
+      forceInline = true, useFreshName = false)
 
     val buildRDDs = ctx.addReferenceObj("buildRDDs", rdds.toArray,
       s"${classOf[RDD[_]].getName}[]")
@@ -338,19 +334,17 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val partitionClass = classOf[Partition].getName
     val buildPartsVar = ctx.addReferenceObj("buildParts", buildParts.toArray,
       s"$partitionClass[][]")
-    val allIterators = ctx.freshName("allIterators")
     val indexVar = ctx.freshName("index")
-    val contextName = ctx.freshName("context")
     val taskContextClass = classOf[TaskContext].getName
-    ctx.addMutableState(taskContextClass, contextName,
-      s"this.$contextName = $taskContextClass.get();")
-
+    val contextName = internals.addClassField(ctx, taskContextClass, "context",
+      v => s"this.$v = $taskContextClass.get();")
 
     // switch inputs to use the buildPlan RDD iterators
-    ctx.addMutableState("scala.collection.Iterator[]", allIterators,
+    val scalaIterorClass = "scala.collection.Iterator"
+    val allIterators = internals.addClassField(ctx, scalaIterorClass + "[]", "allIterators", v =>
       s"""
-         |$allIterators = inputs;
-         |inputs = new scala.collection.Iterator[$buildRDDs.length];
+         |$v = inputs;
+         |inputs = new $scalaIterorClass[$buildRDDs.length];
          |$taskContextClass $contextName = $taskContextClass.get();
          |for (int $indexVar = 0; $indexVar < $buildRDDs.length; $indexVar++) {
          |  $partitionClass[] parts = $buildPartsVar[$indexVar];
@@ -366,9 +360,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       """.stripMargin)
 
     val buildProduce = buildCodeGen.produce(ctx, mapAccessor)
-    // switch inputs back to streamPlan iterators
-    val numIterators = ctx.freshName("numIterators")
-    ctx.addMutableState("int", numIterators, s"inputs = $allIterators;")
+    // switch inputs back to streamPlan iterators (variable added is a dummy)
+    internals.addClassField(ctx, "int", "numIterators", _ => s"inputs = $allIterators;")
 
     val numKeyColumns = buildSideKeys.length
     val longLived = replicatedTableJoin
@@ -417,15 +410,15 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
-    ctx.copyResult = false
+    internals.resetCopyResult(ctx)
 
     // initialization of min/max for integral keys
     val initMinMaxVars = mapAccessor.integralKeys.zipWithIndex.map {
       case (indexKey, index) =>
         val minVar = mapAccessor.integralKeysMinVars(index)
         val maxVar = mapAccessor.integralKeysMaxVars(index)
-        ctx.addMutableState("long", minVar, "")
-        ctx.addMutableState("long", maxVar, "")
+        internals.addClassField(ctx, "long", minVar, forceInline = true, useFreshName = false)
+        internals.addClassField(ctx, "long", maxVar, forceInline = true, useFreshName = false)
         s"""
           $minVar = $hashMapTerm.getMinValue($indexKey);
           $maxVar = $hashMapTerm.getMaxValue($indexKey);

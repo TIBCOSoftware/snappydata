@@ -17,7 +17,6 @@
 package org.apache.spark.sql.execution.row
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
@@ -28,7 +27,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Logging, Partition, SparkContext}
 
 final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRelationProvider
-    with CreatableRelationProvider with DataSourceRegister with Logging {
+    with CreatableRelationProvider with DataSourceRegister with Logging with SparkSupport {
 
   override def shortName(): String = SnappyParserConsts.ROW_SOURCE
 
@@ -72,7 +71,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       // on the servers to determine table properties like compression etc.
       // SnappyExternalCatalog will alter the definition for final entry if required.
       session.sessionCatalog.createTableForBuiltin(relation.resolvedName,
-        getClass.getCanonicalName, relation.schema, relation.origOptions,
+        getClass.getCanonicalName, relation.schema, relation.origOptions.toMap,
         mode != SaveMode.ErrorIfExists)
       // SaveMode.Overwrite already taken care by createTable to truncate
       relation.insert(data, overwrite = false)
@@ -81,7 +80,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
     } finally {
       if (!success && relation.tableCreated) {
         // remove the catalog entry
-        session.sessionCatalog.externalCatalog.dropTable(relation.schemaName,
+        session.sessionCatalog.snappyExternalCatalog.dropTable(relation.schemaName,
           relation.tableName, ignoreIfNotExists = true, purge = false)
         // destroy the relation
         relation.destroy(ifExists = true)
@@ -97,7 +96,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
     ExternalStoreUtils.getAndSetTotalPartitions(session, parameters,
       forManagedTable = true, forColumnTable = false)
     StoreUtils.getAndSetPartitioningAndKeyColumns(session, schema = null, parameters)
-    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
+    val tableOptions = new CaseInsensitiveMutableHashMap[String](parameters.toMap)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schemaString $ddlExtension"

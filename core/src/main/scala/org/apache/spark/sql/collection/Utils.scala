@@ -34,8 +34,10 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
+import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.{Constant, ToolsCallback}
 import org.apache.commons.math3.distribution.NormalDistribution
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
@@ -49,7 +51,7 @@ import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, EqualNullSafe, EqualTo, Expression, GenericRow, SpecificInternalRow, TokenLiteral, UnsafeProjection}
-import org.apache.spark.sql.catalyst.json.{JSONOptions, JacksonGenerator, JacksonUtils}
+import org.apache.spark.sql.catalyst.json.{JacksonGenerator, JacksonUtils}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
@@ -63,12 +65,11 @@ import org.apache.spark.sql.sources.{CastLongTime, JdbcExtendedUtils}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
-import org.apache.spark.ui.exec.ExecutorsListener
 import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
 
-object Utils extends Logging {
+object Utils extends Logging with SparkSupport {
 
   final val EMPTY_STRING_ARRAY = SharedUtils.EMPTY_STRING_ARRAY
   final val WEIGHTAGE_COLUMN_NAME = "snappy_sampler_weightage"
@@ -598,14 +599,6 @@ object Utils extends Logging {
     driver
   }
 
-  /**
-   * Wrap a DataFrame action to track all Spark jobs in the body so that
-   * we can connect them with an execution.
-   */
-  def withNewExecutionId[T](df: DataFrame, body: => T): T = {
-    df.withNewExecutionId(body)
-  }
-
   def immutableMap[A, B](m: mutable.Map[A, B]): Map[A, B] = new Map[A, B] {
 
     private[this] val map = m
@@ -670,6 +663,16 @@ object Utils extends Logging {
     new ChunkedByteBuffer(chunks)
 
   def getInternalSparkConf(sc: SparkContext): SparkConf = sc.conf
+
+  def getUserPassword(sparkConf: SparkConf): Option[(String, String)] = {
+    sparkConf.getOption(SPARK_STORE_PREFIX + USERNAME_ATTR) match {
+      case None => sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR) match {
+        case None => None
+        case Some(user) => Some(user -> sparkConf.get(STORE_PROPERTY_PREFIX + PASSWORD_ATTR, ""))
+      }
+      case Some(user) => Some(user -> sparkConf.get(SPARK_STORE_PREFIX + PASSWORD_ATTR, ""))
+    }
+  }
 
   def newClusterSparkConf(): SparkConf =
     newClusterSparkConf(Misc.getMemStoreBooting.getBootProperties)
@@ -767,7 +770,7 @@ object Utils extends Logging {
       writer: java.io.Writer): AnyRef = {
     val schema = StructType(Seq(StructField(columnName, dataType)))
     JacksonUtils.verifySchema(schema)
-    new JacksonGenerator(schema, writer, new JSONOptions(Map.empty[String, String]))
+    new JacksonGenerator(schema, writer, internals.newJSONOptions(Map.empty, None))
   }
 
   def generateJson(gen: AnyRef, row: InternalRow, columnIndex: Int,
@@ -788,25 +791,19 @@ object Utils extends Logging {
 
   def genTaskContextFunction(ctx: CodegenContext): String = {
     // use common taskContext variable so it is obtained only once for a plan
-    if (!ctx.addedFunctions.contains(TASKCONTEXT_FUNCTION)) {
-      val taskContextVar = ctx.freshName("taskContext")
+    if (!internals.isFunctionAddedToOuterClass(ctx, TASKCONTEXT_FUNCTION)) {
       val contextClass = classOf[TaskContext].getName
-      ctx.addMutableState(contextClass, taskContextVar, "")
-      ctx.addNewFunction(TASKCONTEXT_FUNCTION,
+      val taskContextVar = internals.addClassField(ctx, contextClass, "taskContext")
+      internals.addFunction(ctx, TASKCONTEXT_FUNCTION,
         s"""
            |private $contextClass $TASKCONTEXT_FUNCTION() {
            |  final $contextClass context = $taskContextVar;
            |  if (context != null) return context;
            |  return ($taskContextVar = $contextClass.get());
            |}
-        """.stripMargin)
+        """.stripMargin, inlineToOuterClass = true)
     }
     TASKCONTEXT_FUNCTION
-  }
-
-  def executorsListener(sc: SparkContext): Option[ExecutorsListener] = sc.ui match {
-    case Some(ui) => Some(ui.executorsListener)
-    case _ => None
   }
 
   def getActiveSession: Option[SparkSession] = SparkSession.getActiveSession

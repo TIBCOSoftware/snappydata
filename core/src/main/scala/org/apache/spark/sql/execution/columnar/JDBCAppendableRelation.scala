@@ -30,9 +30,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.{Expression, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.jdbc.JdbcDialect
@@ -49,7 +48,7 @@ abstract case class JDBCAppendableRelation(
     provider: String,
     mode: SaveMode,
     userSchema: StructType,
-    origOptions: CaseInsensitiveMap,
+    origOptions: CaseInsensitiveMutableHashMap[String],
     externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext) extends BaseRelation
     with PrunedUnsafeFilteredScan
@@ -59,6 +58,7 @@ abstract case class JDBCAppendableRelation(
     with IndexableRelation
     with Logging
     with NativeTableRowLevelSecurityRelation
+    with SparkSupport
     with Serializable {
 
   self =>
@@ -129,11 +129,11 @@ abstract case class JDBCAppendableRelation(
     // use the Insert plan for best performance
     // that will use the getInsertPlan above (in StoreStrategy)
     sqlContext.sessionState.executePlan(
-      new Insert(
+      internals.newInsertPlanWithCountOutput(
         table = LogicalRelation(this),
         partition = Map.empty[String, Option[String]],
         child = data.logicalPlan,
-        OverwriteOptions(overwrite),
+        overwrite,
         ifNotExists = false)).toRdd
   }
 

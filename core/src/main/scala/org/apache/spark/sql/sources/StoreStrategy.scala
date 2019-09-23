@@ -21,7 +21,7 @@ import scala.reflect.{ClassTag, classTag}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, OverwriteOptions}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -31,7 +31,7 @@ import org.apache.spark.sql.types.{DataType, LongType}
 /**
  * Support for DML and other operations on external tables.
  */
-object StoreStrategy extends Strategy {
+object StoreStrategy extends Strategy with SparkSupport {
 
   private def findLogicalRelation[T: ClassTag](table: LogicalPlan): Option[LogicalRelation] = {
     table.find(_.isInstanceOf[LogicalRelation]) match {
@@ -47,10 +47,13 @@ object StoreStrategy extends Strategy {
       EncoderScanExec(plan.rdd.asInstanceOf[RDD[Any]],
         plan.encoder, plan.isFlat, plan.output) :: Nil
 
-    case InsertIntoTable(l@LogicalRelation(p: PlanInsertableRelation,
-    _, _), part, query, overwrite, false) if part.isEmpty =>
-      val preAction = if (overwrite.enabled) () => p.truncate() else () => ()
-      ExecutePlan(p.getInsertPlan(l, planLater(query)), preAction) :: Nil
+    case insert: InsertIntoTable if insert.partition.isEmpty &&
+        !internals.getIfNotExistsOption(insert) && insert.table.isInstanceOf[LogicalRelation] &&
+        insert.table.asInstanceOf[LogicalRelation].relation.isInstanceOf[PlanInsertableRelation] =>
+      val l = insert.table.asInstanceOf[LogicalRelation]
+      val p = l.relation.asInstanceOf[PlanInsertableRelation]
+      val preAction = if (internals.getOverwriteOption(insert)) () => p.truncate() else () => ()
+      ExecutePlan(p.getInsertPlan(l, planLater(insert.children.head)), preAction) :: Nil
 
     case d@DMLExternalTable(table, cmd) => findLogicalRelation[BaseRelation](table) match {
       case Some(l) => ExecutedCommandExec(ExternalTableDMLCmd(l, cmd, d.output)) :: Nil
@@ -128,30 +131,6 @@ case class PutIntoTable(table: LogicalPlan, child: LogicalPlan)
           DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
             tableAttr.dataType)
       }
-}
-
-/**
- * Unlike Spark's InsertIntoTable this plan provides the count of rows
- * inserted as the output.
- */
-final class Insert(
-    table: LogicalPlan,
-    partition: Map[String, Option[String]],
-    child: LogicalPlan,
-    overwrite: OverwriteOptions,
-    ifNotExists: Boolean)
-    extends InsertIntoTable(table, partition, child, overwrite, ifNotExists) {
-
-  override def output: Seq[Attribute] = AttributeReference(
-    "count", LongType)() :: Nil
-
-  override def copy(table: LogicalPlan = table,
-      partition: Map[String, Option[String]] = partition,
-      child: LogicalPlan = child,
-      overwrite: OverwriteOptions = overwrite,
-      ifNotExists: Boolean = ifNotExists): Insert = {
-    new Insert(table, partition, child, overwrite, ifNotExists)
-  }
 }
 
 /**

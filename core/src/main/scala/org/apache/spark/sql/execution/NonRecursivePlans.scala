@@ -17,6 +17,7 @@
 package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSupport
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.internal.CodeGenerationException
 
@@ -25,7 +26,7 @@ import org.apache.spark.sql.internal.CodeGenerationException
  * version and use the same for non-codegenerated case. For that case this
  * prevents recursive calls into code generation in case it fails for some reason.
  */
-abstract class NonRecursivePlans extends SparkPlan {
+trait NonRecursivePlans extends SparkPlan with SparkSupport {
 
   /**
    * Variable to disallow recursive generation so will mark the case of
@@ -38,7 +39,7 @@ abstract class NonRecursivePlans extends SparkPlan {
       throw new CodeGenerationException("Code generation failed for some of the child plans")
     }
     nonCodeGeneratedPlanCalls += 1
-    WholeStageCodegenExec(this).execute()
+    internals.newWholeStagePlan(this).execute()
   }
 
   override def makeCopy(newArgs: Array[AnyRef]): NonRecursivePlans = {

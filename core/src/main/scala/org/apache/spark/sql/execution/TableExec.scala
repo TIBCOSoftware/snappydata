@@ -28,12 +28,13 @@ import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.sources.{DestroyRelation, JdbcExtendedUtils, NativeTableRowLevelSecurityRelation}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{LongType, StructType}
-import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, ThinClientConnectorMode}
+import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, SparkSupport, ThinClientConnectorMode}
 
 /**
  * Base class for bulk insert/mutation operations for column and row tables.
  */
-trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
+trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor
+    with NonRecursivePlans with SparkSupport {
 
   def partitionColumns: Seq[String]
 
@@ -79,7 +80,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
   // Only one insert plan possible in the plan tree, so no clashes.
   if (partitioned) {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    session.sessionState.conf.setExecutionShufflePartitions(numBuckets)
+    session.sessionState.snappyConf.setExecutionShufflePartitions(numBuckets)
   }
 
   /** Specifies how data is partitioned for the table. */
@@ -109,11 +110,6 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
     if (onExecutor) Map.empty
     else Map(s"num${opType}Rows" -> SQLMetrics.createMetric(sparkContext,
       s"number of ${opType.toLowerCase} rows"))
-  }
-
-  override protected def doExecute(): RDD[InternalRow] = {
-    // don't expect code generation to fail
-    WholeStageCodegenExec(this).execute()
   }
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
@@ -157,6 +153,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
       })
       locations
     }
+
     inputRDDs.map { rdd =>
       // if the two are different then its partition pruning case
       if (numBuckets == rdd.getNumPartitions) {
@@ -174,15 +171,15 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
       case _ => throw new UnsupportedOperationException(
         s"Expected a child supporting code generation. Got: $child")
     }
-    if (!ctx.addedFunctions.contains("shouldStop")) {
+    if (!internals.isFunctionAddedToOuterClass(ctx, "shouldStop")) {
       // no need to stop in iteration at any point
-      ctx.addNewFunction("shouldStop",
+      internals.addFunction(ctx, "shouldStop",
         s"""
            |@Override
            |protected final boolean shouldStop() {
            |  return false;
            |}
-        """.stripMargin)
+        """.stripMargin, inlineToOuterClass = true)
     }
     childProduce
   }

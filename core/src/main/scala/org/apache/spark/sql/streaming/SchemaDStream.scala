@@ -24,9 +24,8 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.collection.WrappedInternalRow
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.exchange.ShuffleExchange
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Row, SnappySession}
+import org.apache.spark.sql.{DataFrame, Row, SnappySession, SparkSupport}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext, Time}
@@ -46,7 +45,7 @@ import org.apache.spark.streaming.{Duration, SnappyStreamingContext, Time}
  */
 class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     @transient val queryExecution: QueryExecution)
-    extends DStream[Row](snsc) {
+    extends DStream[Row](snsc) with SparkSupport {
 
   @transient private val snappySession: SnappySession = snsc.snappySession
 
@@ -290,7 +289,7 @@ class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   }
 
   private val _cachedField = {
-    val f = classOf[ShuffleExchange].getDeclaredFields.find(
+    val f = internals.classOfShuffleExchange().getDeclaredFields.find(
       _.getName.contains("cachedShuffleRDD")).get
     f.setAccessible(true)
     f
@@ -298,7 +297,7 @@ class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   private def executionPlan: SparkPlan = {
     queryExecution.executedPlan.foreach {
-      case s: ShuffleExchange => _cachedField.set(s, null)
+      case s if internals.isShuffleExchange(s) => _cachedField.set(s, null)
       case _ =>
     }
     queryExecution.executedPlan

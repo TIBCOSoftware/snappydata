@@ -16,9 +16,8 @@
  */
 package org.apache.spark.sql.hive
 
-import java.util.Properties
-
 import java.nio.file.Paths
+import java.util.Properties
 
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}

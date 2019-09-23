@@ -25,6 +25,7 @@ import io.snappydata.Property._
 import io.snappydata.util.ServiceUtils
 
 import org.apache.spark.Logging
+import org.apache.spark.sql._
 import org.apache.spark.sql.execution.CatalogStaleException
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.streaming.Sink
@@ -32,7 +33,6 @@ import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
 import org.apache.spark.sql.streaming.SnappyStoreSinkProvider.EventType._
 import org.apache.spark.sql.streaming.SnappyStoreSinkProvider._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappyContext, SnappySession, _}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
 
@@ -137,8 +137,8 @@ private[streaming] object SnappyStoreSinkProvider {
       .getOrElse(SINK_STATE_TABLE)
 }
 
-case class SnappyStoreSink(snappySession: SnappySession,
-    parameters: Map[String, String], sinkCallback: SnappySinkCallback) extends Sink with Logging {
+case class SnappyStoreSink(snappySession: SnappySession, parameters: Map[String, String],
+    sinkCallback: SnappySinkCallback) extends Sink with Logging with SparkSupport {
 
   override def addBatch(batchId: Long, data: Dataset[Row]): Unit = {
     val message = s"queryName must be specified for ${SnappyContext.SNAPPY_SINK_NAME}."
@@ -218,7 +218,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
    * for a detailed discussion.
    */
   private def convert(ds: DataFrame): DataFrame = {
-    snappySession.internalCreateDataFrame(
+    internals.internalCreateDataFrame(snappySession,
       ds.queryExecution.toRdd,
       StructType(ds.schema.fields))
   }

@@ -24,12 +24,12 @@ import org.apache.spark.sql.catalyst.{InternalRow, JavaTypeInference}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources.SchemaRelationProvider
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{AnalysisException, Row}
+import org.apache.spark.sql.{AnalysisException, Row, SparkSupport}
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.api.java.JavaDStream
 import org.apache.spark.streaming.dstream.DStream
 
-object StreamSqlHelper {
+object StreamSqlHelper extends SparkSupport {
 
   def clearStreams(): Unit = {
     StreamBaseRelation.clearStreams()
@@ -48,8 +48,10 @@ object StreamSqlHelper {
   def getSchemaDStream(ssc: SnappyStreamingContext, tableName: String): SchemaDStream = {
     val catalog = ssc.snappySession.sessionState.catalog
     catalog.resolveRelation(ssc.snappySession.tableIdentifier(tableName)) match {
-      case LogicalRelation(sr: StreamPlan, _, _) => new SchemaDStream(ssc,
-        LogicalDStreamPlan(sr.schema.toAttributes, sr.rowStream)(ssc))
+      case lr: LogicalRelation if lr.relation.isInstanceOf[StreamPlan] =>
+        val sr = lr.relation.asInstanceOf[StreamPlan]
+        new SchemaDStream(ssc, internals.newLogicalDStreamPlan(
+          sr.schema.toAttributes, sr.rowStream, ssc))
       case _ =>
         throw new AnalysisException(s"Table $tableName not a stream table")
     }
@@ -62,16 +64,16 @@ object StreamSqlHelper {
       stream: DStream[A]): SchemaDStream = {
     val encoder = ExpressionEncoder[A]()
     val schema = encoder.schema
-    val logicalPlan = LogicalDStreamPlan(schema.toAttributes,
-      stream.map(encoder.toRow(_).copy()))(ssc)
+    val logicalPlan = internals.newLogicalDStreamPlan(schema.toAttributes,
+      stream.map(encoder.toRow(_).copy()), ssc)
     new SchemaDStream(ssc, logicalPlan)
   }
 
   def createSchemaDStream(ssc: SnappyStreamingContext, rowStream: DStream[Row],
       schema: StructType): SchemaDStream = {
     val encoder = RowEncoder(schema)
-    val logicalPlan = LogicalDStreamPlan(schema.toAttributes,
-      rowStream.map(encoder.toRow(_).copy()))(ssc)
+    val logicalPlan = internals.newLogicalDStreamPlan(schema.toAttributes,
+      rowStream.map(encoder.toRow(_).copy()), ssc)
     new SchemaDStream(ssc, logicalPlan)
   }
 
@@ -79,8 +81,8 @@ object StreamSqlHelper {
       rowStream: JavaDStream[_], beanClass: Class[_]): SchemaDStream = {
     val encoder = ExpressionEncoder.javaBean(beanClass.asInstanceOf[Class[Any]])
     val schema = encoder.schema
-    val logicalPlan = LogicalDStreamPlan(schema.toAttributes,
-      rowStream.dstream.map(encoder.toRow(_).copy()))(ssc)
+    val logicalPlan = internals.newLogicalDStreamPlan(schema.toAttributes,
+      rowStream.dstream.map(encoder.toRow(_).copy()), ssc)
     new SchemaDStream(ssc, logicalPlan)
   }
 }

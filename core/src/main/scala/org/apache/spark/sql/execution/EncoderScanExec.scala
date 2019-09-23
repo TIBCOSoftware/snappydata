@@ -17,7 +17,6 @@
 package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
@@ -26,6 +25,7 @@ import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, BindReferenc
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types.DateType
+import org.apache.spark.sql.{SparkSession, SparkSupport}
 
 /**
  * Efficient SparkPlan with code generation support to consume an RDD
@@ -33,7 +33,7 @@ import org.apache.spark.sql.types.DateType
  */
 case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
     isFlat: Boolean, output: Seq[Attribute])
-    extends LeafExecNode with CodegenSupport {
+    extends LeafExecNode with CodegenSupport with SparkSupport {
 
   override protected def doExecute(): RDD[InternalRow] = {
     rdd.mapPartitionsInternal(_.map(encoder.toRow))
@@ -45,9 +45,8 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val dateTimeClass = DateTimeUtils.getClass.getName.replace("$", "")
-    val iterator = ctx.freshName("iterator")
-    ctx.addMutableState("scala.collection.Iterator", iterator,
-      s"$iterator = inputs[0];")
+    val iterator = internals.addClassField(ctx, "scala.collection.Iterator", "iterator",
+      v => s"$v = inputs[0];")
 
     val javaClass = encoder.clsTag.runtimeClass
     val javaTypeName =
@@ -75,14 +74,14 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
     val declarations = new StringBuilder
 
     def optimizeDate(expr: Expression): ExprCode = expr match {
-      case s@StaticInvoke(_, _, "fromJavaDate", inputValue :: Nil, _) =>
+      case s: StaticInvoke if s.functionName == "fromJavaDate" && s.arguments.length == 1 =>
         // optimization to re-use previous date since it may remain
         // same for a while in many cases
         val prevJavaDate = ctx.freshName("prevJavaDate")
         val prevDate = ctx.freshName("prevDate")
         declarations.append(s"java.sql.Date $prevJavaDate = null;\n")
         declarations.append(s"int $prevDate = 0;\n")
-        val inputDate = inputValue.genCode(ctx)
+        val inputDate = s.arguments.head.genCode(ctx)
         val javaDate = inputDate.value
         val ev = s.genCode(ctx)
         val code = if (ev.isNull == "false") {

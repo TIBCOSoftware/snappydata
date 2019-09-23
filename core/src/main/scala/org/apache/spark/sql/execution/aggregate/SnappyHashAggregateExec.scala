@@ -162,29 +162,23 @@ case class SnappyHashAggregateExec(
     case g: GroupAggregate => g.aggBufferAttributesForGroup
     case sum: Sum if !sum.child.nullable =>
       val sumAttr = sum.aggBufferAttributes.head
-      sumAttr.copy(nullable = false)(sumAttr.exprId, sumAttr.qualifier,
-        sumAttr.isGenerated) :: Nil
+      internals.copyAttribute(sumAttr)(nullable = false) :: Nil
     case avg: Average if !avg.child.nullable =>
       val sumAttr = avg.aggBufferAttributes.head
-      sumAttr.copy(nullable = false)(sumAttr.exprId, sumAttr.qualifier,
-        sumAttr.isGenerated) :: avg.aggBufferAttributes(1) :: Nil
+      internals.copyAttribute(sumAttr)(nullable = false) :: avg.aggBufferAttributes(1) :: Nil
     case max: Max if !max.child.nullable =>
       val maxAttr = max.aggBufferAttributes.head
-      maxAttr.copy(nullable = false)(maxAttr.exprId, maxAttr.qualifier,
-        maxAttr.isGenerated) :: Nil
+      internals.copyAttribute(maxAttr)(nullable = false) :: Nil
     case min: Min if !min.child.nullable =>
       val minAttr = min.aggBufferAttributes.head
-      minAttr.copy(nullable = false)(minAttr.exprId, minAttr.qualifier,
-        minAttr.isGenerated) :: Nil
+      internals.copyAttribute(minAttr)(nullable = false) :: Nil
     case last: Last if !last.child.nullable =>
       val lastAttr = last.aggBufferAttributes.head
       val tail = if (last.aggBufferAttributes.length == 2) {
         val valueSetAttr = last.aggBufferAttributes(1)
-        valueSetAttr.copy(nullable = false)(valueSetAttr.exprId,
-          valueSetAttr.qualifier, valueSetAttr.isGenerated) :: Nil
+        internals.copyAttribute(valueSetAttr)(nullable = false) :: Nil
       } else Nil
-      lastAttr.copy(nullable = false)(lastAttr.exprId, lastAttr.qualifier,
-        lastAttr.isGenerated) :: tail
+      internals.copyAttribute(lastAttr)(nullable = false) :: tail
     case _ => aggregate.aggBufferAttributes
   }
 
@@ -304,8 +298,7 @@ case class SnappyHashAggregateExec(
   @transient protected var bufVarUpdates: String = _
 
   private def doProduceWithoutKeys(ctx: CodegenContext): String = {
-    val initAgg = ctx.freshName("initAgg")
-    ctx.addMutableState("boolean", initAgg, s"$initAgg = false;")
+    val initAgg = internals.addClassField(ctx, "boolean", "initAgg", v => s"$v = false;")
 
     // generate variables for aggregation buffer
     val functions = aggregateExpressions.map(_.aggregateFunction
@@ -314,10 +307,8 @@ case class SnappyHashAggregateExec(
     ctx.INPUT_ROW = null
     ctx.currentVars = null
     bufVars = initExpr.map { e =>
-      val isNull = ctx.freshName("bufIsNull")
-      val value = ctx.freshName("bufValue")
-      ctx.addMutableState("boolean", isNull, "")
-      ctx.addMutableState(ctx.javaType(e.dataType), value, "")
+      val isNull = internals.addClassField(ctx, "boolean", "bufIsNull")
+      val value = internals.addClassField(ctx, ctx.javaType(e.dataType), "bufValue")
       // The initial expression should not access any column
       val ev = e.genCode(ctx)
       val initVars =
@@ -626,18 +617,14 @@ case class SnappyHashAggregateExec(
   }
 
   private def doProduceWithKeysForSHAMap(ctx: CodegenContext): String = {
-    val initAgg = ctx.freshName("initAgg")
-    ctx.addMutableState("boolean", initAgg, s"$initAgg = false;")
+    val initAgg = internals.addClassField(ctx, "boolean", "initAgg", v => s"$v = false;")
     // Create a name for iterator from HashMap
 
     val endIterValueOffset = ctx.freshName("endIterValueOffset")
     val localIterValueOffsetTerm = ctx.freshName("localIterValueOffsetTerm")
     val localIterValueStartOffsetTerm = ctx.freshName("localIterValueStartOffsetTerm")
-    val iterValueOffsetTerm = ctx.freshName("iterValueOffsetTerm")
-    ctx.addMutableState("long", iterValueOffsetTerm, s"$iterValueOffsetTerm = 0;")
-
-    val nullKeysBitsetTerm = ctx.freshName("nullKeysBitset")
-    val nullAggsBitsetTerm = ctx.freshName("nullAggsBitset")
+    val iterValueOffsetTerm = internals.addClassField(ctx, "long", "iterValueOffsetTerm",
+      v => s"$v = 0;")
 
     val numBytesForNullKeyBits = if (this.groupingAttributes.forall(!_.nullable)) {
       0
@@ -648,15 +635,17 @@ case class SnappyHashAggregateExec(
     val numBytesForNullAggsBits = SHAMapAccessor.calculateNumberOfBytesForNullBits(
       this.aggregateBufferAttributesForGroup.length)
 
-    if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullKeyBits)) {
-      ctx.addMutableState("byte[]", nullKeysBitsetTerm,
-        s"$nullKeysBitsetTerm = new byte[$numBytesForNullKeyBits];")
-    }
+    val nullKeysBitsetTerm = if (SHAMapAccessor.isByteArrayNeededForNullBits(
+      numBytesForNullKeyBits)) {
+      internals.addClassField(ctx, "byte[]", "nullKeysBitset", v =>
+        s"$v = new byte[$numBytesForNullKeyBits];")
+    } else ctx.freshName("nullKeysBitset")
 
-    if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullAggsBits)) {
-      ctx.addMutableState("byte[]", nullAggsBitsetTerm,
-        s"$nullKeysBitsetTerm = new byte[$numBytesForNullAggsBits];")
-    }
+    val nullAggsBitsetTerm = if (SHAMapAccessor.isByteArrayNeededForNullBits(
+      numBytesForNullAggsBits)) {
+      internals.addClassField(ctx, "byte[]", "nullAggsBitset",
+        v => s"$v = new byte[$numBytesForNullAggsBits];")
+    } else ctx.freshName("nullAggsBitset")
     val probableSkipLen = this.groupingAttributes.
       lastIndexWhere(attr => !TypeUtilities.isFixedWidth(attr.dataType))
 
@@ -674,10 +663,10 @@ case class SnappyHashAggregateExec(
 
     val sizeAndNumNotNullFuncForStringArr = ctx.freshName("calculateStringArrSizeAndNumNotNulls")
 
-    if (groupingAttributes.exists(attrib => attrib.dataType.existsRecursively(_ match {
+    if (groupingAttributes.exists(_.dataType.existsRecursively {
       case ArrayType(StringType, _) | ArrayType(_, true) => true
       case _ => false
-    }))) {
+    })) {
       ctx.addNewFunction(sizeAndNumNotNullFuncForStringArr,
         s"""
         private long $sizeAndNumNotNullFuncForStringArr($arrayDataClass arrayData,
@@ -710,14 +699,6 @@ case class SnappyHashAggregateExec(
     val doAgg = ctx.freshName("doAggregateWithKeys")
     val setBBMap = ctx.freshName("setBBMap")
 
-    // generate variable name for hash map for use here and in consume
-    hashMapTerm = ctx.freshName("hashMap")
-    val hashSetClassName = classOf[SHAMap].getName
-
-    val  overflowHashMapsTerm = ctx.freshName("overflowHashMaps")
-    val listClassName = classOf[java.util.List[SHAMap]].getName
-    val overflowMapIter = ctx.freshName("overflowMapIter")
-    val iterClassName = classOf[java.util.Iterator[SHAMap]].getName
     // generate variable names for holding data from the Map buffer
     val aggregateBufferVars = for (i <- this.aggregateBufferAttributesForGroup.indices) yield {
       ctx.freshName(s"buffer_$i")
@@ -728,54 +709,54 @@ case class SnappyHashAggregateExec(
     }
 
     val keysDataType = this.groupingAttributes.map(_.dataType)
+    // noinspection ScalaUnnecessaryParentheses
     // declare nullbitset terms for nested structs if required
-    val nestedStructNullBitsTermCreator: ((String, StructType, Int) => Any) => (String, StructType, Int) => Any =
-      (f: (String, StructType, Int) => Any) =>
-        (structVarName: String, structType: StructType, nestingLevel: Int) => {
-          val numBytesForNullBits = SHAMapAccessor.
+    val nestedStructNullBitsTermCreator: ((String, StructType, Int) => Any) =>
+        (String, StructType, Int) => Any = (f: (String, StructType, Int) => Any) =>
+      (structVarName: String, structType: StructType, nestingLevel: Int) => {
+        val numBytesForNullBits = SHAMapAccessor.
             calculateNumberOfBytesForNullBits(structType.length)
-          if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
-            val nullBitTerm = SHAMapAccessor.
-              generateNullKeysBitTermForStruct(structVarName)
-            ctx.addMutableState("byte[]", nullBitTerm,
-              s"$nullBitTerm = new byte[$numBytesForNullBits];")
-          }
-          structType.zipWithIndex.foreach { case (sf, index) => sf.dataType match {
-            case stt: StructType => val structtVarName = SHAMapAccessor.
+        if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
+          // TODO: variable not used in generated code apart from declaration??
+          internals.addClassField(ctx, "byte[]", "struct_nullKeysBitset",
+            v => s"$v = new byte[$numBytesForNullBits];")
+        }
+        structType.zipWithIndex.foreach { case (sf, index) => sf.dataType match {
+          case stt: StructType => val structtVarName = SHAMapAccessor.
               generateExplodedStructFieldVars(structVarName, nestingLevel + 1, index)._1
-              f(structtVarName, stt, nestingLevel + 1)
-              null
-            case _ => null
-          }
-
-          }
+            f(structtVarName, stt, nestingLevel + 1)
+            null
+          case _ => null
         }
+
+        }
+      }
+    // noinspection ScalaUnnecessaryParentheses
     val nestedStructNullBitsTermInitializer: ((String, StructType, Int) => Any) =>
-      (String, StructType, Int) => Any =
-      (f: (String, StructType, Int) => Any) =>
-        (structVarName: String, structType: StructType, nestingLevel: Int) => {
-          val numBytesForNullBits = SHAMapAccessor.
+        (String, StructType, Int) => Any = (f: (String, StructType, Int) => Any) =>
+      (structVarName: String, structType: StructType, nestingLevel: Int) => {
+        val numBytesForNullBits = SHAMapAccessor.
             calculateNumberOfBytesForNullBits(structType.length)
-          val nullBitTerm = SHAMapAccessor.
+        val nullBitTerm = SHAMapAccessor.
             generateNullKeysBitTermForStruct(structVarName)
-          val snippet1 = SHAMapAccessor.initNullBitsetCode(nullBitTerm, numBytesForNullBits)
+        val snippet1 = SHAMapAccessor.initNullBitsetCode(nullBitTerm, numBytesForNullBits)
 
-          val snippet2 = structType.zipWithIndex.map { case (sf, index) => sf.dataType match {
-            case stt: StructType => val structtVarName = SHAMapAccessor.
-              generateVarNameForStructField(structVarName, nestingLevel , index)
-              f(structtVarName, stt, nestingLevel + 1).toString
-            case _ => ""
-          }
-          }.mkString("\n")
-          s"""
-             ${snippet1}
-             $snippet2
-           """.stripMargin
+        val snippet2 = structType.zipWithIndex.map { case (sf, index) => sf.dataType match {
+          case stt: StructType => val structtVarName = SHAMapAccessor.
+              generateVarNameForStructField(structVarName, nestingLevel, index)
+            f(structtVarName, stt, nestingLevel + 1).toString
+          case _ => ""
         }
+        }.mkString("\n")
+        s"""
+             $snippet1
+             $snippet2
+        """.stripMargin
+      }
 
-    def recursiveApply(f:
-    ((String, StructType, Int) => Any) => (String, StructType, Int) => Any):
-    (String, StructType, Int) => Any = f(recursiveApply(f))(_, _, _)
+    // noinspection ScalaUnnecessaryParentheses
+    def recursiveApply(f: ((String, StructType, Int) => Any) => (String, StructType, Int) =>
+        Any): (String, StructType, Int) => Any = f(recursiveApply(f))(_, _, _)
 
     // Now create nullBitTerms
     KeyBufferVars.zip(keysDataType).foreach {
@@ -807,26 +788,28 @@ case class SnappyHashAggregateExec(
         }.toString
       } else {
         keysToProcessSize.zipWithIndex.map {
-          case(attrib, i) => {
+          case(attrib, i) =>
             val sizeTerm = attrib.dataType.defaultSize
             s"""(int)(${SHAMapAccessor.getExpressionForNullEvalFromMask(i + numToDrop,
               numBytesForNullKeyBits, nullKeysBitsetTerm)} ? 0 : $sizeTerm)
             """
-          }
         }.mkString("+")
       }
 
       s"""$keyLengthTerm -
          |(int)($localIterValueOffsetTerm - $localIterValueStartOffsetTerm)
-         |${ if (keysToProcessSize.length > 0) s" - ($suffixSize)" else ""};""".stripMargin
+         |${ if (keysToProcessSize.nonEmpty) s" - ($suffixSize)" else ""};""".stripMargin
     } else ""
 
-
-    ctx.addMutableState(hashSetClassName, hashMapTerm, s"$hashMapTerm = null;")
-    ctx.addMutableState(listClassName + s"<$hashSetClassName>", overflowHashMapsTerm,
-      s"$overflowHashMapsTerm = null;")
-    ctx.addMutableState(iterClassName + s"<$hashSetClassName>", overflowMapIter,
-      s"$overflowMapIter = null;")
+    val hashSetClassName = classOf[SHAMap].getName
+    val listClassName = classOf[java.util.List[SHAMap]].getName
+    val iterClassName = classOf[java.util.Iterator[SHAMap]].getName
+    // generate variable name for hash map for use here and in consume
+    hashMapTerm = internals.addClassField(ctx, hashSetClassName, "hashMap", v => s"$v = null;")
+    val overflowHashMapsTerm = internals.addClassField(ctx, listClassName + s"<$hashSetClassName>",
+      "overflowHashMaps", v => s"$v = null;")
+    val overflowMapIter = internals.addClassField(ctx, iterClassName + s"<$hashSetClassName>",
+      "overflowMapIter", v => s"$v = null;")
 
     val storedAggNullBitsTerm = ctx.freshName("storedAggNullBit")
     val cacheStoredAggNullBits = !SHAMapAccessor.isByteArrayNeededForNullBits(
@@ -939,11 +922,13 @@ case class SnappyHashAggregateExec(
         keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = false) */
 
     val keysExpr = byteBufferAccessor.getBufferVars(keysDataType, KeyBufferVars,
-      localIterValueOffsetTerm, true, byteBufferAccessor.nullKeysBitsetTerm,
-      byteBufferAccessor.numBytesForNullKeyBits, byteBufferAccessor.numBytesForNullKeyBits == 0)
+      localIterValueOffsetTerm, isKey = true, byteBufferAccessor.nullKeysBitsetTerm,
+      byteBufferAccessor.numBytesForNullKeyBits,
+      skipNullBitsCode = byteBufferAccessor.numBytesForNullKeyBits == 0)
     val aggsExpr = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
-      aggregateBufferVars, localIterValueOffsetTerm, false, byteBufferAccessor.nullAggsBitsetTerm,
-      byteBufferAccessor.numBytesForNullAggBits, false)
+      aggregateBufferVars, localIterValueOffsetTerm, isKey = false,
+      byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits,
+      skipNullBitsCode = false)
     val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr, localIterValueOffsetTerm)
     val numOutput = metricTerm(ctx, "numOutputRows")
     val localNumRowsIterated = ctx.freshName("localNumRowsIterated")
@@ -1040,23 +1025,19 @@ case class SnappyHashAggregateExec(
   }
 
   private def doProduceWithKeys(ctx: CodegenContext): String = {
-    val initAgg = ctx.freshName("initAgg")
-    ctx.addMutableState("boolean", initAgg, s"$initAgg = false;")
+    val initAgg = internals.addClassField(ctx, "boolean", "initAgg", v => s"$v = false;")
 
     // Create a name for iterator from HashMap
-    val iterTerm = ctx.freshName("mapIter")
     val iter = ctx.freshName("mapIter")
     val iterObj = ctx.freshName("iterObj")
     val iterClass = "java.util.Iterator"
-    ctx.addMutableState(iterClass, iterTerm, "")
+    val iterTerm = internals.addClassField(ctx, iterClass, "mapIter")
 
     val doAgg = ctx.freshName("doAggregateWithKeys")
 
     // generate variable name for hash map for use here and in consume
-    hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
-
-    ctx.addMutableState(hashSetClassName, hashMapTerm, "")
+    hashMapTerm = internals.addClassField(ctx, hashSetClassName, "hashMap")
 
     // generate variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
@@ -1107,7 +1088,7 @@ case class SnappyHashAggregateExec(
 
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
-    ctx.copyResult = false
+    internals.resetCopyResult(ctx)
 
     val aggTime = metricTerm(ctx, "aggTime")
     val beforeAgg = ctx.freshName("beforeAgg")
@@ -1174,9 +1155,9 @@ case class SnappyHashAggregateExec(
 
     val bufferVars = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
       byteBufferAccessor.aggregateBufferVars,
-      byteBufferAccessor.currentOffSetForMapLookupUpdt,
-      false, byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits,
-      false)
+      byteBufferAccessor.currentOffSetForMapLookupUpdt, isKey = false,
+      byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits,
+      skipNullBitsCode = false)
     val bufferEval = evaluateVariables(bufferVars)
     val bufferVarsFromInitVars = byteBufferAccessor.aggregateBufferVars.zip(initVars).map {
       case (bufferVarName, initExpr) => ExprCode(

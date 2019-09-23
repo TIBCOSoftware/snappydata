@@ -21,24 +21,23 @@ import scala.collection.mutable
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 
 import org.apache.spark.rdd.{EmptyRDD, RDD}
-import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.sources._
+import org.apache.spark.sql.{Row, SparkSupport}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.{DStream, InputDStream, ReceiverInputDStream}
 import org.apache.spark.streaming.{SnappyStreamingContext, StreamUtils, StreamingContextState, Time}
 import org.apache.spark.{Logging, util}
 
-abstract class StreamBaseRelation(opts: Map[String, String])
-    extends DestroyRelation with StreamPlan with TableScan with Serializable with Logging {
+abstract class StreamBaseRelation(opts: Map[String, String]) extends DestroyRelation
+    with StreamPlan with TableScan with Serializable with Logging with SparkSupport {
 
   final def context: SnappyStreamingContext =
     SnappyStreamingContext.getInstance().getOrElse(
       throw new IllegalStateException("No initialized streaming context"))
 
-  protected val options = new CaseInsensitiveMap(opts)
+  protected val options: Map[String, String] = internals.newCaseInsensitiveMap(opts)
 
   @transient val tableName = options(SnappyExternalCatalog.DBTABLE_PROPERTY)
 

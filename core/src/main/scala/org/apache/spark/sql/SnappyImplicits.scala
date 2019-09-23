@@ -44,7 +44,7 @@ object snappy extends Serializable {
     df.sparkSession match {
       case sc: SnappySession =>
         val plan = snappy.unwrapSubquery(df.logicalPlan)
-        if (sc.snappyContextFunctions.isStratifiedSample(plan)) {
+        if (sc.contextFunctions.isStratifiedSample(plan)) {
           new SampleDataFrame(sc, plan)
         } else {
           throw new AnalysisException("Stratified sampling " +
@@ -62,7 +62,7 @@ object snappy extends Serializable {
 
   def unwrapSubquery(plan: LogicalPlan): LogicalPlan = {
     plan match {
-      case SubqueryAlias(_, child, _) => unwrapSubquery(child)
+      case s: SubqueryAlias => unwrapSubquery(s.child)
       case _ => plan
     }
   }
@@ -229,8 +229,8 @@ private[sql] case class SnappyDataFrameOperations(session: SnappySession,
    * }}}
    */
   def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
-    new SampleDataFrame(session, session.snappyContextFunctions.convertToStratifiedSample(
-      options, session, df.logicalPlan))
+    new SampleDataFrame(session, session.contextFunctions.convertToStratifiedSample(
+      options, df.logicalPlan))
 
 
   /**

@@ -44,19 +44,18 @@ import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable}
+import org.apache.spark.sql.catalyst.catalog.{CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappyHiveExternalCatalog}
-import org.apache.spark.sql.internal.ContextJarUtils
+import org.apache.spark.sql.internal.{ContextJarUtils, SQLConf}
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils.{toLowerCase, toUpperCase}
 import org.apache.spark.sql.sources.{DataSourceRegister, JdbcExtendedUtils}
-import org.apache.spark.sql.{AnalysisException, SnappyContext}
+import org.apache.spark.sql.{AnalysisException, SnappyContext, SparkSupport}
 import org.apache.spark.{Logging, SparkConf, SparkEnv}
 
-class StoreHiveCatalog extends ExternalCatalog with Logging {
+class StoreHiveCatalog extends ExternalCatalog with Logging with SparkSupport {
 
   private val THREAD_GROUP_NAME = "StoreCatalog Client Group"
 
@@ -251,13 +250,13 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           }
         }
 
-      case COLUMN_TABLE_SCHEMA => externalCatalog.getTableOption(
+      case COLUMN_TABLE_SCHEMA => externalCatalog.getTableIfExists(
         formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]
         case Some(t) => t.schema.json.asInstanceOf[R]
       }
 
-      case GET_TABLE => externalCatalog.getTableOption(formattedSchema, formattedTable) match {
+      case GET_TABLE => externalCatalog.getTableIfExists(formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]
         case Some(t) => t.asInstanceOf[R]
       }
@@ -294,7 +293,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
             }
             metaData.shortProvider = metaData.provider
             try {
-              val c = DataSource.lookupDataSource(metaData.provider)
+              val c = internals.lookupDataSource(metaData.provider, new SQLConf)
               if (classOf[DataSourceRegister].isAssignableFrom(c)) {
                 metaData.shortProvider = c.newInstance.asInstanceOf[DataSourceRegister].shortName()
               }
@@ -303,7 +302,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
             }
             metaData.columns = ExternalStoreUtils.getColumnMetadata(table.schema)
             if (tableType == CatalogObjectType.View) {
-              metaData.viewText = table.viewOriginalText match {
+              metaData.viewText = internals.catalogTableViewOriginalText(table) match {
                 case None => table.viewText match {
                   case None => ""
                   case Some(t) => t
@@ -352,7 +351,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
         externalCatalog.dropTableUnsafe(formattedSchema, formattedTable,
           forceDrop).asInstanceOf[R]
 
-      case GET_COL_TABLE => externalCatalog.getTableOption(formattedSchema, formattedTable) match {
+      case GET_COL_TABLE => externalCatalog.getTableIfExists(
+        formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]
         case Some(table) =>
           val qualifiedName = table.identifier.unquotedString
@@ -509,7 +509,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
                 case Some(d) if !d.isEmpty => s"$url; ${SnappyExternalCatalog.DBTABLE_PROPERTY}=$d"
                 case _ => url
               }
-            case _ => storage.locationUri match { // fallback to locationUri
+            // fallback to locationUri
+            case _ => internals.catalogStorageFormatLocationUri(storage) match {
               case None => ""
               case Some(l) => maskLocationURI(l)
             }
@@ -542,7 +543,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       try {
         val catalogSchema = externalCatalog.getDatabase(request.getSchemaName)
         val schemaObj = new CatalogSchemaObject(catalogSchema.name, catalogSchema.description,
-          catalogSchema.locationUri, catalogSchema.properties.asJava)
+          internals.catalogDatabaseLocationURI(catalogSchema), catalogSchema.properties.asJava)
         metadata(result.setCatalogSchema(schemaObj))
       } catch {
         case _: AnalysisException => metadata(result)
@@ -555,7 +556,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       metadata(result.setNames(externalCatalog.listDatabases(pattern(request)).asJava))
 
     case snappydataConstants.CATALOG_GET_TABLE =>
-      externalCatalog.getTableOption(request.getSchemaName, request.getNameOrPattern) match {
+      externalCatalog.getTableIfExists(request.getSchemaName, request.getNameOrPattern) match {
         case None => metadata(result)
         case Some(table) =>
           val tableObj = ConnectorExternalCatalog.convertFromCatalogTable(table)
@@ -641,7 +642,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     case snappydataConstants.CATALOG_CREATE_SCHEMA =>
       assert(request.isSetCatalogSchema, "CREATE SCHEMA: expected catalogSchema to be set")
       val schemaObj = request.getCatalogSchema
-      val catalogSchema = CatalogDatabase(schemaObj.getName, schemaObj.getDescription,
+      val catalogSchema = internals.newCatalogDatabase(schemaObj.getName, schemaObj.getDescription,
         schemaObj.getLocationUri, schemaObj.getProperties.asScala.toMap)
       externalCatalog.createDatabase(catalogSchema, request.exists)
 
@@ -665,6 +666,18 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     case snappydataConstants.CATALOG_ALTER_TABLE =>
       assert(request.isSetCatalogTable, "ALTER TABLE: expected catalogTable to be set")
       externalCatalog.alterTable(getCatalogTableForWrite(request, user))
+
+    case snappydataConstants.CATALOG_ALTER_TABLE_STATS =>
+      assert(request.isSetCatalogStats, "ALTER TABLE STATS: expected catalogStats to be set")
+      val schema = request.getNames.get(0)
+      val table = request.getNames.get(1)
+      checkSchemaPermission(schema, table, user)
+      val catalogTable = externalCatalog.getTable(schema, table)
+      val catalogStats = if (request.isSetCatalogStats) {
+        Some(ConnectorExternalCatalog.convertToCatalogStatistics(catalogTable.schema,
+          schema + '.' + table, request.getCatalogStats))
+      } else None
+      internals.alterTableStats(externalCatalog, schema, table, catalogStats)
 
     case snappydataConstants.CATALOG_RENAME_TABLE =>
       assert(request.getNamesSize == 3, "RENAME TABLE: unexpected names = " + request.getNames)
@@ -700,6 +713,14 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       ContextJarUtils.removeFunctionArtifacts(externalCatalog, None, schema,
         function, isEmbeddedMode = true)
       externalCatalog.dropFunction(schema, function)
+
+    case snappydataConstants.CATALOG_ALTER_FUNCTION =>
+      assert(request.isSetCatalogFunction, "ALTER FUNCTION: expected catalogFunction to be set")
+      val functionObj = request.getCatalogFunction
+      val schema = functionObj.getSchemaName
+      checkSchemaPermission(schema, functionObj.getFunctionName, user)
+      internals.alterFunction(externalCatalog, schema,
+        ConnectorExternalCatalog.convertToCatalogFunction(functionObj))
 
     case snappydataConstants.CATALOG_RENAME_FUNCTION =>
       assert(request.getNamesSize == 3, "RENAME FUNCTION: unexpected names = " + request.getNames)
@@ -761,7 +782,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       val table = request.getNames.get(1)
       val path = request.getNames.get(2)
       checkSchemaPermission(schema, table, user)
-      externalCatalog.loadDynamicPartitions(schema, table, path,
+      internals.loadDynamicPartitions(externalCatalog, schema, table, path,
         request.getProperties.get(0).asScala.toMap, request.otherFlags.get(0) != 0,
         request.otherFlags.get(1), request.otherFlags.get(2) != 0)
 

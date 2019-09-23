@@ -384,7 +384,7 @@ trait NativeTableRowLevelSecurityRelation extends DestroyRelation with RowLevelS
       _schema = JdbcExtendedUtils.normalizeSchema(JDBCRDD.resolveTable(new JDBCOptions(
         connProperties.url, table, connProperties.connProps.asScala.toMap)))
     } else {
-      session.externalCatalog.getTableOption(schemaName, tableName) match {
+      session.externalCatalog.getTableIfExists(schemaName, tableName) match {
         case None => _schema = JdbcExtendedUtils.EMPTY_SCHEMA
         case Some(t) => _schema = t.schema; assert(relationInfoAndRegion ne null)
       }

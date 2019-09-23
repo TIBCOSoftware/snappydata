@@ -26,12 +26,13 @@ import org.eclipse.collections.impl.set.mutable.UnifiedSet
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSupport
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.row.RowTableScan
-import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupportOnExecutor, LeafExecNode, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupportOnExecutor, LeafExecNode}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 
@@ -41,7 +42,7 @@ final class ColumnBatchCreator(
     val columnTableName: String,
     val schema: StructType,
     val externalStore: ExternalStore,
-    val compressionCodec: String) extends Logging {
+    val compressionCodec: String) extends Logging with SparkSupport {
 
   def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
       batchID: Long, bucketID: Int,
@@ -94,7 +95,7 @@ final class ColumnBatchCreator(
           // this is only used for local code generation while its RDD semantics
           // and related methods are all ignored
           val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
-            WholeStageCodegenExec(insertPlan), insertPlan)
+            internals.newWholeStagePlan(insertPlan), insertPlan)
           val references = ctx.references
           // also push the index of batchId reference at the end which can be
           // used by caller to update the reference objects before execution
@@ -149,7 +150,7 @@ final class ColumnBatchCreator(
       // this is only used for local code generation while its RDD semantics
       // and related methods are all ignored
       val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
-        WholeStageCodegenExec(insertPlan), insertPlan)
+        internals.newWholeStagePlan(insertPlan), insertPlan)
       val references = ctx.references.toArray
       (code, references)
     })
@@ -176,7 +177,7 @@ trait ColumnBatchRowsBuffer {
  * code to closure callbacks model as required by StratifiedSampler.append
  */
 case class CallbackColumnInsert(_schema: StructType)
-    extends LeafExecNode with CodegenSupportOnExecutor {
+    extends LeafExecNode with CodegenSupportOnExecutor with SparkSupport {
 
   override def output: Seq[Attribute] = _schema.toAttributes
 
@@ -192,13 +193,11 @@ case class CallbackColumnInsert(_schema: StructType)
     val row = ctx.freshName("row")
     val hasResults = ctx.freshName("hasResults")
     val clearResults = ctx.freshName("clearResults")
-    val rowsBuffer = ctx.freshName("rowsBuffer")
     val rowsBufferClass = classOf[ColumnBatchRowsBuffer].getName
-    ctx.addMutableState(rowsBufferClass, rowsBuffer, "")
+    val rowsBuffer = internals.addClassField(ctx, rowsBufferClass, "rowsBuffer")
     // add bucketId variable set to -1 by default
-    bucketIdTerm = ctx.freshName("bucketId")
+    bucketIdTerm = internals.addClassField(ctx, "int", "bucketId", v => s"$v = -1;")
     resetInsertions = ctx.freshName("resetInsertionsCount")
-    ctx.addMutableState("int", bucketIdTerm, s"$bucketIdTerm = -1;")
     val columnsExpr = output.zipWithIndex.map { case (a, i) =>
       BoundReference(i, a.dataType, a.nullable)
     }

@@ -27,27 +27,27 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.{Attribute => GAttr}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
-import io.snappydata.{Constant, Property}
+import io.snappydata.{Constant, HintName, Property, QueryHint}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql.catalyst.analysis
-import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Contains, EndsWith, EqualTo, Expression, Like, Literal, StartsWith}
-import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, InsertIntoTable, LogicalPlan, OverwriteOptions, Project, UnaryNode, Filter => LogicalFilter}
+import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, UnaryNode, Filter => LogicalFilter}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.command.DDLUtils
 import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation, PreprocessTableInsertion}
-import org.apache.spark.sql.execution.{SecurityUtils, datasources}
+import org.apache.spark.sql.execution.{SecurityUtils, SparkOptimizer}
 import org.apache.spark.sql.hive.SnappySessionState
-import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DecimalType, StringType}
-import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext, SnappyParser, SnappySession}
+import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext, SnappyParser, SnappySession, SparkSupport}
 import org.apache.spark.unsafe.types.UTF8String
 
 // Misc helper classes for session handling
@@ -376,7 +376,7 @@ class SQLConfigEntry private(private[sql] val entry: ConfigEntry[_]) {
   override def toString: String = entry.toString
 }
 
-object SQLConfigEntry {
+object SQLConfigEntry extends SparkSupport {
 
   private def handleDefault[T](entry: TypedConfigBuilder[T],
       defaultValue: Option[T]): SQLConfigEntry = defaultValue match {
@@ -406,16 +406,16 @@ object SQLConfigEntry {
   def apply[T: ClassTag](key: String, doc: String, defaultValue: Option[T],
       isPublic: Boolean = true): SQLConfigEntry = {
     classTag[T] match {
-      case ClassTag.Int => handleDefault[Int](SQLConfigBuilder(key)
+      case ClassTag.Int => handleDefault[Int](internals.buildConf(key)
           .doc(doc).intConf, defaultValue.asInstanceOf[Option[Int]])
-      case ClassTag.Long => handleDefault[Long](SQLConfigBuilder(key)
+      case ClassTag.Long => handleDefault[Long](internals.buildConf(key)
           .doc(doc).longConf, defaultValue.asInstanceOf[Option[Long]])
-      case ClassTag.Double => handleDefault[Double](SQLConfigBuilder(key)
+      case ClassTag.Double => handleDefault[Double](internals.buildConf(key)
           .doc(doc).doubleConf, defaultValue.asInstanceOf[Option[Double]])
-      case ClassTag.Boolean => handleDefault[Boolean](SQLConfigBuilder(key)
+      case ClassTag.Boolean => handleDefault[Boolean](internals.buildConf(key)
           .doc(doc).booleanConf, defaultValue.asInstanceOf[Option[Boolean]])
       case c if c.runtimeClass == classOf[String] =>
-        handleDefault[String](SQLConfigBuilder(key).doc(doc).stringConf,
+        handleDefault[String](internals.buildConf(key).doc(doc).stringConf,
           defaultValue.asInstanceOf[Option[String]])
       case c => throw new IllegalArgumentException(
         s"Unknown type of configuration key: $c")
@@ -555,7 +555,35 @@ trait SQLAltName[T] extends AltName[T] {
   }
 }
 
-private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule[LogicalPlan] {
+trait DefaultOptimizer extends SparkOptimizer {
+
+  def state: SnappySessionState
+
+  override def batches: Seq[Batch] = {
+    implicit val ss: SnappySession = state.snappySession
+    var insertedSnappyOpts = 0
+    val modified = super.batches.map {
+      case batch if batch.name.equalsIgnoreCase("Operator Optimizations") =>
+        insertedSnappyOpts += 1
+        val (left, right) = batch.rules.splitAt(batch.rules.indexOf(ReorderJoin))
+        Batch(batch.name, batch.strategy, (left :+ ResolveIndex()) ++ right: _*)
+      case b => b
+    }
+
+    if (insertedSnappyOpts != 1) {
+      throw new AnalysisException("Snappy Optimizations not applied")
+    }
+
+    modified :+
+        Batch("Streaming SQL Optimizers", Once, state.PushDownWindowLogicalPlan) :+
+        Batch("Link buckets to RDD partitions", Once, state.LinkPartitionsToBuckets) :+
+        Batch("TokenizedLiteral Folding Optimization", Once, state.TokenizedLiteralFolding) :+
+        Batch("Order join conditions ", Once, state.OrderJoinConditions)
+  }
+}
+
+private[sql] final class PreprocessTable(state: SnappySessionState)
+    extends Rule[LogicalPlan] with SparkSupport {
 
   private def conf: SQLConf = state.conf
 
@@ -573,9 +601,9 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
       if (mode == SaveMode.Append && queryOpt.isDefined && (isBuiltin ||
           (tableDesc.bucketSpec.isEmpty && tableDesc.partitionColumnNames.isEmpty)) &&
           state.catalog.tableExists(tableIdent)) {
-        new Insert(table = UnresolvedRelation(tableIdent),
-          partition = Map.empty, child = queryOpt.get,
-          overwrite = OverwriteOptions(enabled = false), ifNotExists = false)
+        internals.newInsertPlanWithCountOutput(
+          table = internals.newUnresolvedRelation(tableDesc.identifier, None),
+          partition = Map.empty, child = queryOpt.get, overwrite = false, ifNotExists = false)
       } else if (isBuiltin) {
         val tableName = tableIdent.unquotedString
         // dependent tables are stored as comma-separated so don't allow comma in table name
@@ -601,13 +629,15 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
       } else c
 
     // Check for SchemaInsertableRelation first
-    case i@InsertIntoTable(l@LogicalRelation(r: SchemaInsertableRelation,
-    _, _), _, child, _, _) if l.resolved && child.resolved =>
+    case i@InsertIntoTable(l: LogicalRelation, _, child, _, _)
+      if l.relation.isInstanceOf[SchemaInsertableRelation] && l.resolved && child.resolved =>
+      val r = l.relation.asInstanceOf[SchemaInsertableRelation]
       r.insertableRelation(child.output) match {
         case Some(ir) if r eq ir => i
         case Some(ir) =>
           val br = ir.asInstanceOf[BaseRelation]
-          val relation = LogicalRelation(br, catalogTable = l.catalogTable)
+          val relation = internals.newLogicalRelation(br,
+            None, l.catalogTable, isStreaming = false)
           castAndRenameChildOutputForPut(i.copy(table = relation),
             relation.output, br, null, child)
         case None =>
@@ -622,7 +652,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
     // ResolveRelations, no such special rule has been added for PUT
     case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
-        case l@LogicalRelation(ir: RowInsertableRelation, _, _) =>
+        case l: LogicalRelation if l.relation.isInstanceOf[RowInsertableRelation] =>
           // First, make sure the data to be inserted have the same number of
           // fields with the schema of the relation.
           val expectedOutput = l.output
@@ -631,7 +661,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
                 "SELECT clause of the PUT INTO statement " +
                 "generates the same number of columns as its schema.")
           }
-          castAndRenameChildOutputForPut(p, expectedOutput, ir, l, child)
+          castAndRenameChildOutputForPut(p, expectedOutput, l.relation, l, child)
 
         case _ => p
       }
@@ -642,9 +672,9 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
     // ResolveRelations, no such special rule has been added for PUT
     case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
-        case l@LogicalRelation(dr: MutableRelation, _, _) =>
-
-          val keyColumns = dr.getPrimaryKeyColumns(state.snappySession)
+        case l: LogicalRelation if l.relation.isInstanceOf[MutableRelation] =>
+          val mr = l.relation.asInstanceOf[MutableRelation]
+          val keyColumns = mr.getPrimaryKeyColumns(state.snappySession)
           val childOutput = keyColumns.map(col =>
             child.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
               case Some(a: Attribute) => a
@@ -662,7 +692,8 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
                   s"Actual schema: ${l.output.mkString(",")}")
             })
 
-          castAndRenameChildOutputForPut(d, expectedOutput, dr, l, Project(childOutput, child))
+          castAndRenameChildOutputForPut(d, expectedOutput, l.relation,
+            l, Project(childOutput, child))
 
         case _ => d
       }
@@ -710,7 +741,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
         child = Project(newChildOutput, child)).asInstanceOf[T]
       case d: DeleteFromTable => d.copy(table = newRelation,
         child = Project(newChildOutput, child)).asInstanceOf[T]
-      case i: InsertIntoTable => i.copy(child = Project(newChildOutput,
+      case i: InsertIntoTable => internals.withNewChild(i, Project(newChildOutput,
         child)).asInstanceOf[T]
     }
   }
@@ -720,12 +751,12 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
 
   def apply(plan: LogicalPlan): Unit = {
     plan.foreach {
-      case PutIntoTable(LogicalRelation(t: RowPutRelation, _, _), query) =>
+      case PutIntoTable(l: LogicalRelation, query) if l.relation.isInstanceOf[RowPutRelation] =>
         // Get all input data source relations of the query.
         val srcRelations = query.collect {
-          case LogicalRelation(src: BaseRelation, _, _) => src
+          case l: LogicalRelation => l.relation
         }
-        if (srcRelations.contains(t)) {
+        if (srcRelations.contains(l.relation)) {
           throw Utils.analysisException(
             "Cannot put into table that is also being read from.")
         } else {
@@ -738,7 +769,7 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
   }
 }
 
-private[sql] case class ConditionalPreWriteCheck(sparkPreWriteCheck: datasources.PreWriteCheck)
+private[sql] case class ConditionalPreWriteCheck(sparkPreWriteCheck: LogicalPlan => Unit)
     extends (LogicalPlan => Unit) {
   def apply(plan: LogicalPlan): Unit = {
     plan match {
@@ -818,16 +849,9 @@ case class BypassRowLevelSecurity(child: LogicalFilter) extends UnaryNode {
  * Wrap plan-specific query hints (like joinType). This extends Spark's BroadcastHint
  * so that filters/projections etc can be pushed below this by optimizer.
  */
-class LogicalPlanWithHints(_child: LogicalPlan, val hints: Map[String, String])
-    extends BroadcastHint(_child) {
-
-  override def productArity: Int = 2
-
-  override def productElement(n: Int): Any = n match {
-    case 0 => child
-    case 1 => hints
-  }
+trait LogicalPlanWithHints extends UnaryNode {
+  def allHints: Map[QueryHint.Type, HintName.Type]
 
   override def simpleString: String =
-    s"LogicalPlanWithHints[hints = $hints; child = ${child.simpleString}]"
+    s"LogicalPlanWithHints[hints = $allHints; child = ${child.simpleString}]"
 }

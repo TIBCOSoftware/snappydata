@@ -19,20 +19,19 @@ package org.apache.spark.sql.execution.aggregate
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.CachedDataFrame
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, UnspecifiedDistribution}
-import org.apache.spark.sql.execution.{BufferedRowIterator, InputAdapter, PlanLater, SparkPlan, UnaryExecNode, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{BufferedRowIterator, InputAdapter, PlanLater, SparkPlan, UnaryExecNode}
 import org.apache.spark.sql.hive.SnappySessionState
+import org.apache.spark.sql.{CachedDataFrame, SparkSupport}
 
 /**
  * Special plan to collect top-level aggregation on driver itself and avoid
  * an exchange for simple aggregates.
  */
 case class CollectAggregateExec(child: SparkPlan)(
-    @transient val basePlan: SnappyHashAggregateExec) extends UnaryExecNode {
+    @transient val basePlan: SnappyHashAggregateExec) extends UnaryExecNode with SparkSupport {
 
   override val output: Seq[Attribute] = basePlan.output
 
@@ -49,13 +48,13 @@ case class CollectAggregateExec(child: SparkPlan)(
     // temporarily switch producer to an InputAdapter for rows as normal
     // Iterator[UnsafeRow] which will be set explicitly in executeCollect()
     basePlan.childProducer = InputAdapter(child)
-    val (ctx, cleanedSource) = WholeStageCodegenExec(basePlan).doCodeGen()
+    val (ctx, cleanedSource) = internals.newWholeStagePlan(basePlan).doCodeGen()
     basePlan.childProducer = child
     (cleanedSource, ctx.references.toArray)
   }
 
   @transient private[sql] lazy val generatedClass = {
-    CodeGenerator.compile(generatedSource)
+    internals.compile(generatedSource)
   }
 
   /**

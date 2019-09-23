@@ -19,26 +19,17 @@ package org.apache.spark.sql.execution.ui
 import scala.collection.mutable
 
 import org.apache.spark.scheduler.{SparkListenerEvent, SparkListenerJobStart}
-import org.apache.spark.sql.CachedDataFrame
 import org.apache.spark.sql.execution.{SQLExecution, SparkPlanInfo}
+import org.apache.spark.sql.{CachedDataFrame, SparkListenerSQLPlanExecutionEnd, SparkListenerSQLPlanExecutionStart}
 import org.apache.spark.{JobExecutionStatus, SparkConf}
 
 /**
- * A new event that is fired when a plan is executed to get an RDD.
- */
-case class SparkListenerSQLPlanExecutionStart(
-    executionId: Long,
-    description: String,
-    details: String,
-    physicalPlanDescription: String,
-    sparkPlanInfo: SparkPlanInfo,
-    time: Long)
-    extends SparkListenerEvent
-
-case class SparkListenerSQLPlanExecutionEnd(executionId: Long) extends SparkListenerEvent
-
-/**
- * Snappy's SQL Listener.
+ * SnappyData's SQL Listener. This extends Spark's SQL listener to handle
+ * combining the two part execution with CachedDataFrame where first execution
+ * does the caching ("prepare" phase) along with the actual execution while subsequent
+ * executions only do the latter. This listener also shortens the SQL string
+ * to display properly in the UI (CachedDataFrame already takes care of posting
+ * the SQL string rather than method name unlike Spark).
  *
  * @param conf SparkConf of active SparkContext
  */
@@ -137,10 +128,10 @@ class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
       physicalPlanDescription, sparkPlanInfo, time) => synchronized {
         val executionUIData = baseExecutionIdToData.get(executionId) match {
           case None =>
-            val executionUIData = newExecutionUIData(executionId, description, details,
+            val uiData = newExecutionUIData(executionId, description, details,
               physicalPlanDescription, sparkPlanInfo, time)
-            baseExecutionIdToData(executionId) = executionUIData
-            executionUIData
+            baseExecutionIdToData(executionId) = uiData
+            uiData
           case Some(d) => d
         }
         baseActiveExecutions(executionId) = executionUIData

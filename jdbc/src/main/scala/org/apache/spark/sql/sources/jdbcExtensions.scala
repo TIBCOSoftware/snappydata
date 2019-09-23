@@ -21,14 +21,15 @@ import java.sql.{Connection, ResultSet, ResultSetMetaData, Types}
 import java.util.Properties
 
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 import scala.collection.{mutable, Map => SMap}
 import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.Attribute
 import io.snappydata.Constant
+import org.apache.commons.collections.map.CaseInsensitiveMap
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
@@ -178,9 +179,10 @@ object JdbcExtendedUtils extends Logging {
   def readSplitProperty(propertyName: String,
       options: SMap[String, String]): Option[String] = {
     val params = options match {
-      case _: CaseInsensitiveMap => options
+      case _ if options.getClass.getName.contains("CaseInsensitiveMap") => options
       case _ if options.getClass.getName.contains("CaseInsensitiveMutableHashMap") => options
-      case _ => new CaseInsensitiveMap(options.toMap)
+      case _ => new CaseInsensitiveMap(options.toMap.asJava)
+          .asInstanceOf[java.util.Map[String, String]].asScala
     }
     // read the split schema DDL string from hive metastore table parameters
     params.get(s"$propertyName.numParts") map { numParts =>

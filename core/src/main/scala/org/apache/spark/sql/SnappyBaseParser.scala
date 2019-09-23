@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.xml.bind.DatatypeConverter
 
 import com.gemstone.gemfire.internal.shared.SystemProperties
-import io.snappydata.QueryHint
+import io.snappydata.{HintName, QueryHint}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 import org.eclipse.collections.impl.set.mutable.UnifiedSet
 import org.parboiled2._
@@ -44,17 +44,17 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   private[sql] final val queryHints: ConcurrentHashMap[String, String] =
     new ConcurrentHashMap[String, String](4, 0.7f, 1)
 
-  @volatile private final var _planHints: java.util.Stack[(String, String)] = _
+  @volatile private final var _planHints: java.util.Stack[(QueryHint.Type, HintName.Type)] = _
 
   /**
    * Tracks the hints that need to be applied at current plan level and will be
    * wrapped by LogicalPlanWithHints
    */
-  private[sql] final def planHints: java.util.Stack[(String, String)] = {
+  private[sql] final def planHints: java.util.Stack[(QueryHint.Type, HintName.Type)] = {
     val hints = _planHints
     if (hints ne null) hints
     else synchronized {
-      if (_planHints eq null) _planHints = new java.util.Stack[(String, String)]
+      if (_planHints eq null) _planHints = new java.util.Stack[(QueryHint.Type, HintName.Type)]
       _planHints
     }
   }
@@ -75,7 +75,17 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
    */
   protected def handleQueryHint(hint: String, hintValue: String): Unit = {
     // check for a plan-level hint
-    if (Consts.allowedPlanHints.contains(hint)) planHints.push(hint -> hintValue)
+    QueryHint.get(hint, Consts.allowedPlanHints) match {
+      case Some(h) => h.get(hintValue) match {
+        case Some(v) => planHints.push(h -> v)
+        case None => throw new ParseException(s"Unknown hint name '$hintValue' for $hint. " +
+            s"Expected one of ${h.values.mkString(",")}")
+      }
+      case _ =>
+    }
+    // put all hints into the queryHints map including planHints (helps plan caching
+    // to determine whether or not to re-use the LogicalPlan that does not have
+    // physical plan information that planHints effect)
     queryHints.put(hint, hintValue)
   }
 
@@ -167,6 +177,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def identifier: Rule1[String] = rule {
+    // noinspection ScalaUnnecessaryParentheses
     unquotedIdentifier ~> { (s: String) =>
       val lcase = lower(s)
       test(!Consts.reservedKeywords.contains(lcase)) ~
@@ -175,6 +186,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     quotedIdentifier
   }
 
+  // noinspection ScalaUnnecessaryParentheses
   protected final def quotedIdentifier: Rule1[String] = rule {
     atomic('`' ~ capture((noneOf("`") | "``"). +) ~ '`') ~ ws ~> { (s: String) =>
       if (s.indexOf("``") >= 0) s.replace("``", "`") else s
@@ -190,6 +202,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
    * interpreted as a strictIdentifier.
    */
   protected final def strictIdentifier: Rule1[String] = rule {
+    // noinspection ScalaUnnecessaryParentheses
     unquotedIdentifier ~> { (s: String) =>
       val lcase = lower(s)
       test(!Consts.allKeywords.contains(lcase)) ~
@@ -288,8 +301,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def structField: Rule1[StructField] = rule {
-    identifier ~ ':' ~ ws ~ dataType ~> ((name: String, t: DataType) =>
-      StructField(name, t, nullable = true))
+    identifier ~ ':' ~ ws ~ dataType ~> ((name: String, t: DataType) => StructField(name, t))
   }
 
   protected final def structType: Rule1[DataType] = rule {
@@ -310,6 +322,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
   /** allow for first character of unquoted identifier to be a numeric */
   protected final def identifierExt: Rule1[String] = rule {
+    // noinspection ScalaUnnecessaryParentheses
     atomic(capture(Consts.identifier. +)) ~ delimiter ~> { (s: String) =>
       val lcase = lower(s)
       test(!Consts.reservedKeywords.contains(lcase)) ~
@@ -319,6 +332,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def packageIdentifierPart: Rule1[String] = rule {
+    // noinspection ScalaUnnecessaryParentheses
     atomic(capture((Consts.identifier | Consts.hyphen | Consts.dot). +)) ~ ws ~> { (s: String) =>
       val lcase = lower(s)
       test(!Consts.reservedKeywords.contains(lcase)) ~
@@ -397,7 +411,7 @@ object SnappyParserConsts {
    * Define the hints that need to be applied at plan-level and will be
    * wrapped by LogicalPlanWithHints
    */
-  final val allowedPlanHints: List[String] = List(QueryHint.JoinType.toString)
+  final val allowedPlanHints: Array[QueryHint.Type] = Array(QueryHint.JoinType)
 
   // -10 in sequence will mean all arguments, -1 will mean all odd argument and
   // -2 will mean all even arguments. -3 will mean all arguments except those listed after it.

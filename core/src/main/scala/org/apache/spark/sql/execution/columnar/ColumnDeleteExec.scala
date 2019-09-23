@@ -89,29 +89,23 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
       row: ExprCode): String = {
-    val position = ctx.freshName("position")
-    val lastColumnBatchId = ctx.freshName("lastColumnBatchId")
-    val lastBucketId = ctx.freshName("lastBucketId")
-    val lastNumRows = ctx.freshName("lastNumRows")
-    val deleteEncoder = ctx.freshName("deleteEncoder")
-    batchOrdinal = ctx.freshName("batchOrdinal")
     finishDelete = ctx.freshName("finishDelete")
     deleteMetric = if (onExecutor) null else metricTerm(ctx, "numDeleteColumnBatchRows")
 
     val deleteEncoderClass = classOf[ColumnDeleteEncoder].getName
 
-    val initializeEncoder =
+    val deleteEncoder = internals.addClassField(ctx, deleteEncoderClass, "deleteEncoder")
+    val initializeEncoder: String => String = position =>
       s"""
          |$deleteEncoder = new $deleteEncoderClass();
          |$position = $deleteEncoder.initialize(8); // start with a default size
       """.stripMargin
-
-    ctx.addMutableState(deleteEncoderClass, deleteEncoder, "")
-    ctx.addMutableState("int", position, initializeEncoder)
-    ctx.addMutableState("int", batchOrdinal, "")
-    ctx.addMutableState("long", lastColumnBatchId, s"$lastColumnBatchId = $invalidUUID;")
-    ctx.addMutableState("int", lastBucketId, "")
-    ctx.addMutableState("int", lastNumRows, "")
+    val position = internals.addClassField(ctx, "int", "position", initializeEncoder)
+    batchOrdinal = internals.addClassField(ctx, "int", "batchOrdinal")
+    val lastColumnBatchId = internals.addClassField(ctx, "long", "lastColumnBatchId",
+      v => s"$v = $invalidUUID;")
+    val lastBucketId = internals.addClassField(ctx, "int", "lastBucketId")
+    val lastNumRows = internals.addClassField(ctx, "int", "lastNumRows")
 
     val tableName = ctx.addReferenceObj("columnTable", columnTable, "java.lang.String")
 
@@ -157,7 +151,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
          |        $lastColumnBatchId, ${compressionCodec.id}, new scala.Some($connTerm));
          |    $result += $batchOrdinal;
          |    ${if (deleteMetric eq null) "" else s"$deleteMetric.${metricAdd(batchOrdinal)};"}
-         |    $initializeEncoder
+         |    ${initializeEncoder(position)}
          |    $lastColumnBatchId = batchId;
          |    $lastBucketId = bucketId;
          |    $lastNumRows = numRows;
