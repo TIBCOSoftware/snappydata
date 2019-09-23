@@ -735,7 +735,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
     contextFunctions.registerTopK(topK, rdd, ifExists, overwrite)
 
   def unregisterTopK(topKName: String): Unit = contextFunctions.unregisterTopK(topKName)
-  
+
   override def alterTable(table: CatalogTable): Unit = {
     // first check required permission to alter objects in a schema
     val schemaName = getSchemaName(table.identifier)

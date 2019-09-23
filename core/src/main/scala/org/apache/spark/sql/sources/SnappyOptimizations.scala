@@ -59,7 +59,7 @@ case class ResolveQueryHints(snappySession: SnappySession)
         explicitIndexHint.getOrElse(lr.relation.asInstanceOf[ColumnFormatRelation].table,
           Some(lr)).get
       case s: SubqueryAlias if s.child.isInstanceOf[LogicalRelation] &&
-          s.child.asInstanceOf[LogicalRelation].relation.isInstanceOf[IndexColumnFormatRelation] =>
+          !s.child.asInstanceOf[LogicalRelation].relation.isInstanceOf[IndexColumnFormatRelation] =>
         explicitIndexHint.get(s.alias) match {
           case Some(Some(index)) => internals.newSubqueryAlias(s.alias, index)
           case _ => s
@@ -76,7 +76,7 @@ case class ResolveQueryHints(snappySession: SnappySession)
   }
 
   private def getIndexHints: mutable.Map[String, Option[LogicalPlan]] = {
-    val indexHint = Index
+    val indexHint = Index.toString
     val hints = snappySession.queryHints
     if (hints.isEmpty) mutable.Map.empty
     else hints.asScala.collect {
@@ -481,7 +481,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
     }
     val hints = snappySession.queryHints
     if (!hints.isEmpty && hints.asScala.exists {
-      case (hint, _) => hint.startsWith(Index) &&
+      case (hint, _) => hint.startsWith(Index.toString) &&
           !joinOrderHints.contains(ContinueOptimizations)
     } || Entity.hasUnresolvedReferences(plan)) {
       return plan

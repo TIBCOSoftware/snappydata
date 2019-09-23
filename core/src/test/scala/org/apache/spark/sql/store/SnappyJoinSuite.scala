@@ -183,7 +183,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
 
-  test("Check shuffle in operations with partition pruning"){
+  test("Check shuffle in operations with partition pruning") {
     val t1 = "t1"
     val t2 = "t2"
 
@@ -196,20 +196,19 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         "options( partition_by 'ol_1_int_id', buckets '16')")
 
     var df = snc.sql(s"select sum(ol_1_int2_id)  from $t1 where ol_1_int_id=1")
-    checkForShuffle(df.logicalPlan, snc , shuffleExpected = false)
+    checkForShuffle(df.logicalPlan, snc, shuffleExpected = false)
 
-    // with limit
+    // with limit shuffle is expected to SinglePartition when there is no CollectAggregateExec
     df = snc.sql(s"select sum(ol_1_int2_id)  from $t1 where ol_1_int_id=1 limit 1")
-    checkForShuffle(df.logicalPlan, snc , shuffleExpected = false)
+    checkForShuffle(df.logicalPlan, snc, shuffleExpected = true)
 
     df = snc.sql(s"update $t1 set ol_1_str_id = '3' where ol_1_int_id in (" +
         s"select ol_1_int_id from $t2 where $t2.ol_1_int_id=1)")
 
-    checkForShuffle(df.logicalPlan, snc , shuffleExpected = false)
+    checkForShuffle(df.logicalPlan, snc, shuffleExpected = false)
 
-    snc.dropTable("t1");
-    snc.dropTable("t2");
-
+    snc.dropTable("t1")
+    snc.dropTable("t2")
   }
 
   /**
@@ -219,7 +218,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
   def checkForShuffle(plan: LogicalPlan, snc: SnappyContext,
       shuffleExpected: Boolean): Unit = {
 
-    val qe = new QueryExecution(snc.snappySession, plan)
+    val qe = snc.snappySession.executePlan(plan)
     // logInfo(qe.executedPlan)
     val lj = qe.executedPlan collect {
       case ex: Exchange => ex
@@ -228,10 +227,10 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
       if (lj.isEmpty) sys.error(s"Shuffle Expected , but was not found")
     } else {
       lj.foreach(a => a.child.collect {
-        // this means no Exhange should have child as PartitionedPhysicalRDD
-        case p: PartitionedPhysicalScan => sys.error(
+        // this means no Exchange should have child as PartitionedPhysicalRDD
+        case _: PartitionedPhysicalScan => sys.error(
           s"Did not expect exchange with partitioned scan with same partitions")
-        case p: RowDataSourceScanExec => sys.error(
+        case _: RowDataSourceScanExec => sys.error(
           s"Did not expect RowDataSourceScanExec with PartitionedDataSourceScan")
         case _ => // do nothing, may be some other Exchange and not with scan
       })
@@ -650,7 +649,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         s"where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
         s" and subTotal >13 and c.cid>3 and f.tid = 1")
 
-    assert(df.collect().size === 2)
+    assert(df.collect().length === 2)
 
     df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
         s" so.qty, subTotal, oid, order_time, ask from" +
@@ -659,16 +658,16 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         s" trade.sellorders so" +
         s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
         s" and subTotal >13 and c.cid>1 and f.tid = 1")
-    assert(df.collect().size === 4)
+    assert(df.collect().length === 4)
 
     df = snc.sql(s"select n.cid, cust_name, n.securities, n.cash, n.tid, " +
         s"c.cid from trade.customers c, trade.networth n where  n.cid = c.cid" +
         s" and n.tid = 1 and c.cid > 3")
-    assert(df.collect().size === 3)
+    assert(df.collect().length === 3)
     df = snc.sql(s"select n.cid, cust_name, n.securities, n.cash, n.tid, c.cid" +
         s" from trade.customers c, trade.networth n where n.cid = c.cid" +
         s" and n.tid = 1 and c.cid > 5")
-    assert(df.collect().size === 1)
+    assert(df.collect().length === 1)
   }
 
   private def dropTables(): Unit = {
@@ -699,7 +698,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         s" trade.sellorders so" +
         s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
         s" and subTotal > 4 and c.cid = 1 and f.tid = 1")
-    assert(df.collect().size === 1)
+    assert(df.collect().length === 1)
     df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
         s" so.qty, subTotal, oid, order_time, ask from" +
         s" trade.customers c," +
@@ -707,7 +706,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         s" trade.sellorders so" +
         s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
         s" and subTotal > 4 and c.cid = 2 and f.tid = 1")
-    assert(df.collect().size === 1)
+    assert(df.collect().length === 1)
 
     dropTables()
     loadTables("COLUMN", "", "partition_by 'cid'", ", colocate_with 'trade.customers'")
