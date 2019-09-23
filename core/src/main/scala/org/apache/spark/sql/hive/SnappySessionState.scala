@@ -74,7 +74,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
 
   final def snappySqlParser: SnappySqlParser = sqlParser.asInstanceOf[SnappySqlParser]
 
-  val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] =
+  private[sql] lazy val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] =
     snappySession.contextFunctions.createSampleSnappyCase()
 
   private[sql] lazy val hiveSession: SparkSession = {
@@ -751,6 +751,8 @@ trait SnappyAnalyzer extends Analyzer {
       Batch(batch.name, batch.strategy.asInstanceOf[Strategy], rules: _*)
     case batch => Batch(batch.name, batch.strategy.asInstanceOf[Strategy], batch.rules: _*)
   }
+
+  def baseExecute(plan: LogicalPlan): LogicalPlan = super.execute(plan)
 
   override def execute(plan: LogicalPlan): LogicalPlan =
     session.contextFunctions.executePlan(this, plan)

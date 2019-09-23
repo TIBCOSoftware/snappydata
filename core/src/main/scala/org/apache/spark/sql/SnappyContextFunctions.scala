@@ -24,14 +24,13 @@ import io.snappydata.SnappyDataFunctions
 import io.snappydata.sql.catalog.CatalogObjectType
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.catalog.CatalogTable
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.{CollapseCodegenStages, PlanLater, QueryExecution, SparkPlan, TopK, python}
-import org.apache.spark.sql.hive.OptimizeSortAndFilePlans
+import org.apache.spark.sql.hive.{OptimizeSortAndFilePlans, SnappyAnalyzer}
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.streaming.StreamBaseRelation
@@ -159,7 +158,8 @@ class SnappyContextFunctions(val session: SnappySession) extends SparkSupport {
   def queryPreparations(topLevel: Boolean): Seq[Rule[SparkPlan]] =
     if (topLevel) queryPreparationsTopLevel else queryPreparationsNode
 
-  def executePlan(analyzer: Analyzer, plan: LogicalPlan): LogicalPlan = analyzer.execute(plan)
+  def executePlan(analyzer: SnappyAnalyzer, plan: LogicalPlan): LogicalPlan =
+    analyzer.baseExecute(plan)
 
   def sql[T](fn: => T): T = fn
 }

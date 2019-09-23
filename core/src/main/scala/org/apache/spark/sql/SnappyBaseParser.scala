@@ -177,7 +177,8 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def identifier: Rule1[String] = rule {
-    unquotedIdentifier ~> { s: String =>
+    // noinspection ScalaUnnecessaryParentheses
+    unquotedIdentifier ~> { (s: String) =>
       val lcase = lower(s)
       test(!Consts.reservedKeywords.contains(lcase)) ~
           push(if (caseSensitive) s else lcase)
@@ -185,11 +186,12 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     quotedIdentifier
   }
 
+  // noinspection ScalaUnnecessaryParentheses
   protected final def quotedIdentifier: Rule1[String] = rule {
-    atomic('`' ~ capture((noneOf("`") | "``"). +) ~ '`') ~ ws ~> { s: String =>
+    atomic('`' ~ capture((noneOf("`") | "``"). +) ~ '`') ~ ws ~> { (s: String) =>
       if (s.indexOf("``") >= 0) s.replace("``", "`") else s
     } |
-    atomic('"' ~ capture((noneOf("\"") | "\"\""). +) ~ '"') ~ ws ~> { s: String =>
+    atomic('"' ~ capture((noneOf("\"") | "\"\""). +) ~ '"') ~ ws ~> { (s: String) =>
       if (s.indexOf("\"\"") >= 0) s.replace("\"\"", "\"") else s
     }
   }
@@ -200,7 +202,8 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
    * interpreted as a strictIdentifier.
    */
   protected final def strictIdentifier: Rule1[String] = rule {
-    unquotedIdentifier ~> { s: String =>
+    // noinspection ScalaUnnecessaryParentheses
+    unquotedIdentifier ~> { (s: String) =>
       val lcase = lower(s)
       test(!Consts.allKeywords.contains(lcase)) ~
           push(if (caseSensitive) s else lcase)
@@ -298,8 +301,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def structField: Rule1[StructField] = rule {
-    identifier ~ ':' ~ ws ~ dataType ~> ((name: String, t: DataType) =>
-      StructField(name, t, nullable = true))
+    identifier ~ ':' ~ ws ~ dataType ~> ((name: String, t: DataType) => StructField(name, t))
   }
 
   protected final def structType: Rule1[DataType] = rule {
@@ -308,12 +310,10 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def columnCharType: Rule1[DataType] = rule {
-    VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharStringType(d.toInt, baseType = "VARCHAR")) |
-    CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) =>
-      CharStringType(d.toInt, baseType = "CHAR")) |
+    VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => VarcharType(d.toInt)) |
+    CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => CharType(d.toInt)) |
     STRING ~> (() => StringType) |
-    CLOB ~> (() => CharStringType(Int.MaxValue, baseType = "CLOB"))
+    CLOB ~> (() => VarcharType(Int.MaxValue))
   }
 
   final def columnDataType: Rule1[DataType] = rule {
@@ -322,6 +322,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
   /** allow for first character of unquoted identifier to be a numeric */
   protected final def identifierExt: Rule1[String] = rule {
+    // noinspection ScalaUnnecessaryParentheses
     atomic(capture(Consts.identifier. +)) ~ delimiter ~> { (s: String) =>
       val lcase = lower(s)
       test(!Consts.reservedKeywords.contains(lcase)) ~
@@ -331,6 +332,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def packageIdentifierPart: Rule1[String] = rule {
+    // noinspection ScalaUnnecessaryParentheses
     atomic(capture((Consts.identifier | Consts.hyphen | Consts.dot). +)) ~ ws ~> { (s: String) =>
       val lcase = lower(s)
       test(!Consts.reservedKeywords.contains(lcase)) ~

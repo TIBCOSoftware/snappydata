@@ -86,16 +86,21 @@ private[sql] final case class ColumnTableScan(
     else "ColumnTableScan"
   }
 
+  @transient private lazy val session: Option[SnappySession] = sqlContext match {
+    case null => None
+    case c => Some(c.sparkSession.asInstanceOf[SnappySession])
+  }
+
   lazy val tableIdentifier: Option[TableIdentifier] = baseRelation match {
     case null => None
-    case r => sqlContext match {
-      case null => None
-      case c => Some(c.sparkSession.asInstanceOf[SnappySession].tableIdentifier(r.table))
+    case r => session match {
+      case Some(s) => Some(s.tableIdentifier(r.table, resolve = true))
+      case None => Some(SnappySession.tableIdentifier(r.table, catalog = null, resolve = false))
     }
   }
 
-  override def equals(obj: Any): Boolean = obj match {
-    case r: ColumnTableScan => r.baseRelation.table == baseRelation.table &&
+  override def sameResult(plan: SparkPlan): Boolean = plan match {
+    case r: ColumnTableScan => r.tableIdentifier == tableIdentifier &&
         r.numBuckets == numBuckets && r.schema == schema
     case _ => false
   }
@@ -142,11 +147,6 @@ private[sql] final case class ColumnTableScan(
       .asInstanceOf[Seq[RDD[Any]]])
 
   private lazy val otherRDDsPartitionIndex = rdd.getNumPartitions
-
-  private def session = sqlContext match {
-    case null => None
-    case c => Some(c.sparkSession.asInstanceOf[SnappySession])
-  }
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     allRDDs.asInstanceOf[RDD[InternalRow]] :: Nil
@@ -355,7 +355,7 @@ private[sql] final case class ColumnTableScan(
       val initBufferFunction = s"${buffer}Init"
       val bufferVar = if (isWideSchema) {
         internals.addClassField(ctx, "Object", "bufferObject")
-      } else ""
+      } else s"${buffer}Object"
       // projections are not pushed in embedded mode for optimized access
       val baseIndex = Utils.fieldIndex(schemaAttributes, attr.name, caseSensitive)
       val rsPosition = if (embedded) baseIndex + 1 else rsIndex + 1

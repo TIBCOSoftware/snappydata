@@ -62,7 +62,7 @@ case class CreateTableUsingCommand(
     provider: String,
     mode: SaveMode,
     options: Map[String, String],
-    partitionColumns: Seq[String],
+    partitionColumns: Array[String],
     bucketSpec: Option[BucketSpec],
     query: Option[LogicalPlan],
     isExternal: Boolean) extends RunnableCommand {
@@ -455,7 +455,7 @@ case class DescribeSnappyTableCommand(table: TableIdentifier, partitionSpec: Tab
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val catalog = sparkSession.asInstanceOf[SnappySession].sessionCatalog
     catalog.synchronized {
-      // set the flag to return CharStringType if present
+      // set the flag to return CharType/VarcharType if present
       catalog.convertCharTypesInMetadata = true
       try {
         internals.newDescribeTableCommand(table, partitionSpec,

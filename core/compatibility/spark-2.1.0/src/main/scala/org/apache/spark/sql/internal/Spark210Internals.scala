@@ -152,10 +152,8 @@ class Spark210Internals extends SparkInternals {
 
   override def resetCopyResult(ctx: CodegenContext): Unit = ctx.copyResult = false
 
-  override def isPredicateSubquery(expr: Expression): Boolean = expr match {
-    case _: PredicateSubquery => true
-    case _ => false
-  }
+  override def isPredicateSubquery(expr: Expression): Boolean =
+    expr.isInstanceOf[PredicateSubquery]
 
   override def copyPredicateSubquery(expr: Expression, newPlan: LogicalPlan,
       newExprId: ExprId): Expression = {
@@ -743,29 +741,34 @@ class SnappySessionState21(override val snappySession: SnappySession)
 
   override def analyzerBuilder(): Analyzer = new Analyzer(catalog, conf) with SnappyAnalyzer {
 
+    self =>
+
     override def session: SnappySession = snappySession
 
-    private def state: SnappySessionState = snappySession.sessionState
-
-    override lazy val baseAnalyzerInstance: Analyzer = new Analyzer(catalog, conf)
+    private def state: SnappySessionState = session.sessionState
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = {
       val extensions = session.contextFunctions.getExtendedResolutionRules
       new HiveConditionalRule(_.catalog.ParquetConversions, state) ::
           new HiveConditionalRule(_.catalog.OrcConversions, state) ::
-          AnalyzeCreateTable(snappySession) ::
+          AnalyzeCreateTable(session) ::
           new PreprocessTable(state) ::
           ResolveAliasInGroupBy ::
-          new FindDataSourceTable(snappySession) ::
+          new FindDataSourceTable(session) ::
           DataSourceAnalysis(conf) ::
-          AnalyzeMutableOperations(snappySession, this) ::
-          ResolveQueryHints(snappySession) ::
+          AnalyzeMutableOperations(session, this) ::
+          ResolveQueryHints(session) ::
           RowLevelSecurity ::
           ExternalRelationLimitFetch ::
           (if (conf.runSQLonFile) new ResolveDataSource(session) :: extensions else extensions)
     }
 
     override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
+
+    override lazy val baseAnalyzerInstance: Analyzer = new Analyzer(catalog, conf) {
+      override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = self.extendedResolutionRules
+      override val extendedCheckRules: Seq[LogicalPlan => Unit] = self.extendedCheckRules
+    }
   }
 
   override def optimizerBuilder(): Optimizer = {

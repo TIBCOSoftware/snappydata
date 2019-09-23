@@ -56,7 +56,7 @@ private[sql] trait SnappyStrategies {
   object SnappyStrategies extends Strategy {
 
     def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-      sampleSnappyCase(plan)
+      self.sampleSnappyCase(plan)
     }
   }
 

@@ -24,7 +24,7 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath 'io.snappydata:gradle-scalatest:0.23'
+    classpath 'io.snappydata:gradle-scalatest:0.25'
     classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.9.0'
     classpath 'com.github.jengelman.gradle.plugins:shadow:5.1.0'
     classpath 'de.undercouch:gradle-download-task:3.4.3'
@@ -123,7 +123,7 @@ allprojects {
     sparkPackageName = "snappydata-${version}_${sparkConnectorVersion}-s_${scalaBinaryVersion}"
 
     sparkConnectorDistName = "spark-${sparkConnectorVersion}-bin-hadoop2.7"
-    sparkCurrentVersion = '2.4.3'
+    sparkCurrentVersion = '2.4.4'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.25'
@@ -387,8 +387,7 @@ subprojects {
   }
 
   task scalaTest(type: Test) {
-    def factory = new com.github.maiflai.BackwardsCompatibleJavaExecActionFactory(gradle.gradleVersion)
-    actions = [ new com.github.maiflai.ScalaTestAction(factory) ]
+    actions = [ new com.github.maiflai.ScalaTestAction() ]
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
     maxParallelForks = 1
