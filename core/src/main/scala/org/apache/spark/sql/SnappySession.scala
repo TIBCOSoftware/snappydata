@@ -107,18 +107,18 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
   @transient
   override lazy val sessionState: SnappySessionState = internals.newSnappySessionState(self)
 
-  final def sessionCatalog: SnappySessionCatalog = sessionState.catalog
-
-  final def externalCatalog: SnappyExternalCatalog = sessionState.catalog.snappyExternalCatalog
-
-  final def snappyParser: SnappyParser = sessionState.snappySqlParser.sqlParser
-
   @transient
   final val contextFunctions: SnappyContextFunctions = SparkSupport.aqpOverridesClass match {
     case None => new SnappyContextFunctions(self)
     case Some(c) => c.getConstructor(classOf[SnappySession]).newInstance(self)
         .asInstanceOf[SnappyContextFunctions]
   }
+
+  final def sessionCatalog: SnappySessionCatalog = sessionState.catalog
+
+  final def externalCatalog: SnappyExternalCatalog = sessionState.catalog.snappyExternalCatalog
+
+  final def snappyParser: SnappyParser = sessionState.snappySqlParser.sqlParser
 
   SnappyContext.initGlobalSnappyContext(sparkContext, this)
   contextFunctions.registerSnappyFunctions()
@@ -724,15 +724,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
     })
   }
 
-  def tableIdentifier(table: String): TableIdentifier = {
-    // hive meta-store is case-insensitive so always use upper case names for object names
-    val fullName = sessionCatalog.formatTableName(table)
-    val dotIndex = fullName.indexOf('.')
-    if (dotIndex > 0) {
-      new TableIdentifier(fullName.substring(dotIndex + 1),
-        Some(fullName.substring(0, dotIndex)))
-    } else new TableIdentifier(fullName, None)
-  }
+  def tableIdentifier(table: String, resolve: Boolean = false): TableIdentifier =
+    SnappySession.tableIdentifier(table, sessionCatalog, resolve)
 
   /**
    * Append dataframe to cache table in Spark.
@@ -1335,7 +1328,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       mode: SaveMode,
       options: Map[String, String],
       isExternal: Boolean,
-      partitionColumns: Seq[String] = Nil,
+      partitionColumns: Array[String] = Utils.EMPTY_STRING_ARRAY,
       bucketSpec: Option[BucketSpec] = None,
       query: Option[LogicalPlan] = None): DataFrame = {
     val providerIsBuiltIn = SnappyContext.isBuiltInProvider(provider)
@@ -1346,7 +1339,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       }
       // for builtin tables, never use partitionSpec or bucketSpec since that has different
       // semantics and implies support for add/drop/recover partitions which is not possible
-      if (partitionColumns.nonEmpty) {
+      if (partitionColumns.length > 0) {
         throw new AnalysisException(s"CREATE TABLE ... USING '$provider' does not support " +
             "PARTITIONED BY clause.")
       }
@@ -1404,7 +1397,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       storage = storage,
       schema = schema,
       provider = Some(provider),
-      partitionColumnNames = partitionColumns,
+      partitionColumnNames = partitionColumns.toSeq,
       bucketSpec = bucketSpec)
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
     sessionState.executePlan(plan).toRdd
@@ -2064,6 +2057,20 @@ object SnappySession extends Logging {
     """(cannot resolve ')(\w+).(\w+).*(' given input columns.*)""".r
   private val unresolvedColRegex =
     """(cannot resolve '`)(\w+).(\w+).(\w+)(.*given input columns.*)""".r
+
+  def tableIdentifier(table: String, catalog: SnappySessionCatalog,
+      resolve: Boolean): TableIdentifier = {
+    // hive meta-store is case-insensitive so use lower case names for object names consistently
+    val fullName =
+      if (catalog ne null) catalog.formatTableName(table) else JdbcExtendedUtils.toLowerCase(table)
+    val dotIndex = fullName.indexOf('.')
+    if (dotIndex > 0) {
+      new TableIdentifier(fullName.substring(dotIndex + 1),
+        Some(fullName.substring(0, dotIndex)))
+    } else if (resolve && (catalog ne null)) {
+      new TableIdentifier(fullName, Some(catalog.getCurrentSchema))
+    } else new TableIdentifier(fullName, None)
+  }
 
   private[sql] def findShuffleDependencies(rdd: RDD[_]): List[Int] = {
     rdd.dependencies.toList.flatMap {

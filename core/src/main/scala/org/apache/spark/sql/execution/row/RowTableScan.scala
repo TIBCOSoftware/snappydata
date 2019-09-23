@@ -60,8 +60,9 @@ private[sql] final case class RowTableScan(
   lazy val tableIdentifier: Option[TableIdentifier] = baseRelation match {
     case null => None
     case r => sqlContext match {
-      case null => None
-      case c => Some(c.sparkSession.asInstanceOf[SnappySession].tableIdentifier(r.table))
+      case null => Some(SnappySession.tableIdentifier(r.table, catalog = null, resolve = false))
+      case c =>
+        Some(c.sparkSession.asInstanceOf[SnappySession].tableIdentifier(r.table, resolve = true))
     }
   }
 

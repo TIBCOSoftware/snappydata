@@ -639,13 +639,13 @@ case class SnappyHashAggregateExec(
       numBytesForNullKeyBits)) {
       internals.addClassField(ctx, "byte[]", "nullKeysBitset", v =>
         s"$v = new byte[$numBytesForNullKeyBits];")
-    } else ""
+    } else ctx.freshName("nullKeysBitset")
 
     val nullAggsBitsetTerm = if (SHAMapAccessor.isByteArrayNeededForNullBits(
       numBytesForNullAggsBits)) {
-      internals.addClassField(ctx, "byte[]", "nullAggsBitset", v =>
-        s"$v = new byte[$numBytesForNullAggsBits];")
-    } else ""
+      internals.addClassField(ctx, "byte[]", "nullAggsBitset",
+        v => s"$v = new byte[$numBytesForNullAggsBits];")
+    } else ctx.freshName("nullAggsBitset")
     val probableSkipLen = this.groupingAttributes.
       lastIndexWhere(attr => !TypeUtilities.isFixedWidth(attr.dataType))
 
@@ -717,6 +717,7 @@ case class SnappyHashAggregateExec(
         val numBytesForNullBits = SHAMapAccessor.
             calculateNumberOfBytesForNullBits(structType.length)
         if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
+          // TODO: variable not used in generated code apart from declaration??
           internals.addClassField(ctx, "byte[]", "struct_nullKeysBitset",
             v => s"$v = new byte[$numBytesForNullBits];")
         }

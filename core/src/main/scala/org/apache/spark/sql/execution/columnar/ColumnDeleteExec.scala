@@ -151,7 +151,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
          |        $lastColumnBatchId, ${compressionCodec.id}, new scala.Some($connTerm));
          |    $result += $batchOrdinal;
          |    ${if (deleteMetric eq null) "" else s"$deleteMetric.${metricAdd(batchOrdinal)};"}
-         |    $initializeEncoder
+         |    ${initializeEncoder(position)}
          |    $lastColumnBatchId = batchId;
          |    $lastBucketId = bucketId;
          |    $lastNumRows = numRows;

@@ -52,11 +52,11 @@ private[sql] abstract class PartitionedPhysicalScan(
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     partitionColumnAliases: Seq[Seq[Attribute]],
-    @transient override val relation: BaseRelation)
+    @transient override val relation: BaseRelation,
+    // not used currently (if need to use then get from relation.table)
+    override val metastoreTableIdentifier: Option[TableIdentifier] = None)
     extends DataSourceScanExec with CodegenSupportOnExecutor
         with NonRecursivePlans with SparkSupport {
-
-  val metastoreTableIdentifier: Option[TableIdentifier] = None
 
   def getMetrics: Map[String, SQLMetric] = {
     if (sqlContext eq null) Map.empty

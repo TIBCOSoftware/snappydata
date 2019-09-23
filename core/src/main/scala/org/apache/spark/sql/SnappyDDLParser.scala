@@ -268,7 +268,7 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   final type ColumnDirectionMap = Seq[(String, Option[SortDirection])]
   final type TableEnd = (Option[String], Option[Map[String, String]],
-      Seq[String], Option[BucketSpec], Option[LogicalPlan])
+      Array[String], Option[BucketSpec], Option[LogicalPlan])
 
   protected final def ifNotExists: Rule1[Boolean] = rule {
     (IF ~ NOT ~ EXISTS ~ push(true)).? ~> ((o: Any) => o != None)
@@ -374,14 +374,11 @@ abstract class SnappyDDLParser(session: SnappySession)
               case _ => IdUtil.getUserAuthorizationId(SnappyParserConsts.LDAPGROUP.lower) +
                   ':' + IdUtil.getUserAuthorizationId(id)
             })
-        ). + (commaSep) ~> {
-        policyTo: Any => policyTo.asInstanceOf[Seq[String]].map(_.trim)
-          }).? ~> { toOpt: Any =>
-      toOpt match {
-        case Some(x) => x.asInstanceOf[Seq[String]]
-        case _ => SnappyParserConsts.CURRENT_USER.lower :: Nil
-      }
-    }
+        ). + (commaSep) ~> ((policyTo: Any) => policyTo.asInstanceOf[Seq[String]].map(_.trim))
+    ).? ~> ((toOpt: Any) => toOpt match {
+      case Some(x) => x.asInstanceOf[Seq[String]]
+      case _ => SnappyParserConsts.CURRENT_USER.lower :: Nil
+    })
   }
 
   protected def createPolicy: Rule1[LogicalPlan] = rule {
@@ -682,8 +679,8 @@ abstract class SnappyDDLParser(session: SnappySession)
         // for both builtin as well as external implementations
         val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
         CreateTableUsingCommand(streamIdent, None, specifiedSchema, None,
-          provider, mode, opts, partitionColumns = Nil, bucketSpec = None,
-          query = None, isExternal = false)
+          provider, mode, opts, partitionColumns = Utils.EMPTY_STRING_ARRAY,
+          bucketSpec = None, query = None, isExternal = false)
     }
   }
 
@@ -725,7 +722,11 @@ abstract class SnappyDDLParser(session: SnappySession)
           val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
           val funcResources = resources.asInstanceOf[Seq[FunctionResource]]
           funcResources.foreach(checkExists)
-          val classNameWithType = className + "__" + t.catalogString
+          val catalogString = t match {
+            case VarcharType(Int.MaxValue) => "string"
+            case _ => t.catalogString
+          }
+          val classNameWithType = className + "__" + catalogString
           internals.newCreateFunctionCommand(functionIdent.database,
             functionIdent.funcName, classNameWithType, funcResources, isTemp,
             ignoreIfExists, replace != None)
@@ -923,9 +924,16 @@ abstract class SnappyDDLParser(session: SnappySession)
         t: DataType, notNull: Any, cm: Any) =>
       val builder = new MetadataBuilder()
       val (dataType, empty) = t match {
-        case CharStringType(size, baseType) =>
+        case CharType(size) =>
           builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
-              .putString(Constant.CHAR_TYPE_BASE_PROP, baseType)
+              .putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
+          (StringType, false)
+        case VarcharType(Int.MaxValue) => // indicates CLOB type
+          builder.putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
+          (StringType, false)
+        case VarcharType(size) =>
+          builder.putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+              .putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
           (StringType, false)
         case StringType =>
           builder.putString(Constant.CHAR_TYPE_BASE_PROP, "STRING")

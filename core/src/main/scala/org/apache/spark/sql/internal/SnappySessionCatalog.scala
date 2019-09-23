@@ -73,7 +73,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
 
   /**
    * Can be used to temporarily switch the metadata returned by catalog
-   * to use CharStringType with baseType as CHAR/VARCHAR. Is to be used for only temporary
+   * to use CharType and VarcharTypes. Is to be used for only temporary
    * change by a caller that wishes the consume the result because rest
    * of Spark cannot deal with those types.
    */
@@ -613,10 +613,10 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
         case StringType if field.metadata.contains(Constant.CHAR_TYPE_BASE_PROP) =>
           val md = field.metadata
           md.getString(Constant.CHAR_TYPE_BASE_PROP) match {
-            case "CHAR" => field.copy(dataType = CharStringType(
-              md.getLong(Constant.CHAR_TYPE_SIZE_PROP).toInt, baseType = "CHAR"))
-            case "VARCHAR" => field.copy(dataType = CharStringType(
-              md.getLong(Constant.CHAR_TYPE_SIZE_PROP).toInt, baseType = "VARCHAR"))
+            case "CHAR" =>
+              field.copy(dataType = CharType(md.getLong(Constant.CHAR_TYPE_SIZE_PROP).toInt))
+            case "VARCHAR" =>
+              field.copy(dataType = VarcharType(md.getLong(Constant.CHAR_TYPE_SIZE_PROP).toInt))
             case _ => field
           }
         case _ => field

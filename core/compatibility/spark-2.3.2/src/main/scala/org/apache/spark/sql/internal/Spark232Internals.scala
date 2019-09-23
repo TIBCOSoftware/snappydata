@@ -760,11 +760,11 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
 
   override protected def analyzer: Analyzer = new Analyzer(catalog, conf) with SnappyAnalyzer {
 
+    aSelf =>
+
     override def session: SnappySession = self.session
 
     private def state: SnappySessionState = session.sessionState
-
-    override lazy val baseAnalyzerInstance: Analyzer = new Analyzer(catalog, conf)
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = {
       val extensions = session.contextFunctions.getExtendedResolutionRules
@@ -790,6 +790,12 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
 
     override val extendedCheckRules: Seq[LogicalPlan => Unit] =
       state.getExtendedCheckRules ++ (PreReadCheck +: customCheckRules)
+
+    override lazy val baseAnalyzerInstance: Analyzer = new Analyzer(catalog, conf) {
+      override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = aSelf.extendedResolutionRules
+      override val postHocResolutionRules: Seq[Rule[LogicalPlan]] = aSelf.postHocResolutionRules
+      override val extendedCheckRules: Seq[LogicalPlan => Unit] = aself.extendedCheckRules
+    }
   }
 
   override protected def optimizer: Optimizer = {

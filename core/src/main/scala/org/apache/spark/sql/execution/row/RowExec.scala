@@ -39,7 +39,6 @@ trait RowExec extends TableExec {
   @transient protected var rowCount: String = _
   @transient protected var result: String = _
 
-
   def resolvedName: String
 
   def connProps: ConnectionProperties
@@ -123,16 +122,17 @@ trait RowExec extends TableExec {
 
   protected def doProduce(ctx: CodegenContext, pstmtStr: String,
       produceAddonCode: () => String = () => ""): String = {
-    val (initCode, commitCode, endCode) = connectionCodes(ctx)
-    val numOpRowsMetric = if (onExecutor) null
-    else metricTerm(ctx, s"num${opType}Rows")
-    val numOperations = ctx.freshName("numOperations")
-    val childProduce = doChildProduce(ctx)
-    val mutateTable = ctx.freshName("mutateTable")
 
     stmt = internals.addClassField(ctx, "java.sql.PreparedStatement", "statement")
     result = internals.addClassField(ctx, "long", "result", v => s"$v = -1L;")
     rowCount = internals.addClassField(ctx, "long", "rowCount")
+
+    val (initCode, commitCode, endCode) = connectionCodes(ctx)
+    val numOpRowsMetric = if (onExecutor) null else metricTerm(ctx, s"num${opType}Rows")
+    val numOperations = ctx.freshName("numOperations")
+    val childProduce = doChildProduce(ctx)
+    val mutateTable = ctx.freshName("mutateTable")
+
     ctx.addNewFunction(mutateTable,
       s"""
          |private void $mutateTable() throws java.io.IOException, java.sql.SQLException {
