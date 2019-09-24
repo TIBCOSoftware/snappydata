@@ -7,6 +7,7 @@
 
     | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
 	|--------|--------|--------|
+    |[Version 0.7.3.6](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.6) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.1.1](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.1.1)|
     |[Version 0.7.3.6](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.6) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.1.0](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.1.0)|
     |[Version 0.7.3.4](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.4) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.0.2.1](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.2.1)|
     |[Version 0.7.3.2](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.2) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.0.2](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.2)|
