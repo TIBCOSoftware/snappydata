@@ -257,6 +257,7 @@ On this page, you can view the total time required for all the tasks in a job to
 
 * **GC time**: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory, especially when you have row tables.
 
+<a id="historyserver"></a>
 ## Spark History Server
 The Spark History server is an HTTP server that let you analyze the Spark jobs.
 
