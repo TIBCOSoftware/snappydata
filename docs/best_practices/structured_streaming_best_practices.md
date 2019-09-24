@@ -1,4 +1,4 @@
-# Structured Streaming Considerations
+# Structured Streaming
 
 The following best practices for Structured Streaming are explained in this section:
 
@@ -18,9 +18,8 @@ A good practice is to limit the batch size of a streaming query such that it rem
 
 This gives the following advantages:
 
-**Snappy** **Sink** internally caches the incoming dataframe batch. If the batch size is too large, the cached dataframe might not fit in the memory and can start spilling over to the disk. This can lead to performance issues.
-
-By limiting the batch size to **spark.sql.autoBroadcastJoinThreshold**, you can ensure that the **putInto** operation, that is performed as part of **Snappy** **Sink**, uses broadcast join which is significantly faster than sort merge join.
+*	**Snappy** **Sink** internally caches the incoming dataframe batch. If the batch size is too large, the cached dataframe might not fit in the memory and can start spilling over to the disk. This can lead to performance issues.
+*	By limiting the batch size to **spark.sql.autoBroadcastJoinThreshold**, you can ensure that the **putInto** operation, that is performed as part of **Snappy** **Sink**, uses broadcast join which is significantly faster than sort merge join.
 
 The batch size can be restricted using one of the following options depending upon the source:
 
@@ -59,10 +58,7 @@ val df = snappy.readStream.schema(schema)
 ## Limiting Default Incoming Data Frame Size
 
 Spark relies on the data size statistics provided by the sources to decide join type to be used for the query plan.
-Some sources do not provide the correct size statistics and in such a case, Spark falls down to the default value, which is **Long.MaxValue** which is greater than **spark.sql.autoBroadcastJoinThreshold**. As a result of that the **putInto** join query always uses the sort merge join even if the incoming batch size is lesser than **spark.sql.autoBroadcastJoinThreshold**.
-
-!!! Note
-	A broadcast join is more performant than a sort merge join.
+Some sources do not provide the correct size statistics and in such a case, Spark falls down to the default value, which is **Long.MaxValue** which is greater than **spark.sql.autoBroadcastJoinThreshold**. As a result of that the **putInto** join query always uses the sort merge join even if the incoming batch size is lesser than **spark.sql.autoBroadcastJoinThreshold**. A broadcast join is more performant than a sort merge join.
 
 To overcome this, use the session level property **spark.sql.defaultSizeInBytesyou** and override the default size. The value set for this property should be approximately equal to the maximum batch size that you expect after complying to the suggestion mentioned in [Limiting Batch Size](#limitbatchsize) section.
 
