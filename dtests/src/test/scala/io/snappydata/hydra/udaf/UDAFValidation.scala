@@ -28,76 +28,9 @@ class UDAFValidation extends SnappySQLJob {
     // scalastyle:off println
     println("UDAF validation started....")
     val snc : SnappyContext = snappySession.sqlContext
-
-    val createUDAF = "create function mean_udaf as io.snappydata.hydra.MeanMarks " +
-      "returns double " +
-      "using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/MeanMarkUDAF.jar'"
-
-    val createCleverUDAF = "create function cleverstudent_udaf " +
-      "as io.snappydata.hydra.CleverStudent " +
-      "returns double using jar " +
-      "'/home/cbhatt/TestWork/out/artifacts/TestWork_jar/cleverStudent.jar'"
-
-    val createDullUDAF = "create function dullstudent_udaf as " +
-      "io.snappydata.hydra.DullStudent " +
-      "returns double using jar " +
-      "'/home/cbhatt/TestWork/out/artifacts/TestWork_jar/dullStudent.jar'"
-
-
-    val createUDAFWithDifferentFunctionality = "create function mean_udaf " +
-      "as io.snappydata.hydra.CleverStudent returns double " +
-      "using jar '/home/cbhatt/TestWork/MeanMarkUDAF.jar'"
-
-    val createUDAFWrongJarPath = "create function mean_udaf as io.snappydata.hydra.MeanMarks " +
-      "returns double " +
-      "using jar '/home/cbhatt/TestWork/jars/MeanMarkUDAF.jar'"
-
-    val createUDAFWrongQualifiedClass = "create function mean_udaf " +
-      "as io.snappydata.udaftest.AvgMarks " +
-      "returns double " +
-      "using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/MeanMarkUDAF.jar'"
-
-    val createUDAFWrongReturnType = "create function mean_udaf as io.snappydata.hydra.MeanMarks " +
-      "returns Boolean " +
-      "using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/MeanMarkUDAF.jar'"
-
-    val dropUDAF = "drop function if exists mean_udaf"
-    val dropCleverUDAF = "drop function if exists cleverstudent_udaf"
-    val dropDullUDAF = "drop function if exists dullstudent_udaf";
-
-    val createStagingStudent = "create external table if not exists staging_student" +
-      "(studentid int,name string,class int," +
-      "maths double,english double,physics double,socialst double,year int,total double) " +
-      "using csv options(path '/home/cbhatt/UDAF_Data_1')"
-
-    val dropStagingStudent = "drop table if exists stagingStudent"
-
-    val createStudent = "create table if not exists " +
-      "student using column as select * from staging_student"
-
-    val dropStudent = "drop table if exists Student"
-
-
     val outputFile = "ValidateUDAF_" +  System.currentTimeMillis()
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), true))
     pw.println("UDAF validation started....")
-
-    val query_1_UDAF = "select class,mean_udaf(maths,class) from  student " +
-      "group by class order by class"
-    val query_1_Snappy = "select class,avg(maths) from student group by class order by class"
-
-    val query_2_UDAF = "select class,mean_udaf(physics,class) from  student " +
-      "group by class order by class"
-    val query_2_Snappy = "select class,avg(physics) from student group by class order by class"
-
-    val query_3_UDAF = "select class,mean_udaf(maths) from student group by class order by class"
-    val query_3_Snappy = "select class,count(maths) from student" +
-      " where maths >= 95.0 group by class order by class"
-
-    val query_mulitple_UDAF = "select class, mean_udaf(maths,class), " +
-      "cleverstudent_udaf(maths), dullstudent_udaf(maths,0,0) " +
-      "from student group by class order by class"
-
 
     /**
       * Create UDAF, test it, drop the function
@@ -105,23 +38,23 @@ class UDAFValidation extends SnappySQLJob {
       *  Result should be the same.
       */
     pw.println("Create UDAF, test it, drop the function and repeat it.")
-    snc.sql("drop function if exists cleverstudent_udaf")
-    snc.sql("drop function if exists dullstudent_udaf")
-    snc.sql(dropUDAF)
-    snc.sql(dropStagingStudent)
-    snc.sql(dropStudent)
-    snc.sql(createUDAF)
-    snc.sql(createStagingStudent)
-    snc.sql(createStudent)
-    val sncDF1 = snc.sql(query_1_UDAF)
-    val sncDF2 = snc.sql(query_1_Snappy)
-    validateResultSet(snc, sncDF1, sncDF2, pw, query_1_UDAF)
-    snc.sql(dropUDAF)
-    snc.sql(createUDAF)
-    val sncDF3 = snc.sql(query_2_UDAF)
-    val sncDF4 = snc.sql(query_2_Snappy)
-    validateResultSet(snc, sncDF3, sncDF4, pw, query_2_UDAF)
-    snc.sql(dropUDAF)
+    snc.sql(UDAFUtils.dropCleverUDAF)
+    snc.sql(UDAFUtils.dropDullUDAF)
+    snc.sql(UDAFUtils.dropUDAF)
+    snc.sql(UDAFUtils.dropStagingStudent)
+    snc.sql(UDAFUtils.dropStudent)
+    snc.sql(UDAFUtils.createUDAF)
+    snc.sql(UDAFUtils.createStagingStudent)
+    snc.sql(UDAFUtils.createStudent)
+    val sncDF1 = snc.sql(UDAFUtils.query_1_UDAF)
+    val sncDF2 = snc.sql(UDAFUtils.query_1_Snappy)
+    validateResultSet(snc, sncDF1, sncDF2, pw, UDAFUtils.query_1_UDAF)
+    snc.sql(UDAFUtils.dropUDAF)
+    snc.sql(UDAFUtils.createUDAF)
+    val sncDF3 = snc.sql(UDAFUtils.query_2_UDAF)
+    val sncDF4 = snc.sql(UDAFUtils.query_2_Snappy)
+    validateResultSet(snc, sncDF3, sncDF4, pw, UDAFUtils.query_2_UDAF)
+    snc.sql(UDAFUtils.dropUDAF)
 
     /**
       * Create UDAF with wrong jar path.
@@ -130,7 +63,7 @@ class UDAFValidation extends SnappySQLJob {
       */
     try {
       pw.println("Create UDAF with wrong jar path.")
-      snc.sql(createUDAFWrongJarPath)
+      snc.sql(UDAFUtils.createUDAFWrongJarPath)
     } catch {
       case e : Exception => {
         pw.println("Exception when wrong jar path given -> " + e.getMessage)
@@ -138,7 +71,7 @@ class UDAFValidation extends SnappySQLJob {
         pw.flush()
       }
     }
-    snc.sql(dropUDAF)
+    snc.sql(UDAFUtils.dropUDAF)
 
     /**
       * Create UDAF with wrong qualified class name.
@@ -147,8 +80,8 @@ class UDAFValidation extends SnappySQLJob {
        */
     try {
       pw.println("Create UDAF with wrong qualified class name.")
-      snc.sql(createUDAFWrongQualifiedClass)
-      snc.sql(query_1_UDAF)
+      snc.sql(UDAFUtils.createUDAFWrongQualifiedClass)
+      snc.sql(UDAFUtils.query_1_UDAF)
     } catch {
       case e : Exception => {
         pw.println("Exception when wrong qualified class path given -> " + e.getMessage)
@@ -156,7 +89,7 @@ class UDAFValidation extends SnappySQLJob {
         pw.flush()
       }
     }
-    snc.sql(dropUDAF)
+    snc.sql(UDAFUtils.dropUDAF)
 
     /**
       * Create the UDAF, test it and then drop the UDAF.
@@ -165,12 +98,12 @@ class UDAFValidation extends SnappySQLJob {
       */
     try {
       pw.println("Create UDAF, test and drop it and without creating UDAF test it.")
-      snc.sql(createUDAF)
-      val sncDF1 = snc.sql(query_1_UDAF)
-      val sncDF2 = snc.sql(query_1_Snappy)
-      validateResultSet(snc, sncDF1, sncDF2, pw, query_1_UDAF)
-      snc.sql(dropUDAF)
-      val sncDF3 = snc.sql(query_2_UDAF)
+      snc.sql(UDAFUtils.createUDAF)
+      val sncDF1 = snc.sql(UDAFUtils.query_1_UDAF)
+      val sncDF2 = snc.sql(UDAFUtils.query_1_Snappy)
+      validateResultSet(snc, sncDF1, sncDF2, pw, UDAFUtils.query_1_UDAF)
+      snc.sql(UDAFUtils.dropUDAF)
+      val sncDF3 = snc.sql(UDAFUtils.query_2_UDAF)
     } catch {
       case e : Exception => {
         pw.println("Without creating the UDAF, call the UDAF produce -> " + e.getMessage)
@@ -187,10 +120,10 @@ class UDAFValidation extends SnappySQLJob {
       */
     try {
       pw.println("Create UDAF with wrong return data type.")
-      snc.sql(createUDAFWrongReturnType)
-      val sncDF1 = snc.sql(query_1_UDAF)
-      val sncDF2 = snc.sql(query_1_Snappy)
-      validateResultSet(snc, sncDF1, sncDF2, pw, query_1_UDAF)
+      snc.sql(UDAFUtils.createUDAFWrongReturnType)
+      val sncDF1 = snc.sql(UDAFUtils.query_1_UDAF)
+      val sncDF2 = snc.sql(UDAFUtils.query_1_Snappy)
+      validateResultSet(snc, sncDF1, sncDF2, pw, UDAFUtils.query_1_UDAF)
      } catch {
       case e : Exception => {
         pw.println("When wrong return type given to function produce -> " + e.getMessage)
@@ -198,7 +131,7 @@ class UDAFValidation extends SnappySQLJob {
         pw.flush()
       }
     }
-    snc.sql(dropUDAF)
+    snc.sql(UDAFUtils.dropUDAF)
 
     /**
       * Create the UDAF, test it and drop it.
@@ -208,15 +141,15 @@ class UDAFValidation extends SnappySQLJob {
       */
     try {
       pw.println("Test UDAF : jar gets undeployed cleanly from cluster.")
-      snc.sql(createUDAF)
-      val sncDF1 = snc.sql(query_1_UDAF)
-      val sncDF2 = snc.sql(query_1_Snappy)
-      validateResultSet(snc, sncDF1, sncDF2, pw, query_1_UDAF)
-      snc.sql(dropUDAF)
-      snc.sql(createUDAFWithDifferentFunctionality)
-      val sncDF3 = snc.sql(query_3_UDAF)
-      val sncDF4 = snc.sql(query_3_Snappy)
-      validateResultSet(snc, sncDF3, sncDF4, pw, query_3_UDAF)
+      snc.sql(UDAFUtils.createUDAF)
+      val sncDF1 = snc.sql(UDAFUtils.query_1_UDAF)
+      val sncDF2 = snc.sql(UDAFUtils.query_1_Snappy)
+      validateResultSet(snc, sncDF1, sncDF2, pw, UDAFUtils.query_1_UDAF)
+      snc.sql(UDAFUtils.dropUDAF)
+      snc.sql(UDAFUtils.createUDAFWithDifferentFunctionality)
+      val sncDF3 = snc.sql(UDAFUtils.query_3_UDAF)
+      val sncDF4 = snc.sql(UDAFUtils.query_3_Snappy)
+      validateResultSet(snc, sncDF3, sncDF4, pw, UDAFUtils.query_3_UDAF)
     } catch {
       case e : Exception => {
         pw.println("Undepoly jar cleanly from cluster produce -> " + e.getMessage)
@@ -224,17 +157,17 @@ class UDAFValidation extends SnappySQLJob {
         pw.flush()
       }
    }
-    snc.sql(dropUDAF)
+    snc.sql(UDAFUtils.dropUDAF)
 
     try {
       pw.println("Testing : Multiple UDF in select statement")
-      snc.sql(dropUDAF)
-      snc.sql(dropCleverUDAF)
-      snc.sql(dropDullUDAF)
-      snc.sql(createUDAF)
-      snc.sql(createCleverUDAF)
-      snc.sql(createDullUDAF)
-      val sncDF1 = snc.sql(query_mulitple_UDAF)
+      snc.sql(UDAFUtils.dropUDAF)
+      snc.sql(UDAFUtils.dropCleverUDAF)
+      snc.sql(UDAFUtils.dropDullUDAF)
+      snc.sql(UDAFUtils.createUDAF)
+      snc.sql(UDAFUtils.createCleverUDAF)
+      snc.sql(UDAFUtils.createDullUDAF)
+      val sncDF1 = snc.sql(UDAFUtils.query_mulitple_UDAF)
       sncDF1.show()
       val validateDF1 = sncDF1.select(sncDF1("class"), sncDF1("meanmarks(maths, class)"))
       val validateDF2 = sncDF1.select(sncDF1("class"), sncDF1("cleverstudent(maths)"))
@@ -269,12 +202,12 @@ class UDAFValidation extends SnappySQLJob {
         pw.flush()
       }
     }
-    snc.sql(dropUDAF)
-    snc.sql(dropCleverUDAF)
-    snc.sql(dropDullUDAF)
+    snc.sql(UDAFUtils.dropUDAF)
+    snc.sql(UDAFUtils.dropCleverUDAF)
+    snc.sql(UDAFUtils.dropDullUDAF)
 
-    snc.sql(dropStagingStudent)
-    snc.sql(dropStudent)
+    snc.sql(UDAFUtils.dropStagingStudent)
+    snc.sql(UDAFUtils.dropStudent)
     pw.println("UDAF validation ends successfully...")
     println("UDAF validation ends successfully...")
     pw.flush()
