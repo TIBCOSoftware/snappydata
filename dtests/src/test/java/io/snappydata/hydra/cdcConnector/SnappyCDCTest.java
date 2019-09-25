@@ -17,8 +17,9 @@ import hydra.RemoteTestModule;
 import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyStartUpTest;
 import io.snappydata.hydra.cluster.SnappyTest;
-import io.snappydata.hydra.dataExtractorTool.DataExtractorToolTestPrms;
+import io.snappydata.hydra.dataExtractorTool.SnappyDataExtractorToolTestPrms;
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
+import io.snappydata.test.util.TestException;
 import org.apache.commons.io.FileUtils;
 import sql.sqlutil.ResultSetHelper;
 
@@ -288,7 +289,7 @@ public class SnappyCDCTest extends SnappyTest {
     int tableCnt = 0;
     Boolean isBeforeRestart = SnappyCDCPrms.getIsBeforeRestart();
     String fileName = SnappyCDCPrms.getDataLocation();
-    String schema = DataExtractorToolTestPrms.getSchemaName();
+    String schema = SnappyDataExtractorToolTestPrms.getSchemaName();
     try {
       Connection con = SnappyTest.getLocatorConnection();
       String tableCntQry = "SELECT COUNT(*) FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='" +schema+ "' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
@@ -314,7 +315,8 @@ public class SnappyCDCTest extends SnappyTest {
         ResultSet rs3 = con.createStatement().executeQuery(cntQry);
         while (rs3.next())
           count = rs3.getInt(1);
-        tableCntMap.put(tableName, count);
+        if(!tableCntMap.containsKey(tableName)) //To avoid overwriting the existing key(table)
+          tableCntMap.put(tableName, count);
         rs3.close();
       }
       SnappyBB.getBB().getSharedMap().put("tableCntMap", tableCntMap);
@@ -365,7 +367,9 @@ public class SnappyCDCTest extends SnappyTest {
 
   public void getResultSet(Connection conn, Boolean isBeforeRestart, String fileName) {
     SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
-    String logFile = getCurrentDirPath();
+    String logFile = getCurrentDirPath()+ File.separator + "queryResultFiles";
+    File queryResultDir = new File(logFile);
+    if (!queryResultDir.exists()) queryResultDir.mkdir();
     String outputFile;
     try {
       ArrayList<String> queryList = getQueryList(fileName);
@@ -382,7 +386,10 @@ public class SnappyCDCTest extends SnappyTest {
         testInstance.listToFile(snappyList, outputFile);
         if (!isBeforeRestart) {
           String beforeRestartFileName = logFile + File.separator + "beforeRestartResultSet_query_" + i + ".out";
-          testInstance.compareFiles(logFile, outputFile, beforeRestartFileName, true, "query_" + i);
+          String mismatchStr = testInstance.compareFiles(logFile, outputFile, beforeRestartFileName, true, "query_" + i);
+          if(mismatchStr.length() > 0){
+            throw new TestException("Observed data mismatch in query  " + qStr);
+          }
         }
       }
     } catch (SQLException ex) {
@@ -695,7 +702,6 @@ public class SnappyCDCTest extends SnappyTest {
     Log.getLogWriter().info("the dirPath is " + dirPath);
     removeDiskStoreFiles(dirPath);
   }
-
 
   public void stopCluster(String snappyPath, File logFile) {
     ProcessBuilder pbClustStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");
