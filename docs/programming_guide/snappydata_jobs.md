@@ -139,7 +139,7 @@ For writing jobs users need to include [Maven/SBT dependencies for the latest re
 For example, gradle can be configured as:
 
 ```pre
-compile('io.snappydata:snappydata-cluster_2.11:1.1.0') {
+compile('io.snappydata:snappydata-cluster_2.11:1.1.1') {
         exclude(group: 'io.snappydata', module: 'snappy-spark-unsafe_2.11')
         exclude(group: 'io.snappydata', module: 'snappy-spark-core_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-yarn_2.11')
@@ -213,6 +213,10 @@ $ ./bin/snappy-job.sh listcontexts  \
 $ ./bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
     --lead localhost:8090
 ```
+
+You can import the examples into a separate independent gradle project as is and submit the jobs to the cluster.
+Refer to the instructions [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/README.md). The link also contains instructions for importing and running examples from an IDE such as Intellij IDEA.
+
 
 **Related Topic**:
 

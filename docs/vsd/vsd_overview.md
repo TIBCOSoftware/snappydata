@@ -1,5 +1,7 @@
 #  Using VSD to Analyze Statistics
 
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
+
 The Visual Statistics Display (VSD) reads the sampled statistics from one or more archives and produces graphical displays for analysis. VSD is installed with SnappyData in the <span class="ph filepath">tools</span> subdirectory.
 
 VSD’s extensive online help offers complete reference information about the tool. 

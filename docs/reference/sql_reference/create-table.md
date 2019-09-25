@@ -61,7 +61,7 @@ column-definition-for-row-table: column-name column-data-type [ column-constrain
 *	Refer to the [identity](#id-columns) section for more information on GENERATED.</br>
 *	Refer to the [constraint](#constraint) section for more information on table-constraint and column-constraint.
 
-`column-data-type`
+### column-data-type
 The following data types are supported:
 
 ```pre
@@ -272,7 +272,12 @@ With this alternate form of the CREATE TABLE statement, you specify the column n
 
 If no column names are specified for the new table, then all the columns in the result of the query expression are used to create same-named columns in the new table, of the corresponding data type(s). If one or more column names are specified for the new table, the same number of columns must be present in the result of the query expression; the data types of those columns are used for the corresponding columns of the new table.
 
-Note that only the column names and data types from the queried table are used when creating the new table. Additional settings in the queried table, such as partitioning, replication, and persistence, are not duplicated. You can optionally specify partitioning, replication, and persistence configuration settings for the new table and those settings need not match the settings of the queried table.
+!!!Note
+	Only the column names and data types from the queried table are used when creating the new table. Additional settings in the queried table, such as partitioning, replication, and persistence, are not duplicated. You can optionally specify partitioning, replication, and persistence configuration settings for the new table and those settings need not match the settings of the queried table.
+
+When you are creating a new table in SnappyData from another table, for example an external table, by using `CREATE TABLE ... AS SELECT * FROM ...` query and you find that the query fails with the message: `Syntax error or analysis exception: Table <schemaname.tablename> already exists ...`, it's likely due to insufficient memory on one of the servers and that the server is going down. 
+You may also see an entry for that table created when you run `show tables` command immediately after.
+This happens because some tasks pertaining to the query may be still running on another server(s). As soon as those tasks are completed, the table gets cleaned up as expected because the query failed.
 
 ### Example: Create Table using Spark DataFrame API
 
@@ -318,6 +323,18 @@ Use eviction settings to keep your table within a specified limit, either by rem
     Default in SnappyData for `synchronous` is `persistence`, `overflow` is `true` and `eviction_by` is `LRUHEAPPERCENT`.
     	
         CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) USING row OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000');
+
+### Example: Create Column Table with COMMENT Clause
+
+You can add comments about a column using the COMMENT clause. The COMMENT clause must be used in the column definition as shown in the following example:
+```
+snappy> create table foobar (a string comment 'column 1', b string not null comment 'column 2') using column;
+snappy> describe foobar;
+col_name |data_type |comment
+------------------------------
+a        |string    |column 1
+b        |string    |column 2
+```
 
 <a id="constraint"></a>
 ### Constraint (only for Row Tables)
