@@ -366,13 +366,9 @@ private[sql] object JoinStrategy {
   /**
    * Matches a plan whose output should be small enough to be used in broadcast join.
    */
-  def canBroadcast(plan: LogicalPlan, conf: SQLConf): Boolean = {
-    plan.collectFirst {
-        case LogicalRelation(_: SamplingRelation, _, _) => true
-    }.isEmpty && (
-    plan.statistics.isBroadcastable ||
-        plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold)
-  }
+  def canBroadcast(plan: LogicalPlan, conf: SQLConf): Boolean = plan.statistics.isBroadcastable ||
+        plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold
+
 
   def getMaxHashJoinSize(conf: SQLConf): Long = {
     ExternalStoreUtils.sizeAsBytes(Property.HashJoinSize.get(conf),
@@ -396,10 +392,11 @@ private[sql] object JoinStrategy {
   def allowsReplicatedJoin(plan: LogicalPlan): Boolean = {
     plan match {
       case PhysicalScan(_, _, child) => child match {
-        case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned && (t match {
+        case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned
+        /* && (t match {
           case _: SamplingRelation => false
           case _ => true
-        })
+        }) */
         case _: Filter | _: Project | _: LocalLimit => allowsReplicatedJoin(child.children.head)
         case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
           allowsReplicatedJoin(left) && allowsReplicatedJoin(right) &&
