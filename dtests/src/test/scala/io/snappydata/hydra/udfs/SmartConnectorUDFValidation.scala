@@ -56,13 +56,13 @@ object SmartConnectorUDFValidation {
     executeJavaUDF13(snc, udfJarPath, pw)
     executeJavaUDF14(snc, udfJarPath, pw)
     executeJavaUDF15(snc, udfJarPath, pw)
-    //    executeJavaUDF16(snc, udfJarPath, pw)
-    //    executeJavaUDF17(snc, udfJarPath, pw)
-    //    executeJavaUDF18(snc, udfJarPath, pw)
-    //    executeJavaUDF19(snc, udfJarPath, pw)
-    //    executeJavaUDF20(snc, udfJarPath, pw)
-    //    executeJavaUDF21(snc, udfJarPath, pw)
-    //    executeJavaUDF22(snc, udfJarPath, pw)
+    executeJavaUDF16(snc, udfJarPath, pw)
+    executeJavaUDF17(snc, udfJarPath, pw)
+    executeJavaUDF18(snc, udfJarPath, pw)
+    executeJavaUDF19(snc, udfJarPath, pw)
+    executeJavaUDF20(snc, udfJarPath, pw)
+    executeJavaUDF21(snc, udfJarPath, pw)
+    executeJavaUDF22(snc, udfJarPath, pw)
     pw.println("Smart connector Java / Scala UDF validation Job Completed Successfully...")
     pw.close()
 
@@ -428,9 +428,11 @@ object SmartConnectorUDFValidation {
         snc.sql("CREATE FUNCTION UDF13 AS " +
           "com.snappy.poc.udf.JavaUDF13 RETURNS TIMESTAMP USING JAR '" +  udfJarPath + "';")
         val df1 = snc.sql("SELECT UDF13(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11,i12,i13) FROM T13")
+        var r1 = df1.collect()
+        pw.println(r1)
         var result = df1.collect().mkString.replace("[", "").replace("]", "")
         pw.println(result)
-        if(result.equals(new Timestamp(System.currentTimeMillis()).toString().trim())) {
+        if(result.equals(new Timestamp(System.currentTimeMillis()).toString())) {
           pw.println("Java UDF13 -> " + result)
         } else {
           pw.println("Mismatch in Java UDF13 -> " + result)
@@ -513,7 +515,28 @@ object SmartConnectorUDFValidation {
 
     def executeJavaUDF16(snc: SnappyContext, udfJarPath: String, pw: PrintWriter): Unit = {
       try {
-
+        snc.sql("DROP TABLE IF EXISTS T16")
+        snc.sql("CREATE TABLE IF NOT EXISTS T16" +
+          "(s1 String,s2 String,s3 String,s4 String,s5 String,s6 String,s7 String,s8 String," +
+          "s9 String,s10 String,s11 String,s12 String,s13 String,s14 String," +
+          "s15 String,s16 String) USING COLUMN")
+        snc.sql("INSERT INTO T16 VALUES('snappy','data','is','working','on','a'," +
+          "'distributed','data','base.','Its','Performance','is','faster','than','Apache','spark')")
+        snc.sql("CREATE FUNCTION UDF16 AS " +
+          "com.snappy.poc.udf.JavaUDF16 RETURNS VARCHAR(255) USING JAR '" +  udfJarPath + "';")
+        val df1 = snc.sql("SELECT UDF16(s1,s2,s3,s4,s5,s6,s7,s8," +
+          "s9,s10,s11,s12,s13,s14,s15,s16) FROM T16")
+        var result = df1.collect().mkString.replace("[", "").replace("]", "")
+        if(result.equals("snappy+data+is+working+on+a+distributed+data+base." +
+          "+Its+Performance+is+faster+than+Apache+spark")) {
+          pw.println("Java UDF16 -> " + result)
+        } else {
+          pw.println("Mismatch in Java UDF16 -> " + result)
+        }
+        pw.println("-- -- -- -- -- -- -- -- -- -- -- -- -- -- --")
+        pw.flush()
+        snc.sql("DROP FUNCTION UDF16;");
+        snc.sql("DROP TABLE IF EXISTS T16;");
       } catch {
         case e : Exception => {
           pw.println("Exception in Java UDF16 : " + e.getMessage)
@@ -525,7 +548,28 @@ object SmartConnectorUDFValidation {
 
     def executeJavaUDF17(snc: SnappyContext, udfJarPath: String, pw: PrintWriter): Unit = {
       try {
-
+        snc.sql("DROP TABLE IF EXISTS T17")
+        snc.sql("CREATE TABLE IF NOT EXISTS T17" +
+          "(f1 Float,f2 Float,f3 Float,f4 Float,f5 Float,f6 Float,f7 Float" +
+          ",f8 Float,f9 Float,f10 Float,f11 Float,f12 Float,f13 Float,f14 Float," +
+          "f15 Float,f16 Float,f17 Float) USING COLUMN")
+        snc.sql("INSERT INTO T17 VALUES" +
+          "(15.2,17.2,99.9,45.2,71.0,89.8,66.6,23.7," +
+          "33.1,13.5,77.7,38.3,44.4,21.7,41.8,83.2,78.1)")
+        snc.sql("CREATE FUNCTION UDF17 AS " +
+          "com.snappy.poc.udf.JavaUDF17 RETURNS BOOLEAN USING JAR '" +  udfJarPath + "';")
+        val df1 = snc.sql("SELECT UDF17(f1,f2,f3,f4,f5,f6,f7," +
+          "f8,f9,f10,f11,f12,f13,f14,f15,f16,f17) FROM T17")
+        var result = df1.collect().mkString.replace("[", "").replace("]", "")
+        if(result.equals("true")) {
+          pw.println("Java UDF17 -> " + result)
+        } else {
+          pw.println("Mismatch in Java UDF17 -> " + result)
+        }
+        pw.println("-- -- -- -- -- -- -- -- -- -- -- -- -- -- --")
+        pw.flush()
+        snc.sql("DROP FUNCTION UDF17")
+        snc.sql("DROP TABLE IF EXISTS T17")
       } catch {
         case e : Exception => {
           pw.println("Exception in Java UDF17 : " + e.getMessage)
@@ -537,7 +581,30 @@ object SmartConnectorUDFValidation {
 
     def executeJavaUDF18(snc: SnappyContext, udfJarPath: String, pw: PrintWriter): Unit = {
       try {
-
+        snc.sql("DROP TABLE IF EXISTS T18")
+        snc.sql("CREATE TABLE IF NOT EXISTS T18" +
+          "(s1 String,s2 String,s3 String,s4 String,s5 String,s6 String,s7 String,s8 String," +
+          "s9 String,s10 String,s11 String,s12 String,s13 String,s14 String,s15 String," +
+          "s16 String,s17 String,s18 String) USING COLUMN")
+        snc.sql("INSERT INTO T18 VALUES" +
+          "('snappy','data','spark','leader','locator','server','memory','eviction'," +
+          "'sql','udf','udaf','scala','docker','catalog','smart connector'," +
+          "'cores','executor','dir')")
+        snc.sql("CREATE FUNCTION UDF18 AS " +
+          "com.snappy.poc.udf.JavaUDF18 RETURNS STRING USING JAR '" +  udfJarPath + "';")
+        val df1 = snc.sql("SELECT UDF18(s1,s2,s3,s4,s5,s6,s7,s8," +
+          "s9,s10,s11,s12,s13,s14,s15,s16,s17,s18) FROM T18")
+        var result = df1.collect().mkString.replace("[", "").replace("]", "")
+        if(result.equals("executorsmart connectorcatalogdocker" +
+          "evictionmemoryserverlocatorleadersnappy,,,,,,,,,,")) {
+          pw.println("Java UDF18 -> " + result)
+        } else {
+          pw.println("Mismatch in Java UDF18 -> " + result)
+        }
+        pw.println("-- -- -- -- -- -- -- -- -- -- -- -- -- -- --")
+        pw.flush()
+        snc.sql("DROP FUNCTION UDF18")
+        snc.sql("DROP TABLE IF EXISTS T18")
       } catch {
         case e : Exception => {
           pw.println("Exception in Java UDF18 : " + e.getMessage)
@@ -549,7 +616,31 @@ object SmartConnectorUDFValidation {
 
     def executeJavaUDF19(snc: SnappyContext, udfJarPath: String, pw: PrintWriter): Unit = {
       try {
-
+        snc.sql("DROP TABLE IF EXISTS T19")
+        snc.sql("CREATE TABLE IF NOT EXISTS T19" +
+          "(s1 String,s2 String,s3 String,s4 String,s5 String,s6 String,s7 String,s8 String," +
+          "s9 String,s10 String,s11 String,s12 String,s13 String,s14 String,s15 String," +
+          "s16 String,s17 String,s18 String,s19 String) USING COLUMN")
+        snc.sql("INSERT INTO T19 VALUES" +
+          "('snappy','data','spark','leader','locator','server','memory','eviction'," +
+          "'sql','udf','udaf','scala','docker','catalog','smart connector'," +
+          "'cores','executor','dir','avro')")
+        snc.sql("CREATE FUNCTION UDF19 AS " +
+          "com.snappy.poc.udf.JavaUDF19 RETURNS STRING USING JAR '" +  udfJarPath + "';")
+        val df1 = snc.sql("SELECT UDF19(s1,s2,s3,s4,s5,s6,s7,s8," +
+          "s9,s10,s11,s12,s13,s14,s15,s16,s17,s18,s19) FROM T19")
+        var result = df1.collect().mkString.replace("[", "").replace("]", "")
+        if(result.equals("SNAPPY,DATA,SPARK,LEADER,LOCATOR,SERVER,MEMORY," +
+          "EVICTION,SQL,UDF,UDAF,SCALA,DOCKER,CATALOG," +
+          "SMART CONNECTOR,CORES,EXECUTOR,DIR,AVRO,")) {
+          pw.println("Java UDF19 -> " + result)
+        } else {
+          pw.println("Mismatch in Java UDF19 -> " + result)
+        }
+        pw.println("-- -- -- -- -- -- -- -- -- -- -- -- -- -- --")
+        pw.flush()
+        snc.sql("DROP FUNCTION UDF19")
+        snc.sql("DROP TABLE IF EXISTS T19")
       } catch {
         case e : Exception => {
           pw.println("Exception in Java UDF19 : " + e.getMessage)
@@ -561,7 +652,29 @@ object SmartConnectorUDFValidation {
 
     def executeJavaUDF20(snc: SnappyContext, udfJarPath: String, pw: PrintWriter): Unit = {
       try {
-
+        snc.sql("DROP TABLE IF EXISTS T20")
+        snc.sql("CREATE TABLE IF NOT EXISTS T20" +
+          "(i1 Integer,i2 Integer,i3 Integer,i4 Integer,i5 Integer,i6 Integer," +
+          "i7 Integer,i8 Integer,i9 Integer,i10 Integer,i11 Integer,i12 Integer," +
+          "i13 Integer,i14 Integer,i15 Integer,i16 Integer,i17 Integer,i18 Integer," +
+          "i19 Integer,i20 Integer) USING COLUMN")
+        snc.sql("INSERT INTO T20 VALUES" +
+          "(10,20,30,40,50,60,70,80,90," +
+          "100,13,17,21,25,19,22,86,88,64,58)")
+        snc.sql("CREATE FUNCTION UDF20 AS " +
+          "com.snappy.poc.udf.JavaUDF20 RETURNS INTEGER USING JAR '" + udfJarPath + "';")
+        val df1 = snc.sql("SELECT UDF20(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10," +
+          "i11,i12,i13,i14,i15,i16,i17,i18,i19,i20) FROM T20")
+        var result = df1.collect().mkString.replace("[", "").replace("]", "")
+        if(result.equals("15")) {
+          pw.println("Java UDF20 -> " + result)
+        } else {
+          pw.println("Mismatch in Java UDF20 -> " + result)
+        }
+        pw.println("-- -- -- -- -- -- -- -- -- -- -- -- -- -- --")
+        pw.flush()
+        snc.sql("DROP FUNCTION UDF20")
+        snc.sql("DROP TABLE IF EXISTS T20")
       } catch {
         case e : Exception => {
           pw.println("Exception in Java UDF20 : " + e.getMessage)
@@ -573,7 +686,31 @@ object SmartConnectorUDFValidation {
 
     def executeJavaUDF21(snc: SnappyContext, udfJarPath: String, pw: PrintWriter): Unit = {
       try {
-
+        snc.sql("DROP TABLE IF EXISTS T21")
+        snc.sql("CREATE TABLE IF NOT EXISTS T21" +
+          "(s1 String,s2 String,s3 String,s4 String,s5 String,s6 String,s7 String," +
+          "s8 String,s9 String,s10 String,s11 String,s12 String,s13 String,s14 String," +
+          "s15 String,s16 String,s17 String,s18 String,s19 String," +
+          "s20 String,s21 String) USING COLUMN")
+        snc.sql("INSERT INTO T21 VALUES" +
+          "('snappy','snappy','snappy','snappy','snappy','snappy'," +
+          "'snappy','snappy','snappy','snappy','snappy','snappy'," +
+          "'snappy','snappy','snappy','snappy','snappy','snappy'," +
+          "'snappy','snappy','snappy')")
+        snc.sql("CREATE FUNCTION UDF21 AS " +
+          "com.snappy.poc.udf.JavaUDF21 RETURNS INTEGER USING JAR '" +  udfJarPath + "';")
+        val df1 = snc.sql("SELECT UDF21(s1,s2,s3,s4,s5,s6,s7,s8," +
+          "s9,s10,s11,s12,s13,s14,s15,s16,s17,s18,s19,s20,s21) FROM T21")
+        var result = df1.collect().mkString.replace("[", "").replace("]", "")
+        if(result.equals("126")) {
+          pw.println("Java UDF21 -> " + result)
+        } else {
+          pw.println("Mismatch in Java UDF21 -> " + result)
+        }
+        pw.println("-- -- -- -- -- -- -- -- -- -- -- -- -- -- --")
+        pw.flush()
+        snc.sql("DROP FUNCTION UDF21")
+        snc.sql("DROP TABLE IF EXISTS T21")
       } catch {
         case e : Exception => {
           pw.println("Exception in Java UDF21 : " + e.getMessage)
@@ -585,7 +722,29 @@ object SmartConnectorUDFValidation {
 
     def executeJavaUDF22(snc: SnappyContext, udfJarPath: String, pw: PrintWriter): Unit = {
       try {
-
+        snc.sql("DROP TABLE IF EXISTS T22")
+        snc.sql("CREATE TABLE IF NOT EXISTS T22" +
+          "(i1 Integer,i2 Integer,i3 Integer,i4 Integer,i5 Integer,i6 Integer,i7 Integer," +
+          "i8 Integer,i9 Integer,i10 Integer,i11 Integer,i12 Integer,i13 Integer,i14 Integer," +
+          "i15 Integer,i16 Integer,i17 Integer,i18 Integer,i19 Integer," +
+          "i20 Integer,i21 Integer,i22 Integer) USING COLUMN")
+        snc.sql("INSERT INTO T22 VALUES" +
+          "(10,10,10,10,10,10,10,10,10," +
+          "10,10,10,10,10,10,10,10,10,10,10,10,10)")
+        snc.sql("CREATE FUNCTION UDF22 AS " +
+          "com.snappy.poc.udf.JavaUDF22 RETURNS INTEGER USING JAR '" +  udfJarPath + "';")
+        val df1 = snc.sql("SELECT UDF22(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11," +
+          "i12,i13,i14,i15,i16,i17,i18,i19,i20,i21,i22) FROM T22")
+        var result = df1.collect().mkString.replace("[", "").replace("]", "")
+        if(result.equals("220")) {
+          pw.println("Java UDF22 -> " + result)
+        } else {
+          pw.println("Mismatch in Java UDF22 -> " + result)
+        }
+        pw.println("-- -- -- -- -- -- -- -- -- -- -- -- -- -- --")
+        pw.flush()
+        snc.sql("DROP FUNCTION UDF22")
+        snc.sql("DROP TABLE IF EXISTS T22")
       } catch {
         case e : Exception => {
           pw.println("Exception in Java UDF22 : " + e.getMessage)
@@ -594,6 +753,5 @@ object SmartConnectorUDFValidation {
         }
       }
     }
-
   }
 }
