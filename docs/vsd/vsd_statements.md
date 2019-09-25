@@ -1,5 +1,7 @@
 #  SQL Statement Performance
 
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
+
 With statement-level statistics enabled, statistics are available for all DML statements.
 
 An example follows the table.

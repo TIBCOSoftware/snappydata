@@ -3,6 +3,8 @@
 SnappyData Monitoring Console is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data.  This simple widget based view allows you to navigate easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
 All the usage details are automatically refreshed after every five seconds.
 
+!!! Note
+	TIBCO ComputeDB Monitoring Console is not yet tested and supported on Internet Explorer.
 
 To access SnappyData Monitoring Console, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
 
@@ -33,7 +35,12 @@ The following topics are covered in this section:
 !!! Note
 	When connecting to a SnappyData cluster using Smart Connector, the information related to **SQL**, **Jobs**, and **Stages** are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about SnappyData Smart Connector Mode [here](../affinity_modes/connector_mode.md).
 
+In cases where you cannot access the SnappyData Monitoring Console to analyse Jobs and tasks, you must turn on the [Spark History server](#historyserver).
+
+
 On the top-right side of the SnappyData Monitoring Console page, you can view the version details of SnappyData Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.
+
+On the top of the dashboard, the date and time details about when the cluster is started are displayed. The period till when the cluster is running is also shown.
 
 ![](../Images/MonitoringUI/SnappyData-UI-About-Box1.png)
 
@@ -41,10 +48,6 @@ On the top-right side of the SnappyData Monitoring Console page, you can view th
 ## Dashboard
 The Dashboard page graphically presents various cluster-level statistics that can be used to monitor the current health status of a cluster. The statistics on the dashboard page can be set to update automatically after every five seconds.  If you want to turn off the auto-refresh, use the **Auto Refresh** switch that is provided on the upper-right corner.
 ![](../Images/AutoRefresh-is-ON.png)
-
-You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
-![](../Images/CPU_cores.png)
-
 
 The **Dashboard** page displays the following sections:
 
@@ -63,6 +66,11 @@ You can use the search and sort functionalities in any of the sections, except f
 In the **Cluster** section, you can view the following graphs which are automatically refreshed:
 
 ![Cluster](../Images/Dashboard-Trends.png)
+
+On the Dashboard page, the **Cluster** section displays the date and time when the cluster was launched. It also displays the cluster's up-time since cluster was launched.
+
+You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
+![](../Images/CPU_cores.png)
 
 |Graphs|Description|
 |--------|--------|
@@ -114,7 +122,9 @@ The following columns are displayed in this section:
 |**In-Memory Size**    |    Displays the heap memory used by data table to store its data. If less than **Total Size** then the data is overflowing to disk.   |
 |**Spill-to-Disk Size**|Displays size of data overflown to disk|
 |     **Total Size**   |     Displays the collective physical memory and disk overflow space used by the data table to store its data.   |
-|      **Buckets**  |  Displays the total number of buckets in the data table.|
+|      **Buckets**  |  Displays the total number of buckets in the data table. If a number displayed in red here, it indicates that some of the buckets are offline.|
+|      **Redundancy**  |  Displays the number of redundant copies.  </br>Redundancy value **0** indicates that redundant copies are not configured. </br>Redundancy value **1** indicates that one redundant copy is configured. </br>Redundancy value **NA** indicates that redundancy is not applicable.|
+|      **Redundancy Status**  |  Displays whether redundancy criteria is satisfied or broken. </br>Redundancy status **Satisfied** indicates that all the configured redundant copies are available. </br> Redundancy status **Broken** indicates that some of the redundant copies are not available. </br> Redundancy status **NA** indicates that redundancy is not applicable.|
 
 ### External Tables
 The **External Tables** section lists all the external tables present in the cluster along with their various statistical details. The displayed details are automatically refreshed after every five seconds.
@@ -163,7 +173,7 @@ The usage trends of the member are represented in the following graphs:
 <a id="memberlogs"></a>
 ### Member Logs
 
-In the Member Details page, you can view the logs generated for a single member in the cluster. 
+In the Member Details page, you can view the logs generated for a single member in the cluster.
 
 ![MemberLogs](../Images/monitoring_memberdetails_logs.png)
 
@@ -246,3 +256,22 @@ On this page, you can view the total time required for all the tasks in a job to
 * **Number of parallel tasks**: Due to concurrency, multiple queries may take cores and a specific query can take longer. To fix this, you can create a new scheduler and [assign appropriate cores to it](../best_practices/setup_cluster.md).
 
 * **GC time**: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory, especially when you have row tables.
+
+<a id="historyserver"></a>
+## Spark History Server
+The Spark History server is an HTTP server that let you analyze the Spark jobs.
+
+The first step in tuning query performance in SnappyData is to understand the query physical plan that is available through the SQL tab on the SnappyData Monitoring console. The detailed execution plan requires one to understand the jobs and tasks associated with the query. This is available in the Jobs/Tasks tab. However, if the SnappyData Monitoring console is not accessible to the investigator, it becomes a difficult exercise. To overcome this, TIBCO recommends to turn on the History server for production applications.
+
+To turn on the History server, do the following:
+
+1.	Ensure to provide a shared disk that can be accessed from all the SnappyData nodes. If you do not have the NFS access, use HDFS. Provide the permissions to access a shared folder when you start SnappyData.
+2.	Enable event logging for the Spark jobs. For example, if the server was configured with a log directory of hdfs://namenode/shared/spark-logs, then configure the following properties in the conf/lead: 
+
+            spark.eventLog.enabled true
+            spark.eventLog.dir hdfs://namenode/shared/spark-logs
+
+3.	Start the History server.
+			./sbin/start-history-server.sh
+	This creates a web interface at http://<server-url>:18080 by default, listing incomplete and completed instances of SQL queries and the associated Spark jobs and tasks.
+    For more details about History server, refer to [Configuring History Server](https://spark.apache.org/docs/latest/monitoring.html#environment-variables).

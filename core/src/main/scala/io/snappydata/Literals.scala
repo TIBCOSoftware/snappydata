@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -291,7 +291,9 @@ object Property extends Enumeration {
 
   val UseOptimizedHashAggregateForSingleKey: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.useOptimizedHashAggregateForSingleKey",
-    "use ByteBufferMap based SnappyHashAggregateExec even for single string group by",
+    "Use the new ByteBufferMap based SnappyHashAggregateExec even for single column group by." +
+        "The default value is false since the older implementation is substantially faster " +
+        "for most of single column group by cases (except if number of groups is very large).",
     Some(false))
 
   val ApproxMaxCapacityOfBBMap: SQLValue[Int] = SQLVal[Int](
