@@ -17,20 +17,20 @@
 
 package io.snappydata.hydra.dataExtractorTool;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Vector;
 
+import hydra.FileUtil;
 import hydra.Log;
 import io.snappydata.hydra.cdcConnector.SnappyCDCPrms;
+import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.security.SnappySecurityPrms;
-import io.snappydata.hydra.security.SnappySecurityTest;
+import org.apache.commons.io.FileUtils;
 import util.TestException;
 
 public class DataExtractorToolTest extends SnappyTest {
@@ -120,6 +120,103 @@ public class DataExtractorToolTest extends SnappyTest {
     closeConnection(conn);
   }
 
+
+  public static void HydraTask_modifyConf() {
+    if (dataExtractorToolTest == null) {
+      dataExtractorToolTest = new DataExtractorToolTest();
+    }
+    dataExtractorToolTest.modifyConf();
+  }
+
+  public void modifyConf() {
+    String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
+    String nodeConfigInfo = SnappyCDCPrms.getNodeInfoForHA();
+    File orgName = new File(snappyPath + "/conf/servers");
+    File bkName = new File(snappyPath + "/conf/servers_bk");
+    String dest1 = getCurrentDirPath() + File.separator + "catResults1.log";
+    File logFile1 = new File(dest1);
+    String dest2 = getCurrentDirPath() + File.separator + "catResults2.log";
+    File logFile2 = new File(dest2);
+    String dest3 = getCurrentDirPath() + File.separator + "catResults3.log";
+    File logFile3 = new File(dest3);
+
+    boolean isStartClusterForCPDE = SnappyDataExtractorToolTestPrms.getIsStartClusterForCPDE();
+    try {
+      if (isStartClusterForCPDE) {
+        File tempConfFile = null;
+        String cmd1 = " cat "+ orgName;
+        ProcessBuilder pb1 = new ProcessBuilder("/bin/bash", "-c", cmd1);
+        snappyTest.executeProcess(pb1,logFile1);
+        FileInputStream fis = new FileInputStream(orgName);
+        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+        String str;
+
+        tempConfFile = (File) SnappyBB.getBB().getSharedMap().get("SERVER_CONF");
+        String cmd2 = " cat "+ tempConfFile;
+        ProcessBuilder pb2 = new ProcessBuilder("/bin/bash", "-c", cmd2);
+        snappyTest.executeProcess(pb2,logFile2);
+        FileWriter fw1 = new FileWriter(tempConfFile, true);
+        while ((str = br.readLine()) != null) {
+          String strString = str + "\n";
+          Log.getLogWriter().info("SP: The string to be written in conf file is " + strString);
+          fw1.write(strString);
+        }
+        fw1.close();
+        orgName.delete();
+        orgName.createNewFile();
+        FileUtils.copyFile(tempConfFile,orgName);
+        String cmd3 = " cat "+ orgName;
+        ProcessBuilder pb3 = new ProcessBuilder("/bin/bash", "-c", cmd3);
+        snappyTest.executeProcess(pb3,logFile3);
+
+        deleteFiles(bkName);
+        deleteFiles(tempConfFile);
+
+      } else {
+        Vector hostList = SnappyCDCPrms.getNodeName();
+        FileUtils.copyFile(orgName, bkName);
+        orgName.delete();
+        orgName.createNewFile();
+        FileWriter fw = new FileWriter(orgName, true);
+        Log.getLogWriter().info("SP: The hostList size = " + hostList.size());
+        for (int i = 0; i < hostList.size(); i++) {
+          String nodeName = String.valueOf(hostList.get(i));
+          Log.getLogWriter().info("The nodeName is " + nodeName);
+          String nodeInfo = nodeName + nodeConfigInfo ;//+ " -locators = " + endpoints.get(0);
+          Log.getLogWriter().info("The nodeInfo is  " + nodeInfo);
+          String nodeConfig = nodeInfo + "\n";
+          fw.write(nodeConfig);
+        }
+        fw.close();
+        SnappyBB.getBB().getSharedMap().put("SERVER_CONF", bkName);
+       // deleteFiles(bkName);
+      }
+      Log.getLogWriter().info("Starting the cluster");
+      startSnappyCluster();
+      Log.getLogWriter().info("Finished cluster startUp.");
+    } catch (FileNotFoundException e) {
+      throw new io.snappydata.test.util.TestException("Caught FileNotFoundException in addNewNode method " + e.getMessage());
+    } catch (IOException e) {
+      throw new io.snappydata.test.util.TestException("Caught IOException in addNewNode method " + e.getMessage());
+    } catch (Exception e) {
+      throw new io.snappydata.test.util.TestException("Caught Exception in addNewNode method" + e.getMessage());
+    }
+  }
+
+  public void deleteFiles(File fileName){
+    try{
+      //delete the temp conf file created.
+      if (fileName.delete()) {
+        Log.getLogWriter().info(fileName.getName() + " is deleted!");
+      } else {
+        Log.getLogWriter().info("Deleting the " +fileName+ " conf file operation failed.");
+      }
+    }
+    catch(Exception ex) {
+
+    }
+  }
+
   public static void HydraTask_startClusterInRecoveryMode() {
     if (dataExtractorToolTest == null) {
       dataExtractorToolTest = new DataExtractorToolTest();
@@ -133,14 +230,7 @@ public class DataExtractorToolTest extends SnappyTest {
       String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
       String dest = getCurrentDirPath() + File.separator + "RecoveryModeCluster.log";
       File logFile = new File(dest);
-      String loc = getCurrentDirPath() + File.separator + "StopCluster.log";
-      File locFile = new File(loc);
-
-      //Before starting in recovery mode stop the cluster.
-      ProcessBuilder pbClustStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");
-      snappyTest.executeProcess(pbClustStop, locFile);
-      Log.getLogWriter().info("The destination file is " + dest);
-      String command = snappyPath + "/sbin/snappy-start-all.sh --recover";
+      String command = snappyPath + "/sbin/snappy-start-all.sh -r";
       ProcessBuilder pbClustStart = new ProcessBuilder("/bin/bash", "-c", command);
       Long startTime1 = System.currentTimeMillis();
       snappyTest.executeProcess(pbClustStart, logFile);

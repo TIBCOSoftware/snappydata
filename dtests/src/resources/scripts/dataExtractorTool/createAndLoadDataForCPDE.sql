@@ -1,4 +1,4 @@
-  CREATE TABLE AGREEMENT( AGREE_ID BIGINT NOT NULL,
+  CREATE TABLE AGREEMENT1( AGREE_ID BIGINT NOT NULL,
     VER BIGINT NOT NULL,
     CLIENT_ID BIGINT NOT NULL,
     AGREE_CD VARCHAR(200),
@@ -9,9 +9,9 @@
     VLD_TO_DT TIMESTAMP,
     SRC_SYS_REF_ID VARCHAR(200) NOT NULL,
     SRC_SYS_REC_ID VARCHAR(200)) USING column OPTIONS(partition_by 'AGREE_ID', buckets '32',key_columns 'CLIENT_ID,AGREE_ID ',redundancy '1' );
-    INSERT into AGREEMENT select id,abs(rand()*1000),abs(rand()*1000),'agree_cd','description','2018-01-01','2019-01-01',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),'src_sys_ref_id','src_sys_rec_id' FROM range(50000000);
+    INSERT into AGREEMENT1 select id,abs(rand()*1000),abs(rand()*1000),'agree_cd','description','2018-01-01','2019-01-01',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),'src_sys_ref_id','src_sys_rec_id' FROM range(50000000);
 
-CREATE TABLE AGREEMENT_ROW( AGREE_ID BIGINT NOT NULL,
+CREATE TABLE AGREEMENT_ROW1( AGREE_ID BIGINT NOT NULL,
     VER BIGINT NOT NULL,
     CLIENT_ID BIGINT NOT NULL,
     AGREE_CD VARCHAR(200),
@@ -22,9 +22,9 @@ CREATE TABLE AGREEMENT_ROW( AGREE_ID BIGINT NOT NULL,
     VLD_TO_DT TIMESTAMP,
     SRC_SYS_REF_ID VARCHAR(200) NOT NULL,
     SRC_SYS_REC_ID VARCHAR(200)) USING row OPTIONS(partition_by 'AGREE_ID', buckets '32',redundancy '1' );
-    INSERT into AGREEMENT_ROW select id,abs(rand()*1000),abs(rand()*1000),'agree_cd','description','2018-01-01','2019-01-01',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),'src_sys_ref_id','src_sys_rec_id' FROM range(500000);
+    INSERT into AGREEMENT_ROW1 select id,abs(rand()*1000),abs(rand()*1000),'agree_cd','description','2018-01-01','2019-01-01',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),'src_sys_ref_id','src_sys_rec_id' FROM range(500000);
 
-CREATE TABLE AGREEMENT_RR( AGREE_ID BIGINT NOT NULL,
+CREATE TABLE AGREEMENT_RR1( AGREE_ID BIGINT NOT NULL,
   VER BIGINT NOT NULL,
   CLIENT_ID BIGINT NOT NULL,
   AGREE_CD VARCHAR(200),
@@ -35,9 +35,9 @@ CREATE TABLE AGREEMENT_RR( AGREE_ID BIGINT NOT NULL,
   VLD_TO_DT TIMESTAMP,
   SRC_SYS_REF_ID VARCHAR(200) NOT NULL,
   SRC_SYS_REC_ID VARCHAR(200)) ;
-  INSERT into AGREEMENT_RR select id,abs(rand()*1000),abs(rand()*1000),'agree_cd','description','2018-01-01','2019-01-01',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),'src_sys_ref_id','src_sys_rec_id' FROM range(10000);
+  INSERT into AGREEMENT_RR1 select id,abs(rand()*1000),abs(rand()*1000),'agree_cd','description','2018-01-01','2019-01-01',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),'src_sys_ref_id','src_sys_rec_id' FROM range(10000);
 
-CREATE TABLE BANK(
+CREATE TABLE BANK1(
   BNK_ORG_ID BIGINT NOT NULL,
   BNK_ID BIGINT NOT NULL,
   VER BIGINT NOT NULL,
@@ -48,10 +48,10 @@ CREATE TABLE BANK(
   VLD_TO_DT TIMESTAMP,
   SRC_SYS_REF_ID VARCHAR(10) NOT NULL,
   SRC_SYS_REC_ID VARCHAR(150)) USING column OPTIONS(partition_by 'BNK_ORG_ID', buckets '32',key_columns 'CLIENT_ID,BNK_ORG_ID,BNK_ID ',redundancy '1') ;
-  INSERT into BANK select id,id,abs(rand()*1000),abs(rand()*1000),'BNK_FULL_NM','RTNG_NUM',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),'src_sys_ref_id','src_sys_rec_id' from range(4000000);
+  INSERT into BANK1 select id,id,abs(rand()*1000),abs(rand()*1000),'BNK_FULL_NM','RTNG_NUM',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),'src_sys_ref_id','src_sys_rec_id' from range(4000000);
 
-CREATE EXTERNAL TABLE staging_orders_details USING com.databricks.spark.csv  OPTIONS (path ':dataLocation/ORDERS_DETAILS.dat', header 'true', inferSchema 'false',nullValue 'NULL', maxCharsPerColumn '4096');
-CREATE TABLE ORDERS_DETAILS
+CREATE EXTERNAL TABLE staging_orders_details1 USING com.databricks.spark.csv  OPTIONS (path ':dataLocation/ORDERS_DETAILS.dat', header 'true', inferSchema 'false',nullValue 'NULL', maxCharsPerColumn '4096');
+CREATE TABLE ORDERS_DETAILS1
              (SINGLE_ORDER_DID BIGINT ,SYS_ORDER_ID VARCHAR(64) ,SYS_ORDER_VER INTEGER ,DATA_SNDG_SYS_NM VARCHAR(128) ,
              SRC_SYS VARCHAR(20) ,SYS_PARENT_ORDER_ID VARCHAR(64) ,SYS_PARENT_ORDER_VER SMALLINT ,PARENT_ORDER_TRD_DATE VARCHAR(20),
              PARENT_ORDER_SYS_NM VARCHAR(128) ,SYS_ALT_ORDER_ID VARCHAR(64) ,TRD_DATE VARCHAR(20),GIVE_UP_BROKER VARCHAR(20) ,
@@ -96,91 +96,12 @@ CREATE TABLE ORDERS_DETAILS
              IOI_PRICE DECIMAL(28, 10) ,TGT_PRICE DECIMAL(28, 10) ,IOI_QTY VARCHAR(64) ,IOI_ORDER_QTY DECIMAL(28, 4) ,CMSN VARCHAR(64) ,SYS_LEG_REF_ID VARCHAR(64) ,
              TRADING_TYPE VARCHAR(4) ,EXCH_ORDER_ID VARCHAR(64) ,DEAL_ID VARCHAR(64) ,ORDER_TRD_TYPE VARCHAR(4) ,CXL_REASON VARCHAR(64))
              USING column OPTIONS (partition_by 'SINGLE_ORDER_DID', redundancy '1',buckets '32');
+INSERT INTO ORDERS_DETAILS1 SELECT * FROM staging_orders_details;
 
-INSERT INTO ORDERS_DETAILS SELECT * FROM staging_orders_details;
-
-CREATE TABLE IF NOT EXISTS Student(rollno Int, name String, marks ARRAY<Double>) USING column OPTIONS( buckets '32');
-INSERT INTO Student SELECT 1,'Mohit Shukla', Array(97.8,85.2,63.9,45.2,75.2,96.5);
-INSERT INTO Student SELECT 2,'Nalini Gupta',Array(89.3,56.3,89.1,78.4,84.1,99.2);
-INSERT INTO Student SELECT 3,'Kareena Kapoor',Array(99.9,25.3,45.8,65.8,77.9,23.1);
-INSERT INTO Student SELECT 4,'Salman Khan',Array(99.9,89.2,85.3,90.2,83.9,96.1);
-INSERT INTO Student SELECT 5,'Aranav Goswami',Array(90.1,80.1,70.1,60.1,50.1,40.1);
-INSERT INTO Student SELECT 6,'Sudhir Chudhari',Array(81.1,81.2,81.3,81.4,81.5,81.6);
-INSERT INTO Student SELECT 7,'Anjana Kashyap',Array(71.2,65.0,52.3,89.4,95.1,90.9);
-INSERT INTO Student SELECT 8,'Navika Kumar',Array(95.5,75.5,55.5,29.3,27.4,50.9);
-INSERT INTO Student SELECT 9,'Atul Singh',Array(40.1,42.3,46.9,47.8,44.4,42.0);
-INSERT INTO Student SELECT 10,'Dheeraj Sen',Array(62.1,50.7,52.3,67.9,69.9,66.8);
-
-CREATE VIEW StudentMark AS SELECT rollno,name,explode(marks) AS Marks FROM Student;
-
-CREATE TABLE IF NOT EXISTS StudentMarksRecord (rollno Integer, name String,Maths MAP<STRING,DOUBLE>,Science MAP<STRING,DOUBLE>, English MAP<STRING,DOUBLE>, Computer MAP<STRING,DOUBLE>, Music MAP<STRING,Double>, History MAP<STRING,DOUBLE>) USING column OPTIONS( buckets '32');;
-INSERT INTO StudentMarksRecord SELECT 1,'Mohit Shukla',MAP('maths',97.8),MAP('science',85.2), MAP('english',63.9),MAP('computer',45.2),MAP('music',75.2),MAP('history',96.5);
-INSERT INTO StudentMarksRecord SELECT 2,'Nalini Gupta',MAP('maths',89.3),MAP('science',56.3), MAP('english',89.1),MAP('computer',78.4),MAP('music',84.1),MAP('history',99.2);
-INSERT INTO StudentMarksRecord SELECT 3,'Kareena Kapoor',MAP('maths',99.9),MAP('science',25.3), MAP('english',45.8),MAP('computer',65.8),MAP('music',77.9),MAP('history',23.1);
-INSERT INTO StudentMarksRecord SELECT 4,'Salman Khan',MAP('maths',99.9),MAP('science',89.2), MAP('english',85.3),MAP('computer',90.2),MAP('music',83.9),MAP('history',96.1);
-INSERT INTO StudentMarksRecord SELECT 5,'Aranav Goswami',MAP('maths',90.1),MAP('science',80.1), MAP('english',70.1),MAP('computer',60.1),MAP('music',50.1),MAP('history',40.1);
-INSERT INTO StudentMarksRecord SELECT 6,'Sudhir Chudhari',MAP('maths',81.1),MAP('science',81.2), MAP('english',81.3),MAP('computer',81.4),MAP('music',81.5),MAP('history',81.6);
-INSERT INTO StudentMarksRecord SELECT 7,'Anjana Kashyap',MAP('maths',71.2),MAP('science',65.0), MAP('english',52.3),MAP('computer',89.4),MAP('music',95.1),MAP('history',90.9);
-INSERT INTO StudentMarksRecord SELECT 8,'Navika Kumar',MAP('maths',95.5),MAP('science',75.5), MAP('english',55.5),MAP('computer',29.3),MAP('music',27.4),MAP('history',50.9);
-INSERT INTO StudentMarksRecord SELECT 9,'Atul Singh',MAP('maths',40.1),MAP('science',42.3), MAP('english',46.9),MAP('computer',47.8),MAP('music',44.4),MAP('history',42.0);
-INSERT INTO StudentMarksRecord SELECT 10,'Dheeraj Sen',MAP('maths',62.1),MAP('science',50.7), MAP('english',52.3),MAP('computer',67.9),MAP('music',69.9),MAP('history',66.8);
-
-CREATE TABLE IF NOT EXISTS CricketRecord(name String,TestRecord STRUCT<batStyle:String,Matches:Long,Runs:Int,Avg:Double>) USING column;
-INSERT INTO CricketRecord SELECT 'Sachin Tendulkar',STRUCT('Right Hand',200,15921,53.79);
-INSERT INTO CricketRecord SELECT 'Saurav Ganguly',STRUCT('Left Hand',113,7212,51.26);
-INSERT INTO CricketRecord SELECT 'Rahul Drvaid',STRUCT('Right Hand',164,13288,52.31);
-INSERT INTO CricketRecord SELECT 'Yuvraj Singh',STRUCT('Left Hand',40,1900,33.93);
-INSERT INTO CricketRecord SELECT 'MahendraSingh Dhoni',STRUCT('Right Hand',90,4876,38.09);
-INSERT INTO CricketRecord SELECT 'Kapil Dev',STRUCT('Right Hand',131,5248,31.05);
-INSERT INTO CricketRecord SELECT 'Zahir Khan',STRUCT('Right Hand',92,1230,11.94);
-INSERT INTO CricketRecord SELECT 'Gautam Gambhir',STRUCT('Left Hand',58,4154,41.96);
-INSERT INTO CricketRecord SELECT 'VVS Laxman',STRUCT('Right Hand',134,8781,45.5);
-INSERT INTO CricketRecord SELECT 'Virendra Sehwag',STRUCT('Right Hand',104,8586,49.34);
-INSERT INTO CricketRecord SELECT 'Sunil Gavaskar',STRUCT('Right Hand',125,10122,51.12);
-INSERT INTO CricketRecord SELECT 'Anil Kumble',STRUCT('Right Hand',132,2506,17.65);
-
-CREATE TABLE IF NOT EXISTS TwentyTwenty(name String,LastThreeMatchPerformance ARRAY<Double>,Roll MAP<SMALLINT,STRING>,Profile STRUCT<Matches:Long,Runs:Int,SR:Double,isPlaying:Boolean>) USING column OPTIONS( buckets '32');;
-INSERT INTO TwentyTwenty SELECT 'M S Dhoni',ARRAY(37,25,58),MAP(1,'WicketKeeper'),STRUCT(93,1487,127.09,true);
-INSERT INTO TwentyTwenty SELECT 'Yuvaraj Singh',ARRAY(68,72,21),MAP(2,'AllRounder'),STRUCT(58,1177,136.38,false);
-INSERT INTO TwentyTwenty SELECT 'Viral Kohli',ARRAY(52,102,23),MAP(3,'Batsmen'),STRUCT(65,2167,136.11,true);
-INSERT INTO TwentyTwenty SELECT 'Gautam Gambhir',ARRAY(35,48,74),MAP(3,'Batsmen'),STRUCT(37,932,119.02,false);
-INSERT INTO TwentyTwenty SELECT 'Rohit Sharma',ARRAY(0,56,44),MAP(3,'Batsmen'),STRUCT(90,2237,138.17,true);
-INSERT INTO TwentyTwenty SELECT 'Ravindra Jadeja',ARRAY(15,25,33),MAP(2,'AllRounder'),STRUCT(40,116,93.54,true);
-INSERT INTO TwentyTwenty SELECT 'Virendra Sehwag',ARRAY(5,45,39),MAP(3,'Batsmen'),STRUCT(19,394,145.39,false);
-INSERT INTO TwentyTwenty SELECT 'Hardik Pandya',ARRAY(27,14,19),MAP(2,'AllRounder'),STRUCT(35,271,153.10,true);
-INSERT INTO TwentyTwenty SELECT 'Suresh Raina',ARRAY(31,26,48),MAP(3,'Batsmen'),STRUCT(78,1605,134.87,false);
-INSERT INTO TwentyTwenty SELECT 'Harbhajan Singh',ARRAY(23,5,11),MAP(4,'Bowler'),STRUCT(28,108,124.13,false);
-INSERT INTO TwentyTwenty SELECT 'Ashish Nehra',ARRAY(2,1,5),MAP(4,'Bowler'),STRUCT(27,28,71.79,false);
-INSERT INTO TwentyTwenty SELECT 'Kuldeep Yadav',ARRAY(3,3,0),MAP(4,'Bowler'),STRUCT(17,20,100.0,true);
-INSERT INTO TwentyTwenty SELECT 'Parthiv Patel',ARRAY(29,18,9),MAP(1,'WicketKeeper'),STRUCT(2,36,112.50,false);
-INSERT INTO TwentyTwenty SELECT 'Ravichandran Ashwin',ARRAY(15,7,12),MAP(4,'Bowler'),STRUCT(46,123,106.95,true);
-INSERT INTO TwentyTwenty SELECT 'Irfan Pathan',ARRAY(17,23,18),MAP(2,'AllRounder'),STRUCT(24,172,119.44,false);
-
-CREATE TABLE IF NOT EXISTS TwoWheeler (brand String,BikeInfo ARRAY< STRUCT <type:String,cc:Double,noofgears:BigInt,instock:Boolean>>) USING column OPTIONS( buckets '32');;
-INSERT INTO TwoWheeler SELECT 'Honda',ARRAY(STRUCT('Street Bike',149.1,5,false));
-INSERT INTO TwoWheeler SELECT 'TVS',ARRAY(STRUCT('Scooter',110,0,true));
-INSERT INTO TwoWheeler SELECT 'Honda',ARRAY(STRUCT('Scooter',109.19,0,true));
-INSERT INTO TwoWheeler SELECT 'Royal Enfield',ARRAY(STRUCT('Cruiser',346.0,5,true));
-INSERT INTO TwoWheeler SELECT 'Suzuki', ARRAY(STRUCT('Cruiser',154.9,5,true));
-INSERT INTO TwoWheeler SELECT 'Yamaha', ARRAY(STRUCT('Street Bike',149,5,false));
-INSERT INTO TwoWheeler SELECT 'Bajaj',ARRAY(STRUCT('Street Bike',220.0,5,true));
-INSERT INTO TwoWheeler SELECT 'Kawasaki',ARRAY(STRUCT('Sports Bike',296.0,5,false));
-INSERT INTO TwoWheeler SELECT 'Vespa',ARRAY(STRUCT('Scooter',125.0,0,true));
-INSERT INTO TwoWheeler SELECT 'Mahindra',ARRAY(STRUCT('Scooter',109.0,0,false));
-
-CREATE TABLE IF NOT EXISTS FamousPeople(country String,celebrities MAP<String,Array<String>>) USING column OPTIONS( buckets '32');;
-INSERT INTO FamousPeople  SELECT 'United States', MAP('Presidents',ARRAY('George Washington','Abraham Lincoln','Thomas Jefferson', 'John F. Kennedy','Franklin D. Roosevelt'));
-INSERT INTO FamousPeople  SELECT 'India', MAP('Prime Ministers',ARRAY('Jawaharlal Nehru','Indira Gandhi', 'Lal Bahadur Shastri','Narendra Modi','PV Narsimha Rao'));
-INSERT INTO FamousPeople  SELECT 'India', MAP('Actors',ARRAY('Amithab Bachhan','Sanjeev Kumar','Dev Anand', 'Akshay Kumar','Shahrukh Khan','Salman Khan'));
-INSERT INTO FamousPeople  SELECT 'United States', MAP('Actors',ARRAY('Brad Pitt','Jim Carry','Bruce Willis', 'Tom Cruise','Michael Douglas','Dwayne Johnson'));
-INSERT INTO FamousPeople  SELECT 'India', MAP('Authors',ARRAY('Chetan Bhagat','Jay Vasavada','Amish Tripathi', 'Khushwant Singh','Premchand','Kalidas'));
-INSERT INTO FamousPeople  SELECT 'United States', MAP('Authors',ARRAY('Mark Twain','Walt Whitman','J.D. Salinger', 'Emily Dickinson','Willa Cather','William Faulkner'));
-CREATE VIEW FamousPeopleView AS  SELECT country, explode(celebrities) FROM FamousPeople;
-
-CREATE EXTERNAL TABLE staging_exec_details USING com.databricks.spark.csv
+CREATE EXTERNAL TABLE staging_exec_details1 USING com.databricks.spark.csv
              OPTIONS (path ':dataLocation/EXEC_DETAILS.dat', header 'true', inferSchema 'false', nullValue 'NULL', maxCharsPerColumn '4096');
 
-CREATE TABLE EXEC_DETAILS(
+CREATE TABLE EXEC_DETAILS1(
              EXEC_DID BIGINT,SYS_EXEC_VER INTEGER,SYS_EXEC_ID VARCHAR(64),TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64),SYS_EXEC_STAT VARCHAR(20),
              DW_EXEC_STAT VARCHAR(20),ORDER_OWNER_FIRM_ID VARCHAR(20),TRDR_SYS_LOGON_ID VARCHAR(64),CONTRA_BROKER_MNEMONIC VARCHAR(20),SIDE VARCHAR(20),
              TICKER_SYMBOL VARCHAR(32),SYS_SECURITY_ALT_ID VARCHAR(64),PRODUCT_CAT_CD VARCHAR(20),LAST_MKT VARCHAR(20),EXECUTED_QTY DECIMAL(18, 4),
@@ -218,4 +139,4 @@ CREATE TABLE EXEC_DETAILS(
              UNDERLYING_FX_RATE DECIMAL(18, 8),CONVERSION_RATE DECIMAL(18, 8),TRANS_COMMENT VARCHAR(256),AGGRESSOR_FLAG VARCHAR(1))
              USING column OPTIONS (partition_by 'EXEC_DID', redundancy '1', buckets '32');
 
-INSERT INTO EXEC_DETAILS SELECT * FROM staging_exec_details;
+INSERT INTO EXEC_DETAILS1 SELECT * FROM staging_exec_details;
