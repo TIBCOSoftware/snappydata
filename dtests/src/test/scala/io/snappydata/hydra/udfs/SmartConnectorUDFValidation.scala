@@ -428,10 +428,7 @@ object SmartConnectorUDFValidation {
         snc.sql("CREATE FUNCTION UDF13 AS " +
           "com.snappy.poc.udf.JavaUDF13 RETURNS TIMESTAMP USING JAR '" +  udfJarPath + "';")
         val df1 = snc.sql("SELECT UDF13(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11,i12,i13) FROM T13")
-        var r1 = df1.collect()
-        pw.println(r1)
         var result = df1.collect().mkString.replace("[", "").replace("]", "")
-        pw.println(result)
         if(result.equals(new Timestamp(System.currentTimeMillis()).toString())) {
           pw.println("Java UDF13 -> " + result)
         } else {
