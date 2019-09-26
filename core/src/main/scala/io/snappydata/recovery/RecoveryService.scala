@@ -25,8 +25,7 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegionHelper
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.ddl.{DDLConflatable, GfxdDDLQueueEntry, GfxdDDLRegionQueue}
-import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector
-import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
+import com.pivotal.gemfirexd.internal.engine.distributed.RecoveryModeResultCollector
 import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode
 import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode.RecoveryModePersistentView
 import com.pivotal.gemfirexd.internal.engine.sql.execute.RecoveredMetadataRequestMessage
@@ -439,8 +438,8 @@ object RecoveryService extends Logging {
   def collectViewsAndRecoverDDLs(): Unit = {
     // Send a message to all the servers and locators to send back their
     // respective persistent state information.
-    logDebug("Start Collect Views and Recover DDLs for cluster startup")
-    val collector = new GfxdListResultCollector(null, true)
+    logDebug("Start CollectViewsAndRecoverDDLs for cluster startup")
+    val collector = new RecoveryModeResultCollector()
     val msg = new RecoveredMetadataRequestMessage(collector)
     msg.executeFunction()
     val persistentData = collector.getResult
@@ -449,9 +448,7 @@ object RecoveryService extends Logging {
     val snappyHiveExternalCatalog = HiveClientUtil
         .getOrCreateExternalCatalog(snapCon.sparkContext, snapCon.sparkContext.getConf)
     while (itr.hasNext) {
-      val persistentViewObj = itr.next().asInstanceOf[
-          ListResultCollectorValue].resultOfSingleExecution.asInstanceOf[
-          PersistentStateInRecoveryMode]
+      val persistentViewObj = itr.next().asInstanceOf[PersistentStateInRecoveryMode]
       persistentObjectMemberMap += persistentViewObj.getMember -> persistentViewObj
       val regionItr = persistentViewObj.getAllRegionViews.iterator()
       while (regionItr.hasNext) {

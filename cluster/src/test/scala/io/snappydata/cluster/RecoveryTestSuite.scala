@@ -173,7 +173,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     stmt.execute("CREATE TABLE tapp.test1rowtab3 (col1 int, col2 int NOT NULL, col3 varchar(22))" +
         " USING ROW OPTIONS(PARTITION_BY 'col1', buckets '1')")
 
-    stmt.execute("CREATE DISKSTORE anotherdiskstore ('./testDS' 10240);")
+    stmt.execute("CREATE DISKSTORE anotherdiskstore ('./testDS' 10240)")
 
     stmt.execute(s"CREATE TABLE $defaultSchema.test1coltab4 (col1 int NOT NULL," +
         " col2 int not null) USING COLUMN OPTIONS(diskstore 'anotherdiskstore')")
@@ -614,7 +614,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
     rs4.close()
 
-    // custom diskstore test - row row table // todo : put proper assertion stmts
+    // custom diskstore test - row row table
     var rstest1rowtab5 = stmtRec.executeQuery("SELECT * FROM gemfire10.test1rowtab5")
     println("SELECT * FROM gemfire10.test1rowtab5;")
     while (rstest1rowtab5.next()) {
@@ -622,13 +622,16 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
     rstest1rowtab5.close()
 
-    rs4 = stmtRec.executeQuery("select col1, col2, col3, col4, col5 from gemfire10.test1rowtab6;")
+    rs4 = stmtRec.executeQuery("select col1, col2, col3, col4, col5 from gemfire10.test1rowtab6 order by col4")
     println("==== test1rowtab6 ====")
-    // todo : add assert statemenets
-    // obs : int is also coming 0 in this case.
+    arrBuf.clear()
+    i = 0
+    arrBuf ++= ArrayBuffer("NULL,NULL,333.333,NULL,true", "NULL,xczadsf,232.1222,11,NULL", "NULL,adsf,NULL,12,false")
     while (rs4.next()) {
-      println(s"${rs4.getInt(1)}\t${rs4.getString(2)}\t${rs4.getFloat(3)}\t " +
-          s" ${rs4.getShort(4)}\t${rs4.getBoolean(5)}\t")
+      str.clear()
+      str ++= s"${rs4.getObject(1)},${rs4.getString(2)},${rs4.getObject(3)},${rs4.getObject(4)},${rs4.getObject(5)}"
+      assert(str.toString().toUpperCase() === (arrBuf(i)).toUpperCase())
+      i += 1
     }
     rs4.close()
 
@@ -641,9 +644,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
       str.clear()
       str ++= s"${rs4.getObject(1)},${rs4.getObject(2)},${rs4.getObject(3)}," +
           s"${rs4.getObject(4)},${rs4.getObject(5)}"
-      println(str.toString())
-      //      assert(str.toString().toUpperCase() === (arrBuf(i)).toUpperCase()) ...  uncomment when short null is fixed
-
+            assert(str.toString().toUpperCase() === (arrBuf(i)).toUpperCase())
       i += 1
     }
     rs4.close()
@@ -651,15 +652,15 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     rs4 = stmtRec.executeQuery("SELECT * FROM gemfire10.test1coltab8 ORDER BY col1")
     arrBuf.clear()
     i = 0
-    arrBuf ++= ArrayBuffer("9123372036812312307,null,123.123324,12,null", "8123372036812312307,qewrwr4,345.123324,11,2019-03-21", "null,null,null,null,null")
+    arrBuf ++= ArrayBuffer("null,null,null,null,null", "8123372036812312307,qewrwr4,345.123324,11," +
+        "2019-03-21", "9123372036812312307,null,123.123324,12,null")
 
 
     while (rs4.next()) {
       str.clear()
       str ++= s"${rs4.getObject(1)},${rs4.getObject(2)},${rs4.getObject(3)}," +
           s"${rs4.getObject(4)},${rs4.getObject(5)}"
-      println(str.toString())
-      //      assert(str.toString().toUpperCase() === (arrBuf(i)).toUpperCase()) ...  uncomment when short null is fixed
+            assert(str.toString().toUpperCase() === (arrBuf(i)).toUpperCase())
       i += 1
     }
     rs4.close()
@@ -1009,8 +1010,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     while (rs6.next()) {
       str ++= s"${rs6.getInt("rcount")},${rs6.getBoolean("c5")}"
     }
-    println(str.toString())
-    //    assert(str.toString().equalsIgnoreCase("250,true"))
+        assert(str.toString().equalsIgnoreCase("250,true"))
     rs6.close()
 
     // 4. Test if all sql functions are working fine - like min,max,avg,etc.
@@ -1033,20 +1033,26 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     rs7 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3coltab7 ORDER BY col3;")
     arrBuf.clear()
     i = 0
-    arrBuf ++= ArrayBuffer("891012.312321314,1434124.1,193471498234123,2019-02-18,ZXcabcdefg", "91012.312321314,34124.125,243471498234123,2019-04-18,qewrabcdefg", "1012.312321314,4124.1235,333471498234123,2019-03-18,adfcdefg")
+
+    // todo: float doesn't return all the accurate digits : ,4124.12353515625  should be 4124.1234341
+//     and 1434124.125 should be 1434124.123434134
+    arrBuf ++= ArrayBuffer("891012.312321314,1434124.125,193471498234123,2019-02-18,ZXcabcdefg", "91012.312321314,34124.125,243471498234123,2019-04-18,qewrabcdefg", "1012.312321314,4124.12353515625,333471498234123,2019-03-18,adfcdefg")
     while (rs7.next()) {
-      println(s"${rs7.getBigDecimal(1)},${rs7.getBigDecimal(2)},${rs7.getLong(3)},${rs7.getDate(4)},${rs7.getString(5)}")
+      assert(s"${rs7.getBigDecimal(1)},${rs7.getBigDecimal(2)},${rs7.getLong(3)},${rs7.getDate(4)},${rs7.getString(5)}" === arrBuf(i))
       i += 1
     }
     rs7.close()
 
     rs7 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3rowtab8 ORDER BY col2;")
-    // add assert stmt
     arrBuf.clear()
     i = 0
-    arrBuf ++= ArrayBuffer("qewradfs,111,asdfqewr,true,123.1234", "adsffs,222,vzxcqewr,true,4745.345345", "xzcvadfs,444,zxcvzv,false,78768.34")
+    // todo float doesn't all digits :: adsffs,222,vzxcqewr,true,4745.345 shoudl be adsffs,222,vzxcqewr,true,4745.345345
+    arrBuf ++= ArrayBuffer("qewradfs,111,asdfqewr,true,123.1234",
+      "adsffs,222,vzxcqewr,true,4745.345", "xzcvadfs,444,zxcvzv,false,78768.34")
     while (rs7.next()) {
-      println(s"${rs7.getString(1)},${rs7.getInt(2)},${rs7.getString(3)},${rs7.getBoolean(4)},${rs7.getFloat(5)} ")
+      assert(s"${rs7.getString(1)},${rs7.getInt(2)},${rs7.getString(3)}," +
+          s"${rs7.getBoolean(4)},${rs7.getFloat(5)}" === arrBuf(i))
+      i += 1
     }
     rs7.close()
 
@@ -1145,7 +1151,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
         " options(path '/tmp/test5_exttab1.csv')")
 
     // case: CREATE TABLE as SELECT * FROM ...
-    stmt.execute("CREATE TABLE test5coltab4 as SELECT * FROM test5_exttab1;")
+    stmt.execute("CREATE TABLE test5coltab4 as SELECT * FROM test5_exttab1")
 
     // column table - how nulls are reflected in the recovered data files.
     stmt.execute("CREATE TABLE test5coltab5 (col1 timestamp, col2 integer, col3 varchar(33)," +
@@ -1195,10 +1201,6 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     connRec = getConn(locNetPort, "gemfire10", "gemfire10")
     stmtRec = connRec.createStatement()
     // todo: may be we can add S3,hdfs as export path
-    val rstemp = stmtRec.executeQuery("SELECT * FROM test5rowtab6");
-    while (rstemp.next()) {
-      println(rstemp.getObject(1))
-    }
 
     stmtRec.execute("call sys.DUMP_DATA('./recover_data_parquet','parquet'," +
         "'  gemfire10.test5coltab1   ','true')")

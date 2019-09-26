@@ -27,6 +27,8 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.Version
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ClassPathLoader, GemFireVersion}
+import com.pivotal.gemfirexd.Attribute
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
@@ -140,6 +142,13 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   override def dumpData(connId: lang.Long, exportUri: String,
       formatType: String, tableNames: String, ignoreError: lang.Boolean): Unit = {
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
+    if (Misc.isSecurityEnabled) {
+      session.conf.set(Attribute.USERNAME_ATTR,
+        Misc.getMemStore.getBootProperty(Attribute.USERNAME_ATTR))
+      session.conf.set(Attribute.PASSWORD_ATTR,
+        Misc.getMemStore.getBootProperty(Attribute.PASSWORD_ATTR))
+    }
+
     val tablesArr = if (tableNames.equalsIgnoreCase("all")) {
       val catalogTables = RecoveryService.getTables
       val tablesArr = catalogTables.map(ct => {
@@ -191,7 +200,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     val arrBuf: ArrayBuffer[String] = ArrayBuffer.empty
 
     RecoveryService.getAllDDLs.foreach(ddl => {
-      arrBuf.append(ddl + ";\n")
+      arrBuf.append(ddl.trim + ";\n")
     })
     session.sparkContext.parallelize(arrBuf, 1).saveAsTextFile(filePath)
 
