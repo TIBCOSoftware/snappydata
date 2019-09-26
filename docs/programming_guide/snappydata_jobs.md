@@ -173,6 +173,9 @@ Python users can submit a Python application using `./bin/spark-submit` in the T
 	KMeans uses numpy hence you need to install numpy package before using Spark KMeans.</br>
 	For example `sudo apt-get install python-numpy`
 
+**Related Topic**:
+
+- [How to use Python to Create Tables and Run Queries](../howto/use_python_to_create_tables_and_run_queries.md)
 
 ## Streaming Jobs
 
@@ -213,9 +216,9 @@ $ ./bin/snappy-job.sh listcontexts  \
 $ ./bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
     --lead localhost:8090
 ```
+## Snappy Job Examples
+
 You can import the examples into a separate independent gradle project as is and submit the jobs to the cluster.
 Refer to the instructions [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/README.md). The link also contains instructions for importing and running examples from an IDE such as Intellij IDEA.
 
-**Related Topic**:
 
-- [How to use Python to Create Tables and Run Queries](../howto/use_python_to_create_tables_and_run_queries.md)
