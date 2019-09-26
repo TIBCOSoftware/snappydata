@@ -249,19 +249,33 @@ On this page, you can view the total time required for all the tasks in a job to
 
 <a id="historyserver"></a>
 ## Spark History Server
-The Spark History server is a Spark UI extension. It is a web application that lets you analyze the running as well as completed SQL queries and the associated Spark jobs. The metadata collected in the form of event logs by the Spark History server can be shipped from a TIBCO ComputeDB cluster to another TIBCO ComputeDB cluster for further analsis.
+The Spark History server is a Spark UI extension. It is a web application that lets you analyze the running as well as completed SQL queries and the associated Spark jobs. The metadata collected in the form of event logs by the Spark History server can be shipped from a TIBCO ComputeDB cluster to another TIBCO ComputeDB cluster for further analysis.
 
 The first step in tuning query performance in TIBCO ComputeDB is to understand the query physical plan that is available through the SQL tab on the TIBCO ComputeDB Monitoring console. The detailed execution plan requires one to understand the jobs and tasks associated with the query. This is available in the Jobs/Tasks tab. However, if the TIBCO ComputeDB Monitoring console is not accessible to the investigator, it becomes a difficult exercise. To overcome this, TIBCO recommends to turn on the History server for production applications.
 
 To turn on the History server, do the following:
 
-1.	Ensure to provide a shared disk that can be accessed from all the TIBCO ComputeDB nodes. If you do not have the NFS access, use HDFS. Provide the permissions to access a shared folder when you start TIBCO ComputeDB.
-2.	Enable event logging for the Spark jobs. For example, if the server was configured with a log directory of hdfs://namenode/shared/spark-logs, then configure the following properties in the conf/lead: 
+1.	Ensure to provide a shared disk that can be accessed from all the TIBCO ComputeDB nodes. If you do not have the NFS access, use HDFS. Provide the necessary permissions to access a shared folder when you start TIBCO ComputeDB.
+2.	Enable event logging for the Spark jobs. For example, specify the following properties in **conf/lead**:
 
-            spark.eventLog.enabled true
-            spark.eventLog.dir hdfs://namenode/shared/spark-logs
+            -spark.eventLog.enabled=true -spark.eventLog.dir=hdfs://namenode/shared/spark-logs
 
-3.	Start the History server.
+3.	Additionally, set the following property in **conf/spark-defaults.conf** file (it defaults to **/tmp/spark-event**s):
+
+			spark.history.fs.logDirectory      hdfs://namenode/shared/spark-logs
+
+    If this property is not set and the directory **/tmp/spark-events** does not exist, Spark History server fails to start.
+
+4.	Start the History server.
+
 			./sbin/start-history-server.sh
-	This creates a web interface at http://<server-url>:18080 by default, listing incomplete and completed instances of SQL queries and the associated Spark jobs and tasks.
+    
+	This creates a web interface at *http://<server-url>:18080* by default, listing incomplete and completed instances of SQL queries and the associated Spark jobs and tasks.
     For more details about History server, refer to [Configuring History Server](https://spark.apache.org/docs/latest/monitoring.html#environment-variables).
+
+5. By default, the history server loads 1000 events (SQL, jobs, stages) which may leave out lot of events. Set these properties to increase the number of events retained and also increase the heap-size of the history server as follows in the file **conf/SPARK_ENV.sh**
+
+```
+		SPARK_HISTORY_OPTS="-Dspark.history.fs.numReplayThreads=16 -Dspark.ui.retainedJobs=10000 -Dspark.ui.retainedStages=20000 -Dspark.sql.ui.retainedExecutions=10000" 
+        SPARK_DAEMON_MEMORY=12g
+```
