@@ -3,7 +3,6 @@
 Before you configure the TIBCO ComputeDB cluster, check the [system requirements](/install/system_requirements.md). In case you have not yet provisioned TIBCO ComputeDB, you can follow the instructions [here](/install.md).  
 TIBCO recommends that you have at least **8 GB** of memory and **4 cores** available even for simple experimentation with TIBCO ComputeDB.
 
-
 ## Launching Single Node Cluster with Default Configuration
 If you want to launch the cluster either on Amazon EC2 or on a Kubernetes cluster, you can follow the instructions listed [here (AWS)](/install/setting_up_cluster_on_amazon_web_services.md) and [here (Kubernetes)](/kubernetes.md)
 
