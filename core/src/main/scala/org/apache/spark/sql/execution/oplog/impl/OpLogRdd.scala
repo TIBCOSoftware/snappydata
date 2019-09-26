@@ -305,11 +305,9 @@ class OpLogRdd(
    * @param phdrRow PlaceHolderDiskRegion of row
    */
   def iterateRowData(phdrRow: PlaceHolderDiskRegion): Iterator[Row] = {
+    if(phdrRow.getRegionMap == null || phdrRow.getRegionMap.isEmpty) return Iterator.empty
     val rm = phdrRow.getRegionMap
-    val regionMapEntries = rm.regionEntries()
-    assert(rm != null, "regionMap for row placeHolderDiskRegion is null")
-    assert(regionMapEntries != null, "regionMap entries for row placeHolderDiskRegion is null")
-    val regMapItr = regionMapEntries.iterator().asScala
+    val regMapItr = rm.regionEntries().iterator().asScala
     regMapItr.map { regEntry =>
       DiskEntry.Helper.readValueFromDisk(
         regEntry.asInstanceOf[DiskEntry], phdrRow) match {
@@ -370,9 +368,9 @@ class OpLogRdd(
    * @param phdrCol PlaceHolderDiskRegion of column batch
    */
   def iterateColData(phdrCol: PlaceHolderDiskRegion): Iterator[Row] = {
+    if(phdrCol.getRegionMap == null || phdrCol.getRegionMap.isEmpty) return Iterator.empty
     val regMap = phdrCol.getRegionMap
-    assert(regMap != null, "region map for column batch is null")
-    if (regMap.regionEntries().isEmpty) return Iterator.empty
+    // assert(regMap != null, "region map for column batch is null")
     regMap.keySet().iterator().asScala.flatMap {
       case k: ColumnFormatKey if k.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX =>
         // get required info about deletes
