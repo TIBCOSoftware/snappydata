@@ -3,7 +3,6 @@
 Before you configure the SnappyData cluster, check the [system requirements](/install/system_requirements.md). In case you have not yet provisioned SnappyData, you can follow the instructions [here](/install.md).  
 TIBCO recommends that you have at least **8 GB** of memory and **4 cores** available even for simple experimentation with SnappyData.
 
-
 ## Launching Single Node Cluster with Default Configuration
 If you want to launch the cluster either on Amazon EC2 or on a Kubernetes cluster, you can follow the instructions listed [here (AWS)](/install/setting_up_cluster_on_amazon_web_services.md) and [here (Kubernetes)](/kubernetes.md)
 
@@ -12,7 +11,7 @@ If you are launching on a single node, for example, on your laptop or on a linux
 ```
 ./sbin/snappy-start-all.sh 
 ```
-This launches a single [locator](should point to concepts), [lead](should point to concepts) and a [data server](should point to concepts). You can go to the following URL on your browser to view the cluster dashboard:
+This launches a single [locator](/configuring_cluster/configuring_cluster.md#locator), [lead](/configuring_cluster/configuring_cluster.md#lead) and a [data server](/configuring_cluster/configuring_cluster.md#dataserver). You can go to the following URL on your browser to view the cluster dashboard:
 
 **http://(localhost or hostname or machineIP):5050** 
 

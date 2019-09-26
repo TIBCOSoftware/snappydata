@@ -22,10 +22,7 @@ PUT INTO <schema name>.<table name2> SELECT * from <schema name>.<table name1>;
 PUT INTO <schema name>.<table name2> SELECT * from <schema name>.<table name1> WHERE <column name>='<Value>'
 
 PUT INTO <schema name>.<table name2> SELECT from <schema name>.<table name1> WHERE <column name>='<Value>'
-```
 
-
-```
 PUT INTO <schema name>.<table name> VALUES (V1, V2,... ,Vn);
 
 ```
