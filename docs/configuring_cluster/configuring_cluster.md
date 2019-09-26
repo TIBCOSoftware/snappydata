@@ -201,7 +201,7 @@ node-c -dir=/node-c/server1 -heap-size=4096m -memory-size=16g -locators=node-b:8
 node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 ```
 
-<a id="listorproperties"></a>
+<a id="listofproperties"></a>
 ##  List of Properties
 
 Refer [TIBCO ComputeDB properties](property_description.md).
