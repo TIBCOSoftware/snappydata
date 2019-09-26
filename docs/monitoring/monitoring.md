@@ -266,16 +266,17 @@ To turn on the History server, do the following:
 
     If this property is not set and the directory **/tmp/spark-events** does not exist, Spark History server fails to start.
 
+5. By default, the history server loads only 1000 most recent events (SQL, Jobs, Stages). Older events will not be visible. To retain more number of events, set additional properties using **SPARK_HISTORY_OPTS**, and also increase the heap-size of the history server as follows in the file **conf/SPARK_ENV.sh**.
+
+             SPARK_HISTORY_OPTS="-Dspark.history.fs.numReplayThreads=16 -Dspark.ui.retainedJobs=10000 -Dspark.ui.retainedStages=20000 -Dspark.sql.ui.retainedExecutions=10000"
+             SPARK_DAEMON_MEMORY=12g
+     	
+    !!!Note 
+    	When you retain a high number of events, it increases the disk space requirement. Therefore, ensure that the disk store, where the events are stored, has adequate disk space.
+
 4.	Start the History server.
 
 			./sbin/start-history-server.sh
-    
+
 	This creates a web interface at *http://<server-url>:18080* by default, listing incomplete and completed instances of SQL queries and the associated Spark jobs and tasks.
     For more details about History server, refer to [Configuring History Server](https://spark.apache.org/docs/latest/monitoring.html#environment-variables).
-
-5. By default, the history server loads 1000 events (SQL, jobs, stages) which may leave out lot of events. Set these properties to increase the number of events retained and also increase the heap-size of the history server as follows in the file **conf/SPARK_ENV.sh**
-
-```
-		SPARK_HISTORY_OPTS="-Dspark.history.fs.numReplayThreads=16 -Dspark.ui.retainedJobs=10000 -Dspark.ui.retainedStages=20000 -Dspark.sql.ui.retainedExecutions=10000" 
-        SPARK_DAEMON_MEMORY=12g
-```
