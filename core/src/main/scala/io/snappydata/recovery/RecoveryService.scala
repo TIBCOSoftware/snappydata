@@ -253,6 +253,7 @@ object RecoveryService extends Logging {
     val schemaName = fqtn.split('.')(0)
     val tableName = fqtn.split('.')(1)
     val (_, isReplicated) = getNumBuckets(schemaName, tableName)
+    // using row region path as column regions will be colocated on same host
     val tablePath = '/' + fqtn.replace(".", "/")
     var bucketPath = tablePath
     if (!isReplicated) {
@@ -262,16 +263,12 @@ object RecoveryService extends Logging {
     // check if the path exists else check path of column buffer.
     // also there could be no data in any.
     // check only row, only col, no data
-    if (regionViewSortedSet.contains(bucketPath)) {
-      assert(regionViewSortedSet.contains(bucketPath))
-      regionViewSortedSet(bucketPath).map(e => {
-        val hostCanonical = e.getExecutorHost
-        val host = hostCanonical.split('(').head
-        s"executor_${host}_$hostCanonical"
-      }).toSeq
-    } else {
-      getRandomExecutorHost()
-    }
+    assert(regionViewSortedSet.contains(bucketPath))
+    regionViewSortedSet(bucketPath).map(e => {
+      val hostCanonical = e.getExecutorHost
+      val host = hostCanonical.split('(').head
+      s"executor_${host}_$hostCanonical"
+    }).toSeq
   }
 
   def getRandomExecutorHost(): Seq[String] = {
