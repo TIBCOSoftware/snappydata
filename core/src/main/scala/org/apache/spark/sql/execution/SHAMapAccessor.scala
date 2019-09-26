@@ -692,7 +692,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
       }.mkString("\n")
       }
          | // evaluate hash code of the lookup key
-         |${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
+         |${generateHashCode(hashVar, keyVars, keysDataType)}
          |// get key size code
          |$numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)};
          |// prepare the key
@@ -1119,8 +1119,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
    * Generate code to calculate the hash code for given column variables that
    * correspond to the key columns in this class.
    */
-  def generateHashCode(hashVar: Array[String], keyVars: Seq[ExprCode],
-    keyExpressions: Seq[Expression], keysDataType: Seq[DataType],
+  def generateHashCode(hashVar: Array[String], keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
     skipDeclaration: Boolean = false, register: Boolean = true): String = {
     var hash = hashVar(0)
     val hashDeclaration = if (skipDeclaration) "" else s"int $hash = 0;\n"

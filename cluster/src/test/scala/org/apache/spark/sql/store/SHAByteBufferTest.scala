@@ -1305,6 +1305,44 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test1")
   }
 
+  test("SNAP-2567. Code size exceeds limit") {
+    snc
+    val numStrCols = 450
+    val stringFieldsStr = (for (i <- 0 until numStrCols) yield {
+      s"string_$i string"
+    }).mkString(",")
+
+    val numIntCols = 5
+
+    val intFieldsStr = (for (i <- 0 until numIntCols) yield {
+      s"int_$i int"
+    }).mkString(",")
+
+    snc.sql(s"create table test ($stringFieldsStr, $intFieldsStr) using column ")
+    val prepStr = (for (i <- 0 until (numIntCols + numStrCols)) yield {
+      "?"
+    }).mkString(",")
+    val conn = getSqlConnection
+    val prepStmt = conn.prepareStatement(s"insert into test values ($prepStr)")
+    for (i <- 0 until 100) {
+      for (j <- 0 until numStrCols) {
+        prepStmt.setString(j + 1, s"str_${i % 5}")
+      }
+      for (j <- 0 until numIntCols) {
+        prepStmt.setInt(j + numStrCols + 1, i * j )
+      }
+      prepStmt.addBatch()
+    }
+    prepStmt.executeBatch()
+    assertEquals(100, snc.sql("select count(*) from test").collect()(0).getLong(0))
+    val groupByClause = (for (i <- 0 until numStrCols) yield {
+      s"string_$i"
+    }).mkString(",")
+    val rs = snc.sql(s"select count(*), sum(int_0), sum(int_1)," +
+      s" sum(int_2), sum(int_3), sum(int_4) from test group by $groupByClause")
+    val rows = rs.collect()
+  }
+
   test("SNAP-3132") {
     snc
     snc.sql("drop table if exists test1")
