@@ -81,6 +81,8 @@ class DeployUndeployDUnitTest(val s: String)
   override def beforeClass(): Unit = {
 
     super.beforeClass()
+
+    // start snappy clsuter
     logInfo(s"Starting snappy cluster in $snappyProductDir/work with locator client port $netPort")
 
     val confDir = s"$snappyProductDir/conf"
@@ -103,6 +105,7 @@ class DeployUndeployDUnitTest(val s: String)
     sparkXmlJarPath = downloadURI("https://repo1.maven.org/maven2/com/databricks/" +
         "spark-xml_2.11/0.5.0/spark-xml_2.11-0.5.0.jar")
 
+    // start cassandra cluster
     jarLoc = getLoc(downloadLoc, "apache-cassandra-2.1.21")
     connectorJarLoc =
         getUserAppJarLocation("spark-cassandra-connector_2.11-2.0.7.jar", downloadLoc)
@@ -116,6 +119,7 @@ class DeployUndeployDUnitTest(val s: String)
     cassandraConnectorJarLoc = connectorJarLoc
     startCassandraCluster()
 
+    // start mongodb cluster
     jarLoc = getLoc(downloadLoc, "mongodb-linux-x86_64-ubuntu1604-4.2.0")
     connectorJarLoc =
         getUserAppJarLocation("mongo-spark-connector_2.11-2.1.6.jar", downloadLoc)
@@ -133,6 +137,7 @@ class DeployUndeployDUnitTest(val s: String)
   override def afterClass(): Unit = {
     super.afterClass()
 
+    // stop mongodb cluster
     val cmd1 =
       s"""./mongo --port=23456 employeesDB $cassandraScriptPath/mongodb_script1""".stripMargin
     println(mongodbClusterLoc + cmd1)
@@ -144,6 +149,14 @@ class DeployUndeployDUnitTest(val s: String)
     p1.exitValue() == 0
     logInfo("MongoDb cluster stopped successfully")
 
+    // stop cassandra cluster
+    logInfo("Stopping cassandra cluster")
+    val p = Runtime.getRuntime.exec("pkill -f cassandra")
+    p.waitFor()
+    p.exitValue() == 0
+    logInfo("Cassandra cluster stopped successfully")
+
+    // stop snappy cluster
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
 
@@ -151,13 +164,6 @@ class DeployUndeployDUnitTest(val s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
-
-    logInfo("Stopping cassandra cluster")
-    val p = Runtime.getRuntime.exec("pkill -f cassandra")
-    p.waitFor()
-    p.exitValue() == 0
-    logInfo("Cassandra cluster stopped successfully")
-
   }
 
   def startCluster(jarName: String, connectorJarName: String,
@@ -299,13 +305,6 @@ class DeployUndeployDUnitTest(val s: String)
     doTestDeployPackageWithExternalTableInSnappyShellWithCassandraDS()
     doTestPackageViaSnappyJobCommandWithMongodbDS()
   }
-
-  def doTestPackageViaSnappyJobCommandWithMongodbDS(): Unit = {
-    logInfo("Running testPackageViaSnappyJobCommandWithMongodbDS")
-    submitAndWaitForCompletion("io.snappydata.cluster.jobs.MongoDBSnappyConnectionJob" ,
-      "--packages org.mongodb.spark:mongo-spark-connector_2.11:2.1.6")
-  }
-
 
   def doTestPackageViaSnappyJobCommandWithCassandraDS(): Unit = {
     logInfo("Running testPackageViaSnappyJobCommand")
@@ -522,5 +521,11 @@ class DeployUndeployDUnitTest(val s: String)
       case e: Exception if e.getMessage.contains("Job failed with result:") => // expected
       case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
     }
+  }
+
+  def doTestPackageViaSnappyJobCommandWithMongodbDS(): Unit = {
+    logInfo("Running testPackageViaSnappyJobCommandWithMongodbDS")
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.MongoDBSnappyConnectionJob" ,
+      "--packages org.mongodb.spark:mongo-spark-connector_2.11:2.1.6")
   }
 }
