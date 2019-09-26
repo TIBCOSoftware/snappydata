@@ -16,6 +16,8 @@ In this section, you will get a quick tour to start a TIBCO ComputeDB cluster an
 
 *	[Run Queries](#runqry)
 
+*	[Submit Snappy Jobs](#submitsnapjobs)
+
 *	[Add Servers to Cluster](#addservercluster)
 
 *	[Rebalance Data on Servers](#rebalancedataonserver)
@@ -279,6 +281,10 @@ NULL
 1 row selected
 
 ```
+<a id= submitsnapjobs> </a>
+## Submit Snappy Jobs
+There are samples jobs available for reference. You can import the examples into a separate independent gradle project and submit the jobs to the cluster or run within an IDE. Refer to the instructions [here][https://github.com/SnappyDataInc/snappydata/blob/master/examples/README.md].
+
 <a id= addservercluster> </a>
 ## Add Servers into Cluster
 
