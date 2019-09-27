@@ -893,49 +893,51 @@ case class SHAMapAccessor(@transient session: SnappySession,
           |// move current offset to end of null bits
           |$offsetTerm += ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)};""".stripMargin
     }
-    s"""$storeNullBitStartOffsetAndRepositionOffset
-       |${dataTypes.zip(varsToWrite).zipWithIndex.map {
-         case ((dt, expr), i) =>
-          val variable = expr.value
-          val writingCode = writeVarPartialFunction((baseObjectTerm, offsetTerm, variable,
-            nestingLevel, i, dt)).trim
-          // Now do the actual writing based on whether the variable is null or not
-          if (skipNullEvalCode) {
-            writingCode
-          } else {
-            SHAMapAccessor.evaluateNullBitsAndEmbedWrite(numBytesForNullBits, expr,
-              i, nullBitsTerm, offsetTerm, dt, isKey, writingCode)
-          }
+    val fieldWritingCode = dataTypes.zip(varsToWrite).zipWithIndex.map {
+      case ((dt, expr), i) =>
+        val variable = expr.value
+        val writingCode = writeVarPartialFunction((baseObjectTerm, offsetTerm, variable,
+          nestingLevel, i, dt)).trim
+        // Now do the actual writing based on whether the variable is null or not
+        if (skipNullEvalCode) {
+          writingCode
+        } else {
+          SHAMapAccessor.evaluateNullBitsAndEmbedWrite(numBytesForNullBits, expr,
+            i, nullBitsTerm, offsetTerm, dt, isKey, writingCode)
+        }
 
-      }.mkString("\n")
-    }
-    // now write the nullBitsTerm
-    ${if (!skipNullEvalCode) {
-        val nullBitsWritingCode = writeNullBitsAt(baseObjectTerm, startingOffsetTerm,
-          nullBitsTerm, numBytesForNullBits)
-       if(isKey) {
-         if (nestingLevel == 0) {
-            storedKeyNullBitsTerm.map(storedBit =>
-              s"""
-                 | if ($storedBit != $nullBitsTerm) {
-                 |   $nullBitsWritingCode
-                 |   $storedBit = $nullBitsTerm;
-                 | }
+    }.mkString("\n")
+
+    val nullBitsWritingCode = if (!skipNullEvalCode) {
+      val nullBitsWritingCode = writeNullBitsAt(baseObjectTerm, startingOffsetTerm,
+        nullBitsTerm, numBytesForNullBits)
+      if(isKey) {
+        if (nestingLevel == 0) {
+          storedKeyNullBitsTerm.map(storedBit =>
+            s"""
+               | if ($storedBit != $nullBitsTerm) {
+               |   $nullBitsWritingCode
+               |   $storedBit = $nullBitsTerm;
+               | }
                """.stripMargin).getOrElse(nullBitsWritingCode)
-         } else {
-           nullBitsWritingCode
-         }
-       } else {
-         storedAggNullBitsTerm.map(storedAggBit =>
-           s"""
-              | if ($storedAggBit != $nullAggsBitsetTerm) {
-              |   $nullBitsWritingCode
-              | }
+        } else {
+          nullBitsWritingCode
+        }
+      } else {
+        storedAggNullBitsTerm.map(storedAggBit =>
+          s"""
+             | if ($storedAggBit != $nullAggsBitsetTerm) {
+             |   $nullBitsWritingCode
+             | }
          """.stripMargin
-         ).getOrElse(nullBitsWritingCode)
-       }
-      } else ""
-    }"""
+        ).getOrElse(nullBitsWritingCode)
+      }
+    } else ""
+
+    s"""$storeNullBitStartOffsetAndRepositionOffset
+        |$fieldWritingCode
+        // now write the nullBitsTerm
+        $nullBitsWritingCode""".stripMargin
 
   }
 
@@ -949,6 +951,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
     if (useCustomHashMap) {
       ""
     } else {
+
+
       s"""
         if ($keyBytesHolderVarTerm == null || $keyHolderCapacityTerm <
       $numKeyBytesVar + $numValueBytes) {
@@ -1232,34 +1236,48 @@ case class SHAMapAccessor(@transient session: SnappySession,
         grouppedSeq.map(generateHashCodeCalcCode(_))
         .mkString(prefix + firstColumnHash, "", suffix)
       } else {
+        val functionMapping = scala.collection.mutable.Map[String, String]()
         grouppedSeq.map(groupSeq => {
-          val enhancedGroupSeq = groupSeq.map {
-            case (dataType, exprCode) =>
-              val nullBool = exprCode.isNull
-              (exprCode.copy(isNull = ctx.freshName("nullVar")), dataType, nullBool)
-          }
-          val methodName = ctx.freshName("calculateHashCode")
-          val methodBody =
-            s"""
-               |${generateHashCodeCalcCode(enhancedGroupSeq.unzip(tup => ((tup._2, tup._1), tup._3))._1)}
-               |return $hash;
+          val paramTypesStr = groupSeq.map(_._1).mkString(",")
+
+          val existingFunc = functionMapping.get(paramTypesStr)
+          existingFunc match {
+            case Some(funcName) => val methodArgs = groupSeq.map(tup => {
+              val exprCd = tup._2
+              s"${exprCd.value}, ${exprCd.isNull}"
+            }).mkString("", ",", s", $hash")
+            s"$hash = $funcName($methodArgs); \n"
+            case None => {
+              val enhancedGroupSeq = groupSeq.map {
+                case (dataType, exprCode) =>
+                  val nullBool = exprCode.isNull
+                  (exprCode.copy(isNull = ctx.freshName("nullVar")), dataType, nullBool)
+              }
+              val methodName = ctx.freshName("calculateHashCode")
+              val methodBody =
+                s"""
+                   |${generateHashCodeCalcCode(enhancedGroupSeq.unzip(tup => ((tup._2, tup._1), tup._3))._1)}
+                   |return $hash;
              """.stripMargin
-          val methodParams = enhancedGroupSeq.map {
-            case (exprCode, dt, _) => s"${ctx.javaType(dt)} ${exprCode.value}," +
-              s" boolean ${exprCode.isNull}"
-          }.mkString("", ",", s",int $hash")
-          ctx.addNewFunction(methodName,
-            s"""
-               |private int $methodName($methodParams) {
-                 |$methodBody
-               |}
-       """.stripMargin)
+              val methodParams = enhancedGroupSeq.map {
+                case (exprCode, dt, _) => s"${ctx.javaType(dt)} ${exprCode.value}," +
+                  s" boolean ${exprCode.isNull}"
+              }.mkString("", ",", s",int $hash")
+              ctx.addNewFunction(methodName,
+                s"""
+                   |private int $methodName($methodParams) {
+                     |$methodBody
+                   |}
+                """.stripMargin)
 
-          val methodArgs = enhancedGroupSeq.map {
-            case (exprCode, _, nullBool) => s"${exprCode.value}, $nullBool"
-          }.mkString("", ",", s",$hash")
+              val methodArgs = enhancedGroupSeq.map {
+                case (exprCode, _, nullBool) => s"${exprCode.value}, $nullBool"
+              }.mkString("", ",", s", $hash")
+              functionMapping +=(paramTypesStr -> methodName )
+              s"$hash = $methodName($methodArgs); \n"
+            }
+          }
 
-          s"$hash = $methodName($methodArgs);"
         }).mkString(prefix + firstColumnHash, "", suffix)
       }
     } else prefix + firstColumnHash + suffix
