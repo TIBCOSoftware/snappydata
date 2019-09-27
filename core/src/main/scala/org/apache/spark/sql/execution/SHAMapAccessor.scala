@@ -999,110 +999,148 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val unsafeRowClass = classOf[UnsafeRow].getName
     val unsafeArrayDataClass = classOf[UnsafeArrayData].getName
 
-    keysDataType.zip(keyVars).zipWithIndex.map { case ((dt, expr), i) =>
-      val nullVar = expr.isNull
-      val notNullSizeExpr = if (TypeUtilities.isFixedWidth(dt)) {
-        dt.defaultSize.toString
-      } else {
-        dt match {
-          case StringType =>
-            val strPart = s"${expr.value}.numBytes()"
-            if (nestingLevel == 0 && i == skipLenForAttribIndex) {
-              strPart
-            } else {
-              s"($strPart + 4)"
-            }
-          case BinaryType => s"(${expr.value}.length + 4) "
-          case st: StructType => val (childKeysVars, childDataTypes) =
-            getExplodedExprCodeAndDataTypeForStruct(expr.value, st, nestingLevel)
-            val explodedStructSizeCode = generateKeySizeCode(childKeysVars, childDataTypes,
-              SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length), nestingLevel + 1)
-            val unexplodedStructSizeCode = s"(($unsafeRowClass) ${expr.value}).getSizeInBytes() + 4"
 
-            "1 + " + (if (alwaysExplode) {
-              explodedStructSizeCode
-            } else {
-              s"""(${expr.value} instanceof $unsafeRowClass ? $unexplodedStructSizeCode
-                                                            |: $explodedStructSizeCode)
+    def generateLengthCode(partKeyVars: Seq[ExprCode], partKeysDataType: Seq[DataType],
+      nestingLevel: Int): String = {
+      partKeysDataType.zip(partKeyVars).zipWithIndex.map { case ((dt, expr), i) =>
+        val nullVar = expr.isNull
+        val notNullSizeExpr = if (TypeUtilities.isFixedWidth(dt)) {
+          dt.defaultSize.toString
+        } else {
+          dt match {
+            case StringType =>
+              val strPart = s"${expr.value}.numBytes()"
+              if (nestingLevel == 0 && i == skipLenForAttribIndex) {
+                strPart
+              } else {
+                s"($strPart + 4)"
+              }
+            case BinaryType => s"(${expr.value}.length + 4) "
+            case st: StructType => val (childKeysVars, childDataTypes) =
+              getExplodedExprCodeAndDataTypeForStruct(expr.value, st, nestingLevel)
+              val explodedStructSizeCode = generateKeySizeCode(childKeysVars, childDataTypes,
+                SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length), nestingLevel + 1)
+              val unexplodedStructSizeCode = s"(($unsafeRowClass) ${expr.value}).getSizeInBytes() + 4"
+
+              "1 + " + (if (alwaysExplode) {
+                explodedStructSizeCode
+              } else {
+                s"""(${expr.value} instanceof $unsafeRowClass ? $unexplodedStructSizeCode
+                   |: $explodedStructSizeCode)
             """.stripMargin
-            }
-            )
+              }
+                )
 
-          case at@ArrayType(elementType, containsNull) =>
-            // The array serialization format is following
-            /**
-             *           Boolean (exploded or not)
-             *             |
-             *        --------------------------------------
-             *   False|                                     | true
-             * 4 bytes for num bytes                     ----------
-             * all bytes                         no null |           | may be null
-             *                                    allowed            | 4 bytes for total elements
-             *                                        |              + num bytes for null bit mask
-             *                                     4 bytes for       + inidividual not null elements
-             *                                     num elements
-             *                                     + each element
-             *                                     serialzied
-             *
-             */
-            val (isFixedWidth, unitSize) = if (TypeUtilities.isFixedWidth(elementType)) {
-              (true, dt.defaultSize)
-            } else {
-              (false, 0)
-            }
-            val snippetNullBitsSizeCode =
-              s"""${expr.value}.numElements()/8 + (${expr.value}.numElements() % 8 > 0 ? 1 : 0)
+            case at@ArrayType(elementType, containsNull) =>
+              // The array serialization format is following
+              /**
+               *           Boolean (exploded or not)
+               *             |
+               *        --------------------------------------
+               *   False|                                     | true
+               * 4 bytes for num bytes                     ----------
+               * all bytes                         no null |           | may be null
+               *                                    allowed            | 4 bytes for total elements
+               *                                        |              + num bytes for null bit mask
+               *                                     4 bytes for       + inidividual not null elements
+               *                                     num elements
+               *                                     + each element
+               *                                     serialzied
+               *
+               */
+              val (isFixedWidth, unitSize) = if (TypeUtilities.isFixedWidth(elementType)) {
+                (true, dt.defaultSize)
+              } else {
+                (false, 0)
+              }
+              val snippetNullBitsSizeCode =
+                s"""${expr.value}.numElements()/8 + (${expr.value}.numElements() % 8 > 0 ? 1 : 0)
               """.stripMargin
 
-            val snippetNotNullFixedWidth = s"4 + ${expr.value}.numElements() * $unitSize"
-            val snippetNotNullVarWidth =
-              s"""4 + (int)($sizeAndNumNotNullFuncForStringArr(${expr.value}, true) >>> 32L)
+              val snippetNotNullFixedWidth = s"4 + ${expr.value}.numElements() * $unitSize"
+              val snippetNotNullVarWidth =
+                s"""4 + (int)($sizeAndNumNotNullFuncForStringArr(${expr.value}, true) >>> 32L)
                """.stripMargin
-            val snippetNullVarWidth = s" $snippetNullBitsSizeCode + $snippetNotNullVarWidth"
-            val snippetNullFixedWidth =
-              s"""4 + $snippetNullBitsSizeCode +
-                 |$unitSize * (int)($sizeAndNumNotNullFuncForStringArr(
-                 |${expr.value}, false) & 0xffffffffL)
+              val snippetNullVarWidth = s" $snippetNullBitsSizeCode + $snippetNotNullVarWidth"
+              val snippetNullFixedWidth =
+                s"""4 + $snippetNullBitsSizeCode +
+                   |$unitSize * (int)($sizeAndNumNotNullFuncForStringArr(
+                   |${expr.value}, false) & 0xffffffffL)
             """.stripMargin
 
-            "( 1 + " + (if (alwaysExplode) {
-              if (isFixedWidth) {
-                if (containsNull) {
-                  snippetNullFixedWidth
+              "( 1 + " + (if (alwaysExplode) {
+                if (isFixedWidth) {
+                  if (containsNull) {
+                    snippetNullFixedWidth
+                  } else {
+                    snippetNotNullFixedWidth
+                  }
                 } else {
-                  snippetNotNullFixedWidth
+                  if (containsNull) {
+                    snippetNullVarWidth
+                  } else {
+                    snippetNotNullVarWidth
+                  }
                 }
               } else {
-                if (containsNull) {
-                  snippetNullVarWidth
+                s"""(${expr.value} instanceof $unsafeArrayDataClass ?
+                   |(($unsafeArrayDataClass) ${expr.value}).getSizeInBytes() + 4
+                   |: ${ if (isFixedWidth) {
+                  s"""$containsNull ? ($snippetNullFixedWidth)
+                     |: ($snippetNotNullFixedWidth))
+                       """.stripMargin
                 } else {
-                  snippetNotNullVarWidth
+                  s"""$containsNull ? ($snippetNullVarWidth)
+                     |: ($snippetNotNullVarWidth))
+                       """.stripMargin
                 }
-              }
-            } else {
-              s"""(${expr.value} instanceof $unsafeArrayDataClass ?
-                      |(($unsafeArrayDataClass) ${expr.value}).getSizeInBytes() + 4
-                      |: ${ if (isFixedWidth) {
-                       s"""$containsNull ? ($snippetNullFixedWidth)
-                                         |: ($snippetNotNullFixedWidth))
-                       """.stripMargin
-                      } else {
-                       s"""$containsNull ? ($snippetNullVarWidth)
-                                         |: ($snippetNotNullVarWidth))
-                       """.stripMargin
-                     }
-                  }
+                }
              """.stripMargin
-            }) + ")"
+              }) + ")"
 
+          }
         }
-      }
-      if (nullVar.isEmpty || nullVar == "false") {
-        notNullSizeExpr
-      } else {
-        s"($nullVar? 0 : $notNullSizeExpr)"
-      }
-    }.mkString(" + ") + s" + ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)}"
+        if (nullVar.isEmpty || nullVar == "false") {
+          notNullSizeExpr
+        } else {
+          s"($nullVar? 0 : $notNullSizeExpr)"
+        }
+      }.mkString(" + ")
+    }
+
+    (if (keysDataType.size <= SHAMapAccessor.codeSplitGroupSize) {
+     generateLengthCode(keyVars, keysDataType, nestingLevel)
+   } else {
+     val groupIter = keyVars.zip(keysDataType).grouped(SHAMapAccessor.codeSplitGroupSize)
+      var method_number = 0
+      val baseMethodName = ctx.freshName("calculatePartLength")
+      (for (groupSeq <- groupIter) yield {
+       val enhancedGroupSeq = groupSeq.map {
+          case (exprCode, dataType) => (exprCode.isNull,
+            exprCode.copy(isNull = ctx.freshName("nullVar")), dataType)
+        }
+        val methodName = s"${baseMethodName}_$method_number"
+        method_number += 1
+        val (nullBools, partKeyVars, partKeysDataType) = enhancedGroupSeq.unzip3
+
+        val methodBody = s"return ${generateLengthCode(partKeyVars,
+          partKeysDataType, nestingLevel)};"
+        val methodParams = enhancedGroupSeq.map {
+          case(_, exprCode, dt) => s"${ctx.javaType(dt)} ${exprCode.value}," +
+            s" boolean ${exprCode.isNull}"
+        }.mkString(",")
+        ctx.addNewFunction(methodName,
+          s"""
+             |private int $methodName($methodParams) {
+               |$methodBody
+             |}
+       """.stripMargin)
+        val methodArgs = enhancedGroupSeq.map {
+          case(nullBool, exprCode, dt) => s"${exprCode.value}, $nullBool"
+        }.mkString(",")
+        s"$methodName($methodArgs)"
+      }).mkString(" + ")
+    }) + s" + ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)}"
   }
 
   def getExplodedExprCodeAndDataTypeForStruct(parentStructVarName: String, st: StructType,
@@ -1489,7 +1527,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 
 object SHAMapAccessor {
-
+  val codeSplitGroupSize = 5
   val nullVarSuffix = "_isNull"
   val supportedDataTypes: DataType => Boolean = dt =>
     dt match {
