@@ -708,6 +708,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../../best_practices/structured_streaming_best_practices/">Structured Streaming</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../../best_practices/important_settings/">Important Settings</a>
         
     </li>
@@ -2217,8 +2224,8 @@ column-definition-for-row-table: column-name column-data-type [ column-constrain
 <li>Refer to the <a href="#id-columns">identity</a> section for more information on GENERATED.</br></li>
 <li>Refer to the <a href="#constraint">constraint</a> section for more information on table-constraint and column-constraint.</li>
 </ul>
-<p><code>column-data-type</code>
-The following data types are supported:</p>
+<h3 id="column-data-type">column-data-type</h3>
+<p>The following data types are supported:</p>
 <pre><code class="pre">column-data-type: 
     BIGINT |
     BINARY |
@@ -2471,6 +2478,16 @@ Default in SnappyData for <code>synchronous</code> is <code>persistence</code>, 
 </code></pre>
 </li>
 </ol>
+<h3 id="example-create-column-table-with-comment-clause">Example: Create Column Table with COMMENT Clause</h3>
+<p>You can add comments about a column using the COMMENT clause. The COMMENT clause must be used in the column definition as shown in the following example:</p>
+<pre><code>snappy&gt; create table foobar (a string comment 'column 1', b string not null comment 'column 2') using column;
+snappy&gt; describe foobar;
+col_name |data_type |comment
+------------------------------
+a        |string    |column 1
+b        |string    |column 2
+</code></pre>
+
 <p><a id="constraint"></a></p>
 <h3 id="constraint-only-for-row-tables">Constraint (only for Row Tables)</h3>
 <p>A CONSTRAINT clause is an optional part of a CREATE TABLE statement that defines a rule to which table data must conform.</p>

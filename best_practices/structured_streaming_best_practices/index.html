@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Release Notes - SnappyData™ 1.1.1</title>
+  <title>Structured Streaming - SnappyData™ 1.1.1</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -30,9 +30,9 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Release Notes";
-    var mkdocs_page_input_path = "release_notes/release_notes.md";
-    var mkdocs_page_url = "/release_notes/release_notes/";
+    var mkdocs_page_name = "Structured Streaming";
+    var mkdocs_page_input_path = "best_practices/structured_streaming_best_practices.md";
+    var mkdocs_page_url = "/best_practices/structured_streaming_best_practices/";
   </script>
   
   <script src="../../js/jquery-2.1.1.min.js"></script>
@@ -646,7 +646,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/">Best Practices</a>
+        <a class="" href="../">Best Practices</a>
         
     </li>
 <li>
@@ -658,14 +658,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/setup_cluster/">Tuning for Concurrency and Computation</a>
+        <a class="" href="../setup_cluster/">Tuning for Concurrency and Computation</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_schema/">Designing your Database and Schema</a>
+        <a class="" href="../design_schema/">Designing your Database and Schema</a>
         
     </li>
 
@@ -677,14 +677,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/design_principles/">Design Principles of Scalable, Partition-Aware Databases</a>
+        <a class="" href="../design_principles/">Design Principles of Scalable, Partition-Aware Databases</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
+        <a class="" href="../optimizing_query_latency/">Optimizing Query Latency: Partitioning and Replication Strategies</a>
         
     </li>
 
@@ -694,35 +694,50 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/memory_management/">Memory Management</a>
+        <a class="" href="../memory_management/">Memory Management</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/ha_considerations/">HA Considerations</a>
+        <a class="" href="../ha_considerations/">HA Considerations</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Structured Streaming</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#structured-streaming">Structured Streaming</a></li>
+                
+                    <li><a class="toctree-l4" href="#using-shared-file-system-as-checkpoint-directory-location">Using Shared File System as Checkpoint Directory Location</a></li>
+                
+                    <li><a class="toctree-l4" href="#limiting-batch-size">Limiting Batch Size</a></li>
+                
+                    <li><a class="toctree-l4" href="#limiting-default-incoming-data-frame-size">Limiting Default Incoming Data Frame Size</a></li>
+                
+                    <li><a class="toctree-l4" href="#running-a-structured-streaming-query-with-dedicated-snappysession-instance">Running a Structured Streaming Query with Dedicated SnappySession Instance</a></li>
+                
+            
+            </ul>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/structured_streaming_best_practices/">Structured Streaming</a>
+        <a class="" href="../important_settings/">Important Settings</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/important_settings/">Important Settings</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../best_practices/transactions_best_practices/">SnappyData Distributed Transactions</a>
+        <a class="" href="../transactions_best_practices/">SnappyData Distributed Transactions</a>
         
     </li>
 
@@ -2085,15 +2100,8 @@
 <li>
           
             <li>
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Release Notes</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#release-notes">Release Notes</a></li>
-                
-            
-            </ul>
+    <li class="toctree-l1 ">
+        <a class="" href="../../release_notes/release_notes/">Release Notes</a>
         
     </li>
 <li>
@@ -2162,8 +2170,78 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="release-notes">Release Notes</h1>
-<p><a href="../TIB_compute-ce_1.1.1_relnotes.pdf">SnappyData 1.1.1 Release Notes</a></p>
+                <h1 id="structured-streaming">Structured Streaming</h1>
+<p>The following best practices for Structured Streaming are explained in this section:</p>
+<ul>
+<li><a href="#sharefilesys">Using Shared File System as Checkpoint Directory Location</a></li>
+<li><a href="#limitbatchsize">Limiting Batch Size</a></li>
+<li><a href="#limitdefaultincoming">Limiting Default Incoming Data Frame Size</a></li>
+<li><a href="#dedicatedsnappysession">Running a Structured Streaming Query with Dedicated SnappySession Instance</a></li>
+</ul>
+<p><a id= sharefilesys> </a></p>
+<h2 id="using-shared-file-system-as-checkpoint-directory-location">Using Shared File System as Checkpoint Directory Location</h2>
+<p>The location used to store checkpoint directory content should be on a shared file system like HDFS, which is accessible from all the nodes. This is required because the incremental aggregation state of a streaming query is stored as part of checkpoint directory itself. So if one of the executor nodes goes down, the aggregation state stored by that node needs to be accessible from the other executor nodes for the proper functioning of the streaming query.</p>
+<p><a id= limitbatchsize> </a></p>
+<h2 id="limiting-batch-size">Limiting Batch Size</h2>
+<p>A good practice is to limit the batch size of a streaming query such that it remains below <strong>spark.sql.autoBroadcastJoinThreshold</strong> while using <strong>Snappy</strong> <strong>Sink</strong>.</p>
+<p>This gives the following advantages:</p>
+<ul>
+<li><strong>Snappy</strong> <strong>Sink</strong> internally caches the incoming dataframe batch. If the batch size is too large, the cached dataframe might not fit in the memory and can start spilling over to the disk. This can lead to performance issues.</li>
+<li>By limiting the batch size to <strong>spark.sql.autoBroadcastJoinThreshold</strong>, you can ensure that the <strong>putInto</strong> operation, that is performed as part of <strong>Snappy</strong> <strong>Sink</strong>, uses broadcast join which is significantly faster than sort merge join.</li>
+</ul>
+<p>The batch size can be restricted using one of the following options depending upon the source:</p>
+<h3 id="for-apache-kafka-source">For Apache Kafka Source</h3>
+<p><strong>maxOffsetsPerTrigger</strong> - Rate limit on the maximum number of offsets processed for each trigger interval. The specified total number of offsets are proportionally split across topic Partitions of different volume. (default: no max)</p>
+<p>Example:</p>
+<pre><code>val streamingDF = snappySession
+      .readStream
+      .format(&quot;kafka&quot;)
+      .option(&quot;kafka.bootstrap.servers&quot;,”localhost:9091”)
+      .option(&quot;maxOffsetsPerTrigger&quot;, 100)
+      .option(&quot;subscribe&quot;, “topic1”)
+      .load
+</code></pre>
+
+<h3 id="for-file-sources">For File Sources</h3>
+<p><strong>maxFilesPerTrigger</strong>- Maximum number of new files to be considered in every trigger (default: no max).</p>
+<p>Example:</p>
+<pre><code>val inputPath = &quot;/path/to/parquet_input&quot;
+val schema = snappy.read.parquet(inputPath).schema
+val df = snappy.readStream.schema(schema)
+  .option(&quot;maxFilesPerTrigger&quot;, 1)
+  .format(&quot;parquet&quot;)
+  .load(inputPath)
+</code></pre>
+
+<p><a id= limitdefaultincoming> </a></p>
+<h2 id="limiting-default-incoming-data-frame-size">Limiting Default Incoming Data Frame Size</h2>
+<p>Spark relies on the data size statistics provided by the sources to decide join type to be used for the query plan.
+Some sources do not provide the correct size statistics and in such a case, Spark falls down to the default value, which is <strong>Long.MaxValue</strong> which is greater than <strong>spark.sql.autoBroadcastJoinThreshold</strong>. As a result of that the <strong>putInto</strong> join query always uses the sort merge join even if the incoming batch size is lesser than <strong>spark.sql.autoBroadcastJoinThreshold</strong>. A broadcast join is more performant than a sort merge join.</p>
+<p>To overcome this, use the session level property <strong>spark.sql.defaultSizeInBytesyou</strong> and override the default size. The value set for this property should be approximately equal to the maximum batch size that you expect after complying to the suggestion mentioned in <a href="#limitbatchsize">Limiting Batch Size</a> section.</p>
+<p>It can be set using the following SQL command: </p>
+<pre><code>set spark.sql.defaultSizeInBytes = &lt;some long value&gt;
+</code></pre>
+
+<p>For example:</p>
+<pre><code>set spark.sql.defaultSizeInBytes = 10000
+</code></pre>
+
+<p>Using SnappySession instance, you can be run the same as follows: </p>
+<pre><code>snappySession.sql(“set spark.sql.defaultSizeInBytes = 10000”)
+</code></pre>
+
+<p><a id= dedicatedsnappysession> </a></p>
+<h2 id="running-a-structured-streaming-query-with-dedicated-snappysession-instance">Running a Structured Streaming Query with Dedicated SnappySession Instance</h2>
+<p>A good practice is to run each structured streaming query using it’s own dedicated instance of SnappySession. 
+A new instance of SnappySession can be created as follows:</p>
+<pre><code>val newSession = snappySession.newSession()
+</code></pre>
+
+<p>The newSession instance has a similar session level config as snappySession.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For embedded snappy jobs, it is recommended to use a new snappy-job for each streaming query.</p>
+</div>
               
             </div>
           </div>
@@ -2198,10 +2276,10 @@
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../../additional_files/license_model/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../ha_considerations/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../../prev_doc_ver/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../important_settings/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

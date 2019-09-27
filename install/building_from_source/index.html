@@ -727,6 +727,13 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../best_practices/structured_streaming_best_practices/">Structured Streaming</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../best_practices/important_settings/">Important Settings</a>
         
     </li>
@@ -2323,6 +2330,9 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
 </li>
 <li>
 <p>Generate Apache Avro and SnappyData required sources by expanding: <strong>snappydata_2.11&gt; Tasks&gt; other</strong>. Right-click on <strong>generateSources</strong> and run it. The <strong>Run</strong> option may not be available if indexing is still in progress, wait for indexing to complete, and then try again. <br> The first run may take some time to complete, as it downloads the jar files and other required files. This step has to be done the first time, or if <strong>./gradlew clean</strong> has been run, or if you have made changes to <strong>javacc/avro/messages.xml</strong> source files.</p>
+</li>
+<li>
+<p>Go to <strong>File&gt; Settings&gt; Build, Execution, Deployment&gt; Build tools&gt; Gradle</strong>. Enter <strong>-DideaBuild</strong> in the <strong>Gradle VM Options</strong> textbox.</p>
 </li>
 <li>
 <p>If you get unexpected <strong>Database not found</strong> or <strong>NullPointerException</strong> errors in SnappyData-store/GemFireXD layer, run the <strong>generateSources</strong> target (Gradle tab) again.</p>
