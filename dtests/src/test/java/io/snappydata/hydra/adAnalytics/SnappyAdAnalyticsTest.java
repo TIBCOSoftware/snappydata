@@ -375,15 +375,14 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         Log.getLogWriter().info("JobID is : " + jobID);
         SnappyBB.getBB().getSharedMap().put(appName, jobID);
         for (int j = 0; j < 3; j++) {
+          if (!getJobStatus(jobID)) {
+            throw new TestException("Got Exception while executing streaming job. Please check " +
+                "the job status output.");
+          }
           try {
             Thread.sleep(10 * 1000);
           } catch (InterruptedException ie) {
           }
-          getJobStatus(jobID);
-        }
-        if(!checkJobStatus(jobID)){
-          throw new TestException("Got Exception while executing streaming job. Please check " +
-              "the job status output.");
         }
       }
     }
@@ -596,7 +595,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
             return false;
           break;
         }
-      } try { Thread.sleep(10*1000);} catch(InterruptedException ie) { }
+      }
     } catch (IOException ie){
       Log.getLogWriter().info("Got exception while accessing current dir");
     }

@@ -82,7 +82,7 @@ object SnappyTestUtils {
       pw: PrintWriter, sqlContext: SQLContext): Boolean = {
     var validationFailed = false
     var snappyDF: DataFrame = null
-    snappyDF = snc.sql(sqlString)
+    snappyDF = snc.sql(sqlString).cache()
     val snappyDFCount = snappyDF.count
     // scalastyle:off println
     pw.println(s"\n${logTime} Executing Query $queryNum ...")
@@ -99,7 +99,7 @@ object SnappyTestUtils {
     }
     var fullRSValidationFailed: Boolean = false
     if (validateFullResultSet) {
-      val sparkDF = sqlContext.sql(sqlString)
+      val sparkDF = sqlContext.sql(sqlString).cache()
       val sparkDFCount = sparkDF.count()
       if(snappyDFCount != sparkDFCount) {
         pw.println(s"Count difference observed in snappy and spark resultset for query " +
@@ -125,18 +125,16 @@ object SnappyTestUtils {
   def assertQuery(snc: SnappyContext, snappyDF: DataFrame, sparkDF: DataFrame, queryNum: String,
       pw: PrintWriter): Boolean = {
     var fullRSValidationFailed = false
-    val snappyQueryFileName = s"Snappy_${queryNum}"
-    val snappyDest: String = getQueryResultDir("snappyResults") +
-        File.separator + snappyQueryFileName
+
+    val snappyResFileName = s"Snappy_${queryNum}"
+    val snappyDest: String = getQueryResultDir("snappyResults") + File.separator + snappyResFileName
     // scalastyle:off println
-    // pw.println(s"Snappy query results are at : ${snappyDest}")
     val snappyFile: File = new java.io.File(snappyDest)
 
-    val sparkQueryFileName = s"Spark_${queryNum}"
-    val sparkDest: String = getQueryResultDir("sparkResults") + File.separator +
-        sparkQueryFileName
-    // pw.println(s"Spark query results are at : ${sparkDest}")
+    val sparkResFileName = s"Spark_${queryNum}"
+    val sparkDest: String = getQueryResultDir("sparkResults") + File.separator + sparkResFileName
     val sparkFile: File = new java.io.File(sparkDest)
+
     try {
       if (!snappyFile.exists()) {
         // val snap_col1 = snappyDF.schema.fieldNames(0)
@@ -145,6 +143,7 @@ object SnappyTestUtils {
         writeToFile(snappyDF.repartition((1)), snappyDest, snc)
         pw.println(s"${logTime} Snappy result collected in : ${snappyDest}")
       }
+
       if (!sparkFile.exists()) {
         // val col1 = sparkDF.schema.fieldNames(0)
         // val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
@@ -152,20 +151,44 @@ object SnappyTestUtils {
         writeToFile(sparkDF.repartition(1), sparkDest, snc)
         pw.println(s"${logTime} Spark result collected in : ${sparkDest}")
       }
-      val missingDF = sparkDF.except(snappyDF).collectAsList()
-      val unexpectedDF = snappyDF.except(sparkDF).collectAsList()
-      if(missingDF.size() > 0 || unexpectedDF.size() > 0) {
-        fullRSValidationFailed = true
-        pw.println("Found mismatch in resultset")
-        if(missingDF.size() > 0) {
-          pw.println(s"The following ${missingDF.size} rows were missing in snappyDF:\n ")
-          for(i <- 0 to missingDF.size())
-            pw.println(missingDF.get(i))
+      val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
+      val sparkDF2 = snc.read.format("com.databricks.spark.csv")
+          .option("header", "false")
+          .option("inferSchema", "false")
+          .option("nullValue", "NULL")
+          .option("maxCharsPerColumn", "4096")
+          .load(s"${expectedFile}")
+
+      val missingDF: Array[Row] = sparkDF2.except(snappyDF).sort(sparkDF2.columns(0)).collect()
+      val unexpectedDF: Array[Row] = snappyDF.except(sparkDF2).sort(sparkDF2.columns(0)).collect()
+
+      val aStr = new StringBuilder
+      if(missingDF.length > 0 || unexpectedDF.length > 0) {
+        pw.println(s"Found mismatch in resultset for query ${queryNum}... ")
+        if(missingDF.length > 0) {
+          aStr.append(s"The following ${missingDF.size} rows were missing in snappyDF:\n ")
+          for(i <- 0 to missingDF.size)
+            aStr.append(missingDF(i) + "\n")
         }
-        if(unexpectedDF.size() > 0) {
-          pw.println(s"The following ${unexpectedDF.size} rows were unexpected in snappyDF:\n")
-          for(i <- 0 to unexpectedDF.size())
-            pw.println(unexpectedDF.get(i))
+        if(unexpectedDF.length > 0) {
+          aStr.append(s"The following ${unexpectedDF.size} rows were unexpected in snappyDF:\n")
+          for(i <- 0 to unexpectedDF.size)
+            aStr.append(unexpectedDF(i) + "\n")
+        }
+
+        // check if the mismatch is due to decimal, and can be ignored
+        if (unexpectedDF.length == missingDF.length) {
+          for (i <- 0 until missingDF.size) {
+            if (!isIgnorable(missingDF(i).toString, unexpectedDF(i).toString)) {
+              fullRSValidationFailed = true
+            }
+          }
+          pw.println("This mismatch can be ignored.")
+          aStr.setLength(0) // data mismatch can be ignored
+        }
+        if(aStr.length > 0) {
+          pw.println(aStr)
+          fullRSValidationFailed = true
         }
       }
       // fullRSValidationFailed
@@ -181,7 +204,6 @@ object SnappyTestUtils {
     pw.flush()
     fullRSValidationFailed
   }
-
 
   def dataTypeConverter(row: Row): Row = {
     val md = row.toSeq.map {
@@ -216,7 +238,7 @@ object SnappyTestUtils {
         })
         sb.toString()
       }).write.format("org.apache.spark.sql.execution.datasources.csv.CSVFileFormat").option(
-      "header", false).save(dest)
+      "header", true).save(dest)
   }
 
   /*

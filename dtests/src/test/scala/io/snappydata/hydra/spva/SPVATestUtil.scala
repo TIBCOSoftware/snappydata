@@ -29,34 +29,26 @@ object SPVATestUtil {
   def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {
 
     snc.sql(SPVAQueries.patients_table)
-    SPVAQueries.patients(snc).write.insertInto("patient")
 
     snc.sql(SPVAQueries.encounters_table)
-    SPVAQueries.encounters(snc).write.insertInto("encounters")
 
     snc.sql(SPVAQueries.allergies_table)
-    SPVAQueries.allergies(snc).write.insertInto("allergies")
 
     snc.sql(SPVAQueries.careplans_table)
-    SPVAQueries.careplans(snc).write.insertInto("careplans")
 
     snc.sql(SPVAQueries.conditions_table)
-    SPVAQueries.conditions(snc).write.insertInto("conditions")
 
     snc.sql(SPVAQueries.imaging_studies_table)
-    SPVAQueries.imaging_studies(snc).write.insertInto("imaging_studies")
 
     snc.sql(SPVAQueries.immunizations_table)
-    SPVAQueries.immunizations(snc).write.insertInto("immunizations")
 
     snc.sql(SPVAQueries.medications_table)
-    SPVAQueries.medications(snc).write.insertInto("medications")
 
     snc.sql(SPVAQueries.observations_table)
-    SPVAQueries.observations(snc).write.insertInto("observations")
 
     snc.sql(SPVAQueries.procedures_table)
-    SPVAQueries.procedures(snc).write.insertInto("procedures")
+
+    loadTables(snc)
   }
 
   def createAndLoadPartitionedTables(snc: SnappyContext): Unit = {
@@ -91,16 +83,7 @@ object SPVATestUtil {
         " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
 
-    SPVAQueries.patients(snc).write.insertInto("patients")
-    SPVAQueries.encounters(snc).write.insertInto("encounters")
-    SPVAQueries.allergies(snc).write.insertInto("allergies")
-    SPVAQueries.careplans(snc).write.insertInto("careplans")
-    SPVAQueries.conditions(snc).write.insertInto("conditions")
-    SPVAQueries.imaging_studies(snc).write.insertInto("imaging_studies")
-    SPVAQueries.immunizations(snc).write.insertInto("immunizations")
-    SPVAQueries.medications(snc).write.insertInto("medications")
-    SPVAQueries.observations(snc).write.insertInto("observations")
-    SPVAQueries.procedures(snc).write.insertInto("procedures")
+    loadTables(snc)
   }
 
   def createAndLoadColumnTables(snc: SnappyContext): Unit = {
@@ -134,7 +117,10 @@ object SPVATestUtil {
     snc.sql(SPVAQueries.procedures_table + " using column options(PARTITION_BY 'PATIENT', " +
         " colocate_with 'PATIENTS', buckets '12', redundancy '1', PERSISTENT 'sync', " +
         " EVICTION_BY 'LRUHEAPPERCENT')")
+    loadTables(snc)
+  }
 
+  def loadTables(snc: SnappyContext): Unit = {
     SPVAQueries.patients(snc).write.insertInto("patients")
     SPVAQueries.encounters(snc).write.insertInto("encounters")
     SPVAQueries.allergies(snc).write.insertInto("allergies")
