@@ -280,7 +280,7 @@ NULL
 
 <a id= submitsnapjobs> </a>
 ## Submit Snappy Jobs
-There are samples jobs available for reference. You can import the examples into a separate independent gradle project and submit the jobs to the cluster or run within an IDE. Refer to the instructions [here][https://github.com/SnappyDataInc/snappydata/blob/master/examples/README.md].
+There are samples jobs available for reference. You can import the examples into a separate independent gradle project and submit the jobs to the cluster or run within an IDE. Refer to the instructions [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/README.md).
 
 <a id= addservercluster> </a>
 ## Add Servers into Cluster
