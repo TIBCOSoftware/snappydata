@@ -1118,33 +1118,55 @@ case class SHAMapAccessor(@transient session: SnappySession,
    } else {
      val groupIter = keyVars.zip(keysDataType).grouped(SHAMapAccessor.codeSplitGroupSize).
        zipWithIndex
-     groupIter.map{case (groupSeq, index) => {
-       val enhancedGroupSeq = groupSeq.map {
-          case (exprCode, dataType) => (exprCode.isNull,
-            exprCode.copy(isNull = ctx.freshName("nullVar")), dataType)
-        }
-        val methodName = ctx.freshName("calculatePartLength")
-        val (nullBools, partKeyVars, partKeysDataType) = enhancedGroupSeq.unzip3
+     val functionMapping = scala.collection.mutable.Map[String, String]()
+     groupIter.map { case (groupSeq, index) => {
+       val paramTypesStr = groupSeq.map(_._1).mkString(",")
+       val isSkipLengthCase = this.skipLenForAttribIndex != -1 &&
+         this.skipLenForAttribIndex >= index * SHAMapAccessor.codeSplitGroupSize &&
+         this.skipLenForAttribIndex < (index + 1) * SHAMapAccessor.codeSplitGroupSize
 
-        val methodBody = s"return ${generateLengthCode(partKeyVars,
-          partKeysDataType, nestingLevel, index * SHAMapAccessor.codeSplitGroupSize)};"
-        val methodParams = enhancedGroupSeq.map {
-          case(_, exprCode, dt) => s"${ctx.javaType(dt)} ${exprCode.value}," +
-            s" boolean ${exprCode.isNull}"
-        }.mkString(",")
-        ctx.addNewFunction(methodName,
-          s"""
-             |private int $methodName($methodParams) {
-               |$methodBody
-             |}
-       """.stripMargin)
+       val existingFunc = if (isSkipLengthCase) None else functionMapping.get(paramTypesStr)
+       existingFunc match {
+         case Some(funcName) => val methodArgs = groupSeq.map(tup => {
+           val exprCd = tup._1
+           s"${exprCd.value}, ${exprCd.isNull}"
+         }).mkString(",")
+           s"$funcName($methodArgs)"
+         case None => val enhancedGroupSeq = groupSeq.map {
+           case (exprCode, dataType) => (exprCode.isNull,
+             exprCode.copy(isNull = ctx.freshName("nullVar")), dataType)
+         }
+           val methodName = ctx.freshName("calculatePartLength")
+           val (nullBools, partKeyVars, partKeysDataType) = enhancedGroupSeq.unzip3
+           val methodBody = s"return ${
+             generateLengthCode(partKeyVars,
+               partKeysDataType, nestingLevel, index * SHAMapAccessor.codeSplitGroupSize)
+           };"
+           val methodParams = enhancedGroupSeq.map {
+             case (_, exprCode, dt) => s"${ctx.javaType(dt)} ${exprCode.value}," +
+               s" boolean ${exprCode.isNull}"
+           }.mkString(",")
+           ctx.addNewFunction(methodName,
+             s"""
+                |private int $methodName($methodParams) {
+                |$methodBody
+
+                |}
+             """.
+               stripMargin)
         val methodArgs = enhancedGroupSeq.map {
-          case(nullBool, exprCode, dt) => s"${exprCode.value}, $nullBool"
+          case(nullBool, exprCode, dt) => s"${
+            exprCode.value}, $nullBool"
         }.mkString(",")
+         if (!isSkipLengthCase) {
+           functionMapping += (paramTypesStr -> methodName)
+         }
         s"$methodName($methodArgs)"
-      }}.mkString(" + ")
+      }}
+       }.mkString(" + ")
     }) + s" + ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)}"
   }
+
 
   def getExplodedExprCodeAndDataTypeForStruct(parentStructVarName: String, st: StructType,
     nestingLevel: Int): (Seq[ExprCode], Seq[DataType]) = st.zipWithIndex.map {
