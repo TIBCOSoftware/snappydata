@@ -838,13 +838,13 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     stmt.execute("INSERT INTO test3coltab6 VALUES(300000000000001, 3, false)")
 
     // column table - not null columns todo: add not null here
-    stmt.execute("CREATE TABLE test3coltab7 (col1 decimal(15,9), col2 float , col3 BIGint, col4 date, col5 string ) using column")
+    stmt.execute("CREATE TABLE test3coltab7 (col1 decimal(15,9), col2 float , col3 BIGint, col4 date, col5 string ) using column options(BUCKETS '512')")
     stmt.execute("INSERT INTO test3coltab7 VALUES(891012.312321314, 1434124.123434134, 193471498234123, '2019-02-18', 'ZXcabcdefg')")
     stmt.execute("INSERT INTO test3coltab7 VALUES(91012.312321314, 34124.12343413, 243471498234123, '2019-04-18', 'qewrabcdefg')")
     stmt.execute("INSERT INTO test3coltab7 VALUES(1012.312321314, 4124.1234341, 333471498234123, '2019-03-18', 'adfcdefg')")
 
     // todo: Paresh: the peculiar case
-    stmt.execute("CREATE TABLE test3rowtab8 (col1 string, col2 int, col3 varchar(33), col4 boolean, col5 float);")
+    stmt.execute("CREATE TABLE test3rowtab8 (col1 string, col2 int, col3 varchar(33), col4 boolean, col5 float)using row")
     stmt.execute("INSERT INTO test3rowtab8 VALUES('qewradfs',111, 'asdfqewr', true, 123.1234);")
     stmt.execute("INSERT INTO test3rowtab8 VALUES('adsffs',222, 'vzxcqewr', true, 4745.345345);")
     stmt.execute("INSERT INTO test3rowtab8 VALUES('xzcvadfs',444, 'zxcvzv', false, 78768.34);")
@@ -988,6 +988,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
           .equalsIgnoreCase(arrBuf(i)))
       i += 1
     }
+    assert(i != 0)
     rs4.close()
 
     val rs5 = stmtRec.executeQuery("SELECT col1, col2, col3 from gemfire10.test3coltab6 ORDER BY col1")
@@ -1001,6 +1002,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
             s" ${rs5.getBoolean("col3")}\nExpected: ${arrBuf(i)}")
       i += 1
     }
+    assert(i != 0)
     rs5.close()
 
 
@@ -1041,6 +1043,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
       assert(s"${rs7.getBigDecimal(1)},${rs7.getBigDecimal(2)},${rs7.getLong(3)},${rs7.getDate(4)},${rs7.getString(5)}" === arrBuf(i))
       i += 1
     }
+    assert(i != 0)
     rs7.close()
 
     rs7 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3rowtab8 ORDER BY col2;")
@@ -1054,6 +1057,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
           s"${rs7.getBoolean(4)},${rs7.getFloat(5)}" === arrBuf(i))
       i += 1
     }
+    assert(i != 0)
     rs7.close()
 
     // todo add assertion for gemfire10.test3rowtab9 and gemfire10.test3coltab10 ; once null issue

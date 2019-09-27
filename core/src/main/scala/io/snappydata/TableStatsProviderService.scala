@@ -190,8 +190,10 @@ trait TableStatsProviderService extends Logging {
       Map[String, SnappyIndexStats], Map[String, SnappyExternalTableStats]) = {
     if (!doRun) return (Map.empty, Map.empty, Map.empty)
     val (tableStats, indexStats, externalTableStats) =
-      if (Misc.getGemFireCache.isSnappyRecoveryMode) RecoveryService.getStats
-      else getStatsFromAllServers()
+      if (Misc.getGemFireCacheNoThrow != null &&
+          Misc.getGemFireCache.isSnappyRecoveryMode) {
+        RecoveryService.getStats
+      } else getStatsFromAllServers()
 
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
     val aggregatedExtTableStats = scala.collection.mutable.Map[String, SnappyExternalTableStats]()
