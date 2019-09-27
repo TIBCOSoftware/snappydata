@@ -4,7 +4,7 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf
   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
   snappyBinPath="$GEMFIRE/../snappy"
   scriptName=createAndLoadTablesForDE.sql
-  dataFilesLocation="/home/supriya/Downloads"
+  dataFilesLocation="/home/apps/Downloads"
   dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DMLQueriesForDE.sql"
   ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
   queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueries.sql"
@@ -17,7 +17,7 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorWithCPDE.conf
     snappyBinPath="$GEMFIRE/../snappy"
     scriptName=createAndLoadTablesForDE.sql
     scriptName1=createAndLoadDataForCPDE.sql
-    dataFilesLocation="/home/supriya/Downloads"
+    dataFilesLocation="/home/apps/Downloads"
     node1="localhost"
     node2="localhost"
     dmlFileLocation="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DMLQueriesForDE.sql"
@@ -31,15 +31,17 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorWithCPDE.conf
    B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
    C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
    snappyBinPath="$GEMFIRE/../snappy"
-   scriptName=createAndLoadTablesWithCompForDE.sql
+   scriptName=createAndLoadTablesForDE.sql
    scriptName1=insertColVal.sql
    scriptName2=insertRowVal.sql
-   dataFilesLocation="/home/supriya/Downloads"
+   dataFilesLocation="/home/apps/Downloads"
+   queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueries.sql"
    dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/patientQuery.sql"
    ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
 
+
  io/snappydata/hydra/dataExtractorTool/dataExtractorWithJson.conf
-  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
   snappyBinPath="$GEMFIRE/../snappy"

@@ -38,7 +38,12 @@ object DataExtractorTestOOM extends SnappySQLJob {
         }
         Iterator.empty
       })
-    } finally {
+    }
+      catch {
+        case ex: Exception => {
+          System.out.println("Got Expected exception")
+        }}
+      finally {
       // StratifiedSampler.removeSampler(sampleTable, markFlushed = false)
     }
   }
