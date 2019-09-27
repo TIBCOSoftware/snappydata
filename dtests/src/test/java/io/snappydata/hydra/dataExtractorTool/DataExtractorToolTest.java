@@ -33,6 +33,8 @@ import io.snappydata.hydra.security.SnappySecurityPrms;
 import org.apache.commons.io.FileUtils;
 import util.TestException;
 
+import static io.snappydata.hydra.cdcConnector.SnappyCDCTest.HydraTask_stopCluster;
+
 public class DataExtractorToolTest extends SnappyTest {
 
   private static Integer expectedExceptionCnt = 0;
@@ -201,6 +203,59 @@ public class DataExtractorToolTest extends SnappyTest {
     } catch (Exception e) {
       throw new io.snappydata.test.util.TestException("Caught Exception in addNewNode method" + e.getMessage());
     }
+  }
+
+  public static void HydraTask_createDummyData(){
+    if (dataExtractorToolTest == null) {
+      dataExtractorToolTest = new DataExtractorToolTest();
+    }
+    dataExtractorToolTest.createDummyData();
+  }
+
+  public static void HydraTask_checkForException(){
+    if (dataExtractorToolTest == null) {
+      dataExtractorToolTest = new DataExtractorToolTest();
+    }
+    dataExtractorToolTest.checkForException();
+  }
+
+  public void checkForException(){
+    boolean isOOME = false;
+    if (SnappyBB.getBB().getSharedMap().containsKey("IS_OOME"))
+       isOOME=(Boolean)SnappyBB.getBB().getSharedMap().get("IS_OOME");
+    if(!isOOME) {
+      try {
+        String dest = getCurrentDirPath() + File.separator + "checkException.log";
+        File logFile = new File(dest);
+        String cmd = " find . -name jvmkill*.log ";
+        ProcessBuilder pb2 = new ProcessBuilder("/bin/bash", "-c", cmd);
+        snappyTest.executeProcess(pb2, logFile);
+        BufferedReader br = new BufferedReader(new FileReader(logFile));
+        String line = null;
+        while ((line = br.readLine()) != null) {
+          if (line.contains("jvmkill")) {
+            SnappyBB.getBB().getSharedMap().put("IS_OOME", true);
+           // isOOME = true;
+            sleepForMs(60);
+            HydraTask_stopCluster();
+          }
+        }
+        br.close();
+      } catch (Exception ex) {
+        throw new io.snappydata.test.util.TestException("Caught exception in checkForException");
+      }
+    }
+  }
+
+  public void createDummyData(){
+      boolean isOOME = false;
+      while(!isOOME) {
+        if (SnappyBB.getBB().getSharedMap().containsKey("IS_OOME"))
+          isOOME=(Boolean)SnappyBB.getBB().getSharedMap().get("IS_OOME");
+        if(isOOME) break;
+        HydraTask_executeSnappyJob();
+      }
+        Log.getLogWriter().info("The servers are down with OOME as isOOME = " + isOOME);
   }
 
   public void deleteFiles(File fileName){
