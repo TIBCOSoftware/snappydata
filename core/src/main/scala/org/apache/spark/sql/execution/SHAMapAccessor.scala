@@ -1565,7 +1565,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 
 object SHAMapAccessor {
-  val codeSplitGroupSize = 5
+  val codeSplitGroupSize = 10
   val nullVarSuffix = "_isNull"
   val supportedDataTypes: DataType => Boolean = dt =>
     dt match {
