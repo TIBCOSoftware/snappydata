@@ -416,6 +416,15 @@ object RecoveryService extends Logging {
         versionCnt += 1
       })
     })
+    logDebug(
+      s"""SchemaVsVersionMap:
+         |$schemaStructMap
+         |
+         |TableVsColumnIDsMap:
+         |$tableColumnIds
+         |
+         |TableVersionMap
+         |$versionMap""".stripMargin)
   }
 
 
@@ -435,7 +444,7 @@ object RecoveryService extends Logging {
   def collectViewsAndRecoverDDLs(): Unit = {
     // Send a message to all the servers and locators to send back their
     // respective persistent state information.
-    logDebug("Start CollectViewsAndRecoverDDLs for cluster startup")
+    logDebug("Start collecting PersistentStateInRecoveryMode from all the servers/locators.")
     val collector = new RecoveryModeResultCollector()
     val msg = new RecoveredMetadataRequestMessage(collector)
     msg.executeFunction()
@@ -476,6 +485,8 @@ object RecoveryService extends Logging {
     val memberToConsider = regionView.getMember
     memberObject = persistentObjectMemberMap(memberToConsider)
     mostRecentMemberObject = persistentObjectMemberMap(memberToConsiderForHiveCatalog)
+    logDebug(s"The PersistentStateInRecoveryMode object used for populating" +
+        s" the new catalog:\n$mostRecentMemberObject")
     val catalogObjects = mostRecentMemberObject.getCatalogObjects
     import scala.collection.JavaConverters._
     val catalogArr = catalogObjects.asScala.map(catObj => {
@@ -493,21 +504,19 @@ object RecoveryService extends Logging {
     RecoveryService.populateCatalog(catalogArr, snapCon.sparkContext)
     createSchemasMap(snappyHiveExternalCatalog)
 
-    // temp log line for testing purpose -------- * /
     val dbList = snappyHiveExternalCatalog.listDatabases("*")
     val allFunctions = dbList.map(dbName =>
       snappyHiveExternalCatalog.listFunctions(dbName, "*")
           .map(func => snappyHiveExternalCatalog.getFunction(dbName, func)))
     val allDatabases = dbList.map(snappyHiveExternalCatalog.getDatabase)
     logInfo(
-      s"""PP:RecoveryService: Catalog contents in recovery mode:
+      s"""Catalog contents in recovery mode:
          |Tables:
          |${snappyHiveExternalCatalog.getAllTables().toString()}
          |Databases:
          |${allDatabases.toString()}
          |Functions:
          |${allFunctions.toString()}""".stripMargin)
-    //    -------- * /
   }
 
   def getTables: Seq[CatalogTable] = {
@@ -547,19 +556,19 @@ object RecoveryService extends Logging {
     catalogObjSeq.foreach {
       case catDB: CatalogDatabase =>
         extCatalog.createDatabase(catDB, ignoreIfExists = true)
-        logInfo(s"Inserting catalog database: ${
+        logDebug(s"Inserting catalog database: ${
           catDB.name
         } in the catalog.")
       case catFunc: CatalogFunction =>
         extCatalog.createFunction(catFunc.identifier.database
             .getOrElse(Constant.DEFAULT_SCHEMA), catFunc)
-        logInfo(s"Inserting catalog function: ${
+        logDebug(s"Inserting catalog function: ${
           catFunc.identifier
         } in the catalog.")
       case catTab: CatalogTable =>
         val opLogTable = catTab.copy(provider = Option("oplog"))
         extCatalog.createTable(opLogTable, ignoreIfExists = true)
-        logInfo(s"Inserting catalog table: ${
+        logDebug(s"Inserting catalog table: ${
           catTab.identifier
         } in the catalog.")
     }
