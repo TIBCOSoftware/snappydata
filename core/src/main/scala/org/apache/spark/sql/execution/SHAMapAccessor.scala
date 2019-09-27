@@ -1020,7 +1020,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
               getExplodedExprCodeAndDataTypeForStruct(expr.value, st, nestingLevel)
               val explodedStructSizeCode = generateKeySizeCode(childKeysVars, childDataTypes,
                 SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length), nestingLevel + 1)
-              val unexplodedStructSizeCode = s"(($unsafeRowClass) ${expr.value}).getSizeInBytes() + 4"
+              val unexplodedStructSizeCode = s"(($unsafeRowClass) ${expr.value})." +
+                s"getSizeInBytes() + 4"
 
               "1 + " + (if (alwaysExplode) {
                 explodedStructSizeCode
@@ -1112,15 +1113,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
      generateLengthCode(keyVars, keysDataType, nestingLevel)
    } else {
      val groupIter = keyVars.zip(keysDataType).grouped(SHAMapAccessor.codeSplitGroupSize)
-      var method_number = 0
-      val baseMethodName = ctx.freshName("calculatePartLength")
-      (for (groupSeq <- groupIter) yield {
+     groupIter.map(groupSeq => {
        val enhancedGroupSeq = groupSeq.map {
           case (exprCode, dataType) => (exprCode.isNull,
             exprCode.copy(isNull = ctx.freshName("nullVar")), dataType)
         }
-        val methodName = s"${baseMethodName}_$method_number"
-        method_number += 1
+        val methodName = ctx.freshName("calculatePartLength")
         val (nullBools, partKeyVars, partKeysDataType) = enhancedGroupSeq.unzip3
 
         val methodBody = s"return ${generateLengthCode(partKeyVars,
@@ -1204,8 +1202,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
       case _ =>
         hashSingleInt(s"$colVar.hashCode()", nullVar, hash)
     }
-    if (keyVars.length > 1) {
-      keysDataType.tail.zip(keyVars.tail).map {
+
+    def generateHashCodeCalcCode(keyDataTypesAndExprs: Seq[(DataType, ExprCode)]): String = {
+      keyDataTypesAndExprs.map {
         case (BooleanType, ev) =>
           addHashInt(s"${ev.value} ? 1 : 0", ev.isNull, hash)
         case (ByteType | ShortType | IntegerType | DateType, ev) =>
@@ -1223,7 +1222,45 @@ case class SHAMapAccessor(@transient session: SnappySession,
           addHashInt(s"${ev.value}.fastHashCode()", ev.isNull, hash)
         case (_, ev) =>
           addHashInt(s"${ev.value}.hashCode()", ev.isNull, hash)
-      }.mkString(prefix + firstColumnHash, "", suffix)
+      }.mkString("")
+    }
+    if (keyVars.length > 1) {
+      val grouppedSeq = keysDataType.tail.zip(keyVars.tail).
+        grouped(SHAMapAccessor.codeSplitGroupSize).toSeq
+      if (grouppedSeq.size == 1) {
+        grouppedSeq.map(generateHashCodeCalcCode(_))
+        .mkString(prefix + firstColumnHash, "", suffix)
+      } else {
+        grouppedSeq.map(groupSeq => {
+          val enhancedGroupSeq = groupSeq.map {
+            case (dataType, exprCode) =>
+              val nullBool = exprCode.isNull
+              (exprCode.copy(isNull = ctx.freshName("nullVar")), dataType, nullBool)
+          }
+          val methodName = ctx.freshName("calculateHashCode")
+          val methodBody =
+            s"""
+               |${generateHashCodeCalcCode(enhancedGroupSeq.unzip(tup => ((tup._2, tup._1), tup._3))._1)}
+               |return $hash;
+             """.stripMargin
+          val methodParams = enhancedGroupSeq.map {
+            case (exprCode, dt, _) => s"${ctx.javaType(dt)} ${exprCode.value}," +
+              s" boolean ${exprCode.isNull}"
+          }.mkString("", ",", s",int $hash")
+          ctx.addNewFunction(methodName,
+            s"""
+               |private int $methodName($methodParams) {
+                 |$methodBody
+               |}
+       """.stripMargin)
+
+          val methodArgs = enhancedGroupSeq.map {
+            case (exprCode, _, nullBool) => s"${exprCode.value}, $nullBool"
+          }.mkString("", ",", s",$hash")
+
+          s"$hash = $methodName($methodArgs);"
+        }).mkString(prefix + firstColumnHash, "", suffix)
+      }
     } else prefix + firstColumnHash + suffix
   }
 
