@@ -1001,8 +1001,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 
     def generateLengthCode(partKeyVars: Seq[ExprCode], partKeysDataType: Seq[DataType],
-      nestingLevel: Int): String = {
-      partKeysDataType.zip(partKeyVars).zipWithIndex.map { case ((dt, expr), i) =>
+      nestingLevel: Int, indexCorrector: Int): String = {
+      partKeysDataType.zip(partKeyVars).zipWithIndex.map { case ((dt, expr), indx) =>
         val nullVar = expr.isNull
         val notNullSizeExpr = if (TypeUtilities.isFixedWidth(dt)) {
           dt.defaultSize.toString
@@ -1010,7 +1010,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           dt match {
             case StringType =>
               val strPart = s"${expr.value}.numBytes()"
-              if (nestingLevel == 0 && i == skipLenForAttribIndex) {
+              if (nestingLevel == 0 && (indx + indexCorrector) == skipLenForAttribIndex) {
                 strPart
               } else {
                 s"($strPart + 4)"
@@ -1110,10 +1110,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
     }
 
     (if (keysDataType.size <= SHAMapAccessor.codeSplitGroupSize) {
-     generateLengthCode(keyVars, keysDataType, nestingLevel)
+     generateLengthCode(keyVars, keysDataType, nestingLevel, 0)
    } else {
-     val groupIter = keyVars.zip(keysDataType).grouped(SHAMapAccessor.codeSplitGroupSize)
-     groupIter.map(groupSeq => {
+     val groupIter = keyVars.zip(keysDataType).grouped(SHAMapAccessor.codeSplitGroupSize).
+       zipWithIndex
+     groupIter.map{case (groupSeq, index) => {
        val enhancedGroupSeq = groupSeq.map {
           case (exprCode, dataType) => (exprCode.isNull,
             exprCode.copy(isNull = ctx.freshName("nullVar")), dataType)
@@ -1122,7 +1123,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
         val (nullBools, partKeyVars, partKeysDataType) = enhancedGroupSeq.unzip3
 
         val methodBody = s"return ${generateLengthCode(partKeyVars,
-          partKeysDataType, nestingLevel)};"
+          partKeysDataType, nestingLevel, index * SHAMapAccessor.codeSplitGroupSize)};"
         val methodParams = enhancedGroupSeq.map {
           case(_, exprCode, dt) => s"${ctx.javaType(dt)} ${exprCode.value}," +
             s" boolean ${exprCode.isNull}"
@@ -1137,7 +1138,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           case(nullBool, exprCode, dt) => s"${exprCode.value}, $nullBool"
         }.mkString(",")
         s"$methodName($methodArgs)"
-      }).mkString(" + ")
+      }}.mkString(" + ")
     }) + s" + ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)}"
   }
 
