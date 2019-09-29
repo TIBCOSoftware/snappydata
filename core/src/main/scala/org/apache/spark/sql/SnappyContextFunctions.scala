@@ -144,6 +144,8 @@ class SnappyContextFunctions(val session: SnappySession) extends SparkSupport {
 
   def getExtendedResolutionRules: List[Rule[LogicalPlan]] = Nil
 
+  def getPostHocResolutionRules: List[Rule[LogicalPlan]] = Nil
+
   protected def createQueryPreparations(
       topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq[Rule[SparkPlan]](
     python.ExtractPythonUDFs,

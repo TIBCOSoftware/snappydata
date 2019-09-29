@@ -602,7 +602,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState)
           (tableDesc.bucketSpec.isEmpty && tableDesc.partitionColumnNames.isEmpty)) &&
           state.catalog.tableExists(tableIdent)) {
         internals.newInsertPlanWithCountOutput(
-          table = internals.newUnresolvedRelation(tableDesc.identifier, None),
+          table = internals.newUnresolvedRelation(tableIdent, None),
           partition = Map.empty, child = queryOpt.get, overwrite = false, ifNotExists = false)
       } else if (isBuiltin) {
         val tableName = tableIdent.unquotedString

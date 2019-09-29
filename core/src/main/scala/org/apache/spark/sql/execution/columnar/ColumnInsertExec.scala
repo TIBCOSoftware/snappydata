@@ -161,6 +161,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       classOf[StructType].getName)
 
     val schemaLength = tableSchema.length
+    cursorArrayTerm = internals.addClassField(ctx, "long[]", "cursorArray",
+      cur => s"this.$cur = new long[$schemaLength];")
     numInsertions = internals.addClassField(ctx, "long", "numInsertions", v => s"$v = -1L;")
     maxDeltaRowsTerm = ctx.freshName("maxDeltaRows")
     txIdConnArray = ctx.freshName("txIdConnArray")
@@ -169,7 +171,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     defaultBatchSizeTerm = ctx.freshName("defaultBatchSize")
     batchSizeTerm = internals.addClassField(ctx, "int", "currentBatchSize", v => s"$v = 0;")
     val defaultRowSize = ctx.freshName("defaultRowSize")
-    val childProduce = doChildProduce(ctx)
 
     child match {
       case c: CallbackColumnInsert =>
@@ -195,9 +196,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |${loop(initEncoderCode(enc), schemaLength)}
         """.stripMargin)
 
-    cursorArrayTerm = internals.addClassField(ctx, "long[]", "cursorArray",
-      cur => s"this.$cur = new long[$schemaLength];")
-
+    val childProduce = doChildProduce(ctx)
     val encoderLoopCode = s"$defaultRowSize += " +
       s"$encoderArrayTerm[i].defaultSize($schemaTerm.fields()[i].dataType());"
 

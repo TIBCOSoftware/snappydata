@@ -158,6 +158,7 @@ trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
       includeTypes: Seq[CatalogObjectType.Type],
       excludeTypes: Seq[CatalogObjectType.Type]): Seq[CatalogTable] = {
     val allDependents = SnappyExternalCatalog.getDependents(properties)
+    if (allDependents.length == 0) return Nil
     // scan through dependents even if includes/excludes are empty to skip dependents
     // not present (e.g. intermediate cluster failure before dependent was recorded
     // in base table entry and actual table entry creation)

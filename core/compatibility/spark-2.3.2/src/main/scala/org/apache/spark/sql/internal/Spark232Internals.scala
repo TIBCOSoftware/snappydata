@@ -767,14 +767,13 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
     private def state: SnappySessionState = session.sessionState
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = {
-      val extensions = session.contextFunctions.getExtendedResolutionRules
       (new HiveConditionalRule(_.catalog.ParquetConversions, state) ::
           new HiveConditionalRule(_.catalog.OrcConversions, state) ::
           new PreprocessTable(state) ::
           state.ResolveAliasInGroupBy ::
           new FindDataSourceTable(session) ::
           new ResolveSQLOnFile(session) ::
-          extensions) ++ customResolutionRules
+          session.contextFunctions.getExtendedResolutionRules) ++ customResolutionRules
     }
 
     override val postHocResolutionRules: Seq[Rule[LogicalPlan]] = {
@@ -785,7 +784,7 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
           ResolveQueryHints(session) ::
           state.RowLevelSecurity ::
           state.ExternalRelationLimitFetch ::
-          Nil) ++ customPostHocResolutionRules
+          session.contextFunctions.getPostHocResolutionRules) ++ customPostHocResolutionRules
     }
 
     override val extendedCheckRules: Seq[LogicalPlan => Unit] =

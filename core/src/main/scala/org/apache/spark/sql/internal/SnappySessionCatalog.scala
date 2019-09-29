@@ -227,7 +227,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
       filter.transformAllExpressions {
         case ar: AttributeReference if mappingInfo.contains(ar.exprId) =>
           AttributeReference(ar.name, ar.dataType, ar.nullable,
-            ar.metadata)(mappingInfo(ar.exprId), ar.qualifier)
+            ar.metadata)(mappingInfo(ar.exprId), ar.qualifier, ar.isGenerated)
       }
     }
   }
@@ -1073,14 +1073,6 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
   }
 
   // TODO: SW: clean up function creation to be like Spark with backward compatibility
-
-  protected def functionLookupFailure(name: FunctionIdentifier): Nothing = {
-    val schema = name.database match {
-      case None => getCurrentSchema
-      case Some(s) => s
-    }
-    throw new NoSuchFunctionException(schema, name.funcName)
-  }
 
   override def loadFunctionResources(resources: Seq[FunctionResource]): Unit = {
     val qualifiedName = SnappyExternalCatalog.currentFunctionIdentifier.get()

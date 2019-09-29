@@ -171,20 +171,31 @@ class Spark210Internals extends SparkInternals {
   def createAndAttachSQLListener(sparkContext: SparkContext): Unit = {
     // if the call is done the second time, then attach in embedded mode
     // too since this is coming from ToolsCallbackImpl
-    val (forceAttachUI, listener) = SparkSession.sqlListener.get() match {
-      case l: SnappySQLListener => true -> l // already set
-      case _ =>
+    val (forceAttachUI, listener, old) = SparkSession.sqlListener.get() match {
+      case l: SnappySQLListener => (true, l, null) // already set
+      case l =>
         val listener = new SnappySQLListener(sparkContext.conf)
-        if (SparkSession.sqlListener.compareAndSet(null, listener)) {
-          sparkContext.addSparkListener(listener)
+        if (SparkSession.sqlListener.compareAndSet(l, listener)) {
+          sparkContext.listenerBus.addListener(listener)
+          if (l ne null) sparkContext.listenerBus.removeListener(l)
         }
-        false -> listener
+        (false, listener, l)
     }
     // embedded mode attaches SQLTab later via ToolsCallbackImpl that also
     // takes care of injecting any authentication module if configured
     sparkContext.ui match {
       case Some(ui) if forceAttachUI || !SnappyContext.getClusterMode(sparkContext)
-          .isInstanceOf[SnappyEmbeddedMode] => new SQLTab(listener, ui)
+          .isInstanceOf[SnappyEmbeddedMode] =>
+        // clear the previous SQLTab, if any
+        if (old ne null) {
+          ui.getTabs.foreach {
+            case tab: SQLTab =>
+              ui.detachTab(tab)
+              ui.removeStaticHandler("/static/sql")
+            case _ =>
+          }
+        }
+        new SQLTab(listener, ui)
       case _ =>
     }
   }
@@ -748,8 +759,9 @@ class SnappySessionState21(override val snappySession: SnappySession)
     private def state: SnappySessionState = session.sessionState
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = {
-      val extensions = session.contextFunctions.getExtendedResolutionRules
-      new HiveConditionalRule(_.catalog.ParquetConversions, state) ::
+      val extensions1 = session.contextFunctions.getExtendedResolutionRules
+      val extensions2 = session.contextFunctions.getPostHocResolutionRules
+      val rules = new HiveConditionalRule(_.catalog.ParquetConversions, state) ::
           new HiveConditionalRule(_.catalog.OrcConversions, state) ::
           AnalyzeCreateTable(session) ::
           new PreprocessTable(state) ::
@@ -760,7 +772,8 @@ class SnappySessionState21(override val snappySession: SnappySession)
           ResolveQueryHints(session) ::
           RowLevelSecurity ::
           ExternalRelationLimitFetch ::
-          (if (conf.runSQLonFile) new ResolveDataSource(session) :: extensions else extensions)
+          (if (conf.runSQLonFile) new ResolveDataSource(session) :: extensions2 else extensions2)
+      if (extensions1.isEmpty) rules else extensions1 ++ rules
     }
 
     override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules

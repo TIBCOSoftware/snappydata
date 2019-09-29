@@ -32,6 +32,7 @@ import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
+import com.gemstone.gemfire.distributed.internal.membership.jgroup.JGroupMembershipManager.DEFAULT_LEADER_MEMBER_WEIGHT_NAME
 import com.gemstone.gemfire.internal.cache.{CacheServerLauncher, Status}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.pivotal.gemfirexd.FabricService.State
@@ -61,8 +62,6 @@ class LeadImpl extends ServerImpl with Lead
     with ProtocolOverrides with Logging {
 
   self =>
-
-  val DEFAULT_LEADER_MEMBER_WEIGHT_NAME = "gemfire.member-weight"
 
   val DEFAULT_LEADER_MEMBER_WEIGHT = "17"
 
