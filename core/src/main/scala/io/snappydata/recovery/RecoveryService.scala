@@ -259,15 +259,14 @@ object RecoveryService extends Logging {
       val bucketName = PartitionedRegionHelper.getBucketName(tablePath, bucketId)
       bucketPath = s"/${PartitionedRegionHelper.PR_ROOT_REGION_NAME}/$bucketName"
     }
-    // check if the path exists else check path of column buffer.
-    // also there could be no data in any.
-    // check only row, only col, no data
-    assert(regionViewSortedSet.contains(bucketPath))
-    regionViewSortedSet(bucketPath).map(e => {
-      val hostCanonical = e.getExecutorHost
-      val host = hostCanonical.split('(').head
-      s"executor_${host}_$hostCanonical"
-    }).toSeq
+    // for null region maps select random host
+    if(regionViewSortedSet.contains(bucketPath)) {
+      regionViewSortedSet(bucketPath).map(e => {
+        val hostCanonical = e.getExecutorHost
+        val host = hostCanonical.split('(').head
+        s"executor_${host}_$hostCanonical"
+      }).toSeq
+    } else getRandomExecutorHost()
   }
 
   def getRandomExecutorHost(): Seq[String] = {
