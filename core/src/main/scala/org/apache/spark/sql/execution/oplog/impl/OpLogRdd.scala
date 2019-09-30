@@ -309,8 +309,7 @@ class OpLogRdd(
     val rm = phdrRow.getRegionMap
     val regMapItr = rm.regionEntries().iterator().asScala
     regMapItr.map { regEntry =>
-      DiskEntry.Helper.readValueFromDisk(
-        regEntry.asInstanceOf[DiskEntry], phdrRow) match {
+      getValueInVMOrDiskWithoutFaultIn(phdrRow, regEntry) match {
         case valueArr@(_: Array[Byte] | _: Array[Array[Byte]]) => getRow(valueArr)
         case Token.TOMBSTONE => null
       }
@@ -495,6 +494,7 @@ class OpLogRdd(
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
+    logDebug(s"starting compute for partition ${split.index} of table $fqtn")
     try {
       val diskStores = Misc.getGemFireCache.listDiskStores()
       var diskStrCol: DiskStoreImpl = null
@@ -671,8 +671,11 @@ class OpLogRdd(
    * @param split partition corresponding to bucket
    * @return sequence of hostnames
    */
-  override def getPreferredLocations(split: Partition): Seq[String] =
-    RecoveryService.getExecutorHost(fqtn, split.index)
+  override def getPreferredLocations(split: Partition): Seq[String] = {
+    val preferredHosts = RecoveryService.getExecutorHost(fqtn, split.index)
+    logDebug(s"preferred hosts for partition ${split.index} of $fqtn are $preferredHosts")
+    preferredHosts
+  }
 
   override def write(kryo: Kryo, output: Output): Unit = {
     super.write(kryo, output)
