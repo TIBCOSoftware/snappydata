@@ -875,9 +875,174 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   }
 
-
-
   def writeKeyOrValue(baseObjectTerm: String, offsetTerm: String,
+    dataTypes: Seq[DataType], varsToWrite: Seq[ExprCode], nullBitsTerm: String,
+    numBytesForNullBits: Int, isKey: Boolean, skipNullEvalCode: Boolean,
+    nestingLevel: Int = 0): String = {
+    // Move the offset at the end of num Null Bytes space, we will fill that space later
+    // store the starting value of offset
+
+    val startingOffsetTerm = ctx.freshName("startingOffset")
+    val tempBigDecArrayTerm = ctx.freshName("tempBigDecArray")
+    val storeNullBitStartOffsetAndRepositionOffset = if (skipNullEvalCode) {
+      ""
+    } else {
+      s"""long $startingOffsetTerm = $offsetTerm;
+         |// move current offset to end of null bits
+         |$offsetTerm += ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)};""".stripMargin
+    }
+
+    val fieldWritingCode = if (dataTypes.size <= SHAMapAccessor.codeSplitGroupSize) {
+      dataTypes.zip(varsToWrite).zipWithIndex.map {
+        case ((dt, expr), i) =>
+          val variable = expr.value
+          val writingCode = writeVarPartialFunction((baseObjectTerm, offsetTerm, variable,
+            nestingLevel, i, dt)).trim
+          // Now do the actual writing based on whether the variable is null or not
+          if (skipNullEvalCode) {
+            writingCode
+          } else {
+            SHAMapAccessor.evaluateNullBitsAndEmbedWrite(numBytesForNullBits, expr,
+              i, nullBitsTerm, offsetTerm, dt, isKey, writingCode)
+          }
+
+      }.mkString("\n")
+    } else {
+      val stateTransferArray = ctx.freshName("stateTransferArray")
+      val (nullCastPrimitive, nullCastObj) = if (skipNullEvalCode) {
+        "" -> ""
+      } else {
+
+        if (!SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
+          val ct = SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
+          if (ct.equals("int")) {
+            "int" -> "Integer"
+          } else {
+            ct -> (ct.substring(0, 1).toUpperCase + ct.substring(1))
+          }
+        } else "byte[]" -> "byte[]"
+      }
+
+      val groupIter = varsToWrite.zip(dataTypes).grouped(SHAMapAccessor.codeSplitGroupSize).
+        zipWithIndex
+      val functionMapping = scala.collection.mutable.Map[String, String]()
+      val funcFieldWritingCode = groupIter.map { case (groupSeq, index) => {
+        val paramTypesStr = groupSeq.map(_._1).mkString(",")
+        val isSkipLengthCase = this.skipLenForAttribIndex != -1 &&
+          this.skipLenForAttribIndex >= index * SHAMapAccessor.codeSplitGroupSize &&
+          this.skipLenForAttribIndex < (index + 1) * SHAMapAccessor.codeSplitGroupSize
+
+        val existingFunc = if (isSkipLengthCase) None else functionMapping.get(paramTypesStr)
+
+        existingFunc match {
+          case Some(funcName) => val methodArgs = groupSeq.map(tup => {
+            val exprCd = tup._1
+            s"${exprCd.value}, ${exprCd.isNull}"
+          }).mkString("", ",", s", $stateTransferArray, $baseObjectTerm" )
+            s"$funcName($methodArgs)"
+          case None => val enhancedGroupSeq = groupSeq.map {
+            case (exprCode, dataType) => (exprCode.isNull,
+              exprCode.copy(isNull = ctx.freshName("nullVar")), dataType)
+          }.zipWithIndex
+            val methodName = ctx.freshName("writeKeyOrValGroup")
+
+            val partBody = enhancedGroupSeq.map {
+              case ((nullBools, partKeyVars, partKeysDataType), innerIndex) => {
+                val fieldWrCode = writeVarPartialFunction((baseObjectTerm, offsetTerm,
+                  partKeyVars.value, nestingLevel,
+                  index * SHAMapAccessor.codeSplitGroupSize + innerIndex, partKeysDataType)).trim
+                // Now do the actual writing based on whether the variable is null or not
+                if (skipNullEvalCode) {
+                  fieldWrCode
+                } else {
+                  SHAMapAccessor.evaluateNullBitsAndEmbedWrite(numBytesForNullBits, partKeyVars,
+                    index * SHAMapAccessor.codeSplitGroupSize + innerIndex,
+                    nullBitsTerm, offsetTerm, partKeysDataType, isKey, fieldWrCode)
+                }
+              }
+            }.mkString("\n")
+
+            val methodBody = s"""
+                 |long $offsetTerm = (Long)$stateTransferArray[0];
+                 |${if (!skipNullEvalCode) {
+                    s"$nullCastPrimitive $nullBitsTerm = ($nullCastObj)$stateTransferArray[1];"
+                   } else ""
+                  }
+                 |$partBody
+                 |$stateTransferArray[0] = $offsetTerm;
+                 |${ if (!skipNullEvalCode) s"$stateTransferArray[1] = $nullBitsTerm;" else ""}
+                 """.stripMargin
+
+            val methodParams = enhancedGroupSeq.map {
+              case ((_, exprCode, dt), innerIndex) => s"${ctx.javaType(dt)} ${exprCode.value}," +
+                s" boolean ${exprCode.isNull}"
+            }.mkString("", ",", s", Object[] $stateTransferArray, Object $baseObjectTerm")
+            ctx.addNewFunction(methodName,
+              s"""
+                 |private void $methodName($methodParams) {
+                   |$methodBody
+                 |}
+             """.
+                stripMargin)
+            val methodArgs = enhancedGroupSeq.map {
+              case ((nullBool, exprCode, dt), innerIndex) => s"${exprCode.value}, $nullBool"
+            }.mkString("", ",", s", $stateTransferArray, $baseObjectTerm")
+            if (!isSkipLengthCase) {
+              functionMapping += (paramTypesStr -> methodName)
+            }
+            s"$methodName($methodArgs); \n"
+         }
+       }
+      }.mkString("\n")
+
+      val stateArraySize = if (skipNullEvalCode) 1 else 2
+      s"""
+         |Object[] $stateTransferArray = new Object[$stateArraySize];
+         |$stateTransferArray[0] = $offsetTerm;
+         |${if (!skipNullEvalCode) s"$stateTransferArray[1] = $nullBitsTerm;" else ""}
+         |$funcFieldWritingCode
+         |$offsetTerm = (Long)$stateTransferArray[0];
+         |${if (!skipNullEvalCode) s"$nullBitsTerm = ($nullCastObj)$stateTransferArray[1];"
+           else ""}
+
+       """.stripMargin
+    }
+
+    val nullBitsWritingCode = if (!skipNullEvalCode) {
+      val nullBitsWritingCode = writeNullBitsAt(baseObjectTerm, startingOffsetTerm,
+        nullBitsTerm, numBytesForNullBits)
+      if(isKey) {
+        if (nestingLevel == 0) {
+          storedKeyNullBitsTerm.map(storedBit =>
+            s"""
+               | if ($storedBit != $nullBitsTerm) {
+               |   $nullBitsWritingCode
+               |   $storedBit = $nullBitsTerm;
+               | }
+               """.stripMargin).getOrElse(nullBitsWritingCode)
+        } else {
+          nullBitsWritingCode
+        }
+      } else {
+        storedAggNullBitsTerm.map(storedAggBit =>
+          s"""
+             | if ($storedAggBit != $nullAggsBitsetTerm) {
+             |   $nullBitsWritingCode
+             | }
+         """.stripMargin
+        ).getOrElse(nullBitsWritingCode)
+      }
+    } else ""
+
+    s"""$storeNullBitStartOffsetAndRepositionOffset
+       |$fieldWritingCode
+        // now write the nullBitsTerm
+       |$nullBitsWritingCode""".stripMargin
+
+  }
+
+
+  def _writeKeyOrValue(baseObjectTerm: String, offsetTerm: String,
     dataTypes: Seq[DataType], varsToWrite: Seq[ExprCode], nullBitsTerm: String,
     numBytesForNullBits: Int, isKey: Boolean, skipNullEvalCode: Boolean,
     nestingLevel: Int = 0): String = {
@@ -940,6 +1105,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
         $nullBitsWritingCode""".stripMargin
 
   }
+
+
+
 
   def generateKeyBytesHolderCodeOrEmptyString(numKeyBytesVar: String, numValueBytes: Int,
     keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
@@ -1707,8 +1875,10 @@ object SHAMapAccessor {
     "short"
   } else if (numBytesForNullBits <= 4) {
     "int"
-  } else {
+  } else if (numBytesForNullBits <= 8){
     "long"
+  } else {
+   ""
   }
 
   def getOffsetIncrementCodeForNullAgg(offsetTerm: String, dt: DataType): String = {
