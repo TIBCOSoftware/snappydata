@@ -977,12 +977,14 @@ abstract class SnappyDDLParser(session: SnappySession)
         ((pairs: Any) => pairs.asInstanceOf[Seq[(String, String)]].toMap)
   }
 
-  protected final def isNotRecoveryMode: Rule0 = rule {
-    MATCH ~> (() => test(!Misc.getGemFireCache.isSnappyRecoveryMode))
+  protected final def allowDDL: Rule0 = rule {
+    MATCH ~> (() => test({
+      SnappyContext.getClusterMode(session.sparkContext).isInstanceOf[ThinClientConnectorMode] || !Misc.getGemFireCache.isSnappyRecoveryMode
+    }))
   }
 
   protected def ddl: Rule1[LogicalPlan] = rule {
-    describe | isNotRecoveryMode ~ (createTableLike | createHiveTable | createTable | refreshTable |
+    describe | allowDDL ~ (createTableLike | createHiveTable | createTable | refreshTable |
     dropTable | truncateTable | createView | createTempViewUsing | dropView | alterView | createSchema |
     dropSchema | alterTableToggleRowLevelSecurity | createPolicy | dropPolicy |
     alterTableProps | alterTableOrView | alterTable | createStream | streamContext |
