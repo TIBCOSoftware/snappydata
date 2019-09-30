@@ -1409,6 +1409,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val orgSqlText = getContextObject[String]("orgSqlText") match {
       case Some(s) => s
       case None => {
+        // case when create api was used - sql text cannot be captured in this case.
         userSpecifiedSchema match {
           case Some(schema) => s"create table ${resolvedName.table} (${getDDLSchema(schema)})"
           case None => ""
@@ -1458,6 +1459,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case StringType => "string"
       case FloatType => "float"
       case DoubleType => "double"
+      case t: DecimalType => s"decimal(${t.precision},${t.scale})"
       case DateType => "date"
       case TimestampType => "timestamp"
       case BooleanType => "boolean"
