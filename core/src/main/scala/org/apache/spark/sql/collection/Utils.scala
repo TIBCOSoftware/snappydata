@@ -250,10 +250,10 @@ object Utils extends Logging with SparkSupport {
   private final val timeIntervalSpec = "([0-9]+)(ms|s|m|h)".r
 
   /**
-    * Parse the given time interval value as long milliseconds.
-    *
-    * @see timeIntervalSpec for the allowed string specification
-    */
+   * Parse the given time interval value as long milliseconds.
+   *
+   * @see timeIntervalSpec for the allowed string specification
+   */
   def parseTimeInterval(optV: Any, module: String): Long = {
     optV match {
       case tii: Int => tii.toLong
@@ -433,7 +433,7 @@ object Utils extends Logging with SparkSupport {
    * field is stored (and rendered) as VARCHAR by SnappyStore.
    *
    * @param size the size parameter of the VARCHAR() column type
-   * @param md optional Metadata object to be merged into the result
+   * @param md   optional Metadata object to be merged into the result
    * @return the result Metadata object to use for StructField
    */
   def varcharMetadata(size: Int, md: Metadata): Metadata = {
@@ -471,7 +471,7 @@ object Utils extends Logging with SparkSupport {
    * field is stored (and rendered) as CHAR by SnappyStore.
    *
    * @param size the size parameter of the CHAR() column type
-   * @param md optional Metadata object to be merged into the result
+   * @param md   optional Metadata object to be merged into the result
    * @return the result Metadata object to use for StructField
    */
   def charMetadata(size: Int, md: Metadata): Metadata = {
@@ -513,9 +513,9 @@ object Utils extends Logging with SparkSupport {
   }
 
   /**
-    * Get the result schema given an optional explicit schema and base table.
-    * In case both are specified, then check compatibility between the two.
-    */
+   * Get the result schema given an optional explicit schema and base table.
+   * In case both are specified, then check compatibility between the two.
+   */
   def getSchemaAndPlanFromBase(schemaOpt: Option[StructType],
       baseTableOpt: Option[String], catalog: SnappySessionCatalog,
       asSelect: Boolean, table: String,
@@ -579,8 +579,8 @@ object Utils extends Logging with SparkSupport {
   }
 
   /**
-    * Register given driver class with Spark's loader.
-    */
+   * Register given driver class with Spark's loader.
+   */
   def registerDriver(driver: String): Unit = {
     try {
       DriverRegistry.register(driver)
@@ -591,8 +591,8 @@ object Utils extends Logging with SparkSupport {
   }
 
   /**
-    * Register driver for given JDBC URL and return the driver class name.
-    */
+   * Register driver for given JDBC URL and return the driver class name.
+   */
   def registerDriverUrl(url: String): String = {
     val driver = getDriverClassName(url)
     registerDriver(driver)
@@ -824,21 +824,21 @@ object Utils extends Logging with SparkSupport {
   }
 
   def getPrunedPartition(partitionColumns: Seq[String],
-                         filters: Array[Expression], schema: StructType,
-                         numBuckets: Int, partitionColumnCount: Int): Int = {
+      filters: Array[Expression], schema: StructType,
+      numBuckets: Int, partitionColumnCount: Int): Int = {
 
     // this will yield partitioning column ordered Array of Expression (Literals/ParamLiterals).
     // RDDs needn't have to care for orderless hashing scheme at invocation point.
     val (pruningExpressions, fields) = partitionColumns.map { pc =>
       filters.collectFirst {
         case EqualTo(a: Attribute, v) if TokenLiteral.isConstant(v) &&
-          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+            pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
         case EqualTo(v, a: Attribute) if TokenLiteral.isConstant(v) &&
-          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+            pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
         case EqualNullSafe(a: Attribute, v) if TokenLiteral.isConstant(v) &&
-          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+            pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
         case EqualNullSafe(v, a: Attribute) if TokenLiteral.isConstant(v) &&
-          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+            pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
       }
     }.filter(_.nonEmpty).map(_.get).unzip
 
@@ -846,10 +846,10 @@ object Utils extends Logging with SparkSupport {
     val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
     val bucketIdGeneration = UnsafeProjection.create(
       HashPartitioning(pcFields, numBuckets)
-        .partitionIdExpression :: Nil, pcFields)
+          .partitionIdExpression :: Nil, pcFields)
     if (pruningExpressions.nonEmpty &&
-      // verify all the partition columns are provided as filters
-      pruningExpressions.length == partitionColumnCount) {
+        // verify all the partition columns are provided as filters
+        pruningExpressions.length == partitionColumnCount) {
       pruningExpressions.zipWithIndex.foreach { case (e, i) =>
         mutableRow(i) = e.eval(null)
       }
@@ -988,11 +988,13 @@ final class MultiBucketExecutorPartition(private[this] var _index: Int,
       private[this] var bucket = bucketSet.nextSetBit(0)
 
       override def hasNext: Boolean = bucket >= 0
+
       override def next(): Integer = {
         val b = Int.box(bucket)
         bucket = bucketSet.nextSetBit(bucket + 1)
         b
       }
+
       override def remove(): Unit = throw new UnsupportedOperationException
     }
 
@@ -1067,15 +1069,15 @@ private[spark] case class NarrowExecutorLocalSplitDep(
 }
 
 /**
-  * Stores information about the narrow dependencies used by a StoreRDD.
-  *
-  * @param narrowDep maps to the dependencies variable in the parent RDD:
-  *                  for each one to one dependency in dependencies,
-  *                  narrowDeps has a NarrowExecutorLocalSplitDep (describing
-  *                  the partition for that dependency) at the corresponding
-  *                  index. The size of narrowDeps should always be equal to
-  *                  the number of parents.
-  */
+ * Stores information about the narrow dependencies used by a StoreRDD.
+ *
+ * @param narrowDep maps to the dependencies variable in the parent RDD:
+ *                  for each one to one dependency in dependencies,
+ *                  narrowDeps has a NarrowExecutorLocalSplitDep (describing
+ *                  the partition for that dependency) at the corresponding
+ *                  index. The size of narrowDeps should always be equal to
+ *                  the number of parents.
+ */
 private[spark] class CoGroupExecutorLocalPartition(
     idx: Int, val blockId: BlockManagerId,
     val narrowDep: Option[NarrowExecutorLocalSplitDep])

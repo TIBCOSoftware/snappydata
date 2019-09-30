@@ -39,6 +39,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{Filter => LogicalFilter, _}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
@@ -251,7 +252,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
         case _: InsertIntoTable | _: TableMutationPlan =>
           // disable for inserts/puts to avoid exchanges and indexes to work correctly
           snappySession.linkPartitionsToBuckets(flag = true)
-        case l: LogicalRelation if l.relation.isInstanceOf[IndexableRelation] =>
+        case l: LogicalRelation if l.relation.isInstanceOf[IndexColumnFormatRelation] =>
           // disable for indexes
           snappySession.linkPartitionsToBuckets(flag = true)
         case _ => // nothing for others
@@ -410,8 +411,8 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
             }
 
           case a: SubqueryAlias if a.child.isInstanceOf[LogicalFilter] =>
-            LogicalFilter(a.child.asInstanceOf[LogicalFilter].condition,
-              internals.newSubqueryAlias(a.alias, a.child))
+            val lf = a.child.asInstanceOf[LogicalFilter]
+            LogicalFilter(lf.condition, internals.newSubqueryAlias(a.alias, lf.child))
 
           case LogicalFilter(condition1, LogicalFilter(condition2, child)) =>
             if (rlsConditionChecker(conditionEvaluator)(condition1)) {
