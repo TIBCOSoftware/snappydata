@@ -53,7 +53,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   storedKeyNullBitsTerm: Option[String],
   aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String,
   shaMapClassName: String, useCustomHashMap: Boolean,
-  previousSingleKey_Position_LenTerm: Option[(String, String, String)])
+  previousSingleKey_Position_LenTerm: Option[(String, String, String)],
+  codeSplitGroupSize: Int)
   extends CodegenSupport {
   val unsafeArrayClass = classOf[UnsafeArrayData].getName
   val unsafeRowClass = classOf[UnsafeRow].getName
@@ -892,7 +893,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
          |$offsetTerm += ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)};""".stripMargin
     }
 
-    val fieldWritingCode = if (dataTypes.size <= SHAMapAccessor.codeSplitGroupSize) {
+    val fieldWritingCode = if (dataTypes.size <= codeSplitGroupSize) {
       dataTypes.zip(varsToWrite).zipWithIndex.map {
         case ((dt, expr), i) =>
           val variable = expr.value
@@ -923,14 +924,14 @@ case class SHAMapAccessor(@transient session: SnappySession,
         } else "byte[]" -> "byte[]"
       }
 
-      val groupIter = varsToWrite.zip(dataTypes).grouped(SHAMapAccessor.codeSplitGroupSize).
+      val groupIter = varsToWrite.zip(dataTypes).grouped(codeSplitGroupSize).
         zipWithIndex
       val functionMapping = scala.collection.mutable.Map[String, String]()
       val funcFieldWritingCode = groupIter.map { case (groupSeq, index) => {
         val paramTypesStr = groupSeq.map(_._1).mkString(",")
         val isSkipLengthCase = this.skipLenForAttribIndex != -1 && nestingLevel == 0 &&
-          this.skipLenForAttribIndex >= index * SHAMapAccessor.codeSplitGroupSize &&
-          this.skipLenForAttribIndex < (index + 1) * SHAMapAccessor.codeSplitGroupSize
+          this.skipLenForAttribIndex >= index * codeSplitGroupSize &&
+          this.skipLenForAttribIndex < (index + 1) * codeSplitGroupSize
 
         val existingFunc = if (isSkipLengthCase) None else functionMapping.get(paramTypesStr)
 
@@ -939,7 +940,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
             val exprCd = tup._1
             s"${exprCd.value}, ${if (exprCd.isNull.isEmpty) "false" else exprCd.isNull}"
           }).mkString("", ",", s", $stateTransferArray, $baseObjectTerm," +
-            s" ${index * SHAMapAccessor.codeSplitGroupSize}" )
+            s" ${index * codeSplitGroupSize}" )
             s"$funcName($methodArgs)"
           case None =>
             val attributeIndexStart = ctx.freshName("attributeIndexStart")
@@ -953,7 +954,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
             val partBody = enhancedGroupSeq.map {
               case ((nullBools, partKeyVars, partKeysDataType), innerIndex) => {
                 val skipLengthForAttr = isSkipLengthCase && (
-                  index * SHAMapAccessor.codeSplitGroupSize + innerIndex ==
+                  index * codeSplitGroupSize + innerIndex ==
                     this.skipLenForAttribIndex)
                 val fieldWrCode = writeVarPartialFunction((baseObjectTerm, offsetTerm,
                   partKeyVars.value, nestingLevel, skipLengthForAttr, partKeysDataType)).trim
@@ -998,7 +999,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
             val methodArgs = enhancedGroupSeq.map {
               case ((nullBool, exprCode, dt), innerIndex) => s"${exprCode.value}, $nullBool"
             }.mkString("", ",", s", $stateTransferArray, $baseObjectTerm, " +
-              s"${index * SHAMapAccessor.codeSplitGroupSize}")
+              s"${index * codeSplitGroupSize}")
             if (!isSkipLengthCase) {
               functionMapping += (paramTypesStr -> methodName)
             }
@@ -1304,17 +1305,17 @@ case class SHAMapAccessor(@transient session: SnappySession,
       }.mkString(" + ")
     }
 
-    (if (keysDataType.size <= SHAMapAccessor.codeSplitGroupSize) {
+    (if (keysDataType.size <= codeSplitGroupSize) {
      generateLengthCode(keyVars, keysDataType, nestingLevel, 0)
    } else {
-     val groupIter = keyVars.zip(keysDataType).grouped(SHAMapAccessor.codeSplitGroupSize).
+     val groupIter = keyVars.zip(keysDataType).grouped(codeSplitGroupSize).
        zipWithIndex
      val functionMapping = scala.collection.mutable.Map[String, String]()
      groupIter.map { case (groupSeq, index) => {
        val paramTypesStr = groupSeq.map(_._1).mkString(",")
        val isSkipLengthCase = this.skipLenForAttribIndex != -1 &&
-         this.skipLenForAttribIndex >= index * SHAMapAccessor.codeSplitGroupSize &&
-         this.skipLenForAttribIndex < (index + 1) * SHAMapAccessor.codeSplitGroupSize
+         this.skipLenForAttribIndex >= index * codeSplitGroupSize &&
+         this.skipLenForAttribIndex < (index + 1) * codeSplitGroupSize
 
        val existingFunc = if (isSkipLengthCase) None else functionMapping.get(paramTypesStr)
        existingFunc match {
@@ -1331,7 +1332,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
            val (nullBools, partKeyVars, partKeysDataType) = enhancedGroupSeq.unzip3
            val methodBody = s"return ${
              generateLengthCode(partKeyVars,
-               partKeysDataType, nestingLevel, index * SHAMapAccessor.codeSplitGroupSize)
+               partKeysDataType, nestingLevel, index * codeSplitGroupSize)
            };"
            val methodParams = enhancedGroupSeq.map {
              case (_, exprCode, dt) => s"${ctx.javaType(dt)} ${exprCode.value}," +
@@ -1444,7 +1445,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     }
     if (keyVars.length > 1) {
       val grouppedSeq = keysDataType.tail.zip(keyVars.tail).
-        grouped(SHAMapAccessor.codeSplitGroupSize).toSeq
+        grouped(codeSplitGroupSize).toSeq
       if (grouppedSeq.size == 1) {
         grouppedSeq.map(generateHashCodeCalcCode(_))
         .mkString(prefix + firstColumnHash, "", suffix)
@@ -1796,7 +1797,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 
 object SHAMapAccessor {
-  val codeSplitGroupSize = 10
   val nullVarSuffix = "_isNull"
   val supportedDataTypes: DataType => Boolean = dt =>
     dt match {

@@ -52,6 +52,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
   val sparkSession = SparkSession.builder().
     config(io.snappydata.Property.TestDisableCodeGenFlag.name, "true").
     config(io.snappydata.Property.UseOptimizedHashAggregateForSingleKey.name, "true").
+    config(io.snappydata.Property.TestCodeSplitGroupSizeInSHA.name, "3").
     master("local[*]").getOrCreate()
   // snc.sql("set snappydata.sql.tokenize=true")
   // snc.sql("set snappydata.sql.planCaching=true")

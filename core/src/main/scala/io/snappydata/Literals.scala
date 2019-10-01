@@ -311,6 +311,11 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.disableCodegenFallback",
     s"The test flag if set to true will throw Exception instead of creating CodegenSparkFallback " +
       s"Default value is false", Some(false))
+
+  val TestCodeSplitGroupSizeInSHA: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.codeSplitGroupSize",
+    s"The maximum number of group by keys or aggregates which can generate inline " +
+      s"code in SnappyHashAggregateExec", Some(75))
 }
 
 // extractors for properties
