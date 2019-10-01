@@ -1142,7 +1142,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val unsafeRowClass = classOf[UnsafeRow].getName
     val unsafeArrayDataClass = classOf[UnsafeArrayData].getName
 
-
     def generateLengthCode(partKeyVars: Seq[ExprCode], partKeysDataType: Seq[DataType],
       nestingLevel: Int, indexCorrector: Int): String = {
       partKeysDataType.zip(partKeyVars).zipWithIndex.map { case ((dt, expr), indx) =>
@@ -1281,7 +1280,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
           s"""
              |private int $methodName($methodParams) {
              |$methodBody
-
              |}
              """.
             stripMargin)
