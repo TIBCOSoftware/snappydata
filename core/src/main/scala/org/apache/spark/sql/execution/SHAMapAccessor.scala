@@ -925,21 +925,19 @@ case class SHAMapAccessor(@transient session: SnappySession,
       }
       val methodFound = (methodName: String, groupSeq: Seq[(ExprCode, DataType)],
         attributeStartIndex: Int, skipLengthCase: Boolean, nestingLevel: Int) => {
-          val methodArgs = groupSeq.map(tup => {
-            val exprCd = tup._1
-            s"${exprCd.value}, ${if (exprCd.isNull.isEmpty) "false" else exprCd.isNull}"
-          }).mkString("", ",", s", $stateTransferArray, $baseObjectTerm," +
-            s" $attributeStartIndex" )
-          s"$methodName($methodArgs)"
-        }
+        val methodArgs = groupSeq.map(tup => {
+          val exprCd = tup._1
+          s"${exprCd.value}, ${if (exprCd.isNull.isEmpty) "false" else exprCd.isNull}"
+        }).mkString("", ",", s", $stateTransferArray, $baseObjectTerm," +
+          s" $attributeStartIndex")
+        s"$methodName($methodArgs)"
+      }
 
       val methodNotFound = (baseMethodName: String,
         enhancedGroupSeq: Seq[((String, ExprCode, DataType), Int)],
         attributeStartIndex: Int, isSkipLengthCase: Boolean, nestingLevel: Int) => {
         val attributeIndexStartPrm = ctx.freshName("attributeIndexStart")
-
         val methodName = ctx.freshName(baseMethodName)
-
         val partBody = enhancedGroupSeq.map {
           case ((nullBools, partKeyVars, partKeysDataType), innerIndex) => {
             val skipLengthForAttr = isSkipLengthCase && (
@@ -952,9 +950,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
               fieldWrCode
             } else {
               s"""
-                 |${SHAMapAccessor.evaluateNullBitsAndEmbedWrite(numBytesForNullBits,
-                partKeyVars, attributeIndexStartPrm, nullBitsTerm, offsetTerm,
-                partKeysDataType, isKey, fieldWrCode, ctx)}
+                 |${
+                SHAMapAccessor.evaluateNullBitsAndEmbedWrite(numBytesForNullBits,
+                  partKeyVars, attributeIndexStartPrm, nullBitsTerm, offsetTerm,
+                  partKeysDataType, isKey, fieldWrCode, ctx)
+              }
                  | ++$attributeIndexStartPrm;
                    """.stripMargin
 
@@ -962,15 +962,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
           }
         }.mkString("\n")
 
-        val methodBody = s"""
-                            |long $offsetTerm = (Long)$stateTransferArray[0];
-                            |${if (!skipNullEvalCode) {
-          s"$nullCastPrimitive $nullBitsTerm = ($nullCastObj)$stateTransferArray[1];"
-        } else ""
-        }
-                            |$partBody
-                            |$stateTransferArray[0] = $offsetTerm;
-                            |${if (!skipNullEvalCode) s"$stateTransferArray[1] = $nullBitsTerm;" else ""}
+        val methodBody =
+          s"""
+             |long $offsetTerm = (Long)$stateTransferArray[0];
+             |${ if (!skipNullEvalCode) {
+                   s"$nullCastPrimitive $nullBitsTerm = ($nullCastObj)$stateTransferArray[1];"
+                 } else ""
+              }
+             |$partBody
+             |$stateTransferArray[0] = $offsetTerm;
+             |${if (!skipNullEvalCode) s"$stateTransferArray[1] = $nullBitsTerm;" else ""}
                  """.stripMargin
 
         val methodParams = enhancedGroupSeq.map {
@@ -992,13 +993,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
         s"$methodName($methodArgs); \n" -> methodName
       }
 
-
-
-
       val funcFieldWritingCode = codeSplit(dataTypes, varsToWrite, "writeKeyOrValGroup",
         nestingLevel, methodFound, methodNotFound, "\n", "", "")
-
-
 
       val stateArraySize = if (skipNullEvalCode) 1 else 2
       s"""
@@ -1051,9 +1047,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
     nestingLevel: Int,
     methodFound: (String, Seq[(ExprCode, DataType)], Int, Boolean, Int) => String,
     methodNotFound: (String, Seq[((String, ExprCode, DataType), Int)], Int,
-    Boolean, Int) => (String, String), separator: String, prefix: String,
-    suffix: String):
-  String = {
+      Boolean, Int) => (String, String), separator: String, prefix: String,
+    suffix: String): String = {
     val groupIter = vars.zip(dataTypes).grouped(codeSplitGroupSize).
       zipWithIndex
     val functionMapping = scala.collection.mutable.Map[String, String]()
@@ -1070,27 +1065,22 @@ case class SHAMapAccessor(@transient session: SnappySession,
           isSkipLengthCase, nestingLevel)
         case None =>
           val enhancedGroupSeq: Seq[((String, ExprCode, DataType), Int)] = groupSeq.map {
-            case (exprCode, dataType) => ( if (exprCode.isNull.isEmpty) "false"
+            case (exprCode, dataType) => (if (exprCode.isNull.isEmpty) "false"
             else exprCode.isNull, exprCode.copy(isNull = ctx.freshName("nullVar")),
               dataType)
           }.zipWithIndex
 
-         val (code, functionName) = methodNotFound(baseMethod, enhancedGroupSeq,
-           index * codeSplitGroupSize, isSkipLengthCase, nestingLevel)
-
+          val (code, functionName) = methodNotFound(baseMethod, enhancedGroupSeq,
+            index * codeSplitGroupSize, isSkipLengthCase, nestingLevel)
 
           if (!isSkipLengthCase) {
             functionMapping += (paramTypesStr -> functionName)
           }
-         code
+          code
       }
     }
     }.mkString(prefix, separator, suffix)
   }
-
-
-
-
 
   def generateKeyBytesHolderCodeOrEmptyString(numKeyBytesVar: String, numValueBytes: Int,
     keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
@@ -1102,8 +1092,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
     if (useCustomHashMap) {
       ""
     } else {
-
-
       s"""
         if ($keyBytesHolderVarTerm == null || $keyHolderCapacityTerm <
       $numKeyBytesVar + $numValueBytes) {
@@ -1265,9 +1253,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
     }
 
     (if (keysDataType.size <= codeSplitGroupSize) {
-     generateLengthCode(keyVars, keysDataType, nestingLevel, 0)
-   } else {
-    val methodFound = (methodName: String, groupSeq: Seq[(ExprCode, DataType)],
+      generateLengthCode(keyVars, keysDataType, nestingLevel, 0)
+    } else {
+      val methodFound = (methodName: String, groupSeq: Seq[(ExprCode, DataType)],
         attributeStartIndex: Int, skipLengthCase: Boolean, nestingLevel: Int) => {
         val methodArgs = groupSeq.map(tup => {
           val exprCd = tup._1
@@ -1279,15 +1267,13 @@ case class SHAMapAccessor(@transient session: SnappySession,
       val methodNotFound = (baseMethodName: String,
         enhancedGroupSeq: Seq[((String, ExprCode, DataType), Int)],
         attributeStartIndex: Int, isSkipLengthCase: Boolean, nestingLevel: Int) => {
-
-
         val (partKeyVars, partKeysDataType) = enhancedGroupSeq.unzip(tup => (tup._1._2, tup._1._3))
         val methodBody = s"return ${
           generateLengthCode(partKeyVars,
             partKeysDataType, nestingLevel, attributeStartIndex)
         };"
         val methodParams = enhancedGroupSeq.map {
-          case ((_, exprCode, dt) , _) => s"${ctx.javaType(dt)} ${exprCode.value}," +
+          case ((_, exprCode, dt), _) => s"${ctx.javaType(dt)} ${exprCode.value}," +
             s" boolean ${exprCode.isNull}"
         }.mkString(",")
         val methodName = ctx.freshName(baseMethodName)
@@ -1300,12 +1286,13 @@ case class SHAMapAccessor(@transient session: SnappySession,
              """.
             stripMargin)
         val methodArgs = enhancedGroupSeq.map {
-          case((nullBool, exprCode, dt), _) => s"${exprCode.value}, $nullBool"
+          case ((nullBool, exprCode, dt), _) => s"${exprCode.value}, $nullBool"
         }.mkString(",")
 
         s"$methodName($methodArgs)" -> methodName
       }
-     codeSplit(keysDataType, keyVars, "calculatePartLength",
+
+      codeSplit(keysDataType, keyVars, "calculatePartLength",
         nestingLevel, methodFound, methodNotFound, " + ", "", "")
 
     }) + s" + ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)}"
@@ -1402,7 +1389,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
         grouppedSeq.map(generateHashCodeCalcCode(_))
         .mkString(prefix + firstColumnHash, "", suffix)
       } else {
-
         val methodFound = (methodName: String, groupSeq: Seq[(ExprCode, DataType)],
           attributeStartIndex: Int, skipLengthCase: Boolean, nestingLevel: Int) => {
           val methodArgs = groupSeq.map(tup => {
@@ -1415,8 +1401,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
         val methodNotFound = (baseMethodName: String,
           enhancedGroupSeq: Seq[((String, ExprCode, DataType), Int)],
           attributeStartIndex: Int, isSkipLengthCase: Boolean, nestingLevel: Int) => {
-
-
           val methodName = ctx.freshName(baseMethodName)
           val methodBody =
             s"""
@@ -1440,6 +1424,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
           s"$hash = $methodName($methodArgs); \n" -> methodName
         }
+
         codeSplit(keysDataType.tail, keyVars.tail, "calculateHashCode",
           0, methodFound, methodNotFound, "", prefix + firstColumnHash, suffix)
       }
@@ -1524,7 +1509,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
       val bbHashMapObject = ByteBufferHashMap.getClass.getName + ".MODULE$"
       val bsleExceptionClass = classOf[BufferSizeLimitExceededException].getName
       val customNewInsertTerm = "customNewInsert"
-      val nullKeyBitsParamName = if (numBytesForNullKeyBits == 0) "" else ctx.freshName("nullKeyBits")
+      val nullKeyBitsParamName = if (numBytesForNullKeyBits == 0) ""
+      else ctx.freshName("nullKeyBits")
 
       val nullKeyBitsArg = if (numBytesForNullKeyBits == 0) ""
       else s", ${SHAMapAccessor.getNullBitsCastTerm(numBytesForNullKeyBits)}  $nullKeyBitsParamName"
@@ -1612,7 +1598,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
        } else {
          s"""
             |${writeVarPartialFunction(valueBaseObjectTerm, positionTerm,
-              s"$paramIsNull ? (byte)1 : 0", 0,  0 == this.skipLenForAttribIndex, ByteType)}
+              s"$paramIsNull ? (byte)1 : 0", 0, 0 == this.skipLenForAttribIndex, ByteType)}
             | if (!$paramIsNull) {
             |   $keyWritingCode
             | }
