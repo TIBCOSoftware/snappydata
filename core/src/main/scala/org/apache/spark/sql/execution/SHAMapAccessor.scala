@@ -923,90 +923,82 @@ case class SHAMapAccessor(@transient session: SnappySession,
           }
         } else "byte[]" -> "byte[]"
       }
-
-      val groupIter = varsToWrite.zip(dataTypes).grouped(codeSplitGroupSize).
-        zipWithIndex
-      val functionMapping = scala.collection.mutable.Map[String, String]()
-      val funcFieldWritingCode = groupIter.map { case (groupSeq, index) => {
-        val paramTypesStr = groupSeq.map(_._1).mkString(",")
-        val isSkipLengthCase = this.skipLenForAttribIndex != -1 && nestingLevel == 0 &&
-          this.skipLenForAttribIndex >= index * codeSplitGroupSize &&
-          this.skipLenForAttribIndex < (index + 1) * codeSplitGroupSize
-
-        val existingFunc = if (isSkipLengthCase) None else functionMapping.get(paramTypesStr)
-
-        existingFunc match {
-          case Some(funcName) => val methodArgs = groupSeq.map(tup => {
+      val methodFound = (methodName: String, groupSeq: Seq[(ExprCode, DataType)],
+        attributeStartIndex: Int, skipLengthCase: Boolean, nestingLevel: Int) => {
+          val methodArgs = groupSeq.map(tup => {
             val exprCd = tup._1
             s"${exprCd.value}, ${if (exprCd.isNull.isEmpty) "false" else exprCd.isNull}"
           }).mkString("", ",", s", $stateTransferArray, $baseObjectTerm," +
-            s" ${index * codeSplitGroupSize}" )
-            s"$funcName($methodArgs)"
-          case None =>
-            val attributeIndexStart = ctx.freshName("attributeIndexStart")
-            val enhancedGroupSeq = groupSeq.map {
-              case (exprCode, dataType) => ( if (exprCode.isNull.isEmpty) "false"
-                else exprCode.isNull, exprCode.copy(isNull = ctx.freshName("nullVar")),
-                dataType)
-            }.zipWithIndex
-            val methodName = ctx.freshName("writeKeyOrValGroup")
+            s" $attributeStartIndex" )
+          s"$methodName($methodArgs)"
+        }
 
-            val partBody = enhancedGroupSeq.map {
-              case ((nullBools, partKeyVars, partKeysDataType), innerIndex) => {
-                val skipLengthForAttr = isSkipLengthCase && (
-                  index * codeSplitGroupSize + innerIndex ==
-                    this.skipLenForAttribIndex)
-                val fieldWrCode = writeVarPartialFunction((baseObjectTerm, offsetTerm,
-                  partKeyVars.value, nestingLevel, skipLengthForAttr, partKeysDataType)).trim
-                // Now do the actual writing based on whether the variable is null or not
-                if (skipNullEvalCode) {
-                  fieldWrCode
-                } else {
-                  s"""
-                     |${SHAMapAccessor.evaluateNullBitsAndEmbedWrite(numBytesForNullBits,
-                       partKeyVars, attributeIndexStart, nullBitsTerm, offsetTerm,
-                       partKeysDataType, isKey, fieldWrCode, ctx)}
-                     | ++$attributeIndexStart;
+      val methodNotFound = (baseMethodName: String,
+        enhancedGroupSeq: Seq[((String, ExprCode, DataType), Int)],
+        attributeStartIndex: Int, isSkipLengthCase: Boolean, nestingLevel: Int) => {
+        val attributeIndexStartPrm = ctx.freshName("attributeIndexStart")
+
+        val methodName = ctx.freshName(baseMethodName)
+
+        val partBody = enhancedGroupSeq.map {
+          case ((nullBools, partKeyVars, partKeysDataType), innerIndex) => {
+            val skipLengthForAttr = isSkipLengthCase && (
+              attributeStartIndex + innerIndex ==
+                this.skipLenForAttribIndex)
+            val fieldWrCode = writeVarPartialFunction((baseObjectTerm, offsetTerm,
+              partKeyVars.value, nestingLevel, skipLengthForAttr, partKeysDataType)).trim
+            // Now do the actual writing based on whether the variable is null or not
+            if (skipNullEvalCode) {
+              fieldWrCode
+            } else {
+              s"""
+                 |${SHAMapAccessor.evaluateNullBitsAndEmbedWrite(numBytesForNullBits,
+                partKeyVars, attributeIndexStartPrm, nullBitsTerm, offsetTerm,
+                partKeysDataType, isKey, fieldWrCode, ctx)}
+                 | ++$attributeIndexStartPrm;
                    """.stripMargin
 
-                }
-              }
-            }.mkString("\n")
+            }
+          }
+        }.mkString("\n")
 
-            val methodBody = s"""
-                 |long $offsetTerm = (Long)$stateTransferArray[0];
-                 |${if (!skipNullEvalCode) {
-                    s"$nullCastPrimitive $nullBitsTerm = ($nullCastObj)$stateTransferArray[1];"
-                   } else ""
-                  }
-                 |$partBody
-                 |$stateTransferArray[0] = $offsetTerm;
-                 |${ if (!skipNullEvalCode) s"$stateTransferArray[1] = $nullBitsTerm;" else ""}
+        val methodBody = s"""
+                            |long $offsetTerm = (Long)$stateTransferArray[0];
+                            |${if (!skipNullEvalCode) {
+          s"$nullCastPrimitive $nullBitsTerm = ($nullCastObj)$stateTransferArray[1];"
+        } else ""
+        }
+                            |$partBody
+                            |$stateTransferArray[0] = $offsetTerm;
+                            |${if (!skipNullEvalCode) s"$stateTransferArray[1] = $nullBitsTerm;" else ""}
                  """.stripMargin
 
-            val methodParams = enhancedGroupSeq.map {
-              case ((_, exprCode, dt), innerIndex) => s"${ctx.javaType(dt)} ${exprCode.value}," +
-                s" boolean ${exprCode.isNull}"
-            }.mkString("", ",", s", Object[] $stateTransferArray, Object $baseObjectTerm," +
-              s" int $attributeIndexStart")
-            ctx.addNewFunction(methodName,
-              s"""
-                 |private void $methodName($methodParams) {
-                   |$methodBody
-                 |}
+        val methodParams = enhancedGroupSeq.map {
+          case ((_, exprCode, dt), innerIndex) => s"${ctx.javaType(dt)} ${exprCode.value}," +
+            s" boolean ${exprCode.isNull}"
+        }.mkString("", ",", s", Object[] $stateTransferArray, Object $baseObjectTerm," +
+          s" int $attributeIndexStartPrm")
+        ctx.addNewFunction(methodName,
+          s"""
+             |private void $methodName($methodParams) {
+             |$methodBody
+             |}
              """.
-                stripMargin)
-            val methodArgs = enhancedGroupSeq.map {
-              case ((nullBool, exprCode, dt), innerIndex) => s"${exprCode.value}, $nullBool"
-            }.mkString("", ",", s", $stateTransferArray, $baseObjectTerm, " +
-              s"${index * codeSplitGroupSize}")
-            if (!isSkipLengthCase) {
-              functionMapping += (paramTypesStr -> methodName)
-            }
-            s"$methodName($methodArgs); \n"
-         }
-       }
-      }.mkString("\n")
+            stripMargin)
+        val methodArgs = enhancedGroupSeq.map {
+          case ((nullBool, exprCode, dt), innerIndex) => s"${exprCode.value}, $nullBool"
+        }.mkString("", ",", s", $stateTransferArray, $baseObjectTerm, $attributeStartIndex")
+
+        s"$methodName($methodArgs); \n" -> methodName
+      }
+
+
+
+
+      val funcFieldWritingCode = codeSplit(dataTypes, varsToWrite, "writeKeyOrValGroup",
+        nestingLevel, methodFound, methodNotFound)
+
+
 
       val stateArraySize = if (skipNullEvalCode) 1 else 2
       s"""
@@ -1053,81 +1045,47 @@ case class SHAMapAccessor(@transient session: SnappySession,
        |$nullBitsWritingCode""".stripMargin
 
   }
-/*
+
+
   def codeSplit(dataTypes: Seq[DataType], vars: Seq[ExprCode], baseMethod: String,
-    methodFound: ()): String = {
-    val groupIter = vars.zip(dataTypes).grouped(SHAMapAccessor.codeSplitGroupSize).
+    nestingLevel: Int,
+    methodFound: (String, Seq[(ExprCode, DataType)], Int, Boolean, Int) => String,
+    methodNotFound: (String, Seq[((String, ExprCode, DataType), Int)], Int,
+    Boolean, Int) => (String, String)):
+  String = {
+    val groupIter = vars.zip(dataTypes).grouped(codeSplitGroupSize).
       zipWithIndex
     val functionMapping = scala.collection.mutable.Map[String, String]()
-    val funcFieldWritingCode = groupIter.map { case (groupSeq, index) => {
+    groupIter.map { case (groupSeq, index) => {
       val paramTypesStr = groupSeq.map(_._1).mkString(",")
-      val isSkipLengthCase = this.skipLenForAttribIndex != -1 &&
-        this.skipLenForAttribIndex >= index * SHAMapAccessor.codeSplitGroupSize &&
-        this.skipLenForAttribIndex < (index + 1) * SHAMapAccessor.codeSplitGroupSize
+      val isSkipLengthCase = this.skipLenForAttribIndex != -1 && nestingLevel == 0 &&
+        this.skipLenForAttribIndex >= index * codeSplitGroupSize &&
+        this.skipLenForAttribIndex < (index + 1) * codeSplitGroupSize
 
       val existingFunc = if (isSkipLengthCase) None else functionMapping.get(paramTypesStr)
 
       existingFunc match {
-        case Some(funcName) => val methodArgs = groupSeq.map(tup => {
-          val exprCd = tup._1
-          s"${exprCd.value}, ${exprCd.isNull}"
-        }).mkString("", ",", s", $stateTransferArray, $baseObjectTerm" )
-          s"$funcName($methodArgs)"
-        case None => val enhancedGroupSeq = groupSeq.map {
-          case (exprCode, dataType) => (exprCode.isNull,
-            exprCode.copy(isNull = ctx.freshName("nullVar")), dataType)
-        }.zipWithIndex
-          val methodName = ctx.freshName("writeKeyOrValGroup")
+        case Some(funcName) => methodFound(funcName, groupSeq, index * codeSplitGroupSize,
+          isSkipLengthCase, nestingLevel)
+        case None =>
+          val enhancedGroupSeq: Seq[((String, ExprCode, DataType), Int)] = groupSeq.map {
+            case (exprCode, dataType) => ( if (exprCode.isNull.isEmpty) "false"
+            else exprCode.isNull, exprCode.copy(isNull = ctx.freshName("nullVar")),
+              dataType)
+          }.zipWithIndex
 
-          val partBody = enhancedGroupSeq.map {
-            case ((nullBools, partKeyVars, partKeysDataType), innerIndex) => {
-              val fieldWrCode = writeVarPartialFunction((baseObjectTerm, offsetTerm,
-                partKeyVars.value, nestingLevel,
-                index * SHAMapAccessor.codeSplitGroupSize + innerIndex, partKeysDataType)).trim
-              // Now do the actual writing based on whether the variable is null or not
-              if (skipNullEvalCode) {
-                fieldWrCode
-              } else {
-                SHAMapAccessor.evaluateNullBitsAndEmbedWrite(numBytesForNullBits, partKeyVars,
-                  index * SHAMapAccessor.codeSplitGroupSize + innerIndex,
-                  nullBitsTerm, offsetTerm, partKeysDataType, isKey, fieldWrCode)
-              }
-            }
-          }.mkString("\n")
+         val (code, functionName) = methodNotFound(baseMethod, enhancedGroupSeq,
+           index * codeSplitGroupSize, isSkipLengthCase, nestingLevel)
 
-          val methodBody = s"""
-                              |long $offsetTerm = (Long)$stateTransferArray[0];
-                              |${if (!skipNullEvalCode) {
-            s"$nullCastPrimitive $nullBitsTerm = ($nullCastObj)$stateTransferArray[1];"
-          } else ""
-          }
-                              |$partBody
-                              |$stateTransferArray[0] = $offsetTerm;
-                              |${ if (!skipNullEvalCode) s"$stateTransferArray[1] = $nullBitsTerm;" else ""}
-                 """.stripMargin
 
-          val methodParams = enhancedGroupSeq.map {
-            case ((_, exprCode, dt), innerIndex) => s"${ctx.javaType(dt)} ${exprCode.value}," +
-              s" boolean ${exprCode.isNull}"
-          }.mkString("", ",", s", Object[] $stateTransferArray, Object $baseObjectTerm")
-          ctx.addNewFunction(methodName,
-            s"""
-               |private void $methodName($methodParams) {
-               |$methodBody
-               |}
-             """.
-              stripMargin)
-          val methodArgs = enhancedGroupSeq.map {
-            case ((nullBool, exprCode, dt), innerIndex) => s"${exprCode.value}, $nullBool"
-          }.mkString("", ",", s", $stateTransferArray, $baseObjectTerm")
           if (!isSkipLengthCase) {
-            functionMapping += (paramTypesStr -> methodName)
+            functionMapping += (paramTypesStr -> functionName)
           }
-          s"$methodName($methodArgs); \n"
+         code
       }
     }
     }.mkString("\n")
-  } */
+  }
 
 
 
