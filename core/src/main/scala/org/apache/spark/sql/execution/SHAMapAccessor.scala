@@ -996,7 +996,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 
       val funcFieldWritingCode = codeSplit(dataTypes, varsToWrite, "writeKeyOrValGroup",
-        nestingLevel, methodFound, methodNotFound, "\n")
+        nestingLevel, methodFound, methodNotFound, "\n", "", "")
 
 
 
@@ -1051,7 +1051,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
     nestingLevel: Int,
     methodFound: (String, Seq[(ExprCode, DataType)], Int, Boolean, Int) => String,
     methodNotFound: (String, Seq[((String, ExprCode, DataType), Int)], Int,
-    Boolean, Int) => (String, String), separator: String):
+    Boolean, Int) => (String, String), separator: String, prefix: String,
+    suffix: String):
   String = {
     val groupIter = vars.zip(dataTypes).grouped(codeSplitGroupSize).
       zipWithIndex
@@ -1084,7 +1085,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
          code
       }
     }
-    }.mkString(separator)
+    }.mkString(prefix, separator, suffix)
   }
 
 
@@ -1305,7 +1306,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
         s"$methodName($methodArgs)" -> methodName
       }
      codeSplit(keysDataType, keyVars, "calculatePartLength",
-        nestingLevel, methodFound, methodNotFound, " + ")
+        nestingLevel, methodFound, methodNotFound, " + ", "", "")
 
     }) + s" + ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)}"
   }
@@ -1401,49 +1402,46 @@ case class SHAMapAccessor(@transient session: SnappySession,
         grouppedSeq.map(generateHashCodeCalcCode(_))
         .mkString(prefix + firstColumnHash, "", suffix)
       } else {
-        val functionMapping = scala.collection.mutable.Map[String, String]()
-        grouppedSeq.map(groupSeq => {
-          val paramTypesStr = groupSeq.map(_._1).mkString(",")
 
-          val existingFunc = functionMapping.get(paramTypesStr)
-          existingFunc match {
-            case Some(funcName) => val methodArgs = groupSeq.map(tup => {
-              val exprCd = tup._2
-              s"${exprCd.value}, ${if (exprCd.isNull.isEmpty) "false" else exprCd.isNull}"
-            }).mkString("", ",", s", $hash")
-            s"$hash = $funcName($methodArgs); \n"
-            case None => {
-              val enhancedGroupSeq = groupSeq.map {
-                case (dataType, exprCode) =>
-                  val nullBool = if (exprCode.isNull.isEmpty) "false" else exprCode.isNull
-                  (exprCode.copy(isNull = ctx.freshName("nullVar")), dataType, nullBool)
-              }
-              val methodName = ctx.freshName("calculateHashCode")
-              val methodBody =
-                s"""
-                   |${generateHashCodeCalcCode(enhancedGroupSeq.unzip(tup => ((tup._2, tup._1), tup._3))._1)}
-                   |return $hash;
+        val methodFound = (methodName: String, groupSeq: Seq[(ExprCode, DataType)],
+          attributeStartIndex: Int, skipLengthCase: Boolean, nestingLevel: Int) => {
+          val methodArgs = groupSeq.map(tup => {
+            val exprCd = tup._1
+            s"${exprCd.value}, ${if (exprCd.isNull.isEmpty) "false" else exprCd.isNull}"
+          }).mkString("", ",", s", $hash")
+          s"$hash = $methodName($methodArgs); \n"
+        }
+
+        val methodNotFound = (baseMethodName: String,
+          enhancedGroupSeq: Seq[((String, ExprCode, DataType), Int)],
+          attributeStartIndex: Int, isSkipLengthCase: Boolean, nestingLevel: Int) => {
+
+
+          val methodName = ctx.freshName(baseMethodName)
+          val methodBody =
+            s"""
+               |${generateHashCodeCalcCode(enhancedGroupSeq.map(tup => tup._1._3 -> tup._1._2))}
+               |return $hash;
              """.stripMargin
-              val methodParams = enhancedGroupSeq.map {
-                case (exprCode, dt, _) => s"${ctx.javaType(dt)} ${exprCode.value}," +
-                  s" boolean ${exprCode.isNull}"
-              }.mkString("", ",", s",int $hash")
-              ctx.addNewFunction(methodName,
-                s"""
-                   |private int $methodName($methodParams) {
-                     |$methodBody
-                   |}
+          val methodParams = enhancedGroupSeq.map {
+            case ((_, exprCode, dt), _) => s"${ctx.javaType(dt)} ${exprCode.value}," +
+              s" boolean ${exprCode.isNull}"
+          }.mkString("", ",", s",int $hash")
+          ctx.addNewFunction(methodName,
+            s"""
+               |private int $methodName($methodParams) {
+               |$methodBody
+               |}
                 """.stripMargin)
 
-              val methodArgs = enhancedGroupSeq.map {
-                case (exprCode, _, nullBool) => s"${exprCode.value}, $nullBool"
-              }.mkString("", ",", s", $hash")
-              functionMapping +=(paramTypesStr -> methodName )
-              s"$hash = $methodName($methodArgs); \n"
-            }
-          }
+          val methodArgs = enhancedGroupSeq.map {
+            case ((nullBool, exprCode, _), _) => s"${exprCode.value}, $nullBool"
+          }.mkString("", ",", s", $hash")
 
-        }).mkString(prefix + firstColumnHash, "", suffix)
+          s"$hash = $methodName($methodArgs); \n" -> methodName
+        }
+        codeSplit(keysDataType.tail, keyVars.tail, "calculateHashCode",
+          0, methodFound, methodNotFound, "", prefix + firstColumnHash, suffix)
       }
     } else prefix + firstColumnHash + suffix
   }
