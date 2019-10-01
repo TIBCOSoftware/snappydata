@@ -1343,6 +1343,65 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     val rows = rs.collect()
   }
 
+  test("test code splitting") {
+    val snc1 = snc.newSession()
+    snc1.setConf(Property.TestCodeSplitGroupSizeInSHA.name, "2")
+
+
+    val fieldsStr = (for (i <- 0 until 5) yield {
+      Array(s"string1_$i string", s"int_$i int", s"double_$i double", s"long_$i long",
+        s"string2_$i string" ).mkString(",")
+    }).mkString(",")
+    snc.sql(s"create table test ($fieldsStr) using column ")
+
+
+    val prepStr = (for (i <- 0 until 25) yield {
+      "?"
+    }).mkString(",")
+    val conn = getSqlConnection
+    val prepStmt = conn.prepareStatement(s"insert into test values ($prepStr)")
+    val distincts = scala.collection.mutable.Set[(String, Int, Double, Long, String)]()
+    var j = 1
+    for ( k <- 0 until 100) {
+      for (i <- 0 until 5) {
+        if (k % 10 == 0) {
+          prepStmt.setNull(j, Types.VARCHAR)
+        } else {
+          prepStmt.setString(j, s"val_${k % 3}")
+        }
+        j = j + 1
+        prepStmt.setInt(j, k % 3)
+
+        j = j + 1
+        prepStmt.setDouble(j, (k % 3) * .01d)
+
+        j = j + 1
+        prepStmt.setLong(j, k % 3)
+
+        j = j + 1
+        prepStmt.setString(j, s"val_${k % 3}")
+        j = j + 1
+        if (k % 10 == 0) {
+          distincts.add((null, k % 3, (k % 3) * .01d, k % 3, s"val_${k % 3}"))
+        } else {
+          distincts.add((s"val_${k % 3}", k % 3, (k % 3) * .01d, k % 3, s"val_${k % 3}"))
+        }
+      }
+      prepStmt.addBatch()
+      j = 1
+    }
+    prepStmt.executeBatch()
+    assertEquals(100, snc.sql("select count(*) from test").collect()(0).getLong(0))
+    val groupBy = (for (i <- 0 until 5) yield {
+      Array(s"string1_$i", s"int_$i", s"double_$i", s"long_$i", s"string2_$i" ).mkString(",")
+    }).mkString(",")
+
+
+    val rs = snc.sql(s"select count(*) from test group by $groupBy")
+    val rows = rs.collect()
+    assertEquals(distincts.size, rows.length)
+  }
+
   test("SNAP-3132") {
     snc
     snc.sql("drop table if exists test1")
