@@ -5,25 +5,36 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf
   snappyBinPath="$GEMFIRE/../snappy"
   scriptName=createAndLoadTablesForDE.sql
   dataFilesLocation="/home/apps/Downloads"
+  queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueries.sql"
+  extractedDDLPath=""
+  extractedDataPath=""
   dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DMLQueriesForDE.sql"
   ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
-  queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueries.sql"
 
 /*
+io/snappydata/hydra/dataExtractorTool/dataExtractorWithMissingDiskStore.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  snappyBinPath="$GEMFIRE/../snappy"
+  scriptName=createAndLoadTablesForDE.sql
+  dataFilesLocation="/home/apps/Downloads"
+  nodeName=localhost
+  queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueries.sql"
+
+
 io/snappydata/hydra/dataExtractorTool/dataExtractorWithCPDE.conf
-    A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
-    B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-    C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-    snappyBinPath="$GEMFIRE/../snappy"
-    scriptName=createAndLoadTablesForDE.sql
-    scriptName1=createAndLoadDataForCPDE.sql
-    dataFilesLocation="/home/apps/Downloads"
-    node1="localhost"
-    node2="localhost"
-    dmlFileLocation="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DMLQueriesForDE.sql"
-    ddlFileLocation="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
-    queryPath1="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueries.sql"
-    queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueriesForCPDE.sql"
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  snappyBinPath="$GEMFIRE/../snappy"
+  scriptName=createAndLoadTablesForDE.sql
+  scriptName1=createAndLoadDataForCPDE.sql
+  dataFilesLocation="/home/apps/Downloads"
+  node1="localhost"
+  node2="localhost"
+  queryPath1="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueries.sql"
+  queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueriesForCPDE.sql"
 
 
  io/snappydata/hydra/dataExtractorTool/dataExtractorWithOOME.conf
@@ -36,19 +47,17 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorWithCPDE.conf
    scriptName2=insertRowVal.sql
    dataFilesLocation="/home/apps/Downloads"
    queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueries.sql"
-   dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/patientQuery.sql"
-   ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
 
-
- io/snappydata/hydra/dataExtractorTool/dataExtractorWithJson.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  snappyBinPath="$GEMFIRE/../snappy"
-  scriptPath="$GEMFIRE/../../../dtests/src/resources/scripts/putInto/create_and_load_30ColTable.sql"
-  dataFilesLocation="/home/supriya/Downloads"
-  dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DMLQueriesForDE.sql"
-  ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
+ io/snappydata/hydra/dataExtractorTool/dataExtractorWithJsonTpcdsAO.conf
+   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+   snappyBinPath="$GEMFIRE/../snappy"
+   scriptPath="$GEMFIRE/../../../dtests/src/resources/scripts/putInto/create_and_load_30ColTable.sql"
+   dataFilesLocation="/export/shared/QA_DATA/climateChange/data"
+   jsonFileLoc="/export/shared/QA_DATA/jsonFile/40millJsonFile"
+   tpcdsFileLoc="/export/shared/QA_DATA/TPCDS/data"
+   queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueryForJsonTpcdsAO.sql"
 
  io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf
    A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
@@ -58,17 +67,13 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorWithCPDE.conf
    redundantCopies=0
    scriptName=createAndLoadWideSchmeaTables.sql
    dataFilesLocation="/home/supriya/Downloads"
-   dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/patientQuery.sql"
-   ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
-   expectedExcptCnt = 4*/
 
-/*io/snappydata/hydra/dataExtractor/dataExtractorToolWithRLSTest.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
-  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=client clientHosts=1 clientVMsPerHost=1 clientThreadsPerVM=1
-  snappyBinPath="$GEMFIRE/../snappy"
-  dataFilesLocation="/export/shared/QA_DATA/patients/SPD"
-  dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/patientQuery.sql"
-  ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
-  expectedExcptCnt = 4*/
+ io/snappydata/hydra/dataExtractor/dataExtractorToolWithRLSTest.conf
+   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
+   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+   D=client clientHosts=1 clientVMsPerHost=1 clientThreadsPerVM=1
+   snappyBinPath="$GEMFIRE/../snappy"
+   dataFilesLocation="/export/shared/QA_DATA/patients/SPD"
+
+ */
