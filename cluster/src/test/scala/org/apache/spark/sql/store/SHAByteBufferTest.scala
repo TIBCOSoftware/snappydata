@@ -1352,12 +1352,13 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       Array(s"string1_$i string", s"int_$i int", s"double_$i double", s"long_$i long",
         s"string2_$i string" ).mkString(",")
     }).mkString(",")
-    snc.sql(s"create table test ($fieldsStr) using column ")
 
+    snc1.sql(s"create table test ($fieldsStr) using column ")
 
     val prepStr = (for (i <- 0 until 25) yield {
       "?"
     }).mkString(",")
+
     val conn = getSqlConnection
     val prepStmt = conn.prepareStatement(s"insert into test values ($prepStr)")
     val distincts = scala.collection.mutable.Set[(String, Int, Double, Long, String)]()
@@ -1396,8 +1397,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       Array(s"string1_$i", s"int_$i", s"double_$i", s"long_$i", s"string2_$i" ).mkString(",")
     }).mkString(",")
 
-
-    val rs = snc.sql(s"select count(*) from test group by $groupBy")
+    val rs = snc1.sql(s"select count(*) from test group by $groupBy")
     val rows = rs.collect()
     assertEquals(distincts.size, rows.length)
   }
