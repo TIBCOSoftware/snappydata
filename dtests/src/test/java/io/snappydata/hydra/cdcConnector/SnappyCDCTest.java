@@ -379,6 +379,7 @@ public class SnappyCDCTest extends SnappyTest {
         } else
           outputFile = logFile + File.separator + "afterRestartResultSet_query_" + i + ".out";
         String qStr = queryList.get(i);
+        Log.getLogWriter().info("The query for validation is " + qStr);
         ResultSet snappyRS = conn.createStatement().executeQuery(qStr);
         StructTypeImpl snappySti = ResultSetHelper.getStructType(snappyRS);
         List<Struct> snappyList = ResultSetHelper.asList(snappyRS, snappySti, false);
@@ -698,9 +699,10 @@ public class SnappyCDCTest extends SnappyTest {
   }
 
   public void removeDiskStore() {
-    String dirPath = SnappyCDCPrms.getDataLocation();
-    Log.getLogWriter().info("the dirPath is " + dirPath);
-    removeDiskStoreFiles(dirPath);
+    Vector hostList = SnappyCDCPrms.getNodeName();
+    String nodeName = String.valueOf(hostList.get(0));
+    Log.getLogWriter().info("the nodeName is " + nodeName);
+    removeDiskStoreFiles(nodeName);
   }
 
   public void stopCluster(String snappyPath, File logFile) {
@@ -745,9 +747,13 @@ public class SnappyCDCTest extends SnappyTest {
     snappyTest.executeProcess(pbStart, logFile);
   }
 
-  public void removeDiskStoreFiles(String dirPath) {
+  public void removeDiskStoreFiles(String nodeName) {
     try {
+      String dirName = "vm_2_snappyStore1_"+nodeName;
+      String dirPath = getCurrentDirPath() + File.separator + dirName;
+      Log.getLogWriter().info("SP:The dir path is " + dirPath);
       File dir = new File(dirPath);
+
       String[] extensions = new String[]{"crf", "drf", "krf", "idxkrf", "if"};
       Log.getLogWriter().info("Getting files with specified extension " + dir.getCanonicalPath());
       List<File> files = (List<File>) FileUtils.listFiles(dir, extensions, false);
