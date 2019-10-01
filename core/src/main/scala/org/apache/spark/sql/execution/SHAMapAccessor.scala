@@ -996,7 +996,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 
       val funcFieldWritingCode = codeSplit(dataTypes, varsToWrite, "writeKeyOrValGroup",
-        nestingLevel, methodFound, methodNotFound)
+        nestingLevel, methodFound, methodNotFound, "\n")
 
 
 
@@ -1051,7 +1051,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     nestingLevel: Int,
     methodFound: (String, Seq[(ExprCode, DataType)], Int, Boolean, Int) => String,
     methodNotFound: (String, Seq[((String, ExprCode, DataType), Int)], Int,
-    Boolean, Int) => (String, String)):
+    Boolean, Int) => (String, String), separator: String):
   String = {
     val groupIter = vars.zip(dataTypes).grouped(codeSplitGroupSize).
       zipWithIndex
@@ -1084,7 +1084,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
          code
       }
     }
-    }.mkString("\n")
+    }.mkString(separator)
   }
 
 
@@ -1266,54 +1266,47 @@ case class SHAMapAccessor(@transient session: SnappySession,
     (if (keysDataType.size <= codeSplitGroupSize) {
      generateLengthCode(keyVars, keysDataType, nestingLevel, 0)
    } else {
-     val groupIter = keyVars.zip(keysDataType).grouped(codeSplitGroupSize).
-       zipWithIndex
-     val functionMapping = scala.collection.mutable.Map[String, String]()
-     groupIter.map { case (groupSeq, index) => {
-       val paramTypesStr = groupSeq.map(_._1).mkString(",")
-       val isSkipLengthCase = this.skipLenForAttribIndex != -1 &&
-         this.skipLenForAttribIndex >= index * codeSplitGroupSize &&
-         this.skipLenForAttribIndex < (index + 1) * codeSplitGroupSize
-
-       val existingFunc = if (isSkipLengthCase) None else functionMapping.get(paramTypesStr)
-       existingFunc match {
-         case Some(funcName) => val methodArgs = groupSeq.map(tup => {
-           val exprCd = tup._1
-           s"${exprCd.value}, ${if (exprCd.isNull.isEmpty) "false" else exprCd.isNull}"
-         }).mkString(",")
-           s"$funcName($methodArgs)"
-         case None => val enhancedGroupSeq = groupSeq.map {
-           case (exprCode, dataType) => ( if (exprCode.isNull.isEmpty) "false" else exprCode.isNull,
-             exprCode.copy(isNull = ctx.freshName("nullVar")), dataType)
-         }
-           val methodName = ctx.freshName("calculatePartLength")
-           val (nullBools, partKeyVars, partKeysDataType) = enhancedGroupSeq.unzip3
-           val methodBody = s"return ${
-             generateLengthCode(partKeyVars,
-               partKeysDataType, nestingLevel, index * codeSplitGroupSize)
-           };"
-           val methodParams = enhancedGroupSeq.map {
-             case (_, exprCode, dt) => s"${ctx.javaType(dt)} ${exprCode.value}," +
-               s" boolean ${exprCode.isNull}"
-           }.mkString(",")
-           ctx.addNewFunction(methodName,
-             s"""
-                |private int $methodName($methodParams) {
-                |$methodBody
-
-                |}
-             """.
-               stripMargin)
-        val methodArgs = enhancedGroupSeq.map {
-          case(nullBool, exprCode, dt) => s"${
-            exprCode.value}, $nullBool"
-        }.mkString(",")
-         if (!isSkipLengthCase) {
-           functionMapping += (paramTypesStr -> methodName)
-         }
+    val methodFound = (methodName: String, groupSeq: Seq[(ExprCode, DataType)],
+        attributeStartIndex: Int, skipLengthCase: Boolean, nestingLevel: Int) => {
+        val methodArgs = groupSeq.map(tup => {
+          val exprCd = tup._1
+          s"${exprCd.value}, ${if (exprCd.isNull.isEmpty) "false" else exprCd.isNull}"
+        }).mkString(",")
         s"$methodName($methodArgs)"
-      }}
-       }.mkString(" + ")
+      }
+
+      val methodNotFound = (baseMethodName: String,
+        enhancedGroupSeq: Seq[((String, ExprCode, DataType), Int)],
+        attributeStartIndex: Int, isSkipLengthCase: Boolean, nestingLevel: Int) => {
+
+
+        val (partKeyVars, partKeysDataType) = enhancedGroupSeq.unzip(tup => (tup._1._2, tup._1._3))
+        val methodBody = s"return ${
+          generateLengthCode(partKeyVars,
+            partKeysDataType, nestingLevel, attributeStartIndex)
+        };"
+        val methodParams = enhancedGroupSeq.map {
+          case ((_, exprCode, dt) , _) => s"${ctx.javaType(dt)} ${exprCode.value}," +
+            s" boolean ${exprCode.isNull}"
+        }.mkString(",")
+        val methodName = ctx.freshName(baseMethodName)
+        ctx.addNewFunction(methodName,
+          s"""
+             |private int $methodName($methodParams) {
+             |$methodBody
+
+             |}
+             """.
+            stripMargin)
+        val methodArgs = enhancedGroupSeq.map {
+          case((nullBool, exprCode, dt), _) => s"${exprCode.value}, $nullBool"
+        }.mkString(",")
+
+        s"$methodName($methodArgs)" -> methodName
+      }
+     codeSplit(keysDataType, keyVars, "calculatePartLength",
+        nestingLevel, methodFound, methodNotFound, " + ")
+
     }) + s" + ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)}"
   }
 
