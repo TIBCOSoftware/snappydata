@@ -93,6 +93,9 @@ case class SnappyHashAggregateExec(
         !useOldImplementationForSingleKey
   }
 
+  val codeSplitGroupSize = Property.TestCodeSplitGroupSizeInSHA.
+    get(sqlContext.sparkSession.sessionState.conf)
+
   override def nodeName: String =
     if (useByteBufferMapBasedAggregation) "BufferMapHashAggregate" else "SnappyHashAggregate"
 
@@ -889,7 +892,7 @@ case class SnappyHashAggregateExec(
       if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None,
       if (cacheStoredKeyNullBits) Some(storedKeyNullBitsTerm) else None,
       aggregateBufferVars, keyHolderCapacityTerm, hashSetClassName,
-      useCustomHashMap, previousSingleKey_Position_LengthTerm)
+      useCustomHashMap, previousSingleKey_Position_LengthTerm, codeSplitGroupSize)
 
     if (useCustomHashMap) {
       ctx.addNewFunction(hashSetClassName, byteBufferAccessor.
