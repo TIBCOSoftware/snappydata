@@ -1341,6 +1341,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     val rs = snc.sql(s"select count(*), sum(int_0), sum(int_1)," +
       s" sum(int_2), sum(int_3), sum(int_4) from test group by $groupByClause")
     val rows = rs.collect()
+    snc.dropTable("test")
   }
 
   test("test code splitting") {
@@ -1400,6 +1401,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     val rs = snc1.sql(s"select count(*) from test group by $groupBy")
     val rows = rs.collect()
     assertEquals(distincts.size, rows.length)
+    snc.dropTable("test")
   }
 
   test("SNAP-3132") {
