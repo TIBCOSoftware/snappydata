@@ -1203,6 +1203,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   test("Bug SNAP-2728. SQL Built in functions throwing exception") {
+    snc.dropTable("test1", true)
     snc.sql("SELECT sort_array(array('b', 'd', 'c', 'a'), true)").collect()
     snc.sql("SELECT sort_array(array('b', 'd', 'c', 'a'), true)").collect()
     val numRows = 100
@@ -1216,5 +1217,6 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("select rand(0)").collect()
     snc.sql("select randn(0)").collect()
     snc.sql("select randn(0)").collect()
+    snc.dropTable("test1")
   }
 }
