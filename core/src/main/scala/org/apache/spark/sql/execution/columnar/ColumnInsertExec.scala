@@ -172,6 +172,19 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     batchSizeTerm = internals.addClassField(ctx, "int", "currentBatchSize", v => s"$v = 0;")
     val defaultRowSize = ctx.freshName("defaultRowSize")
 
+    val initEncoderCode: String => String = encoderArray =>
+      s"""
+         |this.$encoderArray[i] = $encodingClass.getColumnEncoder(
+         |    $schemaTerm.fields()[i]);
+       """.stripMargin
+    encoderArrayTerm = internals.addClassField(ctx, s"$encoderClass[]", "encoderArray", enc =>
+      s"""
+         |this.$enc = new $encoderClass[$schemaLength];
+         |${loop(initEncoderCode(enc), schemaLength)}
+        """.stripMargin)
+
+    val childProduce = doChildProduce(ctx)
+
     child match {
       case c: CallbackColumnInsert =>
         ctx.addNewFunction(c.resetInsertions,
@@ -185,18 +198,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       case _ =>
     }
 
-    val initEncoderCode: String => String = encoderArray =>
-      s"""
-         |this.$encoderArray[i] = $encodingClass.getColumnEncoder(
-         |    $schemaTerm.fields()[i]);
-       """.stripMargin
-    encoderArrayTerm = internals.addClassField(ctx, s"$encoderClass[]", "encoderArray", enc =>
-      s"""
-         |this.$enc = new $encoderClass[$schemaLength];
-         |${loop(initEncoderCode(enc), schemaLength)}
-        """.stripMargin)
-
-    val childProduce = doChildProduce(ctx)
     val encoderLoopCode = s"$defaultRowSize += " +
       s"$encoderArrayTerm[i].defaultSize($schemaTerm.fields()[i].dataType());"
 

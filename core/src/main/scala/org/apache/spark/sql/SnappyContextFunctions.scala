@@ -162,6 +162,4 @@ class SnappyContextFunctions(val session: SnappySession) extends SparkSupport {
 
   def executePlan(analyzer: SnappyAnalyzer, plan: LogicalPlan): LogicalPlan =
     analyzer.baseExecute(plan)
-
-  def sql[T](fn: => T): T = fn
 }

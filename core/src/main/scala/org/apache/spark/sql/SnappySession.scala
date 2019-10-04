@@ -181,7 +181,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
   }
 
    private[sql] def sqInternal(sqlText: String): CachedDataFrame = {
-    contextFunctions.sql(SnappySession.sqlPlan(this, sqlText))
+    SnappySession.sqlPlan(this, sqlText)
   }
 
   @DeveloperApi
@@ -189,12 +189,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
     if (planCaching) {
       planCaching = false
       try {
-        contextFunctions.sql(super.sql(sqlText))
+        super.sql(sqlText)
       } finally {
         planCaching = Property.PlanCaching.get(sessionState.conf)
       }
     } else {
-      contextFunctions.sql(super.sql(sqlText))
+      super.sql(sqlText)
     }
   }
 
