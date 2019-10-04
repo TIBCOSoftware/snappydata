@@ -28,6 +28,7 @@ import hydra.FileUtil;
 import hydra.Log;
 import io.snappydata.hydra.cdcConnector.SnappyCDCPrms;
 import io.snappydata.hydra.cluster.SnappyBB;
+import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.security.SnappySecurityPrms;
 import org.apache.commons.io.FileUtils;
@@ -109,12 +110,23 @@ public class DataExtractorToolTest extends SnappyTest {
 
   public void extractData() {
     Connection conn;
-    String dest = getCurrentDirPath();
+    Vector filePath = SnappyPrms.getDataLocationList();
+    String ddlPath = filePath.get(0).toString();
+    String dataPath = filePath.get(1).toString();
+    String dest = getCurrentDirPath() + File.separator + "removeExtractDataFolder.out";
+    File logFile = new File(dest);
+    String cmd = " rm -rf "+ ddlPath + "_* " + dataPath + "_*";
+    Log.getLogWriter().info("SP: The ddl path is " + ddlPath);
+    Log.getLogWriter().info("SP: The data path is " + dataPath);
+    Log.getLogWriter().info("SP: The cmd to delete folder is " + cmd);
+
     try {
+      ProcessBuilder p = new ProcessBuilder("/bin/bash", "-c", cmd);
+      snappyTest.executeProcess(p,logFile);
       conn = getLocatorConnection();
-      String query1 = "call sys.DUMP_DATA('" + dest + "/recover_data_parquet','parquet','all','true')";
+      String query1 = "call sys.DUMP_DATA('" + dataPath + "','parquet','all','true')";
       conn.createStatement().execute(query1);
-      String query2 = "call sys.DUMP_DDLS('" + dest + "/recover_ddls/')";
+      String query2 = "call sys.DUMP_DDLS('" + ddlPath + "')";
       conn.createStatement().execute(query2);
     } catch (Exception ex) {
       throw new io.snappydata.test.util.TestException("Task HydraTask_ExtractData failed with : \n" + ex.getMessage());
@@ -122,6 +134,54 @@ public class DataExtractorToolTest extends SnappyTest {
     closeConnection(conn);
   }
 
+
+  public static void HydraTask_createTableFromExtractedDDLs() {
+    if (dataExtractorToolTest == null) {
+      dataExtractorToolTest = new DataExtractorToolTest();
+    }
+    dataExtractorToolTest.createTableFromExtractedDDLs();
+  }
+
+  public void createTableFromExtractedDDLs(){
+    try {
+      Vector filePathVec = SnappyPrms.getDataLocationList();
+      String ddlPath = filePathVec.get(0).toString();
+      String dropTableQPath = filePathVec.get(1).toString();
+      String actualDDLPath = ddlPath + "_*" + File.separator + "part-00000";
+      String destPath = getCurrentDirPath() + File.separator + "ddl.sql";
+      Log.getLogWriter().info("SP: actualPath is " + actualDDLPath);
+      Log.getLogWriter().info("SP: destPath is " + destPath);
+      String dest = getCurrentDirPath() + File.separator + "createTableFromExtractedDDLs.out";
+      File logFile = new File(dest);
+      String cmd = " cp -f " + actualDDLPath + " " + destPath;
+      Log.getLogWriter().info("SP: the copy command is " + cmd);
+
+      ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd);
+      snappyTest.executeProcess(pb, logFile);
+
+      //Create tables now from the copied location:
+
+      Log.getLogWriter().info("SP: Now creating and loading the tables from extracted ddls and data");
+      String primaryLocatorHost = getPrimaryLocatorHost();
+      String primaryLocatorPort = getPrimaryLocatorPort();
+      Log.getLogWriter().info("SP: The primaryLocatorHost = " + primaryLocatorHost + "\n The primaryLocatorPort is " + primaryLocatorPort);
+
+
+      //First drop the tables already in the cluster:
+      ProcessBuilder pb1 = new ProcessBuilder(SnappyShellPath, "run", "-file=" +
+              dropTableQPath,"-client-port=" + primaryLocatorPort,"-client-bind-address=" + primaryLocatorHost);
+      snappyTest.executeProcess(pb1, logFile);
+
+      //Then Create the tables from extracted ddls.
+      ProcessBuilder pb2 = new ProcessBuilder(SnappyShellPath, "run", "-file=" +
+              destPath,"-client-port=" + primaryLocatorPort,"-client-bind-address=" + primaryLocatorHost);
+      snappyTest.executeProcess(pb2, logFile);
+    }
+    catch(Exception ex){
+      throw new io.snappydata.test.util.TestException("Task createTableFromExtracteddDDL got exception " + ex.getMessage());
+    }
+
+  }
 
   public static void HydraTask_modifyConf() {
     if (dataExtractorToolTest == null) {

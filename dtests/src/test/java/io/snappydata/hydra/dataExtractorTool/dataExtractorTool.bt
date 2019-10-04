@@ -6,8 +6,9 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf
   scriptName=createAndLoadTablesForDE.sql
   dataFilesLocation="/home/apps/Downloads"
   queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueries.sql"
-  extractedDDLPath=""
-  extractedDataPath=""
+  extractedDDLPath="/tmp/recover_ddls"
+  extractedDataPath="/tmp/recover_data_parquet"
+  dropTableQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dropTables.sql"
   dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DMLQueriesForDE.sql"
   ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
 

@@ -19,23 +19,20 @@ package io.snappydata.hydra.dataExtractorTool
 
 import com.typesafe.config.Config
 import org.apache.spark.sql._
-import org.apache.spark.sql.collection.Utils
+import scala.io.Source
 
 object CreateAndLoadTablesDE extends SnappySQLJob {
   // scalastyle:off println
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
-    val ddlPath = jobConfig.getString("extractedDDLPath")
+ //   val ddlPath = jobConfig.getString("extractedDDLPath")
     val dataPath = jobConfig.getString("extractedDataPath")
     val tableQry = "SELECT TABLENAME FROM SYS.SYSTABLES WHERE TABLESCHEMANAME = 'APP' " +
       "AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'"
     val snc = snSession.sqlContext
-    val tableList = snc.sql(tableQry).select("tablename").collect() // AsList()
-    // tableDF.show()
+    val tableList = snc.sql(tableQry).select("tablename").collect()
     var dataDF: DataFrame = null
 
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
-
-    // println("SP: The total number of tables are " + tableList.size())
 
     tableList.foreach { r => val actualDataPath = dataPath + "_*" + "/APP." + r.getString(0)
        println("SP: the actualPath is " + actualDataPath)
@@ -46,31 +43,13 @@ object CreateAndLoadTablesDE extends SnappySQLJob {
       else {
         dataDF = snc.read.format("com.databricks.spark.csv")
           .option("header", "true")
-          .option("inferSchema", "true")
+          .option("inferSchema", "false")
           .option("maxCharsPerColumn", "4096")
           .load(actualDataPath + "/part-*.csv")
       }
 
-      dataDF.write.mode(SaveMode.Overwrite).saveAsTable(r.getString(0))
+      dataDF.write.mode("overwrite").insertInto(r.getString(0))
     }
-/*   for (i <- 0 until tableList.length)
-    {
-      println("SP: the table name is " +  tableList.)
-      val actualDataPath = dataPath + "_*" + "/APP." +  tableList.get(i).toString
-      println("SP: the actualPath is " + actualDataPath)
-     if (dataPath.contains("parquet")) {
-        dataDF = snc.read.load(dataPath + "_*" + "/APP.")
-      }
-      else {
-        dataDF = snc.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .option("inferSchema", "true")
-          .option("maxCharsPerColumn", "4096")
-          .load(dataPath)
-      }
-
-    dataDF.write.mode(SaveMode.Overwrite).saveAsTable("")
-   } */
   }
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
