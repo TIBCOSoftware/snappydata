@@ -115,7 +115,8 @@ class SnappyConf(@transient val session: SnappySession)
          Property.HashAggregateSize.name |
          Property.ForceLinkPartitionsToBuckets.name |
          Property.UseOptimzedHashAggregate.name |
-         Property.TestCodeSplitGroupSizeInSHA.name |
+         Property.TestCodeSplitFunctionParamsSizeInSHA.name |
+         Property.TestCodeSplitThresholdInSHA.name |
          Property.UseOptimizedHashAggregateForSingleKey.name |
          Property.TestExplodeComplexDataTypeInSHA.name =>
       session.clearPlanCache()

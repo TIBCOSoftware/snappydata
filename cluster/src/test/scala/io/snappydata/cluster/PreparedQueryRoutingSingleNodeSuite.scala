@@ -50,7 +50,8 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         .setMaster("local[6]").
       set(io.snappydata.Property.TestDisableCodeGenFlag.name, "true").
       set(io.snappydata.Property.UseOptimizedHashAggregateForSingleKey.name, "true").
-      set(io.snappydata.Property.TestCodeSplitGroupSizeInSHA.name, "3")
+      set(io.snappydata.Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2").
+      set(io.snappydata.Property.TestCodeSplitThresholdInSHA.name, "2")
         // .set("spark.logConf", "true")
         // .set("mcast-port", "4958")
   }

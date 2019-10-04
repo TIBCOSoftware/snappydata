@@ -93,7 +93,10 @@ case class SnappyHashAggregateExec(
         !useOldImplementationForSingleKey
   }
 
-  val codeSplitGroupSize = Property.TestCodeSplitGroupSizeInSHA.
+  val codeSplitFuncParamsSize = Property.TestCodeSplitFunctionParamsSizeInSHA.
+    get(sqlContext.sparkSession.sessionState.conf)
+
+  val codeSplitThresholdSize = Property.TestCodeSplitThresholdInSHA.
     get(sqlContext.sparkSession.sessionState.conf)
 
   override def nodeName: String =
@@ -671,7 +674,7 @@ case class SnappyHashAggregateExec(
 
     if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullAggsBits)) {
       ctx.addMutableState("byte[]", nullAggsBitsetTerm,
-        s"$nullKeysBitsetTerm = new byte[$numBytesForNullAggsBits];")
+        s"$nullAggsBitsetTerm = new byte[$numBytesForNullAggsBits];")
     }
     val probableSkipLen = this.groupingAttributes.
       lastIndexWhere(attr => !TypeUtilities.isFixedWidth(attr.dataType))
@@ -892,7 +895,8 @@ case class SnappyHashAggregateExec(
       if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None,
       if (cacheStoredKeyNullBits) Some(storedKeyNullBitsTerm) else None,
       aggregateBufferVars, keyHolderCapacityTerm, hashSetClassName,
-      useCustomHashMap, previousSingleKey_Position_LengthTerm, codeSplitGroupSize)
+      useCustomHashMap, previousSingleKey_Position_LengthTerm,
+      codeSplitFuncParamsSize, codeSplitThresholdSize)
 
     if (useCustomHashMap) {
       ctx.addNewFunction(hashSetClassName, byteBufferAccessor.
@@ -1264,11 +1268,14 @@ case class SnappyHashAggregateExec(
       keysExpr, keysDataType, aggBuffDataTypes, dictionaryCode, dictionaryArrayTerm,
       aggFuncDependentOnGroupByKey)
 
-    val bufferVars = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
+    val (stateArrayVarOpt, bufferVars) = byteBufferAccessor.getBufferVarsForUpdate(aggBuffDataTypes,
       byteBufferAccessor.aggregateBufferVars,
       byteBufferAccessor.currentOffSetForMapLookupUpdt,
-      false, byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits,
-      false)
+      byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits)
+    stateArrayVarOpt.foreach(stateArrayVar => {
+      ctx.addMutableState("Object[]", stateArrayVar, s"$stateArrayVar = new Object[2];")
+    })
+
     val bufferEval = evaluateVariables(bufferVars)
     val bufferVarsFromInitVars = byteBufferAccessor.aggregateBufferVars.zip(initVars).map {
       case (bufferVarName, initExpr) => ExprCode(
@@ -1309,7 +1316,9 @@ case class SnappyHashAggregateExec(
             currentOffSetForMapLookupUpdt, byteBufferAccessor.nullAggsBitsetTerm,
             byteBufferAccessor.numBytesForNullAggBits)
           }
+          |${stateArrayVarOpt.map(stateArrayVar => s"$stateArrayVar[0] = ${byteBufferAccessor.currentOffSetForMapLookupUpdt};").getOrElse("")}
           |$bufferEval
+          |${stateArrayVarOpt.map(stateArrayVar => s"${byteBufferAccessor.currentOffSetForMapLookupUpdt} = (Long)$stateArrayVar[0];").getOrElse("")}
        |} else {
        |  $bufferEvalFromInitVars
        |}

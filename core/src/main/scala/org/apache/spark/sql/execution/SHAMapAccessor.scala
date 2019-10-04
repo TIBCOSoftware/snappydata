@@ -54,7 +54,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String,
   shaMapClassName: String, useCustomHashMap: Boolean,
   previousSingleKey_Position_LenTerm: Option[(String, String, String)],
-  codeSplitGroupSize: Int)
+  codeSplitFuncParamsSize: Int, codeSplitThresholdSize: Int)
   extends CodegenSupport {
   val unsafeArrayClass = classOf[UnsafeArrayData].getName
   val unsafeRowClass = classOf[UnsafeRow].getName
@@ -74,7 +74,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
     currentValueOffsetTerm: String, isKey: Boolean, nullBitTerm: String,
     numBytesForNullBits: Int, skipNullBitsCode: Boolean, nestingLevel: Int = 0):
   Seq[ExprCode] = {
-
     val castTerm = SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
     dataTypes.zip(varNames).zipWithIndex.map { case ((dt, varName), i) =>
       val nullVar = if (isKey) {
@@ -118,6 +117,82 @@ case class SHAMapAccessor(@transient session: SnappySession,
       ExprCode(exprCode, nullVar, varName)
     }
   }
+
+
+  def getBufferVarsForUpdate(dataTypes: Seq[DataType], varNames: Seq[String],
+    currentValueOffsetTerm: String, nullBitTerm: String, numBytesForNullBits: Int):
+  (Option[String], Seq[ExprCode]) = {
+    val nullBitsCastTerm = if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
+      "byte[]"
+    } else SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
+    if (dataTypes.length <= codeSplitThresholdSize) {
+      (None, getBufferVars(dataTypes, varNames, currentValueOffsetTerm, false, nullBitTerm,
+        numBytesForNullBits, false, 0))
+    } else {
+      val baseMethod = "readFromBBMap"
+      val stateArray = ctx.freshName("stateArray")
+      val localVar = ctx.freshName("tempVar")
+      val localIndex = ctx.freshName("index")
+      val localNullBool = ctx.freshName("isNull")
+      val nullBoolEvalCode = if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
+        s"""
+           |int remainder = $localIndex % 8;
+           |         |int pos = $localIndex / 8;
+           |         |boolean $localNullBool = ($nullBitTerm[pos] & (0x01 << remainder)) != 0;
+         """.stripMargin
+      } else {
+        s"""boolean $localNullBool = ($nullBitTerm & ((($nullBitsCastTerm)0x01) << $localIndex)) != 0;"""
+      }
+
+      val funcMapping = dataTypes.distinct.map(dt => {
+        val methodName = ctx.freshName(baseMethod)
+
+        val partMethodBody = readVarPartialFunction(currentValueOffsetTerm, 0, -1,
+          localVar, dt).trim
+
+
+        val varDataType = ctx.javaType(dt);
+
+        ctx.addNewFunction(methodName,
+          s"""
+             |private Object $methodName(Object[] $stateArray,
+             | $nullBitsCastTerm $nullBitTerm, int $localIndex) {
+             | $currentValueOffsetTerm = (Long) $stateArray[0];
+             | $varDataType $localVar = ${ctx.defaultValue(dt)};
+             | $nullBoolEvalCode
+             | if ($localNullBool) {
+             |  ${SHAMapAccessor.getOffsetIncrementCodeForNullAgg(currentValueOffsetTerm, dt)}
+             | } else {
+             |   $partMethodBody
+             | }
+             | $stateArray[0] = $currentValueOffsetTerm;
+             | $stateArray[1] = $localNullBool;
+             | return $localVar;
+             |}
+         """.stripMargin)
+        dt -> methodName
+      }).toMap
+
+      val exprCodes = dataTypes.zip(varNames).zipWithIndex.map {
+        case ((dt, varName), index) => {
+          val varDataType = ctx.javaType(dt);
+          val funcName = funcMapping.get(dt).get
+          val nullVar = s"$varName${SHAMapAccessor.nullVarSuffix}"
+          val code =
+            s"""
+               |$varName = (${SHAMapAccessor.getObjectTypeForPrimitiveType(varDataType)})$funcName($stateArray, $nullBitTerm, $index);
+               |$nullVar = (Boolean)$stateArray[1];
+             """.stripMargin
+          ExprCode(code, nullVar, varName)
+        }
+      }
+
+      Some(stateArray) -> exprCodes
+    }
+  }
+
+
+
 
   def readNullBitsCode(currentValueOffsetTerm: String, nullBitsetTerm: String,
     numBytesForNullBits: Int): String = {
@@ -893,7 +968,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
          |$offsetTerm += ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)};""".stripMargin
     }
 
-    val fieldWritingCode = if (dataTypes.size <= codeSplitGroupSize) {
+    val fieldWritingCode = if (dataTypes.size <= codeSplitThresholdSize) {
       dataTypes.zip(varsToWrite).zipWithIndex.map {
         case ((dt, expr), i) =>
           val variable = expr.value
@@ -916,11 +991,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
         if (!SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
           val ct = SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
-          if (ct.equals("int")) {
-            "int" -> "Integer"
-          } else {
-            ct -> (ct.substring(0, 1).toUpperCase + ct.substring(1))
-          }
+          ct -> SHAMapAccessor.getObjectTypeForPrimitiveType(ct)
         } else "byte[]" -> "byte[]"
       }
       val methodFound = (methodName: String, groupSeq: Seq[(ExprCode, DataType)],
@@ -930,7 +1001,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           s"${exprCd.value}, ${if (exprCd.isNull.isEmpty) "false" else exprCd.isNull}"
         }).mkString("", ",", s", $stateTransferArray, $baseObjectTerm," +
           s" $attributeStartIndex")
-        s"$methodName($methodArgs)"
+        s"$methodName($methodArgs);"
       }
 
       val methodNotFound = (baseMethodName: String,
@@ -994,7 +1065,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
       }
 
       val funcFieldWritingCode = codeSplit(dataTypes, varsToWrite, "writeKeyOrValGroup",
-        nestingLevel, methodFound, methodNotFound, "\n", "", "")
+        nestingLevel, methodFound, methodNotFound, "\n", "", "", isKey)
 
       val stateArraySize = if (skipNullEvalCode) 1 else 2
       s"""
@@ -1048,20 +1119,21 @@ case class SHAMapAccessor(@transient session: SnappySession,
     methodFound: (String, Seq[(ExprCode, DataType)], Int, Boolean, Int) => String,
     methodNotFound: (String, Seq[((String, ExprCode, DataType), Int)], Int,
       Boolean, Int) => (String, String), separator: String, prefix: String,
-    suffix: String): String = {
-    val groupIter = vars.zip(dataTypes).grouped(codeSplitGroupSize).
+    suffix: String, isGroupByKeys: Boolean): String = {
+    val groupIter = vars.zip(dataTypes).grouped(codeSplitFuncParamsSize).
       zipWithIndex
     val functionMapping = scala.collection.mutable.Map[String, String]()
     groupIter.map { case (groupSeq, index) => {
-      val paramTypesStr = groupSeq.map(_._1).mkString(",")
-      val isSkipLengthCase = this.skipLenForAttribIndex != -1 && nestingLevel == 0 &&
-        this.skipLenForAttribIndex >= index * codeSplitGroupSize &&
-        this.skipLenForAttribIndex < (index + 1) * codeSplitGroupSize
+      val paramTypesStr = groupSeq.map(_._2.toString).mkString(",")
+      val isSkipLengthCase = isGroupByKeys &&
+        this.skipLenForAttribIndex != -1 && nestingLevel == 0 &&
+        this.skipLenForAttribIndex >= index * codeSplitFuncParamsSize &&
+        this.skipLenForAttribIndex < (index + 1) * codeSplitFuncParamsSize
 
       val existingFunc = if (isSkipLengthCase) None else functionMapping.get(paramTypesStr)
 
       existingFunc match {
-        case Some(funcName) => methodFound(funcName, groupSeq, index * codeSplitGroupSize,
+        case Some(funcName) => methodFound(funcName, groupSeq, index * codeSplitFuncParamsSize,
           isSkipLengthCase, nestingLevel)
         case None =>
           val enhancedGroupSeq: Seq[((String, ExprCode, DataType), Int)] = groupSeq.map {
@@ -1071,7 +1143,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           }.zipWithIndex
 
           val (code, functionName) = methodNotFound(baseMethod, enhancedGroupSeq,
-            index * codeSplitGroupSize, isSkipLengthCase, nestingLevel)
+            index * codeSplitFuncParamsSize, isSkipLengthCase, nestingLevel)
 
           if (!isSkipLengthCase) {
             functionMapping += (paramTypesStr -> functionName)
@@ -1251,7 +1323,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
       }.mkString(" + ")
     }
 
-    (if (keysDataType.size <= codeSplitGroupSize) {
+    (if (keysDataType.size <= codeSplitThresholdSize) {
       generateLengthCode(keyVars, keysDataType, nestingLevel, 0)
     } else {
       val methodFound = (methodName: String, groupSeq: Seq[(ExprCode, DataType)],
@@ -1291,7 +1363,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
       }
 
       codeSplit(keysDataType, keyVars, "calculatePartLength",
-        nestingLevel, methodFound, methodNotFound, " + ", "", "")
+        nestingLevel, methodFound, methodNotFound, " + ", "", "", true)
 
     }) + s" + ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)}"
   }
@@ -1381,11 +1453,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
       }.mkString("")
     }
     if (keyVars.length > 1) {
-      val grouppedSeq = keysDataType.tail.zip(keyVars.tail).
-        grouped(codeSplitGroupSize).toSeq
-      if (grouppedSeq.size == 1) {
-        grouppedSeq.map(generateHashCodeCalcCode(_))
-        .mkString(prefix + firstColumnHash, "", suffix)
+      val remainingElems = keysDataType.tail.zip(keyVars.tail)
+      if (remainingElems.size <= codeSplitThresholdSize) {
+        s"$prefix$firstColumnHash${generateHashCodeCalcCode(remainingElems)}$suffix"
       } else {
         val methodFound = (methodName: String, groupSeq: Seq[(ExprCode, DataType)],
           attributeStartIndex: Int, skipLengthCase: Boolean, nestingLevel: Int) => {
@@ -1424,7 +1494,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
         }
 
         codeSplit(keysDataType.tail, keyVars.tail, "calculateHashCode",
-          0, methodFound, methodNotFound, "", prefix + firstColumnHash, suffix)
+          0, methodFound, methodNotFound, "", prefix + firstColumnHash, suffix,
+          false)
       }
     } else prefix + firstColumnHash + suffix
   }
@@ -1811,12 +1882,12 @@ object SHAMapAccessor {
    def getExpressionForNullEvalFromMask(i: Int, numBytesForNullBits: Int,
      nullBitTerm: String ): String = {
      val castTerm = getNullBitsCastTerm(numBytesForNullBits)
-     if (numBytesForNullBits <= 8) {
-       s"""($nullBitTerm & ((($castTerm)0x01) << $i)) != 0"""
-     } else {
+     if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
        val remainder = i % 8
        val index = i / 8
        s"""($nullBitTerm[$index] & (0x01 << $remainder)) != 0"""
+     } else {
+       s"""($nullBitTerm & ((($castTerm)0x01) << $i)) != 0"""
      }
    }
 
@@ -1992,5 +2063,14 @@ object SHAMapAccessor {
     ctx.currentVars = null
     vars
   }
+
+  def getObjectTypeForPrimitiveType(primType: String): String =
+    if (primType.equals("int")) {
+     "Integer"
+    } else {
+      primType.substring(0, 1).toUpperCase + primType.substring(1)
+    }
+
+
 
 }

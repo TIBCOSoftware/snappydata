@@ -61,7 +61,8 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     conf.set(io.snappydata.Property.TestDisableCodeGenFlag.name, "true")
     conf.set(io.snappydata.Property.UseOptimizedHashAggregateForSingleKey.name, "true")
-    conf.set(io.snappydata.Property.TestCodeSplitGroupSizeInSHA.name, "3")
+    conf.set(io.snappydata.Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2")
+    conf.set(io.snappydata.Property.TestCodeSplitThresholdInSHA.name, "2")
     conf
   }
 

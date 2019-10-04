@@ -1346,8 +1346,8 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   test("test code splitting") {
     val snc1 = snc.newSession()
-    snc1.setConf(Property.TestCodeSplitGroupSizeInSHA.name, "2")
-
+    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2")
+    snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "2")
 
     val fieldsStr = (for (i <- 0 until 5) yield {
       Array(s"string1_$i string", s"int_$i int", s"double_$i double", s"long_$i long",
@@ -1403,6 +1403,64 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     assertEquals(distincts.size, rows.length)
     snc.dropTable("test")
   }
+
+
+  test("test code splitting for aggregate functions") {
+    snc
+    val numIntCols = 450
+
+    val intFieldsStr = (for (i <- 0 until numIntCols) yield {
+      s"int_$i int"
+    }).mkString(",")
+
+    val numStringCols = 5
+
+    val stringFieldsStr = (for (i <- 0 until numStringCols) yield {
+      s"string_$i string"
+    }).mkString(",")
+
+    snc.sql(s"create table test ($intFieldsStr, $stringFieldsStr) using column ")
+    val prepStr = (for (i <- 0 until (numIntCols + numStringCols)) yield {
+      "?"
+    }).mkString(",")
+    val conn = getSqlConnection
+    val prepStmt = conn.prepareStatement(s"insert into test values ($prepStr)")
+    for (i <- 0 until 100) {
+      for (j <- 0 until numIntCols) {
+        prepStmt.setInt(j + 1, i * j )
+      }
+      for (j <- 0 until numStringCols) {
+        prepStmt.setString(j + numIntCols + 1, s"str_${i % 5}" )
+      }
+
+      prepStmt.addBatch()
+    }
+    prepStmt.executeBatch()
+    assertEquals(100, snc.sql("select count(*) from test").collect()(0).getLong(0))
+    val groupByClause = (for (i <- 0 until numStringCols) yield {
+      s"string_$i"
+    }).mkString(",")
+
+    val aggFunctionProjection = (for (i <- 0 until numIntCols) yield {
+      s"sum(int_$i) summ_$i"
+    }).mkString(",")
+
+    val rs = snc.sql(s"select $aggFunctionProjection from" +
+      s" test group by $groupByClause order by summ_0 asc")
+    val rows = rs.collect()
+    assertEquals (5, rows.length)
+    val sum_col1_key1 = 100/2*(2 * 0 + (100 - 1) * 5)
+    val sum_col1_key2 = 100/2*(2 * 1 + (100 - 1) * 5)
+    val sum_col1_key3 = 100/2*(2 * 2 + (100 - 1) * 5)
+    val sum_col1_key4 = 100/2*(2 * 3 + (100 - 1) * 5)
+    val sum_col1_key5 = 100/2*(2 * 4 + (100 - 1) * 5)
+
+
+
+    snc.dropTable("test")
+  }
+
+
 
   test("SNAP-3132") {
     snc

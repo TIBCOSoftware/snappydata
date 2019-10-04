@@ -312,10 +312,16 @@ object Property extends Enumeration {
     s"The test flag if set to true will throw Exception instead of creating CodegenSparkFallback " +
       s"Default value is false", Some(false))
 
-  val TestCodeSplitGroupSizeInSHA: SQLValue[Int] = SQLVal[Int](
-    s"${Constant.PROPERTY_PREFIX}sql.codeSplitGroupSize",
+  val TestCodeSplitThresholdInSHA: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.codeSplitThresholdInSHA",
     s"The maximum number of group by keys or aggregates which can generate inline " +
-      s"code in SnappyHashAggregateExec", Some(75))
+      s"code in SnappyHashAggregateExec. Beyond the threshold value" +
+      s", code splitting occurs through functions. Default value is 75", Some(75))
+
+  val TestCodeSplitFunctionParamsSizeInSHA: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.codeSplitFunctionParamsSizeInSHA",
+    s"The number of group by keys or aggregates which should be used as parameters at a time" +
+      s" for code splitting function", Some(5))
 }
 
 // extractors for properties
