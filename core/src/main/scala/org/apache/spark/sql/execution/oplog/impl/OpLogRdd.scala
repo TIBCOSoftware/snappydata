@@ -367,7 +367,7 @@ class OpLogRdd(
    * @param phdrCol PlaceHolderDiskRegion of column batch
    */
   def iterateColData(phdrCol: PlaceHolderDiskRegion): Iterator[Row] = {
-    if(phdrCol.getRegionMap == null || phdrCol.getRegionMap.isEmpty) return Iterator.empty
+    if (phdrCol.getRegionMap == null || phdrCol.getRegionMap.isEmpty) return Iterator.empty
     val regMap = phdrCol.getRegionMap
     // assert(regMap != null, "region map for column batch is null")
     regMap.keySet().iterator().asScala.flatMap {
