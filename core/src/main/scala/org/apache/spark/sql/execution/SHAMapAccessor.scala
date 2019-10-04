@@ -156,8 +156,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
         ctx.addNewFunction(methodName,
           s"""
              |private Object $methodName(Object[] $stateArray,
-             | $nullBitsCastTerm $nullBitTerm, int $localIndex) {
-             | $currentValueOffsetTerm = (Long) $stateArray[0];
+             | $nullBitsCastTerm $nullBitTerm, int $localIndex, Object $vdBaseObjectTerm) {
+             | long $currentValueOffsetTerm = (Long) $stateArray[0];
              | $varDataType $localVar = ${ctx.defaultValue(dt)};
              | $nullBoolEvalCode
              | if ($localNullBool) {
@@ -180,7 +180,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
           val nullVar = s"$varName${SHAMapAccessor.nullVarSuffix}"
           val code =
             s"""
-               |$varName = (${SHAMapAccessor.getObjectTypeForPrimitiveType(varDataType)})$funcName($stateArray, $nullBitTerm, $index);
+               |$varName = (${SHAMapAccessor.getObjectTypeForPrimitiveType(varDataType)})$funcName($stateArray,
+               | $nullBitTerm, $index, $vdBaseObjectTerm);
                |$nullVar = (Boolean)$stateArray[1];
              """.stripMargin
           ExprCode(code, nullVar, varName)
