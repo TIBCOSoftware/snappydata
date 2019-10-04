@@ -377,7 +377,7 @@ public class SnappyCDCTest extends SnappyTest {
         if (isBeforeRestart) {
           outputFile = logFile + File.separator + "beforeRestartResultSet_query_" + i + ".out";
         } else
-          outputFile = logFile + File.separator + "afterRestartResultSet_query_" + i + ".out";
+          outputFile = logFile + File.separator + "afterRestartResultSet_query_" +System.currentTimeMillis() + "_" + i + ".out";
         String qStr = queryList.get(i);
         Log.getLogWriter().info("The query for validation is " + qStr);
         ResultSet snappyRS = conn.createStatement().executeQuery(qStr);

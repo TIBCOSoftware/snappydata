@@ -50,7 +50,8 @@ public class DataExtractorToolTest extends SnappyTest {
       dataExtractorToolTest = new DataExtractorToolTest();
     }
     dataExtractorToolTest.executeQuery();
-    dataExtractorToolTest.validate(expectedExcptCnt, unExpectedExcptCnt);
+    if (expectedExcptCnt != 0)
+      dataExtractorToolTest.validate(expectedExcptCnt, unExpectedExcptCnt);
   }
 
   public void executeQuery() {
@@ -66,22 +67,23 @@ public class DataExtractorToolTest extends SnappyTest {
           conn.createStatement().execute(queryStr);
           Log.getLogWriter().info("Query executed successfully");
         } catch (SQLException se) {
-          if (se.getMessage().contains("SELECT")) {
-            unExpectedExceptionCnt = unExpectedExceptionCnt + 1;
-            Log.getLogWriter().info("Caught unExpected exception" + se.getMessage() + "\n" + se.getCause());
-          } else if (se.getMessage().contains("Insert") || se.getMessage().contains("Update") || se.getMessage().contains("Delete") || se.getMessage().contains("PutInto")
-              || se.getMessage().contains("TRUNCATE") || se.getMessage().contains("DROP") || se.getMessage().contains("ALTER") || se.getMessage().contains("CREATE")) {
-            expectedExceptionCnt = expectedExceptionCnt + 1;
-            Log.getLogWriter().info("Caught expected exception " + se.getMessage());
-          } else
-            Log.getLogWriter().info("Caught Exception in runDMLOps method " + se.getMessage() + "\n" + se.getCause());
+          if (expectedExceptionCnt != 0) {
+            if (se.getMessage().contains("SELECT")) {
+              unExpectedExceptionCnt = unExpectedExceptionCnt + 1;
+              Log.getLogWriter().info("Caught unExpected exception" + se.getMessage() + "\n" + se.getCause());
+            } else if (se.getMessage().contains("Insert") || se.getMessage().contains("Update") || se.getMessage().contains("Delete") || se.getMessage().contains("PutInto")
+                || se.getMessage().contains("TRUNCATE") || se.getMessage().contains("DROP") || se.getMessage().contains("ALTER") || se.getMessage().contains("CREATE")) {
+              expectedExceptionCnt = expectedExceptionCnt + 1;
+              Log.getLogWriter().info("Caught expected exception " + se.getMessage());
+            } else
+              Log.getLogWriter().info("Caught Exception in runDMLOps method " + se.getMessage() + "\n" + se.getCause());
+          }
         }
       }
-    }
-    catch(SQLException ex){
+    } catch (SQLException ex) {
       throw new io.snappydata.test.util.TestException("Task executeQuery failed with : \n" + ex.getMessage());
     }
-      closeConnection(conn);
+    closeConnection(conn);
   }
 
   public void validate(Integer expectedCnt, Integer unExpectedCnt) {
@@ -115,14 +117,14 @@ public class DataExtractorToolTest extends SnappyTest {
     String dataPath = filePath.get(1).toString();
     String dest = getCurrentDirPath() + File.separator + "removeExtractDataFolder.out";
     File logFile = new File(dest);
-    String cmd = " rm -rf "+ ddlPath + "_* " + dataPath + "_*";
+    String cmd = " rm -rf " + ddlPath + "_* " + dataPath + "_*";
     Log.getLogWriter().info("SP: The ddl path is " + ddlPath);
     Log.getLogWriter().info("SP: The data path is " + dataPath);
     Log.getLogWriter().info("SP: The cmd to delete folder is " + cmd);
 
     try {
       ProcessBuilder p = new ProcessBuilder("/bin/bash", "-c", cmd);
-      snappyTest.executeProcess(p,logFile);
+      snappyTest.executeProcess(p, logFile);
       conn = getLocatorConnection();
       String query1 = "call sys.DUMP_DATA('" + dataPath + "','parquet','all','true')";
       conn.createStatement().execute(query1);
@@ -142,7 +144,7 @@ public class DataExtractorToolTest extends SnappyTest {
     dataExtractorToolTest.createTableFromExtractedDDLs();
   }
 
-  public void createTableFromExtractedDDLs(){
+  public void createTableFromExtractedDDLs() {
     try {
       Vector filePathVec = SnappyPrms.getDataLocationList();
       String ddlPath = filePathVec.get(0).toString();
@@ -169,15 +171,14 @@ public class DataExtractorToolTest extends SnappyTest {
 
       //First drop the tables already in the cluster:
       ProcessBuilder pb1 = new ProcessBuilder(SnappyShellPath, "run", "-file=" +
-              dropTableQPath,"-client-port=" + primaryLocatorPort,"-client-bind-address=" + primaryLocatorHost);
+          dropTableQPath, "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
       snappyTest.executeProcess(pb1, logFile);
 
       //Then Create the tables from extracted ddls.
       ProcessBuilder pb2 = new ProcessBuilder(SnappyShellPath, "run", "-file=" +
-              destPath,"-client-port=" + primaryLocatorPort,"-client-bind-address=" + primaryLocatorHost);
+          destPath, "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
       snappyTest.executeProcess(pb2, logFile);
-    }
-    catch(Exception ex){
+    } catch (Exception ex) {
       throw new io.snappydata.test.util.TestException("Task createTableFromExtracteddDDL got exception " + ex.getMessage());
     }
 
@@ -206,17 +207,17 @@ public class DataExtractorToolTest extends SnappyTest {
     try {
       if (isStartClusterForCPDE) {
         File tempConfFile = null;
-        String cmd1 = " cat "+ orgName;
+        String cmd1 = " cat " + orgName;
         ProcessBuilder pb1 = new ProcessBuilder("/bin/bash", "-c", cmd1);
-        snappyTest.executeProcess(pb1,logFile1);
+        snappyTest.executeProcess(pb1, logFile1);
         FileInputStream fis = new FileInputStream(orgName);
         BufferedReader br = new BufferedReader(new InputStreamReader(fis));
         String str;
 
         tempConfFile = (File) SnappyBB.getBB().getSharedMap().get("SERVER_CONF");
-        String cmd2 = " cat "+ tempConfFile;
+        String cmd2 = " cat " + tempConfFile;
         ProcessBuilder pb2 = new ProcessBuilder("/bin/bash", "-c", cmd2);
-        snappyTest.executeProcess(pb2,logFile2);
+        snappyTest.executeProcess(pb2, logFile2);
         FileWriter fw1 = new FileWriter(tempConfFile, true);
         while ((str = br.readLine()) != null) {
           String strString = str + "\n";
@@ -226,10 +227,10 @@ public class DataExtractorToolTest extends SnappyTest {
         fw1.close();
         orgName.delete();
         orgName.createNewFile();
-        FileUtils.copyFile(tempConfFile,orgName);
-        String cmd3 = " cat "+ orgName;
+        FileUtils.copyFile(tempConfFile, orgName);
+        String cmd3 = " cat " + orgName;
         ProcessBuilder pb3 = new ProcessBuilder("/bin/bash", "-c", cmd3);
-        snappyTest.executeProcess(pb3,logFile3);
+        snappyTest.executeProcess(pb3, logFile3);
 
         deleteFiles(bkName);
         deleteFiles(tempConfFile);
@@ -244,14 +245,14 @@ public class DataExtractorToolTest extends SnappyTest {
         for (int i = 0; i < hostList.size(); i++) {
           String nodeName = String.valueOf(hostList.get(i));
           Log.getLogWriter().info("The nodeName is " + nodeName);
-          String nodeInfo = nodeName + nodeConfigInfo ;//+ " -locators = " + endpoints.get(0);
+          String nodeInfo = nodeName + nodeConfigInfo;//+ " -locators = " + endpoints.get(0);
           Log.getLogWriter().info("The nodeInfo is  " + nodeInfo);
           String nodeConfig = nodeInfo + "\n";
           fw.write(nodeConfig);
         }
         fw.close();
         SnappyBB.getBB().getSharedMap().put("SERVER_CONF", bkName);
-       // deleteFiles(bkName);
+        // deleteFiles(bkName);
       }
       Log.getLogWriter().info("Starting the cluster");
       startSnappyCluster();
@@ -265,25 +266,25 @@ public class DataExtractorToolTest extends SnappyTest {
     }
   }
 
-  public static void HydraTask_createDummyData(){
+  public static void HydraTask_createDummyData() {
     if (dataExtractorToolTest == null) {
       dataExtractorToolTest = new DataExtractorToolTest();
     }
     dataExtractorToolTest.createDummyData();
   }
 
-  public static void HydraTask_checkForException(){
+  public static void HydraTask_checkForException() {
     if (dataExtractorToolTest == null) {
       dataExtractorToolTest = new DataExtractorToolTest();
     }
     dataExtractorToolTest.checkForException();
   }
 
-  public void checkForException(){
+  public void checkForException() {
     boolean isOOME = false;
     if (SnappyBB.getBB().getSharedMap().containsKey("IS_OOME"))
-       isOOME=(Boolean)SnappyBB.getBB().getSharedMap().get("IS_OOME");
-    if(!isOOME) {
+      isOOME = (Boolean) SnappyBB.getBB().getSharedMap().get("IS_OOME");
+    if (!isOOME) {
       try {
         String dest = getCurrentDirPath() + File.separator + "checkException.log";
         File logFile = new File(dest);
@@ -295,7 +296,7 @@ public class DataExtractorToolTest extends SnappyTest {
         while ((line = br.readLine()) != null) {
           if (line.contains("jvmkill")) {
             SnappyBB.getBB().getSharedMap().put("IS_OOME", true);
-           // isOOME = true;
+            // isOOME = true;
             sleepForMs(60);
             HydraTask_stopCluster();
           }
@@ -307,27 +308,26 @@ public class DataExtractorToolTest extends SnappyTest {
     }
   }
 
-  public void createDummyData(){
-      boolean isOOME = false;
-      while(!isOOME) {
-        if (SnappyBB.getBB().getSharedMap().containsKey("IS_OOME"))
-          isOOME=(Boolean)SnappyBB.getBB().getSharedMap().get("IS_OOME");
-        if(isOOME) break;
-        HydraTask_executeSnappyJob();
-      }
-        Log.getLogWriter().info("The servers are down with OOME as isOOME = " + isOOME);
+  public void createDummyData() {
+    boolean isOOME = false;
+    while (!isOOME) {
+      if (SnappyBB.getBB().getSharedMap().containsKey("IS_OOME"))
+        isOOME = (Boolean) SnappyBB.getBB().getSharedMap().get("IS_OOME");
+      if (isOOME) break;
+      HydraTask_executeSnappyJob();
+    }
+    Log.getLogWriter().info("The servers are down with OOME as isOOME = " + isOOME);
   }
 
-  public void deleteFiles(File fileName){
-    try{
+  public void deleteFiles(File fileName) {
+    try {
       //delete the temp conf file created.
       if (fileName.delete()) {
         Log.getLogWriter().info(fileName.getName() + " is deleted!");
       } else {
-        Log.getLogWriter().info("Deleting the " +fileName+ " conf file operation failed.");
+        Log.getLogWriter().info("Deleting the " + fileName + " conf file operation failed.");
       }
-    }
-    catch(Exception ex) {
+    } catch (Exception ex) {
 
     }
   }
@@ -357,7 +357,7 @@ public class DataExtractorToolTest extends SnappyTest {
   }
 
   public ArrayList getQueryArr(String fileName) {
-    Log.getLogWriter().info("Inide getQueryArray");
+    Log.getLogWriter().info("Inside getQueryArray");
     Log.getLogWriter().info("File Name = " + fileName);
     ArrayList<String> queries = new ArrayList<String>();
     try {
