@@ -968,7 +968,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
          |$offsetTerm += ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)};""".stripMargin
     }
 
-    val fieldWritingCode = if (dataTypes.size <= codeSplitThresholdSize) {
+    val fieldWritingCode = if (dataTypes.size <= codeSplitThresholdSize || nestingLevel > 0) {
       dataTypes.zip(varsToWrite).zipWithIndex.map {
         case ((dt, expr), i) =>
           val variable = expr.value
@@ -1323,7 +1323,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
       }.mkString(" + ")
     }
 
-    (if (keysDataType.size <= codeSplitThresholdSize) {
+    (if (keysDataType.size <= codeSplitThresholdSize || nestingLevel > 0) {
       generateLengthCode(keyVars, keysDataType, nestingLevel, 0)
     } else {
       val methodFound = (methodName: String, groupSeq: Seq[(ExprCode, DataType)],
@@ -1454,7 +1454,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     }
     if (keyVars.length > 1) {
       val remainingElems = keysDataType.tail.zip(keyVars.tail)
-      if (remainingElems.size <= codeSplitThresholdSize) {
+      if (remainingElems.size <= codeSplitThresholdSize ) {
         s"$prefix$firstColumnHash${generateHashCodeCalcCode(remainingElems)}$suffix"
       } else {
         val methodFound = (methodName: String, groupSeq: Seq[(ExprCode, DataType)],
