@@ -9,8 +9,9 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf
   extractedDDLPath="/tmp/recover_ddls"
   extractedDataPath="/tmp/recover_data_parquet"
   dropTableQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dropTables.sql"
-  dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DMLQueriesForDE.sql"
-  ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/DDLQuery.sql"
+  dmlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dmlQueriesForDE.sql"
+  ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/ddlQuery.sql"
+  dmlOpsFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dmlOps.sql"
 
 /*
 io/snappydata/hydra/dataExtractorTool/dataExtractorWithMissingDiskStore.conf
