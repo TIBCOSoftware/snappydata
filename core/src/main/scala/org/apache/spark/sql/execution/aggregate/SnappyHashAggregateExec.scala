@@ -940,8 +940,7 @@ case class SnappyHashAggregateExec(
               """.stripMargin}.getOrElse("")}
            |${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
            |${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggsBits)}
-           |${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
-           |${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
+
            |${ if (cacheStoredAggNullBits) {
                  SHAMapAccessor.initNullBitsetCode(storedAggNullBitsTerm, numBytesForNullAggsBits)
                } else ""
@@ -1268,6 +1267,17 @@ case class SnappyHashAggregateExec(
       keysExpr, keysDataType, aggBuffDataTypes, dictionaryCode, dictionaryArrayTerm,
       aggFuncDependentOnGroupByKey)
 
+    // declare & initialize the buffer variables
+    val bufferVarsFromInitVars = byteBufferAccessor.aggregateBufferVars.zip(initVars).
+      zip(aggBuffDataTypes).map {
+      case ((bufferVarName, initExpr), dt) => ExprCode(
+        s"""
+           |boolean $bufferVarName${SHAMapAccessor.nullVarSuffix} = ${initExpr.isNull};
+           |${ctx.javaType(dt)} $bufferVarName = ${initExpr.value};""".stripMargin,
+        s"$bufferVarName${SHAMapAccessor.nullVarSuffix}", bufferVarName)
+    }
+    val bufferEvalFromInitVars = evaluateVariables(bufferVarsFromInitVars)
+
     val (stateArrayVarOpt, bufferVars) = byteBufferAccessor.getBufferVarsForUpdate(aggBuffDataTypes,
       byteBufferAccessor.aggregateBufferVars,
       byteBufferAccessor.currentOffSetForMapLookupUpdt,
@@ -1277,28 +1287,99 @@ case class SnappyHashAggregateExec(
     })
 
     val bufferEval = evaluateVariables(bufferVars)
-    val bufferVarsFromInitVars = byteBufferAccessor.aggregateBufferVars.zip(initVars).map {
-      case (bufferVarName, initExpr) => ExprCode(
-        s"""
-          |$bufferVarName${SHAMapAccessor.nullVarSuffix} = ${initExpr.isNull};
-          |$bufferVarName = ${initExpr.value};""".stripMargin,
-        s"$bufferVarName${SHAMapAccessor.nullVarSuffix}", bufferVarName)
-    }
-    val bufferEvalFromInitVars = evaluateVariables(bufferVarsFromInitVars)
+
+
     ctx.currentVars = bufferVars ++ input
     // pre-evaluate input variables used by child expressions and updateExpr
     val inputCodes = evaluateRequiredVariables(child.output,
       ctx.currentVars.takeRight(child.output.length),
       child.references ++ updateAttrs)
+
+
     val boundUpdateExpr = updateExpr.map(BindReferences.bindReference(_,
       inputAttr))
-    val subExprs = ctx.subexpressionEliminationForWholeStageCodegen(
-      boundUpdateExpr)
-    val effectiveCodes = subExprs.codes.mkString("\n")
-    val updateEvals = ctx.withSubExprEliminationExprs(subExprs.states) {
-      boundUpdateExpr.map(_.genCode(ctx))
-    }
 
+
+    val evaluateAggregateUpdate = if (aggBuffDataTypes.length <= codeSplitThresholdSize) {
+      val subExprs = ctx.subexpressionEliminationForWholeStageCodegen(
+        boundUpdateExpr)
+      val effectiveCodes = subExprs.codes.mkString("")
+      val updateEvals = ctx.withSubExprEliminationExprs(subExprs.states) {
+        boundUpdateExpr.map(_.genCode(ctx))
+      }
+      s"""
+         |$effectiveCodes
+         |// evaluate aggregate functions
+         |${evaluateVariables(updateEvals)}
+         |// generate update
+         |${byteBufferAccessor.generateUpdate(updateEvals, aggBuffDataTypes)}
+       """.stripMargin
+    } else {
+      // for each specific update expression identify the input vars & buffer variables
+      // to which it is dependent. those will become parameters to the function for evaluation
+
+
+      val booleanStateTransferVar = ctx.freshName("stateTransferBoolean")
+      ctx.addMutableState("boolean[]", booleanStateTransferVar,
+        s"$booleanStateTransferVar = new boolean[1];")
+
+      val funcParamVars = boundUpdateExpr.map(expr => expr.collect {
+        case br: BoundReference => (br.ordinal, br.dataType)
+      }.distinct.map{case(i, dt) => {
+        val tempExpr = ctx.currentVars(i)
+        val modExpr = if (tempExpr.isNull.isEmpty || tempExpr.isNull == "true"
+          || tempExpr.isNull == "false") {
+          val code = tempExpr.code
+          val tempName = ctx.freshName("isNull")
+          val boolCode = s"boolean $tempName = ${tempExpr.isNull};"
+          tempExpr.copy(isNull = tempName, code = s"$code \n $boolCode" )
+        } else tempExpr
+        modExpr -> dt}
+      })
+
+      val (codes, updtVars) = boundUpdateExpr.zip(funcParamVars).map {
+        case (singleBoundUpdtExpr, varsForUpdate) => val functName = ctx.freshName("evaluateUpdate")
+          val methodParams = varsForUpdate.map {
+            case (exprCode, dt) => s"${ctx.javaType(dt)} ${exprCode.value}," +
+              s" boolean ${exprCode.isNull}"
+          }.mkString("", ",", s", boolean[] $booleanStateTransferVar")
+          val singleUpdtExprC = {
+            val var1 = singleBoundUpdtExpr.genCode(ctx)
+            if (var1.isNull.isEmpty || var1.isNull == "true" ||
+              var1.isNull == "false"){
+              val tempBool = ctx.freshName("isNull")
+              val boolCode = s"boolean $tempBool = ${if (var1.isNull.isEmpty) "false" else var1.isNull};"
+              var1.copy(code = s"${var1.code} \n $boolCode", isNull = tempBool)
+            } else var1
+          }
+          val methodBody = s"${evaluateVariables(Seq(singleUpdtExprC))}"
+          ctx.addNewFunction(functName,
+            s"""
+               |private ${ctx.javaType(singleBoundUpdtExpr.dataType)} $functName($methodParams) {
+               | $methodBody
+               | $booleanStateTransferVar[0] = ${singleUpdtExprC.isNull};
+               | return ${singleUpdtExprC.value};
+               |}
+         """.stripMargin)
+          val args = varsForUpdate.map {
+            case (exprCode, _) => s"${exprCode.value}, ${exprCode.isNull}"
+          }.mkString("", ",", s", $booleanStateTransferVar")
+
+          s"""
+             |// revaluate the update vars to declare new boolean if not already done
+             |${evaluateVariables(varsForUpdate.map(_._1))}
+             |${ctx.javaType(singleBoundUpdtExpr.dataType)} ${singleUpdtExprC.value} = $functName($args);
+             |boolean ${singleUpdtExprC.isNull} = $booleanStateTransferVar[0];
+             |""".stripMargin -> singleUpdtExprC
+      }.unzip
+
+      s"""
+         |${codes.mkString("")}
+         |// generate update
+         |${byteBufferAccessor.generateUpdate(updtVars, aggBuffDataTypes)}
+       """.stripMargin
+
+    }
     // We first generate code to probe and update the hash map. If the probe is
     // successful, the corresponding buffer will hold buffer class object.
     // We try to do hash map based in-memory aggregation first. If there is not
@@ -1309,7 +1390,8 @@ case class SnappyHashAggregateExec(
     // them together for same key.
     s"""
        |$mapCode
-       |// initialization for buffer fields from the hashmap
+       |// declare buffer fields & initialize with default init values
+       |$bufferEvalFromInitVars
        |if (${byteBufferAccessor.keyExistedTerm}) {
        |  ${
             byteBufferAccessor.readNullBitsCode(byteBufferAccessor.
@@ -1319,18 +1401,13 @@ case class SnappyHashAggregateExec(
           |${stateArrayVarOpt.map(stateArrayVar => s"$stateArrayVar[0] = ${byteBufferAccessor.currentOffSetForMapLookupUpdt};").getOrElse("")}
           |$bufferEval
           |${stateArrayVarOpt.map(stateArrayVar => s"${byteBufferAccessor.currentOffSetForMapLookupUpdt} = (Long)$stateArrayVar[0];").getOrElse("")}
-       |} else {
-       |  $bufferEvalFromInitVars
        |}
        | // reset the  offset position to start of values for writing update
        |${byteBufferAccessor.currentOffSetForMapLookupUpdt} = ${byteBufferAccessor.valueOffsetTerm};
        | // common sub-expressions
        |$inputCodes
-       |$effectiveCodes
-       |// evaluate aggregate functions
-       |${evaluateVariables(updateEvals)}
-       |// generate update
-       |${byteBufferAccessor.generateUpdate(updateEvals, aggBuffDataTypes)}
+       |$evaluateAggregateUpdate
+
       """.stripMargin
   }
 

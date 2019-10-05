@@ -181,7 +181,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           val code =
             s"""
                |$varName = (${SHAMapAccessor.getObjectTypeForPrimitiveType(varDataType)})$funcName($stateArray,
-               | $nullBitTerm, $index, $vdBaseObjectTerm);
+               |$nullBitTerm, $index, $vdBaseObjectTerm);
                |$nullVar = (Boolean)$stateArray[1];
              """.stripMargin
           ExprCode(code, nullVar, varName)
