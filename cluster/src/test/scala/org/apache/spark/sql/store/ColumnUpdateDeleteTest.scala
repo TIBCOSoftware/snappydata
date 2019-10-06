@@ -62,7 +62,7 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     conf.set(io.snappydata.Property.TestDisableCodeGenFlag.name, "true")
     conf.set(io.snappydata.Property.UseOptimizedHashAggregateForSingleKey.name, "true")
     conf.set(io.snappydata.Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2")
-    conf.set(io.snappydata.Property.TestCodeSplitThresholdInSHA.name, "2")
+    conf.set(io.snappydata.Property.TestCodeSplitThresholdInSHA.name, "5")
     conf
   }
 

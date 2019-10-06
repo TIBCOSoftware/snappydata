@@ -52,7 +52,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
   val sparkSession = SparkSession.builder().
     config(io.snappydata.Property.TestDisableCodeGenFlag.name, "true").
     config(io.snappydata.Property.UseOptimizedHashAggregateForSingleKey.name, "true").
-    config(io.snappydata.Property.TestCodeSplitThresholdInSHA.name, "2").
+    config(io.snappydata.Property.TestCodeSplitThresholdInSHA.name, "5").
     config(io.snappydata.Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2").
 
     master("local[*]").getOrCreate()

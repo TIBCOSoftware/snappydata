@@ -97,7 +97,7 @@ object LocalSparkConf {
         .set("snappydata.sql.planCaching", random.nextBoolean().toString)
         .set(Property.TestDisableCodeGenFlag.name , "true")
         .set(Property.UseOptimizedHashAggregateForSingleKey.name, "true")
-        .set(Property.TestCodeSplitThresholdInSHA.name, "2")
+        .set(Property.TestCodeSplitThresholdInSHA.name, "5")
         .set(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2")
         .setAppName(getClass.getName)
     if (addOn != null) {
