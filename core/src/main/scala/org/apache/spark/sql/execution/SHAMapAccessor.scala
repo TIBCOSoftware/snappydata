@@ -856,7 +856,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
         }
     }.getOrElse(lookUpInsertCode)
 
-    s"""|$valueInitCode
+    s"""
         |${SHAMapAccessor.resetNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
         |${SHAMapAccessor.resetNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
           // evaluate input row vars
