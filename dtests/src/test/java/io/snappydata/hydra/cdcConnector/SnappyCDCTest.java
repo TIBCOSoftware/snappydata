@@ -313,8 +313,10 @@ public class SnappyCDCTest extends SnappyTest {
         String tableName = tableArr[i];
         String cntQry = "SELECT COUNT(*) FROM " + tableName;
         ResultSet rs3 = con.createStatement().executeQuery(cntQry);
-        while (rs3.next())
+        while (rs3.next()) {
           count = rs3.getInt(1);
+          Log.getLogWriter().info("SP: The tableName = " + tableName + " count = " + count);
+        }
         if(!tableCntMap.containsKey(tableName)) //To avoid overwriting the existing key(table)
           tableCntMap.put(tableName, count);
         rs3.close();
