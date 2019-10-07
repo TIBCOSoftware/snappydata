@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,13 +21,12 @@ import io.snappydata.SnappyFunSuite
 
 class PooledKryoSerializerSuite extends SnappyFunSuite {
 
-  test("Test borrow-reset-release"){
-    //Borrow from one thread
+  test("Test borrow-reset-release") {
+    // Borrow from one thread
     val serzr = KryoSerializerPool.borrow()
     // Other thread might reset the pool by resetting the setDefaultClassLoader
     KryoSerializerPool.clear()
     // The 1st thread should not see any problem
     KryoSerializerPool.release(serzr)
   }
-
 }

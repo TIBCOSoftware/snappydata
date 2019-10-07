@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,25 +17,13 @@
 package io.snappydata
 
 import java.io.File
+import java.net.URLClassLoader
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
-import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 
 trait ToolsCallback {
 
-  def invokeLeadStartAddonService(sc: SparkContext): Unit
-
-  def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
-      partitionColumnAliases: Seq[Seq[Attribute]],
-      numPartitions: Int, numBuckets: Int, tableBuckets: Int): Partitioning
-
-  def checkOrderlessHashPartitioning(partitioning: Partitioning): Option[
-      (Seq[Expression], Seq[Seq[Attribute]], Int, Int, Int)]
-
-  def updateUI(scUI: Option[Any]): Unit // Option[SparkUI] is expected
-
-  def removeAddedJar(sc: SparkContext, jarName : String): Unit
+  def updateUI(sc: SparkContext): Unit
 
   /**
    * Callback to spark Utils to fetch file
@@ -54,10 +42,37 @@ trait ToolsCallback {
   def doFetchFile(
       url: String,
       targetDir: File,
-      filename: String) : File
+      filename: String): File
 
   def setSessionDependencies(sparkContext: SparkContext,
-      appName : String,
-      classLoader: ClassLoader): Unit = {
+      appName: String,
+      classLoader: ClassLoader, addAllJars: Boolean): Unit = {
   }
+
+  def addURIs(alias: String, jars: Array[String],
+      deploySql: String, isPackage: Boolean = true): Unit
+
+  def removeURIs(uris: Array[String], isPackage: Boolean = true): Unit
+
+  def addURIsToExecutorClassLoader(jars: Array[String]): Unit
+
+  def removeURIsFromExecutorClassLoader(jars: Array[String]): Unit
+
+  def removeFunctionJars(args: Array[String]): Unit
+
+  def getAllGlobalCmnds: Array[String]
+
+  def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]]
+
+  def removePackage(alias: String): Unit
+
+  def setLeadClassLoader(): Unit
+
+  def getLeadClassLoader: URLClassLoader
+
+  /**
+   * Check permission to write to given schema for a user. Returns the normalized user or
+   * LDAP group name of the schema owner (or passed user itself if security is disabled).
+   */
+  def checkSchemaPermission(schema: String, currentUser: String): String
 }

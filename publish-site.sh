@@ -8,6 +8,7 @@ API_DOCS_DIR="build-artifacts/scala-2.11/docs"
 
 if [ ! -d "${API_DOCS_DIR}" ]; then
   echo "API Docs folder ${API_DOCS_DIR} does not exist. Can't Publish."
+  echo "Please check if you have run the gradle task docs."
   exit 1
 fi
 
@@ -30,7 +31,7 @@ do
 done
 
 ## Remove the lines till toc and then copy that as index.md
-index_start_line=`grep -n '## Introduction' ./docs/GettingStarted.md | cut -d':' -f1`
+index_start_line=`grep -n '# Introduction' ./docs/GettingStarted.md | cut -d':' -f1`
 echo LINE START $index_start_line
 
 if [ ! -z ${index_start_line} ]; then
@@ -44,7 +45,7 @@ fi
 MKDOCS_EXISTS=`which mkdocs`
 
 if [ -z ${MKDOCS_EXISTS} ]; then
-  echo "Install mkdocs...exiting"
+  echo "Please install MkDocs (www.mkdocs.org/#installation) before publishing the docs. Exiting."
   exit 1
 fi
 
@@ -53,11 +54,13 @@ fi
 mkdocs build --clean
 
 # Copy the generated scala docs inside the site folder. 
-mkdir site/apidocs
+mkdir -p site/apidocs
 cp -R build-artifacts/scala-2.11/docs/* site/apidocs/
+mkdir -p site/sql_functions
+cp -R spark/sql/site/* site/sql_functions/
 
 #mkdocs gh-deploy
 
 # remove extra files added to docs
 #rm ./docs/index.md
-mkdocs serve
+mkdocs serve $@

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,60 +17,41 @@
 
 package io.snappydata
 
-import scala.collection.concurrent.TrieMap
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
+import javax.annotation.concurrent.GuardedBy
+
+import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.language.implicitConversions
-import scala.util.control.Breaks._
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.CancelException
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{MemberStatistics, SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
 
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkContext}
 
 trait TableStatsProviderService extends Logging {
 
   @volatile
-  private var tableSizeInfo = Map.empty[String, SnappyRegionStats]
+  protected var tableSizeInfo = Map.empty[String, SnappyRegionStats]
+  private var externalTableSizeInfo = Map.empty[String, SnappyExternalTableStats]
   @volatile
   private var indexesInfo = Map.empty[String, SnappyIndexStats]
-  protected val membersInfo: TrieMap[String, mutable.Map[String, Any]] =
-    TrieMap.empty[String, mutable.Map[String, Any]]
+  protected val membersInfo: mutable.Map[String, MemberStatistics] =
+    new ConcurrentHashMap[String, MemberStatistics](8, 0.7f, 1).asScala
 
-  private var _snc: Option[SnappyContext] = None
-
-  protected def snc: SnappyContext = synchronized {
-    _snc.getOrElse {
-      val context = SnappyContext()
-      _snc = Option(context)
-      context
-    }
-  }
-
-  var memberStatsUpdater: Option[Thread] = None
-
-  protected def getMemberStatsUpdater: Thread = synchronized {
-
-    if (memberStatsUpdater.isEmpty ||
-        memberStatsUpdater.get.getState == Thread.State.TERMINATED) {
-      memberStatsUpdater = {
-        val th = new Thread(new Runnable() {
-          def run() {
-            // update membersInfo
-            fillAggregatedMemberStatsOnDemand()
-          }
-        })
-        Option(th)
-      }
-    }
-    memberStatsUpdater.get
-  }
+  @GuardedBy("this")
+  protected var memberStatsFuture: Option[Future[Unit]] = None
+  protected val waitDuration = Duration(5000L, TimeUnit.MILLISECONDS)
 
   @volatile protected var doRun: Boolean = false
   @volatile private var running: Boolean = false
 
-  def start(sc: SparkContext): Unit
   def start(sc: SparkContext, url: String): Unit
 
   protected def aggregateStats(): Unit = synchronized {
@@ -79,13 +60,15 @@ trait TableStatsProviderService extends Logging {
         val prevTableSizeInfo = tableSizeInfo
         running = true
         try {
-          val (tableStats, indexStats) = getAggregatedStatsOnDemand
+          val (tableStats, indexStats, extTableStats) = getAggregatedStatsOnDemand
           tableSizeInfo = tableStats
           indexesInfo = indexStats // populating indexes stats
+          externalTableSizeInfo = extTableStats
 
           // Commenting this call to avoid periodic refresh of members stats
           // get members details
           // fillAggregatedMemberStatsOnDemand()
+          val memInfo = getMembersStatsOnDemand
 
         } finally {
           running = false
@@ -105,81 +88,53 @@ trait TableStatsProviderService extends Logging {
       }
     } catch {
       case _: CancelException => // ignore
-      case e: Exception => if (!e.getMessage.contains(
-        "com.gemstone.gemfire.cache.CacheClosedException")) {
-        logWarning(e.getMessage, e)
-      } else {
-        logError(e.getMessage, e)
-      }
+      case e: Exception =>
+        val msg = if (e.getMessage ne null) e.getMessage else e.toString
+        if (!msg.contains("com.gemstone.gemfire.cache.CacheClosedException")) {
+          logWarning(msg, e)
+        } else {
+          logError(msg, e)
+        }
     }
   }
 
   def fillAggregatedMemberStatsOnDemand(): Unit = {
   }
 
-  def getMembersStatsFromService: mutable.Map[String, mutable.Map[String, Any]] = {
+  def getMembersStatsOnDemand: mutable.Map[String, MemberStatistics] = {
+    // wait for updated stats for sometime else return the previous information
+    val future = synchronized(memberStatsFuture match {
+      case Some(f) => f
+      case None =>
+        val f = Future(fillAggregatedMemberStatsOnDemand())
+        memberStatsFuture = Some(f)
+        f
+    })
+    try {
+      logDebug(s"Obtaining updated Members Statistics. Waiting for $waitDuration")
+      Await.result(future, waitDuration)
+      synchronized(memberStatsFuture = None)
+    } catch {
+      case NonFatal(_) => // ignore timeout exception and return current map
+        logWarning("Obtaining updated Members Statistics is taking longer than expected time.")
+    }
     membersInfo
-  }
-
-  def getMembersStatsOnDemand: mutable.Map[String, mutable.Map[String, Any]] = {
-    // fillAggregatedMemberStatsOnDemand()
-    // membersInfo
-
-    var infoToBeReturned: mutable.Map[String, mutable.Map[String, Any]] =
-      TrieMap.empty[String, mutable.Map[String, Any]]
-    val prevMembersInfo = membersInfo.synchronized{membersInfo}
-    val waitTime: Int = 500
-
-    // get member stats updater thread
-    val msUpdater = getMemberStatsUpdater
-    if (!msUpdater.isAlive) {
-      // start updater thread to update members stats
-      msUpdater.start()
-    }
-
-    val endTimeMillis = System.currentTimeMillis() + 5000
-    if (msUpdater.isAlive) {
-      breakable {
-        while (msUpdater.isAlive) {
-          if (System.currentTimeMillis() > endTimeMillis) {
-            logWarning("Obtaining updated Members Statistics is taking longer than expected time..")
-            // infoToBeReturned = prevMembersInfo
-            break
-          }
-          try {
-            // Wait
-            logDebug("Obtaining updated Members Statistics in progress.." +
-                "Waiting for " + waitTime + " ms")
-            Thread.sleep(waitTime)
-          } catch {
-            case e: InterruptedException => logWarning("InterruptedException", e)
-          }
-        }
-      }
-
-      if (msUpdater.getState == Thread.State.TERMINATED) {
-        // Thread is terminated so assigning updated member info
-        infoToBeReturned = membersInfo
-      } else {
-        // Thread is still running so assigning last updated member info
-        logWarning("Setting last updated member statistics snapshot..")
-        infoToBeReturned = prevMembersInfo
-      }
-    } else {
-      // Thread is terminated so assigning updated member info
-      infoToBeReturned = membersInfo
-    }
-
-    infoToBeReturned
   }
 
   def stop(): Unit = {
     doRun = false
     // wait for it to end for sometime
     synchronized {
-      if (running) wait(20000)
+      if (running) wait(10000)
     }
-    _snc = None
+  }
+
+  def getMembersStatsFromService: mutable.Map[String, MemberStatistics] = {
+    if (this.membersInfo.isEmpty) {
+      // force run
+      aggregateStats()
+    }
+    this.membersInfo
   }
 
   def getIndexesStatsFromService: Map[String, SnappyIndexStats] = {
@@ -195,50 +150,68 @@ trait TableStatsProviderService extends Logging {
     indexesInfo
   }
 
-  def getTableSizeStats: Map[String, SnappyRegionStats] = {
-    // TODO: [SachinK] Below conditional check can be commented to avoid
-    // forced refresh of stats on every call (tableSizeInfo could be empty).
-    val tableSizes = this.tableSizeInfo
-    if (tableSizes.isEmpty) {
-      // force run
-      aggregateStats()
-    }
+  def refreshAndGetTableSizeStats: Map[String, SnappyRegionStats] = {
+    // force run
+    aggregateStats()
     tableSizeInfo
   }
 
   def getTableStatsFromService(
       fullyQualifiedTableName: String): Option[SnappyRegionStats] = {
-    val tableSizes = this.tableSizeInfo
-    if (tableSizes.isEmpty || !tableSizes.contains(fullyQualifiedTableName)) {
+    if (!this.tableSizeInfo.contains(fullyQualifiedTableName)) {
       // force run
       aggregateStats()
     }
     tableSizeInfo.get(fullyQualifiedTableName)
   }
 
+  def getAllTableStatsFromService: Map[String, SnappyRegionStats] = {
+    this.tableSizeInfo
+  }
+
+  def getExternalTableStatsFromService(
+      fullyQualifiedTableName: String): Option[SnappyExternalTableStats] = {
+    if (!this.externalTableSizeInfo.contains(fullyQualifiedTableName)) {
+      // force run
+      aggregateStats()
+    }
+    externalTableSizeInfo.get(fullyQualifiedTableName)
+  }
+
+  def getAllExternalTableStatsFromService: Map[String, SnappyExternalTableStats] = {
+    this.externalTableSizeInfo
+  }
+
   def getAggregatedStatsOnDemand: (Map[String, SnappyRegionStats],
-      Map[String, SnappyIndexStats]) = {
-    val snc = this.snc
-    if (snc == null) return (Map.empty, Map.empty)
-    val (tableStats, indexStats) = getStatsFromAllServers()
+      Map[String, SnappyIndexStats], Map[String, SnappyExternalTableStats]) = {
+    if (!doRun) return (Map.empty, Map.empty, Map.empty)
+    val (tableStats, indexStats, externalTableStats) = getStatsFromAllServers()
 
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
+    val aggregatedExtTableStats = scala.collection.mutable.Map[String, SnappyExternalTableStats]()
     val aggregatedStatsIndex = scala.collection.mutable.Map[String, SnappyIndexStats]()
-    if (!doRun) return (Map.empty, Map.empty)
+    if (!doRun) return (Map.empty, Map.empty, Map.empty)
     // val samples = getSampleTableList(snc)
     tableStats.foreach { stat =>
-      aggregatedStats.get(stat.getRegionName) match {
-        case Some(oldRecord) =>
-          aggregatedStats.put(stat.getRegionName, oldRecord.getCombinedStats(stat))
-        case None =>
-          aggregatedStats.put(stat.getRegionName, stat)
-      }
+        if (!stat.getTableName.contains("SNAPPYSYS_INTERNAL____SINK_STATE_TABLE")) {
+          aggregatedStats.get(stat.getTableName) match {
+            case Some(oldRecord) =>
+              aggregatedStats.put(stat.getTableName, oldRecord.getCombinedStats(stat))
+            case None =>
+              aggregatedStats.put(stat.getTableName, stat)
+          }
+        }
     }
 
     indexStats.foreach { stat =>
       aggregatedStatsIndex.put(stat.getIndexName, stat)
     }
-    (Utils.immutableMap(aggregatedStats), Utils.immutableMap(aggregatedStatsIndex))
+    externalTableStats.foreach { stat =>
+      aggregatedExtTableStats.put(stat.getTableFullyQualifiedName, stat)
+    }
+    (Utils.immutableMap(aggregatedStats),
+        Utils.immutableMap(aggregatedStatsIndex),
+        Utils.immutableMap(aggregatedExtTableStats))
   }
 
   /*
@@ -248,11 +221,11 @@ trait TableStatsProviderService extends Logging {
           .getDataSourceTables(Seq(ExternalTableType.Sample)).map(_.toString())
     } catch {
       case tnfe: org.apache.spark.sql.TableNotFoundException =>
-        Seq.empty[String]
+        Nil
     }
   }
   */
 
   def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
-      Seq[SnappyIndexStats])
+      Seq[SnappyIndexStats], Seq[SnappyExternalTableStats])
 }

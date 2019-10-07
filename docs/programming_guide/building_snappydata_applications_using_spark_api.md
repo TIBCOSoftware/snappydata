@@ -5,8 +5,8 @@
 Other than `create` and `drop` table, rest are all based on the Spark SQL Data Source APIs.
 
 ### Scala
-```scala
- val props = Map("BUCKETS" -> "2")// Number of partitions to use in the SnappyStore
+```pre
+ val props = Map("BUCKETS" -> "8")// Number of partitions to use in the SnappyStore
 
  case class Data(COL1: Int, COL2: Int, COL3: Int)
 
@@ -30,9 +30,9 @@ Other than `create` and `drop` table, rest are all based on the Spark SQL Data S
 ```
 
 ### Java
-```Java
+```pre
  Map<String, String> props1 = new HashMap<>();
- props1.put("buckets", "11");
+ props1.put("buckets", "16");
 
  JavaRDD<Row> jrdd = jsc.parallelize(Arrays.asList(
   RowFactory.create(1, 2, 3),
@@ -69,7 +69,7 @@ Other than `create` and `drop` table, rest are all based on the Spark SQL Data S
 
 ### Python
 
-```Python
+```pre
 from pyspark.sql.types import *
 
 data = [(1,2,3),(7,8,9),(9,2,3),(4,2,3),(5,6,7)]
@@ -84,7 +84,7 @@ dataDF = snappy.createDataFrame(rdd, schema)
 snappy.dropTable("COLUMN_TABLE", True)
 #"column" is the table format (that is row or column)
 #dataDF.schema provides the schema for table
-snappy.createTable("COLUMN_TABLE", "column", dataDF.schema, True, buckets="11")
+snappy.createTable("COLUMN_TABLE", "column", dataDF.schema, True, buckets="16")
 
 #append dataDF into the table
 dataDF.write.insertInto("COLUMN_TABLE")
@@ -99,7 +99,7 @@ For more details about the properties ('props1' map in above example) and `creat
 
 ## Create Row Tables using API, Update the Contents of Row Table
 
-```scala
+```pre
 // create a row format table called ROW_TABLE
 snappy.dropTable("ROW_TABLE", ifExists = true)
 // "row" is the table format
@@ -135,7 +135,7 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
 
 
 ### Scala
-```scala
+```pre
  import org.apache.spark.sql._
  import org.apache.spark.streaming._
  import scala.collection.mutable
@@ -169,7 +169,7 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
 ```
 
 ### Java
-```java
+```pre
  StructType schema = new StructType(new StructField[]{
      new StructField("id", DataTypes.IntegerType, false, Metadata.empty()),
      new StructField("text", DataTypes.StringType, false, Metadata.empty())
@@ -209,7 +209,7 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
 ```
 
 ### Python
-```python
+```pre
 from pyspark.streaming.snappy.context import SnappyStreamingContext
 from pyspark.sql.types import *
 
@@ -234,7 +234,6 @@ schemadstream.foreachDataFrame(lambda df: saveFunction(df))
 snsc.start()
 time.sleep(1)
 snsc.sql("select count(*) from streamingExample").show()
-
 ```
 
 <!--

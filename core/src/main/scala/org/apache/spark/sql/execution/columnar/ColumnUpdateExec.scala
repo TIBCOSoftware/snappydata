@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,16 +17,19 @@
 
 package org.apache.spark.sql.execution.columnar
 
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
+
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaEncoder
-import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoder, ColumnStatsSchema}
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.store.{CompressionCodecId, StoreUtils}
 import org.apache.spark.sql.types.StructType
 
 /**
@@ -36,13 +39,19 @@ import org.apache.spark.sql.types.StructType
 case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression], numBuckets: Int,
     isPartitioned: Boolean, tableSchema: StructType, externalStore: ExternalStore,
-    relation: Option[DestroyRelation], updateColumns: Seq[Attribute],
+    columnRelation: BaseColumnFormatRelation, updateColumns: Seq[Attribute],
     updateExpressions: Seq[Expression], keyColumns: Seq[Attribute],
     connProps: ConnectionProperties, onExecutor: Boolean) extends ColumnExec {
 
   assert(updateColumns.length == updateExpressions.length)
 
-  private lazy val schemaAttributes = tableSchema.toAttributes
+  override def relation: Option[DestroyRelation] = Some(columnRelation)
+
+  val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(
+    columnRelation.getCompressionCodec)
+
+  private val schemaAttributes = tableSchema.toAttributes
+
   /**
    * The indexes below are the final ones that go into ColumnFormatKey(columnIndex).
    * For deltas the convention is to use negative values beyond those available for
@@ -56,17 +65,24 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     Utils.fieldIndex(schemaAttributes, a.name,
       sqlContext.conf.caseSensitiveAnalysis), hierarchyDepth = 0)).toArray
 
+  @transient private var _tableToUpdateIndex: IntObjectHashMap[Integer] = _
+
+  /**
+   * Map from table column (0 based) to index in updateColumns.
+   */
+  private def tableToUpdateIndex: IntObjectHashMap[Integer] = {
+    if (_tableToUpdateIndex ne null) return _tableToUpdateIndex
+    val m = new IntObjectHashMap[Integer](updateIndexes.length)
+    for (i <- updateIndexes.indices) {
+      m.put(ColumnDelta.tableColumnIndex(updateIndexes(i)) - 1, i)
+    }
+    _tableToUpdateIndex = m
+    _tableToUpdateIndex
+  }
+
   override protected def opType: String = "Update"
 
   override def nodeName: String = "ColumnUpdate"
-
-  // Require per-partition sort on batchId+ordinal because deltas are accumulated for
-  // consecutive batchIds+ordinals else it will  be very inefficient for bulk updates
-  // (e.g. for putInto). BatchId attribute is always third last in the keyColumns
-  // while ordinal (index of row in the batch) is the one before that.
-  override def requiredChildOrdering: Seq[Seq[SortOrder]] =
-  Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 3)),
-    StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 4))))
 
   override lazy val metrics: Map[String, SQLMetric] = {
     if (onExecutor) Map.empty
@@ -77,18 +93,19 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
         "number of updates to column batches"))
   }
 
-  override def simpleString: String =
-    s"${super.simpleString} update: columns=$updateColumns expressions=$updateExpressions"
+  override def simpleString: String = s"${super.simpleString} update: columns=$updateColumns " +
+      s"expressions=$updateExpressions compression=$compressionCodec"
 
   @transient private var batchOrdinal: String = _
   @transient private var finishUpdate: String = _
   @transient private var updateMetric: String = _
   @transient protected var txId: String = _
 
-  override protected def doProduce(ctx: CodegenContext): String = {
+  override protected def delayRollover: Boolean = true
 
+  override protected def doProduce(ctx: CodegenContext): String = {
     val sql = new StringBuilder
-    sql.append("UPDATE ").append(resolvedName).append(" SET ")
+    sql.append("UPDATE ").append(quotedName(resolvedName, escapeQuotes = true)).append(" SET ")
     JdbcExtendedUtils.fillColumnsClause(sql, updateColumns.map(_.name),
       escapeQuotes = true, separator = ", ")
     sql.append(" WHERE ")
@@ -132,6 +149,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
 
     val numColumns = updateColumns.length
     val deltaEncoderClass = classOf[ColumnDeltaEncoder].getName
+    val encoderClass = classOf[ColumnEncoder].getName
     val columnBatchClass = classOf[ColumnBatch].getName
 
     ctx.addMutableState(s"$deltaEncoderClass[]", deltaEncoders, "")
@@ -196,21 +214,62 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       val isNull = ctx.freshName("isNull")
       val field = ctx.freshName("field")
       val dataType = col.dataType
-      val encoderTerm = s"$deltaEncoders[$i]"
+      val encoderTerm = ctx.freshName("deltaEncoder")
+      val realEncoderTerm = s"${encoderTerm}_realEncoder"
       val cursorTerm = s"$cursors[$i]"
       val ev = updateInput(i)
       ctx.addNewFunction(function,
         s"""
            |private void $function(int $ordinal, int $ordinalIdVar,
            |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
+           |  final $deltaEncoderClass $encoderTerm = $deltaEncoders[$i];
+           |  final $encoderClass $realEncoderTerm = $encoderTerm.getRealEncoder();
            |  $encoderTerm.setUpdatePosition($ordinalIdVar);
-           |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, encoderTerm,
-                cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
+           |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, realEncoderTerm,
+                encoderTerm, cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
            |}
         """.stripMargin)
       // code for invoking the function
       s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
     }.mkString("\n")
+    // Old code(Keeping the comment for better understanding)
+    // Write the delta stats row for all table columns at the end of a batch.
+    // Columns that have not been updated will write nulls for all three stats
+    // columns so this costs 3 bits per non-updated column (worst case of say
+    // 100 column table will be ~38 bytes).
+
+    // New Code : Stats rows are written as UnsafeRow. Unsafe row irrespective
+    // of nullability keeps nullbits.
+    // So if 100 columns are  there stats row will contain 100 * 3 and UnsafeRow will contain
+    // 300 nullbits plus bits required for 8 bytes word allignment. Hence setting unused columns
+    // as null does not really saves much.
+
+    // These nullbits are set based on platform endianness. SD ColumnFormatValue
+    // assumes LITTLE_ENDIAN bytes. However, Unsafe row itself does not force any endianness
+    // and picks up from the platform. Hence a lower byte of the bit set  can be represented as
+    // [11111110]. The 0th bit is for batch count which can never be null.
+    // This causes SD ColumnFormatValue to understand stats row as a compressed byte
+    // array( as first int is 1, hence -1 which after taking a negative
+    // equals to 1 i.e LZ4 compression codec id ).
+    // Hence setting each 3rd bit( null count stats) with not null flag. This will never cause
+    // the word to be read as negative number.
+    val allNullsExprs = Seq(ExprCode("", "true", ""),
+      ExprCode("", "true", ""), ExprCode("", "false", "-1"))
+    val (statsSchema, stats) = tableSchema.indices.map { i =>
+      val field = tableSchema(i)
+      tableToUpdateIndex.get(i) match {
+        case null =>
+          // write null for unchanged columns apart from null count field (by this update)
+          (ColumnStatsSchema(field.name, field.dataType,
+            nullCountNullable = false).schema, allNullsExprs)
+        case u => ColumnWriter.genCodeColumnStats(ctx, field,
+          s"$deltaEncoders[$u].getRealEncoder()")
+      }
+    }.unzip
+    // GenerateUnsafeProjection will automatically split stats expressions into separate
+    // methods if required so no need to add separate functions explicitly.
+    // Count is hardcoded as zero which will change for "insert" index deltas.
+    val statsEv = ColumnWriter.genStatsRow(ctx, "0", stats, statsSchema)
     ctx.addNewFunction(finishUpdate,
       s"""
          |private void $finishUpdate(long batchId, int bucketId, int numRows) {
@@ -227,13 +286,14 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |    for (int $index = 0; $index < $numColumns; $index++) {
          |      buffers[$index] = $deltaEncoders[$index].finish($cursors[$index], $lastNumRows);
          |    }
-         |    // TODO: SW: delta stats row (can have full limits for those columns)
-         |    // for now put dummy bytes in delta stats row
+         |    // create delta statistics row
+         |    ${statsEv.code}
+         |    // store the delta column batch
          |    final $columnBatchClass columnBatch = $columnBatchClass.apply(
-         |        $batchOrdinal, buffers, new byte[] { 0, 0, 0, 0 }, $deltaIndexes);
+         |        $batchOrdinal, buffers, ${statsEv.value}.getBytes(), $deltaIndexes);
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
-         |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch,
-         |        $lastBucketId, $lastColumnBatchId, -1, new scala.Some($connTerm));
+         |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch, $lastBucketId,
+         |        $lastColumnBatchId, -1, ${compressionCodec.id}, new scala.Some($connTerm));
          |    $result += $batchOrdinal;
          |    ${if (updateMetric eq null) "" else s"$updateMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoders();

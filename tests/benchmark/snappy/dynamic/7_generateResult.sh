@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 source PerfRun.conf
 
-directory=$outputLocation/$(date "+%Y.%m.%d-%H.%M.%S")_$dataSize$queries
-mkdir $directory
+directory=$outputLocation/GeneratedResults/$(date "+%Y.%m.%d-%H.%M.%S")
+mkdir -p $directory
+mkdir -p $directory/conf
 
+cp PerfRun.conf $directory/
 cp $leadDir/* $directory/
 
 latestProp=$directory/latestProp.props
@@ -21,6 +23,9 @@ cd ../spark-jobserver
 echo spark-jobserver = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestProp
 cd $SnappyData/../../../tests/benchmark/snappy/dynamic
 
+cd $SnappyData/conf
+cp leads locators servers *.properties $directory/conf/
+
 echo SPARK_PROPERTIES = $sparkProperties >> $latestProp
 echo SPARK_SQL_PROPERTIES = $sparkSqlProperties >> $latestProp
 echo ServerMemory = $serverMemory >> $latestProp
@@ -35,17 +40,11 @@ echo WarmUp = $WarmupRuns >> $latestProp
 echo AverageRuns = $AverageRuns >> $latestProp
 echo LOCATOR = $locator >> $latestProp
 echo LEAD = $leads >> $latestProp
+
 for element in "${servers[@]}";
   do
        echo SERVERS = $element >> $latestProp
   done
-
-
-for i in $directory/*.out
-do
-   cat $latestProp >> $i
-done
-
 
 
 echo "******************Performance Result Generated*****************"

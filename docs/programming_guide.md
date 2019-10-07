@@ -1,10 +1,11 @@
 # Programming Guide
+
 SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the higher level APIs (like Spark ML). 
 All SnappyData managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.</br>
 It is therefore recommended that you understand the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) 
-and the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes). You can also store and manage arbitrary RDDs (or even Spark DataSets) through the implicit or explicit transformation to a DataFrame. While the complete SQL support is still evolving, the supported SQL is much richer than SparkSQL. The extension SQL supported by the SnappyStore can be referenced [here](#markdown_link_row_and_column_tables).
+and the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes). You can also store and manage arbitrary RDDs (or even Spark DataSets) through the implicit or explicit transformation to a DataFrame. While the complete SQL support is still evolving, the supported SQL is much richer than SparkSQL. The extension SQL supported by the SnappyStore can be referenced [here](/sql_reference.md).
 
-In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. 
+In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters.
 Data in tables is primarily managed in-memory with one or more consistent copies across machines or racks, but it can also be reliably managed on disk.
 
 The following topics are covered in this section:
@@ -20,8 +21,6 @@ The following topics are covered in this section:
 * [Using the Spark Shell and spark-submit](programming_guide/using_the_spark_shell_and_spark-submit.md)
 
 * [Working with Hadoop YARN Cluster Manager](programming_guide/working_with_hadoop_yarn_cluster_manager.md)
-
-* [Using Transactions](programming_guide/using_transactions.md)
 
 * [Using JDBC with SnappyData](programming_guide/using_jdbc_with_snappydata.md)
 

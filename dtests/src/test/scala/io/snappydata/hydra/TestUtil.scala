@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -33,16 +33,18 @@ object TestUtil {
   validation has failed.
   */
   def assertJoin(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, pw:
-  PrintWriter,sqlContext: SQLContext): Boolean = {
+  PrintWriter, sqlContext: SQLContext, skipNumRowsValidation: Boolean): Boolean = {
     var hasValidationFailed = false
     snc.sql("set spark.sql.crossJoin.enabled = true")
-    val df = snc.sql(sqlString)
-    pw.println(s"No. rows in resultset for join query ${queryNum} is : ${df.count} for ${tableType} table")
-    if (df.count() != numRows) {
-      pw.println(s"Result mismatch for join query ${queryNum} : found ${df.count} rows but expected ${numRows} rows.")
-      hasValidationFailed = true
+    if (!skipNumRowsValidation) {
+      val df = snc.sql(sqlString)
+      pw.println(s"No. rows in resultset for join query ${queryNum} is : ${df.count} for ${tableType} table")
+      if (df.count() != numRows) {
+        pw.println(s"Result mismatch for join query ${queryNum} : found ${df.count} rows but expected ${numRows} rows.")
+        hasValidationFailed = true
+      }
+      pw.flush()
     }
-    pw.flush()
     if (validateFullResultSet)
       hasValidationFailed = assertValidateFullResultSet(snc, sqlString, queryNum, pw, sqlContext,
         hasValidationFailed)
@@ -58,15 +60,18 @@ object TestUtil {
    validation has failed.
    */
   def assertQuery(snc: SnappyContext, sqlString: String, numRows: Int, queryNum: String, pw:
-  PrintWriter, sqlContext: SQLContext): Boolean = {
+  PrintWriter, sqlContext: SQLContext, skipNumRowsValidation: Boolean): Boolean = {
+
     var hasValidationFailed = false
-    val df = snc.sql(sqlString)
-    pw.println(s"No. rows in resultset for query ${queryNum} is : ${df.count} for ${tableType} table")
-    if (df.count() != numRows) {
-      pw.println(s"Result mismatch for query ${queryNum} : found ${df.count} rows but expected ${numRows} rows.")
-      hasValidationFailed = true
+    if (!skipNumRowsValidation) {
+      val df = snc.sql(sqlString)
+      pw.println(s"No. rows in resultset for query ${queryNum} is : ${df.count} for ${tableType} table")
+      if (df.count() != numRows) {
+        pw.println(s"Result mismatch for query ${queryNum} : found ${df.count} rows but expected ${numRows} rows.")
+        hasValidationFailed = true
+      }
+      pw.flush()
     }
-    pw.flush()
     if (validateFullResultSet)
       hasValidationFailed = assertValidateFullResultSet(snc, sqlString, queryNum, pw, sqlContext,
         hasValidationFailed)
@@ -82,7 +87,7 @@ object TestUtil {
   resultset.
    */
   def assertValidateFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String, pw:
-  PrintWriter,sqlContext: SQLContext, validationFailed: Boolean): Boolean = {
+  PrintWriter, sqlContext: SQLContext, validationFailed: Boolean): Boolean = {
     var hasValidationFailed = validationFailed
 
     val snappyQueryFileName = s"Snappy_${queryNum}"
@@ -103,7 +108,7 @@ object TestUtil {
         val snap_col1 = snappyDF.schema.fieldNames(0)
         val snap_col = snappyDF.schema.fieldNames.filter(!_.equals(snap_col1)).toSeq
         snappyDF = snappyDF.repartition(1).sortWithinPartitions(snap_col1, snap_col: _*)
-        SnappyTestUtils.writeToFile(snappyDF,snappyDest,snc)
+        SnappyTestUtils.writeToFile(snappyDF, snappyDest, snc)
         //writeResultSetToCsv(snappyDF, snappyFile)
         pw.println(s"${queryNum} Result Collected in file ${snappyDest}")
       }
@@ -111,11 +116,11 @@ object TestUtil {
         val col1 = sparkDF.schema.fieldNames(0)
         val col = sparkDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
         sparkDF = sparkDF.repartition(1).sortWithinPartitions(col1, col: _*)
-        SnappyTestUtils.writeToFile(sparkDF,sparkDest,snc)
+        SnappyTestUtils.writeToFile(sparkDF, sparkDest, snc)
         //writeResultSetToCsv(sparkDF, sparkFile)
         pw.println(s"${queryNum} Result Collected in file ${sparkDest}")
       }
-      hasValidationFailed = compareFiles(snappyFile,sparkFile,pw,hasValidationFailed)
+      hasValidationFailed = compareFiles(snappyFile, sparkFile, pw, hasValidationFailed)
     } catch {
       case ex: Exception => {
         hasValidationFailed = true
@@ -219,7 +224,7 @@ object TestUtil {
         val snap_col1 = snappyDF.schema.fieldNames(0)
         val snap_col = snappyDF.schema.fieldNames.filter(!_.equals(snap_col1)).toSeq
         snappyDF = snappyDF.repartition(1).sortWithinPartitions(snap_col1, snap_col: _*)
-        SnappyTestUtils.writeToFile(snappyDF,snappyDest,snc)
+        SnappyTestUtils.writeToFile(snappyDF, snappyDest, snc)
         //writeResultSetToCsv(snappyDF, snappyFile)
         pw.println(s"${queryNum} Result Collected in file $snappyDest")
       }
@@ -234,13 +239,13 @@ object TestUtil {
         val col1 = goldenDF.schema.fieldNames(0)
         val col = goldenDF.schema.fieldNames.filter(!_.equals(col1)).toSeq
         goldenDF = goldenDF.repartition(1).sortWithinPartitions(col1, col: _*)
-        SnappyTestUtils.writeToFile(goldenDF,sortedGoldenDest,snc)
+        SnappyTestUtils.writeToFile(goldenDF, sortedGoldenDest, snc)
         //writeResultSetToCsv(goldenDF, sortedGoldenFile)
         pw.println(s"${queryNum} Result Collected in file ${sortedGoldenDest}")
       } else {
         pw.println(s"zero results in query $queryNum.")
       }
-      hasValidationFailed = compareFiles(snappyFile,sortedGoldenFile,pw,hasValidationFailed)
+      hasValidationFailed = compareFiles(snappyFile, sortedGoldenFile, pw, hasValidationFailed)
 
     } catch {
       case ex: Exception => {
@@ -253,7 +258,7 @@ object TestUtil {
     return hasValidationFailed
   }
 
-  def compareFiles(snappyFile: File, sparkFile: File,pw: PrintWriter,validationFailed: Boolean):
+  def compareFiles(snappyFile: File, sparkFile: File, pw: PrintWriter, validationFailed: Boolean):
   Boolean = {
     var hasValidationFailed = validationFailed
     val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))

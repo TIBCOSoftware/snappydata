@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -32,10 +32,10 @@ import org.apache.spark.sql.types.DataType
 
 /**
  * A fast hash map implementation for nullable keys. This hash map supports
- * insertions and updates, but not deletions. This map is about 5X faster than
- * java.util.HashMap, while using much less space overhead.
+ * insertions and updates, but not deletions. This map is about as fast as
+ * any other hashmap, while using much less space overhead.
  *
- * Under the hood, it uses our MultiColumnOpenHashSet implementation.
+ * Under the hood, it uses the MultiColumnOpenHashSet implementation.
  */
 final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
     _columns: Array[Int],

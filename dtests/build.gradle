@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -52,7 +52,8 @@ dependencies {
        exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
        exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
        exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
-       exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-8_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+       exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
        exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
        exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
     }
@@ -64,7 +65,8 @@ dependencies {
           exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
           exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
           exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
-          exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-8_' + scalaBinaryVersion)
+          exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+          exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
           exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
           exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
         }
@@ -105,12 +107,13 @@ dependencies {
     if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
         testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
     }
+    testCompile project(path: ':snappy-examples_' + scalaBinaryVersion, configuration: 'testOutput')
+    testRuntime project(':snappy-examples_' + scalaBinaryVersion)
     testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 
 }
 
 task buildDtests {
-  delete buildDir
   dependsOn ':cleanScalaTest', ':snappy-store:storeProduct', ':product', packageTests
 }
 
@@ -135,6 +138,7 @@ scalaTest {
     doFirst {
         // cleanup files since scalatest plugin does not honour workingDir yet
         cleanIntermediateFiles(project.path)
+        environment 'SMOKE_PERF': rootProject.hasProperty("smokePerf")
     }
     doLast {
         // cleanup files since scalatest plugin does not honour workingDir yet
@@ -143,7 +147,6 @@ scalaTest {
 }
 
 testClasses.doLast {
-  copyTestsCommonResources(buildDir)
   if (new File(rootDir, 'store/build.gradle').exists()) {
     copy {
       from ("src/test/java") {
@@ -152,7 +155,9 @@ testClasses.doLast {
           include '**/*.inc'
           include '**/*.sql'
       }
-      into project(':snappy-store:snappydata-store-tests').sourceSets.main.output.classesDir
+      into project(':snappy-store:snappydata-store-tests').sourceSets.main.java.outputDir
     }
   }
 }
+
+check.dependsOn test, scalaTest

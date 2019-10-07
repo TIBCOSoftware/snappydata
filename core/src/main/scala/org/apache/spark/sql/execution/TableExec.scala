@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,17 +17,15 @@
 package org.apache.spark.sql.execution
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
-import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
-import org.apache.spark.sql.hive.ConnectorCatalog
-import org.apache.spark.sql.row.JDBCMutableRelation
-import org.apache.spark.sql.sources.DestroyRelation
+import org.apache.spark.sql.sources.{DestroyRelation, JdbcExtendedUtils, NativeTableRowLevelSecurityRelation}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, ThinClientConnectorMode}
@@ -56,6 +54,21 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
   protected def opType: String
 
   protected def isInsert: Boolean = false
+
+  def catalogSchemaVersion: Long = {
+    if (!onExecutor) {
+      val catalogVersion: Option[Long] = Utils.executeIfSmartConnector(sqlContext.sparkContext) {
+        relation match {
+          case Some(r: NativeTableRowLevelSecurityRelation) => r.relationInfo.catalogSchemaVersion
+          case _ =>
+            -1
+        }
+      }
+      catalogVersion.getOrElse(-1)
+    } else {
+      -1
+    }
+  }
 
   override lazy val output: Seq[Attribute] =
     AttributeReference("count", LongType, nullable = false)() :: Nil
@@ -116,7 +129,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
                 .region.asInstanceOf[PartitionedRegion]
             // if the two are different then its partition pruning case
             if (numBuckets == rdd.getNumPartitions) {
-              new DelegateRDD(sparkContext, rdd,
+              new DelegateRDD(sparkContext, rdd, Nil,
                 Array.tabulate(numBuckets)(
                   StoreUtils.getBucketPreferredLocations(region, _, forWrite = true)))
             } else rdd
@@ -130,29 +143,26 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
   private def getInputRDDsForConnector(
       inputRDDs: Seq[RDD[InternalRow]]): Seq[RDD[InternalRow]] = {
     def preferredLocations(table: String): Array[Seq[String]] = {
-      val catalog =
-        sqlContext.sparkSession.sessionState.catalog.asInstanceOf[ConnectorCatalog]
-      val relInfo =
-        catalog.getCachedRelationInfo(catalog.newQualifiedTableName(table))
+      val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+      val (schemaName, tableName) = JdbcExtendedUtils.getTableWithSchema(table,
+        conn = null, Some(session))
+      val relInfo = session.externalCatalog.getRelationInfo(schemaName, tableName,
+        isRowTable = false)._1
       val locations = new Array[Seq[String]](numBuckets)
       var i = 0
       relInfo.partitions.foreach(x => {
-          locations(i) = x.asInstanceOf[SmartExecutorBucketPartition].
-          hostList.map(_._1.asInstanceOf[String])
-          i = i + 1
+        locations(i) = x.asInstanceOf[SmartExecutorBucketPartition].
+            hostList.map(_._1.asInstanceOf[String])
+        i = i + 1
       })
       locations
     }
-    relation.get match {
-      case m: JDBCMutableRelation =>
-        inputRDDs.map { rdd =>
-          new DelegateRDD(sparkContext, rdd, preferredLocations(m.table))
-        }
-      case JDBCAppendableRelation(table, _, _, _, _, _, _) =>
-        inputRDDs.map { rdd =>
-          new DelegateRDD(sparkContext, rdd, preferredLocations(table))
-        }
-      case _ => inputRDDs
+    inputRDDs.map { rdd =>
+      // if the two are different then its partition pruning case
+      if (numBuckets == rdd.getNumPartitions) {
+        val table = relation.get.asInstanceOf[PartitionedDataSourceScan].table
+        new DelegateRDD(sparkContext, rdd, Nil, preferredLocations(table))
+      } else rdd
     }
   }
 

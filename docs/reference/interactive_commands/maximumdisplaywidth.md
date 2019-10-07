@@ -4,7 +4,7 @@ Sets the largest display width for columns to the specified value.
 
 ## Syntax
 
-``` pre
+```pre
 MAXIMUMDISPLAYWIDTH integer_value
 ```
 
@@ -14,7 +14,7 @@ Sets the largest display width for columns to the specified value. You generally
 
 ## Example
 
-``` pre
+```pre
 snappy> insert into airlineref values('A-1', 'NOW IS THE TIME');
 1 row inserted/updated/deleted
 snappy> maximumdisplaywidth 4;

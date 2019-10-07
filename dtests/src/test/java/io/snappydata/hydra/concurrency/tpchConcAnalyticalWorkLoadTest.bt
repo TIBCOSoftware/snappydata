@@ -1,0 +1,69 @@
+io/snappydata/hydra/concurrency/tpchAnalyticalConcQueries.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=2
+  C=snappyClientA snappyClientAHosts=1 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  dataDir="/export/shared/QA_DATA/TPCH/10GB"
+  buckets_Order_Lineitem=128
+  buckets_Cust_Part_PartSupp=128
+  buckets_Nation_Region_Supp=128
+  Nation_Region_Supp_col=false
+  Redundancy=0
+  Persistence=true
+  Persistence_Type=SYNCHRONOUS
+  NumberOfLoadStages=1
+  Parquet=false
+
+io/snappydata/hydra/concurrency/tpchAnalyticalConcQueries.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=2
+  C=snappyClientA snappyClientAHosts=2 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  dataDir="/export/shared/QA_DATA/TPCH/10GB"
+  buckets_Order_Lineitem=128
+  buckets_Cust_Part_PartSupp=128
+  buckets_Nation_Region_Supp=128
+  Nation_Region_Supp_col=false
+  Redundancy=0
+  Persistence=true
+  Persistence_Type=SYNCHRONOUS
+  NumberOfLoadStages=1
+  Parquet=false
+
+io/snappydata/hydra/concurrency/tpchAnalyticalConcQueries.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=2
+  C=snappyClientA snappyClientAHosts=3 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  dataDir="/export/shared/QA_DATA/TPCH/10GB"
+  buckets_Order_Lineitem=128
+  buckets_Cust_Part_PartSupp=128
+  buckets_Nation_Region_Supp=128
+  Nation_Region_Supp_col=false
+  Redundancy=0
+  Persistence=true
+  Persistence_Type=SYNCHRONOUS
+  NumberOfLoadStages=1
+  Parquet=false
+
+io/snappydata/hydra/concurrency/tpchAnalyticalConcQueries.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=2
+  C=snappyClientA snappyClientAHosts=4 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  dataDir="/export/shared/QA_DATA/TPCH/10GB"
+  buckets_Order_Lineitem=128
+  buckets_Cust_Part_PartSupp=128
+  buckets_Nation_Region_Supp=128
+  Nation_Region_Supp_col=false
+  Redundancy=0
+  Persistence=true
+  Persistence_Type=SYNCHRONOUS
+  NumberOfLoadStages=1
+  Parquet=false
+
+io/snappydata/hydra/concurrency/tpchAnalyticalConcQueries.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=2
+  C=snappyClientA snappyClientAHosts=5 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  dataDir="/export/shared/QA_DATA/TPCH/10GB"
+  buckets_Order_Lineitem=128
+  buckets_Cust_Part_PartSupp=128
+  buckets_Nation_Region_Supp=128
+  Nation_Region_Supp_col=false
+  Redundancy=0
+  Persistence=true
+  Persistence_Type=SYNCHRONOUS
+  NumberOfLoadStages=1
+  Parquet=false

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -32,11 +32,7 @@ trait Locator extends FabricLocator
 
 trait ProtocolOverrides extends FabricServiceImpl {
 
-  abstract override def getProtocol: java.lang.String = {
-    "jdbc:snappydata:"
-  }
+  abstract override def getProtocol: String = Constant.DEFAULT_EMBEDDED_URL
 
-  abstract override def getNetProtocol: String = {
-    "jdbc:snappydata://"
-  }
+  abstract override def getNetProtocol: String = Constant.DEFAULT_THIN_CLIENT_URL
 }

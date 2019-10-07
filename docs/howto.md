@@ -1,4 +1,5 @@
 # Overview
+
 This section introduces you to several common operations such as starting a cluster, working with tables (load, query, update), working with streams and running approximate queries.
 
 **Running the Examples:**
@@ -12,7 +13,7 @@ You can run the examples in any of the following ways:
 
 * **As a Job**:	Many of the Scala examples are also implemented as a SnappyData job. In this case, examples can be submitted as a job to a running SnappyData cluster. Refer to the [jobs](howto/run_spark_job_inside_cluster.md) section for details on how to run a job.
 
-!!! Note: 
+!!! Note
 	SnappyData also supports Java API. Refer to the [documentation](./programming_guide/building_snappydata_applications_using_spark_api.md) for more details on Java API.
 
 The following topics are covered in this section:
@@ -63,16 +64,5 @@ The following topics are covered in this section:
 
 * [How to use Apache Zeppelin with SnappyData](howto/use_apache_zeppelin_with_snappydata.md)<a id="howto-zeppelin"></a>
 
-
-<heading2> Known Issue</heading2>
-
-If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8 or future releases, the approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
-
-<heading2> More Information</heading2>
-
-Refer to these sections for information on SnappyData CloudBuilder:
-
-* [About the Interpreter](isight/quick_start_steps.md#using-the-interpreter) 
-
-* [Example Notebooks](isight/quick_start_steps/#creating-notebooks-try-it-yourself)
+* [How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster](howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md)<a id="howto-concurrentzeppelin"></a>
 

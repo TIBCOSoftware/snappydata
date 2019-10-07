@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -70,11 +70,13 @@ object SnappyDataVersion {
 
     // platform version
     loadProperties()
-    pw.println("SnappyData Platform Version " + GemFireVersion.getProductVersion +
-        " " + GemFireVersion.getProductReleaseStage)
+    val platform = s" Platform Version ${GemFireVersion.getProductVersion} " +
+        s"${GemFireVersion.getProductReleaseStage}"
 
     // rowstore version
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
+    val product = if (GemFireVersion.isEnterpriseEdition) "TIBCO ComputeDB" else "SnappyData"
+    pw.println(product + platform)
     pw.printf("%4s%s\n", " ", GemFireVersion.getProductName + " " +
         GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage)
 
@@ -86,10 +88,12 @@ object SnappyDataVersion {
     // AQP version if available
     val is: InputStream = ClassPathLoader.getLatest.getResourceAsStream(
       classOf[SnappyDataVersion], AQP_VERSION_PROPERTIES)
-    if (is ne null) {
+    if (is ne null) try {
       GemFireVersion.getInstance(classOf[SnappyDataVersion], AQP_VERSION_PROPERTIES)
       pw.printf("%4s%s\n", " ", GemFireVersion.getProductName + " " +
           GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage)
+    } finally {
+      is.close()
     }
     pw.flush()
   }
@@ -112,10 +116,12 @@ object SnappyDataVersion {
     // AQP version if available
     val is: InputStream = ClassPathLoader.getLatest.getResourceAsStream(
       classOf[SnappyDataVersion], AQP_VERSION_PROPERTIES)
-    if (is ne null) {
+    if (is ne null) try {
       GemFireVersion.getInstance(classOf[SnappyDataVersion], AQP_VERSION_PROPERTIES)
       pw.println(GemFireVersion.getProductName)
       GemFireVersion.print(pw, printSourceInfo)
+    } finally {
+      is.close()
     }
 
     pw.flush()
@@ -129,7 +135,8 @@ object SnappyDataVersion {
   }
 
   def getSnappyDataProductVersion: mutable.HashMap[String, String] = {
-    GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
+    GemFireVersion.getInstance(classOf[GemFireXDVersion], SNAPPYDATA_VERSION_PROPERTIES)
+
     val versionDetails = mutable.HashMap.empty[String, String]
     versionDetails.put("productName", GemFireVersion.getProductName)
     versionDetails.put("productVersion", GemFireVersion.getProductVersion)
@@ -138,6 +145,11 @@ object SnappyDataVersion {
     versionDetails.put("buildPlatform", GemFireVersion.getBuildPlatform)
     versionDetails.put("nativeCodeVersion", GemFireVersion.getNativeCodeVersion)
     versionDetails.put("sourceRevision", GemFireVersion.getSourceRevision)
+
+    GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
+    val productEditionType = if (GemFireVersion.isEnterpriseEdition) "Enterprise" else "Community"
+
+    versionDetails.put("editionType", productEditionType)
 
     versionDetails
   }

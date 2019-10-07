@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -74,7 +74,7 @@ object DataValidationJob extends SnappySQLJob {
             for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
               if (!expectedLine.equals(actualLine)) {
                 resultOutputStream.println(s"For $query result mismatched observed")
-                resultOutputStream.println(s"Excpected : $expectedLine")
+                resultOutputStream.println(s"Expected  : $expectedLine")
                 resultOutputStream.println(s"Found     : $actualLine")
                 resultOutputStream.println(s"-------------------------------------")
               }

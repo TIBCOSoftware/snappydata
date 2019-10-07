@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,12 +17,14 @@
 package io.snappydata.gemxd
 
 import java.io.{CharArrayWriter, DataOutput}
+import java.sql.SQLWarning
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.DataSerializer
-import com.gemstone.gemfire.internal.shared.Version
+import com.gemstone.gemfire.cache.CacheClosedException
+import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, Version}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -35,16 +37,17 @@ import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLChar}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
-import io.snappydata.{Constant, QueryHint}
+import io.snappydata.{Constant, Property, QueryHint}
 
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
+import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{CachedDataFrame, SnappyContext, SnappySession}
 import org.apache.spark.storage.RDDBlockId
 import org.apache.spark.util.SnappyUtils
-import org.apache.spark.{Logging, SparkContext, SparkEnv}
+import org.apache.spark.{Logging, SparkEnv}
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -72,33 +75,25 @@ class SparkSQLExecuteImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setSchema(schema)
+  Utils.setCurrentSchema(session, schema, createIfNotExists = true)
 
   session.setPreparedQuery(preparePhase = false, pvs)
 
-  private[this] val df = session.sql(sql)
+  private[this] val df = Utils.sqlInternal(session, sql)
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
   private[this] val hdos = new GfxdHeapDataOutputStream(
-    thresholdListener, sql, true, senderVersion)
+    thresholdListener, sql, false, senderVersion)
 
   private[this] val querySchema = df.schema
 
   private[this] lazy val colTypes = getColumnTypes
 
   // check for query hint to serialize complex types as JSON strings
-  private[this] val complexTypeAsJson = session.getPreviousQueryHints.get(
-    QueryHint.ComplexTypeAsJson.toString) match {
-    case None => false
-    case Some(v) => Misc.parseBoolean(v)
-  }
+  private[this] val complexTypeAsJson = SparkSQLExecuteImpl.getJsonProperties(session)
 
-  private val (allAsClob, columnsAsClob) = session.getPreviousQueryHints.get(
-    QueryHint.ColumnsAsClob.toString) match {
-    case None => (false, Set.empty[String])
-    case Some(v) => Utils.parseColumnsAsClob(v)
-  }
+  private val (allAsClob, columnsAsClob) = SparkSQLExecuteImpl.getClobProperties(session)
 
   override def packRows(msg: LeadNodeExecutorMsg,
       snappyResultHolder: SnappyResultHolder): Unit = {
@@ -121,7 +116,8 @@ class SparkSQLExecuteImpl(val sql: String,
         CachedDataFrame.localBlockStoreResultHandler(rddId, bm),
         CachedDataFrame.localBlockStoreDecoder(querySchema.length, bm))
       hdos.clearForReuse()
-      writeMetaData(srh)
+      SparkSQLExecuteImpl.writeMetaData(srh, hdos, tableNames, nullability, getColumnNames,
+        colTypes, getColumnDataTypes, session.getWarnings)
 
       var id = 0
       for (block <- partitionBlocks) {
@@ -143,7 +139,7 @@ class SparkSQLExecuteImpl(val sql: String,
             // prepare SnappyResultHolder with all data and create new one
             SparkSQLExecuteImpl.handleLocalExecution(srh, hdos)
             msg.sendResult(srh)
-            srh = new SnappyResultHolder(this, msg.isUpdateOrDelete)
+            srh = new SnappyResultHolder(this, msg.isUpdateOrDeleteOrPut)
           } else {
             // throttle sending if target node is CRITICAL_UP
             val targetMember = msg.getSender
@@ -191,103 +187,77 @@ class SparkSQLExecuteImpl(val sql: String,
   override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit =
     SparkSQLExecuteImpl.serializeRows(out, hasMetadata, hdos)
 
-  private lazy val (tableNames, nullability) = getTableNamesAndNullability
-
-  def getTableNamesAndNullability: (Array[String], Array[Boolean]) = {
-    var i = 0
-    val output = df.queryExecution.analyzed.output
-    val tables = new Array[String](output.length)
-    val nullables = new Array[Boolean](output.length)
-    output.foreach { a =>
-      val fn = a.qualifiedName
-      val dotIdx = fn.lastIndexOf('.')
-      if (dotIdx > 0) {
-        tables(i) = fn.substring(0, dotIdx)
-      } else {
-        tables(i) = ""
-      }
-      nullables(i) = a.nullable
-      i += 1
-    }
-    (tables, nullables)
-  }
-
-  private def writeMetaData(srh: SnappyResultHolder): Unit = {
-    val hdos = this.hdos
-    // indicates that the metadata is being packed too
-    srh.setHasMetadata()
-    DataSerializer.writeStringArray(tableNames, hdos)
-    DataSerializer.writeStringArray(getColumnNames, hdos)
-    DataSerializer.writeBooleanArray(nullability, hdos)
-    for (i <- colTypes.indices) {
-      val (tp, precision, scale) = colTypes(i)
-      InternalDataSerializer.writeSignedVL(tp, hdos)
-      tp match {
-        case StoredFormatIds.SQL_DECIMAL_ID =>
-          InternalDataSerializer.writeSignedVL(precision, hdos) // precision
-          InternalDataSerializer.writeSignedVL(scale, hdos) // scale
-        case StoredFormatIds.SQL_VARCHAR_ID |
-             StoredFormatIds.SQL_CHAR_ID =>
-          // Write the size as precision
-          InternalDataSerializer.writeSignedVL(precision, hdos)
-        case StoredFormatIds.REF_TYPE_ID =>
-          // Write the DataType
-          val pooled = KryoSerializerPool.borrow()
-          val output = pooled.newOutput()
-          try {
-            StructTypeSerializer.writeType(pooled.kryo, output,
-              querySchema(i).dataType)
-            hdos.write(output.getBuffer, 0, output.position())
-          } finally {
-            KryoSerializerPool.release(pooled)
-          }
-        case _ => // ignore for others
-      }
-    }
-  }
+  private lazy val (tableNames, nullability) = SparkSQLExecuteImpl.
+      getTableNamesAndNullability(session, df.queryExecution.analyzed.output)
 
   def getColumnNames: Array[String] = {
     querySchema.fieldNames
   }
 
   private def getColumnTypes: Array[(Int, Int, Int)] =
-    querySchema.map(f => getSQLType(f)).toArray
+    querySchema.map(f => {
+      SparkSQLExecuteImpl.getSQLType(f.dataType, complexTypeAsJson,
+        f.metadata, Utils.toLowerCase(f.name), allAsClob, columnsAsClob)
+    }).toArray
 
-  private def getSQLType(f: StructField): (Int, Int, Int) = {
-    val dataType = f.dataType
+  private def getColumnDataTypes: Array[DataType] =
+    querySchema.map(_.dataType).toArray
+}
+
+object SparkSQLExecuteImpl {
+
+  def getJsonProperties(session: SnappySession): Boolean = session.getPreviousQueryHints.get(
+    QueryHint.ComplexTypeAsJson.toString) match {
+    case null => Constant.COMPLEX_TYPE_AS_JSON_DEFAULT
+    case v => ClientSharedUtils.parseBoolean(v)
+  }
+
+  def getClobProperties(session: SnappySession): (Boolean, Set[String]) =
+    session.getPreviousQueryHints.get(QueryHint.ColumnsAsClob.toString) match {
+    case null => (false, Set.empty[String])
+    case v => Utils.parseColumnsAsClob(v, session)
+  }
+
+  def getSQLType(dataType: DataType, complexTypeAsJson: Boolean,
+      metaData: Metadata = Metadata.empty, metaName: String = "",
+      allAsClob: Boolean = false, columnsAsClob: Set[String] = Set.empty): (Int, Int, Int) = {
     dataType match {
       case IntegerType => (StoredFormatIds.SQL_INTEGER_ID, -1, -1)
       case StringType =>
-        TypeUtilities.getMetadata[String](Constant.CHAR_TYPE_BASE_PROP,
-          f.metadata) match {
-          case Some(base) if base != "CLOB" =>
+        TypeUtilities.getMetadata[String](Constant.CHAR_TYPE_BASE_PROP, metaData) match {
+          case Some(base) =>
             lazy val size = TypeUtilities.getMetadata[Long](
-              Constant.CHAR_TYPE_SIZE_PROP, f.metadata)
-            lazy val varcharSize = size.getOrElse(
-              Constant.MAX_VARCHAR_SIZE.toLong).toInt
-            lazy val charSize = size.getOrElse(
-              Constant.MAX_CHAR_SIZE.toLong).toInt
-            if (allAsClob ||
-                (columnsAsClob.nonEmpty && columnsAsClob.contains(f.name))) {
-              if (base != "STRING") {
-                if (base == "VARCHAR") {
-                  (StoredFormatIds.SQL_VARCHAR_ID, varcharSize, -1)
-                } else {
-                  // CHAR
-                  (StoredFormatIds.SQL_CHAR_ID, charSize, -1)
+              Constant.CHAR_TYPE_SIZE_PROP, metaData)
+            base match {
+              case "CHAR" =>
+                val charSize = size match {
+                  case Some(s) => s.toInt
+                  case None => Constant.MAX_CHAR_SIZE
                 }
-              } else {
+                (StoredFormatIds.SQL_CHAR_ID, charSize, -1)
+              case "STRING" if allAsClob ||
+                  (columnsAsClob.nonEmpty && columnsAsClob.contains(metaName)) =>
                 (StoredFormatIds.SQL_CLOB_ID, -1, -1)
-              }
-            } else if (base == "CHAR") {
-              (StoredFormatIds.SQL_CHAR_ID, charSize, -1)
-            } else if (base == "VARCHAR" || !SparkSQLExecuteImpl.STRING_AS_CLOB) {
-              (StoredFormatIds.SQL_VARCHAR_ID, varcharSize, -1)
-            } else {
-              (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+              case "CLOB" => (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+              case _ =>
+                val varcharSize = size match {
+                  case Some(s) => s.toInt
+                  case None => Constant.MAX_VARCHAR_SIZE
+                }
+                (StoredFormatIds.SQL_VARCHAR_ID, varcharSize, -1)
             }
-
-          case _ => (StoredFormatIds.SQL_CLOB_ID, -1, -1) // CLOB
+          case None => if (allAsClob ||
+              (columnsAsClob.nonEmpty && columnsAsClob.contains(metaName))) {
+            (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+          } else {
+            // check if size is specified
+            val size = TypeUtilities.getMetadata[Long](
+              Constant.CHAR_TYPE_SIZE_PROP, metaData) match {
+              case Some(s) => s.toInt
+              case None => Constant.MAX_VARCHAR_SIZE
+            }
+            (StoredFormatIds.SQL_VARCHAR_ID, size, -1)
+          }
         }
       case LongType => (StoredFormatIds.SQL_LONGINT_ID, -1, -1)
       case TimestampType => (StoredFormatIds.SQL_TIMESTAMP_ID, -1, -1)
@@ -309,9 +279,59 @@ class SparkSQLExecuteImpl(val sql: String,
       case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
     }
   }
-}
 
-object SparkSQLExecuteImpl {
+  def getTableNamesAndNullability(session: SnappySession,
+      output: Seq[expressions.Attribute]): (Seq[String], Seq[Boolean]) = {
+    output.map { a =>
+      val fn = a.qualifiedName
+      val dotIdx = fn.lastIndexOf('.')
+      if (dotIdx > 0) {
+        val tableName = fn.substring(0, dotIdx)
+        val fullTableName = if (tableName.indexOf('.') > 0) tableName
+        else {
+          // JDBC spec allows returning empty string for getSchemaName so the code
+          // should do the same instead of returning current schema which can be incorrect
+          "." + tableName
+        }
+        (fullTableName, a.nullable)
+      } else {
+        ("", a.nullable)
+      }
+    }.unzip
+  }
+
+  def writeMetaData(srh: SnappyResultHolder, hdos: GfxdHeapDataOutputStream,
+      tableNames: Seq[String], nullability: Seq[Boolean], columnNames: Array[String],
+      colTypes: Array[(Int, Int, Int)], dataTypes: Array[DataType],
+      warnings: SQLWarning): Unit = {
+    // indicates that the metadata is being packed too
+    srh.setHasMetadata()
+    DataSerializer.writeStringArray(tableNames.toArray, hdos)
+    DataSerializer.writeStringArray(columnNames, hdos)
+    DataSerializer.writeBooleanArray(nullability.toArray, hdos)
+    var i = 0
+    while (i < colTypes.length) {
+      val (tp, precision, scale) = colTypes(i)
+      InternalDataSerializer.writeSignedVL(tp, hdos)
+      tp match {
+        case StoredFormatIds.SQL_DECIMAL_ID =>
+          InternalDataSerializer.writeSignedVL(precision, hdos) // precision
+          InternalDataSerializer.writeSignedVL(scale, hdos) // scale
+        case StoredFormatIds.SQL_VARCHAR_ID |
+             StoredFormatIds.SQL_CHAR_ID =>
+          // Write the size as precision
+          InternalDataSerializer.writeSignedVL(precision, hdos)
+        case StoredFormatIds.REF_TYPE_ID =>
+          // Write the DataType
+          hdos.write(KryoSerializerPool.serialize((kryo, out) =>
+            StructTypeSerializer.writeType(kryo, out, dataTypes(i))))
+        case _ => // ignore for others
+      }
+      i += 1
+    }
+    DataSerializer.writeObject(warnings, hdos)
+  }
+
   def getContextOrCurrentClassLoader: ClassLoader =
     Option(Thread.currentThread().getContextClassLoader)
         .getOrElse(getClass.getClassLoader)
@@ -361,7 +381,7 @@ object SparkSQLExecuteImpl {
         val writer = new CharArrayWriter()
         writers += writer
         generators += Utils.getJsonGenerator(d.asInstanceOf[DataType],
-          s"COL_$size", writer)
+          s"col_$size", writer)
       }
     }
     val execRow = new ValueRow(dvds)
@@ -458,21 +478,30 @@ object SparkSQLExecuteImpl {
 
 object SnappySessionPerConnection {
 
-  private val connectionIdMap =
+  private[this] val connectionIdMap =
     new java.util.concurrent.ConcurrentHashMap[java.lang.Long, SnappySession]()
 
   def getSnappySessionForConnection(connId: Long): SnappySession = {
-    val connectionID = Long.box(connId)
-    val session = connectionIdMap.get(connectionID)
-    if (session != null) session
-    else {
-      val session = SnappyContext(null: SparkContext).snappySession
-      val oldSession = connectionIdMap.putIfAbsent(connectionID, session)
-      if (oldSession == null) session else oldSession
-    }
+    connectionIdMap.computeIfAbsent(Long.box(connId), CreateNewSession)
   }
 
+  def getAllSessions: Seq[SnappySession] = connectionIdMap.values().asScala.toSeq
+
   def removeSnappySession(connectionID: java.lang.Long): Unit = {
-    connectionIdMap.remove(connectionID)
+    val session = connectionIdMap.remove(connectionID)
+    if (session ne null) session.clear()
+  }
+}
+
+object CreateNewSession extends java.util.function.Function[java.lang.Long, SnappySession] {
+  override def apply(connId: java.lang.Long): SnappySession = {
+    val session = SnappyContext.globalSparkContext match {
+      // use a CancelException to force failover by client to another lead if available
+      case null => throw new CacheClosedException("No SparkContext ...")
+      case sc => new SnappySession(sc)
+    }
+    Utils.getLocalProperties(session.sparkContext).clear()
+    Property.PlanCaching.set(session.sessionState.conf, true)
+    session
   }
 }

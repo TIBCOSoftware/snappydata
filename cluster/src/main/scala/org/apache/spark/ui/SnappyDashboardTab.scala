@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,6 +27,7 @@ import io.snappydata.gemxd.SnappyDataVersion
 import scala.util.control.Breaks._
 
 import org.apache.spark.internal.Logging
+import org.apache.spark.status.api.v1.SnappyApiRootResource
 import org.apache.spark.ui.JettyUtils._
 
 class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboard") with Logging {
@@ -49,7 +50,7 @@ class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboar
   newTabsList += tabsList.last
   // Add remaining tabs in tabs list
   tabsList.foreach(tab => {
-    if(!tab.prefix.equalsIgnoreCase("dashboard")){
+    if (!tab.prefix.equalsIgnoreCase("dashboard")) {
       newTabsList += tab
     }
   })
@@ -62,7 +63,8 @@ class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboar
 
   updateRedirectionHandler
 
-  // Replace default spark jobs page redirection handler by Snappy Dashboard page redirection handler
+  // Replace default spark jobs page redirection handler by Snappy Dashboard page
+  // redirection handler
   def updateRedirectionHandler: Unit = {
     val handlers = parent.getHandlers
     breakable {
@@ -77,6 +79,7 @@ class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboar
       })
     }
 
+    parent.attachHandler(SnappyApiRootResource.getServletHandler(parent))
     // create and add member logs request handler
     parent.attachHandler(createServletHandler("/dashboard/memberDetails/log",
       (request: HttpServletRequest) => snappyMemberDetailsPage.renderLog(request),

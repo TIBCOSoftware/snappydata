@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,6 +17,8 @@
 package io.snappydata.test.dunit;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
@@ -28,7 +30,6 @@ import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Method;
 import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.security.PrivilegedAction;
 import java.text.DecimalFormat;
 import java.util.HashMap;
@@ -45,7 +46,6 @@ import com.gemstone.gemfire.cache.TimeoutException;
 import com.gemstone.gemfire.distributed.DistributedSystem;
 import com.gemstone.gemfire.distributed.internal.DistributionConfig;
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem;
-import com.gemstone.gemfire.internal.SocketCreator;
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl;
 import com.gemstone.gemfire.internal.shared.NativeCalls;
 import io.snappydata.test.dunit.standalone.DUnitBB;
@@ -56,6 +56,7 @@ import junit.framework.TestCase;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 import org.junit.internal.MethodSorter;
 
 /**
@@ -123,6 +124,8 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
 
     public static void setUp() {
       // nothing; actual setup done in static initializer
+      // May be just use this to set certain system properties in tests, like below.
+      System.setProperty("gemfire.DISALLOW_RESERVE_SPACE", "true");
     }
 
     public static String getBaseDir() {
@@ -645,8 +648,18 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     return (globalLogger = newGlobalLogger());
   }
 
-  private Logger newLogWriter() {
-    Logger logger = LogManager.getLogger(getClass());
+  private static synchronized Logger newLogWriter() {
+    Logger logger = LogManager.getLogger("DUnitTest");
+    try {
+      Properties props = new Properties();
+      // fallback to defaults
+      try (InputStream in = DistributedTestBase.class.getResourceAsStream(
+          "/test-log4j.properties")) {
+        props.load(in);
+      }
+      new PropertyConfigurator().doConfigure(props, logger.getLoggerRepository());
+    } catch (IOException ignored) {
+    }
     logger.setLevel(getLevel(DUnitLauncher.LOG_LEVEL));
     return logger;
   }
@@ -696,15 +709,21 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     logTestHistory();
     testName = getName();
 
+    Class<?> thisClass = getClass();
+    Logger logger = getLogWriter();
     if (!beforeClassDone) {
+      lastTest = null;
+      logger.info("[setup] Invoking beforeClass for " +
+          thisClass.getSimpleName() + "." + testName + "\n");
       beforeClass();
       beforeClassDone = true;
-      lastTest = null;
+      System.out.println("\n[setup] Invoked beforeClass for " +
+          thisClass.getSimpleName() + "." + testName + "\n");
     }
     if (lastTest == null) {
       // for class-level afterClass, list the test methods and do the
       // afterClass in the tearDown of last method
-      Class<?> scanClass = getClass();
+      Class<?> scanClass = thisClass;
       while (Test.class.isAssignableFrom(scanClass)) {
         for (Method m : MethodSorter.getDeclaredMethods(scanClass)) {
           String methodName = m.getName();
@@ -717,16 +736,15 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
         scanClass = scanClass.getSuperclass();
       }
       if (lastTest == null) {
-        fail("Could not find any last test in " + getClass().getName());
+        fail("Could not find any last test in " + thisClass.getName());
       } else {
-        getLogWriter().info(
-            "Last test for " + getClass().getName() + ": " + lastTest);
+        logger.info("[setup] Last test for " + thisClass.getName() +
+            ": " + lastTest);
       }
     }
 
     if (testName != null) {
       String baseDefaultDiskStoreName = getTestClass().getCanonicalName() + "." + getTestName();
-      final String className = getClass().getName();
       for (int h = 0; h < Host.getHostCount(); h++) {
         Host host = Host.getHost(h);
         for (int v = 0; v < host.getVMCount(); v++) {
@@ -737,7 +755,8 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
         }
       }
     }
-    System.out.println("\n\n[setup] START TEST " + getClass().getSimpleName() + "." + testName + "\n\n");
+    System.out.println("\n\n[setup] START TEST " + thisClass.getSimpleName() +
+        "." + testName + "\n\n");
   }
 
   /**
@@ -781,12 +800,21 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
         }
       }
     } finally {
-      tearDownAfter();
-
-      if (getName().equals(lastTest)) {
-        afterClass();
-        beforeClassDone = false;
-        lastTest = null;
+      final boolean isLastTest = getName().equals(lastTest);
+      try {
+        tearDownAfter();
+        if (isLastTest) {
+          System.out.println("\n[tearDown] Invoking afterClass post " +
+              getClass().getSimpleName() + "." + testName + "\n");
+          afterClass();
+          System.out.println("\n[tearDown] Invoked afterClass post " +
+              getClass().getSimpleName() + "." + testName + "\n");
+        }
+      } finally {
+        if (isLastTest) {
+          beforeClassDone = false;
+          lastTest = null;
+        }
       }
     }
   }
@@ -844,16 +872,8 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
         : host.getHostName();
   }
 
-  /** get the IP literal name for the current host, use this instead of
-   * "localhost" to avoid IPv6 name resolution bugs in the JDK/machine config.
-   * @return an ip literal, this method honors java.net.preferIPvAddresses
-   */
   public static String getIPLiteral() {
-    try {
-      return SocketCreator.getLocalHost().getHostAddress();
-    } catch (UnknownHostException e) {
-      throw new Error("problem determining host IP address", e);
-    }
+    return "localhost";
   }
 
   /**

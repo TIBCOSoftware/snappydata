@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,21 +18,20 @@
 package org.apache.spark.examples.snappydata
 
 import java.io.File
+import java.lang.{Integer => JInt}
 import java.net.InetSocketAddress
-import java.util.Properties
-
-import scala.language.postfixOps
+import java.util.concurrent.TimeUnit
+import java.util.{Properties, Map => JMap}
 
 import kafka.admin.AdminUtils
-import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
-import kafka.serializer.StringEncoder
+import kafka.api.Request
 import kafka.server.{KafkaConfig, KafkaServer}
-import kafka.utils.ZKStringSerializer
-import org.I0Itec.zkclient.ZkClient
-import org.apache.commons.lang3.RandomUtils
+import kafka.utils.ZkUtils
+import org.apache.kafka.clients.consumer.KafkaConsumer
+import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord, RecordMetadata}
+import org.apache.kafka.common.TopicPartition
+import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
 import org.apache.log4j.{Level, Logger}
-import org.apache.zookeeper.server.{NIOServerCnxnFactory, ZooKeeperServer}
-
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.jdbc.{ConnectionConfBuilder, ConnectionUtil}
@@ -40,31 +39,40 @@ import org.apache.spark.sql.streaming.{SchemaDStream, StreamToRowsConverter}
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.streaming.{Seconds, SnappyStreamingContext}
 import org.apache.spark.util.Utils
+import org.apache.zookeeper.server.{NIOServerCnxnFactory, ZooKeeperServer}
+import org.json4s.NoTypeHints
+import org.json4s.jackson.Serialization
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable.HashMap
+import scala.language.postfixOps
+import scala.util.Random
+import scala.util.control.NonFatal
 
 /**
- * An example showing usage of streaming with SnappyData
- *
- * <p></p>
- * To run the example in local mode go to your SnappyData product distribution
- * directory and type following command on the command prompt
- * <pre>
- * bin/run-example snappydata.StreamingExample
- * </pre>
- *
- * This example starts embedded Kafka and publishes messages(advertising bids)
- * on it to be processed in SnappyData as streaming data. In SnappyData, streams
- * are managed declaratively by creating a stream table(adImpressionStream). A
- * continuous query is executed on the stream and its result is processed and
- * publisher_bid_counts table is modified based on the streaming data
- *
- * We also update a row table to maintain the no of distinct bids so far(example
- * of storing and updating a state of streaming data)
- *
- * For more details on streaming with SnappyData refer to:
- * http://snappydatainc.github.io/snappydata/programming_guide
- * /stream_processing_using_sql/#stream-processing-using-sql
- *
- */
+  * An example showing usage of streaming with SnappyData
+  *
+  * <p></p>
+  * To run the example in local mode go to your SnappyData product distribution
+  * directory and type following command on the command prompt
+  * <pre>
+  * bin/run-example snappydata.StreamingExample
+  * </pre>
+  *
+  * This example starts embedded Kafka and publishes messages(advertising bids)
+  * on it to be processed in SnappyData as streaming data. In SnappyData, streams
+  * are managed declaratively by creating a stream table(adImpressionStream). A
+  * continuous query is executed on the stream and its result is processed and
+  * publisher_bid_counts table is modified based on the streaming data
+  *
+  * We also update a row table to maintain the no of distinct bids so far(example
+  * of storing and updating a state of streaming data)
+  *
+  * For more details on streaming with SnappyData refer to:
+  * http://snappydatainc.github.io/snappydata/programming_guide
+  * /stream_processing_using_sql/#stream-processing-using-sql
+  *
+  */
 object StreamingExample {
 
   def main(args: Array[String]) {
@@ -76,13 +84,13 @@ object StreamingExample {
 
     println("Initializing a SnappyStreamingContext")
     val spark: SparkSession = SparkSession
-        .builder
-        .appName(getClass.getSimpleName)
-        .master("local[*]")
-        // sys-disk-dir attribute specifies the directory where persistent data is saved
-        .config("snappydata.store.sys-disk-dir", dataDirAbsolutePath)
-        .config("snappydata.store.log-file", dataDirAbsolutePath + "/SnappyDataExample.log")
-        .getOrCreate
+      .builder
+      .appName(getClass.getSimpleName)
+      .master("local[*]")
+      // sys-disk-dir attribute specifies the directory where persistent data is saved
+      .config("snappydata.store.sys-disk-dir", dataDirAbsolutePath)
+      .config("snappydata.store.log-file", dataDirAbsolutePath + "/SnappyDataExample.log")
+      .getOrCreate
 
     val snsc = new SnappyStreamingContext(spark.sparkContext, Seconds(1))
 
@@ -93,11 +101,14 @@ object StreamingExample {
     val topic = "kafka_topic"
     utils.createTopic(topic)
 
-
     val add = utils.brokerAddress
+    val groupId = s"test-consumer-" + Random.nextInt(10000)
+
     println()
     println("Creating a stream table to read data from Kafka")
     snsc.sql("drop table if exists adImpressionStream")
+    snsc.sql("drop table if exists publisher_bid_counts")
+
     // Streams can be managed as tables declaratively using SQL
     // statements.
     // rowConverter attribute specifies a class that converts a
@@ -106,16 +117,20 @@ object StreamingExample {
     // http://snappydatainc.github.io/snappydata/streamingWithSQL/
     snsc.sql(
       "create stream table adImpressionStream (" +
-          " time_stamp timestamp," +
-          " publisher string," +
-          " advertiser string," +
-          " website string," +
-          " geo string," +
-          " bid double," +
-          " cookie string) " + " using directkafka_stream options(" +
-          " rowConverter 'org.apache.spark.examples.snappydata.RowsConverter'," +
-          s" kafkaParams 'metadata.broker.list->$add;auto.offset.reset->smallest'," +
-          s" topics '$topic')"
+        " time_stamp timestamp," +
+        " publisher string," +
+        " advertiser string," +
+        " website string," +
+        " geo string," +
+        " bid double," +
+        " cookie string) " + " using kafka_stream options(" +
+        " rowConverter 'org.apache.spark.examples.snappydata.RowsConverter'," +
+        s" kafkaParams 'bootstrap.servers->$add;" +
+        "key.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
+        "value.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
+        s"group.id->$groupId;auto.offset.reset->earliest'," +
+        " startingOffsets '{\"" + topic + "\":{\"0\":0}}', " +
+        s" subscribe '$topic')"
     )
 
     // create a row table that will maintain no of bids per publisher
@@ -129,7 +144,7 @@ object StreamingExample {
     // Execute this query once every second. Output is a SchemaDStream.
     println("Registering a continuous query to to be executed every second on the stream table")
     val resultStream: SchemaDStream = snsc.registerCQ("select publisher, count(bid) as bidCount from " +
-        "adImpressionStream window (duration 1 seconds, slide 1 seconds) group by publisher")
+      "adImpressionStream window (duration 1 seconds, slide 1 seconds) group by publisher")
 
     // this conf is used to get a connection a JDBC connection
     val conf = new ConnectionConfBuilder(snsc.snappySession).build
@@ -145,7 +160,7 @@ object StreamingExample {
         val conn = ConnectionUtil.getConnection(conf)
         val result = df.collect()
         val stmt = conn.prepareStatement("update publisher_bid_counts set " +
-            s"bidCount = bidCount + ? where publisher = ?")
+          s"bidCount = bidCount + ? where publisher = ?")
 
         result.foreach(row => {
           val publisher = row.getString(0)
@@ -174,7 +189,7 @@ object StreamingExample {
 
     println("Exiting")
     snsc.stop(false)
-    utils.shutdown()
+    utils.teardown()
     System.exit(0)
   }
 
@@ -187,7 +202,7 @@ object StreamingExample {
   }
 
   def publishKafkaMessages(utils: EmbeddedKafkaUtils, topic: String): Unit = {
-    for (i <- 0 until 10) {
+    for (_ <- 0 until 10) {
       val currentTime = System.currentTimeMillis()
 
       // bids with comma separated fields
@@ -212,15 +227,15 @@ object StreamingExample {
 
 
 /**
- * Converts an input stream message into an org.apache.spark.sql.Row
- * instance
- */
+  * Converts an input stream message into an org.apache.spark.sql.Row
+  * instance
+  */
 class RowsConverter extends StreamToRowsConverter with Serializable {
 
   override def toRows(message: Any): Seq[Row] = {
     val log = message.asInstanceOf[String]
     val fields = log.split(",")
-    val rows = Seq(Row.fromSeq(Seq(new java.sql.Timestamp(fields(0).toLong),
+    Seq(Row.fromSeq(Seq(new java.sql.Timestamp(fields(0).toLong),
       fields(1),
       fields(2),
       fields(3),
@@ -228,15 +243,10 @@ class RowsConverter extends StreamToRowsConverter with Serializable {
       fields(5).toDouble,
       fields(6)
     )))
-
-    rows
   }
 }
 
-/**
- * Utility class to start embedded Kafka and publish messages
- */
-protected class EmbeddedKafkaUtils extends Logging {
+class EmbeddedKafkaUtils extends Logging {
 
   // Zookeeper related configurations
   private val zkHost = "localhost"
@@ -246,12 +256,11 @@ protected class EmbeddedKafkaUtils extends Logging {
 
   private var zookeeper: EmbeddedZookeeper = _
 
-  private var zkClient: ZkClient = _
+  private var zkUtils: kafka.utils.ZkUtils = _
 
   // Kafka broker related configurations
   private val brokerHost = "localhost"
-  // 0.8.2 server doesn't have a boundPort method, so can't use 0 for a random port
-  private var brokerPort = RandomUtils.nextInt(1024, 65536)
+  private var brokerPort = 0
   private var brokerConf: KafkaConfig = _
 
   // Kafka broker server
@@ -274,9 +283,9 @@ protected class EmbeddedKafkaUtils extends Logging {
     s"$brokerHost:$brokerPort"
   }
 
-  def zookeeperClient: ZkClient = {
+  def zookeeperClient: ZkUtils = {
     assert(zkReady, "Zookeeper not setup yet or already torn down, cannot get zookeeper client")
-    Option(zkClient).getOrElse(
+    Option(zkUtils).getOrElse(
       throw new IllegalStateException("Zookeeper client is not yet initialized"))
   }
 
@@ -286,8 +295,7 @@ protected class EmbeddedKafkaUtils extends Logging {
     zookeeper = new EmbeddedZookeeper(s"$zkHost:$zkPort")
     // Get the actual zookeeper binding port
     zkPort = zookeeper.actualPort
-    zkClient = new ZkClient(s"$zkHost:$zkPort", zkSessionTimeout, zkConnectionTimeout,
-      ZKStringSerializer)
+    zkUtils = ZkUtils(s"$zkHost:$zkPort", zkSessionTimeout, zkConnectionTimeout, false)
     zkReady = true
   }
 
@@ -298,9 +306,10 @@ protected class EmbeddedKafkaUtils extends Logging {
     // Kafka broker startup
     Utils.startServiceOnPort(brokerPort, port => {
       brokerPort = port
-      brokerConf = new KafkaConfig(brokerConfiguration)
+      brokerConf = new KafkaConfig(brokerConfiguration, doLog = false)
       server = new KafkaServer(brokerConf)
       server.startup()
+      brokerPort = server.boundPort()
       (server, brokerPort)
     }, new SparkConf(), "KafkaBroker")
 
@@ -313,8 +322,8 @@ protected class EmbeddedKafkaUtils extends Logging {
     setupEmbeddedKafkaServer()
   }
 
-  /** Shutdown the whole servers, including Kafka broker and Zookeeper */
-  def shutdown(): Unit = {
+  /** Teardown the whole servers, including Kafka broker and Zookeeper */
+  def teardown(): Unit = {
     brokerReady = false
     zkReady = false
 
@@ -330,9 +339,9 @@ protected class EmbeddedKafkaUtils extends Logging {
 
     brokerConf.logDirs.foreach { f => Utils.deleteRecursively(new File(f)) }
 
-    if (zkClient != null) {
-      zkClient.close()
-      zkClient = null
+    if (zkUtils != null) {
+      zkUtils.close()
+      zkUtils = null
     }
 
     if (zookeeper != null) {
@@ -342,42 +351,94 @@ protected class EmbeddedKafkaUtils extends Logging {
   }
 
   /** Create a Kafka topic and wait until it is propagated to the whole cluster */
-  def createTopic(topic: String, partitions: Int): Unit = {
-    AdminUtils.createTopic(zkClient, topic, partitions, 1)
+  def createTopic(topic: String, partitions: Int, overwrite: Boolean = false): Unit = {
+    var created = false
+    while (!created) {
+      try {
+        AdminUtils.createTopic(zkUtils, topic, partitions, 1)
+        created = true
+      } catch {
+        case e: kafka.common.TopicExistsException if overwrite => // deleteTopic(topic)
+      }
+    }
+    // wait until metadata is propagated
+    (0 until partitions).foreach { p =>
+      waitUntilMetadataIsPropagated(topic, p)
+    }
   }
 
-  /** Single-argument version for backwards compatibility */
-  def createTopic(topic: String): Unit = createTopic(topic, 1)
+  /** Create a Kafka topic and wait until it is propagated to the whole cluster */
+  def createTopic(topic: String): Unit = {
+    createTopic(topic, 1)
+  }
+
 
   /** Send the array of messages to the Kafka broker */
-  def sendMessages(topic: String, messages: Array[String]): Unit = {
-    producer = new Producer[String, String](new ProducerConfig(producerConfiguration))
-    producer.send(messages.map {
-      new KeyedMessage[String, String](topic, _)
-    }: _*)
-    producer.close()
-    producer = null
+  def sendMessages(topic: String, messages: Array[String]): Seq[(String, RecordMetadata)] = {
+    sendMessages(topic, messages, None)
   }
 
-  private def brokerConfiguration: Properties = {
+  /** Send the array of messages to the Kafka broker using specified partition */
+  def sendMessages(
+                    topic: String,
+                    messages: Array[String],
+                    partition: Option[Int]): Seq[(String, RecordMetadata)] = {
+    producer = new KafkaProducer[String, String](producerConfiguration)
+    val offsets = try {
+      messages.map { m =>
+        val record = partition match {
+          case Some(p) => new ProducerRecord[String, String](topic, p, null, m)
+          case None => new ProducerRecord[String, String](topic, m)
+        }
+        val metadata =
+          producer.send(record).get(10, TimeUnit.SECONDS)
+        (m, metadata)
+      }
+    } finally {
+      if (producer != null) {
+        producer.close()
+        producer = null
+      }
+    }
+    offsets
+  }
+
+  protected def brokerConfiguration: Properties = {
     val props = new Properties()
     props.put("broker.id", "0")
     props.put("host.name", "localhost")
+    props.put("advertised.host.name", "localhost")
     props.put("port", brokerPort.toString)
     props.put("log.dir", Utils.createTempDir().getAbsolutePath)
     props.put("zookeeper.connect", zkAddress)
     props.put("log.flush.interval.messages", "1")
     props.put("replica.socket.timeout.ms", "1500")
+    props.put("delete.topic.enable", "true")
     props
   }
 
   private def producerConfiguration: Properties = {
     val props = new Properties()
-    props.put("metadata.broker.list", brokerAddress)
-    props.put("serializer.class", classOf[StringEncoder].getName)
+    props.put("bootstrap.servers", brokerAddress)
+    props.put("value.serializer", classOf[StringSerializer].getName)
+    props.put("key.serializer", classOf[StringSerializer].getName)
     // wait for all in-sync replicas to ack sends
-    props.put("request.required.acks", "-1")
+    props.put("acks", "all")
     props
+  }
+
+  private def waitUntilMetadataIsPropagated(topic: String, partition: Int): Unit = {
+    def isPropagated = server.apis.metadataCache.getPartitionInfo(topic, partition) match {
+      case Some(partitionState) =>
+        val leaderAndInSyncReplicas = partitionState.leaderIsrAndControllerEpoch.leaderAndIsr
+
+        zkUtils.getLeaderForPartition(topic, partition).isDefined &&
+          Request.isValidBrokerId(leaderAndInSyncReplicas.leader) &&
+          leaderAndInSyncReplicas.isr.size >= 1
+
+      case _ =>
+        false
+    }
   }
 
   private class EmbeddedZookeeper(val zkConnect: String) {

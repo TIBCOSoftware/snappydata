@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -112,9 +112,8 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
         asInstanceOf[PartitionedRegion]
 
-    val shadowRegion = Misc.getRegionForTable("APP." + ColumnFormatRelation.
-        columnBatchTableName("COLUMNTABLE7").toUpperCase,
-      true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
+      "APP.COLUMNTABLE7"), true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8), Seq(9, 2), Seq(4, 2)) // Seq(5, 6))
 
@@ -157,9 +156,8 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
         asInstanceOf[PartitionedRegion]
 
-    val shadowRegion = Misc.getRegionForTable("APP." + ColumnFormatRelation.
-        columnBatchTableName("COLUMNTABLE7").toUpperCase,
-      true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
+      "APP.COLUMNTABLE7"), true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8), Seq(9, 2), Seq(4, 2), Seq(5, 6))
 
@@ -208,9 +206,8 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
 
     val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
         asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable("APP." + ColumnFormatRelation.
-        columnBatchTableName("COLUMNTABLE7").toUpperCase()
-      , true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
+      "APP.COLUMNTABLE7"), true).asInstanceOf[PartitionedRegion]
 
     snc.sql("insert into COLUMNTABLE7 VALUES(1,11)")
     snc.sql("insert into COLUMNTABLE7 VALUES(2,11)")

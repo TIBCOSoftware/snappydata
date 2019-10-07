@@ -1,6 +1,6 @@
 # SELECT
 
-```
+```pre
 SELECT [DISTINCT] named_expression[, named_expression, ...]
     FROM relation[, relation, ...]
     [WHERE boolean_expression]
@@ -24,7 +24,6 @@ expressions:
 
 sort_expressions:
     : expression [ASC|DESC][, expression [ASC|DESC], ...]
-
 ```
 
 For information on executing queries on Synopsis Data Engine, refer to [SDE](/../../aqp.md).
@@ -64,7 +63,7 @@ Limit the number of rows returned.
 
 ## Example
 
-```
+```pre
     SELECT * FROM boxes
     SELECT width, length FROM boxes WHERE height=3
     SELECT DISTINCT width, length FROM boxes WHERE height=3 LIMIT 2
@@ -78,7 +77,7 @@ Limit the number of rows returned.
 JOINS
 -----------
 
-```
+```pre
     join_relation:
         | relation join_type JOIN relation (ON boolean_expression | USING (column_name[, column_name, ...]))
         : relation NATURAL join_type JOIN relation
@@ -88,6 +87,7 @@ JOINS
         | (LEFT|RIGHT|FULL) [OUTER]
         : [LEFT] ANTI
 ```
+
 `INNER JOIN`</br>
 Select all rows from both relations where there is match.
 
@@ -102,7 +102,7 @@ Select only rows from the left side that match no rows on the right side.
 
 **Example**:
 
-```
+```pre
     SELECT * FROM boxes INNER JOIN rectangles ON boxes.width = rectangles.width
     SELECT * FROM boxes FULL OUTER JOIN rectangles USING (width, length)
     SELECT * FROM boxes NATURAL JOIN rectangles
@@ -111,8 +111,7 @@ Select only rows from the left side that match no rows on the right side.
 AGGREGATION
 ------------
 
-
-```
+```pre
     aggregation:
         : GROUP BY expressions [(WITH ROLLUP | WITH CUBE | GROUPING SETS (expressions))]
 ```
@@ -120,7 +119,7 @@ AGGREGATION
 Group by a set of expressions using one or more aggregate functions. Common built-in aggregate functions include count, avg, min, max, and sum.
 
 `ROLLUP`</br>
-Create a grouping set at each hierarchical level of the specified expressions. For instance, For instance, GROUP BY a, b, c WITH ROLLUP is equivalent to GROUP BY a, b, c GROUPING SETS ((a, b, c), (a, b), (a), ()). The total number of grouping sets will be N + 1, where N is the number of group expressions.
+Create a grouping set at each hierarchical level of the specified expressions. For instance, GROUP BY a, b, c WITH ROLLUP is equivalent to GROUP BY a, b, c GROUPING SETS ((a, b, c), (a, b), (a), ()). The total number of grouping sets will be N + 1, where N is the number of group expressions.
 
 `CUBE`</br>
 Create a grouping set for each possible combination of a set of the specified expressions. For instance, GROUP BY a, b, c WITH CUBE is equivalent to GROUP BY a, b, c GROUPING SETS ((a, b, c), (a, b), (b, c), (a, c), (a), (b), (c), ()). The total number of grouping sets will be 2^N, where N is the number of group expressions.
@@ -130,7 +129,7 @@ Perform a group by for each subset of the group expressions specified in the gro
 
 **Example**:
 
-```
+```pre
     SELECT height, COUNT(*) AS num_rows FROM boxes GROUP BY height
     SELECT width, AVG(length) AS average_length FROM boxes GROUP BY width
     SELECT width, length, height FROM boxes GROUP BY width, length, height WITH ROLLUP
@@ -140,7 +139,7 @@ Perform a group by for each subset of the group expressions specified in the gro
 Window Functions
 --------------
 
-```
+```pre
 window_expression:
     : expression OVER window_spec
 

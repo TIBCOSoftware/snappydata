@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,7 +27,7 @@ object ValidateCTQueriesApp {
   def main(args: Array[String]) {
     val connectionURL = args(args.length - 1)
     val conf = new SparkConf().
-        setAppName("ValidateCTQueriesApp Application").
+        setAppName("ValidateCTQueriesApp Application_" + System.currentTimeMillis()).
         set("snappydata.connection", connectionURL)
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)
@@ -55,7 +55,7 @@ object ValidateCTQueriesApp {
     }
     val startTime = System.currentTimeMillis
     val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation,
-      sqlContext)
+      sqlContext, false, false)
     val endTime = System.currentTimeMillis
     val totalTime = (endTime - startTime) / 1000
     pw.println(s"Total time for execution is :: ${totalTime} seconds.")

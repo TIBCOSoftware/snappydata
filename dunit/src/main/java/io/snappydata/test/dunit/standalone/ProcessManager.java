@@ -18,7 +18,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -50,6 +50,7 @@ import java.rmi.registry.Registry;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.gemstone.gemfire.internal.FileUtil;
 import com.gemstone.gemfire.internal.shared.NativeCalls;
@@ -176,6 +177,10 @@ public class ProcessManager {
     String classPath = System.getProperty("java.class.path");
     //String tmpDir = System.getProperty("java.io.tmpdir");
     String agent = getAgentString();
+    // limit netty buffer arenas and sizes to avoid occasional OOMEs with 1g heap
+    int pageSize = 8192;
+    int maxOrder = 10; // total size of each chunk will be "pageSize << maxOrder" i.e. 8MB
+    int numArenas = Math.min(8, Runtime.getRuntime().availableProcessors() * 2);
     return new String[] {
       cmd, "-classpath", classPath,
       "-D" + DUnitLauncher.RMI_PORT_PARAM + "=" + namingPort,
@@ -200,6 +205,14 @@ public class ProcessManager {
       "-Dsun.rmi.dgc.client.gcInterval=600000 ",
       "-Dsun.rmi.dgc.server.gcInterval=600000",
       "-Dsun.rmi.transport.tcp.handshakeTimeout=3600000",
+      "-Dspark.sql.codegen.cacheSize=300",
+      "-Dspark.ui.retainedStages=500",
+      "-Dspark.ui.retainedJobs=500",
+      "-Dspark.sql.ui.retainedExecutions=500",
+      "-Dio.netty.allocator.pageSize=" + pageSize,
+      "-Dio.netty.allocator.maxOrder=" + maxOrder,
+      "-Dio.netty.allocator.numHeapArenas=" + numArenas,
+      "-Dio.netty.allocator.numDirectArenas=" + numArenas,
       "-ea",
       agent,
       ChildVM.class.getName()
@@ -257,9 +270,19 @@ public class ProcessManager {
     }
 
     public void kill() {
-      this.killed = true;
+      this.killed = false;
       process.destroy();
-      
+      try {
+        this.killed = process.waitFor(2, TimeUnit.SECONDS);
+      } catch (Exception ignored) {
+      }
+      if (!this.killed) {
+        process.destroyForcibly();
+        try {
+          this.killed = process.waitFor(30, TimeUnit.SECONDS);
+        } catch (Exception ignored) {
+        }
+      }
     }
 
     public Process getProcess() {

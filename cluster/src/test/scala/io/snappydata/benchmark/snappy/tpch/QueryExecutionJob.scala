@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -36,14 +36,16 @@ object QueryExecutionJob extends SnappySQLJob {
   var warmUp: Integer = _
   var runsForAverage: Integer = _
   var threadNumber: Integer = _
-
+  var traceEvents : Boolean = _
+  var randomSeed : Integer = _
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
 
     val avgFileStream: FileOutputStream = new FileOutputStream(
-            new File(s"${threadNumber}_Snappy_Average.out"))
+            new File(s"${threadNumber}_Snappy_AverageResponseTimes.csv"))
     val avgPrintStream: PrintStream = new PrintStream(avgFileStream)
+    avgPrintStream.println(s"Query,AverageResponseTime")
 
     for (prop <- sqlSparkProperties) {
       snc.sql(s"set $prop")
@@ -53,11 +55,10 @@ object QueryExecutionJob extends SnappySQLJob {
     println(s"****************queries : $queries")
     // scalastyle:on println
 
-    for (i <- 1 to 1) {
-      for (query <- queries) {
-        QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
-          threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
-      }
+    QueryExecutor.setRandomSeed(randomSeed)
+    for (query <- queries) {
+      QueryExecutor.execute(query, snc, isResultCollection, isSnappy,
+        threadNumber, isDynamic, warmUp, runsForAverage, avgPrintStream)
     }
     avgPrintStream.close()
     avgFileStream.close()
@@ -71,15 +72,12 @@ object QueryExecutionJob extends SnappySQLJob {
 
     val conf = new SparkConf()
         .setAppName("TPCH")
-        // .setMaster("local[6]")
         .setMaster("snappydata://localhost:10334")
         .set("jobserver.enabled", "false")
     val sc = new SparkContext(conf)
     val snc =
       SnappyContext(sc)
 
-
-    snc.sql("set spark.sql.shuffle.partitions=6")
     queries = Array("16")
     runJob(snc, null)
   }
@@ -93,15 +91,15 @@ object QueryExecutionJob extends SnappySQLJob {
 
     sqlSparkProperties = sqlSparkProps.split(",")
 
-    val tempqueries = if (config.hasPath("queries")) {
+    val tempQueries = if (config.hasPath("queries")) {
       config.getString("queries")
     } else {
       return SnappyJobInvalid("Specify Query number to be executed")
     }
 
     // scalastyle:off println
-    println(s"tempqueries : $tempqueries")
-    queries = tempqueries.split("-")
+    println(s"tempqueries : $tempQueries")
+    queries = tempQueries.split("-")
 
     isDynamic = if (config.hasPath("isDynamic")) {
       config.getBoolean("isDynamic")
@@ -131,6 +129,18 @@ object QueryExecutionJob extends SnappySQLJob {
       config.getInt("threadNumber")
     } else {
       1
+    }
+
+    traceEvents = if (config.hasPath("traceEvents")) {
+      config.getBoolean("traceEvents")
+    } else {
+      false
+    }
+
+    randomSeed = if (config.hasPath("randomSeed")) {
+      config.getInt("randomSeed")
+    } else {
+      42
     }
 
     SnappyJobValid()

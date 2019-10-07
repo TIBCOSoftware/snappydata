@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,6 +23,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -51,10 +52,11 @@ public class TPCHPerfComparer {
     //treat first value are base and divide subsequent values with this base value and plot values
 
     Path p = Paths.get(args[0]);
-    final int maxDepth = 4;
+    final int maxDepth = 5;
     List<String> errorList = new ArrayList<String>();
     try {
-      FileOutputStream reportOutputStream  = new FileOutputStream(new File("ComparisonReport.txt"));
+      SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm-ss") ;
+      FileOutputStream reportOutputStream  = new FileOutputStream(new File(p.toString(), "ComparisonReport_"+dateFormat.format(new Date())+".txt"));
       PrintStream reportPrintStream = new PrintStream(reportOutputStream);
 
       Stream<Path> matches = Files.find(p, maxDepth, (path, attr) -> path.getFileName().toString().equals("1_Snappy_Average.out"));

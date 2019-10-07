@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,36 +16,20 @@
  */
 package org.apache.spark.scheduler.cluster
 
-import com.gemstone.gemfire.cache.CacheClosedException
-import com.gemstone.gemfire.distributed.internal.MembershipListener
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rpc.{RpcEndpointAddress, RpcEnv}
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd, SparkListenerBlockManagerAdded, SparkListenerBlockManagerRemoved, SparkListenerExecutorAdded, SparkListenerExecutorRemoved, TaskSchedulerImpl}
-import org.apache.spark.sql.{BlockAndExecutorId, SnappyContext}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.{BlockAndExecutorId, SnappyContext, SnappySession}
+import org.apache.spark.storage.BlockManagerId
 
 class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
     override val rpcEnv: RpcEnv)
     extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) {
 
   private val snappyAppId = "snappy-app-" + System.currentTimeMillis
-
-  val membershipListener = new MembershipListener {
-    override def quorumLost(failures: java.util.Set[InternalDistributedMember],
-        remaining: java.util.List[InternalDistributedMember]): Unit = {}
-
-    override def memberJoined(id: InternalDistributedMember): Unit = {}
-
-    override def memberSuspect(id: InternalDistributedMember,
-        whoSuspected: InternalDistributedMember): Unit = {}
-
-    override def memberDeparted(id: InternalDistributedMember, crashed: Boolean): Unit = {
-      SnappyContext.removeBlockId(id.toString)
-    }
-  }
 
   /**
    * Overriding the spark app id function to provide a snappy specific app id.
@@ -65,22 +49,14 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl,
       scheduler.sc.conf.get("spark.driver.host"),
       scheduler.sc.conf.get("spark.driver.port").toInt,
       CoarseGrainedSchedulerBackend.ENDPOINT_NAME).toString
-    GemFireXDUtils.getGfxdAdvisor.getDistributionManager
-        .addMembershipListener(membershipListener)
-    logInfo(s"started with driverUrl $driverUrl")
+    logInfo(s"SchedulerBackend started with driverUrl $driverUrl")
   }
 
   override def stop() {
     super.stop()
     _driverUrl = ""
     SnappyClusterManager.cm.foreach(_.stopLead())
-    try {
-      GemFireXDUtils.getGfxdAdvisor.getDistributionManager
-          .removeMembershipListener(membershipListener)
-    } catch {
-      case cce: CacheClosedException =>
-    }
-    logInfo(s"stopped successfully")
+    logInfo(s"SchedulerBackend stopped successfully")
   }
 
   override protected def createDriverEndpoint(properties: Seq[(String, String)]): DriverEndpoint = {
@@ -100,13 +76,18 @@ class BlockManagerIdListener(sc: SparkContext)
     val executorCores = msg.executorInfo.totalCores
     val profile = Misc.getMemStore.getDistributionAdvisor
         .getProfile(msg.executorId)
-    val numProcessors = if (profile != null) profile.getNumProcessors
-    else executorCores
+    val (numProcessors, usableHeap) =
+      if (profile != null) profile.getNumProcessors -> profile.getUsableHeap
+      else executorCores -> 0L
     SnappyContext.getBlockId(msg.executorId) match {
       case None => SnappyContext.addBlockId(msg.executorId,
-        new BlockAndExecutorId(null, executorCores, numProcessors))
+        new BlockAndExecutorId(null, executorCores, numProcessors, usableHeap))
       case Some(b) => b._executorCores = executorCores
         b._numProcessors = numProcessors
+    }
+    SnappyContext.getBlockId(msg.executorId) match {
+      case Some(b) => if (b._blockId != null) handleNewExecutorJoin(b._blockId)
+      case None =>
     }
   }
 
@@ -117,7 +98,7 @@ class BlockManagerIdListener(sc: SparkContext)
       case None =>
         val numCores = sc.schedulerBackend.defaultParallelism()
         SnappyContext.addBlockId(executorId, new BlockAndExecutorId(
-          msg.blockManagerId, numCores, numCores))
+          msg.blockManagerId, numCores, numCores, 0L))
       case Some(b) => b._blockId = msg.blockManagerId
     }
   }
@@ -132,4 +113,12 @@ class BlockManagerIdListener(sc: SparkContext)
 
   override def onApplicationEnd(msg: SparkListenerApplicationEnd): Unit =
     SnappyContext.clearBlockIds()
+
+  private def handleNewExecutorJoin(bid: BlockManagerId): Unit = {
+    val uris = SnappySession.getJarURIs
+    Utils.mapExecutors[Unit](sc, () => {
+      ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(uris)
+      Iterator.empty
+    }, 30, Seq(bid))
+  }
 }

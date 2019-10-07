@@ -74,10 +74,10 @@ pre .cs, pre .c {
 }
 */
 
-/* Formatting for Note 
+/*Formatting for Note 
 note-sub {
     background-color: #e8f7ff; 
-    color: green;
+    color: 6ab0de;
     margin: 10px 0px;
     border: #e8f7ff 1px solid;
     border-radius: 5px; 
@@ -195,7 +195,6 @@ action {
       
 table
 {
-    background: #f5f5f5;
     border-collapse: separate;
     line-height: 24px;
     margin: 15px auto;

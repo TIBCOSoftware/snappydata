@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,12 +21,11 @@ import java.sql.Types
 
 import com.esotericsoftware.kryo.io.{Input, KryoObjectInput, KryoObjectOutput, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoException, Serializer => KryoClassSerializer}
-
-import org.apache.spark.sql.PartitionResult
 import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
+import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{PartitionResult, SnappyDataPoolDialect, SnappyStoreClientDialect}
 
 
 private[spark] class ExternalizableOnlySerializer[T <: Externalizable]
@@ -209,8 +208,9 @@ object ConnectionPropertiesSerializer
     output.writeString(connProps.url)
     output.writeString(connProps.driver)
     connProps.dialect match {
-      case GemFireXDDialect => output.writeByte(0)
-      case GemFireXDClientDialect => output.writeByte(1)
+      case SnappyStoreDialect => output.writeByte(0)
+      case SnappyStoreClientDialect => output.writeByte(1)
+      case SnappyDataPoolDialect => output.writeByte(3)
       case d => output.writeByte(2)
         kryo.writeClassAndObject(output, d)
     }
@@ -246,8 +246,9 @@ object ConnectionPropertiesSerializer
     val url = input.readString()
     val driver = input.readString()
     val dialect = input.readByte() match {
-      case 0 => GemFireXDDialect
-      case 1 => GemFireXDClientDialect
+      case 0 => SnappyStoreDialect
+      case 1 => SnappyStoreClientDialect
+      case 3 => SnappyDataPoolDialect
       case _ => kryo.readClassAndObject(input).asInstanceOf[JdbcDialect]
     }
     var numProps = input.readVarInt(true)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,48 +16,52 @@
  */
 package org.apache.spark.sql.execution.ui
 
-import org.apache.spark.{JobExecutionStatus, SparkConf}
-import org.apache.spark.scheduler.{SparkListenerEvent, SparkListenerJobStart}
-import org.apache.spark.sql.execution.{SQLExecution, SparkPlanInfo}
-
 import scala.collection.mutable
+
+import org.apache.spark.scheduler.{SparkListenerEvent, SparkListenerJobStart}
+import org.apache.spark.sql.CachedDataFrame
+import org.apache.spark.sql.execution.{SQLExecution, SparkPlanInfo}
+import org.apache.spark.{JobExecutionStatus, SparkConf}
 
 /**
  * A new event that is fired when a plan is executed to get an RDD.
  */
 case class SparkListenerSQLPlanExecutionStart(
-   executionId: Long,
-   description: String,
-   details: String,
-   physicalPlanDescription: String,
-   sparkPlanInfo: SparkPlanInfo,
-   time: Long)
-  extends SparkListenerEvent
+    executionId: Long,
+    description: String,
+    details: String,
+    physicalPlanDescription: String,
+    sparkPlanInfo: SparkPlanInfo,
+    time: Long)
+    extends SparkListenerEvent
+
+case class SparkListenerSQLPlanExecutionEnd(executionId: Long) extends SparkListenerEvent
 
 /**
  * Snappy's SQL Listener.
- * @param conf
+ *
+ * @param conf SparkConf of active SparkContext
  */
 class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
+
   // base class variables that are private
-  private val baseStageIdToStageMetrics = {
+  private[this] val baseStageIdToStageMetrics = {
     getInternalField("org$apache$spark$sql$execution$ui$SQLListener$$_stageIdToStageMetrics").
-      asInstanceOf[mutable.HashMap[Long, SQLStageMetrics]]
+        asInstanceOf[mutable.HashMap[Long, SQLStageMetrics]]
   }
-  private val baseJobIdToExecutionId = {
+  private[this] val baseJobIdToExecutionId = {
     getInternalField("org$apache$spark$sql$execution$ui$SQLListener$$_jobIdToExecutionId").
-      asInstanceOf[mutable.HashMap[Long, Long]]
+        asInstanceOf[mutable.HashMap[Long, Long]]
   }
-  private val baseActiveExecutions = {
+  private[this] val baseActiveExecutions = {
     getInternalField("activeExecutions").asInstanceOf[mutable.HashMap[Long, SQLExecutionUIData]]
   }
-  private val baseExecutionIdToData = {
+  private[this] val baseExecutionIdToData = {
     getInternalField("org$apache$spark$sql$execution$ui$SQLListener$$_executionIdToData").
-      asInstanceOf[mutable.HashMap[Long, SQLExecutionUIData]]
+        asInstanceOf[mutable.HashMap[Long, SQLExecutionUIData]]
   }
 
   def getInternalField(fieldName: String): Any = {
-    val x = classOf[SQLListener]
     val resultField = classOf[SQLListener].getDeclaredField(fieldName)
     resultField.setAccessible(true)
     resultField.get(this)
@@ -79,7 +83,7 @@ class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
       // in the active executions. For such cases, we need to
       // look up the executionUIToData as well.
       val executionData = baseActiveExecutions.get(executionId).
-        orElse(baseExecutionIdToData.get(executionId))
+          orElse(baseExecutionIdToData.get(executionId))
       executionData.foreach { executionUIData =>
         executionUIData.jobs(jobId) = JobExecutionStatus.RUNNING
         executionUIData.stages ++= stageIds
@@ -88,6 +92,28 @@ class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
         baseJobIdToExecutionId(jobId) = executionId
       }
     }
+  }
+
+  private def newExecutionUIData(executionId: Long, description: String, details: String,
+      physicalPlanDescription: String, sparkPlanInfo: SparkPlanInfo,
+      time: Long): SQLExecutionUIData = {
+    val physicalPlanGraph = SparkPlanGraph(sparkPlanInfo)
+    val sqlPlanMetrics = physicalPlanGraph.allNodes.flatMap { node =>
+      node.metrics.map(metric => metric.accumulatorId -> metric)
+    }
+    // description and details strings being reference equals means
+    // trim off former here
+    val desc = if (description eq details) {
+      CachedDataFrame.queryStringShortForm(details)
+    } else description
+    new SQLExecutionUIData(
+      executionId,
+      desc,
+      details,
+      physicalPlanDescription,
+      physicalPlanGraph,
+      sqlPlanMetrics.toMap,
+      time)
   }
 
   /**
@@ -108,44 +134,32 @@ class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
     event match {
 
       case SparkListenerSQLExecutionStart(executionId, description, details,
-      physicalPlanDescription, sparkPlanInfo, time) =>
-        val executionUIData = baseExecutionIdToData.get(executionId).getOrElse({
-        val physicalPlanGraph = SparkPlanGraph(sparkPlanInfo)
-        val sqlPlanMetrics = physicalPlanGraph.allNodes.flatMap { node =>
-          node.metrics.map(metric => metric.accumulatorId -> metric)
+      physicalPlanDescription, sparkPlanInfo, time) => synchronized {
+        val executionUIData = baseExecutionIdToData.get(executionId) match {
+          case None =>
+            val executionUIData = newExecutionUIData(executionId, description, details,
+              physicalPlanDescription, sparkPlanInfo, time)
+            baseExecutionIdToData(executionId) = executionUIData
+            executionUIData
+          case Some(d) => d
         }
-        new SQLExecutionUIData(
-          executionId,
-          description,
-          details,
-          physicalPlanDescription,
-          physicalPlanGraph,
-          sqlPlanMetrics.toMap,
-          time)
-        })
+        baseActiveExecutions(executionId) = executionUIData
+      }
+
+      case SparkListenerSQLPlanExecutionStart(executionId, description, details,
+      physicalPlanDescription, sparkPlanInfo, time) =>
+        val executionUIData = newExecutionUIData(executionId, description, details,
+          physicalPlanDescription, sparkPlanInfo, time)
         synchronized {
           baseExecutionIdToData(executionId) = executionUIData
           baseActiveExecutions(executionId) = executionUIData
         }
-      case SparkListenerSQLPlanExecutionStart(executionId, description, details,
-      physicalPlanDescription, sparkPlanInfo, time) =>
-        val physicalPlanGraph = SparkPlanGraph(sparkPlanInfo)
-        val sqlPlanMetrics = physicalPlanGraph.allNodes.flatMap { node =>
-          node.metrics.map(metric => metric.accumulatorId -> metric)
-        }
-        val executionUIData = new SQLExecutionUIData(
-          executionId,
-          description,
-          details,
-          physicalPlanDescription,
-          physicalPlanGraph,
-          sqlPlanMetrics.toMap,
-          time)
-        synchronized {
-          baseExecutionIdToData(executionId) = executionUIData
-        }
+
+      case SparkListenerSQLPlanExecutionEnd(executionId) => synchronized {
+        baseActiveExecutions.remove(executionId)
+      }
+
       case _ => super.onOtherEvent(event)
     }
-
   }
 }

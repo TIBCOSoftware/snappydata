@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -34,7 +34,7 @@ sbin="$(dirname "$(absPath "$0")")"
 "$sbin"/snappy-locators.sh status "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh status "$@"
+"$sbin"/snappy-servers.sh -fg status "$@"
 
 # Start Leads
 if [ "$1" != "rowstore" ]; then

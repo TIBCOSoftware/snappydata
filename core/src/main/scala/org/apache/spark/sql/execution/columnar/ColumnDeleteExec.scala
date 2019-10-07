@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,14 +18,15 @@
 package org.apache.spark.sql.execution.columnar
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder
 import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
+import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.store.{CompressionCodecId, StoreUtils}
 import org.apache.spark.sql.types.StructType
 
 /**
@@ -35,20 +36,18 @@ import org.apache.spark.sql.types.StructType
 case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
     numBuckets: Int, isPartitioned: Boolean, tableSchema: StructType,
-    externalStore: ExternalStore, relation: Option[DestroyRelation], keyColumns: Seq[Attribute],
-    connProps: ConnectionProperties, onExecutor: Boolean) extends ColumnExec {
+    externalStore: ExternalStore, appendableRelation: JDBCAppendableRelation,
+    keyColumns: Seq[Attribute], connProps: ConnectionProperties,
+    onExecutor: Boolean) extends ColumnExec {
+
+  override def relation: Option[DestroyRelation] = Some(appendableRelation)
+
+  val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(
+    appendableRelation.getCompressionCodec)
 
   override protected def opType: String = "Delete"
 
   override def nodeName: String = "ColumnDelete"
-
-  // Require per-partition sort on batchId+ordinal because deltas are accumulated for
-  // consecutive batchIds+ordinals else it will  be very inefficient for bulk deletes.
-  // BatchId attribute is always third last in the keyColumns while ordinal
-  // (index of row in the batch) is the one before that.
-  override def requiredChildOrdering: Seq[Seq[SortOrder]] =
-  Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 3)),
-    StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 4))))
 
   override lazy val metrics: Map[String, SQLMetric] = {
     if (onExecutor) Map.empty
@@ -59,6 +58,8 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
         "number of deletes in column batches"))
   }
 
+  override def simpleString: String = s"${super.simpleString} compression=$compressionCodec"
+
   @transient private var batchOrdinal: String = _
   @transient private var finishDelete: String = _
   @transient private var deleteMetric: String = _
@@ -67,7 +68,8 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val sql = new StringBuilder
-    sql.append("DELETE FROM ").append(resolvedName).append(" WHERE ")
+    sql.append("DELETE FROM ").append(quotedName(resolvedName, escapeQuotes = true))
+        .append(" WHERE ")
     // only the ordinalId is required apart from partitioning columns
     if (keyColumns.length > 4) {
       JdbcExtendedUtils.fillColumnsClause(sql, keyColumns.dropRight(4).map(_.name),
@@ -151,9 +153,8 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
          |    }
          |    // finish previous encoder, put into table and re-initialize
          |    final java.nio.ByteBuffer buffer = $deleteEncoder.finish($position, $lastNumRows);
-         |    // delete puts an empty stats row to denote that there are changes
-         |    $externalStoreTerm.storeDelete($tableName, buffer, new byte[] { 0, 0, 0, 0 },
-         |        $lastBucketId, $lastColumnBatchId, new scala.Some($connTerm));
+         |    $externalStoreTerm.storeDelete($tableName, buffer, $lastBucketId,
+         |        $lastColumnBatchId, ${compressionCodec.id}, new scala.Some($connTerm));
          |    $result += $batchOrdinal;
          |    ${if (deleteMetric eq null) "" else s"$deleteMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoder

@@ -5,7 +5,7 @@ Specifies which connection to make current when more than one connection is open
 ## Syntax
 
 ``` pre
-SET CONNECTION Identifier
+SET CONNECTION Identifier;
 ```
 
 ## Description
@@ -17,12 +17,11 @@ If there is no such connection, an error results and the current connection is u
 ## Example
 
 ``` pre
-snappy> set connection clientConnection;
-snappy(CLIENTCONNECTION)> show connections;
-CLIENTCONNECTION* -     jdbc:snappydata://localhost:1527/
-PEERCLIENT -    jdbc:snappydata:
+snappy(CONNECTION0)> set connection CONNECTION1;
+snappy(CONNECTION1)> show connections;
+CONNECTION0 - 	jdbc:snappydata:thrift://127.0.0.1[1527]
+CONNECTION1* - 	jdbc:snappydata:thrift://127.0.0.1[1527]
 * = current connection
-snappy(CLIENTCONNECTION)>
 ```
 
 

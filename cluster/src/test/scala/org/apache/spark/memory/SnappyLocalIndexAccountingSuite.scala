@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,10 +19,11 @@ package org.apache.spark.memory
 
 import java.sql.DriverManager
 
-import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
+import com.gemstone.gemfire.internal.cache.LocalRegion
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
+
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
@@ -221,11 +222,11 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     sparkSession = createSparkSession(1, 0, 2000000L)
     snSession = new SnappySession(sparkSession.sparkContext)
     val afterRecoverySize = SparkEnv.get.memoryManager.storageMemoryUsed
-    assertApproximate(afterIndex, afterRecoverySize, 10)
+    assertApproximate(afterIndex, afterRecoverySize, 20)
     snSession.dropTable("t1")
   }
 
-  test("Test Index recovery on row repliacted table") {
+  test("Test Index recovery on row replicated table") {
     var sparkSession = createSparkSession(1, 0, 2000000L)
     var snSession = new SnappySession(sparkSession.sparkContext)
     val serverHostPort = TestUtil.startNetServer()
@@ -242,7 +243,7 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     sparkSession = createSparkSession(1, 0, 2000000L)
     snSession = new SnappySession(sparkSession.sparkContext)
     val afterRecoverySize = SparkEnv.get.memoryManager.storageMemoryUsed
-    assertApproximate(afterIndex, afterRecoverySize, 10)
+    assertApproximate(afterIndex, afterRecoverySize, 20)
     snSession.dropTable("t1")
   }
 
@@ -255,8 +256,7 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     val options = "OPTIONS (BUCKETS '1', " +
       "PARTITION_BY 'Col1', " +
       "PERSISTENCE 'none', " +
-      "EVICTION_BY 'LRUCOUNT 30', " +
-      "OVERFLOW 'true')"
+      "EVICTION_BY 'LRUCOUNT 30')"
     snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT, col4 INT, col5 INT" +
       ") " + " USING row " +
       options
@@ -284,7 +284,7 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
     LocalRegion.MAX_VALUE_BEFORE_ACQUIRE = 1
 
     val options = "OPTIONS (EVICTION_BY 'LRUCOUNT 3', " +
-      "OVERFLOW 'true', PERSISTENCE 'NONE')"
+      "PERSISTENCE 'NONE')"
     snSession.sql("CREATE TABLE t1 (Col1 INT, Col2 INT, Col3 INT, col4 INT, col5 INT" +
       ") " + " USING row " +
       options

@@ -2,7 +2,7 @@
 Users can define a function and completely customize how SnappyData evaluates data and manipulates queries using UDF and UDAF functions across sessions. 
 The definition of the functions is stored in a persistent catalog, which enables it to be used after node restart as well.
 
-!!! Note: 
+!!! Note
 	Support for UDF is available from SnappyData version release 0.8 onwards.
 
 ## Create User Defined Function
@@ -14,10 +14,10 @@ These interfaces can be included in your client application by adding **snappy-s
 
 The number of the interfaces (UDF1 to UDF22) signifies the number of parameters a UDF can take.
 
-!!! Note: 
+!!! Note
 	Currently, any UDF which can take more than 22 parameters is not supported.
 
-```scala
+```pre
 package some.package
 import org.apache.spark.sql.api.java.UDF1
 
@@ -29,24 +29,24 @@ class StringLengthUDF extends UDF1[String, Int] {
 <a id= create_udf> </a>
 ### Create a User Defined Function
 
-!!! Note:
+!!! Note
 	Place the jars used for creating persistent UDFs in a shared location (NFS, HDFS etc.) if you are configuring multiple leads for high availability. The same jar is used for DDL replay while the standby lead becomes the active lead.
     
 After defining a UDF you can bundle the UDF class in a JAR file and create the function by using `./bin/snappy-sql` of SnappyData. This creates a persistent entry in the catalog after which, you use the UDF.
 
-```scala
+```pre
 CREATE FUNCTION udf_name AS qualified_class_name RETURNS data_type USING JAR '/path/to/file/udf.jar'
 ```
 
 For example:
 
-```scala
+```pre
 CREATE FUNCTION APP.strnglen AS some.package.StringLengthUDF RETURNS Integer USING JAR '/path/to/file/udf.jar'
 ```
 
 You can write a JAVA or SCALA class to write a UDF implementation. 
 
-!!! Note: 
+!!! Note 
 	For input/output types: </br>
 	The framework always returns the Java types to the UDFs. So, if you are writing `scala.math.BigDecimal` as an input type or output type, an exception is reported. You can use `java.math.BigDecimal` in the SCALA code. 
 
@@ -68,7 +68,7 @@ You can write a JAVA or SCALA class to write a UDF implementation.
 
 ## Use a User Defined Function
 
-```scala
+```pre
 select strnglen(string_column) from <table>
 ```
 
@@ -77,13 +77,13 @@ If you try to use a UDF on a different type of column, for example, an **Int** c
 
 #### Drop the Function
 
-```scala
+```pre
 DROP FUNCTION IF EXISTS udf_name
 ```
 
 For example:
 
-```scala
+```pre
 DROP FUNCTION IF EXISTS app.strnglen
 ```
 
@@ -98,8 +98,9 @@ DROP FUNCTION IF EXISTS app.strnglen
 
 SnappyData uses the same interface as that of Spark to define a User Defined Aggregate Function  `org.apache.spark.sql.expressions.UserDefinedAggregateFunction`. For more information refer to this [document](https://databricks.com/blog/2015/09/16/apache-spark-1-5-dataframe-api-highlights.html).
 
-## Known Limitation
-In the current version of the product, setting schema over a JDBC connection (using the `set schema` command) or SnappySession (using `SnappySession.setSchema` API) does not work in all scenarios. Even if the schema is set, the operations are occasionally performed in the default `APP` schema. 
+## Known Limitations
+*	In the current version of the product, setting schema over a JDBC connection (using the `set schema` command) or SnappySession (using `SnappySession.setSchema` API) does not work in all scenarios. Even if the schema is set, the operations are occasionally performed in the default `APP` schema. 
 As a workaround, you can qualify the schemaname with tablename. </br> 
 For example, to select all rows from table 't1' in schema 'schema1', use query `select * from schema1.t1`
 
+*	In the current version of the product, user defined functions are not displayed when you run the SHOW FUNCTIONS command in SnappyData shell. This will be available in the future releases.

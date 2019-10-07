@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -49,11 +49,16 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
     ctx.addMutableState("scala.collection.Iterator", iterator,
       s"$iterator = inputs[0];")
 
-    val javaTypeName = encoder.clsTag.runtimeClass.getName
+    val javaClass = encoder.clsTag.runtimeClass
+    val javaTypeName =
+      if (javaClass.isPrimitive) ctx.boxedType(javaClass.getTypeName)
+      else javaClass.getTypeName
+
     val objVar = ctx.freshName("object")
 
     val expressions = encoder.serializer.map(
       BindReferences.bindReference(_, output))
+
     ctx.INPUT_ROW = null
     // for non-flat objects row cannot be null and exception
     // will be thrown right at the start
@@ -103,10 +108,12 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
              |} else if ($prevJavaDate != null &&
              |    $prevJavaDate.getTime() == $javaDate.getTime()) {
              |  ${ev.value} = $prevDate;
+             |  ${ev.isNull} = false;
              |} else {
              |  $prevJavaDate = $javaDate;
              |  $prevDate = $dateTimeClass.fromJavaDate($javaDate);
              |  ${ev.value} = $prevDate;
+             |  ${ev.isNull} = false;
              |}
           """.stripMargin
         }
@@ -123,12 +130,20 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
         case DateType => optimizeDate(expr)
         case _ => expr.genCode(ctx)
       }
-      if (ctx.isPrimitiveType(dataType)) {
+      ev
+      // The following code makes some of the Spark tests to fail
+      // check org.apache.spark.sql.SnappyDataFrameSuite.except - nullability.
+      // Reason was if primitives were not null checked it used to give default -1 for
+      // null ints
+      // Hence the below code was erronous and after fixing null handing in above date field
+      // it works for all cases.
+      /* if (ctx.isPrimitiveType(dataType)) {
         ev.copy(isNull = "false")
       } else {
         ev
-      }
+      } */
     }
+
     s"""
        |$declarations
        |while ($iterator.hasNext()) {
@@ -143,4 +158,11 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
 
 class EncoderPlan[T](rdd: RDD[T], val encoder: ExpressionEncoder[T],
     val isFlat: Boolean, output: Seq[Attribute], session: SparkSession)
-    extends LogicalRDD(output, rdd.asInstanceOf[RDD[InternalRow]])(session)
+    extends LogicalRDD(output, rdd.asInstanceOf[RDD[InternalRow]])(session) {
+
+  override def newInstance(): EncoderPlan.this.type = {
+    val newRDD = super.newInstance().asInstanceOf[LogicalRDD]
+    new EncoderPlan(rdd, encoder, isFlat,
+      newRDD.output, session).asInstanceOf[this.type]
+  }
+}

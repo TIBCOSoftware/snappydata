@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -42,7 +42,7 @@ class ReusableRow(val values: Array[MutableValue])
         case _ => new MutableAny
       }.toArray)
 
-  def this() = this(Seq.empty)
+  def this() = this(Nil)
 
   override final def length: Int = values.length
 

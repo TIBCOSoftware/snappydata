@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,6 +16,7 @@
  */
 package io.snappydata.util
 
+import java.nio.file.{Files, Paths}
 import java.util.Properties
 import java.util.regex.Pattern
 
@@ -23,13 +24,17 @@ import scala.collection.JavaConverters._
 
 import _root_.com.gemstone.gemfire.distributed.DistributedMember
 import _root_.com.gemstone.gemfire.distributed.internal.DistributionConfig
+import _root_.com.gemstone.gemfire.distributed.internal.DistributionConfig.ENABLE_NETWORK_PARTITION_DETECTION_NAME
 import _root_.com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import _root_.com.pivotal.gemfirexd.internal.engine.GfxdConstants
 import _root_.com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import io.snappydata.{Constant, Property, ServerManager}
+import io.snappydata.{Constant, Property, ServerManager, SnappyTableStatsProviderService}
 
-import org.apache.spark.SparkContext
+import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.hive.HiveClientUtil
+import org.apache.spark.sql.{SnappyContext, SparkSession, ThinClientConnectorMode}
+import org.apache.spark.{SparkContext, SparkEnv}
 
 /**
  * Common utility methods for store services.
@@ -39,7 +44,7 @@ object ServiceUtils {
   val LOCATOR_URL_PATTERN: Pattern = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])")
 
   private[snappydata] def getStoreProperties(
-      confProps: Array[(String, String)]): Properties = {
+      confProps: Seq[(String, String)], forInit: Boolean = false): Properties = {
     val storeProps = new Properties()
     confProps.foreach {
       case (Property.Locators(), v) =>
@@ -55,38 +60,61 @@ object ServiceUtils {
         storeProps.setProperty(k.trim.replaceFirst(
           Constant.SPARK_STORE_PREFIX, ""), v)
       case (k, v) if k.startsWith(Constant.SPARK_PREFIX) ||
-          k.startsWith(Constant.PROPERTY_PREFIX) => storeProps.setProperty(k, v)
+          k.startsWith(Constant.PROPERTY_PREFIX) ||
+          k.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) => storeProps.setProperty(k, v)
       case _ => // ignore rest
     }
-    setCommonBootDefaults(storeProps)
+    setCommonBootDefaults(storeProps, forLocator = false, forInit)
   }
 
-  private[snappydata] def setCommonBootDefaults(props: Properties): Properties = {
+  private[snappydata] def setCommonBootDefaults(props: Properties,
+      forLocator: Boolean, forInit: Boolean = true): Properties = {
     val storeProps = if (props ne null) props else new Properties()
-    val storePropNames = storeProps.stringPropertyNames()
-    // set default recovery delay to 2 minutes (SNAP-1541)
-    if (!storePropNames.contains(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP)) {
-      storeProps.setProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
+    if (!forLocator) {
+      // set default recovery delay to 2 minutes (SNAP-1541)
+      storeProps.putIfAbsent(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
+      // try hard to maintain executor and node locality
+      storeProps.putIfAbsent("spark.locality.wait.process", "20s")
+      storeProps.putIfAbsent("spark.locality.wait", "10s")
+      // default value for spark.sql.files.maxPartitionBytes in snappy is 32mb
+      storeProps.putIfAbsent("spark.sql.files.maxPartitionBytes", "33554432")
+
+      // change hive temporary files location to be inside working directory
+      // to fix issues with concurrent queries trying to access/write same directories
+      if (forInit) {
+        ClientSharedUtils.deletePath(Paths.get(HiveClientUtil.HIVE_TMPDIR), false, false)
+        Files.createDirectories(Paths.get(HiveClientUtil.HIVE_TMPDIR))
+      }
+      // set as system properties so that these can be overridden by
+      // hive-site.xml if required
+      val sysProps = System.getProperties
+      for ((hiveVar, dirName) <- HiveClientUtil.HIVE_DEFAULT_SETTINGS) {
+        sysProps.putIfAbsent(hiveVar.varname, dirName)
+      }
     }
     // set default member-timeout higher for GC pauses (SNAP-1777)
-    if (!storePropNames.contains(DistributionConfig.MEMBER_TIMEOUT_NAME)) {
-      storeProps.setProperty(DistributionConfig.MEMBER_TIMEOUT_NAME, "30000")
-    }
-    // try hard to maintain executor_ locality
-    if (!storePropNames.contains("spark.locality.wait.process")) {
-      storeProps.setProperty("spark.locality.wait.process", "20s")
-    }
+    storeProps.putIfAbsent(DistributionConfig.MEMBER_TIMEOUT_NAME, "30000")
+    // set network partition detection by default
+    storeProps.putIfAbsent(ENABLE_NETWORK_PARTITION_DETECTION_NAME, "true")
     storeProps
   }
 
   def invokeStartFabricServer(sc: SparkContext,
       hostData: Boolean): Unit = {
-    val properties = getStoreProperties(sc.getConf.getAll)
+    val properties = getStoreProperties(Utils.getInternalSparkConf(sc).getAll, forInit = true)
     // overriding the host-data property based on the provided flag
     if (!hostData) {
       properties.setProperty("host-data", "false")
       // no DataDictionary persistence for non-embedded mode
       properties.setProperty("persist-dd", "false")
+    }
+    // set the log-level from initialized SparkContext's level if set to higher level than default
+    if (!properties.containsKey("log-level")) {
+      val level = org.apache.log4j.Logger.getRootLogger.getLevel
+      if ((level ne null) && level.isGreaterOrEqual(org.apache.log4j.Level.WARN)) {
+        properties.setProperty("log-level",
+          ClientSharedUtils.convertToJavaLogLevel(level).getName.toLowerCase)
+      }
     }
     ServerManager.getServerInstance.start(properties)
 
@@ -98,8 +126,8 @@ object ServiceUtils {
     }
   }
 
-  def invokeStopFabricServer(sc: SparkContext): Unit = {
-    ServerManager.getServerInstance.stop(null)
+  def invokeStopFabricServer(sc: SparkContext, shutDownCreds: Properties = null): Unit = {
+    ServerManager.getServerInstance.stop(shutDownCreds)
   }
 
   def getAllLocators(sc: SparkContext): scala.collection.Map[DistributedMember, String] = {
@@ -119,12 +147,28 @@ object ServiceUtils {
           org.apache.spark.sql.collection.Utils.getClientHostPort(locator._2)
         }).mkString(",")
 
-    "jdbc:" + Constant.SNAPPY_URL_PREFIX + (if (locatorUrl.contains(",")) {
+    Constant.DEFAULT_THIN_CLIENT_URL + (if (locatorUrl.contains(",")) {
       locatorUrl.substring(0, locatorUrl.indexOf(",")) +
           "/;secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1)
     } else locatorUrl + "/")
   }
 
   def clearStaticArtifacts(): Unit = {
+  }
+
+  def isOffHeapStorageAvailable(sparkSession: SparkSession): Boolean = {
+    SnappyContext.getClusterMode(sparkSession.sparkContext) match {
+      case _: ThinClientConnectorMode =>
+        SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
+      case _ =>
+        try {
+          SnappyTableStatsProviderService.getService.getMembersStatsFromService.
+              values.forall(member => !member.isDataServer ||
+              (member.getOffHeapMemorySize > 0))
+        }
+        catch {
+          case _: Throwable => false
+        }
+    }
   }
 }

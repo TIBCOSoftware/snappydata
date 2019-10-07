@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -19,11 +19,28 @@
 
 #set -vx 
 
+function absPath() {
+    perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
+}
+
+if [ -z "${SNAPPY_HOME}" ]; then
+  export SNAPPY_HOME="$(absPath "$(dirname "$(absPath "$0")")/..")"
+fi
+if [ -z "${SPARK_HOME}" ]; then
+  export SPARK_HOME="$SNAPPY_HOME"
+fi
+
 usage=$'Usage: 
        # Create a new context using the provided context factory
-       snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>] [--app-jar <jar-path> --app-name <app-name>] [--conf <property=value>] [--passfile <config-file-path-with-credentials>]
+       snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>]
+         [--app-jar <jar-path> --app-name <app-name>] [--conf <property=value>]
+         [--passfile <config-file-path-with-credentials>]
        # Submit a job, optionally with a provided context or create a streaming-context and use it with the job
-       snappy-job.sh submit --app-name <app-name> --class <job-class> [--lead <hostname:port>] [--app-jar <jar-path>] [--context <context-name> | --stream] [--conf <property=value>] [--passfile <config-file-path-with-credentials>] [--batch-interval <Stream batch interval in millis>]
+       snappy-job.sh submit --app-name <app-name> --class <job-class> [--lead <hostname:port>]
+         [--app-jar <jar-path>] [--context <context-name> | --stream] [--conf <property=value>]
+         [--passfile <config-file-path-with-credentials>] [--batch-interval <Stream batch interval in millis>]
+         [--packages <comma separated package-coordinates> ]
+         [--repos <comma separated mvn repositories] [--jarcache <path where resolved jars will be kept]
        # Get status of the job with the given job-id
        snappy-job.sh status --job-id <job-id> [--lead <hostname:port>] [--passfile <config-file-path-with-credentials>]
        # Stop a job with the given job-id
@@ -51,6 +68,10 @@ TOK_EMPTY="EMPTY"
 APP_PROPS=$APP_PROPS
 securePart=""
 batchInterval=
+packages=
+repos=
+jarcache=
+alljars=
 
 while (( "$#" )); do
   param="$1"
@@ -84,6 +105,18 @@ while (( "$#" )); do
     --app-jar)
       shift
       appjar="${1:-$TOK_EMPTY}"
+    ;;
+    --packages)
+      shift
+      packages="${1:-$TOK_EMPTY}"
+    ;;
+    --repos)
+      shift
+      repos="${1:-$TOK_EMPTY}"
+    ;;
+    --jarcache)
+      shift
+      jarcache="${1:-$TOK_EMPTY}"
     ;;
     --job-id)
       shift
@@ -184,6 +217,12 @@ case $cmd in
       showUsage "--class"
     elif validateOptionalArg $appjar ; then
         showUsage "--app-jar"
+    elif validateOptionalArg $packages ; then
+        showUsage "--packages"
+    elif validateOptionalArg $repos ; then
+        showUsage "--repos"
+    elif validateOptionalArg $jarcache ; then
+        showUsage "--jarcache"
     elif validateOptionalArg $contextName ; then
       showUsage "--context"
     fi
@@ -240,6 +279,28 @@ if [[ $cmd == "jobs" && -z $newContext && -z $contextName ]]; then
   newContext="yes"
 fi
 
+function addDependentJarsToProp () {
+  if [[ $packages != "" ]]; then
+    JAR_FOLDER=$SNAPPY_HOME/jars
+    jarclasspath=`echo $JAR_FOLDER/*.jar | tr -s ' ' ':'`
+    depargs=
+    if [ ! -z $repos ]; then
+      depargs="-- repos $repos"
+    fi
+    if [ ! -z $jarcache ]; then
+      depargs="$depargs --jarcache $jarcache"
+    fi
+    depargs="$depargs $packages"
+    depjars=`${SPARK_HOME}/bin/spark-class -cp $jarclasspath org.apache.spark.deploy.GetJarsAndDependencies $depargs`
+    depjars=`echo $depjars | sed -e "s/,/|/g"`
+    if [[ -z "$APP_PROPS" ]]; then
+      APP_PROPS="dependent-jar-uris=$depjars"
+    else
+      APP_PROPS=$APP_PROPS",dependent-jar-uris=$depjars"
+    fi
+  fi
+}
+
 buildCommand
 
 # build command for new context, if needed.
@@ -260,6 +321,8 @@ fi
 # invoke command
 
 jobServerURL="$hostnamePort/${cmdLine}"
+
+addDependentJarsToProp
 
 case $cmd in
   jobs | newcontext)
@@ -286,3 +349,5 @@ case $cmd in
     curl -X DELETE ${jobServerURL} $CURL_OPTS  ${securePart}
   ;;
 esac
+
+echo

@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,25 +19,25 @@
 
 package io.snappydata
 
-import java.sql.{CallableStatement, Connection}
+import java.sql.{Connection, PreparedStatement, ResultSet}
 import java.util.{Timer, TimerTask}
 
-import com.gemstone.gemfire.internal.ByteArrayDataInput
-import com.gemstone.gemfire.{CancelException, DataSerializer}
+import scala.collection.mutable.ArrayBuffer
+import scala.util.control.NonFatal
+
+import com.gemstone.gemfire.CancelException
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyIndexStats, SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
-import scala.collection.JavaConverters._
-import scala.util.control.NonFatal
 
 object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
 
-  private var conn: Connection = null
-  private var getStatsStmt: CallableStatement = null
-  private var _url: String = null
+  private var conn: Connection = _
+  private var getStatsStmt: PreparedStatement = _
+  private var _url: String = _
 
   def initializeConnection(context: Option[SparkContext] = None): Unit = {
     var securePart = ""
@@ -51,15 +51,9 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
       case None =>
     }
     val jdbcOptions = new JDBCOptions(_url + securePart + ";route-query=false;", "",
-      Map{"driver" -> "io.snappydata.jdbc.ClientDriver"})
+      Map("driver" -> Constant.JDBC_CLIENT_DRIVER))
     conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
-    getStatsStmt = conn.prepareCall("call sys.GET_SNAPPY_TABLE_STATS(?)")
-    getStatsStmt.registerOutParameter(1, java.sql.Types.BLOB)
-  }
-
-  def start(sc: SparkContext): Unit = {
-    throw new IllegalStateException("This is expected to be called for " +
-        "Embedded cluster mode only")
+    getStatsStmt = conn.prepareStatement("select * from sys.TABLESTATS")
   }
 
   def start(sc: SparkContext, url: String): Unit = {
@@ -68,6 +62,7 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
         if (!doRun) {
           _url = url
           initializeConnection(Some(sc))
+          // reduce default interval a bit
           val delay = sc.getConf.getLong(Constant.SPARK_SNAPPY_PREFIX +
               "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
           doRun = true
@@ -89,12 +84,21 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
     }
   }
 
-  def executeStatsStmt(sc: Option[SparkContext] = None): Unit = {
+  private def executeStatsStmt(sc: Option[SparkContext] = None): ResultSet = {
     if (conn == null) initializeConnection(sc)
-    getStatsStmt.execute()
+    getStatsStmt.executeQuery()
   }
 
   private def closeConnection(): Unit = {
+    val stmt = this.getStatsStmt
+    if (stmt ne null) {
+      try {
+        stmt.close()
+      } catch {
+        case NonFatal(_) => // ignore
+      }
+      getStatsStmt = null
+    }
     val c = this.conn
     if (c ne null) {
       try {
@@ -107,23 +111,30 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   }
 
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
-      Seq[SnappyIndexStats]) = {
+      Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = synchronized {
     try {
-      executeStatsStmt(sc)
+      val resultSet = executeStatsStmt(sc)
+      val regionStats = new ArrayBuffer[SnappyRegionStats]
+      while (resultSet.next()) {
+        val tableName = resultSet.getString(1)
+        val isColumnTable = resultSet.getBoolean(2)
+        val isReplicatedTable = resultSet.getBoolean(3)
+        val rowCount = resultSet.getLong(4)
+        val sizeInMemory = resultSet.getLong(5)
+        val totalSize = resultSet.getLong(6)
+        val bucketCount = resultSet.getInt(7)
+        regionStats += new SnappyRegionStats(tableName, totalSize, sizeInMemory, rowCount,
+          isColumnTable, isReplicatedTable, bucketCount)
+      }
+      (regionStats, Nil, Nil)
     } catch {
-      case e: Exception =>
+      case NonFatal(e) =>
         logWarning("Warning: unable to retrieve table stats " +
             "from SnappyData cluster due to " + e.toString)
         logDebug("Exception stack trace: ", e)
         closeConnection()
-        return (Seq.empty[SnappyRegionStats], Seq.empty[SnappyIndexStats])
+        (Nil, Nil, Nil)
     }
-    val value = getStatsStmt.getBlob(1)
-    val bdi: ByteArrayDataInput = new ByteArrayDataInput
-    bdi.initialize(value.getBytes(1, value.length().asInstanceOf[Int]), null)
-    val regionStats: java.util.List[SnappyRegionStats] =
-    DataSerializer.readObject(bdi).asInstanceOf[java.util.ArrayList[SnappyRegionStats]]
-    (regionStats.asScala, Seq.empty[SnappyIndexStats])
   }
 
   override def stop(): Unit = {

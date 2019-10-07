@@ -1,9 +1,7 @@
 # MEMBERS
 
 A SnappyData virtual table that contains information about each distributed system member.
-<!--
-See <mark> TO BE CONFIRMED RowStore Link [Distributed System Membership Information](http://rowstore.docs.snappydata.io/docs/manage_guide/Topics/distributed-sysadmin/member-info.html#concept_2FFD239F66BD4A0099E401F1FC250574)</mark>. 
--->
+
 !!! Note
 	SnappyData converts server group names to all uppercase letters before storing the values in the SYS.MEMBERS table. DDL statements and procedures automatically convert any supplied server group values to all uppercase letters. However, you must specify uppercase values for server groups when you directly query the SYS.MEMBERS table.
 
@@ -27,4 +25,24 @@ See <mark> TO BE CONFIRMED RowStore Link [Distributed System Membership Informat
 |BOOTPROPS   |CLOB  |2147483647   | No |All of the SnappyData boot properties names and values that a member uses.|	
 
 
+**Example** </br>
 
+```pre
+snappy> select * from SYS.MEMBERS;
+ID                           |KIND          |STATUS |HOSTDATA|ISELDER|IPADDRESS |HOST     |PID        |PORT       |ROLES|NETSERVERS               |THRIFTSERVERS            |LOCATOR         |SERVERGROUPS|MANAGERINFO              |SYSTEMPROPS    |GEMFIREPROPS   |BOOTPROPS
+---------------------------------------------------------------------------------------------------------------- 
+127.0.0.1(5687)<v1>:47719    |datastore     |RUNNING|true    |false  |/127.0.0.1|localhost|5687       |47719      |     |localhost/127.0.0.1[1528]|localhost/127.0.0.1[1528]|NULL            |            |Managed Node             |
+--- System Pr&|
+--- GemFire P&|
+--- GemFireXD&
+127.0.0.1(5877)<v2>:10769    |primary lead  |RUNNING|false   |false  |/127.0.0.1|localhost|5877       |10769      |     |                         |                         |NULL            |            |Managed Node             |
+--- System Pr&|
+--- GemFire P&|
+--- GemFireXD&
+127.0.0.1(5548)<ec><v0>:21415|locator       |RUNNING|false   |true   |/127.0.0.1|localhost|5548       |21415      |     |localhost/127.0.0.1[1527]|localhost/127.0.0.1[1527]|127.0.0.1[10334]|            |Manager Node: Not Running|
+--- System Pr&|
+--- GemFire P&|
+--- GemFireXD&
+
+3 rows selected
+```

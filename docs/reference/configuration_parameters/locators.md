@@ -7,15 +7,15 @@ List of locators used by system members. The list must be configured consistentl
 
 For each locator, provide a host name and/or address (separated by '@', if you use both), followed by a port number in brackets. Examples:
 
-``` pre
+```pre
 locators=address1[port1],address2[port2]
 ```
 
-``` pre
+```pre
 locators=hostName1@address1[port1],name2@address2[port2]
 ```
 
-``` pre
+```pre
 locators=hostName1[port1],name2[port2]
 ```
 

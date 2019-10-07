@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,7 +27,6 @@ import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdHeapDataOutputStream
 import org.codehaus.janino.CompilerFactory
 
-import org.apache.spark.Logging
 import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
@@ -35,13 +34,15 @@ import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData, SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ColumnWriter
 import org.apache.spark.sql.execution.columnar.encoding.UncompressedEncoder
-import org.apache.spark.sql.execution.columnar.{ColumnWriter, ExternalStoreUtils}
 import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.row.SnappyStoreDialect
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
+import org.apache.spark.{Logging, SparkEnv}
 
 /**
  * Utilities to generate code for exchanging data from Spark layer
@@ -57,10 +58,19 @@ object CodeGeneration extends Logging {
 
   override def logDebug(msg: => String): Unit = super.logDebug(msg)
 
+  lazy val (codeCacheSize, cacheSize) = {
+    val env = SparkEnv.get
+    val size = if (env ne null) {
+      env.conf.getInt("spark.sql.codegen.cacheSize", 2000)
+    } else 2000
+    // don't need as big a cache for other caches
+    (size, size >>> 2)
+  }
+
   /**
    * A loading cache of generated <code>GeneratedStatement</code>s.
    */
-  private[this] val cache = CacheBuilder.newBuilder().maximumSize(100).build(
+  private[this] lazy val cache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
     new CacheLoader[ExecuteKey, GeneratedStatement]() {
       override def load(key: ExecuteKey): GeneratedStatement = {
         val start = System.nanoTime()
@@ -76,8 +86,8 @@ object CodeGeneration extends Logging {
    * a key (name+schema) instead of the code string itself to avoid having
    * to create the code string upfront. Code adapted from CodeGenerator.cache
    */
-  private[this] val codeCache = CacheBuilder.newBuilder().maximumSize(100).build(
-    new CacheLoader[ExecuteKey, (GeneratedClass, Array[Any])]() {
+  private[this] lazy val codeCache = CacheBuilder.newBuilder().maximumSize(codeCacheSize).build(
+    new CacheLoader[ExecuteKey, AnyRef]() {
       // invoke CodeGenerator.doCompile by reflection to reduce code duplication
       private val doCompileMethod = {
         val allMethods = CodeGenerator.getClass.getDeclaredMethods.toSeq
@@ -88,7 +98,7 @@ object CodeGeneration extends Logging {
         method
       }
 
-      override def load(key: ExecuteKey): (GeneratedClass, Array[Any]) = {
+      override def load(key: ExecuteKey): AnyRef = {
         val (code, references) = key.genCode()
         val startTime = System.nanoTime()
         val result = doCompileMethod.invoke(CodeGenerator, code)
@@ -101,7 +111,7 @@ object CodeGeneration extends Logging {
       }
     })
 
-  private[this] val indexCache = CacheBuilder.newBuilder().maximumSize(100).build(
+  private[this] lazy val indexCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
     new CacheLoader[ExecuteKey, GeneratedIndexStatement]() {
       override def load(key: ExecuteKey): GeneratedIndexStatement = {
         val start = System.nanoTime()
@@ -115,7 +125,7 @@ object CodeGeneration extends Logging {
   /**
    * A loading cache of generated <code>SerializeComplexType</code>s.
    */
-  private[this] val typeCache = CacheBuilder.newBuilder().maximumSize(100).build(
+  private[this] lazy val typeCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
     new CacheLoader[DataType, SerializeComplexType]() {
       override def load(key: DataType): SerializeComplexType = {
         val start = System.nanoTime()
@@ -219,7 +229,7 @@ object CodeGeneration extends Logging {
       ev.code = ""
       c
     }
-    val jdbcType = ExternalStoreUtils.getJDBCType(dialect, NullType)
+    val jdbcType = JdbcExtendedUtils.getJdbcType(NullType, null, dialect).jdbcNullType
     s"""
        |${code}if (${ev.isNull}) {
        |  $stmt.setNull(${col + 1}, $jdbcType);
@@ -443,7 +453,7 @@ object CodeGeneration extends Logging {
   def executeUpdate(name: String, stmt: PreparedStatement, rows: Seq[Row],
       multipleRows: Boolean, batchSize: Int, schema: Array[StructField],
       dialect: JdbcDialect): Int = {
-    val iterator = new java.util.Iterator[InternalRow] {
+    val iterator: java.util.Iterator[InternalRow] = new java.util.Iterator[InternalRow] {
 
       private val baseIterator = rows.iterator
       private val encoder = RowEncoder(StructType(schema))
@@ -469,10 +479,9 @@ object CodeGeneration extends Logging {
   }
 
   def compileCode(name: String, schema: Array[StructField],
-      genCode: () => (CodeAndComment, Array[Any])): (GeneratedClass,
-      Array[Any]) = {
-    codeCache.get(new ExecuteKey(name, schema, GemFireXDDialect,
-      forIndex = false, genCode = genCode))
+      genCode: () => (CodeAndComment, Array[Any])): (GeneratedClass, Array[Any]) = {
+    codeCache.get(new ExecuteKey(name, schema, SnappyStoreDialect,
+      forIndex = false, genCode = genCode)).asInstanceOf[(GeneratedClass, Array[Any])]
   }
 
   def getComplexTypeSerializer(dataType: DataType): SerializeComplexType =
@@ -485,13 +494,10 @@ object CodeGeneration extends Logging {
     result.addBatch(schema.fields)
   }
 
-  def removeCache(name: String): Unit =
+  def removeCache(name: String): Unit = {
     cache.invalidate(new ExecuteKey(name, null, null))
-
-  def removeCache(dataType: DataType): Unit = cache.invalidate(dataType)
-
-  def removeIndexCache(indexName: String): Unit =
-    indexCache.invalidate(new ExecuteKey(indexName, null, null, true))
+    indexCache.invalidate(new ExecuteKey(name, null, null, true))
+  }
 
   def clearAllCache(skipTypeCache: Boolean = true): Unit = {
     cache.invalidateAll()
@@ -528,26 +534,16 @@ trait GeneratedIndexStatement {
 
 final class ExecuteKey(val name: String,
     val schema: Array[StructField], val dialect: JdbcDialect,
-    val forIndex: Boolean = false,
-    val genCode: () => (CodeAndComment, Array[Any]) = null) {
+    val forIndex: Boolean = false, val genCode: () => (CodeAndComment, Array[Any]) = null) {
 
-  override lazy val hashCode: Int = if (schema != null && !forIndex) {
+  override lazy val hashCode: Int = if ((schema ne null) && !forIndex) {
     MurmurHash3.listHash(name :: schema.toList, MurmurHash3.seqSeed)
   } else name.hashCode
 
   override def equals(other: Any): Boolean = other match {
-    case o: ExecuteKey => if (schema != null && o.schema != null && !forIndex) {
-      val numFields = schema.length
-      if (numFields == o.schema.length && name == o.name) {
-        var i = 0
-        while (i < numFields) {
-          if (!schema(i).equals(o.schema(i))) {
-            return false
-          }
-          i += 1
-        }
-        true
-      } else false
+    case o: ExecuteKey => if ((schema ne null) && (o.schema ne null) && !forIndex) {
+      schema.length == o.schema.length && name == o.name && java.util.Arrays.equals(
+        schema.asInstanceOf[Array[AnyRef]], o.schema.asInstanceOf[Array[AnyRef]])
     } else {
       name == o.name
     }

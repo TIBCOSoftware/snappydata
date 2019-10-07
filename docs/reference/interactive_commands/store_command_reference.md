@@ -4,13 +4,13 @@
 
 Start the interactive `snappy` command prompt by using the snappy script without supplying any other options:
 
-``` pre
+```pre
 snappy
 ```
 
 The system property `snappy.history` specifies a file in which to store all of the commands executed during an interactive `snappy` session. For example:
 
-``` pre
+```pre
 $ export JAVA_ARGS="-Dsnappy.history=/Users/user1/snappydata-history.sql"
 $ snappy
 ```
@@ -24,6 +24,12 @@ All `snappy` commands, identifiers, and keywords are case-insensitive.
 Commands can span multiple lines without using any special escape character for ends of lines. This means that if a string spans a line, the new line contents show up in the value in the string.
 
 `snappy` treats any command that it does not recognize as a SQL command that is passed to the underlying connection. This means that any syntactic errors in `snappy` commands are handed to the SQL engine and generally result in SQL parsing errors.
+
+-	**[autocommit](../../reference/interactive_commands/autocommit.md)**
+	Turns the connection's auto-commit mode on or off.
+
+-	**[commit](../../reference/interactive_commands/commit.md)**
+	Issues a `java.sql.Connection.commit` request.
 
 -   **[connect client](../../reference/interactive_commands/connect_client.md)**
     Using the JDBC SnappyData thin client driver, connects to a SnappyData member indicated by the *host:port* values.
@@ -45,6 +51,9 @@ Commands can span multiple lines without using any special escape character for 
 
 -   **[MaximumDisplayWidth](../../reference/interactive_commands/maximumdisplaywidth.md)**
     Sets the largest display width for columns to the specified value.
+
+-   **[rollback](../../reference/interactive_commands/rollback.md)**
+	Issues a `java.sql.Connection.rollback` request.
 
 -   **[run](../../reference/interactive_commands/run.md)**
     Treats the value of the string as a valid file name, and redirects `snappy` processing to read from that file until it ends or an exit command is executed.

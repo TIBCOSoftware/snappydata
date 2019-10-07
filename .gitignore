@@ -1,5 +1,10 @@
 *.class
 aqp
+benchmarking/
+hydraLogs/
+snappy-connectors/
+snappy-poc/
+vm_*
 
 # sbt specific
 .cache/

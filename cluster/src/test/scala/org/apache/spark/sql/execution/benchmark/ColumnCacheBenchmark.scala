@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -40,7 +40,6 @@ import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import io.snappydata.SnappyFunSuite
 
 import org.apache.spark.SparkConf
-import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
 import org.apache.spark.sql.internal.SQLConf
@@ -49,7 +48,7 @@ import org.apache.spark.util.Benchmark
 
 class ColumnCacheBenchmark extends SnappyFunSuite {
 
-  private val cores = math.min(8, Runtime.getRuntime.availableProcessors())
+  private val cores = math.min(16, Runtime.getRuntime.availableProcessors())
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -62,29 +61,149 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   }
 
   override protected def newSparkConf(
-      addOn: SparkConf => SparkConf = null): SparkConf = {
-    val conf = new SparkConf()
-        .setIfMissing("spark.master", s"local[$cores]")
-        .setAppName("microbenchmark")
-    conf.set("snappydata.store.critical-heap-percentage", "95")
-    if (SnappySession.isEnterpriseEdition) {
-      conf.set("snappydata.store.memory-size", "1200m")
-    }
-    conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
-    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
-    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
-    if (addOn != null) {
-      addOn(conf)
-    }
-    conf
-  }
+      addOn: SparkConf => SparkConf = null): SparkConf =
+    TAQTest.newSparkConf(addOn)
 
   private lazy val sparkSession = new SparkSession(sc)
   private lazy val snappySession = snc.snappySession
 
-
   ignore("cache with randomized keys - insert") {
     benchmarkRandomizedKeys(size = 50000000, queryPath = false)
+  }
+
+  test("cache with randomized keys - query") {
+    benchmarkRandomizedKeys(size = 50000000, queryPath = true)
+  }
+
+  ignore("PutInto Vs Insert") {
+    benchMarkForPutIntoColumnTable(size = 50000000)
+  }
+
+  test("Performance and validity check for SNAP-2118") {
+    val snappy = this.snappySession
+    snappy.sql("DROP TABLE IF EXISTS TABLE1")
+    snappy.sql(
+      """
+        |create  table TABLE1(
+        |        id integer,
+        |        month integer,
+        |        val1 decimal(28,10),
+        |        name varchar(200),
+        |        val_name varchar(200),
+        |        year integer,
+        |        type_id integer,
+        |        val_id integer)
+        |using column options (partition_by 'id')
+      """.stripMargin)
+
+    snappy.sql("DROP TABLE IF EXISTS TABLE2")
+    snappy.sql(
+      """
+        |CREATE  TABLE TABLE2(
+        |        role_id INTEGER,
+        |        id INTEGER,
+        |        group_id INTEGER,
+        |        group_name VARCHAR(200),
+        |        name2 VARCHAR(200))
+        |USING COLUMN OPTIONS (PARTITION_BY 'id', COLOCATE_WITH 'TABLE1')
+      """.stripMargin)
+
+    snappy.sql("DROP TABLE IF EXISTS TABLE3")
+    snappy.sql(
+      """
+        |CREATE  TABLE TABLE3(
+        |        type_id INTEGER,
+        |        target_name VARCHAR(200),
+        |        factor DECIMAL(32,16))
+        |USING COLUMN OPTIONS (PARTITION_BY 'type_id');
+      """.stripMargin)
+
+    val numVals = 100
+    val numTypes = 100
+    val numRoles = 100
+    val numGroups = 100
+    val numNames = 1000
+    val numIds = 5000
+
+    val numIters = 10
+
+    val numElems1 = 12 * numVals * numIds
+    val numElems2 = 4 * numIds
+    val numElems3 = numTypes * numTypes
+
+    var ds1 = snappy.range(numElems1).selectExpr(s"(id % $numIds) as id",
+      s"cast((id / ($numVals * $numIds)) as int) as month",
+      "cast ((rand() * 100.0) as decimal(28, 10)) as val1",
+      s"concat('cmd_', cast((id % $numNames) as string)) as name",
+      s"concat('val_', cast(cast((id / (12 * $numIds)) as int) as string)) as val_name",
+      "((id % 2) + 2014) as year", s"(id % $numTypes) type_id", s"(id % $numVals) val_id")
+    ds1.cache()
+    ds1.count()
+    ds1.write.insertInto("TABLE1")
+
+    val ds2 = snappy.range(numElems2).selectExpr(s"cast((rand() * $numRoles) as int)",
+      s"id % $numIds", s"id % $numGroups", "concat('grp_', cast((id % 100) as string))",
+      "concat('site_', cast((id % 1000) as string))")
+    ds2.write.insertInto("TABLE2")
+
+    val ds3 = snappy.range(numElems3).selectExpr(s"id % $numTypes",
+      s"concat('type_', cast(cast((id / $numTypes) as int) as string))", "rand() * 100.0")
+    ds3.write.insertInto("TABLE3")
+
+    val sql = "select b.group_name, a.name, " +
+        "sum(a.val1 * c.factor) " +
+        "from TABLE1 a, TABLE2 b, TABLE3 c " +
+        "where a.id = b.id and a.year = 2015 and " +
+        "a.val_name like 'val\\_42%' and b.role_id = 99 and c.type_id = a.type_id and " +
+        "c.target_name = 'type_36' group by b.group_name, a.name"
+
+    val benchmark = new Benchmark("SNAP-2118 with random data", numElems1)
+
+    var expectedResult: Array[Row] = null
+    benchmark.addCase("smj", numIters, () => snappy.sql("set snappydata.hashJoinSize=-1"),
+      () => {}) { i =>
+      if (i == 1) expectedResult = snappy.sql(sql).collect()
+      else snappy.sql(sql).collect()
+    }
+    benchmark.addCase("hash", numIters, () => snappy.sql("set snappydata.hashJoinSize=1g"),
+      () => {}) { i =>
+      if (i == 1) ColumnCacheBenchmark.collect(snappy.sql(sql), expectedResult)
+      else snappy.sql(sql).collect()
+    }
+    benchmark.run()
+
+    // also check with null values and updates (SNAP-2088)
+
+    snappy.truncateTable("table1")
+    // null values every 8th row
+    ds1 = ds1.selectExpr("id", "month", "(case when (id & 7) = 0 then null else val1 end) val1",
+      "name", "(case when (id & 7) = 0 then null else val_name end) as val_name",
+      "year", "type_id", "(case when (id & 7) = 0 then null else val_id end) val_id")
+    ds1.createOrReplaceTempView("TABLE1_TEMP1")
+    ds1.write.insertInto("table1")
+
+    expectedResult = snappy.sql(sql.replace("TABLE1", "TABLE1_TEMP1")).collect()
+    ColumnCacheBenchmark.collect(snappy.sql(sql), expectedResult)
+
+    // even more null values every 4th row but on TABLE1 these are set using update
+    ds1 = ds1.selectExpr("id", "month", "(case when (id & 3) = 0 then null else val1 end) val1",
+      "name", "(case when (id & 3) = 0 then null else val_name end) as val_name",
+      "year", "type_id", "(case when (id & 3) = 0 then null else val_id end) val_id")
+    ds1.createOrReplaceTempView("TABLE1_TEMP2")
+
+    expectedResult = snappy.sql(sql.replace("TABLE1", "TABLE1_TEMP2")).collect()
+    snappy.sql("update table1 set val1 = null, val_name = null, val_id = null where (id & 3) = 0")
+    ColumnCacheBenchmark.collect(snappy.sql(sql), expectedResult)
+
+    // more update statements but these don't change anything rather change to same value
+    snappy.sql("update table1 set val1 = case when (id & 3) = 0 then null else val1 end, " +
+        "val_name = case when (id & 3) = 0 then null else val_name end, " +
+        "val_id = case when (id & 3) = 0 then null else val_id end where (id % 10) = 0")
+    ColumnCacheBenchmark.collect(snappy.sql(sql), expectedResult)
+
+    snappy.sql("DROP TABLE IF EXISTS TABLE3")
+    snappy.sql("DROP TABLE IF EXISTS TABLE2")
+    snappy.sql("DROP TABLE IF EXISTS TABLE1")
   }
 
   test("insert more than 64K data") {
@@ -98,8 +217,9 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
       SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.defaultValueString)
   }
 
-  test("cache with randomized keys - query") {
-    benchmarkRandomizedKeys(size = 50000000, queryPath = true)
+  test("PutInto wide column table") {
+    snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "-1")
+    createAndTestPutIntoInBigTable()
   }
 
   private def doGC(): Unit = {
@@ -107,6 +227,46 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     System.runFinalization()
     System.gc()
     System.runFinalization()
+  }
+
+  private def benchMarkForPutIntoColumnTable(size: Int, numIters: Int = 10): Unit = {
+    val benchmark = new Benchmark("PutInto Vs Insert", size)
+    val sparkSession = this.sparkSession
+    val snappySession = this.snappySession
+    import org.apache.spark.sql.snappy._
+    if (GemFireCacheImpl.getCurrentBufferAllocator.isDirect) {
+      logInfo("ColumnCacheBenchmark: using off-heap for performance comparison")
+    } else {
+      logInfo("ColumnCacheBenchmark: using heap for performance comparison")
+    }
+
+    val testDF2 = snappySession.range(size)
+        .selectExpr("id", "(rand() * 1000.0) as k")
+
+    def prepare(): Unit = {
+      doGC()
+      sparkSession.sql("drop table if exists test")
+      snappySession.sql("create table test (id bigint not null, k double not null) " +
+          s"using column options(partition_by 'id', buckets '$cores', key_columns 'id')")
+    }
+
+    def cleanup(): Unit = {
+      snappySession.sql("drop table if exists test")
+      doGC()
+    }
+
+    def testCleanup(): Unit = {
+      snappySession.sql("truncate table if exists test")
+    }
+
+    // As expected putInto is two times slower than a simple insert
+    addCaseWithCleanup(benchmark, "Insert", numIters, prepare, cleanup, testCleanup) { _ =>
+      testDF2.write.insertInto("test")
+    }
+    addCaseWithCleanup(benchmark, "PutInto", numIters, prepare, cleanup, testCleanup) { _ =>
+      testDF2.write.putInto("test")
+    }
+    benchmark.run()
   }
 
   /**
@@ -167,6 +327,14 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
           val max = counts.max
           assert(max - min <= 800000, "Unexpectedly large data skew: " +
               results.map(r => s"${r.getInt(1)}=${r.getLong(0)}").mkString(","))
+          // check for SNAP-2200 by forcing overflow with updates
+          snappySession.sql("update test set id = id + 1")
+          snappySession.sql("update test set k = k + 1.0")
+          ColumnCacheBenchmark.collect(snappySession.sql(
+            "select max(id), min(id) from test"), Seq(Row(size, 1L)))
+          // repopulate for the benchmark test
+          snappySession.sql("truncate table test")
+          testDF2.write.insertInto("test")
           ColumnCacheBenchmark.collect(snappySession.sql(query), expectedAnswer2)
         } else {
           ColumnCacheBenchmark.collect(sparkSession.sql(query), expectedAnswer)
@@ -226,6 +394,30 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     benchmark.run()
   }
 
+  private def createAndTestPutIntoInBigTable(): Unit = {
+    snappySession.sql("drop table if exists wide_table")
+    snappySession.sql("drop table if exists wide_table1")
+    import org.apache.spark.sql.snappy._
+    val size = 100
+    val num_col = 300
+    val str = (1 to num_col).map(i => s" '$i' as C$i")
+    val testDF = snappySession.range(size).select(str.map { expr =>
+      Column(snappySession.sessionState.sqlParser.parseExpression(expr))
+    }: _*)
+
+
+    testDF.collect()
+    val sql = (1 to num_col).map(i => s"C$i STRING").mkString(",")
+    snappySession.sql(s"create table wide_table($sql) " +
+        s" using column options(key_columns 'C2,C3')")
+    snappySession.sql(s"create table wide_table1($sql) " +
+        s" using column options()")
+    // Creating another table for Range related issue SNAP-2142
+    testDF.write.insertInto("wide_table")
+    testDF.write.insertInto("wide_table1")
+    val tableDF = snappySession.table("wide_table1")
+    tableDF.write.putInto("wide_table")
+  }
 
   private def createAndTestBigTable(): Unit = {
     snappySession.sql("drop table if exists wide_table")
@@ -246,20 +438,19 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     testDF.write.insertInto("wide_table1")
 
     val uniqDf = snappySession.table("wide_table").dropDuplicates(Array("C1"))
-    uniqDf.count()
+    logInfo("Number of unique rows in wide_table = " + uniqDf.count())
     // check fallback plans being invoked via API
-    uniqDf.show()
+    logInfo(uniqDf.collect().mkString("\n"))
     // and also via SQL
     val s = (2 to num_col).map(i => s"last(C$i)").mkString(",")
-    snappySession.sql(s"select C1, $s from wide_table group by C1").show()
+    snappySession.sql(s"select C1, $s from wide_table group by C1").collect()
 
     val df = snappySession.sql("select *" +
-      " from wide_table a , wide_table1 b where a.c1 = b.c1 and a.c1 = '1'")
+        " from wide_table a , wide_table1 b where a.c1 = b.c1 and a.c1 = '1'")
     df.collect()
 
     val df0 = snappySession.sql(s"select * from wide_table")
     df0.collect()
-    df0.show()
 
     val avgProjections = (1 to num_col).map(i => s"AVG(C$i)").mkString(",")
     val df1 = snappySession.sql(s"select $avgProjections from wide_table")

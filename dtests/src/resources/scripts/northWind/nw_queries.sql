@@ -1,5 +1,5 @@
 elapsedtime on;
-set spark.sql.shuffle.partitions=29;
+--set spark.sql.shuffle.partitions=29;
 
 SELECT * FROM Categories;
 SELECT * FROM Customers;
@@ -45,6 +45,10 @@ SELECT TitleOfCourtesy, FirstName, LastName FROM Employees WHERE TitleOfCourtesy
 SELECT FirstName, LastName, BirthDate FROM Employees WHERE BirthDate BETWEEN Cast('1950-01-01' as TIMESTAMP) AND Cast('1959-12-31 23:59:59' as TIMESTAMP);
 
 SELECT CONCAT(FirstName, ' ', LastName) FROM Employees;
+
+SELECT OrderDate, count(1) from Orders group by OrderDate order by OrderDate asc;
+
+SELECT OrderDate, count(1) from Orders group by OrderDate order by OrderDate;
 
 SELECT OrderID, Freight, Freight * 1.1 AS FreightTotal FROM Orders WHERE Freight >= 500;
 

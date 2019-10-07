@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,6 +23,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
+import org.apache.spark.jdbc.{ConnectionConfBuilder, ConnectionUtil}
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest._
 
 case class OrderData(ref: Int, description: String, price: Long,
@@ -472,9 +473,48 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("insert into test123 values(87,76,63)")
     snc.sql("insert into test123 values(12,24,53)")
 
-    snc.sql("select DSID() from test123").collect().foreach(row=>{
+    snc.sql("select DSID() from test123").collect().foreach(row => {
       assert(row.getString(0).equals(Misc.getMyId().getId()))
     });
     snc.sql("drop table test123")
+  }
+
+  test("Test UDF other schema") {
+    val conf = new ConnectionConfBuilder(snc.snappySession).build()
+    val conn = ConnectionUtil.getPooledConnection("test default conf", conf)
+    try{
+      val st = conn.createStatement
+      st.execute("create schema trade")
+      val udfText: String = "public class StringUDF implements" +
+          " org.apache.spark.sql.api.java.UDF1<String,String> {" +
+          " @Override public String call(String s){ " +
+          "               return s + s; " +
+          "}" +
+          "}"
+      val file = createUDFClass("StringUDF", udfText)
+      val jar = createJarFile(Seq(file))
+
+      snc.sql(s"CREATE FUNCTION TRADE.STRUDF AS StringUDF " +
+          s"RETURNS STRING USING JAR " +
+          s"'$jar'")
+
+      snc.sql("CREATE TABLE trade.rr_test_table(OrderRef INT NOT NULL, description String, " +
+          "price BIGINT, serviceTax DECIMAL, surcharge Float, purchase_date DATE, time Timestamp)")
+
+      snc.sql("CREATE TABLE trade.col_test_table(OrderRef INT NOT NULL," +
+          " description String, price  " +
+          "LONG, serviceTax DECIMAL, surcharge Float, purchase_date DATE, time Timestamp) " +
+          "using column options(PARTITION_BY 'OrderRef')")
+
+
+      snc.sql("select TRADE.strudf(description) from trade.col_test_table").collect()
+      snc.sql("select trade.STRUDF(description) from trade.rr_test_table").collect()
+      snc.sql("select TRADE.STRUDF(description) from trade.rr_test_table").collect()
+      dropUdf("trade.strudf")
+    } finally {
+      snc.sql("DROP TABLE IF EXISTS trade.col_test_table")
+      snc.sql("DROP TABLE IF EXISTS trade.rr_test_table")
+    }
+
   }
 }

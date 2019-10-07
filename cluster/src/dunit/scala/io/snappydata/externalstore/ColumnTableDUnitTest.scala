@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -34,13 +34,15 @@ import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
 /**
  * Some basic column table tests.
  */
+// noinspection ZeroIndexToHead
 class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
-  val currenyLocatorPort = ClusterManagerTestBase.locPort
+  private val currentLocatorPort = ClusterManagerTestBase.locPort
 
   def testTableCreation(): Unit = {
     startSparkJob()
-    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
+    Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
+      "validateNoActiveSnapshotTX"))
   }
 
   def testTableCreationWithHA(): Unit = {
@@ -48,12 +50,12 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val snc = SnappyContext(sc)
 
     createTable(snc, tableName, Map("BUCKETS" -> "1", "PERSISTENT" -> "async"))
-    verifyTableData(snc , tableName)
+    verifyTableData(snc, tableName)
 
     vm2.invoke(classOf[ClusterManagerTestBase], "stopAny")
 
     val props = bootProps
-    val port = currenyLocatorPort
+    val port = currentLocatorPort
 
     val restartServer = new SerializableRunnable() {
       override def run(): Unit = ClusterManagerTestBase.startSnappyServer(port, props)
@@ -61,39 +63,46 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     vm2.invoke(restartServer)
 
-    verifyTableData(snc , tableName)
+    verifyTableData(snc, tableName)
     dropTable(snc, tableName)
-    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
+    Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
+      "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTable(): Unit = {
     startSparkJob2()
-    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
+    Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
+      "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTableProjectionQuery(): Unit = {
     startSparkJob3()
-    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
+    Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
+      "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTableWithPartition(): Unit = {
     startSparkJob4()
-    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
+    Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
+      "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAPI(): Unit = {
     startSparkJob5()
-    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
+    Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
+      "validateNoActiveSnapshotTX"))
   }
 
   def testCreateAndSingleInsertAPI(): Unit = {
     startSparkJob6()
-    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
+    Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
+      "validateNoActiveSnapshotTX"))
   }
 
   def testCreateAndInsertCLOB(): Unit = {
     startSparkJob7()
-    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
+    Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
+      "validateNoActiveSnapshotTX"))
   }
 
 
@@ -109,7 +118,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       data = data :+ Seq.fill(3)(Random.nextInt)
     }
     val rdd = sc.parallelize(data, data.length).map(
-      s => new Data(s(0), s(1), s(2)))
+      s => Data(s(0), s(1), s(2)))
 
     val dataDF = snc.createDataFrame(rdd)
 
@@ -122,10 +131,10 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     // we don't expect any increase in put distribution stats
     val columnTableRegionName = ColumnFormatRelation.
-        columnBatchTableName(tableName).toUpperCase
+        columnBatchTableName("APP." + tableName).toUpperCase
     val getPRMessageCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
-        Int.box(Misc.getRegionForTable("APP." + columnTableRegionName, true).
+        Int.box(Misc.getRegionForTable(columnTableRegionName, true).
             asInstanceOf[PartitionedRegion].getPrStats.getPartitionMessagesSent)
       }
     }
@@ -156,7 +165,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       data = data :+ Seq.fill(3)(Random.nextInt)
     }
     val rdd = sc.parallelize(data, 3).map(
-      s => new Data(s(0), s(1), s(2)))
+      s => Data(s(0), s(1), s(2)))
 
     val dataDF = snc.createDataFrame(rdd)
 
@@ -171,11 +180,11 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val p = Map.empty[String, String]
     snc.createTable(tableName, "column", dataDF.schema, p)
     val columnTableRegionName = ColumnFormatRelation.
-        columnBatchTableName(tableName).toUpperCase
+        columnBatchTableName("APP." + tableName).toUpperCase
     // we don't expect any increase in put distribution stats
     val getPRMessageCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
-        Int.box(Misc.getRegionForTable("APP." + columnTableRegionName, true).
+        Int.box(Misc.getRegionForTable(columnTableRegionName, true).
             asInstanceOf[PartitionedRegion].getPrStats.getPartitionMessagesSent)
       }
     }
@@ -205,21 +214,21 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       data = data :+ Seq.fill(3)(Random.nextInt)
     }
     val rdd = sc.parallelize(data, 3).map(
-      s => new Data(s(0), s(1), s(2)))
+      s => Data(s(0), s(1), s(2)))
 
     val dataDF = snc.createDataFrame(rdd)
 
     val p = Map.empty[String, String]
     snc.createTable(tableName, "column", dataDF.schema, p)
 
-    val tName = ColumnFormatRelation.columnBatchTableName(tableName.toUpperCase())
+    val tName = ColumnFormatRelation.columnBatchTableName("APP." + tableName.toUpperCase())
     // we don't expect any increase in put distribution stats
     val getTotalEntriesCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
         val pr: PartitionedRegion =
-          Misc.getRegionForTable("APP." + tName, true).asInstanceOf[PartitionedRegion]
+          Misc.getRegionForTable(tName, true).asInstanceOf[PartitionedRegion]
         var buckets = Set.empty[Integer]
-        0 to (pr.getTotalNumberOfBuckets - 1) foreach { x =>
+        0 until pr.getTotalNumberOfBuckets foreach { x =>
           buckets = buckets + x
         }
         val iter = pr.getAppropriateLocalEntriesIterator(
@@ -237,7 +246,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val getLocalEntriesCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
         val pr: PartitionedRegion =
-          Misc.getRegionForTable("APP." + tName, true).asInstanceOf[PartitionedRegion]
+          Misc.getRegionForTable(tName, true).asInstanceOf[PartitionedRegion]
         val iter = pr.getAppropriateLocalEntriesIterator(
           pr.getDataStore.getAllLocalBucketIds, false, false, true, pr, false)
         var count = 0
@@ -250,7 +259,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     }
 
     dataDF.write.mode(SaveMode.Append).saveAsTable(tableName)
-    val totalCounts = Array(vm0, vm1, vm2).map(_.invoke(getTotalEntriesCount))
+    val totalCounts = Array(vm0, vm1, vm2).map(_.invoke(getTotalEntriesCount).asInstanceOf[Int])
     assert(totalCounts(0) == totalCounts(1))
     assert(totalCounts(0) == totalCounts(2))
 
@@ -263,10 +272,10 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 1008, s"Unexpected elements ${r.length}, expected=1008")
 
     snc.dropTable(tableName, ifExists = true)
-    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
+    Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
+      "validateNoActiveSnapshotTX"))
     getLogWriter.info("Successful")
   }
-
 
   private val tableName: String = "ColumnTable"
   private val tableNameWithPartition: String = "ColumnTablePartition"
@@ -285,7 +294,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       tableName: String = tableName,
       props: Map[String, String] = props): Unit = {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).saveAsTable(tableName)
@@ -309,7 +318,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       data = data :+ Seq.fill(3)(Random.nextInt)
     }
 
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(tableName, "column", dataDF.schema, props)
@@ -324,9 +333,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val region = Misc.getRegionForTable(s"APP.${tableName.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable("APP." + ColumnFormatRelation.
-        columnBatchTableName(tableName).toUpperCase(),
-      true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
+      "APP." + tableName).toUpperCase(), true).asInstanceOf[PartitionedRegion]
 
     println("startSparkJob2 " + region.size())
 
@@ -353,7 +361,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       data = data :+ Seq.fill(3)(Random.nextInt)
     }
 
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     dataDF.write.format("column").mode(SaveMode.Append)
@@ -367,10 +375,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 1005, s"Unexpected elements ${r.length}, expected=1005")
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(
-      "APP." +
-      ColumnFormatRelation.columnBatchTableName(tableNameWithPartition).toUpperCase(),
-      true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
+      "APP." + tableNameWithPartition).toUpperCase(), true).asInstanceOf[PartitionedRegion]
 
     println("startSparkJob3 " + region.size())
     println("startSparkJob3 " + shadowRegion.size())
@@ -389,7 +395,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         "USING column " +
         "options " +
         "(" +
-        "PARTITION_BY 'Key1'," +
+        "PARTITION_BY 'Key1', buckets '2', " +
         "REDUNDANCY '2', COLUMN_BATCH_SIZE '100')")
 
     var data = Seq(Seq(1, 2, 3, 4), Seq(7, 8, 9, 4), Seq(9, 2, 3, 4),
@@ -398,7 +404,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       data = data :+ Seq.fill(4)(Random.nextInt)
     }
 
-    val rdd = sc.parallelize(data, data.length).map(s => new PartitionData(s(0),
+    val rdd = sc.parallelize(data, data.length).map(s => PartitionData(s(0),
       s(1).toString, s(2).toString, s(3).toString))
     val dataDF = snc.createDataFrame(rdd)
 
@@ -421,10 +427,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(
-      "APP." +
-      ColumnFormatRelation.columnBatchTableName(tableNameWithPartition).toUpperCase(),
-      true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
+      "APP." + tableNameWithPartition).toUpperCase(), true).asInstanceOf[PartitionedRegion]
 
     println("startSparkJob4 " + region.size())
     println("startSparkJob4 " + shadowRegion.size())
@@ -442,12 +446,12 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     1 to 1000 foreach { _ =>
       data = data :+ Seq.fill(4)(Random.nextInt)
     }
-    val rdd = sc.parallelize(data, 10).map(s => new PartitionDataInt(s(0),
+    val rdd = sc.parallelize(data, 10).map(s => PartitionDataInt(s(0),
       s(1), s(2), s(3)))
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createTable(tableNameWithPartition, "column", dataDF.schema,
-      props + ("COLUMN_BATCH_SIZE" -> "100"))
+      props + ("COLUMN_BATCH_SIZE" -> "100") + ("buckets" -> "2"))
 
     data.map { r =>
       snc.insert(tableNameWithPartition, Row.fromSeq(r))
@@ -471,15 +475,13 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(
-      "APP." +
-      ColumnFormatRelation.columnBatchTableName(tableNameWithPartition).toUpperCase(),
-      true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
+      "APP." + tableNameWithPartition).toUpperCase(), true).asInstanceOf[PartitionedRegion]
 
     println("startSparkJob5 " + region.size())
     println("startSparkJob5 " + shadowRegion.size())
 
-    val regionSize = region.size() + (shadowRegion.size()/5) * 3
+    val regionSize = region.size() + (shadowRegion.size() / 5) * 3
     assert(1005 == regionSize, s"Unexpected size = $regionSize, expected = 1005")
     assert(shadowRegion.size() > 0)
 
@@ -512,7 +514,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     1 to 10000 foreach { _ =>
       data = data :+ Seq.fill(2)(Random.nextInt)
     }
-    val rdd = sc.parallelize(data, 50).map(s => new TData(s(0), s(1)))
+    val rdd = sc.parallelize(data, 50).map(s => TData(s(0), s(1)))
 
     val dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("column").mode(SaveMode.Append)
@@ -525,10 +527,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).
         asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(
-      "APP." +
-      ColumnFormatRelation.columnBatchTableName("COLUMNTABLE4").toUpperCase(),
-      true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
+      "APP.COLUMNTABLE4"), true).asInstanceOf[PartitionedRegion]
 
     println("region.size() " + region.size())
     println("shadowRegion.size()" + shadowRegion.size())
@@ -572,7 +572,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     1 to 10000 foreach { _ =>
       data = data :+ Seq.fill(4)(Random.nextInt)
     }
-    val rdd = sc.parallelize(data, 50).map(s => new PartitionData(s(0),
+    val rdd = sc.parallelize(data, 50).map(s => PartitionData(s(0),
       s(1).toString, s(2).toString, s(3).toString))
 
     val dataDF = snc.createDataFrame(rdd)
@@ -586,9 +586,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).
         asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable("APP." + ColumnFormatRelation.
-        columnBatchTableName("COLUMNTABLE4").toUpperCase(),
-      true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
+      "APP.COLUMNTABLE4"), true).asInstanceOf[PartitionedRegion]
 
     println("region.size() " + region.size())
     println("shadowRegion.size()" + shadowRegion.size())
@@ -637,23 +636,22 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         "NASDelay INT," +
         "SecurityDelay INT," +
         "LateAircraftDelay INT," +
-        "ArrDelaySlot INT) using column options (partition_by 'DayOfMonth', Buckets '7', " +
+        "ArrDelaySlot INT) using column options (partition_by 'DayOfMonth', Buckets '8', " +
         "Redundancy '2')")
 
     val hfile: String = getClass.getResource("/2015.parquet").getPath
     val airlineDataFrame = snc.read.load(hfile)
-    val start0 = System.currentTimeMillis
     airlineDataFrame.write.insertInto(s"airline")
-    assert(snc.sql("select count(*) from airline").count()>0)
+    assert(snc.sql("select count(*) from airline").count() > 0)
     snc.sql("drop table airline")
   }
 
   def testSNAP1210(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
-    snc.sql(s"create table t1 using com.databricks.spark.csv options(path " +
-      s"'${(getClass.getResource("/northwind/orders.csv").getPath)}', header 'true', " +
-      s"inferschema 'true', maxCharsPerColumn '4096')")
+    snc.sql(s"create external table t1 using csv options(path " +
+        s"'${getClass.getResource("/northwind/orders.csv").getPath}', header 'true', " +
+        s"inferschema 'true', maxCharsPerColumn '4096')")
     snc.sql("select * from t1").printSchema()
     snc.sql("select * from t1").show
     val tempPath = "/tmp/" + System.currentTimeMillis()
@@ -663,8 +661,6 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     FileUtils.deleteDirectory(new File(tempPath))
   }
 
-
-
   def testSNAP1878(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
@@ -672,20 +668,51 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     snc.sql(s"insert into t1 values(1,'test1')")
     snc.sql(s"insert into t1 values(2,'test2')")
     snc.sql(s"insert into t1 values(3,'test3')")
-    val df=snc.sql("select * from t1")
+    val df = snc.sql("select * from t1")
     df.show
     val tempPath = "/tmp/" + System.currentTimeMillis()
 
-    assert(df.count()==3)
-    df.write.option("header","true").csv(tempPath)
-    snc.createExternalTable("TEST_EXTERNAL","csv",Map("path" -> tempPath,"header" -> "true"))
-    val dataDF=snc.sql("select * from TEST_EXTERNAL")
-    assert(dataDF.count==3)
+    assert(df.count() == 3)
+    df.write.option("header", "true").csv(tempPath)
+    snc.createExternalTable("TEST_EXTERNAL", "csv", Map("path" -> tempPath, "header" -> "true"))
+    val dataDF = snc.sql("select * from TEST_EXTERNAL")
+    assert(dataDF.count == 3)
     snc.sql("drop table if exists TEST_EXTERNAL")
     FileUtils.deleteDirectory(new File(tempPath))
   }
 
+  def testSNAP2088_1(): Unit = {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    val t1 = "snap2088"
+    val t2 = "snap2088_2"
 
+    snc.sql(s"create table $t1 (airport_id int, name string, city string, country string) " +
+        s"using column options (COLUMN_BATCH_SIZE '50')")
+    snc.sql(s"create table $t2 (airport_id int, name string, city string, country string) " +
+        s"using column options (COLUMN_BATCH_SIZE '5000')")
+
+    1 to 500 foreach { i =>
+      if (i % 2 == 0) {
+        snc.sql(s"insert into $t1 values (${Random.nextInt}, 'name_$i', null, 'country_$i')")
+        snc.sql(s"insert into $t2 values (${Random.nextInt}, 'name_$i', null, 'country_$i')")
+      } else {
+        snc.sql(s"insert into $t1 values (${Random.nextInt}, 'name_$i', 'city_$i', 'country_$i')")
+        snc.sql(s"insert into $t2 values (${Random.nextInt}, 'name_$i', 'city_$i', 'country_$i')")
+      }
+    }
+    snc.sql(s"select distinct city from $t1").show
+    snc.sql(s"select distinct city from $t2 order by city").show
+    var df = snc.sql(s"select count(*) from $t1 where city is null")
+    var cnt = df.collect()(0).getLong(0)
+    assert(cnt == 250, s"$cnt records found in $t1 with null city, expected 250")
+
+    df = snc.sql(s"select count(*) from $t2 where city is null")
+    cnt = df.collect()(0).getLong(0)
+    assert(cnt == 250, s"$cnt records found in $t2 with null city, expected 250")
+
+    snc.sql(s"select distinct city from $t1 where country like 'country_1%'").show
+    snc.sql(s"select distinct city from $t2 where country like 'country_1%'").show
+  }
 }
 
 case class TData(Key1: Int, Value: Int)

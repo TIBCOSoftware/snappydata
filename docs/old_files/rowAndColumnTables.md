@@ -31,11 +31,11 @@ Create table DDL for Row and Column tables allows tables to be partitioned on pr
 For row format tables column definition can take underlying GemFire XD syntax to create a table.e.g.note the PRIMARY KEY clause below.
 
     snc.sql("CREATE TABLE tableName (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT)
-             USING row options(BUCKETS '5')" )
+             USING row options(BUCKETS '8')" )
 
 But for column table it's restricted to Spark syntax for column definition e.g.
 
-    snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '5')" )
+    snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '8')" )
 Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.
 
 ##### Spark API for managing tables

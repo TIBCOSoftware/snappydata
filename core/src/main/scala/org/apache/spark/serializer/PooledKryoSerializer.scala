@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,7 +22,7 @@ import java.nio.ByteBuffer
 
 import scala.reflect.ClassTag
 
-import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.io.{ByteBufferOutput, Input}
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer
 import com.esotericsoftware.kryo.serializers.ExternalizableSerializer
 import com.esotericsoftware.kryo.{Kryo, KryoException}
@@ -33,9 +33,9 @@ import org.apache.spark.network.util.ByteUnit
 import org.apache.spark.rdd.ZippedPartitionsPartition
 import org.apache.spark.scheduler._
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTask, StatusUpdate}
-import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
-import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep}
+import org.apache.spark.sql.catalyst.expressions.{DynamicFoldableExpression, ParamLiteral, TokenLiteral, UnsafeRow}
+import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep, SmartExecutorBucketPartition}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, JDBCSourceAsColumnarStore, SmartConnectorColumnRDD, SmartConnectorRowRDD}
 import org.apache.spark.sql.execution.joins.CacheKey
 import org.apache.spark.sql.execution.metric.SQLMetric
@@ -73,7 +73,11 @@ final class PooledKryoSerializer(conf: SparkConf)
   }
 
   override def newKryo(): Kryo = {
+    val oldClassLoader = Thread.currentThread.getContextClassLoader
     val kryo = super.newKryo()
+
+    val classLoader = kryo.getClassLoader
+    kryo.setClassLoader(oldClassLoader)
 
     // specific serialization implementations in Spark and commonly used classes
     kryo.register(classOf[UnsafeRow])
@@ -144,6 +148,9 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[PartitionResult], PartitionResultSerializer)
     kryo.register(classOf[CacheKey], new KryoSerializableSerializer)
     kryo.register(classOf[JDBCSourceAsColumnarStore], new KryoSerializableSerializer)
+    kryo.register(classOf[TokenLiteral], new KryoSerializableSerializer)
+    kryo.register(classOf[ParamLiteral], new KryoSerializableSerializer)
+    kryo.register(classOf[DynamicFoldableExpression], new KryoSerializableSerializer)
 
     try {
       val launchTasksClass = Utils.classForName(
@@ -163,6 +170,7 @@ final class PooledKryoSerializer(conf: SparkConf)
     // to java serializer else use Kryo's FieldSerializer
     kryo.setDefaultSerializer(new SnappyKryoSerializerFactory)
 
+    kryo.setClassLoader(classLoader)
     kryo
   }
 
@@ -184,11 +192,10 @@ final class PooledObject(serializer: PooledKryoSerializer,
   val kryo: Kryo = serializer.newKryo()
   val input: Input = new KryoInputStringFix(0)
 
-  def newOutput(): Output = new Output(bufferSize, -1)
-  def newOutput(size: Int): Output = new Output(size, -1)
+  def newOutput(): ByteBufferOutput = new ByteBufferOutput(bufferSize, -1)
+  def newOutput(size: Int): ByteBufferOutput = new ByteBufferOutput(size, -1)
 }
 
-// TODO: SW: pool must be per SparkContext
 object KryoSerializerPool {
 
   private[serializer] val autoResetField =
@@ -197,8 +204,11 @@ object KryoSerializerPool {
 
   private[serializer] val zeroBytes = new Array[Byte](0)
 
-  private[serializer] val (serializer, bufferSize): (PooledKryoSerializer, Int) = {
-    val conf = Option(SparkEnv.get).map(_.conf).getOrElse(new SparkConf())
+  private[serializer] lazy val (serializer, bufferSize): (PooledKryoSerializer, Int) = {
+    val conf = SparkEnv.get match {
+      case null => new SparkConf()
+      case env => env.conf
+    }
     val bufferSizeKb = conf.getSizeAsKb("spark.kryoserializer.buffer", "4k")
     val bufferSize = ByteUnit.KiB.toBytes(bufferSizeKb).toInt
     (new PooledKryoSerializer(conf), bufferSize)
@@ -206,16 +216,61 @@ object KryoSerializerPool {
 
   private[this] val pool = new java.util.ArrayDeque[SoftReference[PooledObject]]()
 
+  private def readByteBufferAsInput(bb: ByteBuffer, input: Input): Unit = {
+    if (bb.hasArray) {
+      input.setBuffer(bb.array(),
+        bb.arrayOffset() + bb.position(), bb.remaining())
+    } else {
+      val numBytes = bb.remaining()
+      val position = bb.position()
+      val bytes = new Array[Byte](numBytes)
+      bb.get(bytes, 0, numBytes)
+      bb.position(position)
+      input.setBuffer(bytes, 0, numBytes)
+    }
+  }
+
+  def serialize(f: (Kryo, ByteBufferOutput) => Unit, bufferSize: Int = -1): Array[Byte] = {
+    val pooled = borrow()
+    val output = if (bufferSize == -1) pooled.newOutput() else pooled.newOutput(bufferSize)
+    try {
+      f(pooled.kryo, output)
+      output.toBytes
+    } finally {
+      output.release()
+      release(pooled)
+    }
+  }
+
+  def deserialize[T: ClassTag](buffer: ByteBuffer, f: (Kryo, Input) => T): T = {
+    val pooled = borrow()
+    try {
+      readByteBufferAsInput(buffer, pooled.input)
+      f(pooled.kryo, pooled.input)
+    } finally {
+      release(pooled, clearInputBuffer = true)
+    }
+  }
+
+  def deserialize[T: ClassTag](bytes: Array[Byte], offset: Int, count: Int,
+      f: (Kryo, Input) => T): T = {
+    val pooled = borrow()
+    try {
+      pooled.input.setBuffer(bytes, offset, count)
+      f(pooled.kryo, pooled.input)
+    } finally {
+      release(pooled, clearInputBuffer = true)
+    }
+  }
+
   def borrow(): PooledObject = {
     var ref: SoftReference[PooledObject] = null
     pool.synchronized {
       ref = pool.pollFirst()
     }
-    while (ref != null) {
+    while (ref ne null) {
       val poolObject = ref.get()
-      if (poolObject != null) {
-        return poolObject
-      }
+      if (poolObject ne null) return poolObject
       pool.synchronized {
         ref = pool.pollFirst()
       }
@@ -248,22 +303,9 @@ private[spark] final class PooledKryoSerializerInstance(
     pooledSerializer: PooledKryoSerializer)
     extends SerializerInstance with Logging {
 
-  private def readByteBufferAsInput(bb: ByteBuffer, input: Input): Unit = {
-    if (bb.hasArray) {
-      input.setBuffer(bb.array(),
-        bb.arrayOffset() + bb.position(), bb.remaining())
-    } else {
-      val numBytes = bb.remaining()
-      val bytes = new Array[Byte](numBytes)
-      bb.get(bytes, 0, numBytes)
-      input.setBuffer(bytes, 0, numBytes)
-    }
-  }
-
   override def serialize[T: ClassTag](t: T): ByteBuffer = {
 
-    val poolObject = KryoSerializerPool.borrow()
-    val output = t match {
+    val bufferSize = t match {
       // Special handling for wholeStageCodeGenRDD
       case (rdd: Product, _) =>
         // If it is a wholestageRDD, we know the serialization buffer needs to be
@@ -276,50 +318,30 @@ private[spark] final class PooledKryoSerializerInstance(
               rdd.productElement(1).isInstanceOf[CodeAndComment]) {
               val size = rdd.productElement(1).asInstanceOf[CodeAndComment].body.length
               // round off to a multiple of 1024
-              val roundedSize = ((size + 4 * 1024) >> 10) << 10
-              poolObject.newOutput(roundedSize)
-            } else {
-              poolObject.newOutput()
-            }
-      case _ => poolObject.newOutput()
+              ((size + 4 * 1024) >> 10) << 10
+            } else -1
+      case _ => -1
     }
-
-    try {
-      poolObject.kryo.writeClassAndObject(output, t)
-      val result = ByteBuffer.wrap(output.toBytes)
-      result
-    } finally {
-      KryoSerializerPool.release(poolObject)
-    }
+    ByteBuffer.wrap(KryoSerializerPool.serialize(
+      (kryo, out) => kryo.writeClassAndObject(out, t), bufferSize))
   }
 
   override def deserialize[T: ClassTag](buffer: ByteBuffer): T = {
-    val poolObject = KryoSerializerPool.borrow()
-    val input = poolObject.input
-    try {
-      readByteBufferAsInput(buffer, input)
-      val result = poolObject.kryo.readClassAndObject(input).asInstanceOf[T]
-      result
-    } finally {
-      KryoSerializerPool.release(poolObject, clearInputBuffer = true)
-    }
+    KryoSerializerPool.deserialize(buffer,
+      (kryo, in) => kryo.readClassAndObject(in).asInstanceOf[T])
   }
 
   override def deserialize[T: ClassTag](buffer: ByteBuffer,
       loader: ClassLoader): T = {
-    val poolObject = KryoSerializerPool.borrow()
-    val kryo = poolObject.kryo
-    val input = poolObject.input
-    val oldClassLoader = kryo.getClassLoader
-    try {
-      kryo.setClassLoader(loader)
-      readByteBufferAsInput(buffer, input)
-      val result = kryo.readClassAndObject(input).asInstanceOf[T]
-      result
-    } finally {
-      kryo.setClassLoader(oldClassLoader)
-      KryoSerializerPool.release(poolObject, clearInputBuffer = true)
-    }
+    KryoSerializerPool.deserialize(buffer, (kryo, in) => {
+      val oldClassLoader = kryo.getClassLoader
+      try {
+        kryo.setClassLoader(loader)
+        kryo.readClassAndObject(in).asInstanceOf[T]
+      } finally {
+        kryo.setClassLoader(oldClassLoader)
+      }
+    })
   }
 
   override def serializeStream(stream: OutputStream): SerializationStream = {
@@ -375,6 +397,7 @@ private[serializer] class KryoStringFixSerializationStream(
       try {
         output.close()
       } finally {
+        output.release()
         output = null
         KryoSerializerPool.release(poolObject)
       }

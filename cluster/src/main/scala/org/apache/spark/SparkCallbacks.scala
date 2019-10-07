@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,12 +17,12 @@
 package org.apache.spark
 
 import org.apache.spark
-
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.memory.StoreUnifiedManager
 import org.apache.spark.rpc.RpcEnv
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{RetrieveSparkAppConfig, SparkAppConfig}
 import org.apache.spark.ui.{JettyUtils, SnappyBasicAuthenticator}
+import org.eclipse.jetty.security.authentication.BasicAuthenticator
 
 /**
  * Calls that are needed to be sent to snappy-cluster classes because
@@ -39,8 +39,10 @@ object SparkCallbacks {
       ioEncryptionKey: Option[Array[Byte]],
       isLocal: Boolean): SparkEnv = {
 
-    SparkEnv.createExecutorEnv(driverConf, executorId, hostname,
+    val env = SparkEnv.createExecutorEnv(driverConf, executorId, hostname,
       port, numCores, ioEncryptionKey, isLocal)
+    env.memoryManager.asInstanceOf[StoreUnifiedManager].init()
+    env
   }
 
   def getRpcEnv(sparkEnv: SparkEnv): RpcEnv = {
@@ -92,4 +94,11 @@ object SparkCallbacks {
     }
   }
 
+  def getAuthenticatorForJettyServer(): Option[BasicAuthenticator] = {
+    JettyUtils.customAuthenticator
+  }
+
+  def setSparkConf(sc: SparkContext, key: String, value: String): Unit = {
+    if (value ne null) sc.conf.set(key, value) else sc.conf.remove(key)
+  }
 }

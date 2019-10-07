@@ -1,0 +1,94 @@
+/*
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
+apply plugin: 'scala'
+
+compileScala.options.encoding = 'UTF-8'
+
+// fix scala+java mix to all use compileScala which uses correct dependency order
+sourceSets.main.scala.srcDir 'src/main/java'
+sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala' ]
+sourceSets.main.java.srcDirs = []
+sourceSets.test.java.srcDirs = [ ]
+
+dependencies {
+  compile 'org.scala-lang:scala-library:' + scalaVersion
+  compile 'org.scala-lang:scala-reflect:' + scalaVersion
+
+  compile 'org.slf4j:slf4j-api:' + slf4jVersion
+  compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
+  compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
+  compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
+
+  compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
+  compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
+  compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
+  compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
+  compileOnly project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
+  compileOnly project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
+  compileOnly project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
+  compileOnly project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
+  compileOnly project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
+  compileOnly project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
+
+  // some tests expect resource files as having file: URI and not jar:file:
+  testRuntime files("${projectDir}/../spark/sql/core/src/test/resources")
+  testRuntime files("${projectDir}/../spark/sql/hive/src/test/resources")
+  testRuntime files("${projectDir}/../spark/external/kafka-0-10-sql/src/test/resources")
+  testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
+      configuration: 'testOutput')
+  testCompile project(path: ':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion,
+      configuration: 'testOutput')
+  testCompile project(path: ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion,
+      configuration: 'testOutput')
+  testCompile project(':dunit')
+
+  compile (project(':snappy-core_' + scalaBinaryVersion)) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+  }
+
+  testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
+
+  if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
+    testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
+  }
+  testRuntime "org.pegdown:pegdown:${pegdownVersion}"
+}
+
+scalaTest {
+  dependsOn ':cleanScalaTest'
+  doFirst {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+  doLast {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+}
+check.dependsOn.clear()
+check.dependsOn scalaTest
+
+archivesBaseName = 'snappydata-compatibility-tests_'+ scalaBinaryVersion

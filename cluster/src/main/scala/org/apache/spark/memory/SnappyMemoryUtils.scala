@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,20 +21,28 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 object SnappyMemoryUtils {
 
   /**
-    * Checks whether GemFire critical threshold is breached
-    *
-    * @return
-    */
-  def isCriticalUp(): Boolean =
-    Option(GemFireStore.getBootingInstance).exists(_.thresholdListener.isCritical)
-
+   * Checks whether GemFire critical threshold is breached
+   */
+  def isCriticalUp: Boolean = {
+    GemFireStore.getBootingInstance match {
+      case null => false
+      case store => store.thresholdListener() match {
+        case null => false
+        case l => l.isCritical
+      }
+    }
+  }
 
   /**
-    * Checks whether GemFire eviction threshold is breached
-    *
-    * @return
-    */
-  def isEvictionUp: Boolean =
-    Option(GemFireStore.getBootingInstance).exists(_.thresholdListener.isEviction)
-
+   * Checks whether GemFire eviction threshold is breached
+   */
+  def isEvictionUp: Boolean = {
+    GemFireStore.getBootingInstance match {
+      case null => false
+      case store => store.thresholdListener() match {
+        case null => false
+        case l => l.isEviction
+      }
+    }
+  }
 }

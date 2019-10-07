@@ -18,7 +18,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -204,7 +204,7 @@ public class DUnitLauncher {
     }
     
     //populate the Host class with our stubs. The tests use this host class
-    DUnitHost host = new DUnitHost(InetAddress.getLocalHost().getCanonicalHostName(), processManager);
+    DUnitHost host = new DUnitHost("localhost", processManager);
     host.init(registry, NUM_VMS);
 
     init(master);
@@ -489,14 +489,17 @@ public class DUnitLauncher {
 
     @Override
     public VM getVM(int n) {
-      
-      if(n == DEBUGGING_VM_NUM) {
+
+      if (n == LOCATOR_VM_NUM) {
+        return getLocator();
+      }
+      if (n == DEBUGGING_VM_NUM) {
         //for ease of debugging, pass -1 to get the local VM
         return debuggingVM;
       }
 
       int oldVMCount = getVMCount();
-      if(n >= oldVMCount) {
+      if(n >= oldVMCount && n < NUM_VMS) {
         //If we don't have a VM with that number, dynamically create it.
         try {
           for(int i = oldVMCount; i <= n; i++) {

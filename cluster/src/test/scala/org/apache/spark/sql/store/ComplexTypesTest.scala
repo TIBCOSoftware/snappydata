@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -44,10 +44,10 @@ class ComplexTypesTest extends SnappyFunSuite {
     session.sql("drop table if exists trade")
     if (COLUMN_TABLE) {
       session.sql(s"${ComplexTypesTest.sqlTrade} using column " +
-          s"options (buckets '3')")
+          s"options (buckets '8')")
     } else {
       session.sql(s"${ComplexTypesTest.sqlTrade} using row options " +
-          s"(partition_by 'sym', buckets '3', overflow 'true')")
+          s"(partition_by 'sym', buckets '8', overflow 'true')")
     }
 
     val tradeDF = session.createDataset(tradeRDD)

@@ -1,6 +1,6 @@
 # Working with Stratified Samples
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
 
 ## Create Sample Tables
 
@@ -8,7 +8,7 @@ You can create sample tables on datasets that can be sourced from any source sup
 
 Here is an SQL based example to create a sample on tables locally available in the SnappyData cluster. 
 
-```
+```pre
 CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI 
   OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') 
   AS (SELECT * FROM NYCTAXI);
@@ -21,31 +21,31 @@ CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE
 Often your data set is too large to also fit in available cluster memory. If so, you can create an external table pointing to the source. 
 In this example below, a sample table is created for an S3 (external) dataset:
 
-```
+```pre
 CREATE EXTERNAL TABLE TAXIFARE USING parquet 
   OPTIONS(path 's3a://<AWS_SECRET_ACCESS_KEY>:<AWS_ACCESS_KEY_ID>@zeppelindemo/nyctaxifaredata_cleaned');
 //Next, create the sample sourced from this table ..
 CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE 
   options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
-
 ```
+
 When creating a base table, if you have applied the **partition by** clause, the clause is also applied to the sample table. The sample table also inherits the **number of buckets**, **redundancy** and **persistence** properties from the base table.
 
-For sample tables, the **overflow** property is set to **False** by default. (For column tables the default value is  **True**). 
+For sample tables, the **overflow** property is set to **False** by default. (For row and column tables the default value is  **True**). 
 
 For example:
 
-```
+```pre
 CREATE TABLE BASETABLENAME <column details> 
-USING COLUMN OPTIONS (partition_by '<column_name_a>', Buckets '7', Redundancy '1')
+USING COLUMN OPTIONS (partition_by '<column_name_a>', Buckets '8', Redundancy '1')
 
 CREATE TABLE SAMPLETABLENAME <column details> 
 USING COLUMN_SAMPLE OPTIONS (qcs '<column_name_b>',fraction '0.05', 
 strataReservoirSize '50', baseTable 'baseTableName')
 // In this case, sample table 'sampleTableName' is partitioned by column 'column_name_a', has 7 buckets and 1 redundancy.
-
 ```
-!!!Note:
+
+!!! Note
 	* After a sample table is created from a base table, any changes to the base table (for example update and delete operations) is not automatically applied to the sample table.
     
     * For successful creation of sample tables, the number of buckets in the sample table should be more than the number of nodes in the cluster. 
@@ -72,6 +72,6 @@ Here are some general guidelines to use when creating samples:
 
 * When the accuracy of queries is not acceptable, add more samples using the common columns used in GroupBy/Where clauses as mentioned above. The system automatically picks the appropriate sample. 
 
-!!! Note: 
+!!! Note
 	The value of the QCS column should not be empty or set to null for stratified sampling, or an error may be reported when the query is executed.
 

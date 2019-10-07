@@ -1,94 +1,160 @@
-## Introduction
-SnappyData fuses Apache Spark with an in-memory database to deliver a compute+data engine capable of stream processing, transactions, interactive analytics and prediction in a single cluster.
+# Introduction 
+SnappyData (aka TIBCO ComputeDB) is a distributed, in-memory optimized, analytics database. TIBCO ComputeDB delivers high throughput, low latency, and high concurrency for unified analytics workloads. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources/formats and stream processing all in one unified cluster.
 
-!!! Attention:
-	This document assumes that you have familiarity with Apache Spark and its concepts. If you are new to Spark, refer to the [Spark documentation](https://spark.apache.org/docs/2.1.1/) to learn more about using Spark.</br>
-The current release of SnappyData is fully compatible with Spark 2.1.1
+One common use case for SnappyData is to provide analytics at interactive speeds over large volumes of data with minimal or no pre-processing of the dataset. For instance, there is no need to often pre-aggregate/reduce or generate cubes over your large data sets for ad-hoc visual analytics. This is made possible by smartly managing data in-memory, dynamically generating code using vectorization optimizations and maximizing the potential of modern multi-core CPUs.
+SnappyData enables complex processing on large data sets in sub-second timeframes. 
 
-## The Challenge with Spark and Remote Data Sources
-Apache Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and can access disparate data sources in a highly parallelized manner for its distributed computations. Typically, data is fetched lazily as a result of SQL query or a Dataset (RDD) getting materialized. This can be quite inefficient and expensive since most workloads require the data set to be repeatedly processed. 
+![SnappyData Positioning](./Images/Snappy_intro.1.png)
 
-Analytic processing requires large datasets to be repeatedly copied from an external data source like HDFS, into Spark. Copying data, reformatting it (into a columnar format, depending on where the data is being copied from) and moving it across process and machine boundaries can be very expensive. As a result, we see that in several cases, applications using Spark with an external data source fail to deliver the promise of interactive analytic performance. For instance, each time an aggregation is run on a large Cassandra table, it necessitates streaming the entire table into Spark to do the aggregation. The alternative to working with a stateful store is to cache the data in Spark. This, of course, suffers from the problems associated with stale data.
+!!!Note
+	*SnappyData is not another Enterprise Data Warehouse (EDW) platform, but rather a high performance computational and caching cluster that augments traditional EDWs and data lakes.*
+
+## Important Capabilities
+
+*	**Easily discover and catalog big data sets**</br>
+	You can connect and discover datasets in SQL DBs, Hadoop, NoSQL stores, file systems, or even cloud data stores such as S3 by using SQL, infer schemas automatically and register them in a secure catalog. A wide variety of data formats are supported out of the box such as JSON, CSV, text, Objects, Parquet, ORC, SQL, XML, and more.
+
+*	**Rich connectivity**</br>
+	SnappyData is built with Apache Spark inside. Therefore, any data store that has an Apache Spark connector can be accessed using SQL or by using the Apache Spark RDD/Dataset API. Virtually all modern data stores do have Apache Spark connector. See [Apache Spark Packages](https://spark-packages.org/). You can also dynamically deploy connectors to a running SnappyData cluster.
+
+*	**Virtual or in-memory data**</br>
+	You can decide which datasets need to be provisioned into distributed memory or left at the source. When the data is left at source, after being modeled as a virtual/external tables, the analytic query processing is parallelized, and the query fragments are pushed down wherever possible and executed at high speed.
+When speed is essential, applications can selectively copy the external data into memory using a single SQL command.
+
+*	**In-memory Columnar + Row store** </br>
+	You can choose in-memory data to be stored in any of the following forms:
+    *	**Columnar**: The form that is compressed and designed for scanning/aggregating large data sets.
+    *	**Row store**: The form that has an extremely fast key access or highly selective access.
+	The columnar store is automatically indexed using a skipping index. Applications can explicitly add indexes for the row store.
+
+*	**High performance** </br>
+	When data is loaded, the engine parallelizes all the accesses by carefully taking into account the available distributed cores, the available memory, and whether the source data can be partitioned to deliver extremely high-speed loading. Therefore, unlike a traditional warehouse, you can bring up SnappyData whenever required, load, process, and tear it down. Query processing uses code generation and vectorization techniques to shift the processing to the modern-day multi-core processor and L1/L2/L3 caches to the possible extent.
+
+*	**Flexible rich data transformations** </br>
+	External data sets when discovered automatically through schema inference will have the schema of the source. Users can cleanse, blend, reshape data using a SQL function library (Apache Spark SQL+) or even submit Apache Spark jobs and use custom logic. The entire rich Apache Spark API is at your disposal. This logic can be written in SQL, Java, Scala, or even Python.*
+
+*	**Prepares data for data science**</br> 
+	Through the use of apache Apache Spark API for statistics and machine learning, raw or curated datasets can be easily prepared for machine learning. You can understand the statistical characteristics such as correlation, independence of different variables and so on. You can generate distributed feature vectors from your data that is by using processes such as one-hot encoder, binarizer, and a range of functions built into the Apache Spark ML library. These features can be stored back into column tables and shared across a group of users with security and avoid dumping copies to disk, which is slow and error-prone.
+ 
+*	**Stream ingestion and liveness** </br>
+	While it is common to see query service engines today, most resort to periodic refreshing of data sets from the source as the managed data cannot be mutated — for example query engines such as Presto, HDFS formats like parquet, etc. Moreover, when updates can be applied pre-processing, re-shaping of the data is not necessarily simple. 
+   In SnappyData, operational systems can feed data updates through Kafka to SnappyData. The incoming data can be CDC(Change-data-capture) events (insert, updates, or deletes) and can be easily ingested into in-memory tables with ease, consistency, and exactly-once semantics. The Application can apply custom logic to do sophisticated transformations and get the data ready for analytics. This incremental and continuous process is far more efficient than batch refreshes. Refer [Stream Processing with SnappyData](howto/use_stream_processing_with_snappydata.md) </br>  
+
+*	**Approximate Query Processing(AQP)** </br>
+	When dealing with huge data sets, for example, IoT sensor streaming time-series data, it may not be possible to provision the data in-memory, and if left at the source (say Hadoop or S3) your analytic query processing can take too long. In SnappyData, you can create one or more stratified data samples on the full data set. The query engine automatically uses these samples for aggregation queries, and a nearly accurate answer returned to clients. This can be immensely valuable when visualizing a trend, plotting a graph or bar chart. Refer [AQP](aqp.md)
+
+*	**Access from anywhere** </br>
+	You can use JDBC, ODBC, REST, or any of the Apache Spark APIs. The product is fully compatible with Apache Spark 2.1.1. SnappyData natively supports modern visualization tools such as [TIBCO Spotfire](howto/connecttibcospotfire.md), [Tableau](howto/tableauconnect.md), and [Qlikview](setting_up_jdbc_driver_qlikview.md). Refer 
+
+
+## Downloading and Installing SnappyData
+You can download and install the latest version of SnappyData from [github](https://github.com/SnappyDataInc/snappydata/releases) or you can download the enterprise version that is TIBCO ComputeDB from [here](https://edelivery.tibco.com/storefront/index.ep).
+Refer to the [documentation](/install.md) for installation steps.
+
+## Getting Started
+Multiple options are provided to get started with SnappyData. Easiest way to get going with SnappyData is on your laptop. You can also use any of the following options:
+
+*	On-premise clusters
+
+*	AWS
+
+*	Docker
+*	Kubernetes
+
+You can find more information on options for running SnappyData [here](/quickstart.md).
+
+## Quick Test to Measure Performance of SnappyData vs Apache Spark
+
+If you are already using Apache Spark, you can experience upto 20x speedup for your query performance with SnappyData. Try this [test](https://github.com/SnappyDataInc/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala) using the Spark Shell.
+
+## Other Relevant content
+- [Paper](http://cidrdb.org/cidr2017/papers/p28-mozafari-cidr17.pdf) on Snappydata (Community Edition of TIBCO ComputeDB) at Conference on Innovative Data Systems Research (CIDR) - Info on key concepts and motivating problems.
+- [Another early Paper](https://www.snappydata.io/snappy-industrial) that focuses on overall architecture, use cases, and benchmarks. ACM Sigmod 2016.
+- [TPC-H benchmark](https://www.snappydata.io/whitepapers/snappydata-tpch) comparing Apache Spark with SnappyData
+- Checkout the [SnappyData blog](https://www.snappydata.io/blog) for developer content
+-	[TIBCO community page](https://community.tibco.com/products/tibco-computedb) for the latest info.
+
+## Community Support
+
+We monitor the following channels comments/questions:
+
+*	[Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata) ![Stackoverflow](http://i.imgur.com/LPIdp12.png)
+
+*	[Slack](http://snappydata-slackin.herokuapp.com/) ![Slack](http://i.imgur.com/h3sc6GM.png)
+
+*	[Gitter](https://gitter.im/SnappyDataInc/snappydata) ![Gitter](http://i.imgur.com/jNAJeOn.jpg)
+
+*	[Mailing List](https://groups.google.com/forum/#!forum/snappydata-user) ![Mailing List](http://i.imgur.com/YomdH4s.png)
+
+*	[Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)          
+
+*	[JIRA](https://jira.snappydata.io/projects/SNAP/issues) ![JIRA](http://i.imgur.com/E92zntA.png)
+
+## Link with SnappyData Distribution
+
+### Using Maven Dependency
+
+SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
+
+```
+groupId: io.snappydata
+artifactId: snappydata-cluster_2.11
+version: 1.1.1
+```
+
+### Using SBT Dependency
+
+If you are using SBT, add this line to your **build.sbt** for core SnappyData artifacts:
+
+```
+libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.1.1"
+```
+
+For additions related to SnappyData cluster, use:
+
+```
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.1.1"
+```
+
+You can find more specific SnappyData artifacts [here](http://mvnrepository.com/artifact/io.snappydata)
+
+!!!Note
+	If your project fails when resolving the above dependency (that is, it fails to download `javax.ws.rs#javax.ws.rs-api;2.1`), it may be due an issue with its pom file. </br> As a workaround, you can add the below code to your **build.sbt**:
+
+```
+val workaround = {
+  sys.props += "packaging.type" -> "jar"
+  ()
+}
+```
+
+For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
+
+
+## Building from Source
+If you would like to build SnappyData from source, refer to the [documentation on building from source](/install/building_from_source.md).
+
+
+## How is SnappyData Different than Apache Spark?
+
+Apache Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and is capable of working with disparate data sources. While this provides rich unified access to data, this can also be quite inefficient and expensive. Analytic processing requires massive data sets to be repeatedly copied and data to be reformatted to suit Apache Spark. In many cases, it ultimately fails to deliver the promise of interactive analytic performance.
+For instance, each time an aggregation is run on a large Cassandra table, it necessitates streaming the entire table into Apache Spark to do the aggregation. Caching within Apache Spark is immutable and results in stale insight.
 
 ## The SnappyData Approach
-SnappyData fuses a low latency, highly available in-memory transactional database (GemFire) into Spark with shared memory management and several optimizations that deliver performance and concurrency for mixed workloads. Data in the highly available in-memory store is laid out using a custom columnar format somewhat similar to the layout used by Spark caching. Query engine operators are optimized through better vectorization and code generation. The net effect of these changes is, an order of magnitude performance improvement when compared to native Spark caching, and more than two orders of magnitude better Spark performance when working with external data sources.
 
-Essentially, Spark is turned into an in-memory operational database capable of transactions, point reads, writes, working with streams and running analytic SQL queries.
+##### Snappy Architecture
 
-![SnappyData Architecture](Images/SnappyArchitecture.png)
+![SnappyData Architecture](./Images/SnappyArchitecture.png)
 
-SnappyData is an in-memory database that runs Spark’s compute engine directly in the database, and offers **Spark's API and SQL as its interface and computational engine**. The fusion with Spark allows SnappyData to work with a large number of data sources like HDFS, NoSQL etc. through bespoke Spark connectors. </br>
-While the SnappyData engine (that builds on Spark Catalyst SQL engine) is primarily designed for SQL processing, applications can also work with Objects through Spark RDDs and the Spark Datasets API.
-
-Any Spark DataFrame can be easily managed as a SnappyData table or conversely any table can be accessed as a DataFrame.
-
-By default, when the cluster is started, the data store is bootstrapped and when any Spark Jobs/OLAP queries are submitted, Spark executors are automatically launched within the SnappyData process space (JVMs). There is no need to connect and manage external data store clusters. The SnappyData store can synchronously replicate for high availability (HA) with strong consistency and store/recover from disk for additional reliability.
+SnappyData takes a different approach. SnappyData fuses a low latency, highly available in-memory transactional database ((Pivotal GemFire/Apache Geode) into Apache Spark with shared memory management and optimizations. Data can be managed in columnar form similar to Apache Spark caching or in a row oriented manner commonly used in popular relational databases like postgres). But, many query engine operators are significantly more optimized through better vectorization, code generation and indexing. </br>
+The net effect is, an order of magnitude performance improvement when compared to native Apache Spark caching, and more than two orders of magnitude better performance when Apache Spark is used in conjunction with external data sources.
+Apache Spark is turned into an in-memory operational database capable of transactions, point reads, writes, working with Streams (Apache Spark) and running analytic SQL queries without losing the computational richness in Apache Spark.
 
 
-## Key Features
+## Streaming Example - Ad Analytics
+Here is a stream + Transactions + Analytics use case example to illustrate the SQL as well as the Apache Spark programming approaches in SnappyData - [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc). Here is a [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData. The example also goes through a benchmark comparing SnappyData to a Hybrid in-memory database and Cassandra.
 
-* **100% compatible with Spark**- Use SnappyData as a database, and additionally use any of the Spark APIs - ML, Graph, etc.
+## Contributing to SnappyData
 
-* **In-memory row and column stores**: Run the store colocated in Spark executors or in its own process space (that is, a computational cluster and a data cluster)
+If you are interested in contributing, please visit the [community page](http://www.snappydata.io/community) for ways in which you can help.
 
-* **SQL standard compliance**: Spark SQL + several SQL extensions: DML, DDL, indexing, constraints.
-
-* **SQL based extensions for streaming processing**: Use native Spark streaming, DataFrame APIs or declaratively specify your streams and how you want it processed. You do not need to learn Spark APIs to get going with stream processing or its subtleties when processing in parallel.
-
-* **Not-Only SQL**: Use either as a SQL database or work with JSON or even arbitrary Application Objects. Essentially, any Spark RDD/DataSet can also be persisted into SnappyData tables (type system same as Spark Datasets). 
-
-* **Mutate, transact on data in Spark**: You can use SQL to insert, update, delete data in tables as one would expect. Extensions to Spark’s context are also provided so you can mutate data in your Spark programs. Tables defined in SnappyData are automatically visible as DataFrames. By eliminating the need to store data separately in a data store and then cache it in Spark for computing, SnappyData simplifies system architecture and reduces the overall cost of ownership while simultaneously offering much better performance.
-
-* **Optimizations - Indexing**: From version 1.0, you can add indexes to your row format tables and the query optimizer automatically uses in-memory indexes when available, to provide better performance.
-
-* **[Optimizations - colocation](howto/perform_a_colocated_join.md)**: SnappyData implements several optimizations to improve data locality and avoid shuffling data for queries on partitioned data sets. All related data can be colocated using declarative custom partitioning strategies (for example, common shared business key). Reference data tables can be modeled as replicated tables when tables cannot share a common key. Replicas are always consistent.
-
-* **High availability not just Fault tolerance**: Data can be instantly replicated (one at a time or batch at a time) to other nodes in the cluster. It is deeply integrated with a membership-based distributed system to detect and handle failures, instantaneously providing applications continuous HA.
-
-* **Durability and recovery:** Tables can be configured to be persisted to disk (the default) and recovered upon startup. Utilities for backup, restore and import/export are provided with the system.
-
-* **[Interactive analytics using Synopsis Data Engine (SDE)](aqp.md)**: Multiple synopses techniques are introduced through data structures like count-min-sketch and stratified sampling to dramatically reduce the in-memory space requirements and provide true interactive speeds for analytic queries. These structures can be created and managed by developers with little to no statistical background and are completely transparent to the SQL developer running queries. Error estimators are also integrated with simple mechanisms to get to the errors through built-in SQL functions or SparkSession API extensions. 
-
-<a id="SparkChallenges"></a>
-
-## Extensions to the Spark Runtime
-
-SnappyData makes the following contributions to deliver a unified and optimized runtime.
-
-* **Integrating an operational in-memory data store with Spark’s computational model**: A number of extensions are introduced to fuse our runtime with that of Spark. Spark executors run in the same process space as our store’s execution threads, sharing the same pool of memory. When Spark executes tasks in a partitioned manner, it is designed to keep all the available CPU cores busy. <br/> This design is extended by allowing low latency and fine-grained operations to interleave and get higher priority, without involving the scheduler. Furthermore, to support high concurrency, the runtime is extended with a “Job Server” that decouples applications from data servers, operating much in the same way as a traditional database, whereby the state is shared across many clients and applications. <br/>
-
-* **Unified API for OLAP, OLTP, and Streaming**: Spark builds on a common set of abstractions to provide a rich API for a diverse range of applications, such as MapReduce, Machine learning, stream processing, and SQL.
-SnappyData extends Spark’s unified API: 
-	
-	* Allow for OLTP operations, for example, transactions and mutations (inserts/updates/deletions) on tables 
- 
-	* Conform with SQL standards, for example, allowing tables alterations, constraints, and indexes   
-
-	* Support declarative stream processing in SQL
-
-	* A unique addition of SnappyData is ability to mutate (all of inserts/updates/deletes) even column format tables efficiently without much change in query performance profile.
-
-* **Optimizing Spark application execution times**: Our goal is to eliminate the need for yet another external store (for example, a KV store) for Spark applications. With a deeply integrated store, SnappyData improves overall performance by minimizing network traffic and serialization costs. In addition, by promoting colocated schema designs (tables and streams) where related data is colocated in the same process space, SnappyData eliminates the need for shuffling altogether in several scenarios.
-
-* **Synopsis Data Engine support built into Spark**: The SnappyData [Synopsis Data Engine (SDE)](aqp.md) offers a novel and scalable system to analyze large data sets. SDE uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire data set. The approach trades off query accuracy for fast response time. <br>The SDE engine enables you to:
-
-	- Intelligently sample the data set on frequently accessed dimensions to have a good representation across the entire data set (stratified sampling). Queries can execute on samples and return answers instantly.
-
-	- Compute estimates for any ad hoc query from the sample(s). It can also provide error estimates for arbitrarily complex queries on streams.
-
-	- Provide simple knobs for the user to trade off speed for accuracy, that is, simple SQL extensions so the user can specify the error tolerance for all queries. When query error is higher than tolerance level, the system automatically delegates the query to the source.
-
-	-	Express their accuracy requirements as high-level accuracy contracts (HAC), without overwhelming them with numerous statistical concepts.
-
-## Morphing Spark to support mixed workloads (OLTP, OLAP)
-Spark is designed as a computational engine for processing batch jobs. Each Spark application (for example, a Map-reduce job) runs as an independent set of processes (that is, executor JVMs) in the cluster. These JVMs are reused for the lifetime of the application. While, data can be cached and reused in these JVMs for a single application, sharing data across applications or clients require an external storage tier, such as HDFS. SnappyData, on the other hand, targets a real-time, “always-on”, operational design center— clients can connect at will, and share data across any number of concurrent connections. This is similar to any operational database in the market today. Thus, to manage data in the same JVM, our first challenge is to alter the life cycle of these executors so that they are long-lived and decoupled from individual applications.
-
-A second but related challenge is Spark’s design for how user requests (jobs) are handled. A single driver orchestrates all the work done on the executors. Given our need for high concurrency and a hybrid OLTP-OLAP workload, this driver introduces:
-
-1. A single point of contention for all requests, and 
-
-2. A barrier for achieving high availability (HA). Executors are shut down if the driver fails, requiring a full refresh of any cached state.
-
-Spark’s primary usage of memory is for caching RDDs and for shuffling blocks to other nodes. Data is managed in blocks and is immutable. On the other hand, more complex data structure needs to be managed (along with indexes) for point access and updates. Therefore, another challenge is merging these two disparate storage systems with little impedance to the application. This challenge is exacerbated by current limitations of Spark SQL—mostly related to mutability characteristics and conformance to SQL.
-
-Finally, Spark’s strong and growing community has zero tolerance for incompatible forks. This means that no changes can be made to Spark’s execution model or its semantics for existing APIs. In other words, our changes have to be an extension.

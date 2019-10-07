@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -36,7 +36,8 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
-class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) with Logging {
+class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
+  with Logging {
 
   // set default batch size for this test
   bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name, "100")
@@ -66,8 +67,10 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
     val locPort = ClusterManagerTestBase.locPort
+    val sysProps = this.sysProps
     DistributedTestBase.invokeInLocator(new SerializableRunnable() {
       override def run(): Unit = {
+        ClusterManagerTestBase.setSystemProperties(sysProps)
         val loc: Locator = ServiceManager.getLocatorInstance
 
         if (loc.status != FabricService.State.RUNNING) {
@@ -85,6 +88,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) wit
     val nodeProps = bootProps
     val startNode = new SerializableRunnable() {
       override def run(): Unit = {
+        ClusterManagerTestBase.setSystemProperties(sysProps)
         val node = ServiceManager.currentFabricServiceInstance
         if (node == null || node.status != FabricService.State.RUNNING) {
           ClusterManagerTestBase.startSnappyServer(locPort, nodeProps)

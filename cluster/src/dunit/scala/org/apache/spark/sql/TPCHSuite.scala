@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -32,7 +32,7 @@ class TPCHSuite extends SnappyFunSuite with BeforeAndAfterAll  {
   ignore("Test TPCH") {
     val snc = SnappyContext(sc)
     snc.conf.setConfString(SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key, "104857600")
-    Property.HashJoinSize.set(snc.conf, 1L * 1024 * 1024 * 1024)
+    Property.HashJoinSize.set(snc.conf, "1g")
     TPCHUtils.createAndLoadTables(snc, isSnappy = true)
     TPCHUtils.queryExecution(snc, isSnappy = true)
     // TPCHUtils.queryExecution(snc, isSnappy = true, warmup = 6, runsForAverage = 10,

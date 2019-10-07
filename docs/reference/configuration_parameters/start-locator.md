@@ -6,11 +6,11 @@ If set, automatically starts a locator in the current process when the member co
 
 To use, specify the locator with an optional address or host specification and a required port number, in one of these formats:
 
-``` pre
+```pre
 start-locator=address[port1] 
 ```
 
-``` pre
+```pre
 start-locator=port1
 ```
 

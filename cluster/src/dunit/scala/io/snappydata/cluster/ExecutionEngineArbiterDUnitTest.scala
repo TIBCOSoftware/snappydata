@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -714,7 +714,7 @@ trait ExecutionEngineArbiterTestBase {
     createTables_SNAP1507(snc, "COLUMN")
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + startNetServer)
-
+    val s = conn.createStatement()
     val query = "select T1_COL1, T1_COL2, T1_COL3, T1_COL4, T1_COL5, T1_COL6, T1_COL7," +
         " T1_COL8 from TABLE1 as tab1 where exists (select * from " +
         "TABLE2 as tab2 where exists (select * from " +

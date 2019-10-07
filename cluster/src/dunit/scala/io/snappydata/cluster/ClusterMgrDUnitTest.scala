@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,10 +21,13 @@ import java.net.InetAddress
 import scala.math._
 import scala.util.Random
 
-import org.apache.spark.sql.{Row, SnappyContext}
-import org.apache.spark.{SparkConf, SparkContext}
+import com.gemstone.gemfire.cache.LowMemoryException
 
-class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+import org.apache.spark.sql.{Row, SnappyContext}
+import org.apache.spark.{Logging, SparkConf, SparkContext}
+
+class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) with Logging
+{
 
   import ClusterMgrDUnitTest._
 
@@ -50,7 +53,7 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       vm3.invoke(getClass, "startSparkJob")
       vm3.invoke(getClass, "startGemJob")
     } finally {
-      vm3.invoke(getClass, "stopSpark")
+      vm3.invoke(getClass, "stopSpark", Array[AnyRef](null))
       ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
     }
   }
@@ -62,6 +65,28 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       case _ : Throwable =>
     }
     // The executors should have started automatically, so this should not hang
+    startSparkJob()
+  }
+
+  def testNonFatalOOMException(): Unit = {
+    try {
+      throwNonFatalOOMException
+    } catch {
+      case e: org.apache.spark.SparkException =>
+        var t: Throwable = e
+        var foundExpectedError = false
+        while (t != null && !foundExpectedError) {
+          t match {
+            case l: LowMemoryException =>
+              foundExpectedError = true
+              logInfo("Received expected LowMemoryException exception")
+            case _ => t = t.getCause
+          }
+        }
+        // throw if this is not an expected exception
+        if (!foundExpectedError) throw e
+    }
+    // run a spark job to make sure that cluster is available
     startSparkJob()
   }
 
@@ -101,6 +126,14 @@ object ClusterMgrDUnitTest {
   def failTheExecutors: Unit = {
     sc.parallelize(1 until 100, 5).map { i =>
       throw new OutOfMemoryError("Some message")
+    }.collect()
+  }
+
+  def throwNonFatalOOMException: Unit = {
+    sc.parallelize(1 until 100, 5).map { i =>
+      // the message in exception should match one of
+      // the ignored messages in SystemFailure.isJVMFailureError
+      throw new OutOfMemoryError("Unable to acquire")
     }.collect()
   }
 
@@ -162,11 +195,10 @@ object ClusterMgrDUnitTest {
     try {
       new SparkContext(conf)
       assert(assertion = false,
-        "Expected SparkContext creation to fail due to existing lead")
+        "Expected SparkContext creation to fail without launcher")
     } catch {
       case e: org.apache.spark.SparkException =>
-        if (!e.getMessage.startsWith("Primary Lead node (Spark Driver) is " +
-            "already running in the system")) {
+        if (!e.getMessage.contains("only supported from ServiceManager")) {
           throw e
         } // else ok
     }

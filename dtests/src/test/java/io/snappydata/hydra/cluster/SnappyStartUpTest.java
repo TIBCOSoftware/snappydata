@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -98,7 +98,7 @@ public class SnappyStartUpTest extends SnappyTest {
     }
   }
 
-  protected static synchronized Set<String> getServerPidList() {
+  public static synchronized Set<String> getServerPidList() {
     Set<String> pidList = new HashSet<>();
     Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
     for (String key : keys) {
@@ -212,7 +212,7 @@ public class SnappyStartUpTest extends SnappyTest {
       long numRows = 0;
       while (rs.next()) {
         numRows = rs.getLong(1);
-        Log.getLogWriter().info("Qyery : " + query + " executed successfully and query " +
+        Log.getLogWriter().info("Query : " + query + " executed successfully and query " +
             "result is ::" + numRows);
       }
       if (numRows != 6)
@@ -239,7 +239,8 @@ public class SnappyStartUpTest extends SnappyTest {
       Log.getLogWriter().info("staging_order_details table dropped successfully");
       query = "CREATE EXTERNAL TABLE staging_order_details" +
           "    USING com.databricks.spark.csv OPTIONS(path '" + SnappyPrms.getDataLocationList()
-          .get(0) + "/order-details.csv', header 'true', inferSchema 'true', nullValue 'NULL', maxCharsPerColumn '4096')";
+          .get(0) + "/order-details.csv', header 'true', inferSchema 'true', nullValue 'NULL',  " +
+          "maxCharsPerColumn '4096')";
       conn.createStatement().executeUpdate(query);
       Log.getLogWriter().info("staging_order_details table recreated successfully");
       query = "CREATE TABLE order_details USING column OPTIONS(partition_by 'OrderId', buckets" +
@@ -268,8 +269,8 @@ public class SnappyStartUpTest extends SnappyTest {
     for (String nodeLogDir : newNodeLogDirs) {
       Log.getLogWriter().info("nodeLogDir is : " + nodeLogDir);
       nodeLogDir = nodeLogDir + " " + " -rebalance ";
-      SnappyBB.getBB().getSharedMap().put("serverLogDir" + "_" + RemoteTestModule.getMyVmid() + "_" +
-          snappyTest.getMyTid(), nodeLogDir);
+      SnappyBB.getBB().getSharedMap().put("serverLogDir" + "_" + RemoteTestModule.getMyVmid() +
+          "_" + snappyTest.getMyTid(), nodeLogDir);
       String newNodeLogDir;
       newNodeLogDir = nodeLogDir.substring(nodeLogDir.lastIndexOf("-dir=") + 5);
       newNodeLogDir = newNodeLogDir.substring(0, newNodeLogDir.indexOf(" "));
@@ -391,5 +392,171 @@ public class SnappyStartUpTest extends SnappyTest {
     Log.getLogWriter().info("Snappy cluster stopped successfully...." + vmDir);
     HydraTask_startSnappyCluster();
     Log.getLogWriter().info("Snappy cluster restarted successfully...." + vmDir);
+  }
+
+  public static void HydraTask_verifyTableData() {
+    Connection conn;
+    ResultSet rs;
+    String query = null;
+    Vector tableNames, numRowsinTables = null;
+    long expectedNumRows, actualNumRows = 0;
+    try {
+      conn = getLocatorConnection();
+      tableNames = SnappyPrms.getTableList();
+      numRowsinTables = SnappyPrms.getNumRowsList();
+      if (tableNames.isEmpty() || numRowsinTables.isEmpty()) {
+        throw new TestException("Either list of tables or number of rows against tableNames " +
+            "required for validation is not specified");
+      }
+      if (tableNames.size() != numRowsinTables.size()) {
+        Log.getLogWriter().info("Mismatch observed in expected number of rows list and tables " +
+            "list. Please verify the configuration again.");
+      }
+      for (int i = 0; i < tableNames.size(); i++) {
+        String tableName = (String) tableNames.elementAt(i);
+        query = "select count(*) from " + tableName;
+        rs = conn.createStatement().executeQuery(query);
+        expectedNumRows = Long.parseLong((String) numRowsinTables.elementAt(i));
+        while (rs.next()) {
+          actualNumRows = rs.getLong(1);
+          Log.getLogWriter().info("Qyery : " + query + " executed successfully and query " +
+              "result is ::" + actualNumRows);
+        }
+        if (actualNumRows != expectedNumRows) {
+          throw new TestException("Mismatch observed. Expected " + expectedNumRows +
+              "number of rows, " + "but observed actual Number of rows " + actualNumRows + " in " +
+              "table " + tableName);
+        }
+        long numRowsPrimaryBeforeRestart = (long) SnappyBB.getBB().getSharedMap().get
+            ("numRowsPrimaryBeforeRestart");
+        long numRowsSecondaryBeforeRestart = (long) SnappyBB.getBB().getSharedMap().get
+            ("numRowsSecondaryBeforeRestart");
+
+        long numRowsPrimaryAfterRestart = (long) SnappyBB.getBB().getSharedMap().get
+            ("numRowsPrimaryAfterRestart");
+        long numRowsSecondaryAfterRestart = (long) SnappyBB.getBB().getSharedMap().get
+            ("numRowsSecondaryAfterRestart");
+
+        if (numRowsPrimaryBeforeRestart != numRowsPrimaryAfterRestart) {
+          throw new TestException("Mismatch observed. Expected " + numRowsPrimaryBeforeRestart +
+              "number of rows in primary buckets, " + "but observed actual Number of rows in " +
+              "primary buckets" +
+              " " + numRowsPrimaryAfterRestart + " for " +
+              "table " + tableName);
+        } else {
+          Log.getLogWriter().info("Got expected number of rows : " +
+              numRowsPrimaryAfterRestart + " in primary buckets before and " +
+              "after cluster restart");
+        }
+        if (numRowsSecondaryBeforeRestart != numRowsSecondaryAfterRestart) {
+          throw new TestException("Mismatch observed. Expected " + numRowsSecondaryBeforeRestart +
+              "number of rows in secondary buckets, " + "but observed actual Number of rows in " +
+              "secondary buckets" +
+              " " + numRowsSecondaryAfterRestart + " for " +
+              "table " + tableName);
+        } else {
+          Log.getLogWriter().info("Got expected number of rows : " +
+              numRowsSecondaryAfterRestart + " in secondary buckets before and " +
+              "after cluster restart");
+        }
+      }
+      Vector indexNames = SnappyPrms.getIndexList();
+      for (int j = 0; j < indexNames.size(); j++) {
+        String indexName = (String) indexNames.elementAt(j);
+        long numRowsIndexBeforeRestart = (long) SnappyBB.getBB().getSharedMap().get
+            ("numRows_" + indexName + "_BeforeRestart");
+        long numRowsIndexAfterRestart = (long) SnappyBB.getBB().getSharedMap().get
+            ("numRows_" + indexName + "_AfterRestart");
+        if (numRowsIndexBeforeRestart != numRowsIndexAfterRestart) {
+          throw new TestException("Mismatch observed. Expected " + numRowsIndexBeforeRestart +
+              "number of rows in index: " + indexName + ", " + "but observed " +
+              numRowsIndexAfterRestart + " number of rows.");
+        } else {
+          Log.getLogWriter().info("Got expected number of rows : " +
+              numRowsIndexAfterRestart + " in index: " + indexName + " before and " +
+              "after cluster restart");
+        }
+      }
+      closeConnection(conn);
+    } catch (SQLException e) {
+      SQLHelper.printSQLException(e);
+      throw new TestException("Got Exception: " + e.getMessage() + "\n" + TestHelper.getStackTrace
+          (e));
+    }
+  }
+
+  public static void HydraTask_executeDiagnosticQueriesBeforeRecovery() {
+    executeDiagnosticQueries("Before");
+  }
+
+  public static void executeDiagnosticQueries(String queryExecutionTime) {
+    Connection conn;
+    ResultSet rs;
+    String query = null;
+    Vector tableNames = SnappyPrms.getTableList(), indexNames = SnappyPrms.getIndexList();
+    long numRowsPrimary = 0, numRowsPrimarySecondary = 0, numRowsSecondary = 0, numRowsIndex
+        = 0;
+    try {
+      conn = getLocatorConnectionUsingProps();
+      if (tableNames.isEmpty()) {
+        throw new TestException("List of tables against tableNames " +
+            "required for diagnostic query execution is not specified");
+      }
+      if (indexNames.isEmpty()) {
+        throw new TestException("List of indexes against tableNames " +
+            "required for diagnostic query execution is not specified");
+      }
+      for (int i = 0; i < tableNames.size(); i++) {
+        String tableName = (String) tableNames.elementAt(i);
+        query = "select count(*), dsid() from sys.members m --GEMFIREXD-PROPERTIES withSecondaries=false \n , " + tableName + "  where dsid() = m.id";
+        rs = conn.createStatement().executeQuery(query);
+        while (rs.next()) {
+          numRowsPrimary = rs.getLong(1);
+          Log.getLogWriter().info("Qyery : " + query + " executed successfully and found " +
+              numRowsPrimary + " rows in primary buckets " +
+              queryExecutionTime + "  cluster restart.");
+        }
+        query = "select count(*), dsid() from sys.members m --GEMFIREXD-PROPERTIES withSecondaries=true \n , " + tableName + "  where dsid() = m.id";
+        rs = conn.createStatement().executeQuery(query);
+        while (rs.next()) {
+          numRowsPrimarySecondary = rs.getLong(1);
+          Log.getLogWriter().info("Qyery : " + query + " executed successfully and and found " +
+              numRowsPrimarySecondary + " rows in primary and secondary buckets " +
+              queryExecutionTime + " cluster " +
+              "restart.");
+        }
+        numRowsSecondary = numRowsPrimarySecondary - numRowsPrimary;
+        SnappyBB.getBB().getSharedMap().put("numRowsPrimary" +
+            queryExecutionTime + "Restart", numRowsPrimary);
+        SnappyBB.getBB().getSharedMap().put("numRowsSecondary" + queryExecutionTime + "Restart", numRowsSecondary);
+
+        for (int j = 0; j < indexNames.size(); j++) {
+          String indexName = (String) indexNames.elementAt(j);
+          String tableNameString = tableName.substring(tableName.indexOf(".") + 1);
+          if (indexName.contains(tableNameString)) {
+            query = "select count(*), dsid() from sys.members m , " + tableName + " " +
+                "--GEMFIREXD-PROPERTIES index=" + indexName + "  \n where dsid() = m.id ";
+            rs = conn.createStatement().executeQuery(query);
+            while (rs.next()) {
+              numRowsIndex = rs.getLong(1);
+              Log.getLogWriter().info("Qyery : " + query + " executed successfully and and found " +
+                  numRowsIndex + " rows in index:  " + indexName + " on table: " + tableName +
+                  queryExecutionTime + " cluster restart.");
+            }
+            SnappyBB.getBB().getSharedMap().put("numRows_" + indexName + "_" +
+                queryExecutionTime + "Restart", numRowsIndex);
+          }
+        }
+      }
+      closeConnection(conn);
+    } catch (SQLException e) {
+      SQLHelper.printSQLException(e);
+      throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
+    }
+  }
+
+
+  public static void HydraTask_executeDiagnosticQueriesAfterRecovery() {
+    executeDiagnosticQueries("After");
   }
 }

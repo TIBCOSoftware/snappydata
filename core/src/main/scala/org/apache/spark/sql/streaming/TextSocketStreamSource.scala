@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,13 +17,17 @@
 
 package org.apache.spark.sql.streaming
 
-import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.sources.DataSourceRegister
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{SQLContext, SnappyContext}
 import org.apache.spark.streaming.dstream.DStream
 
-final class TextSocketStreamSource extends StreamPlanProvider {
+final class TextSocketStreamSource extends StreamPlanProvider with DataSourceRegister {
+
+  override def shortName(): String = SnappyContext.TEXT_SOCKET_STREAM_SOURCE
+
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String],
       schema: StructType): TextSocketStreamRelation = {
