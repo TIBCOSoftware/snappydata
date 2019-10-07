@@ -410,8 +410,8 @@ class OpLogRdd(
         if (hasTombstone) Iterator.empty
         else {
           val statsEntry = regMap.getEntry(k)
-          val statsValue = DiskEntry.Helper.readValueFromDisk(statsEntry.asInstanceOf[DiskEntry],
-            phdrCol).asInstanceOf[ColumnFormatValue]
+          val statsValue = (getValueInVMOrDiskWithoutFaultIn(phdrCol, statsEntry)
+              .asInstanceOf[ColumnFormatValue]).getValueRetain(FetchRequest.DECOMPRESS)
           val numStatsColumns = schema.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
           val stats = org.apache.spark.sql.collection.SharedUtils
               .toUnsafeRow(statsValue.getBuffer, numStatsColumns)
@@ -444,16 +444,15 @@ class OpLogRdd(
             updateDecoder
           }
 
-          var adjustedRowIndex = 0
-          (0 until (numOfRows - deletedCount)).map { i =>
-            while ((deleteDecoder ne null) && deleteDecoder.deleted(i + currentDeleted)) {
+          (0 until (numOfRows - deletedCount)).map { rowNum =>
+            while ((deleteDecoder ne null) && deleteDecoder.deleted(rowNum + currentDeleted)) {
               // null counts should be added as we go even for deleted records
               // because it is required to build indexes in colbatch
               Row.fromSeq(schema.indices.map { colIndx =>
                 val decoderAndValue = decodersAndValues(colIndx)
                 val colDecoder = decoderAndValue._1
                 val colNextNullPosition = colDecoder.getNextNullPosition
-                if (i + currentDeleted == colNextNullPosition) {
+                if (rowNum + currentDeleted == colNextNullPosition) {
                   colNullCounts(colIndx) += 1
                   colDecoder.findNextNullPosition(
                     decoderAndValue._2, colNextNullPosition, colNullCounts(colIndx))
@@ -462,14 +461,13 @@ class OpLogRdd(
               // calculate how many consecutive rows to skip so that
               // i+numDeletd points to next un deleted row
               currentDeleted += 1
-              adjustedRowIndex = i + currentDeleted
             }
             Row.fromSeq(schema.indices.map { colIndx =>
               val decoderAndValue = decodersAndValues(colIndx)
               val colDecoder = decoderAndValue._1
               val colArray = decoderAndValue._2
               val colNextNullPosition = colDecoder.getNextNullPosition
-              val fieldIsNull = i + currentDeleted == colNextNullPosition
+              val fieldIsNull = rowNum + currentDeleted == colNextNullPosition
               if (fieldIsNull) {
                 colNullCounts(colIndx) += 1
                 colDecoder.findNextNullPosition(
@@ -477,13 +475,14 @@ class OpLogRdd(
               }
 
               val updatedDecoder = updatedDecoders(colIndx)
-              if ((updatedDecoder ne null) && !updatedDecoder.unchanged(i + currentDeleted) &&
+              if ((updatedDecoder ne null) && !updatedDecoder.unchanged(rowNum + currentDeleted) &&
                   updatedDecoder.readNotNull) {
                 val uv = getUpdatedValue(updatedDecoder.getCurrentDeltaBuffer, schema(colIndx))
                 uv
               } else {
-                val decodedValue = if (fieldIsNull) null else getDecodedValue(colDecoder,
-                  colArray, schema(colIndx).dataType, i + currentDeleted - colNullCounts(colIndx))
+                val decodedValue = if (fieldIsNull) null else {getDecodedValue(colDecoder,
+                    colArray, schema(colIndx).dataType, rowNum + currentDeleted - colNullCounts(colIndx))
+                }
                 decodedValue
               }
             })
