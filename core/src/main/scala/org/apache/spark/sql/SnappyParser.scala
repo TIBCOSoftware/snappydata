@@ -905,7 +905,16 @@ class SnappyParser(session: SnappySession)
       case args if args.length == 0 =>
         // disable plan caching for these functions
         session.planCaching = false
-        exprs
+        exprs.map(_. transformUp {
+          case l: TokenizedLiteral => l match {
+            case pl: ParamLiteral  if pl.tokenized && _isPreparePhase =>
+              throw new ParseException(s"function $fnName cannot have " +
+                s"parameterized argument")
+            case _ =>
+          }
+          removeIfParamLiteralFromContext(l)
+          newLiteral(l.value, l.dataType)
+        })
       case args =>
         exprs.indices.map(index => exprs(index).transformUp {
           case l: TokenizedLiteral if (args(0) == -3 && !Ints.contains(args, index)) ||

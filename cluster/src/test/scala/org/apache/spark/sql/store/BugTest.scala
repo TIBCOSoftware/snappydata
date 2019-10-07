@@ -1201,4 +1201,22 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     assert(metrics(numRowsMetric.accumulatorId) ===
         SQLMetrics.stringValue(numRowsMetric.metricType, numRows :: Nil))
   }
+
+  test("Bug SNAP-2728. SQL Built in functions throwing exception") {
+    snc.dropTable("test1", true)
+    snc.sql("SELECT sort_array(array('b', 'd', 'c', 'a'), true)").collect()
+    snc.sql("SELECT sort_array(array('b', 'd', 'c', 'a'), true)").collect()
+    val numRows = 100
+    snc.sql("create table test1 (id long, data string) using column " +
+      s"options (buckets '8') as select id, 'data_' || id from range($numRows)")
+    snc.sql("select first_value(id, true) from test1").collect()
+    snc.sql("select first_value(id, true) from test1").collect()
+    snc.sql("select last_value(id, true) from test1").collect()
+    snc.sql("select last_value(id, true) from test1").collect()
+    snc.sql("select rand(0)").collect()
+    snc.sql("select rand(0)").collect()
+    snc.sql("select randn(0)").collect()
+    snc.sql("select randn(0)").collect()
+    snc.dropTable("test1")
+  }
 }
