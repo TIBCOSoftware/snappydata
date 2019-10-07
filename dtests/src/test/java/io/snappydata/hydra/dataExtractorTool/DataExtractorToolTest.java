@@ -55,6 +55,7 @@ public class DataExtractorToolTest extends SnappyTest {
   }
 
   public void executeQuery() {
+    int expectedExcptCnt = SnappySecurityPrms.getExpectedExcptCnt();
     Log.getLogWriter().info("SP: Inside runDMLOps ");
     String queryFile = SnappySecurityPrms.getDataLocation();
     Connection conn = null;
@@ -67,7 +68,7 @@ public class DataExtractorToolTest extends SnappyTest {
           conn.createStatement().execute(queryStr);
           Log.getLogWriter().info("Query executed successfully");
         } catch (SQLException se) {
-          if (expectedExceptionCnt != 0) {
+          if (expectedExcptCnt != 0) {
             if (se.getMessage().contains("SELECT")) {
               unExpectedExceptionCnt = unExpectedExceptionCnt + 1;
               Log.getLogWriter().info("Caught unExpected exception" + se.getMessage() + "\n" + se.getCause());
@@ -241,18 +242,24 @@ public class DataExtractorToolTest extends SnappyTest {
         orgName.delete();
         orgName.createNewFile();
         FileWriter fw = new FileWriter(orgName, true);
+     //   String dirPath = getCurrentDirPath();
+        String dirName = "";
         Log.getLogWriter().info("SP: The hostList size = " + hostList.size());
         for (int i = 0; i < hostList.size(); i++) {
           String nodeName = String.valueOf(hostList.get(i));
           Log.getLogWriter().info("The nodeName is " + nodeName);
-          String nodeInfo = nodeName + nodeConfigInfo;//+ " -locators = " + endpoints.get(0);
+
+          String dirPath = getCurrentDirPath()+ File.separator + nodeName + "_" + i;
+          File serverDir = new File(dirPath);
+          if (!serverDir.exists()) serverDir.mkdir();
+
+          String nodeInfo = nodeName + nodeConfigInfo + " -dir=" + dirPath;
           Log.getLogWriter().info("The nodeInfo is  " + nodeInfo);
           String nodeConfig = nodeInfo + "\n";
           fw.write(nodeConfig);
         }
         fw.close();
         SnappyBB.getBB().getSharedMap().put("SERVER_CONF", bkName);
-        // deleteFiles(bkName);
       }
       Log.getLogWriter().info("Starting the cluster");
       startSnappyCluster();
