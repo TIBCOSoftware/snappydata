@@ -120,12 +120,13 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 
   def getBufferVarsForUpdate(dataTypes: Seq[DataType], varNames: Seq[String],
-    currentValueOffsetTerm: String, nullBitTerm: String, numBytesForNullBits: Int):
+    currentValueOffsetTerm: String, nullBitTerm: String, numBytesForNullBits: Int,
+    splitAggregate: Boolean):
   (Option[String], Seq[ExprCode]) = {
     val nullBitsCastTerm = if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
       "byte[]"
     } else SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
-    if (dataTypes.length <= codeSplitThresholdSize) {
+    if (!splitAggregate) {
       (None, getBufferVars(dataTypes, varNames, currentValueOffsetTerm, false, nullBitTerm,
         numBytesForNullBits, false, 0))
     } else {
@@ -149,10 +150,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
         val partMethodBody = readVarPartialFunction(currentValueOffsetTerm, 0, -1,
           localVar, dt).trim
-
-
         val varDataType = ctx.javaType(dt);
-
         ctx.addNewFunction(methodName,
           s"""
              |private Object $methodName(Object[] $stateArray,
@@ -191,9 +189,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
       Some(stateArray) -> exprCodes
     }
   }
-
-
-
 
   def readNullBitsCode(currentValueOffsetTerm: String, nullBitsetTerm: String,
     numBytesForNullBits: Int): String = {
@@ -943,11 +938,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
     s"""
        |$setStoredAggNullBitsTerm
       ${SHAMapAccessor.resetNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
-      ${
-      writeKeyOrValue(vdBaseObjectTerm, currentOffSetForMapLookupUpdt,
+      ${writeKeyOrValue(vdBaseObjectTerm, currentOffSetForMapLookupUpdt,
         aggBufferDataType, bufferVars, nullAggsBitsetTerm, numBytesForNullAggBits,
         false, false)
-     }
+      }
     """.stripMargin
 
   }
@@ -1795,11 +1789,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
          |}
      """.stripMargin
    }
-
-
 }
-
-
 
 object SHAMapAccessor {
   val nullVarSuffix = "_isNull"
@@ -2003,7 +1993,6 @@ object SHAMapAccessor {
            |}
         """.stripMargin
       }
-
   }
 
   def isPrimitive(dataType: DataType): Boolean =
@@ -2031,27 +2020,6 @@ object SHAMapAccessor {
    DictionaryOptimizedMapAccessor.checkSingleKeyCase(
       keyExpressions, getExpressionVars(keyExpressions, input.map(_.copy()),
         output, ctx), ctx, session)
-    /*
-    dictionaryKey match {
-      case Some(d@DictionaryCode(dictionary, _, _)) =>
-        // initialize or reuse the array at batch level for join
-        // null key will be placed at the last index of dictionary
-        // and dictionary index will be initialized to that by ColumnTableScan
-        ctx.addMutableState(classOf[StringDictionary].getName, dictionary.value, "")
-        ctx.addNewFunction(dictionaryArrayInit,
-          s"""
-             |public $className[] $dictionaryArrayInit() {
-             |  ${d.evaluateDictionaryCode()}
-             |  if (${dictionary.value} != null) {
-             |    return new $className[${dictionary.value}.size() + 1];
-             |  } else {
-             |    return null;
-             |  }
-             |}
-           """.stripMargin)
-        true
-      case None => false
-    } */
   }
 
   private def getExpressionVars(expressions: Seq[Expression],
