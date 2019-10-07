@@ -99,12 +99,12 @@ public class SnappySecurityPrms extends SnappyPrms{
 
   public static int getExpectedExcptCnt() {
     Long key = expectedExcptCnt;
-    return tasktab().intAt(key, tab().intAt(key, 1));
+    return tasktab().intAt(key, tab().intAt(key, 0));
   }
 
   public static int getUnExpectedExcptCnt() {
     Long key = unExpectedExcptCnt;
-    return tasktab().intAt(key, tab().intAt(key, 1));
+    return tasktab().intAt(key, tab().intAt(key, 0));
   }
 
   public static Vector getUserName() {
