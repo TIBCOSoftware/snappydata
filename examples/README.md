@@ -1,4 +1,4 @@
-# SnapyData Examples
+# SnappyData Examples
 
 This examples directory, a sub-project in SnappyData repository, has sample application programs which can be run as jobs on a SnappyData cluster or also as Spark jobs.
 There are variety of examples for different scenarios like batch and streaming processing, embedded-mode, smartconnector-mode, joins involving different types of tables.
