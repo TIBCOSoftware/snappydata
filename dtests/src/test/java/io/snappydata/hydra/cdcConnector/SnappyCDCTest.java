@@ -298,7 +298,12 @@ public class SnappyCDCTest extends SnappyTest {
         tableCnt = rs.getInt(1);
       rs.close();
       String[] tableArr = new String[tableCnt];
-      Map<String, Integer> tableCntMap = new HashMap<>();
+      Map<String, Integer> tableCntMap = null;
+      if (SnappyBB.getBB().getSharedMap().containsKey("tableCntMap")){
+        tableCntMap = (Map<String,Integer>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
+      }
+      else
+        tableCntMap = new HashMap<>();
       int cnt = 0;
       String tableQry = "SELECT TABLENAME FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='" +schema+ "' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
       ResultSet rs1 = con.createStatement().executeQuery(tableQry);
@@ -318,8 +323,11 @@ public class SnappyCDCTest extends SnappyTest {
           Log.getLogWriter().info("SP: The tableName = " + tableName + " count = " + count);
         }
         if(!tableCntMap.containsKey(tableName)) //To avoid overwriting the existing key(table)
+        {
+          Log.getLogWriter().info("SP: Inserting in the table as " + tableName + " not in the map" );
           tableCntMap.put(tableName, count);
-        rs3.close();
+        }
+          rs3.close();
       }
       SnappyBB.getBB().getSharedMap().put("tableCntMap", tableCntMap);
    //  if(!isBeforeRestart)
