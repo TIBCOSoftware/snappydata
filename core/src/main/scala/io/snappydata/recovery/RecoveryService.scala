@@ -72,7 +72,7 @@ object RecoveryService extends Logging {
       val allTables = getTables
       var tblCounts: Seq[SnappyRegionStats] = Seq()
       allTables.foreach(table => {
-        logDebug(s"RecoveryService:getStats:table: $table")
+        logDebug(s"RecoveryService:getStats for table: $table")
         table.storage.locationUri match {
           case Some(_) => // external tables can be seen in show tables but filtered out in UI
           case None =>
@@ -136,7 +136,6 @@ object RecoveryService extends Logging {
           }
         }
       }
-
     } else {
       val otherDdls = mostRecentMemberObject.getOtherDDLs.asScala
       otherDdls.foreach(ddl => {
@@ -212,8 +211,7 @@ object RecoveryService extends Logging {
     val sortedTempTableBuffer = tempTableBuffer.sortBy(tup => tup._1.split("_")(1).toLong).map(_._2)
     ddlBuffer.appendAll(sortedTempTableBuffer)
 
-    // view ddls should be at the end so that tables
-    // on which these views depend are already captured.
+    // view ddls should be at the end so that the extracted ddls won't fail when replayed as is.
     ddlBuffer.appendAll(tempViewBuffer)
 
     val biConsumer = new BiConsumer[String, String] {
@@ -440,7 +438,7 @@ object RecoveryService extends Logging {
     }
   }
 
-  def collectViewsAndRecoverDDLs(): Unit = {
+  def collectViewsAndPrepareCatalog(): Unit = {
     // Send a message to all the servers and locators to send back their
     // respective persistent state information.
     logDebug("Start collecting PersistentStateInRecoveryMode from all the servers/locators.")
@@ -448,6 +446,8 @@ object RecoveryService extends Logging {
     val msg = new RecoveredMetadataRequestMessage(collector)
     msg.executeFunction()
     val persistentData = collector.getResult
+    logDebug(s"Number of PersistentStateInRecoveryMode received" +
+        s" from members: ${persistentData.size()}")
     val itr = persistentData.iterator()
     val snapCon = SnappyContext()
     val snappyHiveExternalCatalog = HiveClientUtil
@@ -457,14 +457,14 @@ object RecoveryService extends Logging {
       persistentObjectMemberMap += persistentViewObj.getMember -> persistentViewObj
       val regionItr = persistentViewObj.getAllRegionViews.iterator()
       while (regionItr.hasNext) {
-        val x = regionItr.next()
-        val regionPath = x.getRegionPath
+        val persistentView = regionItr.next()
+        val regionPath = persistentView.getRegionPath
         val set = regionViewSortedSet.get(regionPath)
         if (set.isDefined) {
-          set.get += x
+          set.get += persistentView
         } else {
           var newset = mutable.SortedSet.empty[RecoveryModePersistentView]
-          newset += x
+          newset += persistentView
           regionViewSortedSet += regionPath -> newset
         }
       }
@@ -479,12 +479,17 @@ object RecoveryService extends Logging {
     val nonHiveRegionViews = regionViewSortedSet.filterKeys(
       !_.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
     val regionToConsider =
-      nonHiveRegionViews.keySet.toSeq.sortBy(nonHiveRegionViews.get(_).size).reverse.head
+      if (nonHiveRegionViews.size != 0) {
+        nonHiveRegionViews.keySet.toSeq.sortBy(nonHiveRegionViews.get(_).size).reverse.head
+      } else {
+        logInfo("No relevant RecoveryModePersistentViews found.")
+        throw new Exception("Cannot start empty cluster in Recovery Mode.")
+      }
     val regionView = regionViewSortedSet(regionToConsider).lastKey
     val memberToConsider = regionView.getMember
     memberObject = persistentObjectMemberMap(memberToConsider)
     mostRecentMemberObject = persistentObjectMemberMap(memberToConsiderForHiveCatalog)
-    logDebug(s"The PersistentStateInRecoveryMode object used for populating" +
+    logDebug(s"The selected PersistentStateInRecoveryMode used for populating" +
         s" the new catalog:\n$mostRecentMemberObject")
     val catalogObjects = mostRecentMemberObject.getCatalogObjects
     import scala.collection.JavaConverters._

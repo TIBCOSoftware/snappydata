@@ -79,7 +79,7 @@ class OpLogRdd(
     val isNullable = field.nullable
     val metadata = field.metadata
 
-    dataType match {
+    val dataTypeDescriptor = dataType match {
       case LongType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BIGINT, isNullable)
       case IntegerType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.INTEGER, isNullable)
       case BooleanType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BOOLEAN, isNullable)
@@ -115,6 +115,8 @@ class OpLogRdd(
         DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BLOB, isNullable)
       case _ => new DataTypeDescriptor(TypeId.CHAR_ID, isNullable)
     }
+    logDebug(s"Field: $field ===> DataTypeDescriptor $dataTypeDescriptor")
+    dataTypeDescriptor
   }
 
   def getProjectColumnId(tableName: String, columnName: String): Int = {
@@ -204,29 +206,29 @@ class OpLogRdd(
     field.dataType match {
       case ShortType => if (dvd.isNull) null else dvd.getShort
       case ByteType => if (dvd.isNull) null else dvd.getByte
-      case a: ArrayType =>
-        assert(field.dataType == a)
+      case arrayType: ArrayType =>
+        assert(field.dataType == arrayType)
         val array = valueArr(complexFieldIndex)
         val data = new SerializedArray(8)
         if (array != null) {
           data.pointTo(array, Platform.BYTE_ARRAY_OFFSET, array.length)
-          data.toArray(a.elementType)
+          data.toArray(arrayType.elementType)
         } else null
-      case m: MapType =>
-        assert(field.dataType == m)
+      case mapType: MapType =>
+        assert(field.dataType == mapType)
         val map = valueArr(complexFieldIndex)
         val data = new SerializedMap()
         if (map != null) {
           data.pointTo(map, Platform.BYTE_ARRAY_OFFSET)
           val jmap = new java.util.HashMap[Any, Any](data.numElements())
-          data.foreach(m.keyType, m.valueType, (k, v) => jmap.put(k, v))
+          data.foreach(mapType.keyType, mapType.valueType, (k, v) => jmap.put(k, v))
           jmap
         } else null
-      case s: StructType =>
-        assert(field.dataType == s)
+      case structType: StructType =>
+        assert(field.dataType == structType)
         val struct = valueArr(complexFieldIndex)
         if (struct != null) {
-          val data = new SerializedRow(4, s.length)
+          val data = new SerializedRow(4, structType.length)
           data.pointTo(struct, Platform.BYTE_ARRAY_OFFSET, struct.length)
           data
         } else null
@@ -254,10 +256,6 @@ class OpLogRdd(
     // todo: build a local cache = table ->rowformatters
     // todo: so we don't have to create rowformatters for every record
 
-    // For row tables external catalog stores:
-    // float gets stored as DoubleType
-    // byte gets stored as ShortType
-    // tinyint gets store as ShortType
     if ("row".equalsIgnoreCase(provider)) {
       val correctedFields = schemaOfVersion.map(field => {
         field.dataType match {
@@ -305,9 +303,10 @@ class OpLogRdd(
    * @param phdrRow PlaceHolderDiskRegion of row
    */
   def iterateRowData(phdrRow: PlaceHolderDiskRegion): Iterator[Row] = {
-    if(phdrRow.getRegionMap == null || phdrRow.getRegionMap.isEmpty) return Iterator.empty
-    val rm = phdrRow.getRegionMap
-    val regMapItr = rm.regionEntries().iterator().asScala
+    if (phdrRow.getRegionMap == null || phdrRow.getRegionMap.isEmpty) return Iterator.empty
+    val regionMap = phdrRow.getRegionMap
+    logDebug(s"RegionMap keys: ${regionMap.keySet()}")
+    val regMapItr = regionMap.regionEntries().iterator().asScala
     regMapItr.map { regEntry =>
       getValueInVMOrDiskWithoutFaultIn(phdrRow, regEntry) match {
         case valueArr@(_: Array[Byte] | _: Array[Array[Byte]]) => getRow(valueArr)
@@ -370,6 +369,7 @@ class OpLogRdd(
     if (phdrCol.getRegionMap == null || phdrCol.getRegionMap.isEmpty) return Iterator.empty
     val regMap = phdrCol.getRegionMap
     // assert(regMap != null, "region map for column batch is null")
+    logDebug(s"RegionMap keys: ${regMap.keySet()}")
     regMap.keySet().iterator().asScala.flatMap {
       case k: ColumnFormatKey if k.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX =>
         // get required info about deletes
@@ -511,9 +511,10 @@ class OpLogRdd(
       var phdrRow: PlaceHolderDiskRegion = null
       var phdrCol: PlaceHolderDiskRegion = null
 
-      for (d <- diskStores.asScala) {
-        val dskRegMap = d.getAllDiskRegions
-        for ((_, adr) <- dskRegMap.asScala) {
+      for (diskStore <- diskStores.asScala) {
+        val diskRegMap = diskStore.getAllDiskRegions
+        logDebug(s"Number of Disk Regions : ${diskRegMap.size()} in ${diskStore.toString}")
+        for ((_, adr) <- diskRegMap.asScala) {
           val adrPath = adr.getFullPath
           var adrUnescapePath = PartitionedRegionHelper.unescapePRPath(adrPath)
           // var adrUnescapePath = adrPath
@@ -523,15 +524,16 @@ class OpLogRdd(
             adrUnescapePath = adrUnescapePath
                 .replace(wrongTablePattern, tableName.replace('/', '_'))
           }
+          // todo: add more debug lines here
           if (adrUnescapePath.equals(colRegPath) && adr.isBucket) {
-            diskStrCol = d
+            diskStrCol = diskStore
             phdrCol = adr.asInstanceOf[PlaceHolderDiskRegion]
           } else if (adrUnescapePath.equals(rowRegPath)) {
-            diskStrRow = d
+            diskStrRow = diskStore
             phdrRow = adr.asInstanceOf[PlaceHolderDiskRegion]
           } else if (!adr.isBucket && adrUnescapePath
               .equals('/' + fqtn.replace('.', '/'))) {
-            diskStrRow = d
+            diskStrRow = diskStore
             phdrRow = adr.asInstanceOf[PlaceHolderDiskRegion]
           }
         }
@@ -672,7 +674,7 @@ class OpLogRdd(
    */
   override def getPreferredLocations(split: Partition): Seq[String] = {
     val preferredHosts = RecoveryService.getExecutorHost(fqtn, split.index)
-    logDebug(s"preferred hosts for partition ${split.index} of $fqtn are $preferredHosts")
+    logDebug(s"Preferred hosts for partition ${split.index} of $fqtn are $preferredHosts")
     preferredHosts
   }
 
