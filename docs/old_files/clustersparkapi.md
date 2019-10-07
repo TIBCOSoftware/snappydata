@@ -1,10 +1,10 @@
 [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) 
 is the main entry point for SnappyData extensions to Spark. 
-A SnappySession extends Spark's [SparkSession](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SparkSession) 
+A SnappySession extends Spark's [SparkSession](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.SparkSession) 
 to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame. 
 Similarly, [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext) 
 is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's 
-[Streaming Context](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext). 
+[Streaming Context](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.streaming.StreamingContext). 
 
 Applications typically submit Jobs to SnappyData and do not explicitly create a SnappySession or SnappyStreamingContext. 
 These jobs are the primary mechanism to interact with SnappyData using the Spark API. A job implements either 

@@ -6,7 +6,7 @@ This procedure sets the percentage threshold of critical Java heap memory usage 
 
 ## Syntax
 
-``` pre
+```pre
 SYS.SET_CRITICAL_HEAP_PERCENTAGE (
 IN PERCENTAGE REAL NOT NULL
 )
@@ -19,8 +19,10 @@ The percentage of used heap space that triggers `LowMemoryException`s on the loc
 
 This command sets the critical threshold for heap memory usage on the local SnappyData member to 99.9%:
 
-``` pre
-call sys.set_critical_heap_percentage (99.9);
+```pre
+snappy>call sys.set_critical_heap_percentage (99.9);
 ```
 
+**Also see:**
 
+*	[Built-in System Procedures and Built-in Functions](system-procedures.md)

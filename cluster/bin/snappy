@@ -24,16 +24,21 @@ if [ -z "${SPARK_HOME}" ]; then
   export SPARK_HOME="$(absPath "$(dirname "$(absPath "$0")")/..")"
 fi
 export SNAPPY_HOME="${SPARK_HOME}"
+# only scala 2.11 supported in SnappyData builds
+export SPARK_SCALA_VERSION="2.11"
 # disable randomized hash for string in Python 3.3+
 export PYTHONHASHSEED=0
 
-if [ "$JAVA_ARGS" != "" ]
-then
+if [ -n "`echo "$JAVA_ARGS" | grep -q verbose`" ]; then
   echo "Using JAVA_ARGS=$JAVA_ARGS"
 fi
 
 
 function setnewargs() { newargs="$@"; }
+
+if [ -z "${SNAPPY_SCRIPT_NAME}" ]; then
+  export SNAPPY_SCRIPT_NAME=snappy
+fi
 
 if echo $@ | grep -qw "rowstore"; then
   #using rowstore launcher
@@ -44,7 +49,64 @@ if echo $@ | grep -qw "rowstore"; then
     fi
   done
   exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS com.pivotal.gemfirexd.tools.GfxdUtilLauncher $newargs
+elif [ "$1" = "dataextractor" ]; then
+  shift
+  exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS com.pivotal.gemfirexd.tools.dataextractor.GemFireXDDataExtractor "$@"
+elif [ "$1" = "dataextractloader" ]; then
+  shift
+  exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS com.pivotal.gemfirexd.tools.dataextractor.GemFireXDDataExtractorLoader "$@"
+elif [ -z "$SNAPPY_NO_QUICK_LAUNCH" -a $# -ge 2 \
+       -a '(' "$2" = "start" -o "$2" = "stop" -o "$2" = "status" ')' \
+       -a '(' "$1" = "server" -o "$1" = "leader" -o "$1" = "locator" ')' ]; then
+  # faster route for start/stop/status
+
+  # Find the java binary
+  if [ -n "${JAVA_HOME}" ]; then
+    RUNNER="${JAVA_HOME}/bin/java"
+  else
+    if [ "$(command -v java)" ]; then
+      RUNNER="java"
+    else
+      echo "JAVA_HOME is not set" >&2
+      exit 1
+    fi
+  fi
+
+  . "${SPARK_HOME}"/bin/load-spark-env.sh
+  . "${SPARK_HOME}"/bin/load-snappy-env.sh
+
+  HOSTNAME_FOR_CLIENTS=
+  if [ "$2" = "start" ]; then
+    # set hostname-for-clients and SPARK_PUBLIC_DNS in AWS (only supported for Linux)
+    if [ -z "$SPARK_PUBLIC_DNS" ]; then
+      CHECK_AWS=1
+      if [ -r /sys/hypervisor/uuid ]; then
+        if ! grep -q '^ec2' /sys/hypervisor/uuid; then
+          CHECK_AWS=
+        fi
+      elif [ -r /sys/devices/virtual/dmi/id/product_name ]; then
+        if ! grep -iq 'hvm' /sys/devices/virtual/dmi/id/product_name; then
+          CHECK_AWS=
+        fi
+      else
+        # not running on AWS if neither of those two files are present
+        CHECK_AWS=
+      fi
+      if [ -n "$CHECK_AWS" ]; then
+        SPARK_PUBLIC_DNS="$(curl -s --connect-timeout 3 http://169.254.169.254/latest/meta-data/public-ipv4 | head -1)"
+        if [ -n "$SPARK_PUBLIC_DNS" ]; then
+          if ! echo $"${@// /\\ }" | grep -q 'hostname-for-clients='; then
+            HOSTNAME_FOR_CLIENTS="-hostname-for-clients=$SPARK_PUBLIC_DNS"
+          fi
+          export SPARK_PUBLIC_DNS
+        fi
+      fi
+    fi
+  fi
+
+  JARS="`echo "${SPARK_HOME}"/jars/snappydata-launcher* "${SPARK_HOME}"/jars/gemfire-shared* "${SPARK_HOME}"/jars/jna-4.* | sed 's/ /:/g'`"
+  exec $RUNNER $JAVA_ARGS -Xverify:none -cp "$JARS" io.snappydata.tools.QuickLauncher "$@" $HOSTNAME_FOR_CLIENTS
 else
-  #use snappy launcher
+  # use full snappy launcher
   exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS io.snappydata.tools.SnappyUtilLauncher "$@"
 fi

@@ -1,6 +1,6 @@
 # Sketching 
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
 
 Synopses data structures are typically much smaller than the base data sets that they represent. They use very little space and provide fast, approximate answers to queries. A [BloomFilter](https://en.wikipedia.org/wiki/Bloom_filter) is a commonly used example of a synopsis data structure. Another example of a synopsis structure is a [Count-Min-Sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) which serves as a frequency table of events in a stream of data. The ability to use Time as a dimension for querying makes synopses structures much more useful. As streams are ingested, all relevant synopses are updated incrementally and can be queried using SQL or the Scala API.
 
@@ -9,7 +9,7 @@ TopK queries are used to rank attributes to answer "best, most interesting, most
  
 ### SQL API for creating a TopK table in SnappyData
  
-``` 
+```pre
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets')")
 ``` 
@@ -54,7 +54,7 @@ If time is an attribute in the incoming data set, it can be used instead of the 
 
 In the example below tweetTime is a field in the incoming dataset which carries the timestamp of the tweet.
  
-```scala
+```pre
 snsc.sql("create topK table MostPopularTweets on tweetStreamTable " +
         "options(key 'hashtag', frequencyCol 'retweets', timeSeriesColumn 'tweetTime' )")
 ``` 
@@ -62,7 +62,7 @@ The example above create a TopK table called MostPopularTweets, the base table f
 
 ### Scala API for creating a TopK table 
 
-```scala
+```pre
     val topKOptionMap = Map(
         "epoch" -> System.currentTimeMillis().toString,
         "timeInterval" -> "1000ms",

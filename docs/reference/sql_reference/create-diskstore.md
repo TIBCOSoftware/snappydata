@@ -2,7 +2,7 @@
 
 Disk stores provide disk storage for tables that need to overflow or persist.
 
-``` pre
+```pre
 CREATE DISKSTORE diskstore_name
 
     [ MAXLOGSIZE max-log-size-in-mb ]
@@ -60,7 +60,7 @@ Sets the maximum number of row operations that SnappyData asynchronously queues 
 
 The optional `dir-name` entry defines a specific host system directory to use for the disk store. You can include one or more `dir-name` entries using the syntax:
 
-``` pre
+```pre
 [ ( 'dir-name' [ disk-space-in-mb ] [,'dir-name' [ disk-space-in-mb ] ]* ) ]
 ```
 
@@ -75,19 +75,20 @@ In each entry:
 
     If you do not specify the *disk-space-in-mb* value, then SnappyData does not impose a limit on the amount of space used by disk store files in that directory. If you do specify a limit, the size must be large enough to accommodate the disk store oplog files (the `MAXLOGSIZE` value, or 1 GB by default) and leave enough free space in the directory to avoid low disk space warnings. If you specify a size that cannot accommodate the oplog files and maintain enough free space, SnappyData fails to create the disk store with SQLState error XOZ33: Cannot create oplogs with size {0}MB which is greater than the maximum size {1}MB for store directory ''{2}''.
 
-You can specify any number of `dir-name` entries in a `CREATE DISKSTORE` statement. The data is spread evenly among the active disk files in the directories, keeping within any limits you set.
+You can specify any number of `dir-name` entries in a `CREATE DISKSTORE` statement. The default diskstore does not have an option for multiple directories. It is recommended that you use separate data area from the server working directory.
+Create a separate diskstore and specify multiple directories. The data is spread evenly among the active disk files in the directories, keeping within any limits you set.
 
 ## Example
 
 This example uses the default base directory and parameter values to create a named disk store:
 
-``` pre
+```pre
 snappy> CREATE DISKSTORE STORE1;
 ```
 
 This example configures disk store parameters and specifies a storage directory:
 
-``` pre
+```pre
 snappy> CREATE DISKSTORE STORE1
       MAXLOGSIZE 1024 
       AUTOCOMPACT TRUE
@@ -101,9 +102,15 @@ snappy> CREATE DISKSTORE STORE1
 
 This example specifies multiple storage directories and directory sizes for oplog files:
 
-``` pre
+```pre
 snappy> CREATE DISKSTORE STORE1 
       WRITEBUFFERSIZE 19292393
       QUEUESIZE 17374
       ('dir1' 456 , 'dir2', 'dir3' 532 );
 ```
+
+**Related Topics**
+
+* [DROP DISKSTORE](drop-diskstore.md)
+
+* [SYSDISKSTORES](../system_tables/sysdiskstores.md)

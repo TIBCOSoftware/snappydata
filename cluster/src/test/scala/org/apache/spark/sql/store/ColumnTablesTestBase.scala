@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -70,14 +70,14 @@ abstract class ColumnTablesTestBase extends SnappyFunSuite {
     session.sql("CREATE TABLE TypesTable (Index Int not null, T1 Boolean, " +
         "T2 Byte, T3 Short, T4 Int, T5 Long, T6 FLOAT, T7 Double, T8 String, " +
         "T9 Decimal(10, 4), T10 Decimal(35, 15), T11 Date, T12 Timestamp, " +
-        "T13 Binary) USING column options (buckets '5')")
+        "T13 Binary) USING column options (buckets '8')")
     session.sql("CREATE TABLE TypesTable2 (index Int, T1 Boolean NOT NULL, " +
         "T2 Byte NOT NULL, T3 Short NOT NULL, T4 Int NOT NULL, " +
         "T5 Long not null, T6 FLOAT NOT NULL, T7 Double not null, " +
         "T8 String NOT NULL, T9 Decimal(10, 4) NOT NULL, " +
         "T10 Decimal(35, 15) NOT NULL, T11 Date not null, " +
         "T12 Timestamp not null, T13 Binary not null) " +
-        "USING column options (buckets '5')")
+        "USING column options (buckets '8')")
     session.sql("CREATE TABLE TypesTable3 (Index Int not null, T1 Boolean, " +
         "T2 Integer, T3 smallint, T4 Int, T5 bigint, T6 REAL, T7 Double, T8 varchar(100), " +
         "T9 Decimal(10, 4), T10 Decimal(35, 15), T11 Date, T12 Timestamp, " +

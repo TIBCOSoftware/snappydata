@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 source PerfRun.conf
 
-. $SnappyData/bin/snappy-job.sh status --job-id $1
+bash $SnappyData/bin/snappy-job.sh --lead $2:8090 status --job-id $1

@@ -1,0 +1,14 @@
+INSERT INTO [testdatabase20G].[dbo].[ADJUSTMENT] VALUES (912, 1000000000, 9929, 102, 506161, 775324, 431703, 28440200.7189, N'new', N'2016-05-09', 520989, 966723, 592283, 682854, 165363, N'2016-07-02', N'2016-05-30', N'889', N'89');
+DELETE FROM [testdatabase20G].[dbo].[ADJUSTMENT                               ] WHERE   ADJ_ID = 1000000000;
+INSERT INTO [testdatabase20G].[dbo].[AGREEMENT] VALUES (1000000000, 8093, 1, N'new', N'PYydIsuL', N'2016-05-02', N'2016-07-13', N'2016-06-25', N'2016-07-04', N'4027', N'4065');
+DELETE FROM [testdatabase20G].[dbo].[AGREEMENT                                ] WHERE   AGREE_ID = 1000000000;
+INSERT INTO [testdatabase20G].[dbo].[BANK] VALUES (9989, 1000000000, 2391, 1, N'l', N'new', N'2016-07-14', N'2016-06-26', N'4097', N'9092');
+DELETE FROM [testdatabase20G].[dbo].[BANK                                     ] WHERE   BNK_ID = 1000000000;
+INSERT INTO [testdatabase20G].[dbo].[BANK_ACCOUNT] VALUES (9989, 49596, 1000000000, 1455, 1, N'new', N'Dd', 148697, N'2016-08-04', N'2016-05-29', N'3789', N'542');
+DELETE FROM [testdatabase20G].[dbo].[BANK_ACCOUNT                             ] WHERE   BNK_ACCT_ID = 1000000000;
+INSERT INTO [testdatabase20G].[dbo].[BENEFIT_GROUP_NAME] VALUES (14511, 534885, 1000000000, 4440, 1, N'new', N'zaT', N'2016-07-31', N'2016-05-09', N'2016-05-15', N'2016-07-16', N'2367', N'523');
+DELETE FROM [testdatabase20G].[dbo].[BENEFIT_GROUP_NAME                       ] WHERE   BENE_GRP_NM_ID = 1000000000;
+INSERT INTO [testdatabase20G].[dbo].[BENEFIT_GROUPS] VALUES (8252, 87633, 1000000000, 187253, 13, N'czK', N'2016-05-14', N'2016-05-20', N'2016-07-13', N'2016-07-15', N'new', N'FFvhKp');
+DELETE FROM [testdatabase20G].[dbo].[BENEFIT_GROUPS                           ] WHERE   BENE_GRP_ID = 1000000000;
+INSERT INTO [testdatabase20G].[dbo].[BENEFIT_PACKAGE] VALUES (1000000000, 6743, 1, N'new', 266, 149398, N'2016-05-11', N'2016-06-25', N'2016-06-03', N'2016-05-09', N'2344', N'9024');
+DELETE FROM [testdatabase20G].[dbo].[BENEFIT_PACKAGE                          ] WHERE   BENE_PKG_ID = 1000000000;

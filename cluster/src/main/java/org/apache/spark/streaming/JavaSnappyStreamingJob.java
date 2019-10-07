@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -47,7 +47,7 @@ public abstract class JavaSnappyStreamingJob implements SparkJobBase {
     try {
       SnappyUtils.setSessionDependencies(context.snappySession().sparkContext(),
           this.getClass().getCanonicalName(),
-          Thread.currentThread().getContextClassLoader());
+          Thread.currentThread().getContextClassLoader(), false);
       return runSnappyJob(context, SnappySessionFactory.updateCredentials(context.snappySession()
           , jobConfig, true));
     } finally {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,7 +19,6 @@ package org.apache.spark.sql
 import io.snappydata.SnappyFunSuite
 
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.joins.CartesianProductExec
 
 object NWQueries extends SnappyFunSuite {
 
@@ -132,27 +131,105 @@ object NWQueries extends SnappyFunSuite {
   val Q25: String = "SELECT CompanyName FROM Customers WHERE CustomerID = " +
       "(SELECT CustomerID FROM Orders WHERE OrderID = 10290)"
 
+  val Q25_1: String = "SELECT CompanyName FROM Customers WHERE CustomerID = " +
+      "(SELECT CustomerID FROM Orders WHERE OrderID = 10295)"
+
+  val Q25_2: String = "SELECT CompanyName FROM Customers WHERE CustomerID = " +
+      "(SELECT CustomerID FROM Orders WHERE OrderID = 10391)"
+
   val Q26: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
       "FROM Orders WHERE OrderDate BETWEEN '1997-01-01' AND '1997-12-31')"
+
+  val Q26_1: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
+      "FROM Orders WHERE OrderDate BETWEEN Cast('1997-09-30' as TIMESTAMP) AND " +
+      "Cast('1997-12-24' as TIMESTAMP))"
+
+  val Q26_2: String = "SELECT CompanyName FROM Customers  WHERE CustomerID IN (SELECT CustomerID " +
+      "FROM Orders WHERE OrderDate BETWEEN Cast('1997-10-01' as TIMESTAMP) AND " +
+      "Cast('1997-12-31' as TIMESTAMP))"
 
   val Q27: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
       " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
       "('Exotic Liquids', 'Grandma Kellys Homestead', 'Tokyo Traders'))"
 
+  val Q27_1: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
+      " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
+      "('Pavlova Ltd.'))"
+
+  val Q27_2: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
+      " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
+      "('Pavlova Ltd.', 'Karkki Oy'))"
+
+  val Q27_3: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
+      " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
+      "('Grandma Kellys Homestead'))"
+
+  val Q27_4: String = "SELECT ProductName, SupplierID FROM Products WHERE SupplierID" +
+      " IN (SELECT SupplierID FROM Suppliers WHERE CompanyName IN" +
+      "('Exotic Liquids', 'Karkki Oy'))"
+
   val Q28: String = "SELECT ProductName FROM Products WHERE CategoryID = (SELECT " +
       "CategoryID FROM Categories WHERE CategoryName = 'Seafood')"
 
+  val Q28_1: String = "SELECT ProductName FROM Products WHERE CategoryID = (SELECT " +
+      "CategoryID FROM Categories WHERE CategoryName = 'Condiments')"
+
+  val Q28_2: String = "SELECT ProductName FROM Products WHERE CategoryID = (SELECT " +
+      "CategoryID FROM Categories WHERE CategoryName = 'Produce')"
+
   val Q29: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN " +
       "(SELECT SupplierID FROM Products WHERE CategoryID = 8)"
+
+  val Q29_1: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN " +
+      "(SELECT SupplierID FROM Products WHERE CategoryID = 5)"
+
+  val Q29_2: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN " +
+      "(SELECT SupplierID FROM Products WHERE CategoryID = 3)"
 
   val Q30: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN (SELECT SupplierID" +
       " FROM Products  WHERE CategoryID = (SELECT CategoryID FROM Categories" +
       " WHERE CategoryName = 'Seafood'))"
 
+  val Q30_1: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN (SELECT SupplierID" +
+      " FROM Products  WHERE CategoryID = (SELECT CategoryID FROM Categories" +
+      " WHERE CategoryName = 'Condiments'))"
+
+  val Q30_2: String = "SELECT CompanyName  FROM Suppliers WHERE SupplierID IN (SELECT SupplierID" +
+      " FROM Products  WHERE CategoryID = (SELECT CategoryID FROM Categories" +
+      " WHERE CategoryName = 'Confections'))"
+
   val Q31: String = "SELECT Employees.EmployeeID, Employees.FirstName," +
       " Employees.LastName, Orders.OrderID, Orders.OrderDate" +
       " FROM Employees JOIN Orders ON" +
       " (Employees.EmployeeID = Orders.EmployeeID)" +
+      " ORDER BY Orders.OrderDate"
+
+  val Q31_1: String = "SELECT Employees.EmployeeID, Employees.FirstName," +
+      " Employees.LastName, Orders.OrderID, Orders.OrderDate" +
+      " FROM Employees JOIN Orders ON" +
+      " (Employees.EmployeeID = Orders.EmployeeID)" +
+      " where Orders.EmployeeID < 5" +
+      " ORDER BY Orders.OrderDate"
+
+  val Q31_2: String = "SELECT Employees.EmployeeID, Employees.FirstName," +
+      " Employees.LastName, Orders.OrderID, Orders.OrderDate" +
+      " FROM Employees JOIN Orders ON" +
+      " (Employees.EmployeeID = Orders.EmployeeID)" +
+      " where Orders.EmployeeID > 5" +
+      " ORDER BY Orders.OrderDate"
+
+  val Q31_3: String = "SELECT Employees.EmployeeID, Employees.FirstName," +
+      " Employees.LastName, Orders.OrderID, Orders.OrderDate" +
+      " FROM Employees JOIN Orders ON" +
+      " (Employees.EmployeeID = Orders.EmployeeID)" +
+      " where Orders.EmployeeID < 3" +
+      " ORDER BY Orders.OrderDate"
+
+  val Q31_4: String = "SELECT Employees.EmployeeID, Employees.FirstName," +
+      " Employees.LastName, Orders.OrderID, Orders.OrderDate" +
+      " FROM Employees JOIN Orders ON" +
+      " (Employees.EmployeeID = Orders.EmployeeID)" +
+      " where Orders.EmployeeID > 3" +
       " ORDER BY Orders.OrderDate"
 
   val Q32: String = "SELECT o.OrderID, c.CompanyName, e.FirstName, e.LastName" +
@@ -162,10 +239,23 @@ object NWQueries extends SnappyFunSuite {
       " WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > '1998-01-01'" +
       " ORDER BY c.CompanyName"
 
+  val Q32_1: String = "SELECT o.OrderID, c.CompanyName, e.FirstName, e.LastName" +
+      " FROM Orders o" +
+      " JOIN Employees e ON (e.EmployeeID = o.EmployeeID)" +
+      " JOIN Customers c ON (c.CustomerID = o.CustomerID)" +
+      " WHERE o.ShippedDate < o.RequiredDate AND o.OrderDate > Cast('1997-12-01' as TIMESTAMP)" +
+      " ORDER BY c.CompanyName"
+
   val Q33: String = "SELECT e.FirstName, e.LastName, o.OrderID" +
       " FROM Employees e JOIN Orders o ON" +
       " (e.EmployeeID = o.EmployeeID)" +
       " WHERE o.RequiredDate < o.ShippedDate" +
+      " ORDER BY e.LastName, e.FirstName"
+
+  val Q33_1: String = "SELECT e.FirstName, e.LastName, o.OrderID" +
+      " FROM Employees e JOIN Orders o ON" +
+      " (e.EmployeeID = o.EmployeeID)" +
+      " WHERE o.RequiredDate > o.ShippedDate" +
       " ORDER BY e.LastName, e.FirstName"
 
   val Q34: String = "SELECT p.ProductName, SUM(od.Quantity) AS TotalUnits" +
@@ -174,11 +264,41 @@ object NWQueries extends SnappyFunSuite {
       " GROUP BY p.ProductName" +
       " HAVING SUM(Quantity) < 200"
 
+  val Q34_1: String = "SELECT p.ProductName, SUM(od.Quantity) AS TotalUnits" +
+      " FROM Order_Details od JOIN Products p ON" +
+      " (p.ProductID = od.ProductID)" +
+      " GROUP BY p.ProductName" +
+      " HAVING SUM(Quantity) >10 and SUM(Quantity) <100"
+
+  val Q34_2: String = "SELECT p.ProductName, SUM(od.Quantity) AS TotalUnits" +
+      " FROM Order_Details od JOIN Products p ON" +
+      " (p.ProductID = od.ProductID)" +
+      " GROUP BY p.ProductName" +
+      " HAVING SUM(Quantity) >100 and SUM(Quantity) <200"
+
   val Q35: String = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
       " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
       " e.City as employeeCity, c.City as customerCity" +
       " FROM Employees e JOIN Customers c ON" +
       " (e.City = c.City)" +
+      " GROUP BY e.City, c.City " +
+      " ORDER BY numEmployees DESC"
+
+  val Q35_1: String = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
+      " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
+      " e.City as employeeCity, c.City as customerCity" +
+      " FROM Employees e JOIN Customers c ON" +
+      " (e.City = c.City)" +
+      " where e.EmployeeID > 5 " +
+      " GROUP BY e.City, c.City " +
+      " ORDER BY numEmployees DESC"
+
+  val Q35_2: String = "SELECT COUNT(DISTINCT e.EmployeeID) AS numEmployees," +
+      " COUNT(DISTINCT c.CustomerID) AS numCompanies," +
+      " e.City as employeeCity, c.City as customerCity" +
+      " FROM Employees e JOIN Customers c ON" +
+      " (e.City = c.City)" +
+      " where e.EmployeeID > 1 " +
       " GROUP BY e.City, c.City " +
       " ORDER BY numEmployees DESC"
 
@@ -196,6 +316,40 @@ object NWQueries extends SnappyFunSuite {
       " ) b on a.OrderID = b.OrderID" +
       " where a.ShippedDate is not null" +
       " and a.ShippedDate > '1996-12-24' and a.ShippedDate < '1997-09-30'" +
+      " order by ShippedDate"
+
+  val Q36_1: String = "select distinct (a.ShippedDate) as ShippedDate," +
+      " a.OrderID," +
+      " b.Subtotal," +
+      " year(a.ShippedDate) as Year" +
+      " from Orders a" +
+      " inner join" +
+      " (" +
+      " select distinct OrderID," +
+      " sum(UnitPrice * Quantity * (1 - Discount)) as Subtotal" +
+      " from order_details" +
+      " group by OrderID" +
+      " ) b on a.OrderID = b.OrderID" +
+      " where a.ShippedDate is not null" +
+      " and a.ShippedDate > Cast('1997-02-24' as TIMESTAMP) and " +
+      " a.ShippedDate < Cast('1997-09-30' as TIMESTAMP)" +
+      " order by ShippedDate"
+
+  val Q36_2: String = "select distinct (a.ShippedDate) as ShippedDate," +
+      " a.OrderID," +
+      " b.Subtotal," +
+      " year(a.ShippedDate) as Year" +
+      " from Orders a" +
+      " inner join" +
+      " (" +
+      " select distinct OrderID," +
+      " sum(UnitPrice * Quantity * (2 - Discount)) as Subtotal" +
+      " from order_details" +
+      " group by OrderID" +
+      " ) b on a.OrderID = b.OrderID" +
+      " where a.ShippedDate is not null" +
+      " and a.ShippedDate > Cast('1996-02-24' as TIMESTAMP) and " +
+      " a.ShippedDate < Cast('1996-09-30' as TIMESTAMP)" +
       " order by ShippedDate"
 
   val Q37: String = "select distinct a.CategoryID," +
@@ -268,12 +422,88 @@ object NWQueries extends SnappyFunSuite {
       " inner join Products f on f.ProductID = e.ProductID" +
       " order by b.ShipName"
 
+  val Q38_1: String = "select distinct b.ShipName," +
+      " b.ShipAddress," +
+      " b.ShipCity," +
+      " b.ShipRegion," +
+      " b.ShipPostalCode," +
+      " b.ShipCountry," +
+      " b.CustomerID," +
+      " c.CompanyName as custCompanyName," +
+      " c.Address," +
+      " c.City," +
+      " c.Region," +
+      " c.PostalCode," +
+      " c.Country, " +
+      " concat(d.FirstName,  ' ', d.LastName) as Salesperson," +
+      " b.OrderID," +
+      " b.OrderDate," +
+      " b.RequiredDate," +
+      " b.ShippedDate," +
+      " a.CompanyName as shippersCompanyName," +
+      " e.ProductID," +
+      " f.ProductName," +
+      " e.UnitPrice," +
+      " e.Quantity," +
+      " e.Discount," +
+      " e.UnitPrice * e.Quantity * (1 - e.Discount) as ExtendedPrice," +
+      " b.Freight" +
+      " from Shippers a " +
+      " inner join Orders b on a.ShipperID = b.ShipVia" +
+      " inner join Customers c on c.CustomerID = b.CustomerID" +
+      " inner join Employees d on d.EmployeeID = b.EmployeeID" +
+      " inner join Order_Details e on b.OrderID = e.OrderID" +
+      " inner join Products f on f.ProductID = e.ProductID" +
+      " where b.ShippedDate > Cast('1996-07-10' as TIMESTAMP)" +
+      " order by b.ShipName"
+
+  val Q38_2: String = "select distinct b.ShipName," +
+      " b.ShipAddress," +
+      " b.ShipCity," +
+      " b.ShipRegion," +
+      " b.ShipPostalCode," +
+      " b.ShipCountry," +
+      " b.CustomerID," +
+      " c.CompanyName as custCompanyName," +
+      " c.Address," +
+      " c.City," +
+      " c.Region," +
+      " c.PostalCode," +
+      " c.Country, " +
+      " concat(d.FirstName,  ' ', d.LastName) as Salesperson," +
+      " b.OrderID," +
+      " b.OrderDate," +
+      " b.RequiredDate," +
+      " b.ShippedDate," +
+      " a.CompanyName as shippersCompanyName," +
+      " e.ProductID," +
+      " f.ProductName," +
+      " e.UnitPrice," +
+      " e.Quantity," +
+      " e.Discount," +
+      " e.UnitPrice * e.Quantity * (1 - e.Discount) as ExtendedPrice," +
+      " b.Freight" +
+      " from Shippers a " +
+      " inner join Orders b on a.ShipperID = b.ShipVia" +
+      " inner join Customers c on c.CustomerID = b.CustomerID" +
+      " inner join Employees d on d.EmployeeID = b.EmployeeID" +
+      " inner join Order_Details e on b.OrderID = e.OrderID" +
+      " inner join Products f on f.ProductID = e.ProductID" +
+      " where b.ShippedDate > Cast('1996-07-29' as TIMESTAMP)" +
+      " order by b.ShipName"
+
   val Q39: String = "select s.supplierid,s.companyname,p.productid,p.productname " +
       "from suppliers s join products p on(s.supplierid= p.supplierid) and" +
       " s.companyname IN('Grandma Kellys Homestead','Tokyo Traders','Exotic Liquids')"
 
   val Q40: String = "SELECT c.customerID, o.orderID FROM customers c INNER JOIN orders o " +
       "ON c.CustomerID = o.CustomerID"
+
+  val Q40_1: String = "SELECT c.customerID, o.orderID FROM customers c INNER JOIN orders o " +
+      "ON c.CustomerID = o.CustomerID where c.CustomerID='LINOD'"
+
+  val Q40_2: String = "SELECT c.customerID, o.orderID FROM customers c INNER JOIN orders o " +
+      "ON c.CustomerID = o.CustomerID where c.CustomerID='SEVES'"
 
   val Q41: String = "SELECT order_details.OrderID,ShipCountry,UnitPrice,Quantity,Discount" +
       " FROM orders INNER JOIN Order_Details ON Orders.OrderID = Order_Details.OrderID"
@@ -283,8 +513,24 @@ object NWQueries extends SnappyFunSuite {
       " AS ProductSales FROM Orders INNER JOIN Order_Details ON" +
       " Orders.OrderID = Order_Details.OrderID GROUP BY ShipCountry"
 
+  val Q42_1: String = "SELECT ShipCountry," +
+      " Sum(Order_Details.UnitPrice * Quantity * Discount)" +
+      " AS ProductSales FROM Orders INNER JOIN Order_Details ON" +
+      " Orders.OrderID = Order_Details.OrderID where orders.OrderID > 11000 GROUP BY ShipCountry"
+
+  val Q42_2: String = "SELECT ShipCountry," +
+      " Sum(Order_Details.UnitPrice * Quantity * Discount)" +
+      " AS ProductSales FROM Orders INNER JOIN Order_Details ON" +
+      " Orders.OrderID = Order_Details.OrderID where orders.OrderID > 11070 GROUP BY ShipCountry"
+
   val Q43: String = "SELECT * FROM orders LEFT SEMI JOIN order_details " +
       "ON orders.OrderID = order_details.OrderId"
+
+  val Q43_1: String = "SELECT * FROM orders LEFT SEMI JOIN order_details " +
+      "ON orders.OrderID = order_details.OrderId where orders.OrderID > 11067"
+
+  val Q43_2: String = "SELECT * FROM orders LEFT SEMI JOIN order_details " +
+      "ON orders.OrderID = order_details.OrderId where orders.OrderID > 11075"
 
   val Q44: String = "SELECT * FROM orders LEFT SEMI JOIN order_details"
 
@@ -303,15 +549,39 @@ object NWQueries extends SnappyFunSuite {
   val Q49: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
       "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
       "ShipCountry FROM orders FULL JOIN order_details"
+  val Q49_1: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate," +
+      "RequiredDate," +
+      " ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode, " +
+      "ShipCountry FROM orders FULL JOIN order_details" +
+      " where orders.ShippedDate > Cast('1996-07-29' as TIMESTAMP)"
+
+  val Q49_2: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate," +
+      "RequiredDate," +
+      " ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode, " +
+      "ShipCountry FROM orders FULL JOIN order_details" +
+      " where orders.ShippedDate > Cast('1996-07-10' as TIMESTAMP)"
 
   val Q50: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
       "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
       "ShipCountry FROM orders JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
+
   val Q51: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
       "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
       "ShipCountry FROM orders LEFT JOIN order_details" +
       " ON Orders.OrderID = Order_Details.OrderID"
+  val Q51_1: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate," +
+      "RequiredDate," +
+      " ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode, " +
+      "ShipCountry FROM orders LEFT JOIN order_details" +
+      " ON Orders.OrderID = Order_Details.OrderID " +
+      " where orders.ShippedDate > Cast('1996-07-10' as TIMESTAMP)"
+  val Q51_2: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate," +
+      "RequiredDate," +
+      " ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode, " +
+      "ShipCountry FROM orders LEFT JOIN order_details" +
+      " ON Orders.OrderID = Order_Details.OrderID " +
+      " where orders.ShippedDate > Cast('1996-07-29' as TIMESTAMP)"
   val Q52: String = "SELECT orders.OrderID as OOID, CustomerID,EmployeeID,OrderDate,RequiredDate," +
       "ShippedDate,ShipVia,Freight,ShipName,ShipAddress,ShipCity,ShipRegion,ShipPostalCode," +
       "ShipCountry FROM orders RIGHT JOIN order_details" +
@@ -349,6 +619,54 @@ object NWQueries extends SnappyFunSuite {
       " else 'Asia-Pacific'" +
       " end"
 
+  val Q55_1: String = "select c.CategoryName as Product_Category," +
+      " case when s.Country in" +
+      " ('UK','Spain','Sweden','Germany','Norway'," +
+      " 'Denmark','Netherlands','Finland','Italy','France')" +
+      " then 'Europe'" +
+      " when s.Country in ('USA','Canada','Brazil')" +
+      " then 'America'" +
+      " else 'Asia-Pacific'" +
+      " end as Supplier_Continent," +
+      " sum(p.UnitsInStock) as UnitsInStock" +
+      " from Suppliers s " +
+      " inner join Products p on p.SupplierID=s.SupplierID" +
+      " inner join Categories c on c.CategoryID=p.CategoryID" +
+      " where s.Country IN ('USA','UK')" +
+      " group by c.CategoryName," +
+      " case when s.Country in" +
+      " ('UK','Spain','Sweden','Germany','Norway'," +
+      " 'Denmark','Netherlands','Finland','Italy','France')" +
+      " then 'Europe'" +
+      " when s.Country in ('USA','Canada','Brazil')" +
+      " then 'America'" +
+      " else 'Asia-Pacific'" +
+      " end"
+
+  val Q55_2: String = "select c.CategoryName as Product_Category," +
+      " case when s.Country in" +
+      " ('UK','Spain','Sweden','Germany','Norway'," +
+      " 'Denmark','Netherlands','Finland','Italy','France')" +
+      " then 'Europe'" +
+      " when s.Country in ('USA','Canada','Brazil')" +
+      " then 'America'" +
+      " else 'Asia-Pacific'" +
+      " end as Supplier_Continent," +
+      " sum(p.UnitsInStock) as UnitsInStock" +
+      " from Suppliers s " +
+      " inner join Products p on p.SupplierID=s.SupplierID" +
+      " inner join Categories c on c.CategoryID=p.CategoryID" +
+      " where s.Country IN ('Canada','France')" +
+      " group by c.CategoryName," +
+      " case when s.Country in" +
+      " ('UK','Spain','Sweden','Germany','Norway'," +
+      " 'Denmark','Netherlands','Finland','Italy','France')" +
+      " then 'Europe'" +
+      " when s.Country in ('USA','Canada','Brazil')" +
+      " then 'America'" +
+      " else 'Asia-Pacific'" +
+      " end"
+
   // This query shows sales figures by categories - mainly just aggregation with sub-query.
   // The inner query aggregates to product level, and the outer query further aggregates
   // the result set from inner-query to category level.
@@ -364,6 +682,75 @@ object NWQueries extends SnappyFunSuite {
       " inner join Order_Details as c on b.ProductID = c.ProductID" +
       " inner join Orders as d on d.OrderID = c.OrderID" +
       " where d.ShippedDate > '1997-01-01' and d.ShippedDate < '1997-12-31'" +
+      " group by a.CategoryName," +
+      " b.ProductName," +
+      " concat('Qtr ', quarter(d.ShippedDate))" +
+      " order by a.CategoryName," +
+      " b.ProductName," +
+      " ShippedQuarter" +
+      " ) as x" +
+      " group by CategoryName" +
+      " order by CategoryName"
+
+  val Q56_1: String = "select CategoryName, format_number(sum(ProductSales), 2) as CategorySales" +
+      " from" +
+      " (" +
+      " select distinct a.CategoryName," +
+      " b.ProductName," +
+      " format_number(sum(c.UnitPrice * c.Quantity * (1 - c.Discount)), 2) as ProductSales," +
+      " concat('Qtr ', quarter(d.ShippedDate)) as ShippedQuarter" +
+      " from Categories as a" +
+      " inner join Products as b on a.CategoryID = b.CategoryID" +
+      " inner join Order_Details as c on b.ProductID = c.ProductID" +
+      " inner join Orders as d on d.OrderID = c.OrderID" +
+      " where d.ShippedDate < Cast('1997-12-01' as TIMESTAMP) and " +
+      "d.ShippedDate > Cast('1996-07-10' as TIMESTAMP)" +
+      " group by a.CategoryName," +
+      " b.ProductName," +
+      " concat('Qtr ', quarter(d.ShippedDate))" +
+      " order by a.CategoryName," +
+      " b.ProductName," +
+      " ShippedQuarter" +
+      " ) as x" +
+      " group by CategoryName" +
+      " order by CategoryName"
+
+  val Q56_2: String = "select CategoryName, format_number(sum(ProductSales), 2) as CategorySales" +
+      " from" +
+      " (" +
+      " select distinct a.CategoryName," +
+      " b.ProductName," +
+      " format_number(sum(c.UnitPrice * c.Quantity * (1 - c.Discount)), 2) as ProductSales," +
+      " concat('Qtr ', quarter(d.ShippedDate)) as ShippedQuarter" +
+      " from Categories as a" +
+      " inner join Products as b on a.CategoryID = b.CategoryID" +
+      " inner join Order_Details as c on b.ProductID = c.ProductID" +
+      " inner join Orders as d on d.OrderID = c.OrderID" +
+      " where d.ShippedDate < Cast('1998-01-01' as TIMESTAMP) and " +
+      "d.ShippedDate > Cast('1996-07-29' as TIMESTAMP)" +
+      " group by a.CategoryName," +
+      " b.ProductName," +
+      " concat('Qtr ', quarter(d.ShippedDate))" +
+      " order by a.CategoryName," +
+      " b.ProductName," +
+      " ShippedQuarter" +
+      " ) as x" +
+      " group by CategoryName" +
+      " order by CategoryName"
+
+  val Q56_3: String = "select CategoryName, format_number(sum(ProductSales), 2) as CategorySales" +
+      " from" +
+      " (" +
+      " select distinct a.CategoryName," +
+      " b.ProductName," +
+      " format_number(sum(c.UnitPrice * c.Quantity * (1 - c.Discount)), 2) as ProductSales," +
+      " concat('Qtr ', quarter(d.ShippedDate)) as ShippedQuarter" +
+      " from Categories as a" +
+      " inner join Products as b on a.CategoryID = b.CategoryID" +
+      " inner join Order_Details as c on b.ProductID = c.ProductID" +
+      " inner join Orders as d on d.OrderID = c.OrderID" +
+      " where d.ShippedDate < Cast('1998-12-01' as TIMESTAMP) and " +
+      "d.ShippedDate > Cast('1996-07-10' as TIMESTAMP)" +
       " group by a.CategoryName," +
       " b.ProductName," +
       " concat('Qtr ', quarter(d.ShippedDate))" +
@@ -400,37 +787,80 @@ object NWQueries extends SnappyFunSuite {
     "Q23" -> Q23,
     "Q24" -> Q24,
     "Q25" -> Q25,
+    "Q25_1" -> Q25_1,
+    "Q25_2" -> Q25_2,
     "Q26" -> Q26,
+    "Q26_1" -> Q26_1,
+    "Q26_2" -> Q26_2,
     "Q27" -> Q27,
+    "Q27_1" -> Q27_1,
+    "Q27_2" -> Q27_2,
+    "Q27_3" -> Q27_3,
+    "Q27_4" -> Q27_4,
     "Q28" -> Q28,
+    "Q28_1" -> Q28_1,
+    "Q28_2" -> Q28_2,
     "Q29" -> Q29,
+    "Q29_1" -> Q29_1,
+    "Q29_2" -> Q29_2,
     "Q30" -> Q30,
+    "Q30_1" -> Q30_1,
+    "Q30_2" -> Q30_2,
     "Q31" -> Q31,
+    "Q31_1" -> Q31_1,
+    "Q31_2" -> Q31_2,
+    "Q31_3" -> Q31_3,
+    "Q31_4" -> Q31_4,
     "Q32" -> Q32,
+    "Q32_1" -> Q32_1,
     "Q33" -> Q33,
+    "Q33_1" -> Q33_1,
     "Q34" -> Q34,
+    "Q34_1" -> Q34_1,
+    "Q34_2" -> Q34_2,
     "Q35" -> Q35,
+    "Q35_1" -> Q35_1,
+    "Q35_2" -> Q35_2,
     "Q36" -> Q36,
+    "Q36_1" -> Q36_1,
+    "Q36_2" -> Q36_2,
     "Q37" -> Q37,
     "Q38" -> Q38,
+    "Q38_1" -> Q38_1,
+    "Q38_2" -> Q38_2,
     "Q39" -> Q39,
     "Q40" -> Q40,
+    "Q40_1" -> Q40_1,
+    "Q40_2" -> Q40_2,
     "Q41" -> Q41,
     "Q42" -> Q42,
+    "Q42_1" -> Q42_1,
+    "Q42_2" -> Q42_2,
     "Q43" -> Q43,
+    "Q43_1" -> Q43_1,
+    "Q43_2" -> Q43_2,
     "Q44" -> Q44,
     "Q45" -> Q45,
     "Q46" -> Q46,
     "Q47" -> Q47,
     "Q48" -> Q48,
     "Q49" -> Q49,
+    "Q49_1" -> Q49_1,
+    "Q49_2" -> Q49_2,
     "Q50" -> Q50,
     "Q51" -> Q51,
+    "Q51_1" -> Q51_1,
+    "Q51_2" -> Q51_2,
     "Q52" -> Q52,
     "Q53" -> Q53,
     "Q54" -> Q54,
     "Q55" -> Q55,
-    "Q56" -> Q56
+    "Q55_1" -> Q55_1,
+    "Q55_2" -> Q55_2,
+    "Q56" -> Q56,
+    "Q56_1" -> Q56_1,
+    "Q56_2" -> Q56_2,
+    "Q56_3" -> Q56_3
   )
 
   def regions(sqlContext: SQLContext): DataFrame =

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,24 +16,27 @@
  */
 package io.snappydata.cluster
 
+import java.io.PrintWriter
 import java.net.InetAddress
-import java.sql.Timestamp
+import java.sql.{Connection, DriverManager, Timestamp}
 import java.util.Properties
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
 import scala.util.Random
-
+import scala.util.control.NonFatal
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.{ColumnUpdateDeleteTests, Constant}
+import io.snappydata.Property.PlanCaching
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
+import io.snappydata.{ColumnUpdateDeleteTests, ConcurrentOpsTests, Constant, SnappyFunSuite}
 import org.junit.Assert
-
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
+import org.apache.spark.sql.store.{MetadataTest, StoreUtils}
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 import org.apache.spark.util.collection.OpenHashSet
@@ -55,15 +58,46 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def startArgs: Array[AnyRef]
 
+  // reduce minimum compression size so that it happens for all the values for testing
+  protected def compressionMinSize = "128"
+
+  protected def compressionArg: String = s"-D${Constant.COMPRESSION_MIN_SIZE}=$compressionMinSize"
+
   protected def testObject: SplitClusterDUnitTestObject
 
   protected def props: Map[String, String] = testObject.props
 
-  protected def productDir: String
+  protected def sparkProductDir: String
 
   protected def locatorClientPort: Int
 
   protected def startNetworkServers(): Unit
+
+  protected def writeToFile(str: String, fileName: String): Unit = {
+    val pw = new PrintWriter(fileName)
+    try {
+      pw.write(str)
+      pw.flush()
+    } finally {
+      pw.close()
+    }
+    // wait until file becomes available (e.g. running on NFS)
+    var matched = false
+    while (!matched) {
+      Thread.sleep(100)
+      try {
+        val source = scala.io.Source.fromFile(fileName)
+        val lines = try {
+          source.mkString
+        } finally {
+          source.close()
+        }
+        matched = lines == str
+      } catch {
+        case NonFatal(_) =>
+      }
+    }
+  }
 
   def doTestColumnTableCreation(): Unit = {
     // Embedded Cluster Operations
@@ -89,6 +123,9 @@ trait SplitClusterDUnitTestBase extends Logging {
   }
 
   def doTestRowTableCreation(): Unit = {
+    // first check meta-data queries using connector and JDBC
+    vm3.invoke(getClass, "verifyMetadataQueries", Int.box(locatorClientPort))
+
     // Embedded Cluster Operations
     testObject.createTablesAndInsertData("row")
 
@@ -104,7 +141,7 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   def doTestComplexTypesForColumnTables_SNAP643(): Unit = {
     // Embedded Cluster Operations
-    val props = Map("buckets" -> "7")
+    val props = Map("buckets" -> "8")
     testObject.createComplexTablesAndInsertData(props)
 
     // StandAlone Spark Cluster Operations
@@ -160,6 +197,31 @@ trait SplitClusterDUnitTestBase extends Logging {
     doTestTableFormChanges(skewNetworkServers)
   }
 
+  def testConcurrentOpsOnColumnTables(): Unit = {
+    val testObject = this.testObject
+    val netPort = this.locatorClientPort
+    // check update/delete in the connector mode
+    vm3.invoke(new SerializableRunnable() {
+      override def run(): Unit = {
+        val snc = testObject.getSnappyContextForConnector(netPort)
+        val session = snc.snappySession
+        ConcurrentOpsTests.testSimpleLockInsert(session)
+        ConcurrentOpsTests.testSimpleLockUpdate(session)
+        ConcurrentOpsTests.testSimpleLockDeleteFrom(session)
+        ConcurrentOpsTests.testSimpleLockPutInto(session)
+
+        ConcurrentOpsTests.testConcurrentUpdate(session)
+        ConcurrentOpsTests.testConcurrentPutInto(session)
+        ConcurrentOpsTests.testConcurrentDelete(session)
+        ConcurrentOpsTests.testConcurrentPutIntoUpdate(session)
+        ConcurrentOpsTests.testAllOpsConcurrent(session)
+        ConcurrentOpsTests.testConcurrentDeleteFromMultipleTables(session)
+        ConcurrentOpsTests.testConcurrentPutIntoMultipleTables(session)
+      }
+    })
+  }
+
+
   def testUpdateDeleteOnColumnTables(): Unit = {
     val testObject = this.testObject
     val netPort = this.locatorClientPort
@@ -168,11 +230,19 @@ trait SplitClusterDUnitTestBase extends Logging {
       override def run(): Unit = {
         val snc = testObject.getSnappyContextForConnector(netPort)
         val session = snc.snappySession
-        ColumnUpdateDeleteTests.testBasicUpdate(session)
-        ColumnUpdateDeleteTests.testBasicDelete(session)
-        ColumnUpdateDeleteTests.testSNAP1925(session)
-        ColumnUpdateDeleteTests.testSNAP1926(session)
-        ColumnUpdateDeleteTests.testConcurrentOps(session)
+        // using random bucket assignment for cases like SNAP-2175
+        StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = true
+        try {
+          ColumnUpdateDeleteTests.testBasicUpdate(session)
+          ColumnUpdateDeleteTests.testDeltaStats(session)
+          ColumnUpdateDeleteTests.testBasicDelete(session)
+          ColumnUpdateDeleteTests.testSNAP1925(session)
+          ColumnUpdateDeleteTests.testSNAP1926(session)
+          ColumnUpdateDeleteTests.testConcurrentOps(session)
+          ColumnUpdateDeleteTests.testSNAP2124(session)
+        } finally {
+          StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = false
+        }
       }
     })
   }
@@ -180,7 +250,12 @@ trait SplitClusterDUnitTestBase extends Logging {
 
 trait SplitClusterDUnitTestObject extends Logging {
 
+  protected val random = new Random()
+
   val props = Map.empty[String, String]
+
+  def getConnection(netPort: Int, props: Properties = new Properties()): Connection =
+    DriverManager.getConnection(s"${Constant.DEFAULT_THIN_CLIENT_URL}localhost:$netPort", props)
 
   def createTablesAndInsertData(tableType: String): Unit
 
@@ -203,6 +278,60 @@ trait SplitClusterDUnitTestObject extends Logging {
   def verifyTableFormInSplitMOde(locatorPort: Int,
       prop: Properties,
       locatorClientPort: Int): Unit = {
+  }
+
+  def verifyMetadataQueries(locatorClientPort: Int): Unit = {
+
+    val session = getSnappyContextForConnector(locatorClientPort).snappySession
+
+    // clean any existing data
+    TestUtils.dropAllSchemas(session)
+
+    // first check metadata queries using session and JDBC connection
+    val locatorNetServer = s"localhost/127.0.0.1[$locatorClientPort]"
+    // get member IDs using JDBC connection
+    val jdbcConn = getConnection(locatorClientPort)
+    var stmt = jdbcConn.createStatement()
+
+    val rs = stmt.executeQuery("select id, kind, netServers from sys.members")
+    var locatorId = ""
+    var leadId = ""
+    val servers = new mutable.ArrayBuffer[String](2)
+    val netServers = new mutable.ArrayBuffer[String](2)
+    while (rs.next()) {
+      val id = rs.getString(1)
+      val thriftServers = rs.getString(3)
+      rs.getString(2) match {
+        case "locator" => assert(thriftServers == locatorNetServer); locatorId = id
+        case "primary lead" => assert(thriftServers.isEmpty); leadId = id
+        case "datastore" => servers += id; netServers += thriftServers
+        case kind => assert(assertion = false, s"unexpected node type = $kind")
+      }
+    }
+    rs.close()
+    stmt.close()
+    assert(!locatorId.isEmpty)
+    assert(!leadId.isEmpty)
+    assert(servers.nonEmpty)
+
+    // first test metadata using session
+    MetadataTest.testSYSTablesAndVTIs(session.sql,
+      hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
+    val planCaching = PlanCaching.get(session.sessionState.conf)
+    MetadataTest.testDescribeShowAndExplain(session.sql, usingJDBC = false, planCaching)
+    MetadataTest.testDSIDWithSYSTables(session.sql,
+      netServers, locatorId, locatorNetServer, servers, leadId)
+    // next test metadata using JDBC connection
+    stmt = jdbcConn.createStatement()
+    MetadataTest.testSYSTablesAndVTIs(SnappyFunSuite.resultSetToDataset(session, stmt),
+      hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
+    MetadataTest.testDescribeShowAndExplain(SnappyFunSuite.resultSetToDataset(session, stmt),
+      usingJDBC = true , planCaching)
+    MetadataTest.testDSIDWithSYSTables(SnappyFunSuite.resultSetToDataset(session, stmt),
+      netServers, locatorId, locatorNetServer, servers, leadId)
+
+    stmt.close()
+    jdbcConn.close()
   }
 
   def verifyEmbeddedTablesAndCreateInSplitMode(locatorPort: Int,
@@ -239,7 +368,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     // select the data from table created in embedded mode
     selectFromTable(snc, "embeddedModeTable2", 1005)
 
-    var expected = Seq.empty[ComplexData]
+    var expected: Seq[ComplexData] = Nil
     // create a table in split mode
     if (isComplex) {
       expected = createComplexTableUsingDataSourceAPI(snc, "splitModeTable1",
@@ -263,13 +392,17 @@ trait SplitClusterDUnitTestObject extends Logging {
     val hostName = InetAddress.getLocalHost.getHostName
 //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
       val connectionURL = s"localhost:$locatorClientPort"
-      val conf = new SparkConf()
-          .setAppName("test Application")
-          .setMaster(s"spark://$hostName:7077")
-          .set("spark.executor.cores", TestUtils.defaultCores.toString)
-          .set("spark.executor.extraClassPath",
-            getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-          .set("snappydata.connection", connectionURL)
+      logInfo(s"Starting spark job using spark://$hostName:7077, connectionURL=$connectionURL")
+
+    val conf = new SparkConf()
+        .setAppName("test Application")
+        .setMaster(s"spark://$hostName:7077")
+        .set("spark.executor.cores", TestUtils.defaultCoresForSmartConnector)
+        .set("spark.executor.extraClassPath",
+          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+        .set("snappydata.connection", connectionURL)
+        .set("snapptdata.sql.planCaching", random.nextBoolean().toString)
+      .set(io.snappydata.Property.TestDisableCodeGenFlag.name, "false")
 
     if (props != null) {
       val user = props.getProperty(Attribute.USERNAME_ATTR, "")
@@ -314,8 +447,10 @@ trait SplitClusterDUnitTestObject extends Logging {
     SnappyContext.getClusterMode(snc.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         // test index create op
-        snc.createIndex("tableName" + "_index", tableName, Map("COL1" -> None),
-          Map.empty[String, String])
+        if ("row".equalsIgnoreCase(tableType)) {
+          snc.createIndex("tableName" + "_index", tableName, Seq("COL1" -> None),
+            Map.empty[String, String])
+        }
       case _ =>
     }
 
@@ -324,14 +459,15 @@ trait SplitClusterDUnitTestObject extends Logging {
     SnappyContext.getClusterMode(snc.sparkContext) match {
       case ThinClientConnectorMode(_, _) =>
         // test index drop op
-        snc.dropIndex("tableName" + "_index", ifExists = false)
+        if ("row".equalsIgnoreCase(tableType)) {
+          snc.dropIndex("tableName" + "_index", ifExists = false)
+        }
       case _ =>
     }
   }
 
   def selectFromTable(snc: SnappyContext, tableName: String,
-      expectedLength: Int,
-      expected: Seq[ComplexData] = Seq.empty[ComplexData]): Unit = {
+      expectedLength: Int, expected: Seq[ComplexData] = Nil): Unit = {
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
     assert(r.length == expectedLength,

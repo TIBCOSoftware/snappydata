@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,21 +26,25 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdHeapDataOutputStream, SnappyResultHolder}
+import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
-import org.apache.spark.Logging
+import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.PutIntoValuesColumnTable
+import org.apache.spark.sql.hive.QuestionMark
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Row, SnappySession}
 import org.apache.spark.util.SnappyUtils
 
 
 class SparkSQLPrepareImpl(val sql: String,
     val schema: String,
     val ctx: LeadNodeExecutionContext,
-    senderVersion: Version) extends SparkSQLExecute with Logging {
+    senderVersion: Version) extends SparkSQLExecute {
 
   if (Thread.currentThread().getContextClassLoader != null) {
     val loader = SnappyUtils.getSnappyStoreContextLoader(
@@ -56,35 +60,59 @@ class SparkSQLPrepareImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setSchema(schema)
+  Utils.setCurrentSchema(session, schema, createIfNotExists = true)
 
   session.setPreparedQuery(preparePhase = true, None)
 
   private[this] val analyzedPlan: LogicalPlan = {
-    val method = classOf[SnappySession].getDeclaredMethod("prepareSQL", classOf[String])
-    method.setAccessible(true)
-    method.invoke(session, sql).asInstanceOf[LogicalPlan]
+    val aplan = session.prepareSQL(sql)
+//    println(aplan)
+    aplan
   }
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
   protected[this] val hdos = new GfxdHeapDataOutputStream(
-    thresholdListener, sql, true, senderVersion)
+    thresholdListener, sql, false, senderVersion)
+
+  private lazy val (tableNames, nullability) = SparkSQLExecuteImpl.
+      getTableNamesAndNullability(session, analyzedPlan.output)
+
+  private lazy val (columnNames, columnDataTypes) = SparkSQLPrepareImpl.
+      getTableNamesAndDatatype(analyzedPlan.output)
+
+  // check for query hint to serialize complex types as JSON strings
+  private[this] val complexTypeAsJson = SparkSQLExecuteImpl.getJsonProperties(session)
+
+  private def getColumnTypes: Array[(Int, Int, Int)] =
+    columnDataTypes.map(d => SparkSQLExecuteImpl.getSQLType(d, complexTypeAsJson))
 
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
+    SparkSQLExecuteImpl.writeMetaData(srh, hdos, tableNames, nullability, columnNames,
+      getColumnTypes, columnDataTypes, session.getWarnings)
+
     val questionMarkCounter = session.snappyParser.questionMarkCounter
     if (questionMarkCounter > 0) {
       val paramLiterals = new mutable.HashSet[ParamLiteral]()
-      allParamLiterals(analyzedPlan, paramLiterals)
-      if (paramLiterals.size < questionMarkCounter) {
-        remainingParamLiterals(analyzedPlan, paramLiterals)
+      analyzedPlan match {
+        case PutIntoValuesColumnTable(_, _, _, _) => analyzedPlan.expressions.foreach {
+          exp => exp.map {
+            case QuestionMark(pos) =>
+              SparkSQLPrepareImpl.addParamLiteral(pos, exp.dataType, exp.nullable, paramLiterals)
+          }
+        }
+        case _ =>
+      }
+      SparkSQLPrepareImpl.allParamLiterals(analyzedPlan, paramLiterals)
+      if (paramLiterals.size != questionMarkCounter) {
+        SparkSQLPrepareImpl.remainingParamLiterals(analyzedPlan, paramLiterals)
       }
       val paramLiteralsAtPrepare = paramLiterals.toArray.sortBy(_.pos)
       val paramCount = paramLiteralsAtPrepare.length
       if (paramCount != questionMarkCounter) {
-        throw new UnsupportedOperationException("This query is unsupported for prepared statement")
+        throw Util.generateCsSQLException(SQLState.NOT_FOR_PREPARED_STATEMENT, sql)
       }
       val types = new Array[Int](paramCount * 4 + 1)
       types(0) = paramCount
@@ -98,6 +126,7 @@ class SparkSQLPrepareImpl(val sql: String,
         types(index + 2) = sqlType._3
         types(index + 3) = if (paramLiteralsAtPrepare(i).value.asInstanceOf[Boolean]) 1 else 0
       })
+      session.setPreparedParamsTypeInfo(types)
       DataSerializer.writeIntArray(types, hdos)
     } else {
       DataSerializer.writeIntArray(Array[Int](0), hdos)
@@ -134,32 +163,39 @@ class SparkSQLPrepareImpl(val sql: String,
     // send across rest as objects that will be displayed as json strings
     case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
   }
+}
+
+object SparkSQLPrepareImpl{
+  def getTableNamesAndDatatype(
+      output: Seq[expressions.Attribute]): (Array[String], Array[DataType]) =
+    output.toArray.map(o => o.name -> o.dataType).unzip
+
+  def addParamLiteral(position: Int, datatype: DataType, nullable: Boolean,
+    result: mutable.HashSet[ParamLiteral]): Unit = if (!result.exists(_.pos == position)) {
+    result += ParamLiteral(nullable, datatype, position, execId = -1, tokenized = true)
+  }
 
   def handleCase(branches: Seq[(Expression, Expression)], elseValue: Option[Expression],
-      datatype: DataType, nullable: Boolean, result: mutable.HashSet[ParamLiteral]): Unit = {
+    datatype: DataType, nullable: Boolean, result: mutable.HashSet[ParamLiteral]): Unit = {
     branches.foreach {
-      case (_, ParamLiteral(Row(pos: Int), NullType, 0)) =>
+      case (_, QuestionMark(pos)) =>
         addParamLiteral(pos, datatype, nullable, result)
+      case _ =>
     }
     elseValue match {
-      case Some(ParamLiteral(Row(pos: Int), NullType, 0)) =>
+      case Some(QuestionMark(pos)) =>
         addParamLiteral(pos, datatype, nullable, result)
       case _ =>
     }
   }
 
-  def addParamLiteral(position: Int, datatype: DataType, nullable: Boolean,
-      result: mutable.HashSet[ParamLiteral]): Unit = if (!result.exists(_.pos == position)) {
-    result += ParamLiteral(nullable, datatype, position)
-  }
-
   def allParamLiterals(plan: LogicalPlan, result: mutable.HashSet[ParamLiteral]): Unit = {
-    def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case bl@BinaryComparison(left: Expression, ParamLiteral(Row(pos: Int), NullType, 0)) =>
+    val mapExpression: PartialFunction[Expression, Expression] = {
+      case bl@BinaryComparison(left: Expression, QuestionMark(pos)) =>
         addParamLiteral(pos, left.dataType, left.nullable, result)
         bl
       case blc@BinaryComparison(left: Expression,
-      Cast(ParamLiteral(Row(pos: Int), NullType, 0), _)) =>
+      Cast(QuestionMark(pos), _)) =>
         addParamLiteral(pos, left.dataType, left.nullable, result)
         blc
       case ble@BinaryComparison(left: Expression, CaseWhen(branches, elseValue)) =>
@@ -168,10 +204,10 @@ class SparkSQLPrepareImpl(val sql: String,
       case blce@BinaryComparison(left: Expression, Cast(CaseWhen(branches, elseValue), _)) =>
         handleCase(branches, elseValue, left.dataType, left.nullable, result)
         blce
-      case br@BinaryComparison(ParamLiteral(Row(pos: Int), NullType, 0), right: Expression) =>
+      case br@BinaryComparison(QuestionMark(pos), right: Expression) =>
         addParamLiteral(pos, right.dataType, right.nullable, result)
         br
-      case brc@BinaryComparison(Cast(ParamLiteral(Row(pos: Int), NullType, 0), _),
+      case brc@BinaryComparison(Cast(QuestionMark(pos), _),
       right: Expression) =>
         addParamLiteral(pos, right.dataType, right.nullable, result)
         brc
@@ -181,45 +217,46 @@ class SparkSQLPrepareImpl(val sql: String,
       case brce@BinaryComparison(Cast(CaseWhen(branches, elseValue), _), right: Expression) =>
         handleCase(branches, elseValue, right.dataType, right.nullable, result)
         brce
-      case l@Like(left: Expression, ParamLiteral(Row(pos: Int), NullType, 0)) =>
+      case l@Like(left: Expression, QuestionMark(pos)) =>
         addParamLiteral(pos, left.dataType, left.nullable, result)
         l
-      case lc@Like(left: Expression, Cast(ParamLiteral(Row(pos: Int), NullType, 0), _)) =>
+      case lc@Like(left: Expression, Cast(QuestionMark(pos), _)) =>
         addParamLiteral(pos, left.dataType, left.nullable, result)
         lc
       case inlist@org.apache.spark.sql.catalyst.expressions.In(value: Expression,
       list: Seq[Expression]) =>
         list.map {
-          case ParamLiteral(Row(pos: Int), NullType, 0) =>
+          case QuestionMark(pos) =>
             addParamLiteral(pos, value.dataType, value.nullable, result)
-          case Cast(ParamLiteral(Row(pos: Int), _, 0), _) =>
+          case Cast(QuestionMark(pos), _) =>
             addParamLiteral(pos, value.dataType, value.nullable, result)
           case x => x
         }
         inlist
     }
-    handleSubQuery(allParams(plan), allParams)
+    handleSubQuery(plan, mapExpression)
   }
 
   def remainingParamLiterals(plan: LogicalPlan, result: mutable.HashSet[ParamLiteral]): Unit = {
-    def allParams(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
-      case c@Cast(ParamLiteral(Row(pos: Int), NullType, 0), castType: DataType) =>
+    val mapExpression: PartialFunction[Expression, Expression] = {
+      case c@Cast(QuestionMark(pos), castType: DataType) =>
         addParamLiteral(pos, castType, nullable = false, result)
         c
       case cc@Cast(CaseWhen(branches, elseValue), castType: DataType) =>
         handleCase(branches, elseValue, castType, nullable = false, result)
         cc
     }
-    handleSubQuery(allParams(plan), allParams)
+    handleSubQuery(plan, mapExpression)
   }
 
   def handleSubQuery(plan: LogicalPlan,
-      f: (LogicalPlan) => LogicalPlan): LogicalPlan = plan transformAllExpressions {
+    f: PartialFunction[Expression, Expression]): LogicalPlan = plan transformAllExpressions {
+    case e if f.isDefinedAt(e) => f(e)
     case sub: SubqueryExpression => sub match {
-      case l@ListQuery(query, x) => l.copy(f(query), x)
-      case e@Exists(query, x) => e.copy(f(query), x)
-      case p@PredicateSubquery(query, x, y, z) => p.copy(f(query), x, y, z)
-      case s@ScalarSubquery(query, x, y) => s.copy(f(query), x, y)
+      case l@ListQuery(query, x) => l.copy(handleSubQuery(query, f), x)
+      case e@Exists(query, x) => e.copy(handleSubQuery(query, f), x)
+      case p@PredicateSubquery(query, x, y, z) => p.copy(handleSubQuery(query, f), x, y, z)
+      case s@ScalarSubquery(query, x, y) => s.copy(handleSubQuery(query, f), x, y)
     }
   }
 }

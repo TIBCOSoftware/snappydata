@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -30,7 +30,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.SQLConf
 
 //Benchmark function that will execute a function and returns time taken to execute that function
-def benchmark(name: String, times: Int = 10, warmups: Int = 6)(f: => Unit) : Double = {
+def benchmark(name: String, times: Int = 5, warmups: Int = 3)(f: => Unit) : Double = {
   for (i <- 1 to warmups) {
     f
   }

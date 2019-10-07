@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,6 +26,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
+import io.snappydata.SnappyFunSuite.checkAnswer
 import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
 import org.scalatest.Assertions
 
@@ -49,11 +50,11 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     session.sql("drop table if exists checkTable3")
 
     session.sql("create table updateTable (id int, addr string, status boolean) " +
-        "using column options(buckets '5')")
+        "using column options(buckets '4')")
     session.sql("create table checkTable1 (id int, addr string, status boolean) " +
-        "using column options(buckets '5')")
+        "using column options(buckets '4')")
     session.sql("create table checkTable2 (id int, addr string, status boolean) " +
-        "using column options(buckets '3')")
+        "using column options(buckets '2')")
     session.sql("create table checkTable3 (id int, addr string, status boolean) " +
         "using column options(buckets '1')")
 
@@ -71,11 +72,14 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     assert(session.table("checkTable1").count() === numElements)
 
 
-    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
-    session.table("updateTable").show()
-
-    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
-    session.table("updateTable").show()
+    session.sql(
+      s"""update updateTable set id = cast((id + ($numElements / 2)) as int)
+         | where id <> 73""".stripMargin)
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
+    session.sql(
+      s"""update updateTable set id = cast((id + ($numElements / 2)) as int)
+         | where id <> 73""".stripMargin)
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     assert(session.table("updateTable").count() === numElements)
     assert(session.table("checkTable1").count() === numElements)
@@ -105,7 +109,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
       "case when (id % 2) = 0 then true else false end").write.insertInto("checkTable2")
 
     session.sql(s"update updateTable set addr = concat(addr, '_update') where id <> 32")
-    session.table("updateTable").show()
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     assert(session.table("updateTable").count() === numElements)
     assert(session.table("checkTable2").count() === numElements)
@@ -133,7 +137,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
       "case when (id % 2) = 1 then true else false end").write.insertInto("checkTable3")
 
     session.sql(s"update updateTable set status = not status where id <> 87")
-    session.table("updateTable").show()
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     assert(session.table("updateTable").count() === numElements)
     assert(session.table("checkTable3").count() === numElements)
@@ -198,6 +202,53 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     session.conf.unset(Property.ColumnBatchSize.name)
   }
 
+  def testDeltaStats(session: SnappySession): Unit = {
+    session.sql("drop table if exists test1")
+    session.sql("create table test1 (col1 long, col2 long) using column " +
+        "options (buckets '1', column_batch_size '50')")
+    // size of batch ensured so that both rows fall in same batch
+    session.range(2).selectExpr("(id  + 1) * 10", "(id + 1) * 100").write.insertInto("test1")
+
+    checkAnswer(session.sql("select * from test1"), Seq(Row(10L, 100L), Row(20L, 200L)))
+
+    // update should change the delta stats else many point queries below will fail
+    session.sql("update test1 set col1 = 100 where col2 = 100")
+
+    checkAnswer(session.sql("select * from test1"), Seq(Row(100L, 100L), Row(20L, 200L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 100"), Seq(Row(100L, 100L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 100"), Seq(Row(100L, 100L)))
+
+    // check for merging of delta stats
+    session.sql("update test1 set col1 = 200 where col1 = 20")
+    checkAnswer(session.sql("select * from test1"), Seq(Row(100L, 100L), Row(200L, 200L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 200"), Seq(Row(200L, 200L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 200"), Seq(Row(200L, 200L)))
+    session.sql("update test1 set col1 = col1 * 10 where col1 = 100 or col2 = 200")
+    checkAnswer(session.sql("select * from test1"), Seq(Row(1000L, 100L), Row(2000L, 200L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 1000"), Seq(Row(1000L, 100L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 100"), Seq(Row(1000L, 100L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 2000"), Seq(Row(2000L, 200L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 200"), Seq(Row(2000L, 200L)))
+
+    // also check for other column
+    session.sql("update test1 set col2 = 10 where col1 = 1000")
+    checkAnswer(session.sql("select * from test1"), Seq(Row(1000L, 10L), Row(2000L, 200L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 1000"), Seq(Row(1000L, 10L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 10"), Seq(Row(1000L, 10L)))
+    session.sql("update test1 set col2 = 20 where col2 = 200")
+    checkAnswer(session.sql("select * from test1"), Seq(Row(1000L, 10L), Row(2000L, 20L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 2000"), Seq(Row(2000L, 20L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 20"), Seq(Row(2000L, 20L)))
+    session.sql("update test1 set col2 = col2 * 100 where col1 = 2000 or col2 = 10")
+    checkAnswer(session.sql("select * from test1"), Seq(Row(1000L, 1000L), Row(2000L, 2000L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 1000"), Seq(Row(1000L, 1000L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 1000"), Seq(Row(1000L, 1000L)))
+    checkAnswer(session.sql("select * from test1 where col1 = 2000"), Seq(Row(2000L, 2000L)))
+    checkAnswer(session.sql("select * from test1 where col2 = 2000"), Seq(Row(2000L, 2000L)))
+
+    session.sql("drop table test1")
+  }
+
   def testBasicDelete(session: SnappySession): Unit = {
     session.conf.set(Property.ColumnBatchSize.name, "10k")
     // session.conf.set(Property.ColumnMaxDeltaRows.name, "200")
@@ -208,13 +259,13 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     session.sql("drop table if exists checkTable3")
 
     session.sql("create table updateTable (id int, addr string, status boolean) " +
-        "using column options(buckets '5', partition_by 'addr')")
+        "using column options(buckets '4', partition_by 'addr')")
     session.sql("create table checkTable1 (id int, addr string, status boolean) " +
-        "using column options(buckets '3')")
+        "using column options(buckets '2')")
     session.sql("create table checkTable2 (id int, addr string, status boolean) " +
-        "using column options(buckets '7')")
+        "using column options(buckets '8')")
     session.sql("create table checkTable3 (id int, addr string, status boolean) " +
-        "using column options(buckets '3')")
+        "using column options(buckets '2')")
 
     for (_ <- 1 to 3) {
       testBasicDeleteIter(session)
@@ -265,11 +316,14 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
       "concat('addr', cast(id as string))",
       "case when (id % 2) = 0 then true else false end").write.insertInto("checkTable2")
 
-    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
-    session.table("updateTable").show()
-
-    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
-    session.table("updateTable").show()
+    session.sql(
+      s"""update updateTable set id = cast( (id + ($numElements / 2)) as int)
+         | where id <> 73""".stripMargin)
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
+    session.sql(
+      s"""update updateTable set id = cast( (id + ($numElements / 2)) as int)
+         | where id <> 73""".stripMargin)
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     assert(session.table("updateTable").count() === (numElements * 9) / 10)
     assert(session.table("updateTable").collect().length === (numElements * 9) / 10)
@@ -329,7 +383,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
     var result = session.sql("select UnitPrice, tid from order_details where tid <> 6").collect()
     assert(result.length === numElements - 1)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.0) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.0) === Nil)
 
     result = session.sql("select UnitPrice from order_details where tid = 6").collect()
     assert(result.length === 1)
@@ -342,10 +396,10 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     assert(result(0).getDouble(0) == 1.1)
     result = session.sql("select UnitPrice, tid from order_details where tid <> 6").collect()
     assert(result.length === numElements - 1)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Nil)
     result = session.sql("select UnitPrice, tid from order_details").collect()
     assert(result.length === numElements)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Nil)
 
 
     session.sql("UPDATE order_details SET UnitPrice = 1.1 WHERE tid <> 11")
@@ -355,10 +409,10 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     assert(result(0).getDouble(0) == 1.1)
     result = session.sql("select UnitPrice, tid from order_details where tid <> 6").collect()
     assert(result.length === numElements - 1)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Nil)
     result = session.sql("select UnitPrice, tid from order_details").collect()
     assert(result.length === numElements)
-    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Seq.empty)
+    assert(result.toSeq.filter(_.getDouble(0) != 1.1) === Nil)
 
     session.sql("drop table order_details")
     session.conf.unset(Property.ColumnBatchSize.name)
@@ -470,13 +524,15 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     // concurrent updates to different rows but same batches
     val barrier = new CyclicBarrier(concurrency)
     var tasks = Array.tabulate(concurrency)(i => Future {
+      var waited = false
       try {
         val snappy = new SnappySession(session.sparkContext)
         var res = snappy.sql("select count(*) from updateTable").collect()
         assert(res(0).getLong(0) === numElements)
 
         barrier.await()
-        res = snappy.sql(s"update updateTable set id = $idUpdate, " +
+        waited = true
+        res = snappy.sql(s"update updateTable set id = cast( $idUpdate as int), " +
             s"addr = concat('addrUpd', cast(($idUpdate) as string)) " +
             s"where (id % $step) = $i").collect()
         assert(res.map(_.getLong(0)).sum > 0)
@@ -484,6 +540,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
         case t: Throwable =>
           logError(t.getMessage, t)
           exceptions += Thread.currentThread() -> t
+          if (!waited) barrier.await()
           throw t
       }
     }(executionContext))
@@ -491,7 +548,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
     assert(exceptions.isEmpty, s"Failed with exceptions: $exceptions")
 
-    session.table("updateTable").show()
+    logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     var res = session.sql(
       "select * from updateTable EXCEPT select * from checkTable1").collect()
@@ -499,12 +556,14 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
     // concurrent deletes
     tasks = Array.tabulate(concurrency)(i => Future {
+      var waited = false
       try {
         val snappy = new SnappySession(session.sparkContext)
         var res = snappy.sql("select count(*) from updateTable").collect()
         assert(res(0).getLong(0) === numElements)
 
         barrier.await()
+        waited = true
         res = snappy.sql(
           s"delete from updateTable where (id % $step) = ${step - i - 1}").collect()
         assert(res.map(_.getLong(0)).sum > 0)
@@ -512,6 +571,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
         case t: Throwable =>
           logError(t.getMessage, t)
           exceptions += Thread.currentThread() -> t
+          if (!waited) barrier.await()
           throw t
       }
     }(executionContext))
@@ -522,5 +582,45 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     res = session.sql(
       "select * from updateTable EXCEPT select * from checkTable2").collect()
     assert(res.length === 0)
+  }
+
+  def testSNAP2124(session: SnappySession): Unit = {
+    val filePath = getClass.getResource("/sample_records.json").getPath
+    session.sql("CREATE TABLE domaindata (cntno_l string,cntno_m string," +
+        "day1 string,day2 string,day3 string,day4 string,day5 string," +
+        "day6 string,day7 string,dr string,ds string,email string," +
+        "id BIGINT NOT NULL,idinfo_1 string,idinfo_2 string,idinfo_3 string," +
+        "idinfo_4 string,lang_1 string,lang_2 string,lang_3 string,name string) " +
+        "USING COLUMN OPTIONS (PARTITION_BY 'id',BUCKETS '40', COLUMN_BATCH_SIZE '10')")
+    session.read.json(filePath).write.insertInto("domaindata")
+
+    var ds = session.sql("select ds, dr from domaindata where id = 40L")
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("['cbcinewsemail.com']", "[]")))
+    ds = session.sql("select ds, dr from domaindata where id = 418")
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("['taskbuckes.com']", "[]")))
+
+    // check for escape character (\) and two single-quote escape in string literal
+
+    ds = session.sql("UPDATE domaindata SET ds = '''cbcin''.com\\']', dr = '[]' WHERE id = 40")
+    // below checks both the result and partition pruning (only one row)
+    SnappyFunSuite.checkAnswer(ds, Seq(Row(1)))
+
+    ds = session.sql("select ds, dr from domaindata where id = 40")
+    // below checks both the result and partition pruning (only one row)
+    assert(ds.rdd.getNumPartitions === 1)
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("'cbcin'.com']", "[]")))
+
+    ds = session.sql("UPDATE domaindata SET ds = '\\'taskbuck''.com''', dr = '[]' WHERE id = 418")
+    // below checks both the result and partition pruning (only one row)
+    SnappyFunSuite.checkAnswer(ds, Seq(Row(1)))
+
+    ds = session.sql("select ds, dr from domaindata where id = 418")
+    // below checks both the result and partition pruning (only one row)
+    assert(ds.rdd.getNumPartitions === 1)
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("'taskbuck'.com'", "[]")))
+
+    ds = session.sql("delete from domaindata where id = 40")
+    // below checks both the result and partition pruning (only one row)
+    assert(ds.rdd.getNumPartitions === 1)
   }
 }

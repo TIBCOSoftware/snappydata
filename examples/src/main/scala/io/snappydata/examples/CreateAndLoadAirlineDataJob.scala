@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -67,7 +67,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
 
       // Create a table in snappy store
       snc.createTable(colTable, "column",
-        updatedSchema, Map("buckets" -> "11"))
+        updatedSchema, Map("buckets" -> "16"))
 
       // Populate the table in snappy store
       airlineDF.write.mode(SaveMode.Append).saveAsTable(colTable)
@@ -87,7 +87,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
 
       // Create a sample table sampling parameters.
       snc.createSampleTable(sampleTable, Some("Airline"),
-        Map("buckets" -> "7",
+        Map("buckets" -> "8",
           "qcs" -> "UniqueCarrier, Year_, Month_",
           "fraction" -> "0.03",
           "strataReservoirSize" -> "50"

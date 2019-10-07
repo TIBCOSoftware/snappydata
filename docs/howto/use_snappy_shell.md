@@ -1,12 +1,12 @@
 <a id="howto-snappyShell"></a>
-# How to use Snappy SQL Shell (snappy-sql)
+# How to Use Snappy SQL shell (snappy-sql)
 The Snappy SQL shell can be used to execute SQL on SnappyData cluster. In the background, `snappy-sql` uses JDBC connections to execute SQL.
 
 **Connect to a SnappyData Cluster**: </br>
 Use the `snappy-sql` and `connect client` commands on the Snappy SQL shell as follows:
 
-```scala
-$ bin/snappy-sql
+```pre
+$ ./bin/snappy-sql
 snappy> connect client '<locatorHostName>:1527';
 ```
 
@@ -14,7 +14,7 @@ Here, the `<locatorHostName>` is the host name of the node on which the locator 
 
 **Execute SQL queries**:</br> Once connected, you can execute SQL queries using `snappy-sql`
 
-```scala
+```pre
 snappy> CREATE TABLE APP.PARTSUPP (PS_PARTKEY INTEGER NOT NULL PRIMARY KEY, PS_SUPPKEY INTEGER NOT NULL, PS_AVAILQTY INTEGER NOT NULL, PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL) USING ROW OPTIONS (PARTITION_BY 'PS_PARTKEY') ;
 
 snappy> INSERT INTO APP.PARTSUPP VALUES(100, 1, 5000, 100);
@@ -33,13 +33,13 @@ PS_PARTKEY |PS_SUPPKEY |PS_AVAILQTY|PS_SUPPLYCOST
 **View the members of cluster**: </br>
 Use the `show members` command.
 
-```scala
+```pre
 snappy> show members;
-ID                            |HOST                          |KIND                          |STATUS              |NETSERVERS                    |SERVERGROUPS                  
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-192.168.63.1(21412)<v1>:61964 |192.168.63.1                  |datastore(normal)             |RUNNING             |localhost/127.0.0.1[1528]     |                              
-192.168.63.1(21594)<v2>:29474 |192.168.63.1                  |accessor(normal)              |RUNNING             |                              |IMPLICIT_LEADER_SERVERGROUP   
-localhost(21262)<v0>:22770    |localhost                     |locator(normal)               |RUNNING             |localhost/127.0.0.1[1527]     |                              
+ID                            |HOST                          |KIND                  |STATUS              |NETSERVERS                    |SERVERGROUPS
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+192.168.63.1(21412)<v1>:61964 |192.168.63.1                  |datastore             |RUNNING             |localhost/127.0.0.1[1528]     |
+192.168.63.1(21594)<v2>:29474 |192.168.63.1                  |primary lead          |RUNNING             |                              |
+localhost(21262)<v0>:22770    |localhost                     |locator               |RUNNING             |localhost/127.0.0.1[1527]     |
 
 3 rows selected
 ```
@@ -47,7 +47,7 @@ localhost(21262)<v0>:22770    |localhost                     |locator(normal)   
 **View the list tables in a schema**: </br>
 Use `show tables in <schema>` command.
 
-```scala
+```pre
 snappy> show tables in app;
 TABLE_SCHEM         |TABLE_NAME                    |TABLE_TYPE|REMARKS             
 -----------------------------------------------------------------------------------

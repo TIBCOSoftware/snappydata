@@ -4,7 +4,7 @@ Disconnects from the database.
 
 ## Syntax
 
-``` pre
+```pre
 DISCONNECT [ ALL | CURRENT | ConnectionIdentifier ]
 ```
 
@@ -23,8 +23,7 @@ If the [Connect](connect.md) command without the AS clause was used, you can sup
 ## Example
 
 ``` pre
-snappy> disconnect peerclient;
-snappy>
+snappy> DISCONNECT CONNECTION1;
 ```
 
 

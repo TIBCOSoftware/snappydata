@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -76,8 +76,7 @@ object snappy extends Serializable {
      */
     def mapPreserve[U: ClassTag](f: T => U): RDD[U] = rdd.withScope {
       val cleanF = rdd.sparkContext.clean(f)
-      new MapPartitionsPreserveRDD[U, T](rdd,
-        (context, part, iter) => iter.map(cleanF))
+      new MapPartitionsPreserveRDD[U, T](rdd, (_, _, iter) => iter.map(cleanF))
     }
 
     /**
@@ -93,8 +92,19 @@ object snappy extends Serializable {
         f: Iterator[T] => Iterator[U],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
       val cleanedF = rdd.sparkContext.clean(f)
-      new MapPartitionsPreserveRDD(rdd, (context: TaskContext, part: Partition,
+      new MapPartitionsPreserveRDD(rdd, (_, _,
           itr: Iterator[T]) => cleanedF(itr), preservesPartitioning)
+    }
+
+    /**
+     * Like [[mapPartitionsPreserve]] but also skips closure cleaning like
+     * Spark's mapPartitionsInternal.
+     */
+    private[spark] def mapPartitionsPreserveInternal[U: ClassTag](
+        f: Iterator[T] => Iterator[U],
+        preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
+      new MapPartitionsPreserveRDD(rdd, (_, _, itr: Iterator[T]) => f(itr),
+        preservesPartitioning)
     }
 
     /**
@@ -111,7 +121,7 @@ object snappy extends Serializable {
         f: (Int, Iterator[T]) => Iterator[U],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
       val cleanedF = rdd.sparkContext.clean(f)
-      new MapPartitionsPreserveRDD(rdd, (context: TaskContext, part: Partition,
+      new MapPartitionsPreserveRDD(rdd, (_, part: Partition,
           itr: Iterator[T]) => cleanedF(part.index, itr), preservesPartitioning)
     }
 
@@ -135,7 +145,7 @@ object snappy extends Serializable {
 
     def mapPartitionsWithIndexPreserveLocations[U: ClassTag](
         f: (Int, Iterator[T]) => Iterator[U],
-        p: (Int) => Seq[String],
+        p: Int => Seq[String],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
       val cleanedF = rdd.sparkContext.clean(f)
       new PreserveLocationsRDD(rdd,
@@ -155,7 +165,7 @@ object snappy extends Serializable {
   private[this] val parColsMethod = classOf[DataFrameWriter[_]]
       .getDeclaredMethods.find(_.getName.contains("$normalizedParCols"))
       .getOrElse(sys.error("Failed to obtain method  " +
-      "normalizedParCols from DataFrameWriter"))
+          "normalizedParCols from DataFrameWriter"))
 
   dfField.setAccessible(true)
   parColsMethod.setAccessible(true)
@@ -170,7 +180,7 @@ object snappy extends Serializable {
      *
      * This ignores all SaveMode.
      */
-    def putInto(tableName: String): Unit = {
+    def putInto(tableName: String): Long = {
       val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
       val session = df.sparkSession match {
         case sc: SnappySession => sc
@@ -190,35 +200,22 @@ object snappy extends Serializable {
       }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
-          .executedPlan.executeCollect()
+        session.tableIdentifier(tableName)), input)).executedPlan.
+          executeCollect().foldLeft(0)(_ + _.getInt(0))
     }
 
     def deleteFrom(tableName: String): Unit = {
       val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
       val session = df.sparkSession match {
         case sc: SnappySession => sc
-        case _ => sys.error("Expected a SnappyContext for putInto operation")
+        case _ => sys.error("Expected a SnappyContext for deleteFrom operation")
       }
-      val normalizedParCols = parColsMethod.invoke(writer)
-          .asInstanceOf[Option[Seq[String]]]
-      // A partitioned relation's schema can be different from the input
-      // logicalPlan, since partition columns are all moved after data columns.
-      // We Project to adjust the ordering.
-      // TODO: this belongs to the analyzer.
-      val input = normalizedParCols.map { parCols =>
-        val (inputPartCols, inputDataCols) = df.logicalPlan.output.partition {
-          attr => parCols.contains(attr.name)
-        }
-        Project(inputDataCols ++ inputPartCols, df.logicalPlan)
-      }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(DeleteFromTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
-          .executedPlan.executeCollect()
+        session.tableIdentifier(tableName)), df.logicalPlan)).executedPlan.executeCollect()
     }
-
   }
+
 }
 
 private[sql] case class SnappyDataFrameOperations(session: SnappySession,

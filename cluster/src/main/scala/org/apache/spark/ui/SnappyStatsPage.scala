@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -55,8 +55,8 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
   private def rowTable(stats: SnappyRegionStats) = {
     val columnTable = if (stats.isColumnTable) " COLUMN " else " ROW "
     <tr>
-      <td sorttable_customkey={stats.getRegionName}>
-        {stats.getRegionName}
+      <td sorttable_customkey={stats.getTableName}>
+        {stats.getTableName}
       </td>
       <td sorttable_customkey={columnTable}>
         {columnTable}

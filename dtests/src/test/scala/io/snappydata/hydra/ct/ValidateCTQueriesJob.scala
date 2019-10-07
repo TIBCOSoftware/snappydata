@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -32,7 +32,7 @@ class ValidateCTQueriesJob extends SnappySQLJob {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val threadID = Thread.currentThread().getId
     val outputFile = "ValidateCTQueriesJob_thread_" + threadID + "_" + System.currentTimeMillis + ".out"
-    val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
+    val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true))
     val tableType = jobConfig.getString("tableType")
 
     Try {
@@ -51,7 +51,7 @@ class ValidateCTQueriesJob extends SnappySQLJob {
         pw.println(s"Test will not perform fullResultSetValidation")
       val startTime = System.currentTimeMillis
       val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation,
-        sqlContext)
+        sqlContext, false, false)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
       pw.println(s"Total time for execution is :: ${totalTime} seconds.")

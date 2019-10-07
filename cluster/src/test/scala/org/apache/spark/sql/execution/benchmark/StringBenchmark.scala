@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -78,7 +78,10 @@ class StringBenchmark extends SnappyFunSuite {
     val data = sdata.map(UTF8String.fromString)
     val udata = sdata.map(toDirectUTF8String)
 
-    if (preSorted) java.util.Arrays.sort(data, null)
+    if (preSorted) {
+      java.util.Arrays.sort(data, null)
+      java.util.Arrays.sort(udata, null)
+    }
     var cdata: Array[UTF8String] = null
     var cdata2: Array[UTF8String] = null
     var cdata3: Array[UTF8String] = null

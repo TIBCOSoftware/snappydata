@@ -2,16 +2,16 @@
 
 **To Create Stream Table:**
 
-```
+```pre
 // DDL for creating a stream table
 CREATE STREAM TABLE [IF NOT EXISTS] table_name
     ( column-definition	[ , column-definition  ] * )
-    USING kafka_stream | file_stream | twitter_stream | socket_stream | directkafka_stream
+    USING kafka_stream | file_stream | twitter_stream | socket_stream
     OPTIONS (
     // multiple stream source specific options
       storagelevel 'cache-data-option',
       rowConverter 'rowconverter-class-name',
-      topics 'comma-seperated-topic-name',
+      subscribe 'comma-seperated-topic-name',
       kafkaParams 'kafka-related-params',
       consumerKey 'consumer-key',
       consumerSecret 'consumer-secret',
@@ -39,7 +39,7 @@ Provides different trade-offs between memory usage and CPU efficiency.
 
 `rowConverter`</br>
 Converts the unstructured streaming data to a set of rows.
-      
+
 `topics`</br>
 Subscribed Kafka topics.
 
@@ -72,7 +72,7 @@ Access token secret for your Twitter account.
 
 ## Example
 
-```
+```pre
 //create a connection
 snappy> connect client 'localhost:1527';
 
@@ -88,7 +88,7 @@ snappy> create stream table streamTable (id long, text string, fullName string, 
 snappy> streaming start;
 
 //Run ad-hoc queries on the streamTable on current batch of data
-snappy> select id, text, fullName from streamTable where text like '%snappy%'
+snappy> select id, text, fullName from streamTable where text like '%snappy%';
 
 // Drop the streamTable
 snappy> drop table streamTable;

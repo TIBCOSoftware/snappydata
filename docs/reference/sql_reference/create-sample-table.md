@@ -1,7 +1,8 @@
 # CREATE SAMPLE TABLE
 
 **Mode 1**
-```
+
+```pre
 CREATE TABLE [IF NOT EXISTS] table_name 
     ( column-definition	[ , column-definition  ] * )
     USING column_sample
@@ -22,7 +23,8 @@ CREATE TABLE [IF NOT EXISTS] table_name
 ```    
 
 **Mode 2**
-```
+
+```pre
 CREATE SAMPLE TABLE table_name ON base_table_name
     OPTIONS (
     COLOCATE_WITH 'table-name',  // Default none
@@ -60,7 +62,7 @@ Refer to these sections for more information on [Creating Table](create-table.md
 
 ### Mode 1 Example
 
-```
+```pre
 snappy>CREATE TABLE CUSTOMER_SAMPLE ( 
       C_CUSTKEY     INTEGER NOT NULL,
       C_NAME        VARCHAR(25) NOT NULL,
@@ -76,7 +78,7 @@ snappy>CREATE TABLE CUSTOMER_SAMPLE (
 
 ### Mode 2 Example
 
-```
+```pre
 snappy>CREATE SAMPLE TABLE CUSTOMER_SAMPLE on CUSTOMER_BASE
       OPTIONS (qcs 'C_NATIONKEY',fraction '0.05', 
       strataReservoirSize '50') AS (SELECT * FROM CUSTOMER_BASE);

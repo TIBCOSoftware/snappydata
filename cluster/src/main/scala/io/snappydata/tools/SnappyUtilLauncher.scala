@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,34 +19,34 @@ package io.snappydata.tools
 import java.io.{File, IOException}
 import java.util
 
-import com.gemstone.gemfire.internal.GemFireUtilLauncher.CommandEntry
-import com.gemstone.gemfire.internal.i18n.LocalizedStrings
+import com.gemstone.gemfire.internal.GemFireUtilLauncher.{CommandEntry, SCRIPT_NAME}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.{GemFireTerminateError, GemFireUtilLauncher}
 import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
 import com.pivotal.gemfirexd.internal.impl.tools.ij.utilMain
 import com.pivotal.gemfirexd.internal.tools.ij
+import com.pivotal.gemfirexd.tools.GfxdUtilLauncher.GET_CANONICAL_PATH_ARG
 import com.pivotal.gemfirexd.tools.internal.{JarTools, MiscTools}
-import com.pivotal.gemfirexd.tools.{GfxdAgentLauncher, GfxdSystemAdmin, GfxdUtilLauncher}
+import com.pivotal.gemfirexd.tools.{GfxdSystemAdmin, GfxdUtilLauncher}
 import io.snappydata.LocalizedMessages
 import io.snappydata.gemxd.{SnappyDataVersion, SnappySystemAdmin}
+import org.apache.spark.sql.execution.columnar.impl.StoreCallback
 
 /**
  * Launcher class encompassing snappy processes command lines.
  */
 class SnappyUtilLauncher extends GfxdUtilLauncher {
 
+  SnappyUtilLauncher.init()
+
   GfxdUtilLauncher.snappyStore = true
   ClientSharedUtils.setThriftDefault(true)
 
-  import SnappyUtilLauncher._
-
-  SnappyDataVersion.loadProperties
+  SnappyDataVersion.loadProperties()
 
   // gfxd commands not applicable in snappy
   protected var snappy_removed_commands: Set[String] = Set[String](
-    "agent", "encrypt-password", "upgrade-disk-store",
-    "modify-disk-store", "export-disk-store", "shut-down-all")
+    "agent", "encrypt-password", "upgrade-disk-store", "export-disk-store")
 
   protected override def getTypes: java.util.Map[String, CommandEntry] = {
     val types: java.util.Map[String, CommandEntry] = new util.LinkedHashMap[String, CommandEntry]()
@@ -60,7 +60,6 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
 
     types.put(SCRIPT_NAME, new CommandEntry(classOf[ij],
       LocalizedMessages.res.getTextMessage("UTIL_SnappyShell_Usage"), false))
-    val product = LocalizedMessages.res.getTextMessage("FS_PRODUCT")
 
     val commands = GfxdSystemAdmin.getValidCommands
     for (cmd <- commands) {
@@ -94,7 +93,7 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
     super.invoke(args)
   }
 
-  override def validateArgs (args: Array[String]): Unit = {
+  override def validateArgs(args: Array[String]): Unit = {
     super.validateArgs(args)
   }
 
@@ -104,10 +103,16 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
 }
 
 
-object SnappyUtilLauncher {
+object SnappyUtilLauncher extends StoreCallback {
 
-  private val SCRIPT_NAME: String = "snappy"
-  private val GET_CANONICAL_PATH_ARG: String = "--get-canonical-path"
+  init()
+
+  private def init(): Unit = {
+    SCRIPT_NAME = System.getenv("SNAPPY_SCRIPT_NAME") match {
+      case s if (s eq null) || s.length == 0 => "snappy"
+      case s => s
+    }
+  }
 
   /**
    * @see GemFireUtilLauncher#main(String[])

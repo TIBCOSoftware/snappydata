@@ -1,6 +1,6 @@
 # Drop Statements
 
-Drop statements are used to drop functions, indexes, procedures, and tables.
+The drop statements are used to drop diskstores, functions, indexes, schemas, and tables.
 
 -   **[DROP DISKSTORE](drop-diskstore.md)**
 
@@ -8,4 +8,7 @@ Drop statements are used to drop functions, indexes, procedures, and tables.
 
 -   **[DROP INDEX](drop-index.md)**
 
+-   **[DROP SCHEMA](drop-schema.md)**
+
 -   **[DROP TABLE](drop-table.md)**
+

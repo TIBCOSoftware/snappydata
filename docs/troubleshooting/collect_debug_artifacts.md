@@ -15,7 +15,7 @@ The conditions are:
 
 Below is the usage of the script
 
-``` pre
+```pre
 
       <linux-shell> ./sbin/collect-debug-artifacts.sh -h
 
@@ -62,7 +62,7 @@ Options:
   The script can also be asked to collect log files for specified time interval. The time interval can be specified using the start time and an end time parameter. Both the parameter needs to be specified. The format in which the time stamp can be specified is 'YYYY-MM-DD HH:MM[:SS]'
 
   -x, --extract=debugtarfile 
-  To extract the contents of the tar file.	
+  To extract the contents of the tar file.
 
-       Timestamp format: YYYY-MM-DD HH:MM[:SS]
+           Timestamp format: YYYY-MM-DD HH:MM[:SS]
 

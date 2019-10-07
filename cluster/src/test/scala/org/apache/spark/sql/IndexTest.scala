@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,36 +16,27 @@
  */
 package org.apache.spark.sql
 
-import java.sql.{Connection, DriverManager}
-import java.util.{Properties, TimeZone}
+import java.util.TimeZone
 
-import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import io.snappydata.benchmark.TPCH_Queries
 import io.snappydata.benchmark.snappy.tpch.QueryExecutor
 import io.snappydata.benchmark.snappy.{SnappyAdapter, TPCH}
-import io.snappydata.{PlanTest, SnappyFunSuite}
+import io.snappydata.{PlanTest, Property, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterEach
 
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.SubqueryExpression
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Sort}
-import org.apache.spark.sql.execution.streaming.{Offset, Sink, Source}
-import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider, StreamSourceProvider}
-import org.apache.spark.sql.streaming.OutputMode
-import org.apache.spark.sql.types.{BooleanType, IntegerType, StructField, StructType}
+import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.util.Benchmark
 
 class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
-  var existingSkipSPSCompile = false
 
   override def beforeAll(): Unit = {
     // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
-    existingSkipSPSCompile = FabricDatabase.SKIP_SPS_PRECOMPILE
-    FabricDatabase.SKIP_SPS_PRECOMPILE = true
     super.beforeAll()
   }
 
@@ -53,8 +44,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     // System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
-    System.clearProperty("DISABLE_PARTITION_PRUNING")
-    FabricDatabase.SKIP_SPS_PRECOMPILE = existingSkipSPSCompile
+    Property.PartitionPruning.set(snc.conf, true)
     super.afterAll()
   }
 
@@ -63,7 +53,6 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     snc.sql("create table checko (col1 Integer primary key, col2 Integer) using row options " +
         "(partition_by 'col1') ")
 
-    // scalastyle:off println
     val data = sc.parallelize(Seq(Row(1, 1), Row(2, 2), Row(3, 3), Row(4, 4), Row(5, 5),
       Row(6, 6)))
 
@@ -84,7 +73,6 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     df.filter("b < 2").selectExpr("i as col1").write.deleteFrom("APP.CHECKO")
 
     assert(snc.sql("select * from checko").count() == 3)
-    // scalastyle:on println
   }
 
   test("check varchar index") {
@@ -125,12 +113,11 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     snc.sql("update ods.organizations set descr = 'EL                                            " +
         "                                                                      " +
         "  ' where client_id = 8006")
-    snc.sql("select * from ods.organizations").show()
-    snc.sql("select client_id, descr from ods.organizations where client_id = 8006").show()
+    snc.sql("select * from ods.organizations").collect()
+    snc.sql("select client_id, descr from ods.organizations where client_id = 8006").collect()
   }
 
   test("tpch queries") {
-    // scalastyle:off println
     val qryProvider = new TPCH with SnappyAdapter
 
     val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11",
@@ -161,7 +148,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
            |$results
        """.stripMargin
       }
-      println(s"Done $qNum")
+      logInfo(s"Done $qNum")
     }
     snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name, existing)
 
@@ -195,7 +182,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
         (tableName, snc.table(tableName).count())
       }.toMap
 
-      tableSizes.foreach(println)
+      logInfo(tableSizes.mkString("\n"))
       runBenchmark("select o_orderkey from orders where o_orderkey = 1", tableSizes, 2)
       runBenchmark("select o_orderkey from orders where o_orderkey = 32", tableSizes)
       runBenchmark("select o_orderkey from orders where o_orderkey = 801", tableSizes)
@@ -208,8 +195,8 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     }
   }
 
-  private def togglePruning(onOff: Boolean) =
-    System.setProperty("DISABLE_PARTITION_PRUNING", onOff.toString)
+  private def togglePruning(onOff: Boolean, snc: SnappyContext) =
+    Property.PartitionPruning.set(snc.conf, onOff)
 
   def runBenchmark(queryString: String, tableSizes: Map[String, Long], numSecs: Int = 0): Unit = {
 
@@ -240,10 +227,12 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     import scala.concurrent.duration._
     val b = new Benchmark(s"JoinOrder optimization", size,
       warmupTime = numSecs.seconds)
-    b.addCase("WithOut Partition Pruning",
-      prepare = () => togglePruning(true))(_ => snc.sql(queryString).collect().foreach(_ => ()))
-    b.addCase("With Partition Pruning",
-      prepare = () => togglePruning(false))(_ => snc.sql(queryString).collect().foreach(_ => ()))
+    b.addCase("WithOut Partition Pruning", numIters = 0,
+      prepare = () => togglePruning(onOff = false, snc),
+      cleanup = () => {})(_ => snc.sql(queryString).collect())
+    b.addCase("With Partition Pruning", numIters = 0,
+      prepare = () => togglePruning(onOff = true, snc),
+      cleanup = () => {})(_ => snc.sql(queryString).collect())
     b.run()
   }
 
@@ -255,7 +244,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     def executor(str: String) = snc.sql(str)
 
     val size = qryProvider.estimateSizes(query, tableSizes, executor)
-    println(s"$qNum size $size")
+    logInfo(s"$qNum size $size")
     val b = new Benchmark(s"JoinOrder optimization", size, minNumIters = 10)
 
     def case1(): Unit = snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name,
@@ -273,17 +262,19 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
 //      genPlan = genPlan)._1.foreach(_ => ())
 
     var queryToBeExecuted = TPCH_Queries.getQuery(qNum, false, true)
-    def evalSnappyMods(genPlan: Boolean) = QueryExecutor.queryExecution(qNum, queryToBeExecuted, snc, false)
-        ._1.foreach(_ => ())
+    def evalSnappyMods(genPlan: Boolean) = QueryExecutor.queryExecution(
+      qNum, queryToBeExecuted, snc, false)._1.foreach(_ => ())
 
     def evalBaseTPCH = qryProvider.execute(query, executor)._1.foreach(_ => ())
 
     //    b.addCase(s"$qNum baseTPCH index = F", prepare = case1)(i => evalBaseTPCH)
     //    b.addCase(s"$qNum baseTPCH joinOrder = T", prepare = case2)(i => evalBaseTPCH)
-    b.addCase(s"$qNum without PartitionPruning",
-      prepare = () => togglePruning(true))(_ => evalSnappyMods(false))
-    b.addCase(s"$qNum with PartitionPruning",
-      prepare = () => togglePruning(false))(_ => evalSnappyMods(false))
+    b.addCase(s"$qNum without PartitionPruning", numIters = 0,
+      prepare = () => togglePruning(onOff = false, snc),
+      cleanup = () => {})(_ => evalSnappyMods(false))
+    b.addCase(s"$qNum with PartitionPruning", numIters = 0,
+      prepare = () => togglePruning(onOff = true, snc),
+      cleanup = () => {})(_ => evalSnappyMods(false))
     /*
         b.addCase(s"$qNum snappyMods joinOrder = T", prepare = case2)(i => evalSnappyMods(false))
         b.addCase(s"$qNum baseTPCH index = T", prepare = case3)(i => evalBaseTPCH)
@@ -293,12 +284,11 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
   }
 
   test("northwind queries") {
-    println("")
     //    val sctx = sc(c => c.set("spark.sql.inMemoryColumnarStorage.batchSize", "40000"))
     //    val snc = getOrCreate(sctx)
     //    NorthWindDUnitTest.createAndLoadColumnTables(snc)
     //    val s = "select distinct shipcountry from orders"
-    //    snc.sql(s).show()
+    //    snc.sql(s).collect()
     //    NWQueries.assertJoin(snc, NWQueries.Q42, "Q42", 22, 1, classOf[LocalJoin])
     /*
         Thread.sleep(1000 * 60 * 60)

@@ -2,7 +2,7 @@
 
 An INSERT statement creates a row or rows and stores them in the named table. The number of values assigned in an INSERT statement must be the same as the number of specified or implied columns.
 
-``` pre
+```pre
 INSERT INTO table-name
     [ ( simple-column-name [ , simple-column-name ]* ) ]
    Query
@@ -24,29 +24,27 @@ For more information, refer to [SELECT](select.md).
 
 ## Example
 
-``` pre
-INSERT INTO TRADE.CUSTOMERS
-      VALUES (1, 'User 1', '07-06-2002', 'SnappyData', 1);
+```pre
+
+--create table trade.customers
+CREATE TABLE TRADE.CUSTOMERS (CID INT, CUST_NAME VARCHAR(100), SINCE DATE, ADDR VARCHAR(100));
+
+INSERT INTO TRADE.CUSTOMERS VALUES (1, 'User 1', '2001-10-12', 'SnappyData');
 
 -- Insert a new customer into the CUSTOMERS  table,
 -- but do not assign  value to  'SINCE'  column
-INSERT INTO TRADE.CUSTOMERS(CID ,CUST_NAME , ADDR ,TID)
- VALUES (1, 'User 1', 'SnappyData', 1);
+INSERT INTO TRADE.CUSTOMERS(CID, CUST_NAME,  ADDR) VALUES (2, 'USER 2', 'SnappyData');
 
 -- Insert two new customers using one statement 
 -- into the CUSTOMER table as in the previous example, 
 -- but do not assign  value to 'SINCE'  field of the new customer.
-INSERT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR ,TID)
- VALUES (1, 'User 1' , 'SnappyData', 1),
- (2, 'User 2' , 'SnappyData', 1);
+INSERT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR) VALUES (3, 'User 3' , 'SnappyData'), (4, 'User 4' , 'SnappyData');
 
--- Insert the DEFAULT value for the LOCATION column
-INSERT INTO TRADE.CUSTOMERS
-      VALUES (1, 'User 1', DEFAULT, 'SnappyData',1);
+-- Insert the DEFAULT value for the SINCE column
+INSERT INTO TRADE.CUSTOMERS VALUES (1, 'User 1', DEFAULT, 'SnappyData');
 
--- Insert using a select statement.
-INSERT INTO TRADE.NEWCUSTOMERS
-     SELECT * from TRADE.CUSTOMERS WHERE TID=1;
+-- Insert into another table using a select statement.
+INSERT INTO TRADE.NEWCUSTOMERS SELECT * from TRADE.CUSTOMERS WHERE CUST_NAME='User 1';
 ```
 
 

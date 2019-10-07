@@ -6,7 +6,7 @@ Use this procedure to ensure that all in-memory data is written to configured di
 
 ## Syntax
 
-``` pre
+```pre
 SYS.diskstore_fsync (
 IN DISKSTORENAME VARCHAR(128)
 )
@@ -19,9 +19,8 @@ The name of the disk store, as specified in the [CREATE DISKSTORE](../../referen
 
 **Performs an fsync of the the data dictionary disk store file**:
 
-``` pre
+```pre
 snappy> call sys.diskstore_fsync('GFXD-DD-DISKSTORE');
-Statement executed.
 ```
 
 

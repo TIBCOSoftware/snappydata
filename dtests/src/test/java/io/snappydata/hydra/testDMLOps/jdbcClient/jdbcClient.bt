@@ -5,7 +5,6 @@ io/snappydata/hydra/testDMLOps/jdbcClient/testUpdate.conf
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   persistenceMode="sync" redundantCopies=1
-  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
 
 //test delete operation on column table
 io/snappydata/hydra/testDMLOps/jdbcClient/testDelete.conf
@@ -14,7 +13,6 @@ io/snappydata/hydra/testDMLOps/jdbcClient/testDelete.conf
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   persistenceMode="sync" redundantCopies=1
-  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
 
 //test dmlOperations on column table
 io/snappydata/hydra/testDMLOps/jdbcClient/testDMLOps.conf
@@ -23,4 +21,3 @@ io/snappydata/hydra/testDMLOps/jdbcClient/testDMLOps.conf
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   persistenceMode="sync" redundantCopies=1
-  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"

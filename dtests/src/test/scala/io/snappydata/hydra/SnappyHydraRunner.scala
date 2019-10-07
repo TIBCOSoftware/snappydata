@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,31 +18,20 @@ package io.snappydata.hydra
 
 import java.io.File
 
-import io.snappydata.SnappyTestRunner
-import org.apache.commons.io.FileUtils
-
 import scala.sys.process._
 
-/**
-  * Extending SnappyTestRunner. This class runs the snappy hydra smoke.bt
-  */
-class SnappyHydraRunner extends SnappyTestRunner {
-  var SNAPPYDATA_SOURCE_DIR = ""
+import org.apache.commons.io.FileUtils
 
-  override def beforeAll(): Unit = {
-    snappyHome = System.getenv("SNAPPY_HOME")
-    SNAPPYDATA_SOURCE_DIR = s"$snappyHome/../../.."
-    if (snappyHome == null) {
-      throw new Exception("SNAPPY_HOME should be set as an environment variable")
-    }
-    currWorkingDir = System.getProperty("user.dir")
-  }
+/**
+ * Extending SnappyTestRunner. This class runs the snappy hydra smoke.bt and smokePerf.bt
+ */
+class SnappyHydraRunner extends SnappyHydraTestRunner {
 
   override def afterAll(): Unit = {
   }
 
   test("smokeBT") {
-    val logDir = new File(s"$snappyHome/tests/snappy/scalatest/smokeBT")
+    val logDir = new File(s"$snappyHome/../tests/snappy/scalatest/smokeBT")
     if (logDir.exists) {
       FileUtils.deleteDirectory(logDir)
     }
@@ -52,45 +41,7 @@ class SnappyHydraRunner extends SnappyTestRunner {
         s"/smoke.sh $SNAPPYDATA_SOURCE_DIR $logDir"
     val (out, err) = executeProcess("smokeBT", command)
 
-    val c1 = s"grep -r Exception $logDir"
-    val c2 = "grep -v  java.net.BindException"
-    val c3 = "grep -v NoSuchObjectException"
-    val c4 = "grep -v RegionDestroyedException"
-    val c5 = "grep -v statArchive.gfs"
-    val c6 = "grep -v DistributedSystemDisconnectedException"
-    val c7 = "grep -v newDisconnectedException"
-    val c8 = "grep -v CacheClosedException"
-    val c12 = "grep -v java.io.FileNotFoundException"
-    val c13 = "grep -v org.apache.spark.shuffle.FetchFailedException"
-    val c14 = "grep -v java.lang.reflect.InvocationTargetException"
-    val c15 = "grep -v org.apache.spark.storage.ShuffleBlockFetcherIterator." +
-        "throwFetchFailedException"
-    val c16 = "grep \'status:[:space]stopping\'[:space]-e[:space]\'java.lang" +
-        ".IllegalStateException\'"
-    val c17 = "grep -v com.gemstone.gemfire.distributed.LockServiceDestroyedException"
-    val c18 = "grep GemFireIOException:[:space]Current[:space]operations[:space]did[:space]not" +
-        "[:space]distribute[:space]within"
-    val c19 = "grep SparkException:[:space]External[:space]scheduler[:space]cannot[:space]be" +
-        "[:space]instantiated"
-    val command1 = c1 #| c2 #| c3 #| c4 #| c5 #| c6 #| c7 #| c8 #| c12 #| c13 #| c14 #| c15 #|
-        c16 #| c17 #| c18 #| c19
-    // TODO : handle case where the logDir path is incorrect or doesn't exists
-    try {
-      val output1: String = command1.!!
-      throw new Exception(s"smokeBT Failed with below Exceptions:\n" + output1 +
-          "\nCheck the logs at " + logDir + " for more details on Exception.... ")
-    }
-    catch {
-      case r: java.lang.RuntimeException =>
-        if (r.getMessage().contains("Nonzero exit value: 1")) {
-          // scalastyle:off println
-          println("No unexpected Exceptions observed during smoke bt run.")
-        }
-        else {
-          throw r
-        }
-      case i: Throwable => throw i
-    }
+    searchExceptions(logDir)
 
     val c9 = s"grep -r \'result mismatch observed\' $logDir"
     val c10 = "grep -v Q37"
@@ -104,12 +55,30 @@ class SnappyHydraRunner extends SnappyTestRunner {
     catch {
       case r: java.lang.RuntimeException =>
         if (r.getMessage().contains("Nonzero exit value: 1")) {
+          // scalastyle:off println
           println("smoke bt run is successful.")
         }
         else {
           throw r
         }
       case i: Throwable => throw i
+    }
+  }
+
+  test("smokePerfBT") {
+    val smokePerf = System.getenv("SMOKE_PERF")
+    if (smokePerf == null) {
+      println("SMOKE_PERF should be set as an environment variable in order to run smokePerf bt")
+    } else if (smokePerf.equalsIgnoreCase("true")) {
+      val perfLogDir = new File(s"$snappyHome/../tests/snappy/scalatest/smokePerfBT")
+      if (perfLogDir.exists) {
+        FileUtils.deleteDirectory(perfLogDir)
+      }
+      val command: String = s"$SNAPPYDATA_SOURCE_DIR/dtests/src/test/java/io/snappydata/hydra" +
+          s"/smokePerf.sh $SNAPPYDATA_SOURCE_DIR $perfLogDir"
+      val (out, err) = executeProcess("smokePerfBT", command)
+
+      searchExceptions(perfLogDir)
     }
   }
 }

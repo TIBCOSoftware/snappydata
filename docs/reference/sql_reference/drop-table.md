@@ -1,6 +1,6 @@
-# DROP TABLE
+# DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE
 
-``` pre
+```pre
 DROP TABLE [ IF EXISTS ] [schema-name.]table-name
 ```
 
@@ -10,6 +10,20 @@ Removes the specified table. Include the `IF EXISTS` clause to execute the state
 
 ## Example
 
-``` pre
+```pre
 DROP TABLE IF EXISTS app.customer
 ```
+
+**Related Topics**</br>
+
+* [CREATE TABLE](create-table.md)
+
+* [CREATE EXTERNAL TABLE](create-external-table.md)
+
+* [CREATE SAMPLE TABLE](create-sample-table.md)
+
+* [DELETE TABLE](delete.md)
+
+* [SHOW TABLES](../interactive_commands/show.md#tables)
+
+* [TRUNCATE TABLE](truncate-table.md)

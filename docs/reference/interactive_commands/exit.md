@@ -17,8 +17,6 @@ Causes the `snappy` application to complete and processing to halt. Issuing this
 
 
 ``` pre
-snappy> disconnect peerclient;
-snappy> exit;
+snappy> DISCONNECT CONNECTION1;
+snappy> EXIT;
 ```
-
-

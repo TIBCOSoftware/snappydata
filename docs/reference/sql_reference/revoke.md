@@ -4,17 +4,17 @@
 
 The syntax used for the REVOKE statement differs depending on whether you revoke privileges for a table or for a routine.
 
-``` pre
+```pre
 REVOKE privilege-type ON [ TABLE ] { table-name | view-name } FROM grantees
 ```
 
 If you do not specify a column list, the statement revokes the privilege for all of the columns in the table.
 
-``` pre
+```pre
 REVOKE EXECUTE ON { FUNCTION | PROCEDURE } routine-designator FROM grantees RESTRICT
 ```
 
-You must use the RESTRICT clause on REVOKE statements for routines. The RESTRICT clause specifies that the EXECUTE privilege cannot be revoked if the specified routine is used in a view, trigger, or constraint, and the privilege is being revoked from the owner of the view, trigger, or constraint.
+You must use the RESTRICT clause on REVOKE statements for routines. The RESTRICT clause specifies that the EXECUTE privilege cannot be revoked if the specified routine is used in a view or constraint, and the privilege is being revoked from the owner of the view or constraint.
 
 <a id="description"></a>
 ## Description
@@ -27,7 +27,6 @@ The following types of permissions can be revoked:
 -   Insert/Delete data to/from a specific table.
 -   Select/Update data permissions on a table or a subset of columns in a table.
 -   Create a foreign key reference to the named table or to a subset of columns from a table.
--   Create a trigger permission on a table.
 -   Execute permission on a specified routine (function or procedure).
 
 You can revoke privileges from an object if you are the owner of the object or the distributed member owner.
@@ -45,8 +44,6 @@ Use the REFERENCES privilege type to revoke permission to create a foreign key r
 
 Use the SELECT privilege type to revoke permission to perform SELECT statements on a table or view. If a column list is specified with the SELECT privilege, the permission is revoked on only those columns. If no column list is specified, then the privilege is valid on all of the columns in the table.
 
-Use the TRIGGER privilege type to revoke permission to create a trigger on the specified table.
-
 Use the UPDATE privilege type to revoke permission to use the UPDATE statement on the specified table. If a column list is specified, the permission is revoked only on the specified columns.
 
 <a id="grantees"></a>
@@ -57,20 +54,20 @@ You can revoke the privileges from specific users or from all users. Use the key
 
 The privileges revoked from PUBLIC and from individual users are independent privileges. For example, consider the case where the SELECT privilege on table "t" is granted to both PUBLIC and to the authorization ID "harry." If the SELECT privilege is later revoked from the authorization ID "harry," harry can still access table "t" using the PUBLIC privilege.
 
-!!! Note: 
+!!! Note
 	The privileges of the owner (distributed member) of an object cannot be revoked.
 
 <a id="routine-designator"></a>
 ## routine-designator
 
-``` pre
+```pre
 { qualified-name [ signature ] }
 ```
 
 <a id="cascading-object-dependencies"></a>
 ## Cascading Object Dependencies
 
-For views, triggers, and constraints, if the privilege on which the object depends on is revoked, the object is automatically dropped. SnappyData does not try to determine if you have other privileges that can replace the privileges that are being revoked.
+For views and constraints, if the privilege on which the object depends on is revoked, the object is automatically dropped. SnappyData does not try to determine if you have other privileges that can replace the privileges that are being revoked.
 
 <a id="table-level-privilege-limitations"></a>
 ## Table-Level Privilege Limitations
@@ -95,31 +92,31 @@ When a REVOKE statement for a column-level privilege is issued for a grantee, ta
 
 To revoke the SELECT privilege on table t from the authorization IDs maria and harry:
 
-``` pre
+```pre
 REVOKE SELECT ON TABLE t FROM sam,bob;
 ```
 
-To revoke the UPDATE and TRIGGER privileges on table t from the authorization IDs john and smith:
+To revoke the UPDATE privileges on table t from the authorization IDs john and smith:
 
-``` pre
-REVOKE UPDATE, TRIGGER ON TABLE t FROM adam,richard;
+```pre
+REVOKE UPDATE ON TABLE t FROM adam,richard;
 ```
 
 To revoke the SELECT privilege on table s.v from all users:
 
-``` pre
+```pre
 REVOKE SELECT ON TABLE test.sample FROM PUBLIC;
 ```
 
 To revoke the UPDATE privilege on columns c1 and c2 of table s.v from all users:
 
-``` pre
+```pre
 REVOKE UPDATE (c1,c2) ON TABLE test.sample FROM PUBLIC;
 ```
 
 To revoke the EXECUTE privilege on procedure p from the authorization ID george:
 
-``` pre
+```pre
 REVOKE EXECUTE ON PROCEDURE p FROM richard RESTRICT;
 ```
 

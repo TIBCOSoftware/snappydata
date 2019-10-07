@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,7 +17,12 @@
 
 package org.apache.spark.sql.sources
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+
 import io.snappydata.QueryHint._
+
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
@@ -26,21 +31,19 @@ import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.{expressions, plans}
 import org.apache.spark.sql.execution.PartitionedDataSourceScan
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources.Entity.{INDEX_RELATION, TABLE}
-
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 
 /**
  * Replace table with index hint
  */
 case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalPlan] {
-  lazy val catalog = snappySession.sessionState.catalog
 
-  lazy val analyzer = snappySession.sessionState.analyzer
+  private def catalog = snappySession.sessionState.catalog
+
+  private def analyzer = snappySession.sessionState.analyzer
 
   override def apply(plan: LogicalPlan): LogicalPlan = {
 
@@ -53,7 +56,8 @@ case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalP
     plan transformUp {
       case table@LogicalRelation(colRelation: ColumnFormatRelation, _, _) =>
         explicitIndexHint.getOrElse(colRelation.table, Some(table)).get
-      case subQuery@SubqueryAlias(alias, LogicalRelation(_, _, _), _) =>
+      case subQuery@SubqueryAlias(alias, lr: LogicalRelation, _)
+        if !lr.relation.isInstanceOf[IndexColumnFormatRelation] =>
         explicitIndexHint.get(alias) match {
           case Some(Some(index)) => SubqueryAlias(alias, index, None)
           case _ => subQuery
@@ -69,26 +73,29 @@ case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalP
 
   }
 
-  private def getIndexHints = {
+  private def getIndexHints: mutable.Map[String, Option[LogicalPlan]] = {
     val indexHint = Index
-    snappySession.queryHints.collect {
+    val hints = snappySession.queryHints
+    if (hints.isEmpty) mutable.Map.empty
+    else hints.asScala.collect {
       case (hint, value) if hint.startsWith(indexHint) =>
         val tableOrAlias = hint.substring(indexHint.length)
-        val key = catalog.lookupRelationOption(
-          catalog.newQualifiedTableName(tableOrAlias)) match {
-          case Some(relation@LogicalRelation(cf: BaseColumnFormatRelation, _, _)) =>
-            cf.table
-          case _ => tableOrAlias
-        }
-
+        val tableIdent = snappySession.tableIdentifier(tableOrAlias)
+        val key = if (catalog.tableExists(tableIdent)) {
+          catalog.resolveRelation(tableIdent) match {
+            case lr: LogicalRelation if lr.relation.isInstanceOf[BaseColumnFormatRelation] =>
+              lr.relation.asInstanceOf[BaseColumnFormatRelation].table
+            case _ => tableOrAlias
+          }
+        } else tableOrAlias
         val index = if (value.trim.length == 0) {
           // if blank index mentioned,
           // we don't validate to find the index, instead consider that user is
           // disabling optimizer to choose index all together.
           None
         } else {
-          Some(catalog.lookupRelation(
-            snappySession.getIndexTable(catalog.newQualifiedTableName(value))))
+          val tableIdent = snappySession.tableIdentifier(value)
+          Some(catalog.resolveRelation(snappySession.getIndexTable(tableIdent)))
         }
 
         (key, index)
@@ -183,7 +190,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
         .getOrElse(Replacement(r, r)))
 
     val replicatesWithColocated = ReplacementSet(replicates.map(r => Replacement(r, r, false)) ++
-        (if (colocationGroups.nonEmpty) colocationGroups.head.chain else Seq.empty), conditions)
+        (if (colocationGroups.nonEmpty) colocationGroups.head.chain else Nil), conditions)
 
     val replicatesWithNonColocatedHavingFilters = nonColocatedWithFilters.map(nc =>
       ReplacementSet(replicates.map(r => Replacement(r, r)) ++ Some(nc), conditions)).sorted
@@ -198,7 +205,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
       r.mappedConditions(conditions)
     }
 
-    var curPlan = CompletePlan(null, Seq.empty)
+    var curPlan = CompletePlan(null, Nil)
 
     // there are no Non-Colocated tables of lesser cost than colocation chain in consideration.
     if (smallerNC == -1) {
@@ -344,7 +351,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
         val joinKeys = joinConditions.flatMap {
           case (leftA: AttributeReference, rightA: AttributeReference) =>
             Seq((leftA.name, rightA.name))
-          case _ => Seq.empty[(String, String)]
+          case _ => Nil
         }
 
         val hasJoinKeys = Function.tupled[INDEX_RELATION, INDEX_RELATION, Boolean] {
@@ -473,7 +480,8 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
     if (!enabled) {
       return plan
     }
-    if (snappySession.queryHints.exists {
+    val hints = snappySession.queryHints
+    if (!hints.isEmpty && hints.asScala.exists {
       case (hint, _) => hint.startsWith(Index) &&
           !joinOrderHints.contains(ContinueOptimizations)
     } || Entity.hasUnresolvedReferences(plan)) {

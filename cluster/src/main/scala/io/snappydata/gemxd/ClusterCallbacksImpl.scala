@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,9 +27,9 @@ import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
-import io.snappydata.SnappyEmbeddedTableStatsProviderService
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
+import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
 
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
@@ -67,11 +67,13 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def getDriverURL: String = {
     SnappyClusterManager.cm.map(_.schedulerBackend) match {
-      case Some(x) =>
-        logInfo(s"returning driverUrl=${x.driverUrl}")
-        x.driverUrl
-      case None =>
-        null
+      case Some(backend) if backend ne null =>
+        val driverUrl = backend.driverUrl
+        if ((driverUrl ne null) && !driverUrl.isEmpty) {
+          logInfo(s"returning driverUrl=$driverUrl")
+        }
+        driverUrl
+      case _ => null
     }
   }
 
@@ -91,18 +93,12 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def readDataType(in: ByteArrayDataInput): AnyRef = {
     // read the DataType
-    val pooled = KryoSerializerPool.borrow()
-    val input = pooled.input
-    try {
-      val initPosition = in.position()
-      input.setBuffer(in.array(), initPosition, in.available())
-      val result = StructTypeSerializer.readType(pooled.kryo, input)
+    KryoSerializerPool.deserialize(in.array(), in.position(), in.available(), (kryo, input) => {
+      val result = StructTypeSerializer.readType(kryo, input)
       // move the cursor to the new position
       in.setPosition(input.position())
       result
-    } finally {
-      KryoSerializerPool.release(pooled, clearInputBuffer = true)
-    }
+    })
   }
 
   override def getRowIterator(dvds: Array[DataValueDescriptor],
@@ -126,10 +122,24 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     // AQP version if available
     val is: InputStream = ClassPathLoader.getLatest.getResourceAsStream(
       classOf[SnappyDataVersion], SnappyDataVersion.AQP_VERSION_PROPERTIES)
-    if (is ne null) {
+    if (is ne null) try {
       GemFireVersion.getInstance(classOf[SnappyDataVersion], SnappyDataVersion
           .AQP_VERSION_PROPERTIES)
+    } finally {
+      is.close()
     }
     GemFireVersion.getClusterType
+  }
+
+  override def setLeadClassLoader(): Unit = {
+    val instance = ServiceManager.currentFabricServiceInstance
+    instance match {
+      case li: LeadImpl =>
+        val loader = li.urlclassloader
+        if (loader != null) {
+          Thread.currentThread().setContextClassLoader(loader)
+        }
+      case _ =>
+    }
   }
 }

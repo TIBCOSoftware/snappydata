@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -31,8 +31,9 @@ class StopSnappyStreamingJob extends SnappySQLJob {
     val outputFile = "StopSnappyStreaming.log"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     Try {
+      // scalastyle:off println
       pw.println("Stopping Snappy Streaming Context...")
-      //SnappyStreamingContext.getActive.get.stop(false, true)
+      // SnappyStreamingContext.getActive.get.stop(false, true)
       snappySession.sql("streaming stop");
       pw.println("Snappy Streaming Context stopped successfully.")
       pw.close()

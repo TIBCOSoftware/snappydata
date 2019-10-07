@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,14 +21,16 @@ import java.sql.{DriverManager, SQLException}
 import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
 import io.snappydata.core.{Data, TestData, TestData2}
+import io.snappydata.sql.catalog.CatalogObjectType
 import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyFunSuite}
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.hive.ql.parse.ParseDriver
+import org.junit.Assert._
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
@@ -39,8 +41,8 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 
 /**
-  * Tests for column tables in GFXD.
-  */
+ * Tests for column tables in GFXD.
+ */
 class ColumnTableTest
     extends SnappyFunSuite
         with Logging
@@ -91,9 +93,9 @@ class ColumnTableTest
     snc.sql(String.format(pattern, "app"))
     try {
       df.write.insertInto(tableName)
-      fail("expected TableNotFoundException")
+      fail("expected AnalysisException")
     } catch {
-      case _: TableNotFoundException => // expected
+      case e: AnalysisException if e.message.contains("Table or view not found") => // expected
         assert(result.collect().length === count)
     }
     // check that write using qualified name should work
@@ -107,18 +109,11 @@ class ColumnTableTest
     val tempView = s"TABLE_VIEW_$tableName"
     df.createOrReplaceTempView(tempView)
 
-    // check failure with quoted schema but case as passed
+    // check success with quoted schema but case as passed since table names are case-insensitive
     snc.sql("set spark.sql.caseSensitive = true")
     snc.sql(String.format(pattern, "`" + schemaName + "`"))
-    try {
-      snc.sql(s"insert into $tableName select * from $tempView")
-      // TODO: SW: correct case-sensitivity
-      // fail("expected TableNotFoundException")
-      count += size
-    } catch {
-      case _: TableNotFoundException => // expected
-        assert(result.collect().length === count)
-    }
+    snc.sql(s"insert into $tableName select * from $tempView")
+    count += size
     // check the same with quoted schema with upper case as stored
     snc.sql(String.format(pattern, "`" + schemaName.toUpperCase + "`"))
     snc.sql(s"insert into $tableName select * from $tempView")
@@ -127,17 +122,59 @@ class ColumnTableTest
     result = snc.sql(s"SELECT * FROM `${tableName.toUpperCase}`")
     assert(result.collect().length === count)
 
-    // finally check quoted table too but incorrect case
-    try {
-      result = snc.sql(s"SELECT * FROM `$tableName`")
-      // TODO: SW: fix case-sensitivity
-      // fail("expected TableNotFoundException")
-    } catch {
-      case _: TableNotFoundException => // expected
-        assert(result.collect().length === count)
-    }
+    // finally check quoted table too but incorrect case should also be fine
+    result = snc.sql(s"SELECT * FROM `$tableName`")
 
     count
+  }
+
+  test("Test Bug SNAP-2308 view creation fails if query contains decimal numbers not suffixed") {
+    val tableName = "TEST_COLUMN"
+    val viewName = "TEST_VIEW"
+    snc.sql(s"CREATE TABLE $tableName (Col1 String, Col2 String) " +
+        s" USING column " + options)
+
+    val data = Seq(("1.1", "2.2"), ("1", "2"), ("3.57", "3"), ("4.3", "4"), ("5.341", "5"))
+    val rdd = sc.parallelize(data)
+    val dataDF = snc.createDataFrame(rdd)
+    dataDF.write.insertInto(tableName)
+
+    var query = s"SELECT sum(Col1) as summ FROM $tableName where col1 > .0001 having summ > .001"
+    snc.sql(query).collect()
+
+    snc.sql(s"create or replace view $viewName as ($query)")
+
+    query = s"SELECT sum(Col1) as summ FROM $tableName where col1 > .0001BD having summ > .001bD"
+    snc.sql(query).collect()
+
+    snc.sql(s"create or replace view $viewName as ($query)")
+
+    query = s"SELECT sum(Col1) as summ FROM $tableName having summ > .001f"
+    snc.sql(query).collect()
+
+    snc.sql(s"create or replace view $viewName as ($query)")
+
+    query = s"SELECT sum(Col1) as summ FROM $tableName having summ > .001d"
+    snc.sql(query).collect()
+
+    snc.sql(s"create or replace view $viewName as ($query)")
+
+    query = s"SELECT sum(Col1) as summ FROM $tableName having summ > .004ld"
+    var expectedException = intercept[Exception] {
+      snc.sql(query).collect
+    }
+    assert(expectedException.isInstanceOf[ParseException])
+
+    query = s"SELECT sum(Col1) as summ FROM $tableName having summ > 4bl"
+    expectedException = intercept[Exception] {
+      snc.sql(query).collect
+    }
+    assert(expectedException.isInstanceOf[ParseException])
+
+    snc.sql(s"drop view $viewName")
+    snc.sql(s"drop table $tableName")
+
+    logInfo("Successful")
   }
 
   test("More columns -- SNAP-1345") {
@@ -148,7 +185,6 @@ class ColumnTableTest
     } catch {
       case ex: SQLException => assert("42802".equals(ex.getSQLState))
     }
-    
     snc.sql("drop table coltab")
   }
 
@@ -222,27 +258,27 @@ class ColumnTableTest
   test("Test SNAP-947") {
     val table = "APP.TEST_TABLE"
 
-    snc.sql (s"drop table if exists $table")
+    snc.sql(s"drop table if exists $table")
 
     // check that default concurrency checks is set to false for column table.
-    snc.sql(s"create table $table (col1 int) using column" )
+    snc.sql(s"create table $table (col1 int) using column")
 
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == true)
+    assert(Misc.getRegionForTable(table, true).getAttributes.getConcurrencyChecksEnabled == true)
 
     snc.dropTable(table)
 
     // check that default concurrency checks setting is not modified.
 
-    snc.sql(s"create table $table (col1 int) using row options(PERSISTENT 'SYNCHRONOUS')" )
+    snc.sql(s"create table $table (col1 int) using row options(PERSISTENT 'SYNCHRONOUS')")
 
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == true)
+    assert(Misc.getRegionForTable(table, true).getAttributes.getConcurrencyChecksEnabled == true)
 
     snc.dropTable(table)
 
     snc.sql(s"create table $table (col1 int) using row " +
-        s"options(PERSISTENT 'SYNCHRONOUS' , PARTITION_BY 'COL1')" )
+        s"options(PERSISTENT 'SYNCHRONOUS' , PARTITION_BY 'COL1')")
 
-    assert (Misc.getRegionForTable(table , true).getAttributes.getConcurrencyChecksEnabled == true)
+    assert(Misc.getRegionForTable(table, true).getAttributes.getConcurrencyChecksEnabled == true)
 
     snc.dropTable(table)
 
@@ -256,8 +292,7 @@ class ColumnTableTest
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props)
-        .saveAsTable(tableName)
+    dataDF.write.format("column").options(props).saveAsTable(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
@@ -327,8 +362,9 @@ class ColumnTableTest
     logInfo("Successful")
   }
 
+
   test("Test the creation/dropping of table using SQ with explicit URL") {
-    //TODO: Suranjan URL misses the hint in connection that gfTx must not be cleared.
+    // TODO: Suranjan URL misses the hint in connection that gfTx must not be cleared.
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " +
         " USING column " + optionsWithURL)
     val result = snc.sql("SELECT * FROM " + tableName)
@@ -419,15 +455,17 @@ class ColumnTableTest
   test("Test alter table SQL not supported for column tables") {
     snc.sql("drop table if exists employee")
     snc.sql("create table employee(name string, surname string) using column options()")
-    assert (snc.sql("select * from employee").schema.fields.length == 2)
-    intercept[AnalysisException] { // not supported
+    assert(snc.sql("select * from employee").schema.fields.length == 2)
+    intercept[AnalysisException] {
+      // not supported
       snc.sql("alter table employee add column age int")
     }
-    assert (snc.sql("select * from employee").schema.fields.length == 2)
-    intercept[AnalysisException] { // not supported
+    assert(snc.sql("select * from employee").schema.fields.length == 2)
+    intercept[AnalysisException] {
+      // not supported
       snc.sql("alter table employee drop column surname")
     }
-    assert (snc.sql("select * from employee").schema.fields.length == 2)
+    assert(snc.sql("select * from employee").schema.fields.length == 2)
     intercept[TableNotFoundException] {
       snc.sql("alter table non_employee add column age int")
     }
@@ -438,8 +476,9 @@ class ColumnTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.registerDataFrameAsTable(dataDF, "tempTable")
-    snc.sql("select * from tempTable").show
-    intercept[AnalysisException] { // not supported
+    snc.sql("select * from tempTable").collect()
+    intercept[AnalysisException] {
+      // not supported
       snc.sql("alter table tempTable add column age int")
     }
     snc.dropTempTable("tempTable")
@@ -447,9 +486,10 @@ class ColumnTableTest
     val schema = StructType(Array(
       StructField("col_int", IntegerType, false),
       StructField("col_string", StringType, false)))
-    snc.createExternalTable("extTable", "com.databricks.spark.csv",
-      schema, Map.empty[String, String])
-    intercept[AnalysisException] { // not supported
+    val codetableFile = getClass.getResource("/airlineCode_Lookup.csv").getPath
+    snc.createExternalTable("extTable", "csv", schema, Map("path" -> codetableFile))
+    intercept[AnalysisException] {
+      // not supported
       snc.sql("alter table extTable add column age int")
     }
     snc.sql("drop table extTable")
@@ -613,28 +653,8 @@ class ColumnTableTest
   test("Test PR with EVICTION BY") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
-    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) " +
-        "USING column " +
-        "options " +
-        "(" +
-        "PARTITION_BY 'OrderId'," +
-        "EVICTION_BY 'LRUMEMSIZE 200')")
-
-    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-        .asInstanceOf[PartitionedRegion]
-    assert(region.getEvictionAttributes.getAlgorithm ===
-        EvictionAlgorithm.LRU_MEMORY)
-    assert(region.getEvictionAttributes.getAction ===
-        EvictionAction.LOCAL_DESTROY)
-    assert(region.getEvictionAttributes.getMaximum === 200)
-    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
-  }
-
-  test("Test PR with EVICTION BY OVERFLOW") {
-    val snc = org.apache.spark.sql.SnappyContext(sc)
-    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
-    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
-      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'true')")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT, ItemId INT) USING column options" +
+        " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200')")
     var region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
         .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
@@ -645,98 +665,146 @@ class ColumnTableTest
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
-      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'true')")
+        " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200')")
     region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
+        .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_MEMORY)
+        EvictionAlgorithm.LRU_MEMORY)
     assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.OVERFLOW_TO_DISK)
+        EvictionAction.OVERFLOW_TO_DISK)
     assert(region.getEvictionAttributes.getMaximum === 200)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
+    try {
+      snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
+          " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'false')")
+      assert(false, "OVERFLOW=false is not allowed when EVICTION_BY is specified")
+    } catch {
+      case _: AnalysisException => // Expected
+    }
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    try {
+      snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
+          " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'false')")
+      assert(false, "OVERFLOW=false is not allowed when EVICTION_BY is specified")
+    } catch {
+      case _: AnalysisException => // Expected
+    }
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
-    " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'false')")
+        " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'true')")
     region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
+        .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_MEMORY)
+        EvictionAlgorithm.LRU_MEMORY)
     assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.LOCAL_DESTROY)
+        EvictionAction.OVERFLOW_TO_DISK)
     assert(region.getEvictionAttributes.getMaximum === 200)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
-      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'false')")
+        " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200', OVERFLOW 'true')")
     region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
+        .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_MEMORY)
+        EvictionAlgorithm.LRU_MEMORY)
     assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.LOCAL_DESTROY)
+        EvictionAction.OVERFLOW_TO_DISK)
+    assert(region.getEvictionAttributes.getMaximum === 200)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    try {
+      snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
+          " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUCOUNT 200')")
+      assert(false, "EVICTION_BY=LRUCOUNT is not supported for column tables")
+    } catch {
+      case _: AnalysisException => // Expected
+    }
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
+        " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUCOUNT 200')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+        .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+        EvictionAlgorithm.LRU_ENTRY)
+    assert(region.getEvictionAttributes.getAction ===
+        EvictionAction.OVERFLOW_TO_DISK)
     assert(region.getEvictionAttributes.getMaximum === 200)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
-      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200')")
+        " (PARTITION_BY 'OrderId', EVICTION_BY 'lruheappercent')")
     region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
+        .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_MEMORY)
+        EvictionAlgorithm.LRU_HEAP)
     assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.LOCAL_DESTROY)
-    assert(region.getEvictionAttributes.getMaximum === 200)
+        EvictionAction.OVERFLOW_TO_DISK)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
-      " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 200')")
+        " (PARTITION_BY 'OrderId', EVICTION_BY 'lruheappercent')")
     region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
+        .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_MEMORY)
+        EvictionAlgorithm.LRU_HEAP)
     assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.LOCAL_DESTROY)
-    assert(region.getEvictionAttributes.getMaximum === 200)
+        EvictionAction.OVERFLOW_TO_DISK)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT, ItemId INT) USING column")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+        .asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+        EvictionAlgorithm.LRU_HEAP)
+    assert(region.getEvictionAttributes.getAction ===
+        EvictionAction.OVERFLOW_TO_DISK)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT, ItemId INT) USING row")
+    val r = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
+        .asInstanceOf[DistributedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm ===
+        EvictionAlgorithm.LRU_HEAP)
+    assert(region.getEvictionAttributes.getAction ===
+        EvictionAction.OVERFLOW_TO_DISK)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
-      " (PARTITION_BY 'OrderId', OVERFLOW 'true')")
+        " (PARTITION_BY 'OrderId', EVICTION_BY 'none')")
     region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
+        .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_HEAP)
-    assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.OVERFLOW_TO_DISK)
+        EvictionAlgorithm.NONE)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
-      " (PARTITION_BY 'OrderId', OVERFLOW 'true')")
+        " (PARTITION_BY 'OrderId', EVICTION_BY 'NONE')")
     region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
+        .asInstanceOf[PartitionedRegion]
     assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_HEAP)
-    assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.OVERFLOW_TO_DISK)
+        EvictionAlgorithm.NONE)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
-      " (PARTITION_BY 'OrderId', EVICTION_BY 'lruheappercent', OVERFLOW 'true')")
-    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
-    assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_HEAP)
-    assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.OVERFLOW_TO_DISK)
+        " (PARTITION_BY 'OrderId', OVERFLOW 'false')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true).asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm === EvictionAlgorithm.NONE)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
-      " (PARTITION_BY 'OrderId', EVICTION_BY 'lruheappercent', OVERFLOW 'true')")
-    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true)
-      .asInstanceOf[PartitionedRegion]
-    assert(region.getEvictionAttributes.getAlgorithm ===
-      EvictionAlgorithm.LRU_HEAP)
-    assert(region.getEvictionAttributes.getAction ===
-      EvictionAction.OVERFLOW_TO_DISK)
+        " (PARTITION_BY 'OrderId', OVERFLOW 'false')")
+    region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true).asInstanceOf[PartitionedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm === EvictionAlgorithm.NONE)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +
+        " (OVERFLOW 'false')")
+    Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true).asInstanceOf[DistributedRegion]
+    assert(region.getEvictionAttributes.getAlgorithm === EvictionAlgorithm.NONE)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
   }
 
@@ -826,8 +894,7 @@ class ColumnTableTest
         "USING column options()")
 
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props)
-        .saveAsTable("COLUMN_TEST_TABLE10")
+    dataDF.write.format("column").options(props).saveAsTable("COLUMN_TEST_TABLE10")
 
     val count = snc.sql("select * from COLUMN_TEST_TABLE10").count()
     assert(count === 1000)
@@ -1064,7 +1131,6 @@ class ColumnTableTest
       elapsed = (end - start) / 1000000.0
       println(s"Time taken by Hive parser = ${elapsed}ms " +
           s"average=${elapsed / timedRuns}ms")
-
     } finally {
       conn.getLanguageConnection.popCompilerContext(cc)
       conn.restoreContextStack()
@@ -1095,8 +1161,8 @@ class ColumnTableTest
     val rowBufferCount = rowBuffer.asInstanceOf[PartitionedRegion].getPrStats
         .getDataStoreEntryCount
 
-    val region = Misc.getRegionForTable("APP." +
-      ColumnFormatRelation.columnBatchTableName(tableName).toUpperCase, true)
+    val region = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
+      "APP." + tableName).toUpperCase, true)
     SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
     val entries = region.asInstanceOf[PartitionedRegion].getPrStats
         .getPRNumRowsInColumnBatches
@@ -1109,12 +1175,11 @@ class ColumnTableTest
 
   test("Test Dropping Colocated column table") {
 
-
     snc.sql("create table ORDER_DETAILS_COL(SINGLE_ORDER_DID BIGINT ," +
         "SYS_ORDER_ID VARCHAR(64)" +
         " ,SYS_ORDER_VER INTEGER ," +
         "DATA_SNDG_SYS_NM VARCHAR(128)) " +
-        "USING column OPTIONS(BUCKETS '13', " +
+        "USING column OPTIONS(BUCKETS '16', " +
         "REDUNDANCY '1', EVICTION_BY 'LRUHEAPPERCENT'," +
         " PERSISTENT 'ASYNCHRONOUS')")
 
@@ -1122,27 +1187,26 @@ class ColumnTableTest
         "SYS_EXEC_VER INTEGER,SYS_EXEC_ID VARCHAR(64)," +
         "TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64)) " +
         "USING column OPTIONS(COLOCATE_WITH 'ORDER_DETAILS_COL', " +
-        "BUCKETS '13', REDUNDANCY '1', " +
+        "BUCKETS '16', REDUNDANCY '1', " +
         "EVICTION_BY 'LRUHEAPPERCENT', PERSISTENT 'ASYNCHRONOUS')")
 
     try {
       snc.sql("DROP TABLE ORDER_DETAILS_COL")
+      fail("Expected drop table to fail due to dependent tables")
     } catch {
-      case e: AnalysisException => {
-        assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
-            "dependent objects: APP.EXEC_DETAILS_COL;")
+      case e: AnalysisException =>
+        assert(e.getMessage().contains(
+          "app.order_details_col cannot be dropped because of dependent objects"))
         // Execute second time to see we are getting same exception instead of table not found
         try {
           snc.sql("DROP TABLE ORDER_DETAILS_COL")
+          fail("Expected drop table to fail due to dependent tables")
         } catch {
           case e: AnalysisException => {
-            assert(e.getMessage() === "Object APP.ORDER_DETAILS_COL cannot be dropped because of " +
-                "dependent objects: APP.EXEC_DETAILS_COL;")
+            assert(e.getMessage().contains(
+              "app.order_details_col cannot be dropped because of dependent objects"))
           }
-          case t: Throwable => throw new AssertionError(t.getMessage, t)
         }
-      } // Expected Exception hence ignore
-      case _: Throwable => throw new AssertionError
     }
 
     try {
@@ -1157,19 +1221,19 @@ class ColumnTableTest
 
     snc.sql("create table t1(a int,b int) using column options()")
     snc.sql("insert into t1 values(1,2)")
-    snc.sql("select * from t1").show
+    snc.sql("select * from t1").collect()
     snc.sql("create table t2(c int,d int) using column options() as (select * from t1)")
 
     snc.sql("create table t3 using column options() as (select * from t1)")
 
-    val struct = (new StructType())
-      .add(StructField("C", IntegerType, true))
-      .add(StructField("D", IntegerType, true))
+    val struct = new StructType()
+        .add(StructField("c", IntegerType, nullable = true))
+        .add(StructField("d", IntegerType, nullable = true))
 
 
-    val df1=snc.sql("select * from t1")
-    val df2=snc.sql("select * from t2")
-    val df3=snc.sql("select * from t3")
+    val df1 = snc.sql("select * from t1")
+    val df2 = snc.sql("select * from t2")
+    val df3 = snc.sql("select * from t3")
 
     assert(struct == df2.schema)
     assert(df1.schema == df3.schema)
@@ -1177,42 +1241,41 @@ class ColumnTableTest
   }
 
   test("Test create table from CSV without header") {
-    snc.sql(s"create table test1 using com.databricks.spark.csv options(path '${(getClass.getResource
-    ("/northwind/orders" +
-      ".csv").getPath)}', header 'false', inferschema 'true')")
+    snc.sql(s"create external table test1 using csv options(path '${
+      (getClass.getResource
+      ("/northwind/orders" +
+          ".csv").getPath)
+    }', header 'false', inferschema 'true')")
     snc.sql("create table test2 using column options() as (select * from test1)")
     val df2 = snc.sql("select * from test2")
-    df2.show()
+    df2.collect()
 
     snc.sql("drop table test2")
     snc.sql("create table test2(_col1 integer,__col2 integer) using column options()")
     snc.sql("insert into test2 values(1,2)")
     snc.sql("insert into test2 values(2,3)")
     val df3 = snc.sql("select _col1,__col2 from test2")
-    df3.show()
-    val struct = (new StructType())
-      .add(StructField("_COL1", IntegerType, true))
-      .add(StructField("__COL2", IntegerType, true))
+    df3.collect()
+    val struct = new StructType()
+        .add(StructField("_col1", IntegerType, nullable = true))
+        .add(StructField("__col2", IntegerType, nullable = true))
 
-    df3.printSchema()
     assert(struct == df3.schema)
-
   }
 
   test("Test loading json data to column table") {
     val some_people_path = s"${(getClass.getResource("/person.json").getPath)}"
-    println(some_people_path)
     // Read a JSON file using Spark API
     val people = snc.read.json(some_people_path)
 
-    //Drop the table if it exists.
+    // Drop the table if it exists.
     snc.dropTable("people", ifExists = true)
 
-    //Create a columnar table with the Json DataFrame schema
+    // Create a columnar table with the Json DataFrame schema
     snc.createTable(tableName = "people",
       provider = "column",
       schema = people.schema,
-      options = Map.empty[String,String],
+      options = Map.empty[String, String],
       allowExisting = false)
 
     // Write the created DataFrame to the columnar table.
@@ -1220,19 +1283,28 @@ class ColumnTableTest
 
 
     val nameAndAddress = snc.sql("SELECT " +
-      "name, " +
-      "address.city, " +
-      "address.state, " +
-      "address.district, " +
-      "address.lane " +
-      "FROM people")
-    nameAndAddress.toJSON.show(truncate = false)
-    assert(nameAndAddress.count() ==2)
-    val rows:Array[String] = nameAndAddress.toJSON.collect()
+        "name, " +
+        "address.city, " +
+        "address.state, " +
+        "address.district, " +
+        "address.lane " +
+        "FROM people")
+    logInfo(nameAndAddress.toJSON.collect().mkString("\n"))
+    assert(nameAndAddress.count() == 2)
+    val rows: Array[String] = nameAndAddress.toJSON.collect()
 
-    assert(rows(0) =="{\"NAME\":\"Yin\",\"CITY\":\"Columbus\",\"STATE\":\"Ohio\",\"DISTRICT\":\"Pune\"}")
-    assert(rows(1) == "{\"NAME\":\"Michael\",\"STATE\":\"California\",\"LANE\":\"15\"}")
+    assert(rows(0) ==
+        "{\"name\":\"Yin\",\"city\":\"Columbus\",\"state\":\"Ohio\"," +
+            "\"district\":\"Pune\"}")
+    assert(rows(1) ==
+        "{\"name\":\"Michael\",\"state\":\"California\",\"lane\":\"15\"}")
+  }
 
+  test("SNAP-2087 failure in JSON queries with complex types") {
+    val locs = getClass.getResource("/locomotives.json").getPath
+    val ds = snc.read.json(sc.wholeTextFiles(locs).values)
+    assert(ds.count() === 89)
+    assert(ds.filter("model = 'ES44AC'").count() === 12)
   }
 
   test("same generated code for multiple sessions (check statsPredicate ordering)") {
@@ -1279,22 +1351,22 @@ class ColumnTableTest
     snc.sql(s"insert into t1 values(2,'test2')")
     snc.sql(s"insert into t1 values(3,'test3')")
     val df = snc.sql("select * from t1")
-    df.show
+    df.collect()
     val tempPath = "/tmp/" + System.currentTimeMillis()
 
     assert(df.count() == 3)
     df.write.option("header", "true").csv(tempPath)
     snc.createExternalTable("TEST_EXTERNAL", "csv",
-      Map("path" -> tempPath, "header" -> "true", "inferSchema"-> "true"))
+      Map("path" -> tempPath, "header" -> "true", "inferSchema" -> "true"))
     val dataDF = snc.sql("select * from TEST_EXTERNAL order by c1")
 
-    snc.sql("select * from TEST_EXTERNAL").show
+    snc.sql("select * from TEST_EXTERNAL").collect()
 
     assert(dataDF.count == 3)
 
-    val rows=dataDF.collect()
+    val rows = dataDF.collect()
 
-    for(i<- 0 to 2) assert(rows(i)(0)==i+1)
+    for (i <- 0 to 2) assert(rows(i)(0) == i + 1)
 
     snc.sql("drop table if exists TEST_EXTERNAL")
     snc.sql("drop table if exists t1")
@@ -1305,14 +1377,161 @@ class ColumnTableTest
 
     snc.sql("drop table if exists test")
 
-    val rawData=Seq(Seq(1,"emp1",1),Seq(2,"emp2",2),Seq(3,"emp3",3))
+    val rawData = Seq(Seq(1, "emp1", 1), Seq(2, "emp2", 2), Seq(3, "emp3", 3))
 
-    val rdd = sc.parallelize(rawData,1).map(s=> Record(s(0).asInstanceOf[Int],Employee(s(1)
-      .toString,s(2).asInstanceOf[Int])))
+    val rdd = sc.parallelize(rawData, 1).map(s => Record(s(0).asInstanceOf[Int], Employee(s(1)
+        .toString, s(2).asInstanceOf[Int])))
     val df = snc.createDataFrame(rdd)
     df.write.format("column").saveAsTable("test")
 
     snc.sql("drop table if exists test")
+  }
+
+  test("Test method for getting key columns of the column tables") {
+    val session = new SnappySession(snc.sparkContext)
+    session.sql("drop table if exists temp1")
+    session.sql("drop table if exists temp2")
+    session.sql("drop table if exists temp3")
+
+    session.sql("create table temp1(id1 bigint not null , name1 varchar(10)) " +
+        "USING column OPTIONS(key_columns 'id1' ) ")
+    session.sql("create table temp2(id1 bigint not null , name1 varchar(10), " +
+        "id2 bigint not null, id3 bigint not null) USING column " +
+        "OPTIONS(key_columns 'id1,id2' ) ")
+    session.sql("create table temp3(id1 bigint not null , name1 varchar(10)) " +
+        "using column options(partition_by 'name1')")
+    session.sql("create table temp4(id1 bigint not null , name1 varchar(10), " +
+        "id2 bigint not null, id3 bigint not null) USING column " +
+        "OPTIONS(key_columns 'id2,id1,id3' ) ")
+
+    // if key_columns are not present, then CREATE TABLE should fail (SNAP-2790)
+    try {
+      session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+          "USING column OPTIONS(key_columns 'id')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    try {
+      session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+          "USING column OPTIONS(partition_by 'id')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    try {
+      session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+          "USING column OPTIONS(partition_by 'id1', key_columns 'id')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    // key_columns with row tables should fail
+    try {
+      session.sql("create table rt1(id1 bigint not null , name1 varchar(10)) " +
+          "USING row OPTIONS(key_columns 'id1')")
+      fail("should have failed")
+    } catch {
+      case _: AnalysisException => // expected
+    }
+    session.sql("create table ct1(id1 bigint not null , name1 varchar(10)) " +
+        "USING column OPTIONS(partition_by 'id1', key_columns 'id1')")
+    session.sql("drop table ct1")
+
+    val res1 = session.sessionCatalog.getKeyColumns("temp1")
+    assert(res1.size == 1)
+
+    val res2 = session.sessionCatalog.getKeyColumns("temp2")
+    assert(res2.size == 2)
+
+    val res3 = session.sessionCatalog.getKeyColumns("temp3")
+    assert(res3.isEmpty)
+
+    val res4 = session.sessionCatalog.getKeyColumns("temp4")
+    assert(res4.size == 3)
+
+    Try(session.sessionCatalog.getKeyColumns("temp5")) match {
+      case Success(_) => throw new AssertionError(
+        "Should not have succedded with incorrect options")
+      case Failure(_) => // Do nothing
+    }
+  }
+
+  test("Test method for getting table type of snappy tables") {
+    var session = new SnappySession(snc.sparkContext)
+    session.sql("drop table if exists temp1")
+    session.sql("drop table if exists temp2")
+    session.sql("drop table if exists temp3")
+    session.sql("drop table if exists temp4")
+
+    session.sql("create table temp1(id1 bigint not null , name1 varchar(10)) " +
+        "USING column OPTIONS(key_columns 'id1' ) ")
+    session.sql("create table temp2(id1 bigint not null primary key, name1 varchar(10))")
+    session.sql("create stream table temp3 (id long, " +
+        "text string, fullName string, country string, " +
+        "retweets int, hashtag  string) using twitter_stream " +
+        "options (consumerKey '', consumerSecret '', accessToken ''," +
+        " accessTokenSecret '', rowConverter " +
+        "'org.apache.spark.sql.streaming.TweetToRowsConverter')")
+
+    snc.sql("drop table if exists t1")
+    snc.sql(s"create table t1 (c1 integer,c2 string)")
+    snc.sql(s"insert into t1 values(1,'test1')")
+    snc.sql(s"insert into t1 values(2,'test2')")
+    snc.sql(s"insert into t1 values(3,'test3')")
+    val df = snc.sql("select * from t1")
+    df.collect()
+    val tempPath = System.getProperty("user.dir") + System.currentTimeMillis()
+
+    assert(df.count() == 3)
+    df.write.option("header", "true").csv(tempPath)
+    snc.createExternalTable("temp4", "csv",
+      Map("path" -> tempPath, "header" -> "true", "inferSchema" -> "true"))
+
+    val res1 = getTableType("temp1", session)
+    assert(res1 == "COLUMN")
+
+    val res2 = getTableType("temp2", session)
+    assert(res2 == "ROW")
+
+    val res3 = getTableType("temp3", session)
+    assert(res3 == "STREAM")
+
+    val res4 = getTableType("temp4", session)
+    assert(res4 == "EXTERNAL")
+
+    Try(getTableType("temp5", session)) match {
+      case Success(_) => throw new AssertionError(
+        "Should not have succedded with incorrect options")
+      case Failure(_) => // Do nothing
+    }
+  }
+
+  private def getTableType(table: String, session: SnappySession): String = {
+    CatalogObjectType.getTableType(session.externalCatalog.getTable(
+      session.getCurrentSchema, session.sessionCatalog.formatTableName(table))).toString
+  }
+
+  test("Test for SNAP-2860") {
+    snc.sql("drop table if exists t1")
+    snc.sql("create table t1(id integer, str string) using column options(key_columns 'id')")
+    snc.sql("put into t1 select 1, 'aa'")
+    snc.sql("put into t1 select 2, 'aa' union all select 3, 'bb'")
+    snc.sql("put into t1 select 1, 'cc'")
+    val rows = snc.sql("select * from t1")
+    assert(rows.count() == 3)
+    val row1 = snc.sql("select str from t1 where id = 1").collect()
+    for (row <- row1) {
+      assertEquals("cc", row.getAs[String]("str"))
+    }
+    val row2 = snc.sql("select str from t1 where id = 2").collect()
+    for (row <- row2) {
+      assertEquals("aa", row.getAs[String]("str"))
+    }
+    val row3 = snc.sql("select str from t1 where id = 3").collect()
+    for (row <- row3) {
+      assertEquals("bb", row.getAs[String]("str"))
+    }
   }
 }
 

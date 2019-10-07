@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,9 +18,10 @@
 package org.apache.spark.memory
 
 import com.pivotal.gemfirexd.TestUtil
-import io.snappydata.core.FileCleaner
-import org.apache.spark.SparkFunSuite
+import io.snappydata.util.TestUtils
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
+import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 
 class MemoryFunSuite extends SparkFunSuite with BeforeAndAfter with BeforeAndAfterAll {
@@ -35,18 +36,15 @@ class MemoryFunSuite extends SparkFunSuite with BeforeAndAfter with BeforeAndAft
       SnappyContext.globalSparkContext.stop()
     }
     System.setProperty("snappydata.umm.memtrace", "true")
-    return
   }
-
 
   after {
     if (SnappyContext.globalSparkContext != null) {
       val snappySession = new SnappySession(SnappyContext.globalSparkContext)
-      snappySession.dropTable("t1", true)
+      TestUtils.dropAllSchemas(snappySession)
       SnappyContext.globalSparkContext.stop()
     }
     TestUtil.stopNetServer()
-    FileCleaner.cleanStoreFiles()
   }
 
   // Only use if sure of the problem
@@ -60,7 +58,7 @@ class MemoryFunSuite extends SparkFunSuite with BeforeAndAfter with BeforeAndAft
 
   private[memory] def createSparkSession(memoryFraction: Double,
                                          storageFraction: Double,
-                                         sparkMemory: Long = 1000,
+                                         sparkMemory: Long = 500000,
                                          cachedBatchSize: Int = 500): SparkSession = {
     SparkSession
       .builder

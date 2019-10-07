@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,24 +19,25 @@ package org.apache.spark.sql.execution
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
-
-import org.apache.spark.rdd.RDD
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.{RDD, ZippedPartitionsBaseRDD}
 import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
-import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, TableIdentifier}
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnarStorePartitionedRDD, IndexColumnFormatRelation, SmartConnectorColumnRDD}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchange}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
-import org.apache.spark.sql.execution.row.{RowFormatRelation, RowTableScan}
-import org.apache.spark.sql.sources.{BaseRelation, Filter, PrunedUnsafeFilteredScan, SamplingRelation}
+import org.apache.spark.sql.execution.row.{RowFormatRelation, RowFormatScanRDD, RowTableScan}
+import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
+
 
 
 /**
@@ -91,38 +92,64 @@ private[sql] abstract class PartitionedPhysicalScan(
   }
 
   protected override def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
+    WholeStageCodegenExec(this).execute()
   }
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override lazy val outputPartitioning: Partitioning = {
-    if (numPartitions == 1 && numBuckets == 1) {
+    // when buckets are linked to partitions then actual buckets needs to be considered.
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val linkPart = session.hasLinkPartitionsToBuckets || session.preferPrimaries
+    // The SinglePartition here is an optimization that can avoid an Exchange for the case
+    // of simple queries. This partitioning is compatible with all other required
+    // distributions though the table is still HashPartitioned. This helps for the
+    // case of aggregation with limit, for example, (SNAP-) which cannot be converted
+    // to use CollectAggregateExec. For cases where HashPartitioning of the table does
+    // require to be repartitioned due to a sub-query/join, "linkPart" will be true
+    // so it will fall into HashPartitioning.
+    if (numPartitions == 1 && (numBuckets == 1 || !linkPart)) {
       SinglePartition
     } else if (partitionColumns.nonEmpty) {
-      val callbacks = ToolsCallbackInit.toolsCallback
-      if (callbacks != null) {
-        // when buckets are linked to partitions then numBuckets have
-        // to be sent as zero to skip considering buckets in partitioning
-        val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-        callbacks.getOrderlessHashPartitioning(partitionColumns,
-          partitionColumnAliases, numPartitions,
-          if (session.hasLinkPartitionsToBuckets) 0 else numBuckets, numBuckets)
-      } else {
-        HashPartitioning(partitionColumns, numPartitions)
-      }
+      HashPartitioning(partitionColumns, if (linkPart) numBuckets else numPartitions)
     } else super.outputPartitioning
   }
 
-  override lazy val simpleString: String = "Partitioned Scan " + extraInformation +
-      " , Requested Columns = " + output.mkString("[", ",", "]") +
-      " partitionColumns = " + partitionColumns.mkString("[", ",", "]" +
-      " numBuckets= " + numBuckets +
-      " numPartitions= " + numPartitions)
+  override lazy val simpleString: String = {
+    val s = "Partitioned Scan " + extraInformation +
+        ", Requested Columns = " + output.mkString("[", ",", "]") +
+        " partitionColumns = " + partitionColumns.mkString("[", ",", "]" +
+        " numBuckets = " + numBuckets + " numPartitions = " + numPartitions)
+    /* TODO: doesn't work because this simpleString is not re-evaluated (even if made def)
+     * also will need to handle the possible case where numPartitions can change in future
+    if (numPartitions == 1 && numBuckets > 1) {
+      val partitionStr = dataRDD.partitions(0) match {
+        case z: ZippedPartitionsPartition => z.partitions(1).toString
+        case p => p.toString
+      }
+      s += " prunedPartition = " + partitionStr
+    } else {
+      s += " numPartitions = " + numPartitions
+    }
+    */
+    val rdd = dataRDD match {
+      // column scan will create zip of 2 partitions with second being the column one
+      case z: ZippedPartitionsBaseRDD[_] => z.rdds(1)
+      case r => r
+    }
+    val filters = rdd match {
+      case c: ColumnarStorePartitionedRDD => c.filters
+      case r: RowFormatScanRDD => r.filters
+      case s: SmartConnectorColumnRDD => s.filters
+      case _ => Array.empty[Expression]
+    }
+    if (filters != null && filters.length > 0) filters.mkString(s + " filters = ", ",", "") else s
+  }
 }
 
 private[sql] object PartitionedPhysicalScan {
 
   private[sql] val CT_BLOB_POSITION = 4
+  private val EMPTY_PARAMS = Array.empty[ParamLiteral]
 
   def createFromDataSource(
       output: Seq[Attribute],
@@ -134,7 +161,7 @@ private[sql] object PartitionedPhysicalScan {
       relation: PartitionedDataSourceScan,
       allFilters: Seq[Expression],
       schemaAttributes: Seq[AttributeReference],
-      scanBuilderArgs: => (Seq[AttributeReference], Seq[Filter])): SparkPlan =
+      scanBuilderArgs: => (Seq[AttributeReference], Seq[Expression])): SparkPlan =
     relation match {
       case i: IndexColumnFormatRelation =>
         val caseSensitive = i.sqlContext.conf.caseSensitiveAnalysis
@@ -144,13 +171,13 @@ private[sql] object PartitionedPhysicalScan {
         val table = i.getBaseTableRelation
         val (a, f) = scanBuilderArgs
         val baseTableRDD = table.buildRowBufferRDD(() => Array.empty,
-          a.map(_.name).toArray, f.toArray, useResultSet = false)
+          a.map(_.name).toArray, f.toArray, useResultSet = false, projection = null)
 
         def resolveCol(left: Attribute, right: AttributeReference) =
           columnScan.sqlContext.sessionState.analyzer.resolver(left.name, right.name)
 
         val rowBufferScan = RowTableScan(output, StructType.fromAttributes(
-          output), baseTableRDD, numBuckets, Seq.empty, Seq.empty, table, caseSensitive)
+          output), baseTableRDD, numBuckets, Nil, Nil, table.table, table, caseSensitive)
         val otherPartKeys = partitionColumns.map(_.transform {
           case a: AttributeReference => rowBufferScan.output.find(resolveCol(_, a)).getOrElse {
             throw new AnalysisException(s"RowBuffer output column $a not found in " +
@@ -178,15 +205,14 @@ private[sql] object PartitionedPhysicalScan {
         }
       case r: RowFormatRelation =>
         RowTableScan(output, StructType.fromAttributes(output), rdd, numBuckets,
-          partitionColumns, partitionColumnAliases, relation,
+          partitionColumns, partitionColumnAliases, relation.table, relation,
           r.sqlContext.conf.caseSensitiveAnalysis)
     }
 
-  def getSparkPlanInfo(fullPlan: SparkPlan): SparkPlanInfo = {
+  def getSparkPlanInfo(fullPlan: SparkPlan, paramLiterals: Array[ParamLiteral] = EMPTY_PARAMS,
+      paramsId: Int = -1): SparkPlanInfo = {
     val plan = fullPlan match {
-      case CodegenSparkFallback(CachedPlanHelperExec(child)) => child
-      case CodegenSparkFallback(child) => child
-      case CachedPlanHelperExec(child) => child
+      case CodegenSparkFallback(child, _) => child
       case _ => fullPlan
     }
     val children = plan match {
@@ -197,8 +223,21 @@ private[sql] object PartitionedPhysicalScan {
       new SQLMetricInfo(metric.name.getOrElse(key), metric.id, metric.metricType)
     }
 
-    new SparkPlanInfo(plan.nodeName, plan.simpleString,
-      children.map(getSparkPlanInfo), plan.metadata, metrics)
+    val simpleString = SnappySession.replaceParamLiterals(
+      plan.simpleString, paramLiterals, paramsId)
+    new SparkPlanInfo(plan.nodeName, simpleString,
+      children.map(getSparkPlanInfo(_, paramLiterals, paramsId)), plan.metadata, metrics)
+  }
+
+  private[sql] def updatePlanInfo(planInfo: SparkPlanInfo,
+      paramLiterals: Array[ParamLiteral], paramsId: Int): SparkPlanInfo = {
+    if ((paramLiterals ne null) && paramLiterals.length > 0) {
+      val newString = SnappySession.replaceParamLiterals(planInfo.simpleString,
+        paramLiterals, paramsId)
+      new SparkPlanInfo(planInfo.nodeName, newString,
+        planInfo.children.map(p => updatePlanInfo(p, paramLiterals, paramsId)),
+        planInfo.metadata, planInfo.metrics)
+    } else planInfo
   }
 }
 
@@ -211,20 +250,59 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
 
   override def output: Seq[Attribute] = child.output
 
+  override def nodeName: String = "ExecutePlan"
+
+  override def simpleString: String = "ExecutePlan"
+
+  private def collectRDD(sc: SparkContext, rdd: RDD[InternalRow]): Array[InternalRow] = {
+    // direct RDD collect causes NPE in new Array due to (missing?) ClassTag for some reason
+    val rows = sc.runJob(rdd, (iter: Iterator[InternalRow]) => iter.toArray[InternalRow])
+    Array.concat(rows: _*)
+  }
+
   protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
-    preAction()
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val (queryStringShortForm, queryString, planInfo) = session.currentKey match {
-      case null =>
-        val callSite = sqlContext.sparkContext.getCallSite()
-        (callSite.shortForm, callSite.longForm,
-            PartitionedPhysicalScan.getSparkPlanInfo(child))
-      case key => (CachedDataFrame.queryStringShortForm(key.sqlText), key.sqlText,
-          CachedDataFrame.queryPlanInfo(child, session.getAllLiterals(key)))
+    try {
+      val sc = session.sparkContext
+      val key = session.currentKey
+      val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
+      val (result, shuffleIds) = if (oldExecutionId eq null) {
+        val (queryStringShortForm, queryStr, queryExecStr, planInfo) = if (key eq null) {
+          val callSite = sqlContext.sparkContext.getCallSite()
+          (callSite.shortForm, callSite.longForm, treeString(verbose = true),
+            PartitionedPhysicalScan.getSparkPlanInfo(this))
+        } else {
+          val paramLiterals = key.currentLiterals
+          val paramsId = key.currentParamsId
+          (key.sqlText, key.sqlText, SnappySession.replaceParamLiterals(
+            treeString(verbose = true), paramLiterals, paramsId), PartitionedPhysicalScan
+            .getSparkPlanInfo(this, paramLiterals, paramsId))
+        }
+        CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
+          queryStr, queryExecStr, planInfo) {
+          preAction()
+          val rdd = child.execute()
+          val shuffleIds = SnappySession.findShuffleDependencies(rdd)
+          (collectRDD(sc, rdd), shuffleIds)
+        }._1
+      } else {
+        preAction()
+        val rdd = child.execute()
+        val shuffleIds = SnappySession.findShuffleDependencies(rdd)
+        (collectRDD(sc, rdd), shuffleIds)
+      }
+      if (shuffleIds.nonEmpty) {
+        sc.cleaner match {
+          case Some(c) => shuffleIds.foreach(c.doCleanupShuffle(_, blocking = false))
+          case None =>
+        }
+      }
+      result
     }
-    CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
-      queryString, child.treeString(verbose = true), planInfo) {
-      child.executeCollect()
+    finally {
+      logDebug(s" Unlocking the table in execute of ExecutePlan:" +
+        s" ${child.treeString(false)}")
+      session.clearWriteLockOnTable()
     }
   }
 
@@ -328,10 +406,27 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
   }
 
   override protected def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
-    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
+    WholeStageCodegenExec(this).execute()
   }
 
   override def output: Seq[Attribute] = basePlan.output
+}
+
+/**
+ * Extends Spark's ScalarSubquery to avoid emitting a constant in generated
+ * code rather pass as a reference object using [[TokenLiteral]] to enable
+ * generated code re-use.
+ */
+final class TokenizedScalarSubquery(_plan: SubqueryExec, _exprId: ExprId)
+    extends ScalarSubquery(_plan, _exprId) {
+
+  override def withNewPlan(query: SubqueryExec): ScalarSubquery =
+    new TokenizedScalarSubquery(query, exprId)
+
+  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    val result = CatalystTypeConverters.convertToCatalyst(super.eval(null))
+    new TokenLiteral(result, dataType).doGenCode(ctx, ev)
+  }
 }
 
 class StratumInternalRow(val weight: Long) extends InternalRow {

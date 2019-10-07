@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -60,9 +60,9 @@ class BitSetTest extends SnappyFunSuite {
   private def clear(bitset: Array[Long], index: Int): Unit =
     BitSet.clear(bitset, baseAddress, index)
 
-  private def anySet(bitset: Array[Long], index: Int): Boolean = {
-    BitSet.anySet(bitset, baseAddress + ((index + 7) >> 3), ((bitsetSize << 3) - index) >> 3)
-  }
+  private def anySet(bitset: Array[Long], index: Int): Boolean =
+    BitSet.anySet(bitset, baseAddress + ((index + 7) >> 3),
+      (((bitsetSize << 6) - index) + 63) >> 6)
 
   private def nextSetBit(bitset: Array[Long], index: Int): Int =
     BitSet.nextSetBit(bitset, baseAddress, index, bitsetSize)
@@ -74,7 +74,7 @@ class BitSetTest extends SnappyFunSuite {
     val maxSetBit = 96
     val setBits = Seq(0, 9, 1, 10, 90, maxSetBit)
     val bitset = new Array[Long](4)
-    bitsetSize = 13
+    bitsetSize = 2
 
     for (i <- 0 until 100) {
       assert(!get(bitset, i))
@@ -86,7 +86,7 @@ class BitSetTest extends SnappyFunSuite {
       assert(get(bitset, i) === setBits.contains(i))
     }
     for (i <- 0 until 100) {
-      assert(anySet(bitset, i) === (i <= maxSetBit))
+      assert(anySet(bitset, i) === (i <= maxSetBit), "failed for " + i)
     }
 
     // clear the bits and check after each clear
@@ -115,7 +115,7 @@ class BitSetTest extends SnappyFunSuite {
 
   test("100% full bit set then clear all") {
     val bitset = new Array[Long](200)
-    bitsetSize = 1250
+    bitsetSize = 157
 
     for (i <- 0 until 10000) {
       assert(!get(bitset, i))
@@ -140,7 +140,7 @@ class BitSetTest extends SnappyFunSuite {
   test("nextSetBit") {
     val setBits = Seq(0, 9, 1, 10, 90, 96)
     val bitset = new Array[Long](4)
-    bitsetSize = 13
+    bitsetSize = 2
 
     setBits.foreach(i => set(bitset, i))
 
@@ -159,7 +159,7 @@ class BitSetTest extends SnappyFunSuite {
   test("cardinality") {
     val setBits = Seq(0, 9, 1, 10, 100, 90, 34, 108, 130, 127, 128, 96, 123, 180, 191)
     val bitset = new Array[Long](3)
-    bitsetSize = 16
+    bitsetSize = 2
 
     setBits.foreach(set(bitset, _))
 

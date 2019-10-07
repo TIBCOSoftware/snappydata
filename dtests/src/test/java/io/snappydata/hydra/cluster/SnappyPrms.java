@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,6 +16,8 @@
  */
 package io.snappydata.hydra.cluster;
 
+import org.apache.commons.lang.StringUtils;
+
 import java.util.Vector;
 
 import hydra.BasePrms;
@@ -30,6 +32,12 @@ public class SnappyPrms extends BasePrms {
   public static Long sqlScriptNames;
 
   /**
+   * Parameter used to get the user specified script names.
+   * (VectosetValues of Strings) A list of values for script Names to execute.
+   */
+  public static Long scriptNames;
+
+  /**
    * Parameter used to get the user specified data location List for the sql scripts.
    * (VectorsetValues of Strings) A list of values for dataLocation to be replaced in the
    * sql scripts.
@@ -40,6 +48,18 @@ public class SnappyPrms extends BasePrms {
    * Framework will treat its corresponding parameter as " " string in this case.
    */
   public static Long dataLocation;
+
+
+  /**
+   * Parameter used to get the user specified script argument List for the scripts.
+   * (VectorsetValues of Strings) A list of values for scriptArgs for the scripts to be executed in test.
+   * If no arguments are required for script then expected value to be provided for param is :
+   * Empty String : " " in case if user don't want to maintain the sequence.
+   * Or else provide the script that does not require path at the end in list of
+   * scriptNames parameter.
+   * Framework will treat its corresponding parameter as " " string in this case.
+   */
+  public static Long scriptArgs;
 
   /**
    * Parameter used to get the user specified persistence mode List for the sql scripts.
@@ -213,9 +233,36 @@ public class SnappyPrms extends BasePrms {
   public static Long tableDefaultPartitioned;
 
   /**
+   * (boolean) - whether to enable/disable PERSIST-INDEXES. Product default value will be used in
+   * case not provided.
+   */
+  public static Long persistIndexes;
+
+  /**
    * (boolean) - whether test is long running.
    */
   public static Long isLongRunningTest;
+
+  /**
+   * (boolean) - whether test is started using user specified confs for serevrs, leads, locators and workers members
+   * in case of embedded/smart connector mode cluster test.
+   */
+  public static Long isUserConfTest;
+
+  /**
+   * (boolean) - whether to run the CPP script in hydra.
+   */
+  public static Long isCppTest;
+
+  /**
+   * (boolean) - whether TPCH schema is used in test for running the queries concurrently.
+   */
+  public static Long isTPCHSchema;
+
+  /**
+   * (boolean) - whether mix of schemas to be used in test for running the queries concurrently.
+   */
+  public static Long isStabilityTest;
 
   /**
    * (boolean) - whether to enable time statistics. snappy hydra already sets the
@@ -294,9 +341,38 @@ public class SnappyPrms extends BasePrms {
   public static Long sleepTimeSecsForJobStatus;
 
   /**
+   * (int) how long (seconds) it should wait before restarting the VM
+   */
+  public static Long sleepTimeSecsBeforeRestart;
+
+  /**
+   * (boolean) should the process execute in background
+   */
+
+  public static Long executeInBackground;
+
+  /**
+   * (boolean) whether to test conflation.
+   */
+
+  public static Long isConflationTest;
+
+  /**
    * (int) how long (seconds) it should wait before retrieving server status
    */
   public static Long sleepTimeSecsForMemberStatus;
+
+  /**
+   * (int) number of threads required for concurrent execution of queries/tasks.
+   */
+  public static Long numThreadsForConcExecution;
+
+  /**
+   * (int) warmUp time in secs for concurrenct queries execution.
+   * Number of seconds the queries should be executed before recording the execution time for calculating
+   * the latency and throughput stats in concurrency tests.
+   */
+  public static Long warmUpTimeSec;
 
   /**
    * (int) Number of times the test should retry submitting failed job in case of lead node failover.
@@ -320,6 +396,13 @@ public class SnappyPrms extends BasePrms {
   public static Long appPropsForJobServer;
 
   /**
+   * Parameter used to get the user list of queries to execute concurrently using
+   * jdbc clients.
+   * (VectorsetValues of Strings) A list of values queries.
+   */
+  public static Long queryList;
+
+  /**
    * Parameter used to get the user list of pointLookUP queries to execute concurrently using
    * jdbc clients.
    * (VectorsetValues of Strings) A list of values for pointLookUp queries.
@@ -333,6 +416,41 @@ public class SnappyPrms extends BasePrms {
    */
   public static Long analyticalQueryList;
 
+  /**
+   * Parameter used to get the user list of locators host:port to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
+   * (VectorsetValues of Strings) A comma-seperated list of values for locators host:port.
+   */
+  public static Long locatorList;
+
+  /**
+   * Parameter used to get the host name for the primary locator to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
+   */
+  public static Long primaryLocatorHost;
+
+  /**
+   * Parameter used to get the port number for the primary locator to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
+   */
+  public static Long primaryLocatorPort;
+
+  /**
+   * Parameter used to get the host name for the primary leader to be started in the test.
+   */
+  public static Long leadHost;
+
+  /**
+   * Parameter used to get the host name for the spark master to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
+   */
+  public static Long sparkMasterHost;
+
+  /**
+   * Parameter used to get the port number for the primary leader to be started in the test.
+   * Parameter to be used only in case of test with user specified confs.
+   */
+  public static Long leadPort;
 
   /**
    * Parameter used to get the leaderLauncher properties specified by user while launching
@@ -383,18 +501,6 @@ public class SnappyPrms extends BasePrms {
   public static Long serverMemory;
 
   /**
-   * (String) criticalHeapPercentage to be used while starting the Server process. Defaults to 90%
-   * if not provided.
-   */
-  public static Long criticalHeapPercentage;
-
-  /**
-   * (String) evictionHeapPercentage to be used while starting the Server process. Defaults to 90%
-   * of critical-heap-percentage if not provided.
-   */
-  public static Long evictionHeapPercentage;
-
-  /**
    * (String) Memory to be used while starting the Lead process. Defaults to 1GB if not provided.
    */
   public static Long leadMemory;
@@ -427,6 +533,12 @@ public class SnappyPrms extends BasePrms {
   public static Long conserveSockets;
 
   /**
+   * (boolean) - whether to use same data repetatively for performing insert ops. Defaults to
+   * false in case not provided.
+   */
+  public static Long insertDuplicateData;
+
+  /**
    * (int) number of BootStrap trials to be used in test.
    */
   public static Long numBootStrapTrials;
@@ -440,6 +552,11 @@ public class SnappyPrms extends BasePrms {
    * (String) path for kafka directory
    */
   public static Long kafkaDir;
+
+  /**
+   * (String) path for kafka log directory
+   */
+  public static Long kafkaLogDir;
 
   /**
    * (String) snappy-poc jar path
@@ -469,6 +586,16 @@ public class SnappyPrms extends BasePrms {
   public static Long hasDynamicAppProps;
 
   /**
+   * (Boolean) parameter to pass connectionURL in APP_PROPS required for JDBC connection in snappy job.
+   */
+  public static Long useJDBCConnInSnappyJob;
+
+  /**
+   * (Boolean) parameter to pass maxResultWaitSec in APP_PROPS required for long running job termination.
+   */
+  public static Long isLongRunningJob;
+
+  /**
    * (Boolean) parameter to enable security for snappyJob,by default it is false.
    */
   public static Long isSecurity;
@@ -477,6 +604,113 @@ public class SnappyPrms extends BasePrms {
    * (String) User credentials that will be used when submittimg a snappyJob to a secure cluster
    */
   public static Long credentialFile;
+
+  /**
+   * Parameter used to get the user specified table List required for table creation/validation.
+   * (VectorsetValues of Strings) A list of values for table List
+   */
+  public static Long tableList;
+
+  /**
+   * Parameter used to get the user specified table type List required for table(row/column) creation.
+   * (VectorsetValues of Strings) A list of values for table type
+   */
+  public static Long tableType;
+
+  /**
+   * Parameter used to get the user specified external table List required for table creation using parquet file format.
+   * (VectorsetValues of Strings) A list of values for external table List for parquet data format.
+   */
+  public static Long parquetExternalTableList;
+
+  /**
+   * Parameter used to get the user specified external table List required for table creation using CSV file format.
+   * (VectorsetValues of Strings) A list of values for external table List for CSV data format
+   */
+  public static Long csvExternalTableList;
+
+  /**
+   * Parameter used to get the user specified external table List required for inserting data into existing column tables.
+   * (VectorsetValues of Strings) A list of values for external table List for insert into operation.
+   */
+  public static Long externalTableListForInsert;
+
+  /**
+   * Parameter used to get the user specified table List required for loading data from extrenal table into column table.
+   * (VectorsetValues of Strings) A list of values for table List
+   */
+  public static Long insertTableList;
+
+  /**
+   * Parameter used to get the user specified table List of data path required for loading data into extrenal parquet table.
+   * (VectorsetValues of Strings) A list of values for data path List for extrenal parquet table.
+   */
+  public static Long dataPathListForParquet;
+
+  /**
+   * Parameter used to get the user specified table List of data path required for loading data into extrenal CSV table.
+   * (VectorsetValues of Strings) A list of values for data path List for extrenal CSV table.
+   */
+  public static Long dataPathListForCSV;
+
+  /**
+   * options parameters to be used while creating a column table. Defaults to empty if not provided.
+   * (VectorsetValues of Strings) A list of values for data path List for extrenal CSV table.
+   */
+  public static Long tableOptions;
+
+  /**
+   * Parameter used to get the user specified hostName List required for recording the PIDs with hydra Master
+   * while starting the cluster with user specified confs.
+   * (VectorsetValues of Strings) A list of values for hostName List
+   */
+  public static Long hostNames;
+
+  /**
+   * Parameter used to get the user specified index List required for validation.
+   * (VectorsetValues of Strings) A list of values for index List
+   */
+  public static Long indexList;
+
+  /**
+   * Parameter used to get the user specified List of connetcion properties and set them on the
+   * jdbc connection.
+   * (VectorsetValues of Strings) A list of values for connetcion properties list
+   */
+  public static Long connPropsList;
+
+  /**
+   * Parameter used to get the location for the user specified confs for starting SnappyData members.
+   * An exception will be thrown in case not provided.
+   */
+  public static Long userConfLocation;
+
+  /**
+   * Parameter used to get the number of Rows in each table provided in table List. This is
+   * required for validating recovery after cluster restart.
+   * (VectorsetValues of Strings) A list of values for number of rows in each table in table list
+   */
+  public static Long numRowsList;
+
+  /**
+   * (int)Number of stack dumps to be taken for each thread of locators, servers, leads
+   */
+  public static Long numOfStackDumpItr;
+
+  public static int getNumOfStackDumpItrs(){
+    Long key = numOfStackDumpItr;
+    return tasktab().intAt(key, tab().intAt(key, 3));
+  }
+
+  /**
+   * (int)Sleep time in secs between 2 thread dumps.
+   */
+  public static Long sleepBtwnStackDump;
+
+  public static int getSleepBtwnStackDumps(){
+    Long key = sleepBtwnStackDump;
+    return tasktab().intAt(key, tab().intAt(key, 5));
+  }
 
   public static String getCredentialFile() {
     Long key = credentialFile;
@@ -494,14 +728,24 @@ public class SnappyPrms extends BasePrms {
     return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
+  public static int getSleepTimeSecsBeforRestart() {
+    Long key = sleepTimeSecsBeforeRestart;
+    return tasktab().intAt(key, tab().intAt(key, 180));
+  }
+
+  public static boolean executeInBackGround() {
+    Long key = executeInBackground;
+    return tasktab().booleanAt(key, tab().booleanAt(key, true));
+  }
+
   public static int getSleepTimeSecsForJobStatus() {
     Long key = sleepTimeSecsForJobStatus;
-    return tasktab().intAt(key, tab().intAt(key, 120));
+    return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
   public static int getSleepTimeSecsForMemberStatus() {
     Long key = sleepTimeSecsForMemberStatus;
-    return tasktab().intAt(key, tab().intAt(key, 30));
+    return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
   public static String getExecutorCores() {
@@ -536,25 +780,6 @@ public class SnappyPrms extends BasePrms {
     if (serverHeapSize == null) return "";
     serverHeapSize = " -heap-size=" + serverHeapSize;
     return serverHeapSize;
-  }
-
-  public static String getCriticalHeapPercentage() {
-    String criticalHeapPercentageString = " -critical-heap-percentage=" + tab().stringAt
-        (criticalHeapPercentage, "90");
-    return criticalHeapPercentageString;
-  }
-
-  public static String calculateDefaultEvictionPercentage() {
-    int criticalHeapPercent = Integer.parseInt(tab().stringAt(criticalHeapPercentage, "90"));
-    int evictionHeapPercent = (criticalHeapPercent * 90) / 100;
-    String evictionHeapPercentString = String.valueOf(evictionHeapPercent);
-    return evictionHeapPercentString;
-  }
-
-  public static String getEvictionHeapPercentage() {
-    String evictionHeapPercentageString = " -eviction-heap-percentage=" + tab().stringAt
-        (evictionHeapPercentage, calculateDefaultEvictionPercentage());
-    return evictionHeapPercentageString;
   }
 
   public static String getLeadMemory() {
@@ -604,14 +829,25 @@ public class SnappyPrms extends BasePrms {
     return conserveSockets;
   }
 
+  public static boolean insertDuplicateData() {
+    Long key = insertDuplicateData;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+
   public static int getShufflePartitions() {
     Long key = shufflePartitions;
-    return tasktab().intAt(key, tab().intAt(key, 1));
+    return tasktab().intAt(key, tab().intAt(key, 200));
   }
 
   public static String getCommaSepAPPProps() {
     Long key = appPropsForJobServer;
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
+  public static Vector getQueryList() {
+    Long key = queryList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
   public static Vector getPointLookUpQueryList() {
@@ -624,28 +860,61 @@ public class SnappyPrms extends BasePrms {
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
+  public static String getLocatorList() {
+    Long key = locatorList;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "localhost:1527"));
+  }
+
+  public static String getPrimaryLocatorHost() {
+    Long key = primaryLocatorHost;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "localhost"));
+  }
+
+  public static String getPrimaryLocatorPort() {
+    Long key = primaryLocatorPort;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "1527"));
+  }
+
+  public static String getLeadHost() {
+    Long key = leadHost;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "localhost"));
+  }
+
+  public static String getLeadPort() {
+    Long key = leadPort;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "8090"));
+  }
+
+  public static String getMasterHost() {
+    Long key = sparkMasterHost;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
   public static String getLeaderLauncherProps() {
     Long key = leaderLauncherProps;
-    String leaderLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+    Vector<String> leaderLauncherPropList = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key,
         null));
-    if (leaderLauncherPropList == null) return "";
-    else return leaderLauncherPropList;
+    if (leaderLauncherPropList != null && !leaderLauncherPropList.isEmpty())
+      return StringUtils.join(leaderLauncherPropList, " ");
+    else return "";
   }
 
   public static String getServerLauncherProps() {
     Long key = serverLauncherProps;
-    String serverLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+    Vector<String> serverLauncherPropList = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key,
         null));
-    if (serverLauncherPropList == null) return "";
-    else return serverLauncherPropList;
+    if (serverLauncherPropList != null && !serverLauncherPropList.isEmpty())
+      return StringUtils.join(serverLauncherPropList, " ");
+    else return "";
   }
 
   public static String getLocatorLauncherProps() {
     Long key = locatorLauncherProps;
-    String locatorLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+    Vector<String> locatorLauncherPropList = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key,
         null));
-    if (locatorLauncherPropList == null) return "";
-    else return locatorLauncherPropList;
+    if (locatorLauncherPropList != null && !locatorLauncherPropList.isEmpty())
+      return StringUtils.join(locatorLauncherPropList, " ");
+    else return "";
   }
 
   public static String getSparkSubmitExtraPrms() {
@@ -658,8 +927,14 @@ public class SnappyPrms extends BasePrms {
 
   public static boolean getTableDefaultDataPolicy() {
     Long key = tableDefaultPartitioned;
-
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static String getPersistIndexes() {
+    Long key = persistIndexes;
+    boolean persistIndexesFlag = tasktab().booleanAt(key, tab().booleanAt(key, true));
+    String persistIndexes = " -J-Dgemfirexd.persist-indexes=" + persistIndexesFlag;
+    return persistIndexes;
   }
 
   public static String getTimeStatistics() {
@@ -719,8 +994,18 @@ public class SnappyPrms extends BasePrms {
     return snappyLogLevel;
   }
 
+  public static String getLogFileName() {
+    Long key = logFileName;
+    return tasktab().stringAt(key, null);
+  }
+
   public static Vector getSQLScriptNames() {
     Long key = sqlScriptNames;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+  }
+
+  public static Vector getScriptNames() {
+    Long key = scriptNames;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
 
@@ -747,6 +1032,16 @@ public class SnappyPrms extends BasePrms {
   public static Vector getDataLocationList() {
     Long key = dataLocation;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getScriptArgs() {
+    Long key = scriptArgs;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static String getUserConfLocation() {
+    Long key = userConfLocation;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
   }
 
   public static Vector getPersistenceModeList() {
@@ -819,14 +1114,89 @@ public class SnappyPrms extends BasePrms {
     return executorMem;
   }
 
-  public static boolean hasDynamicAppProps(){
+  public static boolean hasDynamicAppProps() {
     Long key = hasDynamicAppProps;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean useJDBCConnInSnappyJob() {
+    Long key = useJDBCConnInSnappyJob;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean isLongRunningJob() {
+    Long key = isLongRunningJob;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
   public static Vector getKafkaTopic() {
     Long key = kafkaTopic;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+  }
+
+  public static Vector getTableList() {
+    Long key = tableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getTableTypeList() {
+    Long key = tableType;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getParquetExternalTableList() {
+    Long key = parquetExternalTableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getCSVExternalTableList() {
+    Long key = csvExternalTableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getExternalTableListForInsert() {
+    Long key = externalTableListForInsert;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getInsertTableList() {
+    Long key = insertTableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getDataPathListForParquet() {
+    Long key = dataPathListForParquet;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getDataPathListForCSV() {
+    Long key = dataPathListForCSV;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getTableOptions() {
+    Long key = tableOptions;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getHostNameList() {
+    Long key = hostNames;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getNumRowsList() {
+    Long key = numRowsList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getIndexList() {
+    Long key = indexList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getConnPropsList() {
+    Long key = connPropsList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
   static {

@@ -1,0 +1,10 @@
+org.apache.spark.sql.execution.columnar.impl.DefaultSource
+org.apache.spark.sql.execution.row.DefaultSource
+org.apache.spark.sql.streaming.SnappyStoreSinkProvider
+org.apache.spark.sql.streaming.SocketStreamSource
+org.apache.spark.sql.streaming.FileStreamSource
+org.apache.spark.sql.streaming.DirectKafkaStreamSource
+org.apache.spark.sql.streaming.TwitterStreamSource
+org.apache.spark.sql.streaming.RawSocketStreamSource
+org.apache.spark.sql.streaming.TextSocketStreamSource
+org.apache.spark.sql.streaming.RabbitMQStreamSource

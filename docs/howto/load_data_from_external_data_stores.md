@@ -5,16 +5,15 @@ SnappyData comes bundled with the libraries to access HDFS (Apache compatible). 
 
 ## Example - Loading data from CSV file using SQL
 
-```scala
--- Create an external table based on CSV file
+```pre
+// Create an external table based on CSV file
 CREATE EXTERNAL TABLE CUSTOMER_STAGING_1 USING csv OPTIONS (path '../../quickstart/src/main/resources/customer_with_headers.csv', header 'true', inferSchema 'true');
 
--- create a snappydata table and load data into CUSTOMER table
+// Create a SnappyData table and load data into CUSTOMER table
 CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_1);
-
 ```
 
-!!!Tip:
+!!! Tip
 	Similarly, you can create an external table for all data sources and use SQL "insert into" query to load data. For more information on creating external tables refer to, [CREATE EXTERNAL TABLE](../reference/sql_reference/create-external-table/)
 
 
@@ -22,24 +21,24 @@ CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_
 
 The example below demonstrates how you can read CSV files from HDFS using an API:
 
-```scala
-val dataDF=snc.read.option("header","true").csv ("../../quickstart/src/main/resources/customer_with_headers.csv'")
+```pre
+val dataDF=snc.read.option("header","true").csv ("hdfs://namenode-uri:port/path/to/customer_with_headers.csv")
 
-// drop table if exist
+// Drop table if it exists
 snc.sql("drop table if exists CUSTOMER")
 
 // Load data into table
-dataDF.write.saveAsTable("CUSTOMER")
+dataDF.write.format("column").saveAsTable("CUSTOMER")
 ```
 
 ## Example - Loading and Enriching CSV Data from HDFS 
 
 The example below demonstrates how you can load and enrich CSV Data from HDFS:
-```scala
+```pre
 val dataDF = snappy.read.option("header", "true")
-    .csv("../examples/src/main/resources/customer_with_headers.csv")
+    .csv("hdfs://namenode-uri:port/path/to/customers.csv")
 
-// drop table if exist and create it with only required fields
+// Drop table if it exists and create it with only required fields
 snappy.sql("drop table if exists CUSTOMER")
 snappy.sql("create table CUSTOMER(C_CUSTKEY INTEGER NOT NULL" +
     ", C_NAME VARCHAR(25) NOT NULL," +
@@ -66,7 +65,7 @@ dataDF.select($"C_CUSTKEY",
 As SnappyData manages the catalog at all times and it is not possible to configure an external Hive catalog service like in Spark when using a SnappySession. But, it is still possible to access Hive using the native SparkSession (with **enableHiveSupport** set to **true**). 
 Here is an example using the SparkSession(spark object below) to access a Hive table as a DataFrame, then converted to an RDD so it can be passed to a SnappySession to store it in a SnappyData Table. 
 
-```scala
+```pre
 val ds = spark.table("hiveTable")
 val rdd = ds.rdd
 val session = new SnappySession(sparkContext)
@@ -76,7 +75,7 @@ df.write.format("column").saveAsTable("columnTable")
 
 ## Importing Data using JDBC from a relational DB
 
-!!! Note:
+!!! Note
 	Before you begin, you must install the corresponding JDBC driver. To do so, copy the JDBC driver jar file in **/jars** directory located in the home directory and then restart the cluster.
 
 <!--**TODO: This is a problem- restart the cluster ? Must confirm package installation or at least get install_jar tested for this case. -- Jags**
@@ -122,9 +121,11 @@ The example below demonstrates how to connect to any SQL database using JDBC:
 ** Using SQL to access external RDB tables **
 You can also use plain SQL to access any external RDB using external tables. Create external table on RDBMS table and query it directly from SnappyData as described below:
 
-        snc.sql("drop table if exists external_table")
-        snc.sql(s"CREATE  external TABLE external_table USING jdbc OPTIONS (dbtable 'tweet', driver 'com.mysql.jdbc.Driver',  user 'root',  password 'root',  url '$jdbcUrl')")
-        snc.sql("select * from external_table").show
+```pre     
+snc.sql("drop table if exists external_table")
+snc.sql(s"CREATE  external TABLE external_table USING jdbc OPTIONS (dbtable 'tweet', driver 'com.mysql.jdbc.Driver',  user 'root',  password 'root',  url '$jdbcUrl')")
+snc.sql("select * from external_table").show
+```
 
 Refer to the [Spark SQL JDBC source access for how to parallelize access when dealing with large data sets](https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#jdbc-to-other-databases).
 
@@ -133,14 +134,13 @@ Refer to the [Spark SQL JDBC source access for how to parallelize access when de
 
 The example below demonstrates how you can load data from a NoSQL store:
 
-!!!Note:
+!!! Note
 	Before you begin, you must install the corresponding Spark-Cassandra connector jar. To do so, copy the Spark-Cassandra connector jar file to the **/jars** directory located in the home directory and then restart the cluster.
 
 <!--**TODO** This isn't a single JAR from what I know. The above step needs testing and clarity. -- Jags
 -->
 
-```scala
-
+```pre
 val df = snc.read.format("org.apache.spark.sql.cassandra").options(Map( "table" -> "CUSTOMER", "keyspace" -> "test")) .load
 df.write.format("column").mode(SaveMode.Append).saveAsTable("CUSTOMER")
 snc.sql("select * from CUSTOMER").show

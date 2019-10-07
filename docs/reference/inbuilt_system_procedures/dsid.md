@@ -2,7 +2,7 @@
 
 The DSID function returns the string form of the distributed member process identity uniquely represented in the distributed system.
 
-!!! Note:
+!!! Note
 
 	* This function is not supported in the Smart Connector mode. It is only supported for embedded mode, JDBC and ODBC.
 
@@ -10,8 +10,8 @@ The DSID function returns the string form of the distributed member process iden
 
 ## Example
 
-```	
-select count(*), dsid() from AIRLINE group by dsid();
+``` pre
+snappy>select count(*), dsid() from AIRLINE group by dsid();
 
 count(1)            |DSID()                      
 -------------------------------------------------
@@ -20,9 +20,10 @@ count(1)            |DSID()
 303811              |192.168.1.98(3255)<v1>:2428 
 
 3 rows selected
-snappy> 
 ```
+**Also see:**
 
+*	[Built-in System Procedures and Built-in Functions](system-procedures.md)
 
 
 

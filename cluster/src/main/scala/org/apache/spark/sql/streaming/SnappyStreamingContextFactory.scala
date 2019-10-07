@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,10 +17,11 @@
 package org.apache.spark.sql.streaming
 
 import com.typesafe.config.{Config, ConfigException}
+import io.snappydata.ServiceManager
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobValidation}
-import org.apache.spark.SparkConf
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{SnappyJobValidate, SnappyJobValidation, SnappySessionFactory}
 import org.apache.spark.streaming.{JavaSnappyStreamingJob, Milliseconds, SnappyStreamingContext}
 import org.apache.spark.util.SnappyUtils
@@ -51,7 +52,7 @@ abstract class SnappyStreamingJob extends SparkJobBase {
 
   def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation
 
-  def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any;
+  def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any
 
 }
 
@@ -62,7 +63,7 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
   override def makeContext(sparkConf: SparkConf, config: Config, contextName: String): C = {
     val interval = config.getInt("streaming.batch_interval")
 
-    new SnappyStreamingContext(LeadImpl.getInitializingSparkContext,
+    new SnappyStreamingContext(SparkContext.getActive.get,
       Milliseconds(interval)) with ContextLike {
 
       override def isValidJob(job: SparkJobBase): Boolean =
@@ -71,9 +72,11 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
       override def stop(): Unit = {
         try {
           val stopGracefully = config.getBoolean("streaming.stopGracefully")
-          stop(stopSparkContext = false, stopGracefully = stopGracefully)
+          SnappyStreamingContext.getActive
+              .foreach(c => c.stop(stopSparkContext = false, stopGracefully = stopGracefully))
         } catch {
-          case _: ConfigException.Missing => stop(stopSparkContext = false, stopGracefully = true)
+          case _: ConfigException.Missing => SnappyStreamingContext.getActive
+              .foreach(c => c.stop(stopSparkContext = false, stopGracefully = true))
         } finally {
           SnappyUtils.clearSessionDependencies(sparkContext)
         }
@@ -83,7 +86,15 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
       // If Job class directly refers to any jars which has been provided
       // by install_jars, this can help.
       override def makeClassLoader(parent: ContextURLClassLoader): ContextURLClassLoader = {
-        SnappyUtils.getSnappyContextURLClassLoader(parent)
+        val cl = SnappyUtils.getSnappyContextURLClassLoader(parent)
+        val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+        val loader = lead.urlclassloader
+        if (loader != null) {
+          loader.getURLs.foreach(u => {
+            cl.addURL(u)
+          })
+        }
+        cl
       }
     }
   }

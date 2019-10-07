@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -46,7 +46,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{SharedUtils, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.encoding._
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
@@ -55,9 +55,7 @@ import org.apache.spark.sql.execution.row.{ResultSetDecoder, ResultSetTraversal,
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.Platform
-import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{Dependency, Partition, RangeDependency, SparkContext, TaskContext}
+import org.apache.spark.{Dependency, Logging, Partition, RangeDependency, SparkContext, TaskContext}
 
 /**
  * Physical plan node for scanning data from a SnappyData column table RDD.
@@ -83,7 +81,16 @@ private[sql] final case class ColumnTableScan(
       partitionColumns, partitionColumnAliases,
       baseRelation.asInstanceOf[BaseRelation]) with CodegenSupport {
 
-  override val nodeName: String = "ColumnTableScan"
+  override val nodeName: String = {
+    if (baseRelation != null && baseRelation.getClass.getName.contains("Sampl")) "SampleTableScan"
+    else "ColumnTableScan"
+  }
+
+  override def sameResult(plan: SparkPlan): Boolean = plan match {
+    case r: ColumnTableScan => r.baseRelation.table == baseRelation.table &&
+        r.numBuckets == numBuckets && r.schema == schema
+    case _ => false
+  }
 
   @transient private val MAX_SCHEMA_LENGTH = 40
 
@@ -121,145 +128,6 @@ private[sql] final case class ColumnTableScan(
 
   override def metricTerm(ctx: CodegenContext, name: String): String =
     if (sqlContext eq null) null else super.metricTerm(ctx, name)
-
-  private def generateStatPredicate(ctx: CodegenContext,
-      numRowsTerm: String): String = {
-
-    val numBatchRows = NumBatchRows(numRowsTerm)
-    val (columnBatchStatsMap, columnBatchStats) = relation match {
-      case _: BaseColumnFormatRelation =>
-        val allStats = schemaAttributes.map(a => a ->
-            ColumnStatsSchema(a.name, a.dataType))
-        (AttributeMap(allStats),
-            ColumnStatsSchema.COUNT_ATTRIBUTE +: allStats.flatMap(_._2.schema))
-      case _ => (null, Nil)
-    }
-
-    def statsFor(a: Attribute) = columnBatchStatsMap(a)
-
-    // Returned filter predicate should return false iff it is impossible
-    // for the input expression to evaluate to `true' based on statistics
-    // collected about this partition batch.
-    // This code is picked up from InMemoryTableScanExec
-    @transient def buildFilter: PartialFunction[Expression, Expression] = {
-      case And(lhs: Expression, rhs: Expression)
-        if buildFilter.isDefinedAt(lhs) || buildFilter.isDefinedAt(rhs) =>
-        (buildFilter.lift(lhs) ++ buildFilter.lift(rhs)).reduce(_ && _)
-
-      case Or(lhs: Expression, rhs: Expression)
-        if buildFilter.isDefinedAt(lhs) && buildFilter.isDefinedAt(rhs) =>
-        buildFilter(lhs) || buildFilter(rhs)
-
-      case EqualTo(a: AttributeReference, l: DynamicReplacableConstant) =>
-        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-      case EqualTo(l: DynamicReplacableConstant, a: AttributeReference) =>
-        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
-
-      case LessThan(a: AttributeReference, l: Literal) => statsFor(a).lowerBound < l
-      case LessThan(l: Literal, a: AttributeReference) => l < statsFor(a).upperBound
-
-      case LessThanOrEqual(a: AttributeReference, l: Literal) => statsFor(a).lowerBound <= l
-      case LessThanOrEqual(l: Literal, a: AttributeReference) => l <= statsFor(a).upperBound
-
-      case GreaterThan(a: AttributeReference, l: Literal) => l < statsFor(a).upperBound
-      case GreaterThan(l: Literal, a: AttributeReference) => statsFor(a).lowerBound < l
-
-      case GreaterThanOrEqual(a: AttributeReference, l: Literal) => l <= statsFor(a).upperBound
-      case GreaterThanOrEqual(l: Literal, a: AttributeReference) => statsFor(a).lowerBound <= l
-
-      case StartsWith(a: AttributeReference, l: Literal) =>
-        // upper bound for column (i.e. LessThan) can be found by going to
-        // next value of the last character of literal
-        val s = l.value.asInstanceOf[UTF8String]
-        val len = s.numBytes()
-        val upper = new Array[Byte](len)
-        s.writeToMemory(upper, Platform.BYTE_ARRAY_OFFSET)
-        var lastCharPos = len - 1
-        // check for maximum unsigned value 0xff
-        val max = 0xff.toByte // -1
-        while (lastCharPos >= 0 && upper(lastCharPos) == max) {
-          lastCharPos -= 1
-        }
-        val stats = statsFor(a)
-        if (lastCharPos < 0) { // all bytes are 0xff
-          // a >= startsWithPREFIX
-          l <= stats.upperBound
-        } else {
-          upper(lastCharPos) = (upper(lastCharPos) + 1).toByte
-          val upperLiteral = Literal(UTF8String.fromAddress(upper,
-            Platform.BYTE_ARRAY_OFFSET, len), StringType)
-
-          // a >= startsWithPREFIX && a < startsWithPREFIX+1
-          l <= stats.upperBound && stats.lowerBound < upperLiteral
-        }
-
-      case IsNull(a: Attribute) => statsFor(a).nullCount > 0
-      case IsNotNull(a: Attribute) => numBatchRows > statsFor(a).nullCount
-    }
-
-    // This code is picked up from InMemoryTableScanExec
-    val columnBatchStatFilters: Seq[Expression] = {
-      if (relation.isInstanceOf[BaseColumnFormatRelation]) {
-        // first group the filters by the expression types (keeping the original operator order)
-        // and then order each group on underlying reference names to give a consistent
-        // ordering (else two different runs can generate different code)
-        val orderedFilters = new ArrayBuffer[(Class[_], ArrayBuffer[Expression])](2)
-        allFilters.foreach { f =>
-          orderedFilters.collectFirst {
-            case p if p._1 == f.getClass => p._2
-          }.getOrElse {
-            val newBuffer = new ArrayBuffer[Expression](2)
-            orderedFilters += f.getClass -> newBuffer
-            newBuffer
-          } += f
-        }
-        orderedFilters.flatMap(_._2.sortBy(_.references.map(_.name).toSeq
-            .sorted.mkString(","))).flatMap { p =>
-          val filter = buildFilter.lift(p)
-          val boundFilter = filter.map(BindReferences.bindReference(
-            _, columnBatchStats, allowFailures = true))
-
-          boundFilter.foreach(_ =>
-            filter.foreach(f =>
-              logDebug(s"Predicate $p generates partition filter: $f")))
-
-          // If the filter can't be resolved then we are missing required statistics.
-          boundFilter.filter(_.resolved)
-        }
-      } else {
-        Seq.empty[Expression]
-      }
-    }
-
-    val predicate = ExpressionCanonicalizer.execute(
-      BindReferences.bindReference(columnBatchStatFilters
-          .reduceOption(And).getOrElse(Literal(true)), columnBatchStats))
-    val statsRow = ctx.freshName("statsRow")
-    ctx.INPUT_ROW = statsRow
-    ctx.currentVars = null
-    val predicateEval = predicate.genCode(ctx)
-
-    val columnBatchesSkipped = metricTerm(ctx, "columnBatchesSkipped")
-    // skip filtering if nothing is to be applied
-    if (predicateEval.value == "true" && predicateEval.isNull == "false") {
-      return ""
-    }
-    val filterFunction = ctx.freshName("columnBatchFilter")
-    ctx.addNewFunction(filterFunction,
-      s"""
-         |private boolean $filterFunction(UnsafeRow $statsRow) {
-         |  // Skip the column batches based on the predicate
-         |  ${predicateEval.code}
-         |  if (!${predicateEval.isNull} && ${predicateEval.value}) {
-         |    return true;
-         |  } else {
-         |    $columnBatchesSkipped.${metricAdd("1")};
-         |    return false;
-         |  }
-         |}
-       """.stripMargin)
-    filterFunction
-  }
 
   private val allRDDs = if (otherRDDs.isEmpty) rdd
   else new UnionScanRDD(rdd.sparkContext, (Seq(rdd) ++ otherRDDs)
@@ -347,8 +215,8 @@ private[sql] final case class ColumnTableScan(
     // (or an extension of it if some special treatment is required)?
     val wrappedRow = if (isForSampleReservoirAsRegion) ctx.freshName("wrappedRow")
     else null
-    val (weightVarName, weightAssignCode) = if (output.exists(_.name ==
-        Utils.WEIGHTAGE_COLUMN_NAME)) {
+    val (weightVarName, weightAssignCode) = if (output.exists(_.name.equalsIgnoreCase(
+        Utils.WEIGHTAGE_COLUMN_NAME))) {
       val varName = ctx.freshName("weightage")
       ctx.addMutableState("long", varName, s"$varName = 0;")
       (varName, s"$varName = $wrappedRow.weight();")
@@ -399,6 +267,8 @@ private[sql] final case class ColumnTableScan(
     val deletedDecoderClass = classOf[ColumnDeleteDecoder].getName
     val batch = ctx.freshName("batch")
     val numBatchRows = s"${batch}NumRows"
+    val numFullRows = s"${batch}NumFullRows"
+    val numDeltaRows = s"${batch}NumDeltaRows"
     val batchIndex = s"${batch}Index"
     val buffers = s"${batch}Buffers"
     val numRows = ctx.freshName("numRows")
@@ -422,7 +292,7 @@ private[sql] final case class ColumnTableScan(
       classOf[StructType].getName)
     val columnBufferInit = new StringBuilder
     val bufferInitCode = new StringBuilder
-    val numNullsUpdateCode = new StringBuilder
+    val closeDecoders = new StringBuilder
     val reservoirRowFetch =
       s"""
          |$stratumRowClass $wrappedRow = ($stratumRowClass)$rowInputSRR.next();
@@ -481,10 +351,10 @@ private[sql] final case class ColumnTableScan(
       val updatedDecoder = s"${decoder}Updated"
       val updatedDecoderLocal = s"${decoder}UpdatedLocal"
       val numNullsVar = s"${decoder}NumNulls"
-      val numNullsLocal = s"${decoder}NumNullsLocal"
-      val buffer = ctx.freshName("buffer")
+      val buffer = s"${decoder}Buffer"
       val bufferVar = s"${buffer}Object"
       val initBufferFunction = s"${buffer}Init"
+      val closeDecoderFunction = s"${decoder}Close"
       if (isWideSchema) {
         ctx.addMutableState("Object", bufferVar, "")
       }
@@ -537,6 +407,19 @@ private[sql] final case class ColumnTableScan(
         """.stripMargin)
       columnBufferInit.append(s"$initBufferFunction();\n")
 
+      ctx.addNewFunction(closeDecoderFunction,
+        s"""
+           |private void $closeDecoderFunction() {
+           |  if ($decoder != null) {
+           |    $decoder.close();
+           |  }
+           |  if ($updatedDecoder != null) {
+           |    $updatedDecoder.close();
+           |  }
+           |}
+        """.stripMargin)
+      closeDecoders.append(s"$closeDecoderFunction();\n")
+
       if (isWideSchema) {
         if (bufferInitCode.length > 1024) {
           bufferInitCodeBlocks.append(bufferInitCode.toString())
@@ -552,14 +435,12 @@ private[sql] final case class ColumnTableScan(
              |final $updatedDecoderClass $updatedDecoderLocal = $updatedDecoder;
              |final Object $bufferVar = ($buffer == null || $buffer.isDirect())
              |    ? null : $buffer.array();
-             |int $numNullsLocal = $numNullsVar;
           """.stripMargin)
-        numNullsUpdateCode.append(s"$numNullsVar = $numNullsLocal;\n")
       }
 
       if (!isWideSchema) {
         genCodeColumnBuffer(ctx, decoderLocal, updatedDecoderLocal, decoder, updatedDecoder,
-          bufferVar, batchOrdinal, numNullsLocal, attr, weightVarName)
+          bufferVar, batchOrdinal, numNullsVar, attr, weightVarName)
       } else {
         val ev = genCodeColumnBuffer(ctx, decoder, updatedDecoder, decoder, updatedDecoder,
           bufferVar, batchOrdinal, numNullsVar, attr, weightVarName)
@@ -611,11 +492,18 @@ private[sql] final case class ColumnTableScan(
       bufferInitCode.toString()
     }
 
-    val filterFunction = generateStatPredicate(ctx, numBatchRows)
-    val unsafeRow = ctx.freshName("unsafeRow")
+    // for smart connector, the filters are pushed down in the procedure sent to stores
+    val filterFunction = if (embedded) ColumnTableScan.generateStatPredicate(ctx,
+      relation.isInstanceOf[BaseColumnFormatRelation], schemaAttributes,
+      allFilters, numBatchRows, metricTerm, metricAdd) else ""
+    val statsRow = ctx.freshName("statsRow")
+    val deltaStatsRow = ctx.freshName("deltaStatsRow")
     val colNextBytes = ctx.freshName("colNextBytes")
-    val numColumnsInStatBlob =
-      relationSchema.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
+    val numTableColumns = if (relationSchema.exists(
+      _.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))) {
+      relationSchema.length - ColumnDelta.mutableKeyNames.length // for update/delete
+    } else relationSchema.length
+    val numColumnsInStatBlob = ColumnStatsSchema.numStatsColumns(numTableColumns)
 
     val incrementBatchOutputRows = if (numOutputRows ne null) {
       s"$numOutputRows.${metricAdd(s"$numBatchRows - $deletedCount")};"
@@ -632,10 +520,16 @@ private[sql] final case class ColumnTableScan(
     val batchAssign =
       s"""
         final java.nio.ByteBuffer $colNextBytes = (java.nio.ByteBuffer)$colInput.next();
-        UnsafeRow $unsafeRow = ${Utils.getClass.getName}.MODULE$$.toUnsafeRow(
+        UnsafeRow $statsRow = ${SharedUtils.getClass.getName}.MODULE$$.toUnsafeRow(
           $colNextBytes, $numColumnsInStatBlob);
-        $deletedCount = $colInput.getDeletedRowCount();
-        $numBatchRows = $unsafeRow.getInt($countIndexInSchema);
+        UnsafeRow $deltaStatsRow = ${SharedUtils.getClass.getName}.MODULE$$.toUnsafeRow(
+          $colInput.getCurrentDeltaStats(), $numColumnsInStatBlob);
+        final int $numFullRows = $statsRow.getInt($countIndexInSchema);
+        int $numDeltaRows = $deltaStatsRow != null ? $deltaStatsRow.getInt(
+          $countIndexInSchema) : 0;
+        $numBatchRows = $numFullRows + $numDeltaRows;
+        // TODO: don't have the update count here (only insert count)
+        $numDeltaRows = $numBatchRows;
         $incrementBatchCount
         $buffers = $colNextBytes;
       """
@@ -643,13 +537,18 @@ private[sql] final case class ColumnTableScan(
       s"""
         while (true) {
           $batchAssign
-          if ($colInput.hasUpdatedColumns() || $filterFunction($unsafeRow)) {
+          // check the delta stats after full stats (null columns will be treated as failure
+          // which is what is required since it means that only full stats check should be done)
+          if ($filterFunction($statsRow, $numFullRows, $deltaStatsRow == null, false) ||
+              ($deltaStatsRow != null && $filterFunction($deltaStatsRow,
+               $numDeltaRows, true, true))) {
             break;
           }
           if (!$colInput.hasNext()) return false;
         }"""
     }
     val nextBatch = ctx.freshName("nextBatch")
+    val closeDecodersFunction = ctx.freshName("closeAllDecoders")
     val switchSRR = if (isForSampleReservoirAsRegion) {
       // triple switch between rowInputSRR, rowInput, colInput
       s"""
@@ -668,10 +567,12 @@ private[sql] final case class ColumnTableScan(
          |}
       """.stripMargin
     } else ""
+
     ctx.addNewFunction(nextBatch,
       s"""
          |private boolean $nextBatch() throws Exception {
          |  if ($buffers != null) return true;
+         |  $closeDecodersFunction();
          |  // get next batch or row (latter for non-batch source iteration)
          |  if ($input == null) return false;
          |  if (!$input.hasNext()) {
@@ -693,12 +594,19 @@ private[sql] final case class ColumnTableScan(
          |    $incrementNumRowsSnippet
          |  } else {
          |    $batchInit
+         |    $deletedCount = $colInput.getDeletedRowCount();
          |    $incrementBatchOutputRows
          |    // initialize the column buffers and decoders
          |    $columnBufferInit
          |  }
          |  $batchIndex = 0;
          |  return true;
+         |}
+      """.stripMargin)
+    ctx.addNewFunction(closeDecodersFunction,
+      s"""
+         |private void $closeDecodersFunction() {
+         |  ${closeDecoders.toString()}
          |}
       """.stripMargin)
 
@@ -752,8 +660,6 @@ private[sql] final case class ColumnTableScan(
        |        $beforeStop
        |        // increment index for return
        |        $batchIndex = $batchOrdinal + 1;
-       |        // update the numNulls
-       |        ${numNullsUpdateCode.toString()}
        |        return;
        |      }
        |    }
@@ -803,12 +709,25 @@ private[sql] final case class ColumnTableScan(
              |    ? $decoderGlobal.getStringDictionary()
              |    : $mutableDecoderGlobal.getStringDictionary();
           """.stripMargin, s"($dictionaryVar == null)", dictionaryVar)
-        val dictionaryIndex = ExprCode(
-          s"""
-             |final int $dictionaryIndexVar = $updateDecoder == null
-             |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
-             |    : $updateDecoder.readDictionaryIndex();
+        val dictionaryIndex = if (attr.nullable) {
+          ExprCode(
+            s"""
+               |${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar)} {
+               |  $dictionaryIndexVar = $updateDecoder == null
+               |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
+               |    : $updateDecoder.readDictionaryIndex();
+               |} else {
+               |  $dictionaryIndexVar = $dictionaryVar.size();
+               |}
+               """.stripMargin, "false", dictionaryIndexVar)
+        } else {
+          ExprCode(
+            s"""
+               |$dictionaryIndexVar = $updateDecoder == null
+               |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
+               |    : $updateDecoder.readDictionaryIndex();
           """.stripMargin, "false", dictionaryIndexVar)
+        }
         session.foreach(_.addDictionaryCode(ctx, col,
           DictionaryCode(dictionary, buffer, dictionaryIndex)))
         "UTF8String"
@@ -827,8 +746,8 @@ private[sql] final case class ColumnTableScan(
       case _: ArrayType => "Array"
       case _: MapType => "Map"
       case t: StructType =>
-        colAssign = s"$col = $decoder.readStruct($buffer, ${t.size}, $nonNullPosition);"
-        updatedAssign = s"readStruct(${t.size})"
+        colAssign = s"$col = $decoder.readStruct($buffer, ${t.length}, $nonNullPosition);"
+        updatedAssign = s"readStruct(${t.length})"
         "Struct"
       case _ =>
         throw new UnsupportedOperationException(s"unknown type $sqlType")
@@ -850,12 +769,11 @@ private[sql] final case class ColumnTableScan(
            |final $jt $col;
            |boolean $isNullVar = false;
            |if ($unchangedCode) {
-           |  $numNullsVar = $decoder.numNulls($buffer, $batchOrdinal, $numNullsVar);
-           |  if ($numNullsVar >= 0) $colAssign
-           |  else {
+           |  ${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar)} {
+           |    $colAssign
+           |  } else {
            |    $col = $defaultValue;
            |    $isNullVar = true;
-           |    $numNullsVar = -$numNullsVar;
            |  }
            |} else if ($updateDecoder.readNotNull()) {
            |  $updatedAssign
@@ -872,11 +790,188 @@ private[sql] final case class ColumnTableScan(
            |if ($unchangedCode) $colAssign
            |else $updatedAssign
         """.stripMargin
-      if (weightVar != null && attr.name == Utils.WEIGHTAGE_COLUMN_NAME) {
+      if (weightVar != null && attr.name.equalsIgnoreCase(Utils.WEIGHTAGE_COLUMN_NAME)) {
         code += s"if ($col == 1) $col = $weightVar;\n"
       }
       ExprCode(code, "false", col)
     }
+  }
+
+  private def genIfNonNullCode(ctx: CodegenContext, decoder: String,
+      buffer: String, batchOrdinal: String, numNullsVar: String): String = {
+    // nextNullPosition is not updated immediately rather when batchOrdinal
+    // goes just past because a column read code can be invoked multiple
+    // times for the same batchOrdinal like in SNAP-2118;
+    // check below crams in all the conditions in a single check to minimize code
+    // repetition of non-null assignment call that is normally inlined by JVM
+    // and besides this piece of code should get inlined in any case or else
+    // it will be big performance hit for every column nullability check
+    val nextNullPosition = ctx.freshName("nextNullPosition")
+    s"""
+       |int $nextNullPosition = $decoder.getNextNullPosition();
+       |if ($batchOrdinal < $nextNullPosition ||
+       |    // check case when batchOrdinal has gone just past nextNullPosition
+       |    ($batchOrdinal == $nextNullPosition + 1 &&
+       |     $batchOrdinal < ($nextNullPosition = $decoder.findNextNullPosition(
+       |       $buffer, $nextNullPosition, $numNullsVar++))) ||
+       |    // check if batchOrdinal has moved ahead by more than one due to filters
+       |    ($batchOrdinal != $nextNullPosition && (($numNullsVar =
+       |       $decoder.numNulls($buffer, $batchOrdinal, $numNullsVar)) == 0 ||
+       |       $batchOrdinal != $decoder.getNextNullPosition())))""".stripMargin
+  }
+}
+
+object ColumnTableScan extends Logging {
+
+  def generateStatPredicate(ctx: CodegenContext, isColumnTable: Boolean,
+      schemaAttrs: Seq[AttributeReference], allFilters: Seq[Expression], numRowsTerm: String,
+      metricTerm: (CodegenContext, String) => String, metricAdd: String => String): String = {
+
+    if ((allFilters eq null) || allFilters.isEmpty) {
+      return ""
+    }
+    val numBatchRows = NumBatchRows(numRowsTerm)
+    val (columnBatchStatsMap, columnBatchStats) = if (isColumnTable) {
+      val allStats = schemaAttrs.map(a => a ->
+          // nullCount as nullable works for both full stats and delta stats
+          // though former will never be null (latter can be for non-updated columns)
+          ColumnStatsSchema(a.name, a.dataType, nullCountNullable = false))
+      (AttributeMap(allStats),
+          ColumnStatsSchema.COUNT_ATTRIBUTE +: allStats.flatMap(_._2.schema))
+    } else (null, Nil)
+
+    def statsFor(a: Attribute): ColumnStatsSchema = columnBatchStatsMap(a)
+
+    def filterInList(l: Seq[Expression]): Boolean =
+      l.length <= 200 && l.forall(TokenLiteral.isConstant)
+
+    // Returned filter predicate should return false iff it is impossible
+    // for the input expression to evaluate to `true' based on statistics
+    // collected about this partition batch.
+    // This code is picked up from InMemoryTableScanExec
+
+    @transient def buildFilter: PartialFunction[Expression, Expression] = {
+      case And(lhs: Expression, rhs: Expression)
+        if buildFilter.isDefinedAt(lhs) || buildFilter.isDefinedAt(rhs) =>
+        (buildFilter.lift(lhs) ++ buildFilter.lift(rhs)).reduce(_ && _)
+
+      case Or(lhs: Expression, rhs: Expression)
+        if buildFilter.isDefinedAt(lhs) && buildFilter.isDefinedAt(rhs) =>
+        buildFilter(lhs) || buildFilter(rhs)
+
+      case EqualTo(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
+        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
+      case EqualTo(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
+        statsFor(a).lowerBound <= l && l <= statsFor(a).upperBound
+
+      case In(a: AttributeReference, l) if filterInList(l) =>
+        statsFor(a).lowerBound <= Greatest(l) && statsFor(a).upperBound >= Least(l)
+      case DynamicInSet(a: AttributeReference, l) if filterInList(l) =>
+        statsFor(a).lowerBound <= Greatest(l) && statsFor(a).upperBound >= Least(l)
+
+      case LessThan(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
+        statsFor(a).lowerBound < l
+      case LessThan(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
+        l < statsFor(a).upperBound
+
+      case LessThanOrEqual(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
+        statsFor(a).lowerBound <= l
+      case LessThanOrEqual(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
+        l <= statsFor(a).upperBound
+
+      case GreaterThan(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
+        l < statsFor(a).upperBound
+      case GreaterThan(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
+        statsFor(a).lowerBound < l
+
+      case GreaterThanOrEqual(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
+        l <= statsFor(a).upperBound
+      case GreaterThanOrEqual(l, a: AttributeReference) if TokenLiteral.isConstant(l) =>
+        statsFor(a).lowerBound <= l
+
+      case StartsWith(a: AttributeReference, l) if TokenLiteral.isConstant(l) =>
+        val stats = statsFor(a)
+        val pattern = if (l.dataType == StringType) l else Cast(l, StringType)
+        StartsWithForStats(stats.upperBound, stats.lowerBound, pattern)
+
+      case IsNull(a: Attribute) => statsFor(a).nullCount > 0
+      case IsNotNull(a: Attribute) => numBatchRows > statsFor(a).nullCount
+    }
+
+    // This code is picked up from InMemoryTableScanExec
+    val columnBatchStatFilters: Seq[Expression] = {
+      if (isColumnTable) {
+        // first group the filters by the expression types (keeping the original operator order)
+        // and then order each group on underlying reference names to give a consistent
+        // ordering (else two different runs can generate different code)
+        val orderedFilters = new ArrayBuffer[(Class[_], ArrayBuffer[Expression])](2)
+        allFilters.foreach { f =>
+          if (f.dataType.isInstanceOf[DecimalType] ||
+              ColumnWriter.SUPPORTED_STATS_TYPES.contains(f.dataType)) {
+            orderedFilters.find(_._1 == f.getClass) match {
+              case Some(p) => p._2 += f
+              case None =>
+                val newBuffer = new ArrayBuffer[Expression](2)
+                newBuffer += f
+                orderedFilters += f.getClass -> newBuffer
+            }
+          }
+        }
+        orderedFilters.flatMap(_._2.sortBy(_.references.map(_.name).toSeq
+            .sorted.mkString(","))).flatMap { p =>
+          val filter = buildFilter.lift(p)
+          val boundFilter = filter.map(BindReferences.bindReference(
+            _, columnBatchStats, allowFailures = true))
+
+          boundFilter.foreach(_ =>
+            filter.foreach(f =>
+              logDebug(s"Predicate $p generates partition filter: $f")))
+
+          // If the filter can't be resolved then we are missing required statistics.
+          boundFilter.filter(_.resolved)
+        }
+      } else Nil
+    }
+
+    val predicate = ExpressionCanonicalizer.execute(
+      BindReferences.bindReference(columnBatchStatFilters
+          .reduceOption(And).getOrElse(Literal(true)), columnBatchStats))
+    val statsRow = ctx.freshName("statsRow")
+    ctx.INPUT_ROW = statsRow
+    ctx.currentVars = null
+    val predicateEval = predicate.genCode(ctx)
+
+    // skip filtering if nothing is to be applied
+    if (predicateEval.value == "true" && predicateEval.isNull == "false") {
+      return ""
+    }
+    val columnBatchesSkipped = if (metricTerm ne null) {
+      metricTerm(ctx, "columnBatchesSkipped")
+    } else null
+    val addBatchMetric = if (columnBatchesSkipped ne null) {
+      s"$columnBatchesSkipped.${metricAdd("1")};"
+    } else ""
+    val filterFunction = ctx.freshName("columnBatchFilter")
+    ctx.addNewFunction(filterFunction,
+      s"""
+         |private boolean $filterFunction(UnsafeRow $statsRow, int $numRowsTerm,
+         |    boolean isLastStatsRow, boolean isDelta) {
+         |  // Skip the column batches based on the predicate
+         |  ${predicateEval.code}
+         |  if (isDelta && (${predicateEval.isNull} || ${predicateEval.value})) {
+         |    return true;
+         |  } else if (!${predicateEval.isNull} && ${predicateEval.value}) {
+         |    return true;
+         |  } else {
+         |    // add to skipped metric only if both stats say so
+         |    if (isLastStatsRow) {
+         |      $addBatchMetric
+         |    }
+         |    return false;
+         |  }
+         |}
+       """.stripMargin)
+    filterFunction
   }
 }
 
@@ -940,4 +1035,73 @@ case class NumBatchRows(varName: String) extends LeafExpression {
       "NumBatchRows.eval not expected to be invoked")
 
   override def sql: String = s"NumBatchRows($varName)"
+}
+
+case class StartsWithForStats(upper: Expression, lower: Expression,
+    pattern: Expression) extends Expression {
+
+  // pattern must be a string constant for stats row evaluation
+  assert(TokenLiteral.isConstant(pattern))
+  assert(pattern.dataType == StringType)
+
+  override final def children: Seq[Expression] = Seq(upper, lower, pattern)
+
+  override def foldable: Boolean = false
+
+  override def nullable: Boolean = false
+
+  override def dataType: DataType = BooleanType
+
+  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    val upperExpr = upper.genCode(ctx)
+    val lowerExpr = lower.genCode(ctx)
+    val patternExpr = pattern.genCode(ctx)
+    val str = ctx.freshName("str")
+    val len = str + "Len"
+    val lastCharPos = str + "LastPos"
+    val upperBytes = str + "Upper"
+    val upperStr = str + "UpperUTF8"
+    val result = ev.value
+    val code =
+      s"""
+         |${patternExpr.code}
+         |boolean $result = true;
+         |if (!${patternExpr.isNull}) {
+         |  ${lowerExpr.code}
+         |  ${upperExpr.code}
+         |  // upper bound for column (i.e. LessThan) can be found by going to
+         |  // next value of the last character of literal
+         |  int $len = ${patternExpr.value}.numBytes();
+         |  byte[] $upperBytes = new byte[$len];
+         |  ${patternExpr.value}.writeToMemory($upperBytes, Platform.BYTE_ARRAY_OFFSET);
+         |  int $lastCharPos = $len - 1;
+         |  // check for maximum unsigned value 0xff
+         |  while ($lastCharPos >= 0 && $upperBytes[$lastCharPos] == (byte)-1) {
+         |    $lastCharPos--;
+         |  }
+         |  if ($lastCharPos < 0 || (${lowerExpr.isNull})) { // all bytes are 0xff
+         |    // a >= startsWithPREFIX
+         |    if (!${upperExpr.isNull}) {
+         |      $result = ${patternExpr.value}.compareTo(${upperExpr.value}) <= 0;
+         |    }
+         |  } else {
+         |    $upperBytes[$lastCharPos] = (byte)($upperBytes[$lastCharPos] + 1);
+         |    UTF8String $upperStr = UTF8String.fromAddress($upperBytes,
+         |      Platform.BYTE_ARRAY_OFFSET, $len);
+         |    // a >= startsWithPREFIX && a < startsWithPREFIX+1
+         |    $result = ((${upperExpr.isNull}) ||
+         |        ${patternExpr.value}.compareTo(${upperExpr.value}) <= 0) &&
+         |      ${lowerExpr.value}.compareTo($upperStr) < 0;
+         |  }
+         |}
+         |
+      """.stripMargin
+    ev.copy(code, "false", result)
+  }
+
+  override def eval(input: InternalRow): Any =
+    throw new UnsupportedOperationException(
+      "StartsWithForStats.eval not expected to be invoked")
+
+  override def sql: String = s"StartsWith($upper, $lower, $pattern)"
 }

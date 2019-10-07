@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -130,8 +130,16 @@ object DictionaryOptimizedMapAccessor {
         dictionaryVar, keyDictVar.bufferVar, keyIndex)
       s"final UTF8String $key = $stringAssignCode;"
     }
-    s"""${keyDictVar.evaluateIndexCode()}
+
+    val indexCode = keyDictVar.evaluateIndexCode()
+    val dictionaryIndexInit = if (indexCode.isEmpty) "" else {
+      s"int ${keyDictVar.dictionaryIndex.value} = -1;"
+    }
+
+    s"""
+       |$dictionaryIndexInit
        |if ($arrayVar != null) {
+       |  $indexCode
        |  $resultVar = $arrayVar[$keyIndex];
        |  ${nullCheck}if ($resultVar == null) {
        |    $keyAssign

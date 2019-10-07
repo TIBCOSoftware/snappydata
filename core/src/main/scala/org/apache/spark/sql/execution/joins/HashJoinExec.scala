@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,6 +20,8 @@ import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Callable, ExecutionException}
 
+import scala.reflect.ClassTag
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.google.common.cache.CacheBuilder
@@ -39,12 +41,11 @@ import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.streaming.PhysicalDStreamPlan
 import org.apache.spark.sql.types.TypeUtilities
 import org.apache.spark.sql.{DelegateRDD, SnappySession}
-import scala.reflect.ClassTag
 
 /**
  * :: DeveloperApi ::
- * Performs an local hash join of two child relations. If a relation
- * (out of a datasource) is already replicated accross all nodes then rather
+ * Performs a local hash join of two child relations. If a relation
+ * (out of a datasource) is already replicated across all nodes then rather
  * than doing a Broadcast join which can be expensive, this join just
  * scans through the single partition of the replicated relation while
  * streaming through the other relation.
@@ -60,7 +61,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     leftSizeInBytes: BigInt,
     rightSizeInBytes: BigInt,
     replicatedTableJoin: Boolean)
-    extends BinaryExecNode with HashJoin with BatchConsumer with NonRecursivePlans {
+    extends NonRecursivePlans with BinaryExecNode with HashJoin
+        with SnappyJoinLike with BatchConsumer {
 
   override def nodeName: String = "SnappyHashJoin"
 
@@ -68,6 +70,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   @transient private var hashMapTerm: String = _
   @transient private var mapDataTerm: String = _
   @transient private var maskTerm: String = _
+  @transient private var initMap: String = _
+  @transient private var initMapCode: String = _
+  @transient private var mapSize: String = _
   @transient private var keyIsUniqueTerm: String = _
   @transient private var numRowsTerm: String = _
   @transient private var dictionaryArrayTerm: String = _
@@ -108,66 +113,10 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     if (replicatedTableJoin) {
       UnspecifiedDistribution :: UnspecifiedDistribution :: Nil
     } else {
-      // if left or right side is already distributed on a subset of keys
-      // then use the same partitioning (for the larger side to reduce exchange)
-      val leftClustered = ClusteredDistribution(leftKeys)
-      val rightClustered = ClusteredDistribution(rightKeys)
-      val leftPartitioning = left.outputPartitioning
-      val rightPartitioning = right.outputPartitioning
-      if (leftPartitioning.satisfies(leftClustered) ||
-          rightPartitioning.satisfies(rightClustered) ||
-          // if either side is broadcast then return defaults
-          leftPartitioning.isInstanceOf[BroadcastDistribution] ||
-          rightPartitioning.isInstanceOf[BroadcastDistribution] ||
-          // if both sides are unknown then return defaults too
-          (leftPartitioning.isInstanceOf[UnknownPartitioning] &&
-              rightPartitioning.isInstanceOf[UnknownPartitioning])) {
-        leftClustered :: rightClustered :: Nil
-      } else {
-        // try subsets of the keys on each side
-        val leftSubset = getSubsetAndIndices(leftPartitioning, leftKeys)
-        val rightSubset = getSubsetAndIndices(rightPartitioning, rightKeys)
-        leftSubset match {
-          case Some((l, li)) => rightSubset match {
-            case Some((r, ri)) =>
-            // check if key indices of both sides match
-            if (li == ri) {
-              ClusteredDistribution(l) :: ClusteredDistribution(r) :: Nil
-            } else {
-              // choose the bigger plan
-              if (leftSizeInBytes > rightSizeInBytes) {
-                ClusteredDistribution(l) ::
-                    ClusteredDistribution(li.map(rightKeys.apply)) :: Nil
-              } else {
-                ClusteredDistribution(ri.map(leftKeys.apply)) ::
-                    ClusteredDistribution(r) :: Nil
-              }
-            }
-            case None => ClusteredDistribution(l) ::
-                ClusteredDistribution(li.map(rightKeys.apply)) :: Nil
-          }
-          case None => rightSubset match {
-            case Some((r, ri)) => ClusteredDistribution(ri.map(leftKeys.apply)) ::
-                ClusteredDistribution(r) :: Nil
-            case None => leftClustered :: rightClustered :: Nil
-          }
-        }
-      }
+      // SnappyJoinLike.requiredChildDistribution has the required logic to deal with
+      // join keys a subset of existing child partitioning
+      super.requiredChildDistribution
     }
-
-  /**
-   * Optionally return result if partitioning is a subset of given join keys,
-   * and if so then return the subset as well as the indices of subset keys
-   * in the join keys (in order).
-   */
-  private def getSubsetAndIndices(partitioning: Partitioning,
-      keys: Seq[Expression]): Option[(Seq[Expression], Seq[Int])] = {
-    val numColumns = Utils.getNumColumns(partitioning)
-    if (keys.length > numColumns) {
-      keys.indices.combinations(numColumns).map(s => s.map(keys.apply) -> s)
-          .find(p => partitioning.satisfies(ClusteredDistribution(p._1)))
-    } else None
-  }
 
   protected lazy val (buildSideKeys, streamSideKeys) = {
     require(leftKeys.map(_.dataType) == rightKeys.map(_.dataType),
@@ -176,14 +125,6 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       case BuildLeft => (leftKeys, rightKeys)
       case BuildRight => (rightKeys, leftKeys)
     }
-  }
-
-  /**
-   * Overridden by concrete implementations of SparkPlan.
-   * Produces the result of the query as an RDD[InternalRow]
-   */
-  override protected def doExecute(): RDD[InternalRow] = {
-    WholeStageCodegenExec(CachedPlanHelperExec(this)).execute()
   }
 
   // return empty here as code of required variables is explicitly instantiated
@@ -211,17 +152,17 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         streamRDD.preferredLocations(streamRDD.partitions(i))
       }
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
-        // add the build-side shuffle dependecies to first stream-side RDD
-        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
+        // add the build-side shuffle dependencies to first stream-side RDD
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD, buildRDDs,
           preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
           streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
-            rdd.sparkContext, rdd, preferredLocations))
+            rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       } else {
-        streamRDDs
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD, buildRDDs,
+          preferredLocations) +: streamRDDs.tail
       }
       (streamPlanRDDs, buildRDDs)
-    }
-    else {
+    } else {
       // wrap in DelegateRDD for shuffle dependencies and preferred locations
 
       // Get the build side shuffle dependencies.
@@ -230,8 +171,18 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         .exists(_.isInstanceOf[ShuffleDependency[_, _, _]]))
       // treat as a zip of all stream side RDDs and build side RDDs and
       // use intersection of preferred locations, if possible, else union
-      val numParts = streamRDDs.head.getNumPartitions
-      val allRDDs = streamRDDs ++ buildRDDs
+
+      // Mostly with SHJ both the partition num will be equal.
+      // However, in certain cases if num partition of one side is
+      // == 1 it also qualifies for SHJ.
+      val (allRDDs, numParts) = if (buildRDDs.head.getNumPartitions == 1) {
+        (streamRDDs, streamRDDs.head.getNumPartitions)
+      } else if (streamRDDs.head.getNumPartitions == 1) {
+        (buildRDDs, buildRDDs.head.getNumPartitions)
+      } else {
+        // Equal partitions
+        (streamRDDs ++ buildRDDs, streamRDDs.head.getNumPartitions)
+      }
       val preferredLocations = Array.tabulate[Seq[String]](numParts) { i =>
         val prefLocations = allRDDs.map(rdd => rdd.preferredLocations(
           rdd.partitions(i)))
@@ -245,19 +196,19 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         } else prefLocations.flatten.distinct
       }
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
-        // add the build-side shuffle dependecies to first stream-side RDD
+        // add the build-side shuffle dependencies to first stream-side RDD
         val rdd = streamRDDs.head
-        new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
+        new DelegateRDD[InternalRow](rdd.sparkContext, rdd, buildRDDs,
           preferredLocations, rdd.dependencies ++ buildShuffleDeps) +:
           streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
-            rdd.sparkContext, rdd, preferredLocations))
+            rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       } else {
         streamRDDs.map(rdd => new DelegateRDD[InternalRow](
-          rdd.sparkContext, rdd, preferredLocations))
+          rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       }
 
       (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
-        rdd.sparkContext, rdd, preferredLocations)))
+        rdd.sparkContext, rdd, Nil, preferredLocations)))
     }
   }
 
@@ -273,11 +224,11 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         streamRDD.preferredLocations(streamRDD.partitions(i))
       }
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
-        // add the build-side shuffle dependecies to first stream-side RDD
-        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD,
+        // add the build-side shuffle dependencies to first stream-side RDD
+        new DelegateRDD[InternalRow](streamRDD.sparkContext, streamRDD, buildRDDs,
           preferredLocations, streamRDD.dependencies ++ buildShuffleDeps) +:
           streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
-            rdd.sparkContext, rdd, preferredLocations))
+            rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       } else {
         streamRDDs
       }
@@ -307,19 +258,19 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         } else prefLocations.flatten.distinct
       }
       val streamPlanRDDs = if (buildShuffleDeps.nonEmpty) {
-        // add the build-side shuffle dependecies to first stream-side RDD
+        // add the build-side shuffle dependencies to first stream-side RDD
         val rdd = streamRDDs.head
-        new DelegateRDD[InternalRow](rdd.sparkContext, rdd,
+        new DelegateRDD[InternalRow](rdd.sparkContext, rdd, buildRDDs,
           preferredLocations, rdd.dependencies ++ buildShuffleDeps) +:
             streamRDDs.tail.map(rdd => new DelegateRDD[InternalRow](
-              rdd.sparkContext, rdd, preferredLocations))
+              rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       } else {
         streamRDDs.map(rdd => new DelegateRDD[InternalRow](
-          rdd.sparkContext, rdd, preferredLocations))
+          rdd.sparkContext, rdd, buildRDDs, preferredLocations))
       }
 
       (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
-        rdd.sparkContext, rdd, preferredLocations)))
+        rdd.sparkContext, rdd, Nil, preferredLocations)))
     }
   }
 
@@ -332,13 +283,16 @@ case class HashJoinExec(leftKeys: Seq[Expression],
   }
 
   override def doProduce(ctx: CodegenContext): String = {
-    startProducing()
-    val initMap = ctx.freshName("initMap")
+    initMap = ctx.freshName("initMap")
     ctx.addMutableState("boolean", initMap, s"$initMap = false;")
 
     val createMap = ctx.freshName("createMap")
     val createMapClass = ctx.freshName("CreateMap")
     val getOrCreateMap = ctx.freshName("getOrCreateMap")
+
+    val beforeMap = ctx.freshName("beforeMap")
+    val buildTime = metricTerm(ctx, "buildTime")
+    val numOutputRows = metricTerm(ctx, "numOutputRows")
 
     // generate variable name for hash map for use here and in consume
     hashMapTerm = ctx.freshName("hashMap")
@@ -361,6 +315,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     // generate local variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
     maskTerm = ctx.freshName("hashMapMask")
+    mapSize = ctx.freshName("mapSize")
     keyIsUniqueTerm = ctx.freshName("keyIsUnique")
     numRowsTerm = ctx.freshName("numRows")
 
@@ -370,6 +325,12 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     mapAccessor = ObjectHashMapAccessor(session, ctx, buildSideKeys,
       buildPlan.output, "LocalMap", hashMapTerm, mapDataTerm, maskTerm,
       multiMap = true, this, this.parent, buildPlan)
+
+    val entryClass = mapAccessor.getClassName
+    ctx.addMutableState(s"$entryClass[]", mapDataTerm, "")
+    ctx.addMutableState("int", maskTerm, "")
+    ctx.addMutableState("int", mapSize, s"$mapSize = -1;")
+    ctx.addMutableState("boolean", keyIsUniqueTerm, s"$keyIsUniqueTerm = true;")
 
     val buildRDDs = ctx.addReferenceObj("buildRDDs", rdds.toArray,
       s"${classOf[RDD[_]].getName}[]")
@@ -409,11 +370,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val numIterators = ctx.freshName("numIterators")
     ctx.addMutableState("int", numIterators, s"inputs = $allIterators;")
 
-    val entryClass = mapAccessor.getClassName
     val numKeyColumns = buildSideKeys.length
-
     val longLived = replicatedTableJoin
-
     val buildSideCreateMap =
       s"""$hashSetClassName $hashMapTerm = new $hashSetClassName(128, 0.6,
       $numKeyColumns, $longLived, scala.reflect.ClassTag$$.MODULE$$.apply(
@@ -424,16 +382,17 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       $buildProduce"""
 
     if (replicatedTableJoin) {
+      var cacheClass = HashedObjectCache.getClass.getName
+      cacheClass = cacheClass.substring(0, cacheClass.length - 1)
       ctx.addNewFunction(getOrCreateMap,
         s"""
         public final void $createMap() throws java.io.IOException {
-           $buildSideCreateMap
+          $buildSideCreateMap
         }
 
         public final void $getOrCreateMap() throws java.io.IOException {
-          $hashMapTerm = org.apache.spark.sql.execution.joins.HashedObjectCache
-            .get($cacheKeyTerm, new $createMapClass(), $contextName, 1,
-             scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
+          $hashMapTerm = $cacheClass.get($cacheKeyTerm, new $createMapClass(),
+            $contextName, 1, scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
         }
 
         public final class $createMapClass implements java.util.concurrent.Callable {
@@ -460,35 +419,38 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     // consumed all the rows, so `copyResult` should be reset to `false`.
     ctx.copyResult = false
 
-    val buildTime = metricTerm(ctx, "buildTime")
-    val numOutputRows = metricTerm(ctx, "numOutputRows")
     // initialization of min/max for integral keys
     val initMinMaxVars = mapAccessor.integralKeys.zipWithIndex.map {
       case (indexKey, index) =>
         val minVar = mapAccessor.integralKeysMinVars(index)
         val maxVar = mapAccessor.integralKeysMaxVars(index)
+        ctx.addMutableState("long", minVar, "")
+        ctx.addMutableState("long", maxVar, "")
         s"""
-          final long $minVar = $hashMapTerm.getMinValue($indexKey);
-          final long $maxVar = $hashMapTerm.getMaxValue($indexKey);
+          $minVar = $hashMapTerm.getMinValue($indexKey);
+          $maxVar = $hashMapTerm.getMaxValue($indexKey);
         """
     }.mkString("\n")
 
+    initMapCode =
+        s"""
+          final long $beforeMap = System.nanoTime();
+          $getOrCreateMap();
+          $buildTime.${metricAdd(s"(System.nanoTime() - $beforeMap) / 1000000")};
+
+          this.$initMap = true;
+          this.$mapSize = $hashMapTerm.size();
+          this.$keyIsUniqueTerm = $keyIsUniqueTerm = $hashMapTerm.keyIsUnique();
+          $initMinMaxVars
+          this.$maskTerm = $maskTerm = $hashMapTerm.mask();
+          this.$mapDataTerm = $mapDataTerm = ($entryClass[])$hashMapTerm.data();"""
+
     val produced = streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)
 
-    val beforeMap = ctx.freshName("beforeMap")
-
     s"""
-      boolean $keyIsUniqueTerm = true;
-      if (!$initMap) {
-        final long $beforeMap = System.nanoTime();
-        $getOrCreateMap();
-        $buildTime.${metricAdd(s"(System.nanoTime() - $beforeMap) / 1000000")};
-        $initMap = true;
-      }
-      $keyIsUniqueTerm = $hashMapTerm.keyIsUnique();
-      $initMinMaxVars
-      final int $maskTerm = $hashMapTerm.mask();
-      final $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
+      boolean $keyIsUniqueTerm = this.$keyIsUniqueTerm;
+      int $maskTerm = this.$maskTerm;
+      $entryClass[] $mapDataTerm = this.$mapDataTerm;
       long $numRowsTerm = 0L;
       try {
         ${session.evaluateFinallyCode(ctx, produced)}
@@ -524,8 +486,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     }
     val streamKeyVars = ctx.generateExpressions(streamKeys)
 
-    mapAccessor.generateMapLookup(entryVar, localValueVar, keyIsUniqueTerm,
-      numRowsTerm, nullMaskVars, initCode, checkCondition, streamSideKeys,
+    mapAccessor.generateMapLookup(entryVar, localValueVar,
+      mapSize, keyIsUniqueTerm, initMap, initMapCode, numRowsTerm,
+      nullMaskVars, initCode, checkCondition, streamSideKeys,
       streamKeyVars, streamedPlan.output, buildKeyVars, buildVars, input,
       resultVars, dictionaryArrayTerm, dictionaryArrayInit, joinType, buildSide)
   }
@@ -562,17 +525,17 @@ case class HashJoinExec(leftKeys: Seq[Expression],
    */
   private def getJoinCondition(ctx: CodegenContext,
       input: Seq[ExprCode],
-      buildVars: Seq[ExprCode]): (Option[ExprCode], String) = condition match {
+      buildVars: Seq[ExprCode]): (Option[ExprCode], String, Option[Expression]) = condition match {
     case Some(expr) =>
-      // evaluate the variables from build side that used by condition
+      // evaluate the variables from build side used by condition
       val eval = evaluateRequiredVariables(buildPlan.output, buildVars,
         expr.references)
       // filter the output via condition
       ctx.currentVars = input.map(_.copy(code = "")) ++ buildVars
       val ev = BindReferences.bindReference(expr,
         streamedPlan.output ++ buildPlan.output).genCode(ctx)
-      (Some(ev), eval)
-    case None => (None, "")
+      (Some(ev), eval, condition)
+    case None => (None, "", None)
   }
 }
 

@@ -1,0 +1,20 @@
+io/snappydata/hydra/recovery/clusterRestartWithPersistentRecovery_ODS_Schema_persistentRowTables.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  dataLocation="/export/shared/QA_DATA/odsData_10GB/"
+  scriptLocation="$GEMFIRE/../../../dtests/src/resources/scripts/recovery/persistent"
+
+io/snappydata/hydra/recovery/clusterRestartWithPersistentRecovery_ODS_Schema_nonPersistentRowTables.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  dataLocation="/export/shared/QA_DATA/odsData_10GB/"
+  scriptLocation="$GEMFIRE/../../../dtests/src/resources/scripts/recovery/nonPersistent"
+
+io/snappydata/hydra/recovery/clusterRestartWithPersistentRecovery_ODS_Schema_mixRowTables.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  dataLocation="/export/shared/QA_DATA/odsData_10GB/"
+  scriptLocation="$GEMFIRE/../../../dtests/src/resources/scripts/recovery/mix"

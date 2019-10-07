@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -56,7 +56,8 @@ object TPCHReplicatedTable {
   }
 
   def createPopulateRegionTable(usingOptionString: String, sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null): Unit = {
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null,
+      trace : Boolean = false, cacheTables : Boolean = true): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val regionData = sc.textFile(s"$path/region.tbl")
@@ -77,17 +78,20 @@ object TPCHReplicatedTable {
       regionDF.write.insertInto("REGION")
     } else {
       regionDF.createOrReplaceTempView("REGION")
-      sqlContext.cacheTable("REGION")
+      if(cacheTables) {
+        sqlContext.cacheTable("REGION")
+      }
       sqlContext.table("REGION").count()
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create REGION Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"REGION,${endTime - startTime}")
     }
   }
 
   def createPopulateNationTable(usingOptionString: String, sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null): Unit = {
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null,
+      trace : Boolean = false, cacheTables : Boolean = true): Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     val nationData = sc.textFile(s"$path/nation.tbl")
@@ -109,24 +113,32 @@ object TPCHReplicatedTable {
       nationDF.write.insertInto("NATION")
     } else {
       nationDF.createOrReplaceTempView("NATION")
-      sqlContext.cacheTable("NATION")
+      if(cacheTables) {
+        sqlContext.cacheTable("NATION")
+      }
       sqlContext.table("NATION").count()
     }
     val endTime = System.currentTimeMillis()
     if (loadPerfPrintStream != null) {
-      loadPerfPrintStream.println(s"Time taken to create NATION Table : ${endTime - startTime}")
+      loadPerfPrintStream.println(s"NATION,${endTime - startTime}")
     }
   }
 
   def createPopulateSupplierTable(usingOptionString: String, sqlContext: SQLContext, path: String,
-      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null, numberOfLoadingStage : Int = 1)
+      isSnappy: Boolean, loadPerfPrintStream: PrintStream = null, numberOfLoadingStages : Int = 1,
+      trace : Boolean = false, cacheTables : Boolean = true)
       : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var unionSupplierDF : DataFrame = null
 
-    for(i <- 1 to numberOfLoadingStage) {
-      val supplierData = sc.textFile(s"$path/supplier.tbl.$i")
+    for(i <- 1 to numberOfLoadingStages) {
+      // apply a tbl.i suffix to table filename only when data is loaded in more than one stages.
+      var stage = ""
+      if (numberOfLoadingStages > 1) {
+        stage = s".$i"
+      }
+      val supplierData = sc.textFile(s"$path/supplier.tbl$stage")
       val supplierReadings = supplierData.map(s => s.split('|')).map(s => TPCHTableSchema
           .parseSupplierRow(s))
       val supplierDF = sqlContext.createDataFrame(supplierReadings)
@@ -158,7 +170,9 @@ object TPCHReplicatedTable {
     }
     if(!isSnappy){
       unionSupplierDF.createOrReplaceTempView("SUPPLIER")
-      sqlContext.cacheTable("SUPPLIER")
+      if(cacheTables) {
+        sqlContext.cacheTable("SUPPLIER")
+      }
       sqlContext.table("SUPPLIER").count()
     }
 

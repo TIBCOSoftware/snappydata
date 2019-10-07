@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,6 +22,7 @@ import java.io.File
 import java.net.URL
 import java.sql.{Connection, DriverManager}
 
+import _root_.io.snappydata.Constant
 import _root_.io.snappydata.cluster.ClusterManagerTestBase
 import org.joda.time.DateTime
 
@@ -51,12 +52,12 @@ class DynamicJarInstallationDUnitTest(val s: String)
 
   def verifyClassOnExecutors(snc: SnappyContext, className: String,
       version: String, count: Int): Unit = {
-    val countInstances = Utility.mapExecutors(snc,
+    val countInstances = Utility.mapExecutors[Int](snc.sparkContext,
       () => {
         if (DynamicJarInstallationDUnitTest.loadClass(className, version)) {
           Seq(1).iterator
         } else Iterator.empty
-      }).count
+      }).length
 
     assert(countInstances == count,
       s"Assertion failed as countInstances=$countInstances and count=$count did not match")
@@ -67,12 +68,13 @@ class DynamicJarInstallationDUnitTest(val s: String)
     var testJar = DynamicJarInstallationDUnitTest.createJarWithClasses(
       classNames = Seq("FakeJobClass", "FakeJobClass1"),
       toStringValue = "1",
-      Seq.empty, Seq.empty,
+      Nil, Nil,
       "testJar_SNAPPY_JOB_SERVER_JAR_%s.jar".format(System.currentTimeMillis()))
 
     var jobCompleted = false
 
-    var localProperty = (Seq("app1", DateTime.now) ++ Array[URL](testJar)).mkString(",")
+    var localProperty = (Seq("app1", DateTime.now, Constant.SNAPPY_JOB_URL)
+        ++ Array[URL](testJar)).mkString(",")
     sc.setLocalProperty("SNAPPY_CHANGEABLE_JAR_NAME", localProperty)
     // verify that jar is loaded at executors
     val rdd = sc.parallelize(1 to 10, 2)
@@ -106,10 +108,11 @@ class DynamicJarInstallationDUnitTest(val s: String)
     testJar = DynamicJarInstallationDUnitTest.createJarWithClasses(
       classNames = Seq("FakeJobClass", "FakeJobClass1"),
       toStringValue = "2",
-      Seq.empty, Seq.empty,
+      Nil, Nil,
       "testJar_SNAPPY_JOB_SERVER_JAR_%s.jar".format(System.currentTimeMillis()))
 
-    localProperty = (Seq("app1", DateTime.now) ++ Array[URL](testJar)).mkString(",")
+    localProperty = (Seq("app1", DateTime.now, Constant.SNAPPY_JOB_URL)
+        ++ Array[URL](testJar)).mkString(",")
     sc.setLocalProperty("SNAPPY_CHANGEABLE_JAR_NAME", localProperty)
     // verify that jar is loaded at executors
 

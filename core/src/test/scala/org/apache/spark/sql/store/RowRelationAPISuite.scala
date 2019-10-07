@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -71,8 +71,7 @@ class RowRelationAPISuite extends SnappyFunSuite with BeforeAndAfterAll {
         "USING row " +
         "options " +
         "(" +
-        "PARTITION_BY 'OrderId'," +
-        "PRESERVEPARTITIONS 'true')")
+        "PARTITION_BY 'OrderId')")
 
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table3")
     val count = snc.sql("select * from row_table3").count()

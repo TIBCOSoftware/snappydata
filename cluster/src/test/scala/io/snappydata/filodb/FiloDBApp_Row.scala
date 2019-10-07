@@ -76,7 +76,7 @@ object FiloDBApp_Row {
            USING row
            OPTIONS ()"""
 
-    val usingOptionString1 = s" USING row OPTIONS (PARTITION_BY 'MEDALLION', BUCKETS '5')"
+    val usingOptionString1 = s" USING row OPTIONS (PARTITION_BY 'MEDALLION', BUCKETS '8')"
 
 
     snc.sql(

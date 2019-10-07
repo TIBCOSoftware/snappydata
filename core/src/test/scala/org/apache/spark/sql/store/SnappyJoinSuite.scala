@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,10 +21,13 @@ import io.snappydata.core.{RefData, TestData2}
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.exchange.Exchange
-import org.apache.spark.sql.execution.joins.{HashJoinExec, SortMergeJoinExec}
+import org.apache.spark.sql.execution.exchange.{BroadcastExchangeExec, Exchange}
+import org.apache.spark.sql.execution.joins.{CartesianProductExec, HashJoinExec, SortMergeJoinExec}
 import org.apache.spark.sql.execution.{PartitionedPhysicalScan, QueryExecution, RowDataSourceScanExec}
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.{DataFrame, Row, SaveMode, SnappyContext, SnappySession}
+
+case class TestDatak(key1: Int, value: String, ref: Int)
 
 class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -179,6 +182,36 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     assert(countDf.count() === 1000) // Make sure aggregation is working with local join
   }
 
+
+  test("Check shuffle in operations with partition pruning"){
+    val t1 = "t1"
+    val t2 = "t2"
+
+    snc.setConf[Long](SQLConf.AUTO_BROADCASTJOIN_THRESHOLD, -1L)
+    snc.sql(s"create table $t1 (ol_1_int_id  integer," +
+        s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+        "options( partition_by 'ol_1_int_id', buckets '16')")
+    snc.sql(s"create table $t2 (ol_1_int_id  integer," +
+        s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+        "options( partition_by 'ol_1_int_id', buckets '16')")
+
+    var df = snc.sql(s"select sum(ol_1_int2_id)  from $t1 where ol_1_int_id=1")
+    checkForShuffle(df.logicalPlan, snc , shuffleExpected = false)
+
+    // with limit
+    df = snc.sql(s"select sum(ol_1_int2_id)  from $t1 where ol_1_int_id=1 limit 1")
+    checkForShuffle(df.logicalPlan, snc , shuffleExpected = false)
+
+    df = snc.sql(s"update $t1 set ol_1_str_id = '3' where ol_1_int_id in (" +
+        s"select ol_1_int_id from $t2 where $t2.ol_1_int_id=1)")
+
+    checkForShuffle(df.logicalPlan, snc , shuffleExpected = false)
+
+    snc.dropTable("t1");
+    snc.dropTable("t2");
+
+  }
+
   /**
    * This method is very specific to  PartitionedDataSourceScan and
    * snappy join improvements
@@ -205,10 +238,23 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     }
   }
 
+  def checkForBroadcast(df: DataFrame, session: SnappySession,
+      broadcastExpected: Boolean): Unit = {
+    val lj = df.queryExecution.executedPlan collect {
+      case ex: BroadcastExchangeExec => ex
+    }
+    if (broadcastExpected) {
+      if (lj.isEmpty) sys.error("Broadcast expected but was not found")
+    } else {
+      if (lj.nonEmpty) sys.error(s"Broadcast not expected but was found: $lj")
+    }
+  }
+
   test("Row PR table join with PR Table") {
 
     val dimension1 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, i % 10 + 1)))
+    snc.conf.setConfString("spark.sql.autoBroadcastJoinThreshold", "-1")
     val refDf = snc.createDataFrame(dimension1)
     snc.sql("DROP TABLE IF EXISTS PR_TABLE1")
 
@@ -496,10 +542,316 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         s"R.ORDERID = Q.OrderId AND R.ORDERREF = Q.OrderRef")
     checkForShuffle(excatJoinKeys.logicalPlan, snc, shuffleExpected = true)
     assert(excatJoinKeys.count() === 500)
+
+    // check CROSS JOIN without requiring spark.sql.crossJoin.enabled property
+    val crossJoin = snc.sql("select P.ORDERREF, P.DESCRIPTION from " +
+        "PR_TABLE11 P INNER JOIN PR_TABLE12 R " +
+        "ON (P.ORDERID = R.OrderId AND P.ORDERREF = R.OrderRef) " +
+        "CROSS JOIN PR_TABLE13 Q")
+    // expected cartesian product
+    val qe = new QueryExecution(snc.snappySession, crossJoin.logicalPlan)
+    assert(qe.executedPlan.find(_.isInstanceOf[CartesianProductExec]).isDefined)
+    assert(crossJoin.count() === 500000)
+  }
+
+  test("SnappyAggregation partitioning") {
+
+    val dimension1 = sc.parallelize(
+      (1 to 1000).map(i => TestDatak(i % 10, i.toString, i % 10)))
+    val refDf = snc.createDataFrame(dimension1)
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE20")
+
+    snc.sql("CREATE TABLE PR_TABLE20(OrderId INT, description String, " +
+        "OrderRef INT) USING column options (" +
+        "PARTITION_BY 'OrderId,OrderRef')")
+    refDf.write.insertInto("PR_TABLE20")
+    val groupBy1 = snc.sql(s"select  OrderRef, orderId from pr_table20 group by OrderRef, orderId")
+    checkForShuffle(groupBy1.logicalPlan, snc, shuffleExpected = false)
+    val groupBy2 = snc.sql(s"select  orderId, sum(orderRef) from pr_table20 group by orderId")
+    checkForShuffle(groupBy2.logicalPlan, snc, shuffleExpected = true)
+  }
+
+  private def loadTables(tableType: String, primaryKey: String,
+      partitioning: String, colocation: String): Unit = {
+
+    snc.sql(s"create table trade.customers" +
+        s" (cid int not null $primaryKey, cust_name varchar(100), " +
+        s"since date, addr varchar(100), tid int) " +
+        s"USING $tableType OPTIONS ($partitioning)")
+
+    snc.sql("create table trade.securities (sec_id int not null," +
+        " symbol varchar(10) not null, price decimal (30, 20)," +
+        " exchange varchar(10) not null, tid int," +
+        " constraint sec_pk primary key (sec_id)," +
+        " constraint sec_uq unique (symbol, exchange)," +
+        " constraint exc_ch check" +
+        " (exchange in ('nasdaq', 'nye', 'amex', 'lse', 'fse', 'hkse', 'tse')))")
+
+    snc.sql(s"create table trade.networth (cid int not null $primaryKey, " +
+        s"cash decimal (30, 20), securities decimal (30, 20), " +
+        s"loanlimit int, availloan decimal (30, 20),  tid int) " +
+        s"USING $tableType OPTIONS ($partitioning$colocation)")
+
+    val contraint = if (primaryKey.isEmpty) "" else s", constraint portf_pk primary key (cid, sid)"
+    snc.sql("create table trade.portfolio (cid int not null," +
+        " sid int not null, qty int not null," +
+        " availQty int not null, subTotal decimal(30,20)," +
+        s" tid int$contraint)" +
+        s" USING $tableType OPTIONS ($partitioning$colocation)")
+
+    snc.sql(s"create table trade.sellorders (oid int not null $primaryKey," +
+        " cid int, sid int, qty int, ask decimal (30, 20), order_time timestamp," +
+        " status varchar(10), tid int)" +
+        s" USING $tableType OPTIONS ($partitioning$colocation)")
+
+    snc.sql(s"insert into trade.customers values(1,'abc','2012-01-14','abc-xyz',1)")
+    snc.sql(s"insert into trade.customers values(2,'aaa','2012-01-14','aaa-xyz',1)")
+    snc.sql(s"insert into trade.customers values(3,'bbb','2012-02-14','abb-xyz',1)")
+    snc.sql(s"insert into trade.customers values(4,'ccc','2012-02-16','ccc-xyz',1)")
+    snc.sql(s"insert into trade.customers values(5,'ddd','2012-01-16','ddd-xyz',1)")
+    snc.sql(s"insert into trade.customers values(6,'eee','2012-03-17','eee-xyz',1)")
+
+    snc.sql("insert into trade.securities values(1,'abc',10.2,'amex',1)")
+    snc.sql("insert into trade.securities values(2,'aaa',10.2,'amex',1)")
+    snc.sql("insert into trade.securities values(3,'bbb',2.3,'nye',1)")
+    snc.sql("insert into trade.securities values(4,'ccc',1.2,'nye',1)")
+    snc.sql("insert into trade.securities values(5,'ddd',5.4,'lse',1)")
+    snc.sql("insert into trade.securities values(6,'eee',15.4,'lse',1)")
+
+    snc.sql("insert into trade.portfolio values(1,1,10,8,11.2,1)")
+    snc.sql("insert into trade.portfolio values(2,2,12,11,13.2,1)")
+    snc.sql("insert into trade.portfolio values(3,3,13,12,15.4,1)")
+    snc.sql("insert into trade.portfolio values(4,4,15,14,17.6,1)")
+    snc.sql("insert into trade.portfolio values(5,5,20,12,14.2,1)")
+    snc.sql("insert into trade.portfolio values(6,6,17,10,12.2,1)")
+
+    snc.sql("insert into trade.sellorders values(1,1,1,10,10.2,'2012-01-14 13:18:42.658','open',1)")
+    snc.sql("insert into trade.sellorders values(2,2,2,8,10.2,'2012-01-14 13:18:42.658','open',1)")
+    snc.sql("insert into trade.sellorders values(3,3,3,9,13.2,'2012-01-14 13:18:42.658','open',1)")
+    snc.sql("insert into trade.sellorders values(4,4,4,12,13.2,'2012-01-14 13:18:42.658','open',1)")
+    snc.sql("insert into trade.sellorders values(5,5,5,15,13.2,'2012-01-14 13:18:42.658','open',1)")
+    snc.sql("insert into trade.sellorders values(6,6,6,19,15.2,'2012-01-14 13:18:42.658','open',1)")
+
+    snc.sql(s"insert into trade.networth values(1,10.2,11.2,10000,5000,1)")
+    snc.sql(s"insert into trade.networth values(2,10.2,11.2,10000,5000,1)")
+    snc.sql(s"insert into trade.networth values(3,13.2,11.2,15000,8000,1)")
+    snc.sql(s"insert into trade.networth values(4,13.2,11.2,12000,3000,1)")
+    snc.sql(s"insert into trade.networth values(5,13.2,14.2,20000,10000,1)")
+    snc.sql(s"insert into trade.networth values(6,15.2,12.2,25000,15000,1)")
+  }
+
+  private def checkQueries_2451(): Unit = {
+
+    var df = snc.sql(s" select f.cid, cust_name, f.sid," +
+        s" so.sid, so.qty, subTotal, oid, order_time, ask" +
+        s" from trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so " +
+        s"where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal >13 and c.cid>3 and f.tid = 1")
+
+    assert(df.collect().size === 2)
+
+    df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal >13 and c.cid>1 and f.tid = 1")
+    assert(df.collect().size === 4)
+
+    df = snc.sql(s"select n.cid, cust_name, n.securities, n.cash, n.tid, " +
+        s"c.cid from trade.customers c, trade.networth n where  n.cid = c.cid" +
+        s" and n.tid = 1 and c.cid > 3")
+    assert(df.collect().size === 3)
+    df = snc.sql(s"select n.cid, cust_name, n.securities, n.cash, n.tid, c.cid" +
+        s" from trade.customers c, trade.networth n where n.cid = c.cid" +
+        s" and n.tid = 1 and c.cid > 5")
+    assert(df.collect().size === 1)
+  }
+
+  private def dropTables(): Unit = {
+    snc.sql("drop table trade.sellorders")
+    snc.sql("drop table trade.portfolio")
+    snc.sql("drop table trade.networth")
+    snc.sql("drop table trade.securities")
+    snc.sql("drop table trade.customers")
+  }
+
+  test("SNAP-2451") {
+
+    loadTables("ROW", "primary key", "partition_by 'cid'", ", colocate_with 'trade.customers'")
+
+    snc.sql(s"set spark.sql.autoBroadcastJoinThreshold = -1")
+    // snc.sql(s"set snappydata.sql.hashJoinSize=-1")
+
+    checkQueries_2451()
+
+    dropTables()
+    loadTables("COLUMN", "", "", "")
+
+    checkQueries_2451()
+    var df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal > 4 and c.cid = 1 and f.tid = 1")
+    assert(df.collect().size === 1)
+    df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal > 4 and c.cid = 2 and f.tid = 1")
+    assert(df.collect().size === 1)
+
+    dropTables()
+    loadTables("COLUMN", "", "partition_by 'cid'", ", colocate_with 'trade.customers'")
+
+    checkQueries_2451()
+    df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal > 4 and c.cid = 1 and f.tid = 1")
+    var result = df.collect()
+    assert(result.length === 1)
+    df = snc.sql(s" select f.cid, cust_name, f.sid, so.sid," +
+        s" so.qty, subTotal, oid, order_time, ask from" +
+        s" trade.customers c," +
+        s" trade.portfolio f," +
+        s" trade.sellorders so" +
+        s" where c.cid= f.cid and f.sid = so.sid and c.cid = so.cid" +
+        s" and subTotal > 4 and c.cid = 2 and f.tid = 1")
+    result = df.collect()
+    assert(result.length === 1)
+    dropTables()
+  }
+
+  test("SNAP-2443") {
+    val testDF = snc.range(100000).selectExpr("id")
+    var splits = testDF.randomSplit(Array(0.7, 0.3))
+    var randomTraining = splits(0)
+    var randomTesting = splits(1)
+    randomTraining.createOrReplaceTempView("randomTraining")
+    var summary = snc.sql("select sum(1) from randomTraining")
+    val one = summary.collect()(0)(0).asInstanceOf[Long]
+    splits = testDF.randomSplit(Array(0.5, 0.5))
+    randomTraining = splits(0)
+    randomTesting = splits(1)
+    randomTraining.createOrReplaceTempView("randomTraining")
+    summary = snc.sql("select sum(1) from randomTraining")
+    val two = summary.collect()(0)(0).asInstanceOf[Long]
+    assert(two < one)
+  }
+
+  test("SNAP-2656") {
+    val snc = this.snc
+    val session = snc.snappySession
+    // set broadcast back to default due to changes by previous tests
+    session.sql("set spark.sql.autoBroadcastJoinThreshold=10000000")
+
+    session.sql("create table t1 (c1 int, c2 int) options (partition_by 'c1')")
+    session.sql("create table t2 (c1 int, c2 int) options (partition_by 'c1')")
+    session.sql("insert into t1 values (2, 10), (2, 20), (3, 30)")
+    session.sql("insert into t2 values (1, 10), (2, 20), (3, 30)")
+    session.sql("create table t3 (c1 int, c2 int, c3 string) using column " +
+        "options (partition_by 'c1,c2')")
+    session.sql("create table t4 (c1 int, c2 int, c3 string) using column " +
+        "options (partition_by 'c1,c2')")
+    session.sql("insert into t3 values (1, 10, 'one'), (2, 20, 'two'), (3, 30, 'three')")
+    session.sql("insert into t4 values (2, 10, 'two1'), (2, 20, 'two'), (3, 30, '3')")
+
+    val q1 = "select t1.*, t2.c2 from t1 join t2 on (t1.c1 = t2.c1) " +
+        "where t1.c2 = (select max(c2) from t2 where t1.c1 = t2.c1)"
+    val q2 = "select t1.*, t2.c2 from t1 join t2 on (t1.c1 = t2.c1 and t1.c2 = t2.c2) " +
+        "where t1.c2 = (select max(c2) from t2 where t1.c1 = t2.c1)"
+    val q3 = "select t1.*, t2.c2 from t1 join t2 on (t1.c1 = t2.c1) " +
+        "where t1.c2 = (select max(c2) from t2 where t1.c1 = t2.c1 and t1.c2 = t2.c2)"
+    val q4 = "select t1.*, t2.c2 from t1 join t2 on (t1.c1 = t2.c1 and t1.c2 = t2.c2) " +
+        "where t1.c2 = (select max(c2) from t2 where t1.c1 = t2.c1 and t1.c2 = t2.c2)"
+
+    val q5 = "select t4.*, t3.c3 from t3 join t4 on (t3.c1 = t4.c1 and t3.c2 = t4.c2) " +
+        "where t3.c3 = (select max(c3) from t4 where t3.c1 = t4.c1 and t3.c2 = t4.c2)"
+    val res5 = Array(Row(2, 20, "two", "two"))
+    val q6 = "select t4.*, t3.c3 from t4 join t3 on (t4.c2 = t3.c2 and t4.c1 = t3.c1) " +
+        "where t3.c2 = (select max(c2) from t4 where t4.c1 = t3.c1 and t4.c2 = t3.c2)"
+    val res6 = Array(Row(2, 20, "two", "two"), Row(3, 30, "3", "three"))
+    val q7 = "select t4.*, t3.c3 from t3 join t4 on (t3.c1 = t4.c1) " +
+        "where t3.c2 = (select max(c2) from t4 where t3.c1 = t4.c1 and t3.c2 = t4.c2)"
+    val q8 = "select t4.*, t3.c3 from t4 join t3 on (t4.c1 = t3.c1 and t4.c3 = t3.c3) " +
+        "where t3.c2 = (select max(c2) from t4 where t4.c1 = t3.c1 and t4.c2 = t3.c2)"
+    val res5_8 = Array(res5, res6, Row(2, 10, "two1", "two") +: res6, res5)
+
+    // all queries will result in broadcast plans due to small size
+    for (q <- Seq(q1, q2, q3, q4)) {
+      val df = session.sql(q)
+      checkForBroadcast(df, session, broadcastExpected = true)
+      val result = df.collect()
+      assert(result.sortBy(_.getInt(0)) === Array(Row(2, 20, 20), Row(3, 30, 30)))
+    }
+    for ((q, i) <- Seq(q5, q6, q7, q8).zipWithIndex) {
+      val df = session.sql(q)
+      checkForBroadcast(df, session, broadcastExpected = true)
+      val result = df.collect()
+      assert(result.sortBy(r => r.getInt(0) * 100 + r.getInt(1)) === res5_8(i))
+    }
+
+    // turning off broadcast should ensure it does not result in a shuffle in any of the queries
+    session.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
+
+    for (q <- Seq(q1, q2, q3, q4)) {
+      val df = session.sql(q)
+      checkForBroadcast(df, session, broadcastExpected = false)
+      checkForShuffle(df.logicalPlan, snc, shuffleExpected = false)
+      val result = df.collect()
+      assert(result.sortBy(_.getInt(0)) === Array(Row(2, 20, 20), Row(3, 30, 30)))
+    }
+    for ((q, i) <- Seq(q5, q6, q7, q8).zipWithIndex) {
+      val df = session.sql(q)
+      checkForBroadcast(df, session, broadcastExpected = false)
+      // exchange is expected when join keys are a subset or partially overlap partitioning keys
+      checkForShuffle(df.logicalPlan, snc, shuffleExpected = i >= 2)
+      // exactly two shuffles for last two
+      if (i >= 2) {
+        assert(df.queryExecution.executedPlan.collect {
+          case _: Exchange => true
+        }.length === 2)
+      }
+      val result = df.collect()
+      assert(result.sortBy(r => r.getInt(0) * 100 + r.getInt(1)) === res5_8(i))
+    }
+
+    session.sql("drop table t1")
+    session.sql("drop table t2")
+    session.sql("drop table t3")
+    session.sql("drop table t4")
   }
 
   def partitionToPartitionJoinAssertions(snc: SnappyContext,
       t1: String, t2: String): Unit = {
+
+    val nullableEquality = snc.sql(s"select P.OrderRef, P.description from " +
+        s"$t1 P JOIN $t2 R ON P.OrderId = R.OrderId" +
+        s" AND P.OrderRef <=> R.OrderRef")
+    // TODO Why an exchange is needed for coalesce.
+    checkForShuffle(nullableEquality.logicalPlan, snc, shuffleExpected = true)
+    assert(nullableEquality.count() === 500)
+
+    val withCoalesce = snc.sql(s"select P.OrderRef, P.description from " +
+        s"$t1 P JOIN $t2 R ON P.OrderId = R.OrderId" +
+        s" AND coalesce(P.OrderRef,0) = coalesce(R.OrderRef,0)")
+    // TODO Why an exchange is needed for coalesce.
+
+    checkForShuffle(withCoalesce.logicalPlan, snc, shuffleExpected = true)
+    assert(withCoalesce.count() === 500)
+
     val excatJoinKeys = snc.sql(s"select P.OrderRef, P.description from " +
         s"$t1 P JOIN $t2 R ON P.OrderId = R.OrderId AND P.OrderRef = R.OrderRef")
     checkForShuffle(excatJoinKeys.logicalPlan, snc, shuffleExpected = false)
@@ -596,5 +948,5 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     assert(fullOuterJoinDF.count() == 1500)
   }
 
-  protected def isDifferentJoinOrderSupported: Boolean = false
+  protected def isDifferentJoinOrderSupported: Boolean = true
 }

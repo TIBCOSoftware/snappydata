@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -49,6 +49,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
     ClusterManagerTestBase.stopNetworkServers()
     super.afterClass()
+    Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
+      "validateNoActiveSnapshotTX"))
     vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
   }
 
@@ -136,8 +138,8 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     conn.close()
   }
 
-  private lazy val totalProcessors = Utils.mapExecutors(sc, (_, _) =>
-    Iterator(Runtime.getRuntime.availableProcessors())).collect().sum
+  private lazy val totalProcessors = Utils.mapExecutors[Int](sc, () =>
+    Iterator(Runtime.getRuntime.availableProcessors())).sum
 
   private def validateReplicatedTableQueries(snc: SnappyContext): Unit = {
     for (q <- NWQueries.queries) {
@@ -761,7 +763,10 @@ object NorthWindDUnitTest {
     // scalastyle:off println
     pw.println(s"$queryNum Result Collected in files with prefix $snappyFile")
     if (!new File(s"$sparkFile.0").exists()) {
-      val sparkDF = sqlContext.sql(sqlString).sort(col1, col: _*)
+      var sparkDF = sqlContext.sql(sqlString)
+      val col = sparkDF.schema.fieldNames(0)
+      val cols = sparkDF.schema.fieldNames.tail
+      sparkDF = sparkDF.sort(col, cols: _*)
       writeToFile(sparkDF, sparkFile, snc)
       pw.println(s"$queryNum Result Collected in files with prefix $sparkFile")
     }
@@ -897,42 +902,142 @@ object NorthWindDUnitTest {
           NWQueries.Q24, 4, "Q24", tableType, pw, sqlContext)
         case "Q25" => assertJoinFullResultSet(snc,
           NWQueries.Q25, 1, "Q25", tableType, pw, sqlContext)
+        /*
+        case "Q25_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q25_1, 1, "Q25_1", tableType, pw, sqlContext)
+        case "Q25_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q25_2, 1, "Q25_2", tableType, pw, sqlContext)
+        */
         case "Q26" => assertJoinFullResultSet(snc,
           NWQueries.Q26, 86, "Q26", tableType, pw, sqlContext)
+        /*
+        case "Q26_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q26_1, 54, "Q26_1", tableType, pw, sqlContext)
+        case "Q26_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q26_2, 60, "Q26_2", tableType, pw, sqlContext)
+        */
         case "Q27" => assertJoinFullResultSet(snc,
           NWQueries.Q27, 9, "Q27", tableType, pw, sqlContext)
+        /*
+        case "Q27_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q27_1, 5, "Q27_1", tableType, pw, sqlContext)
+        case "Q27_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q27_2, 8, "Q27_2", tableType, pw, sqlContext)
+        case "Q27_3" => assertJoinFullResultSet(snc,
+          NWQueries.Q27_3, 3, "Q27_3", tableType, pw, sqlContext)
+        case "Q27_4" => assertJoinFullResultSet(snc,
+          NWQueries.Q27_4, 6, "Q27_4", tableType, pw, sqlContext)
+        */
         case "Q28" => assertJoinFullResultSet(snc,
           NWQueries.Q28, 12, "Q28", tableType, pw, sqlContext)
+        /*
+        case "Q28_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q28_1, 12, "Q28_1", tableType, pw, sqlContext)
+        case "Q28_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q28_2, 5, "Q28_2", tableType, pw, sqlContext)
+        */
         case "Q29" => assertJoinFullResultSet(snc,
           NWQueries.Q29, 8, "Q29", tableType, pw, sqlContext)
+        /*
+        case "Q29_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q29_1, 5, "Q29_1", tableType, pw, sqlContext)
+        case "Q29_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q29_2, 6, "Q29_2", tableType, pw, sqlContext)
+        */
         case "Q30" => assertJoinFullResultSet(snc,
           NWQueries.Q30, 8, "Q30", tableType, pw, sqlContext)
+        /*
+        case "Q30_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q30_1, 8, "Q30_1", tableType, pw, sqlContext)
+        case "Q30_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q30_2, 6, "Q30_2", tableType, pw, sqlContext)
+        */
         case "Q31" => assertJoinFullResultSet(snc,
           NWQueries.Q31, 830, "Q31", tableType, pw, sqlContext)
+        /*
+        case "Q31_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q31_1, 502, "Q31_1", tableType, pw, sqlContext)
+        case "Q31_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q31_2, 286, "Q31_2", tableType, pw, sqlContext)
+        case "Q31_3" => assertJoinFullResultSet(snc,
+          NWQueries.Q31_3, 219, "Q31_3", tableType, pw, sqlContext)
+        case "Q31_4" => assertJoinFullResultSet(snc,
+          NWQueries.Q31_4, 484, "Q31_4", tableType, pw, sqlContext)
+        */
         case "Q32" => assertJoinFullResultSet(snc,
           NWQueries.Q32, 8, "Q32", tableType, pw, sqlContext)
+        /*
+        case "Q32_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q32_1, 282, "Q32_1", tableType, pw, sqlContext)
+        */
         case "Q33" => assertJoinFullResultSet(snc,
           NWQueries.Q33, 37, "Q33", tableType, pw, sqlContext)
+        /*
+        case "Q33_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q33_1, 769, "Q33_1", tableType, pw, sqlContext)
+        */
         case "Q34" => assertJoinFullResultSet(snc,
           NWQueries.Q34, 5, "Q34", tableType, pw, sqlContext)
+        /*
+        case "Q34_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q34_1, 1, "Q34_1", tableType, pw, sqlContext)
+        case "Q34_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q34_2, 4, "Q34_2", tableType, pw, sqlContext)
+        */
         case "Q35" => assertJoinFullResultSet(snc,
           NWQueries.Q35, 3, "Q35", tableType, pw, sqlContext)
+        /*
+        case "Q35_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q35_1, 2, "Q35_1", tableType, pw, sqlContext)
+        case "Q35_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q35_2, 3, "Q35_2", tableType, pw, sqlContext)
+        */
         case "Q36" => assertJoinFullResultSet(snc,
           NWQueries.Q36, 290, "Q36", tableType, pw, sqlContext)
+        /*
+        case "Q36_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q36_1, 232, "Q36_1", tableType, pw, sqlContext)
+        case "Q36_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q36_2, 61, "Q36_2", tableType, pw, sqlContext)
+        */
         case "Q37" => /* assertJoinFullResultSet(snc,
           NWQueries.Q37, 77, "Q37", tableType, pw, sqlContext) */
         case "Q38" => assertJoinFullResultSet(snc,
           NWQueries.Q38, 2155, "Q38", tableType, pw, sqlContext)
+        /*
+        case "Q38_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q38_1, 2080, "Q38_1", tableType, pw, sqlContext)
+        case "Q38_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q38_2, 2041, "Q38_2", tableType, pw, sqlContext)
+        */
         case "Q39" => assertJoinFullResultSet(snc,
           NWQueries.Q39, 9, "Q39", tableType, pw, sqlContext)
         case "Q40" => assertJoinFullResultSet(snc,
           NWQueries.Q40, 830, "Q40", tableType, pw, sqlContext)
+        /*
+        case "Q40_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q40_1, 12, "Q40_1", tableType, pw, sqlContext)
+        case "Q40_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q40_2, 9, "Q40_2", tableType, pw, sqlContext)
+        */
         case "Q41" => assertJoinFullResultSet(snc,
           NWQueries.Q41, 2155, "Q41", tableType, pw, sqlContext)
         case "Q42" => assertJoinFullResultSet(snc,
           NWQueries.Q42, 22, "Q42", tableType, pw, sqlContext)
+        /*
+        case "Q42_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q42_1, 22, "Q42_1", tableType, pw, sqlContext)
+        case "Q42_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q42_2, 7, "Q42_2", tableType, pw, sqlContext)
+        */
         case "Q43" => assertJoinFullResultSet(snc,
           NWQueries.Q43, 830, "Q43", tableType, pw, sqlContext)
+        /*
+        case "Q43_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q43_1, 10, "Q43_1", tableType, pw, sqlContext)
+        case "Q43_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q43_2, 2, "Q43_2", tableType, pw, sqlContext)
+        */
         case "Q44" => assertJoinFullResultSet(snc,
           NWQueries.Q44, 830, "Q44", tableType, pw, sqlContext)
         case "Q45" => assertJoinFullResultSet(snc,
@@ -945,10 +1050,22 @@ object NorthWindDUnitTest {
           NWQueries.Q48, 1788650, "Q48", tableType, pw, sqlContext)
         case "Q49" => assertJoinFullResultSet(snc,
           NWQueries.Q49, 1788650, "Q49", tableType, pw, sqlContext)
+        /*
+        case "Q49_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q49_1, 1713225, "Q49_1", tableType, pw, sqlContext)
+        case "Q49_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q49_2, 1741240, "Q49_2", tableType, pw, sqlContext)
+        */
         case "Q50" => assertJoinFullResultSet(snc,
           NWQueries.Q50, 2155, "Q50", tableType, pw, sqlContext)
         case "Q51" => assertJoinFullResultSet(snc,
           NWQueries.Q51, 2155, "Q51", tableType, pw, sqlContext)
+        /*
+        case "Q51_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q51_1, 2080, "Q51_1", tableType, pw, sqlContext)
+        case "Q51_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q51_2, 2041, "Q51_2", tableType, pw, sqlContext)
+        */
         case "Q52" => assertJoinFullResultSet(snc,
           NWQueries.Q52, 2155, "Q52", tableType, pw, sqlContext)
         case "Q53" => assertJoinFullResultSet(snc,
@@ -957,8 +1074,22 @@ object NorthWindDUnitTest {
           NWQueries.Q54, 2155, "Q54", tableType, pw, sqlContext)
         case "Q55" => assertJoinFullResultSet(snc,
           NWQueries.Q55, 21, "Q55", tableType, pw, sqlContext)
+        /*
+        case "Q55_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q55_1, 7, "Q55_1", tableType, pw, sqlContext)
+        case "Q55_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q55_2, 6, "Q55_2", tableType, pw, sqlContext)
+        */
         case "Q56" => assertJoinFullResultSet(snc,
           NWQueries.Q56, 8, "Q56", tableType, pw, sqlContext)
+        /*
+        case "Q56_1" => assertJoinFullResultSet(snc,
+          NWQueries.Q56, 8, "Q56_1", tableType, pw, sqlContext)
+        case "Q56_2" => assertJoinFullResultSet(snc,
+          NWQueries.Q56, 8, "Q56_2", tableType, pw, sqlContext)
+        case "Q56_3" => assertJoinFullResultSet(snc,
+          NWQueries.Q56, 8, "Q56_3", tableType, pw, sqlContext)
+        */
         case _ =>
           // scalastyle:off println
           println("OK")

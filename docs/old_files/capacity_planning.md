@@ -29,7 +29,7 @@ It is recommended to use 2 X number of cores on a machine. If more than one serv
 `spark.executor.cores` is used to override the number of cores per server.
 
 For example, for a cluster with 2 servers running on two different machines with  4 CPU cores each, a maximum number of tasks that can run concurrently is 16. </br> 
-If a table has 17 partitions (buckets, for row or column tables), a scan query on this table creates 17 tasks. This means, 16 tasks runs concurrently and the last task will run when one of these 16 tasks has finished execution.
+If a table has 16 partitions (buckets, for row or column tables), a scan query on this table creates 16 tasks. This means, 16 tasks runs concurrently and the last task will run when one of these 16 tasks has finished execution.
 
 SnappyData uses an optimization method which clubs multiple partitions on a single machine to form a single partition when there are fewer cores available. This reduces the overhead of scheduling partitions. 
 

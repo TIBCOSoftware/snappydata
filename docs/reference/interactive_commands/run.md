@@ -4,7 +4,7 @@ Treats the value of the string as a valid file name, and redirects `snappy` proc
 
 ## Syntax
 
-``` pre
+```pre
 RUN String
 ```
 
@@ -18,7 +18,7 @@ Any changes made to the `snappy` environment by the file are visible in the envi
 
 ## Example
 
-``` pre
+```pre
 snappy> run 'ToursDB_schema.sql';
 ```
 

@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package org.apache.spark.examples.snappydata
 
 import java.sql.{Blob, Connection, DriverManager}
@@ -47,10 +64,23 @@ object JDBCWithComplexTypes {
   }
 
   def readComplexType(conn: Connection): Unit = {
-    println(s"Reading results as  BLOB and Bytes ...")
+    println(s"Reading results as JSON ...")
     val stmt = conn.createStatement()
+    var rs = stmt.executeQuery(s"SELECT * FROM $tableName")
+    while (rs.next()) {
+      val res1 = rs.getString(2)
+      println(s"res1 = $res1")
+      val res2 = rs.getString("col2")
+      println(s"res2 = $res2")
+      val res3 = rs.getObject("col2")
+      println(s"res3 = $res3")
+      val res4 = rs.getClob("col2")
+      println(s"res4 = $res4")
+    }
+
+    println(s"Reading results as  BLOB and Bytes ...")
     val serializer = ComplexTypeSerializer.create(tableName, "col2", conn)
-    val rs = stmt.executeQuery(s"SELECT * FROM $tableName")
+    rs = stmt.executeQuery(s"SELECT * FROM $tableName --+ complexTypeAsJson(0)")
     while (rs.next()) {
       val res1 = serializer.deserialize(rs.getBytes(2))
       println(s"res1 = $res1")
@@ -63,7 +93,6 @@ object JDBCWithComplexTypes {
       println(s"res4 = $res4")
     }
   }
-
 
   private def doOperationsUsingJDBC(clientPort: String) {
     // JDBC url string to connect to SnappyData cluster
@@ -100,7 +129,7 @@ object JDBCWithComplexTypes {
 
   def printUsage(): Unit = {
     val usage: String =
-      "Usage: bin/run-example JDBCWithComplexTypes <clientPort>\n" +
+      "Usage: bin/run-example snappydata.JDBCWithComplexTypes <clientPort>\n" +
           "\n" +
           "clientPort - client port number for SnappyData on which JDBC connections are accepted \n"
     println(usage)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,19 +16,20 @@
  */
 package io.snappydata.gemxd
 
-import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
 import java.util.Properties
 
 import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.TestUtil
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.core.LocalSparkConf
 
-import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
+import org.apache.spark.sql.{Row, SaveMode}
 
 class BasicStoreSuite(s: String) extends TestUtil(s) {
 
   override protected def tearDown(): Unit = {
+    if (Misc.getMemStoreBootingNoThrow == null) return
     val conn = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
     try {
       conn.createStatement().execute("drop table if exists t1")

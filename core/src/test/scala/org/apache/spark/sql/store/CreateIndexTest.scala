@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,14 +21,15 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.collection.mutable.ListBuffer
 
 import io.snappydata.app.{Data1, Data2, Data3}
-import io.snappydata.{Property, QueryHint, SnappyFunSuite}
+import io.snappydata.{QueryHint, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterEach
 
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Descending}
 import org.apache.spark.sql.execution.PartitionedPhysicalScan
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.joins.{HashJoinExec, SortMergeJoinExec}
+import org.apache.spark.sql.execution.joins.HashJoinExec
 import org.apache.spark.sql.execution.row.RowFormatRelation
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SaveMode, SnappyContext}
@@ -100,7 +101,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         Data2(s.head.asInstanceOf[Int], s(1).asInstanceOf[String], s(2).asInstanceOf[String]))
       val dataDF = snContext.createDataFrame(rdd)
 
-      dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+      dataDF.write.format("column").options(props).saveAsTable(tableName)
       tablesToDrop += tableName
     }
 
@@ -124,7 +125,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     }
 
     executeQ(s"select * from $tableName where col2 = 'aaa' ") {
-      CreateIndexTest.validateIndex(Seq.empty, tableName)(_)
+      CreateIndexTest.validateIndex(Nil, tableName)(_)
     }
 
     executeQ(s"select * from $tableName where col2 = 'bbb' and col3 = 'halo' ") {
@@ -159,7 +160,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.createTable(s"$table2", "column", dataDF.schema, props)
     tablesToDrop += table2
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("column").options(props).saveAsTable(tableName)
     tablesToDrop += tableName
 
     doPrint("Verify index create and drop for various index types")
@@ -189,19 +190,78 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.sql("drop index test1")
 
     snContext.createIndex("test1", tableName,
-      Map(("col1" -> None)), Map("colocate_with" -> tableName))
+      Seq("col1" -> None), Map("colocate_with" -> tableName))
     snContext.dropIndex("test1", false)
-    snContext.createIndex("test1", tableName, Map(("col1" -> None)),
+    snContext.createIndex("test1", tableName, Seq("col1" -> None),
       Map.empty[String, String])
     snContext.dropIndex("test1", false)
 
-    snContext.createIndex("test1", tableName, Map(("col1" -> Some(Ascending))),
+    snContext.createIndex("test1", tableName, Seq("col1" -> Some(Ascending)),
       Map.empty[String, String])
     snContext.dropIndex("test1", false)
 
     // drop non-existent indexes with if exist clause
     snContext.dropIndex("test1", true)
     snContext.sql("drop index if exists test1")
+  }
+
+  test("Test case-sensitivity of index column names (GITHUB-900)") {
+    val tableName = "SCHEMA_MIGRATIONS_2"
+    val indexName = "SCHEMA_MIGRATIONS_VERSION_IDX"
+    val snContext = context.get
+    val data = Seq(Row(111L, "aaa"), Row(222L, "bbb"), Row(333L, "aaa"),
+      Row(444L, "bbb"), Row(555L, "ccc"), Row(666L, "ccc"))
+
+    import snContext.implicits._
+
+    // test using SQL first
+    snContext.sql("drop table if exists " + tableName)
+    snContext.sql(
+      s"""create table $tableName("version" BIGINT NOT NULL,
+        "value" VARCHAR(20), PRIMARY KEY ("version"))""")
+    // index creation should succeed with unquoted or quoted name (case-insensitive)
+    snContext.sql(s"CREATE UNIQUE INDEX $indexName ON $tableName (version)")
+    snContext.sql(s"DROP INDEX $indexName")
+    snContext.sql(s"""CREATE UNIQUE INDEX $indexName ON $tableName ("version")""")
+    val schema = snContext.table(tableName).schema
+
+    implicit val encoder = RowEncoder(schema)
+    val ds = snContext.createDataset(data)
+    ds.write.insertInto(tableName)
+
+    checkAnswer(snContext.sql(s"select * from $tableName"), data)
+    checkAnswer(snContext.sql(
+      s"""select "value" from $tableName where `version`=111"""), Seq(Row("aaa")))
+    checkAnswer(snContext.sql(s"""select * from $tableName where "version" >= 555"""),
+      Seq(Row(555, "ccc"), Row(666, "ccc")))
+
+    snContext.sql("drop table " + tableName)
+
+    // test using API
+    snContext.setConf(SQLConf.CASE_SENSITIVE, true)
+    snContext.createTable(tableName, "row",
+      """("version" BIGINT NOT NULL,
+        "value" VARCHAR(20), PRIMARY KEY ("version"))""",
+      Map.empty[String, String], allowExisting = false)
+    // index creation should succeed with unquoted or quoted name (case-insensitive)
+    snContext.createIndex(indexName, tableName, Seq("version" -> None),
+      Map("INDEX_TYPE" -> "UNIQUE"))
+    snContext.dropIndex(indexName, ifExists = false)
+    snContext.createIndex(indexName, tableName, Seq("Version" -> None),
+      Map("INDEX_TYPE" -> "UNIQUE"))
+
+    ds.write.insertInto(tableName)
+
+    checkAnswer(snContext.table(tableName), data)
+    checkAnswer(snContext.table(tableName).filter($"version" === 111)
+        .select($"value"), Seq(Row("aaa")))
+    checkAnswer(snContext.table(tableName).filter($"version" >= 555),
+      Seq(Row(555, "ccc"), Row(666, "ccc")))
+
+    snContext.setConf(SQLConf.CASE_SENSITIVE, false)
+
+    snContext.dropIndex(indexName, ifExists = false)
+    snContext.dropTable(tableName)
   }
 
   private def createBase3Tables(snContext: SnappyContext,
@@ -232,7 +292,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.createTable(s"$table3", "column", dataDF.schema, props)
     tablesToDrop += table3
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(table1)
+    dataDF.write.format("column").options(props).saveAsTable(table1)
     tablesToDrop += table1
 
     dataDF.write.insertInto(table2)
@@ -297,7 +357,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table2 t2 where t1.col2 = t2.col3 " +
         s"and t1.col3 = t2.col2 ") {
-      CreateIndexTest.validateIndex(Seq.empty, table1, table2)(_)
+      CreateIndexTest.validateIndex(Nil, table1, table2)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table2 t1 join $table3 t2 on t1.col2 = t2.col2 " +
@@ -310,10 +370,14 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
       CreateIndexTest.validateIndex(Seq(index31, index4))(df)
     }
 
+    executeQ(s"select t1.col2, t2.col3 from $table1 t1 join $table3 t2 on t1.col2" +
+        s" = t2.col2 and t1.col3 = t2.col3 ") {
+      CreateIndexTest.validateIndex(Seq(index31, index4))(_)
+    }
+
     executeQ(s"select t1.col2, t2.col3 from $table1 t1 /*+ index( ) */ join $table3 t2 on t1.col2" +
         s" = t2.col2 and t1.col3 = t2.col3 ") {
-      // previous query not picking up index.
-      CreateIndexTest.validateIndex(Seq.empty, table1, table3)(_)
+      CreateIndexTest.validateIndex(Nil, table1, table3)(_)
     }
 
     executeQ(s"select * from $table1 /*+ ${QueryHint.Index}($index1) */, $table3 " +
@@ -332,7 +396,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     }
 
     executeQ(s"select * from $table1 tab1 join $table2 tab2 on tab1.col2 = tab2.col2") {
-      CreateIndexTest.validateIndex(Seq.empty, table1, table2)(_)
+      CreateIndexTest.validateIndex(Nil, table1, table2)(_)
     }
 
     try {
@@ -447,7 +511,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         (props -- Seq("PARTITION_BY") + ("REPLICATE" -> "true")))
       tablesToDrop += rtable6
 
-      dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(table1)
+      dataDF.write.format("column").options(props).saveAsTable(table1)
       tablesToDrop += table1
 
       dataDF.write.insertInto(table2)
@@ -530,7 +594,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
         s"$table2 t2 where xx.col2 = t2.col2 and xx.col3 = t2.col3 " +
         s"and t1.col4 = xx.col5 ") {
       // t1 -> t4, t2 -> t4
-      CreateIndexTest.validateIndex(Seq.empty, table1, table2, table4)(_)
+      CreateIndexTest.validateIndex(Nil, table1, table2, table4)(_)
     }
 
     executeQ(s"select t1.col2, t2.col3 from $table1 t1, $table4 t4, $rtable5 t5, $table2 t2 " +
@@ -629,7 +693,7 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val executeQ = CreateIndexTest.QueryExecutor(snContext, false, false)
 
     val selDF = executeQ(s"select * from $table1") {
-      CreateIndexTest.validateIndex(Seq.empty, s"$table1")(_)
+      CreateIndexTest.validateIndex(Nil, s"$table1")(_)
     }
 
     val baseRows = selDF.collect().toSet
@@ -672,17 +736,17 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.sql("drop index test1")
 
 
-    snContext.createIndex("test1", tableName, Map(("col1" -> None)), Map("index_type" -> "unique"))
+    snContext.createIndex("test1", tableName, Seq("col1" -> None), Map("index_type" -> "unique"))
     snContext.dropIndex("test1", false)
     snContext.createIndex("test1", tableName,
-      Map(("col1" -> None)), Map("index_type" -> "global hash"))
+      Seq("col1" -> None), Map("index_type" -> "global hash"))
     snContext.dropIndex("test1", false)
-    snContext.createIndex("test1", tableName, Map(("col1" -> None)),
+    snContext.createIndex("test1", tableName, Seq("col1" -> None),
       Map.empty[String, String])
     snContext.dropIndex("test1", false)
 
     snContext.createIndex("test1", tableName,
-      Map(("col1" -> Some(Descending))), Map("index_type" -> "unique"))
+      Seq("col1" -> Some(Descending)), Map("index_type" -> "unique"))
     snContext.dropIndex("test1", false)
 
     // drop non-existent indexes with if exist clause
@@ -698,7 +762,6 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     val result = snContext.sql("select COL1 from " +
         tableName +
         " where COL2 like '%a%'")
-    result.explain(true)
     doPrint("")
     doPrint("=============== RESULTS START ===============")
     result.collect.foreach(doPrint)
@@ -735,17 +798,15 @@ object CreateIndexTest extends SnappyFunSuite {
       val selectRes = snContext.sql(sqlText)
 
       if (withExplain || explainQ) {
-        selectRes.explain(true)
+        // selectRes.explain(true)
       }
 
       validate(selectRes)
 
       if (showResults) {
-        selectRes.show
+        logInfo(selectRes.collect().take(20).mkString("\n"))
       } else {
-        // scalastyle:off println
-        selectRes.collect().take(10).foreach(println)
-        // scalastyle:on println
+        logInfo(selectRes.collect().take(10).mkString("\n"))
       }
 
       selectRes

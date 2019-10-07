@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,45 +21,50 @@ import java.sql.{ResultSet, Statement}
 
 import io.snappydata.benchmark.TPCH_Queries
 
-
+// scalastyle:off println
 object TPCH_Memsql {
 
-  var avgFileStream:FileOutputStream  = new FileOutputStream(new File(s"Average.out"))
-  var avgPrintStream:PrintStream = new PrintStream(avgFileStream)
+  var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Average.csv"))
+  var avgPrintStream: PrintStream = new PrintStream(avgFileStream)
+  avgPrintStream.println(s"Query,AverageResponseTime")
 
-   def close(): Unit ={
+   def close(): Unit = {
      avgPrintStream.close()
      avgFileStream.close()
    }
 
-   def execute(queryNumber: String, isResultCollection: Boolean, stmt: Statement, warmup:Integer, runsForAverage:Integer
-       , isDynamic: Boolean): Unit = {
+  def setRandomSeed(randomSeed : Integer): Unit ={
+    TPCH_Queries.setRandomSeed(randomSeed)
+  }
 
-     var queryFileStream = new FileOutputStream(new File(s"$queryNumber.out"))
-     var queryPrintStream = new PrintStream(queryFileStream)
+  def execute(queryNumber: String, isResultCollection: Boolean, stmt: Statement,
+      warmup: Int, runsForAverage: Int, isDynamic: Boolean): Unit = {
+
+     val queryFileStream = new FileOutputStream(new File(s"$queryNumber.out"))
+     val queryPrintStream = new PrintStream(queryFileStream)
 
      var rs: ResultSet = null
      try {
        println(s"Started executing $queryNumber")
        queryPrintStream.println(s"$queryNumber")
-       if(isResultCollection){
-         var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, false)
+       if (isResultCollection) {
+         val queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = false)
          rs = queryExecution(queryNumber, queryToBeExecuted, stmt)
-         //rs = queryExecution(queryNumber, stmt)
-         //rs = stmt.executeQuery(query)
-         //queryPrintStream.println(s"$resultFormat")
-         val rsmd = rs.getMetaData()
-         val columnsNumber = rsmd.getColumnCount();
+         // rs = queryExecution(queryNumber, stmt)
+         // rs = stmt.executeQuery(query)
+         // queryPrintStream.println(s"$resultFormat")
+         val rsmd = rs.getMetaData
+         val columnsNumber = rsmd.getColumnCount
          var count : Int = 0
          while (rs.next()) {
            count += 1
-           for (i:Int <- 1 to columnsNumber) {
+           for (i: Int <- 1 to columnsNumber) {
              if (i > 1) queryPrintStream.print(",")
              queryPrintStream.print(rs.getString(i))
            }
            queryPrintStream.println()
          }
-         println(s"NUmber of results : $count")
+         println(s"Number of results : $count")
          println(s"$queryNumber Result Collected in file $queryNumber.out")
          if (queryNumber.equals("15")) {
            stmt.execute("drop view revenue")
@@ -67,12 +72,12 @@ object TPCH_Memsql {
        } else {
          var totalTime: Long = 0
          for (i <- 1 to (warmup + runsForAverage)) {
-           var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, false)
+           val queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = false)
            val startTime = System.currentTimeMillis()
            rs = queryExecution(queryNumber, queryToBeExecuted, stmt)
-           //rs = stmt.executeQuery(query)
+           // rs = stmt.executeQuery(query)
            while (rs.next()) {
-             //just iterating over result
+             // just iterating over result
            }
            val endTime = System.currentTimeMillis()
            val iterationTime = endTime - startTime
@@ -84,21 +89,20 @@ object TPCH_Memsql {
              stmt.execute("drop view revenue")
            }
          }
-         queryPrintStream.println(s"${totalTime / runsForAverage}")
+         queryPrintStream.println(s"Query $queryNumber average = ${totalTime / runsForAverage}")
          avgPrintStream.println(s"$queryNumber,${totalTime /runsForAverage}")
        }
        println(s"Finished executing $queryNumber")
 
 
      } catch {
-       case e: Exception => {
+       case e: Exception =>
          e.printStackTrace()
          e.printStackTrace(queryPrintStream)
          e.printStackTrace(avgPrintStream)
          println(s" Exception while executing $queryNumber in written to file $queryNumber.txt")
-       }
      } finally {
-       if(isResultCollection) {
+       if (isResultCollection) {
          queryPrintStream.close()
          queryFileStream.close()
          avgPrintStream.close()
@@ -109,7 +113,7 @@ object TPCH_Memsql {
      rs.close()
    }
 
-   def queryExecution(queryNumber:String, query:String, stmt:Statement): ResultSet ={
+   def queryExecution(queryNumber: String, query: String, stmt: Statement): ResultSet = {
      var queryToBeExceuted = query
      if (queryNumber.equals("15")) {
        stmt.execute(queryToBeExceuted)
@@ -118,7 +122,8 @@ object TPCH_Memsql {
      stmt.executeQuery(queryToBeExceuted)
 
 
-     /*val rs : ResultSet = queryNumber match {
+     /*
+       val rs : ResultSet = queryNumber match {
        case "q1" => {
          stmt.executeQuery(getQuery1())
        }
@@ -188,11 +193,11 @@ object TPCH_Memsql {
          stmt.executeQuery(getQuery22())
        }
      }
-     rs*/
+     rs */
 
    }
 
-   /*def getQuery1(): String = {
+   /* def getQuery1(): String = {
      //DELTA = 90
      " select" +
          "     l_returnflag," +
@@ -1076,5 +1081,5 @@ object TPCH_Memsql {
 
    def getResultString22(): String = {
      "CNTRYCODE NUMCUST TOTACCTBAL"
-   }*/
+   } */
  }
