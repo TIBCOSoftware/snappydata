@@ -18,11 +18,11 @@
 package io.snappydata.gemxd.remotestore
 
 trait RemoteDataClient {
-  def getValues(range: Array[Long]): Array[Byte] = {
+  def getValues(fileURL: String, range: Array[Long]): Array[Byte] = {
     null
   }
 
-  def getValues(ranges: Seq[Array[Long]]): Seq[Array[Byte]] = {
+  def getValues(fileURL: String, ranges: Seq[Array[Long]]): Seq[Array[Byte]] = {
     null
   }
 
