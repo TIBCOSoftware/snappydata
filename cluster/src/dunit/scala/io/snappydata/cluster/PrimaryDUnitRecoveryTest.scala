@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata
+package io.snappydata.cluster
 
 import java.io.{BufferedOutputStream, BufferedWriter, ByteArrayOutputStream, File, FileWriter, PrintStream, PrintWriter}
 import java.sql.{Connection, DriverManager, ResultSet, Statement, Timestamp}
@@ -23,23 +23,22 @@ import java.util.Properties
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.sys.process.{Process, ProcessLogger, stderr, stdout, _}
+import scala.util.Try
 import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
-import io.snappydata.test.dunit.AvailablePortHelper
+import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
 import io.snappydata.thrift.internal.ClientClob
 import org.apache.commons.io.output.TeeOutputStream
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FunSuite}
+import org.scalatest.Assertions._
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 
-class RecoveryTestSuite extends FunSuite // scalastyle:ignore
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach
+class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scalastyle:ignore
     with Logging {
 
   val adminUser1 = "gemfire10"
@@ -47,20 +46,9 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
   private var confDirPath = ""
   private var workDirPath = ""
-  private var recovery_mode_dir = ""
+  private val recovery_mode_dir = System.getProperty("RECOVERY_TEST_DIR")
   private var test_status: Boolean = false
-  private[this] var ldapProperties: Properties = new Properties()
 
-  def getLdapConf: String = {
-    var conf = ""
-    for (k <- List(Attribute.AUTH_PROVIDER, Attribute.USERNAME_ATTR, Attribute.PASSWORD_ATTR)) {
-      conf += s"-$k=${ldapProperties.getProperty(k)} "
-    }
-    for (k <- List(AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
-      conf += s"-J-D$k=${ldapProperties.getProperty(k)} "
-    }
-    conf
-  }
 
   def clearDirectory(dir: File): Unit = {
     if (dir.isDirectory) {
@@ -74,14 +62,10 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
   /**
    * start LDAP server in beforeAll
    */
-  override def beforeAll(): Unit = {
+  override def beforeClass(): Unit = {
 
-    recovery_mode_dir = System.getProperty("RECOVERY_TEST_DIR")
-    logInfo("recovery_mode_dir: " + recovery_mode_dir)
-    RecoveryTestSuite.snappyHome = System.getenv("SNAPPY_HOME")
-    if (RecoveryTestSuite.snappyHome == null) {
-      throw new Exception("SNAPPY_HOME should be set as an environment variable")
-    }
+    PrimaryDUnitRecoveryTest.snappyHome = System.getenv("SNAPPY_HOME")
+
 
     // start LDAP server
     logInfo("Starting LDAP server")
@@ -93,15 +77,16 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
 
   def setSecurityProps(): Unit = {
     import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
-    ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0,
+    PrimaryDUnitRecoveryTest.ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0,
       adminUser1, getClass.getResource("/auth.ldif").getPath)
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
-      System.setProperty(k, ldapProperties.getProperty(k))
+      System.setProperty(k, PrimaryDUnitRecoveryTest.ldapProperties.getProperty(k))
     }
   }
 
-  override def afterAll(): Unit = {
+  override def afterClass(): Unit = {
     // 1. stop  ldap cluster.
+    logInfo("PP : called afterClass !!")
     stopLdapTestServer
     // 2. delete all
   }
@@ -113,12 +98,9 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
   }
 
-  override def beforeEach(): Unit = {
-    super.beforeEach()
-  }
+  def afterEach(): Unit = {
+    logInfo("PP : called afterEach!!")
 
-  override def afterEach(): Unit = {
-    super.afterEach()
     val confDir = new File(confDirPath)
     val workDir = new File(workDirPath)
 
@@ -134,12 +116,11 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     confDirPath = ""
     workDirPath = ""
 
-    // 4. reset test_status flag to false
     test_status = false
   }
 
   def startSnappyCluster(): Unit = {
-    val (out, _) = RecoveryTestSuite.executeCommand(s"${RecoveryTestSuite.snappyHome}" +
+    val (out, _) = PrimaryDUnitRecoveryTest.executeCommand(s"${PrimaryDUnitRecoveryTest.snappyHome}" +
         s"/sbin/snappy-start-all.sh --config $confDirPath")
 
     // TODO need a better way to ensure the cluster has started
@@ -244,12 +225,12 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
 
   def stopCluster(): Unit = {
     // TODO need a way to ensure the cluster has stopped
-    RecoveryTestSuite.executeCommand(s"${RecoveryTestSuite.snappyHome}" +
+    PrimaryDUnitRecoveryTest.executeCommand(s"${PrimaryDUnitRecoveryTest.snappyHome}" +
         s"/sbin/snappy-stop-all.sh --config $confDirPath")
   }
 
   def startSnappyRecoveryCluster(): Unit = {
-    val (out, _) = RecoveryTestSuite.executeCommand(s"${RecoveryTestSuite.snappyHome}" +
+    val (out, _) = PrimaryDUnitRecoveryTest.executeCommand(s"${PrimaryDUnitRecoveryTest.snappyHome}" +
         s"/sbin/snappy-start-all.sh --recover --config $confDirPath")
 
     // TODO need a better way to ensure the cluster has started
@@ -317,7 +298,6 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     val filePathOrg = dir.getAbsoluteFile + File.separator + tableName + "_ORG.txt"
     val filePathRec = dir.getAbsoluteFile + File.separator + tableName + "_RECOVERED.txt"
     if (!isRecoveredDataRS) {
-      logInfo(s"PP:creating org file at $filePathOrg")
       val colCount = resultSet.getMetaData.getColumnCount
       while (resultSet.next()) {
         stringBuilder.clear()
@@ -344,7 +324,6 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
         writeToFile(stringBuilder.toString(), filePathOrg, true)
       }
     } else {
-      logInfo(s"PP:creating rec file at $filePathRec")
       val colCount: Int = resultSet.getMetaData.getColumnCount
       while (resultSet.next()) {
         stringBuilder.clear()
@@ -367,18 +346,27 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
           case _ =>
             stringBuilder ++= s"${resultSet.getObject(colCount)}"
         }
-        logInfo(s"PP: string added: ${stringBuilder.toString()}")
 
         // todo: can be improved using batching 100 rows
         writeToFile(stringBuilder.toString(), filePathRec, true)
       }
-            val cmd = s"comm -3 $filePathOrg $filePathRec"
-            val diffRes = cmd.!! // todo won't work on windows. Should be done in code.!?
-            assert(diffRes.length === 0, "Recovered data does not match the original data.")
+      val cmd = s"comm --nocheck-order -3 $filePathOrg $filePathRec"
+      var diffRes: String = ""
+      Try {
+        diffRes = cmd.!! // todo won't work on windows. Should be done in code.!?
+      } match {
+        case scala.util.Success(_) => assert(diffRes.length === 0,
+          s"\nRecovered data does not match the original data.\nOrginal data is present in $filePathOrg\n " +
+              s"Recovered data is present in $filePathRec")
+//               delete the directory after the job is done.
+//                  dir.listFiles().foreach(file => file.delete())
+//                  if(dir.listFiles().length == 0) dir.delete()
 
-      //       delete the directory after the job is done.
-      //          dir.listFiles().foreach(file => file.delete())
-      //          if(dir.listFiles().length == 0) dir.delete()
+        case scala.util.Failure(exception) =>
+          logInfo(s"Error comparing output files.\n$exception")
+      }
+
+
     }
 
   }
@@ -429,9 +417,10 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     }
   }
 
-  test("test1 - Basic test to check commands like describe, show, procedures " +
-      "and list tables names, schemas names and UDFs using LDAP") {
-
+  //  test("test1 - Basic test to check commands like describe, show, procedures " +
+  //      "and list tables names, schemas names and UDFs using LDAP") {
+  def test1(): Unit = {
+    try {
     // set separate work directory and conf directory
     confDirPath = createConfDir("test1");
     val leadsNum = 1
@@ -448,7 +437,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     val locNetPort = locatorNetPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
-    val ldapConf = getLdapConf
+    val ldapConf = PrimaryDUnitRecoveryTest.getLdapConf
     writeToFile(s"localhost  -peer-discovery-port=$locatorPort -dir=$workDirPath/locator-1" +
         s" -client-port=$locNetPort $ldapConf", s"$confDirPath/locators")
     writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
@@ -584,7 +573,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     println("SELECT * FROM gemfire10.test1coltab4;")
     while (rs4.next()) {
       // todo finish this
-      s"${rs4.getInt(2).toString} ${rs4.getInt(2).toString}"
+      println(s"${rs4.getInt(2).toString} ${rs4.getInt(2).toString}")
     }
     rs4.close()
 
@@ -644,7 +633,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
       str.clear()
       str ++= s"${rs4.getObject(1)},${rs4.getObject(2)},${rs4.getObject(3)}," +
           s"${rs4.getObject(4)},${rs4.getObject(5)}"
-            assert(str.toString().toUpperCase() === (arrBuf(i)).toUpperCase())
+      assert(str.toString().toUpperCase() === (arrBuf(i)).toUpperCase())
       i += 1
     }
     rs4.close()
@@ -660,7 +649,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
       str.clear()
       str ++= s"${rs4.getObject(1)},${rs4.getObject(2)},${rs4.getObject(3)}," +
           s"${rs4.getObject(4)},${rs4.getObject(5)}"
-            assert(str.toString().toUpperCase() === (arrBuf(i)).toUpperCase())
+      assert(str.toString().toUpperCase() === (arrBuf(i)).toUpperCase())
       i += 1
     }
     rs4.close()
@@ -669,16 +658,25 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
 
     stmtRec.close()
     connRec.close()
-
+    afterEach()
     test_status = true
+
+  } catch {
+    case e =>
+      afterEach()
+      test_status = true
+      throw new Exception(e)
+  }
   }
 
 
-
-  test("test3 - All Data types at high volume") {
+  //  test("test3 - All Data types at high volume") {
+  def test3(): Unit = {
+    try {
     // Focused particularly on checking if all data types can be
     // extracted properly
     // check for row and column type
+    logInfo(s"PP ____ recovery_mode_dir: $recovery_mode_dir")
     // TODO:Paresh: following tests can be clubbed/rearranged later. Increase the data volume later
     confDirPath = createConfDir("test3")
     val leadsNum = 1
@@ -692,7 +690,12 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     val locNetPort = locatorNetPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
-    val ldapConf = getLdapConf
+    val ldapConf = PrimaryDUnitRecoveryTest.getLdapConf
+
+    logInfo(
+      s"""PP: work dir path : $workDirPath
+         | confdirpath: $confDirPath
+         | ldapConf: $ldapConf""".stripMargin)
 
     writeToFile(s"localhost  -peer-discovery-port=$locatorPort -dir=$workDirPath/locator-1" +
         s" -client-port=$locNetPort $ldapConf", s"$confDirPath/locators")
@@ -720,7 +723,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
                  c3 string NOT NULL, c5 boolean NOT NULL,c6 double NOT NULL, c8 timestamp NOT NULL,
                   c9 date NOT NULL, c10 decimal(15,5) NOT NULL, c11 numeric(20,10) NOT NULL,
                    c12 float NOT NULL,c13 real not null) USING COLUMN
-                OPTIONS (buckets '5', COLUMN_MAX_DELTA_ROWS '135');
+                OPTIONS (BUCKETS '5', COLUMN_MAX_DELTA_ROWS '135');
                 """)
 
     stmt.execute(
@@ -810,7 +813,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
                   cast((id*701*7699 + id*1342341*2267)/2 as double), CURRENT_TIMESTAMP, CURRENT_DATE,
                   cast(id*241/11 as Decimal(15,5)), cast(id*701/11 as Numeric(12,4)),
                   cast(concat(id*100,'.',(id+1)*7699) as float),
-                  cast(concat(id*100000000000,'.',(id+1)*2267*7699) as real) from range(4);
+                  cast(concat(id*100000000000,'.',(id+1)*2267*7699) as real) from range(5);
                  """.stripMargin)
 
     val rsTest3Reptab2 = stmt.executeQuery("SELECT * FROM gemfire10.test3Reptab2 ORDER BY col2")
@@ -1012,7 +1015,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     while (rs6.next()) {
       str ++= s"${rs6.getInt("rcount")},${rs6.getBoolean("c5")}"
     }
-        assert(str.toString().equalsIgnoreCase("250,true"))
+    assert(str.toString().equalsIgnoreCase("250,true"))
     rs6.close()
 
     // 4. Test if all sql functions are working fine - like min,max,avg,etc.
@@ -1037,7 +1040,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     i = 0
 
     // todo: float doesn't return all the accurate digits : ,4124.12353515625  should be 4124.1234341
-//     and 1434124.125 should be 1434124.123434134
+    //     and 1434124.125 should be 1434124.123434134
     arrBuf ++= ArrayBuffer("891012.312321314,1434124.125,193471498234123,2019-02-18,ZXcabcdefg", "91012.312321314,34124.125,243471498234123,2019-04-18,qewrabcdefg", "1012.312321314,4124.12353515625,333471498234123,2019-03-18,adfcdefg")
     while (rs7.next()) {
       assert(s"${rs7.getBigDecimal(1)},${rs7.getBigDecimal(2)},${rs7.getLong(3)},${rs7.getDate(4)},${rs7.getString(5)}" === arrBuf(i))
@@ -1066,37 +1069,48 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     stmtRec.execute("call sys.DUMP_DDLS('./recover_ddls_test3/');")
     stmtRec.close()
     conn.close()
+    afterEach()
     test_status = true
+    } catch {
+    case e =>
+      afterEach()
+      test_status = true
+      throw new Exception(e)
+  }
   }
 
-//  test("test2 - Does all basic tests in non-secure mode(without LDAP).") {
-//    // although ldap server is started before all, if ldap properties are not passed to conf,
-//    // it should work in non-secure mode.
-//    // basicOperationSetSnappyCluster can be used
-//    // multiple VMs - multiple servers - like real world scenario
-//
-//
-//    // check for row and column type
-//    // check if all the contents that are expected to be available to user is present for user to choose
-//
-//    // After the cluster has come up and ready to be used by user.
-//    // check if all procedures available to user is working fine
-//    test_status = true
-//  }
-//
-//  test("test4 - When partial cluster is not available/corrupted/deleted") {
-//    // check for row and column type
-//
-//    // 1. what if one of diskstores is deleted - not available.
-//    // 2. what if some .crf files are missing
-//    // 3. what if some .drf files are missing
-//    // 4. what if some .krf files are missing
-//
-//    test_status = true
-//  }
+  //  //  test("test2 - Does all basic tests in non-secure mode(without LDAP).") {
+  //  def test2(): Unit = {
+  //    // although ldap server is started before all, if ldap properties are not passed to conf,
+  //    // it should work in non-secure mode.
+  //    // basicOperationSetSnappyCluster can be used
+  //    // multiple VMs - multiple servers - like real world scenario
+  //
+  //
+  //    // check for row and column type
+  //    // check if all the contents that are expected to be available to user is present for user to choose
+  //
+  //    // After the cluster has come up and ready to be used by user.
+  //    // check if all procedures available to user is working fine
+  //    afterEach()
+  //    test_status = true
+  //  }
 
-  test("test5 -Recovery procedures / Data export performance check") {
+  //  test("test4 - When partial cluster is not available/corrupted/deleted") {
+  //  def test4(): Unit = {
+  //    // check for row and column type
+  //
+  //    // 1. what if one of diskstores is deleted - not available.
+  //    // 2. what if some .crf files are missing
+  //    // 3. what if some .drf files are missing
+  //    // 4. what if some .krf files are missing
+  //    afterEach()
+  //    test_status = true
+  //  }
 
+  //  test("test5 -Recovery procedures / Data export performance check") {
+  def test5(): Unit = {
+try {
     // todo: Should be able to recover data and export to S3, hdfs, nfs and local file systems.
     //    Check performance with large volume of data.
     //    Should be able to export into all spark supported formats
@@ -1113,7 +1127,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     val locNetPort = locatorNetPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
-    val ldapConf = getLdapConf
+    val ldapConf = PrimaryDUnitRecoveryTest.getLdapConf
 
     writeToFile(s"localhost  -peer-discovery-port=$locatorPort -dir=$workDirPath/locator-1" +
         s" -client-port=$locNetPort $ldapConf", s"$confDirPath/locators")
@@ -1166,7 +1180,7 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     stmt.execute("INSERT INTO test5coltab5 values(null, 67653, null, null)")
 
     // row table - how nulls reflect in the recovered data files.
-    // todo: fix this:default fails in createSchemasMap method of RecoveryTestSuite
+    // todo: fix this:default fails in createSchemasMap method of PrimaryDUnitRecoveryTest
     stmt.execute("CREATE TABLE test5rowtab6 (col1 int, col2 string default 'DEF_VAL', col3  long default -99999, col4 float default 0.0)")
     //    stmt.execute("CREATE TABLE test5rowtab6 (col1 int, col2 string, col3  long, col4 float)")
     stmt.execute("INSERT INTO test5rowtab6 values(null, 'afadsf', 134098245, 123.123)")
@@ -1183,9 +1197,9 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
         " repos 'http://clojars.org/repo/'")
     stmt.execute("deploy package mysql 'clj-mysql:clj-mysql:0.1.0'" +
         " repos 'http://clojars.org/repo/' path '/tmp/deploy_pkg_cache'")
-    stmt.execute(s"deploy jar snappyjar '${RecoveryTestSuite.snappyHome}/jars/zkclient-0.8.jar'")
+    stmt.execute(s"deploy jar snappyjar '${PrimaryDUnitRecoveryTest.snappyHome}/jars/zkclient-0.8.jar'")
     stmt.execute(s"deploy jar snappyjar2" +
-        s" '${RecoveryTestSuite.snappyHome}/jars/zookeeper-3.4.13.jar'")
+        s" '${PrimaryDUnitRecoveryTest.snappyHome}/jars/zookeeper-3.4.13.jar'")
     stmt.execute("undeploy snappyjar")
     stmt.execute("undeploy Sparkcassandra")
 
@@ -1242,380 +1256,410 @@ class RecoveryTestSuite extends FunSuite // scalastyle:ignore
     stmtRec.close()
     connRec.close()
 
-
+    afterEach()
     test_status = true
+
+  } catch {
+    case e =>
+      afterEach()
+      test_status = true
+      throw new Exception(e)
   }
 
+}
 
-  test("test6 - update, delete, complex data types") {
+
+  //  test("test6 - update, delete, complex data types") {
+  def test6(): Unit = {
     // Add test cases that has to fail
     // Add test cases for sample tables
     // Add test for S3, hdfs
     // Add binary and blob in the tests
     // Add not nulls to the tests
     // Add assertion fo recover_ddl / recover_data output
-    confDirPath = createConfDir("test6")
-    val leadsNum = 1
-    val locatorsNum = 1
-    val serversNum = 1
-    workDirPath = createWorkDir("test6", leadsNum, locatorsNum, serversNum)
-    val waitForInit = "-jobserver.waitForInitialization=true"
-    val locatorPort = AvailablePortHelper.getRandomAvailableUDPPort
-    val locNetPort = locatorNetPort
-    val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
-    val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
-    val ldapConf = getLdapConf
-    writeToFile(s"localhost  -peer-discovery-port=$locatorPort -dir=$workDirPath/locator-1" +
-        s" -client-port=$locNetPort $ldapConf", s"$confDirPath/locators")
-    writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
-        s" $waitForInit $ldapConf", s"$confDirPath/leads")
-    writeToFile(
-      s"localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-1 " +
-          s"-client-port=$netPort2 $ldapConf".stripMargin, s"$confDirPath/servers")
+    try {
+      confDirPath = createConfDir("test6")
+      val leadsNum = 1
+      val locatorsNum = 1
+      val serversNum = 1
+      workDirPath = createWorkDir("test6", leadsNum, locatorsNum, serversNum)
+      val waitForInit = "-jobserver.waitForInitialization=true"
+      val locatorPort = AvailablePortHelper.getRandomAvailableUDPPort
+      val locNetPort = locatorNetPort
+      val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
+      val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
+      val ldapConf = PrimaryDUnitRecoveryTest.getLdapConf
+      writeToFile(s"localhost  -peer-discovery-port=$locatorPort -dir=$workDirPath/locator-1" +
+          s" -client-port=$locNetPort $ldapConf", s"$confDirPath/locators")
+      writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
+          s" $waitForInit $ldapConf", s"$confDirPath/leads")
+      writeToFile(
+        s"localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-1 " +
+            s"-client-port=$netPort2 $ldapConf".stripMargin, s"$confDirPath/servers")
 
-    startSnappyCluster()
+      startSnappyCluster()
 
-    val conn = getConn(locNetPort, "gemfire10", "gemfire10")
-    val stmt = conn.createStatement()
-    val defaultSchema = "gemfire10"
-    var fqtn: String = null
+      val conn = getConn(locNetPort, "gemfire10", "gemfire10")
+      val stmt = conn.createStatement()
+      val defaultSchema = "gemfire10"
+      var fqtn: String = null
 
-    // todo: add NOT NULL to columns randomly to some tables
-    // todo: Add nested complex data types tests
-    // todo: null values not supported for complex data type columns - check
+      // todo: add NOT NULL to columns randomly to some tables
+      // todo: Add nested complex data types tests
+      // todo: null values not supported for complex data type columns - check
 
-    // ========================================
-    // ==== Column tables column batch only ===
-    // ========================================
-    // 1: null and not null, atomic data only, 1 bucket
-    fqtn = "gemfire10.t1"
-    stmt.executeUpdate(
-      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,
-         |c3 integer) USING COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '4')""".stripMargin)
-    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 11)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 322222222222222222.22222222222222222222, 33)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (4, 422222222222222222.22222222222222222222, null)")
+      // ========================================
+      // ==== Column tables column batch only ===
+      // ========================================
+      // 1: null and not null, atomic data only, 1 bucket
+      fqtn = "gemfire10.t1"
+      stmt.executeUpdate(
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,
+           |c3 integer) USING COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '4')""".stripMargin)
+      stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 11)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (3, 322222222222222222.22222222222222222222, 33)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (4, 422222222222222222.22222222222222222222, null)")
 
-    // 2: null and not null complex types 2 buckets
-    fqtn = "gemfire10.t2"
-    stmt.executeUpdate(
-      s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
-         |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
-         | USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '1')""".stripMargin)
-    stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-        s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
-    stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-        s" 2, 2.2, Array(2,22,222), Map(2,false), Struct(2.2, 2)")
-
-
-    // ==========================================
-    // ====== Column tables row buffer only =====
-    // ==========================================
-    // 3: null and not null atomic data only 1 bucket
-    fqtn = "gemfire10.t3"
-    stmt.executeUpdate(
-      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,
-         |c3 integer) USING COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
-    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, null)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, 22)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 322222222222222222.22222222222222222222, 33)")
+      // 2: null and not null complex types 2 buckets
+      fqtn = "gemfire10.t2"
+      stmt.executeUpdate(
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
+           |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
+           | USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '1')""".stripMargin)
+      stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
+          s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
+      stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
+          s" 2, 2.2, Array(2,22,222), Map(2,false), Struct(2.2, 2)")
 
 
-    // 4: null and not null complex types 2 buckets
-    fqtn = "gemfire10.t4"
-    stmt.executeUpdate(
-      s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
-         |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
-         | USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '4')""".stripMargin)
-    stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-        s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
-    stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-        s" 2, 2.2, Array(2,22,222), Map(2,false), Struct(2.2, 2)")
-    stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-        s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
+      // ==========================================
+      // ====== Column tables row buffer only =====
+      // ==========================================
+      // 3: null and not null atomic data only 1 bucket
+      fqtn = "gemfire10.t3"
+      stmt.executeUpdate(
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,
+           |c3 integer) USING COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
+      stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, null)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, 22)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (3, 322222222222222222.22222222222222222222, 33)")
 
 
-    // =======================================================
-    // ======= Column tables row buffer and column batch =====
-    // =======================================================
-    // 5: null and not null atomic data only 1 bucket deletes (in both areas)
-    fqtn = "gemfire10.t5"
-    stmt.executeUpdate(
-      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer) USING
-         | COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
-    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, 2)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, null)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, 4)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, null)")
-    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
-    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 5")
-
-    /*
-    CREATE TABLE gemfire10.t5 (c1 integer, c2 double NOT NULL,c3 integer) USING
- COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3');
-    INSERT INTO gemfire10.t5 VALUES (1, 111111111111111111.11111111111111111111, 1);
-    INSERT INTO gemfire10.t5 VALUES (2, 222222222222222222.22222222222222222222, 2);
-    INSERT INTO gemfire10.t5 VALUES (3, 333333333333333333.33333333333333333333, null);
-    INSERT INTO gemfire10.t5 VALUES (4, 444444444444444444.44444444444444444444, 4);
-    INSERT INTO gemfire10.t5 VALUES (5, 555555555555555555.55555555555555555555, null);
-    DELETE FROM gemfire10.t5 WHERE c1 = 2;
-    DELETE FROM gemfire10.t5 WHERE c1 = 5;
-     */
-
-    // 6: null and not null atomic data only 1 bucket deletes/updates (in both areas)
-    fqtn = "gemfire10.t6"
-    stmt.executeUpdate(
-      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer) USING
-         | COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
-    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, null)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, 5)")
-    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
-    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 5")
-    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
-    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 4")
-
-    /*
-    CREATE TABLE gemfire10.t6 (c1 integer, c2 double NOT NULL,c3 integer) USING COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3');
-    INSERT INTO gemfire10.t6 VALUES (1, 111111111111111111.11111111111111111111, 1);
-    INSERT INTO gemfire10.t6 VALUES (2, 222222222222222222.22222222222222222222, null);
-    INSERT INTO gemfire10.t6 VALUES (3, 333333333333333333.33333333333333333333, 3);
-    INSERT INTO gemfire10.t6 VALUES (4, 444444444444444444.44444444444444444444, null);
-    INSERT INTO gemfire10.t6 VALUES (5, 555555555555555555.55555555555555555555, 5);
-    DELETE FROM gemfire10.t6 WHERE c1 = 2;
-    DELETE FROM gemfire10.t6 WHERE c1 = 5;
-    UPDATE gemfire10.t6 SET c3 = 0 WHERE c1 = 1;
-    UPDATE gemfire10.t6 SET c3 = 0 WHERE c1 = 4;
-     */
+      // 4: null and not null complex types 2 buckets
+      fqtn = "gemfire10.t4"
+      stmt.executeUpdate(
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
+           |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
+           | USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '4')""".stripMargin)
+      stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
+          s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
+      stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
+          s" 2, 2.2, Array(2,22,222), Map(2,false), Struct(2.2, 2)")
+      stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
+          s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
 
 
-    // 7: null and not null atomic data only 1 bucket updates (in both areas)
-    fqtn = "gemfire10.t7"
-    stmt.executeUpdate(
-      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer) USING
-         | COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
-    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, 4)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, null)")
-    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
-    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 4")
+      // =======================================================
+      // ======= Column tables row buffer and column batch =====
+      // =======================================================
+      // 5: null and not null atomic data only 1 bucket deletes (in both areas)
+      fqtn = "gemfire10.t5"
+      stmt.executeUpdate(
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer) USING
+           | COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
+      stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, 2)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, null)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, 4)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, null)")
+      stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
+      stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 5")
 
-    // 8: null and not null complex types 2 buckets
-    fqtn = "gemfire10.t8"
-    stmt.execute(
-      s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
-         |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
-         | USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '2')""".stripMargin)
-    stmt.execute(s"INSERT INTO $fqtn SELECT" +
-        s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
-    stmt.execute(s"INSERT INTO $fqtn SELECT" +
-        s" 2, 2.2, Array(2,22,222), Map(2,false), null")
-    stmt.execute(s"INSERT INTO $fqtn SELECT" +
-        s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
+      /*
+      CREATE TABLE gemfire10.t5 (c1 integer, c2 double NOT NULL,c3 integer) USING
+   COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3');
+      INSERT INTO gemfire10.t5 VALUES (1, 111111111111111111.11111111111111111111, 1);
+      INSERT INTO gemfire10.t5 VALUES (2, 222222222222222222.22222222222222222222, 2);
+      INSERT INTO gemfire10.t5 VALUES (3, 333333333333333333.33333333333333333333, null);
+      INSERT INTO gemfire10.t5 VALUES (4, 444444444444444444.44444444444444444444, 4);
+      INSERT INTO gemfire10.t5 VALUES (5, 555555555555555555.55555555555555555555, null);
+      DELETE FROM gemfire10.t5 WHERE c1 = 2;
+      DELETE FROM gemfire10.t5 WHERE c1 = 5;
+       */
 
+      // 6: null and not null atomic data only 1 bucket deletes/updates (in both areas)
+      fqtn = "gemfire10.t6"
+      stmt.executeUpdate(
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer) USING
+           | COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
+      stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, null)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, 5)")
+      stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
+      stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 5")
+      stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
+      stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 4")
 
-    // ===================================
-    // ======= Row table partitioned =====
-    // ===================================
-    // 9: null and not null atomic data only 1 bucket update/delete alter add/drop/add
-    fqtn = "gemfire10.t9"
-    stmt.executeUpdate(
-      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer)
-         | USING row options (partition_by 'c1', buckets '1')""".stripMargin)
-    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, null)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, 5)")
-    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
-    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 4")
-    stmt.execute(s"ALTER TABLE $fqtn DROP COLUMN c2")
-    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
-    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 5")
-    stmt.execute(s"ALTER TABLE $fqtn ADD COLUMN c2 integer")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (9, 99, 999)")
-
-    // 10: null and not null complex types 2 buckets no alter
-    fqtn = "gemfire10.t10"
-    stmt.executeUpdate(
-      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer)
-         | USING row options (partition_by 'c1', buckets '2')""".stripMargin)
-    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, null)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, 5)")
+      /*
+      CREATE TABLE gemfire10.t6 (c1 integer, c2 double NOT NULL,c3 integer) USING COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3');
+      INSERT INTO gemfire10.t6 VALUES (1, 111111111111111111.11111111111111111111, 1);
+      INSERT INTO gemfire10.t6 VALUES (2, 222222222222222222.22222222222222222222, null);
+      INSERT INTO gemfire10.t6 VALUES (3, 333333333333333333.33333333333333333333, 3);
+      INSERT INTO gemfire10.t6 VALUES (4, 444444444444444444.44444444444444444444, null);
+      INSERT INTO gemfire10.t6 VALUES (5, 555555555555555555.55555555555555555555, 5);
+      DELETE FROM gemfire10.t6 WHERE c1 = 2;
+      DELETE FROM gemfire10.t6 WHERE c1 = 5;
+      UPDATE gemfire10.t6 SET c3 = 0 WHERE c1 = 1;
+      UPDATE gemfire10.t6 SET c3 = 0 WHERE c1 = 4;
+       */
 
 
-    // ===================================
-    // ======= Row table replicated ======
-    // ===================================
-    // 11: null and not null atomic data only update/delete alter add/drop/add
-    fqtn = "gemfire10.t11"
-    stmt.executeUpdate(
-      s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer) USING row""".stripMargin)
-    stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
-    stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
-    stmt.execute(s"ALTER TABLE $fqtn DROP COLUMN c2")
-    stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
-    stmt.execute(s"ALTER TABLE $fqtn ADD COLUMN c2 integer")
-    stmt.execute(s"INSERT INTO $fqtn VALUES (9, 99, 999)")
+      // 7: null and not null atomic data only 1 bucket updates (in both areas)
+      fqtn = "gemfire10.t7"
+      stmt.executeUpdate(
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer) USING
+           | COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
+      stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, 4)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, null)")
+      stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
+      stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 4")
 
-    // 12: null and not null complex types no alter
-    //    fqtn = "gemfire10.t12"
-    //    stmt.execute(
-    //      s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
-    //         |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>) USING row""".stripMargin)
-    //    stmt.execute(s"INSERT INTO $fqtn SELECT" +
-    //        s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
-    //    stmt.execute(s"INSERT INTO $fqtn SELECT" +
-    //        s" 2, 2.2, Array(2,22,222), Map(2,false), null")
-    //    stmt.execute(s"INSERT INTO $fqtn SELECT" +
-    //        s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
+      // 8: null and not null complex types 2 buckets
+      fqtn = "gemfire10.t8"
+      stmt.execute(
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
+           |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
+           | USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '2')""".stripMargin)
+      stmt.execute(s"INSERT INTO $fqtn SELECT" +
+          s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
+      stmt.execute(s"INSERT INTO $fqtn SELECT" +
+          s" 2, 2.2, Array(2,22,222), Map(2,false), null")
+      stmt.execute(s"INSERT INTO $fqtn SELECT" +
+          s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
 
 
-    println("--- describe t11")
-    val resttemp = stmt.executeQuery(s"describe $fqtn")
-    while (resttemp.next()) {
-      println(s"${resttemp.getString(1)} ${resttemp.getString(2)}")
-    }
+      // ===================================
+      // ======= Row table partitioned =====
+      // ===================================
+      // 9: null and not null atomic data only 1 bucket update/delete alter add/drop/add
+      fqtn = "gemfire10.t9"
+      stmt.executeUpdate(
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer)
+           | USING row options (partition_by 'c1', buckets '1')""".stripMargin)
+      stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, null)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, 5)")
+      stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
+      stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 4")
+      stmt.execute(s"ALTER TABLE $fqtn DROP COLUMN c2")
+      stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
+      stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 5")
+      stmt.execute(s"ALTER TABLE $fqtn ADD COLUMN c2 integer")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (9, 99, 999)")
 
-    stmt.close()
-    conn.close()
+      // 10: null and not null complex types 2 buckets no alter
+      fqtn = "gemfire10.t10"
+      stmt.executeUpdate(
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer)
+           | USING row options (partition_by 'c1', buckets '2')""".stripMargin)
+      stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (4, 444444444444444444.44444444444444444444, null)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (5, 555555555555555555.55555555555555555555, 5)")
 
-    stopCluster()
-    startSnappyRecoveryCluster()
 
-    var connRec: Connection = null
-    var stmtRec: Statement = null
-    var str = new mutable.StringBuilder()
-    val arrBuf: ArrayBuffer[String] = ArrayBuffer.empty
-    var i = 0
+      // ===================================
+      // ======= Row table replicated ======
+      // ===================================
+      // 11: null and not null atomic data only update/delete alter add/drop/add
+      fqtn = "gemfire10.t11"
+      stmt.executeUpdate(
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,c3 integer) USING row""".stripMargin)
+      stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 1)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (3, 333333333333333333.33333333333333333333, 3)")
+      stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
+      stmt.execute(s"ALTER TABLE $fqtn DROP COLUMN c2")
+      stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
+      stmt.execute(s"ALTER TABLE $fqtn ADD COLUMN c2 integer")
+      stmt.execute(s"INSERT INTO $fqtn VALUES (9, 99, 999)")
 
-    logInfo("=== Recovery mode ============\n")
-    connRec = getConn(locNetPort, "gemfire10", "gemfire10")
-    stmtRec = connRec.createStatement()
-    Thread.sleep(3000)
+      // 12: null and not null complex types no alter
+      //    fqtn = "gemfire10.t12"
+      //    stmt.execute(
+      //      s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
+      //         |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>) USING row""".stripMargin)
+      //    stmt.execute(s"INSERT INTO $fqtn SELECT" +
+      //        s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
+      //    stmt.execute(s"INSERT INTO $fqtn SELECT" +
+      //        s" 2, 2.2, Array(2,22,222), Map(2,false), null")
+      //    stmt.execute(s"INSERT INTO $fqtn SELECT" +
+      //        s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
 
-    //    val rstemp = stmtRec.executeQuery("show tables in gemfire10")
-    //    println("--- tables ---")
-    //    while (rstemp.next()) {
-    //      println(rstemp.getString(2))
-    //    }
-    //    rstemp.close()
 
-    // 1891
-    def getRecFromResultSet(rs: ResultSet, schemaStr: String): ListBuffer[Array[Any]] = {
-      var result = new ListBuffer[Array[Any]]()
-      while (rs.next()) {
-        var i = 1
-        val recArr = schemaStr.split(",").map(_.toLowerCase).map(f => {
-          val fValue = f match {
-            case "integer" | "int" =>
-              val ii = rs.getInt(i)
-              logInfo("element value is " + ii)
-              ii
-            case "double" => rs.getDouble(i)
-            case _ => ""
-          }
-          i += 1
-          if (rs.wasNull()) null else fValue
-        })
-        logInfo(s"recarr = ${recArr.toSeq}")
-        result += recArr
+      println("--- describe t11")
+      val resttemp = stmt.executeQuery(s"describe $fqtn")
+      while (resttemp.next()) {
+        println(s"${resttemp.getString(1)} ${resttemp.getString(2)}")
       }
-      result
-    }
 
-    def compareResult(expectedResult: ListBuffer[Array[Any]],
-        result: ListBuffer[Array[Any]]): Unit = {
-      for (rec <- result) {
-        for (expRec <- expectedResult) {
-          if (expRec.sameElements(rec)) result.remove(result.indexOf(rec))
+      stmt.close()
+      conn.close()
+
+      stopCluster()
+      startSnappyRecoveryCluster()
+
+      var connRec: Connection = null
+      var stmtRec: Statement = null
+      var str = new mutable.StringBuilder()
+      val arrBuf: ArrayBuffer[String] = ArrayBuffer.empty
+      var i = 0
+
+      logInfo("=== Recovery mode ============\n")
+      connRec = getConn(locNetPort, "gemfire10", "gemfire10")
+      stmtRec = connRec.createStatement()
+      Thread.sleep(3000)
+
+      //    val rstemp = stmtRec.executeQuery("show tables in gemfire10")
+      //    println("--- tables ---")
+      //    while (rstemp.next()) {
+      //      println(rstemp.getString(2))
+      //    }
+      //    rstemp.close()
+
+      // 1891
+      def getRecFromResultSet(rs: ResultSet, schemaStr: String): ListBuffer[Array[Any]] = {
+        var result = new ListBuffer[Array[Any]]()
+        while (rs.next()) {
+          var i = 1
+          val recArr = schemaStr.split(",").map(_.toLowerCase).map(f => {
+            val fValue = f match {
+              case "integer" | "int" =>
+                val ii = rs.getInt(i)
+                logInfo("element value is " + ii)
+                ii
+              case "double" => rs.getDouble(i)
+              case _ => ""
+            }
+            i += 1
+            if (rs.wasNull()) null else fValue
+          })
+          logInfo(s"recarr = ${recArr.toSeq}")
+          result += recArr
         }
+        result
       }
-      assert(result.size == 0, s"result has extra records")
+
+      def compareResult(expectedResult: ListBuffer[Array[Any]],
+          result: ListBuffer[Array[Any]]): Unit = {
+        for (rec <- result) {
+          for (expRec <- expectedResult) {
+            if (expRec.sameElements(rec)) result.remove(result.indexOf(rec))
+          }
+        }
+        assert(result.size == 0, s"result has extra records")
+      }
+
+      // *********************************************
+      // ******************testcase 1*****************
+      // *********************************************
+      val rs1 = stmtRec.executeQuery("select * from gemfire10.t1")
+      val expectedResult1: ListBuffer[Array[Any]] = ListBuffer(
+        Array(1, 111111111111111111.11111111111111111111, 11),
+        Array(2, 222222222222222222.22222222222222222222, null),
+        Array(3, 322222222222222222.22222222222222222222, 33),
+        Array(4, 422222222222222222.22222222222222222222, null)
+      )
+      compareResult(expectedResult1,
+        getRecFromResultSet(rs1, "integer,double,integer"))
+      rs1.close()
+
+      // testcase 3
+      val rs3 = stmtRec.executeQuery("select * from gemfire10.t3")
+      val expectedResult3: ListBuffer[Array[Any]] = ListBuffer(
+        Array(1, 111111111111111111.11111111111111111111, null),
+        Array(2, 222222222222222222.22222222222222222222, 22),
+        Array(3, 322222222222222222.22222222222222222222, 33)
+      )
+      compareResult(expectedResult3,
+        getRecFromResultSet(rs3, "integer,double,integer"))
+      rs3.close()
+
+      // testcase 5
+      val rs5 = stmtRec.executeQuery("select * from gemfire10.t5")
+      val expectedResult5: ListBuffer[Array[Any]] = ListBuffer(
+        Array(1, 111111111111111111.11111111111111111111, 1),
+        Array(3, 333333333333333333.33333333333333333333, null),
+        Array(4, 444444444444444444.44444444444444444444, 4)
+      )
+      compareResult(expectedResult5,
+        getRecFromResultSet(rs5, "integer,double,integer"))
+      rs5.close()
+
+      // testcase 6
+      val rs6 = stmtRec.executeQuery("select * from gemfire10.t6")
+      val expectedResult6: ListBuffer[Array[Any]] = ListBuffer(
+        Array(1, 111111111111111111.11111111111111111111, 0),
+        Array(3, 333333333333333333.33333333333333333333, 3),
+        Array(4, 444444444444444444.44444444444444444444, 0)
+      )
+      compareResult(expectedResult6,
+        getRecFromResultSet(rs6, "integer,double,integer"))
+      rs6.close()
+
+      // 7: null and not null atomic data only 1 bucket updates (in both areas)
+      val rs7 = stmtRec.executeQuery("select * from gemfire10.t7")
+      val expectedResult7: ListBuffer[Array[Any]] = ListBuffer(
+        Array(1, 111111111111111111.11111111111111111111, 0),
+        Array(2, 222222222222222222.22222222222222222222, null),
+        Array(3, 333333333333333333.33333333333333333333, 3),
+        Array(4, 444444444444444444.44444444444444444444, 0),
+        Array(5, 555555555555555555.55555555555555555555, null)
+      )
+      compareResult(expectedResult7,
+        getRecFromResultSet(rs7, "integer,double,integer"))
+      rs7.close()
+
+      stmtRec.execute("call sys.DUMP_DDLS('./recover_ddls/');")
+      // todo hmeka Add assertion on recover_ddls output
+      stmtRec.close()
+      connRec.close()
+
+      afterEach()
+      test_status = true
+    } catch {
+      case e =>
+      afterEach()
+      test_status = true
+      throw new Exception(e)
     }
-
-    // *********************************************
-    // ******************testcase 1*****************
-    // *********************************************
-    val rs1 = stmtRec.executeQuery("select * from gemfire10.t1")
-    val expectedResult1: ListBuffer[Array[Any]] = ListBuffer(
-      Array(1, 111111111111111111.11111111111111111111, 11),
-      Array(2, 222222222222222222.22222222222222222222, null),
-      Array(3, 322222222222222222.22222222222222222222, 33),
-      Array(4, 422222222222222222.22222222222222222222, null)
-    )
-    compareResult(expectedResult1,
-      getRecFromResultSet(rs1, "integer,double,integer"))
-    rs1.close()
-
-    // testcase 3
-    val rs3 = stmtRec.executeQuery("select * from gemfire10.t3")
-    val expectedResult3: ListBuffer[Array[Any]] = ListBuffer(
-      Array(1, 111111111111111111.11111111111111111111, null),
-      Array(2, 222222222222222222.22222222222222222222, 22),
-      Array(3, 322222222222222222.22222222222222222222, 33)
-    )
-    compareResult(expectedResult3,
-      getRecFromResultSet(rs3, "integer,double,integer"))
-    rs3.close()
-
-    // testcase 5
-    val rs5 = stmtRec.executeQuery("select * from gemfire10.t5")
-    val expectedResult5: ListBuffer[Array[Any]] = ListBuffer(
-      Array(1, 111111111111111111.11111111111111111111, 1),
-      Array(3, 333333333333333333.33333333333333333333, null),
-      Array(4, 444444444444444444.44444444444444444444, 4)
-    )
-    compareResult(expectedResult5,
-      getRecFromResultSet(rs5, "integer,double,integer"))
-    rs5.close()
-
-    // testcase 6
-    val rs6 = stmtRec.executeQuery("select * from gemfire10.t6")
-    val expectedResult6: ListBuffer[Array[Any]] = ListBuffer(
-      Array(1, 111111111111111111.11111111111111111111, 0),
-      Array(3, 333333333333333333.33333333333333333333, 3),
-      Array(4, 444444444444444444.44444444444444444444, 0)
-    )
-    compareResult(expectedResult6,
-      getRecFromResultSet(rs6, "integer,double,integer"))
-    rs6.close()
-
-    // 7: null and not null atomic data only 1 bucket updates (in both areas)
-    val rs7 = stmtRec.executeQuery("select * from gemfire10.t7")
-    val expectedResult7: ListBuffer[Array[Any]] = ListBuffer(
-      Array(1, 111111111111111111.11111111111111111111, 0),
-      Array(2, 222222222222222222.22222222222222222222, null),
-      Array(3, 333333333333333333.33333333333333333333, 3),
-      Array(4, 444444444444444444.44444444444444444444, 0),
-      Array(5, 555555555555555555.55555555555555555555, null)
-    )
-    compareResult(expectedResult7,
-      getRecFromResultSet(rs7, "integer,double,integer"))
-    rs7.close()
-
-    stmtRec.execute("call sys.DUMP_DDLS('./recover_ddls/');")
-    // todo hmeka Add assertion on recover_ddls output
-    stmtRec.close()
-    connRec.close()
-
-    test_status = true
   }
 }
 
-object RecoveryTestSuite {
+object PrimaryDUnitRecoveryTest extends Logging {
   var snappyHome = ""
+
+  var ldapProperties: Properties = new Properties()
+
+  def getLdapConf: String = {
+    var conf = ""
+    for (k <- List(Attribute.AUTH_PROVIDER, Attribute.USERNAME_ATTR, Attribute.PASSWORD_ATTR)) {
+      conf += s"-$k=${PrimaryDUnitRecoveryTest.ldapProperties.getProperty(k)} "
+    }
+    for (k <- List(AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
+      conf += s"-J-D$k=${PrimaryDUnitRecoveryTest.ldapProperties.getProperty(k)} "
+    }
+    conf
+  }
 
   def getJdbcConnection(netPort: Int): Connection = {
     val driver = "io.snappydata.jdbc.ClientDriver"
