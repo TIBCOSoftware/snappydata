@@ -346,9 +346,6 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       }.asInstanceOf[R]
 
       case GET_ALL_HIVE_ENTRIES => {
-        println(s"KN: this is $this and case is GET_ALL_HIVE_ENTRIES and" +
-            s" externalCatalog = $externalCatalog")
-
         val dbList = externalCatalog.listDatabases("*").filter(dbName =>
           !(dbName.equals("SYS") || dbName.equals("DEFAULT")))
         val allSchemas = dbList.map(externalCatalog.getDatabase(_))

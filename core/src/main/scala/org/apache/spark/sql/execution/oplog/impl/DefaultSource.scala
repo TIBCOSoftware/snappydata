@@ -49,7 +49,7 @@ class DefaultSource extends ExternalSchemaRelationProvider with SchemaRelationPr
     ExternalStoreUtils.getAndSetTotalPartitions(
       session, parameters, forManagedTable = true, forColumnTable = false)
     StoreUtils.getAndSetPartitioningAndKeyColumns(session, schema , parameters)
-
+    logDebug(s"Creating OpLogFormatRelation with Table Name: $tableName, schema: $schema")
     new OpLogFormatRelation(tableName, schema, null, sqlContext)
   }
 
