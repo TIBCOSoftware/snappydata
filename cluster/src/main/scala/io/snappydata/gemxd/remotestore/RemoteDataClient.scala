@@ -17,22 +17,13 @@
 
 package io.snappydata.gemxd.remotestore
 
-import com.gemstone.gemfire.internal.cache.DiskEntry
-import com.google.common.cache.CacheBuilder
-
-import scala.reflect.io.File
-
-class RemoteDataService {
-  private[this] lazy val entryCache = {
-    val x = CacheBuilder.newBuilder().maximumSize(10000).build[DiskEntry, File]()
-  }
-
-  lazy val client: RemoteDataClient = null
-
-  def getValues(diskptrs: Array[DiskEntry]): Array[Byte] = {
+trait RemoteDataClient {
+  def getValues(range: Array[Long]): Array[Byte] = {
     null
   }
-}
 
-object RemoteDataService {
+  def getValues(ranges: Seq[Array[Long]]): Seq[Array[Byte]] = {
+    null
+  }
+
 }
