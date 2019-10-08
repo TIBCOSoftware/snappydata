@@ -100,6 +100,8 @@ case class SnappyHashAggregateExec(
     get(sqlContext.sparkSession.sessionState.conf)
 
   val splitAggCode = this.aggregateAttributes.length > this.codeSplitThresholdSize
+  // TODO fix the group by key spiltting code in the processNext function
+  val splitGroupByKeyCode =  false //this.groupingExpressions.length > this.codeSplitThresholdSize
 
   override def nodeName: String =
     if (useByteBufferMapBasedAggregation) "BufferMapHashAggregate" else "SnappyHashAggregate"
@@ -551,7 +553,9 @@ case class SnappyHashAggregateExec(
 
   private def generateResultCodeForSHAMap(
     ctx: CodegenContext, keyBufferVars: Seq[ExprCode],
-    aggBufferVars: Seq[ExprCode], iterValueOffsetTerm: String): String = {
+    aggBufferVars: Seq[ExprCode], iterValueOffsetTerm: String,
+    stateArrayVarOptForKey: Option[String],
+    stateArrayVarOptForAggs: Option[String]): String = {
     /* Asif: It appears that we have to put the code of materilization of each grouping column
     & aggreagte before we can send it to parent. The reason is following:
     1) In the byte buffer hashmap data is written consecitively i.e key1, key2 agg1 etc.
@@ -589,13 +593,27 @@ case class SnappyHashAggregateExec(
       val resultVars = resultExpressions.map { e =>
         BindReferences.bindReference(e, inputAttrs).genCode(ctx)
       }
+
+
       s"""
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)}
+       ${ stateArrayVarOptForKey.map(stateArrayVar =>
+          s"$stateArrayVar[0] = $iterValueOffsetTerm;").getOrElse("")
+        }
        $evaluateKeyVars
+       ${stateArrayVarOptForKey.map(stateArrayVar =>
+        s"$iterValueOffsetTerm = (Long)$stateArrayVar[0];").getOrElse("")}
+
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits)}
+       ${stateArrayVarOptForAggs.map(stateArrayVar =>
+          s"$stateArrayVar[0] = $iterValueOffsetTerm;").getOrElse("")
+        }
        $evaluateBufferVars
+       ${stateArrayVarOptForAggs.map(stateArrayVar =>
+        s"$iterValueOffsetTerm = (Long)$stateArrayVar[0];").getOrElse("")
+        }
        $evaluateAggResults
        ${consume(ctx, resultVars)}
        """
@@ -616,10 +634,22 @@ case class SnappyHashAggregateExec(
       s"""
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)}
+       ${stateArrayVarOptForKey.map(stateArrayVar =>
+        s"$stateArrayVar[0] = $iterValueOffsetTerm;").getOrElse("")
+       }
        $evaluateKeyVars
+       ${stateArrayVarOptForKey.map(stateArrayVar =>
+        s"$iterValueOffsetTerm = (Long)$stateArrayVar[0];").getOrElse("")
+       }
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits)}
+       ${stateArrayVarOptForAggs.map(stateArrayVar =>
+        s"$stateArrayVar[0] = $iterValueOffsetTerm;").getOrElse("")
+       }
        $evaluateBufferVars
+       ${stateArrayVarOptForAggs.map(stateArrayVar =>
+        s"$iterValueOffsetTerm = (Long)$stateArrayVar[0];").getOrElse("")
+       }
        ${consume(ctx, keyBufferVars ++ aggBufferVars)}
        """
 
@@ -640,7 +670,13 @@ case class SnappyHashAggregateExec(
       s"""
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)}
+       ${stateArrayVarOptForKey.map(stateArrayVar =>
+        s"$stateArrayVar[0] = $iterValueOffsetTerm;").getOrElse("")
+       }
        $evaluateKeyVars
+       ${stateArrayVarOptForKey.map(stateArrayVar =>
+        s"$iterValueOffsetTerm = (Long)$stateArrayVar[0];").getOrElse("")
+       }
        ${consume(ctx, resultVars)}
        """
     }
@@ -995,13 +1031,28 @@ case class SnappyHashAggregateExec(
       val (initCode, keyBufferVars, _) = keyBufferAccessor.getColumnVars(
         keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = false) */
 
-    val keysExpr = byteBufferAccessor.getBufferVars(keysDataType, KeyBufferVars,
-      localIterValueOffsetTerm, true, byteBufferAccessor.nullKeysBitsetTerm,
-      byteBufferAccessor.numBytesForNullKeyBits, byteBufferAccessor.numBytesForNullKeyBits == 0)
-    val aggsExpr = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
+
+
+    val (stateArrayVarOptForKey, keysExpr) = byteBufferAccessor.readVarsFromBBMap(keysDataType,
+      KeyBufferVars, localIterValueOffsetTerm, true,
+      byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits,
+      byteBufferAccessor.numBytesForNullKeyBits == 0, splitGroupByKeyCode)
+
+    stateArrayVarOptForKey.foreach(stateArrayVar => {
+      ctx.addMutableState("Object[]", stateArrayVar, s"$stateArrayVar = new Object[2];")
+    })
+
+
+    val (stateArrayVarOptForAggs, aggsExpr) = byteBufferAccessor.readVarsFromBBMap(aggBuffDataTypes,
       aggregateBufferVars, localIterValueOffsetTerm, false, byteBufferAccessor.nullAggsBitsetTerm,
-      byteBufferAccessor.numBytesForNullAggBits, false)
-    val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr, localIterValueOffsetTerm)
+      byteBufferAccessor.numBytesForNullAggBits, false, splitAggCode)
+
+    stateArrayVarOptForAggs.foreach(stateArrayVar => {
+      ctx.addMutableState("Object[]", stateArrayVar, s"$stateArrayVar = new Object[2];")
+    })
+
+    val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr, localIterValueOffsetTerm,
+      stateArrayVarOptForKey, stateArrayVarOptForAggs)
     val numOutput = metricTerm(ctx, "numOutputRows")
     val localNumRowsIterated = ctx.freshName("localNumRowsIterated")
     // The child could change `copyResult` to true, but we had already
@@ -1331,10 +1382,11 @@ case class SnappyHashAggregateExec(
     }
     val bufferEvalFromInitVars = evaluateVariables(bufferVarsFromInitVars)
 
-    val (stateArrayVarOpt, bufferVars) = byteBufferAccessor.getBufferVarsForUpdate(aggBuffDataTypes,
+    val (stateArrayVarOpt, bufferVars) = byteBufferAccessor.readVarsFromBBMap(aggBuffDataTypes,
       byteBufferAccessor.aggregateBufferVars,
-      byteBufferAccessor.currentOffSetForMapLookupUpdt,
-      byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits, splitAggCode)
+      byteBufferAccessor.currentOffSetForMapLookupUpdt, false,
+      byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits, false,
+      splitAggCode)
     stateArrayVarOpt.foreach(stateArrayVar => {
       ctx.addMutableState("Object[]", stateArrayVar, s"$stateArrayVar = new Object[2];")
     })

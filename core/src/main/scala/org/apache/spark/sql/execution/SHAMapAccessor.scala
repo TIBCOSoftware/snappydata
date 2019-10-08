@@ -70,7 +70,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   val bbDataClass = classOf[ByteBufferData].getName
   val byteArrayEqualsClass = classOf[ByteArrayMethods].getName
 
-  def getBufferVars(dataTypes: Seq[DataType], varNames: Seq[String],
+   private def getBufferVars(dataTypes: Seq[DataType], varNames: Seq[String],
     currentValueOffsetTerm: String, isKey: Boolean, nullBitTerm: String,
     numBytesForNullBits: Int, skipNullBitsCode: Boolean, nestingLevel: Int = 0):
   Seq[ExprCode] = {
@@ -119,32 +119,33 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }
 
 
-  def getBufferVarsForUpdate(dataTypes: Seq[DataType], varNames: Seq[String],
-    currentValueOffsetTerm: String, nullBitTerm: String, numBytesForNullBits: Int,
-    splitAggregate: Boolean):
+  def readVarsFromBBMap(dataTypes: Seq[DataType], varNames: Seq[String],
+    currentValueOffsetTerm: String, isKey: Boolean, nullBitTerm: String,
+    numBytesForNullBits: Int, skipNullBitsCode: Boolean, splitCode: Boolean):
   (Option[String], Seq[ExprCode]) = {
-    val nullBitsCastTerm = if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
-      "byte[]"
-    } else SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
-    if (!splitAggregate) {
-      (None, getBufferVars(dataTypes, varNames, currentValueOffsetTerm, false, nullBitTerm,
-        numBytesForNullBits, false, 0))
-    } else {
+    if (splitCode) {
+      val nullBitsCastTerm = if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
+        "byte[]"
+      } else SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
+
       val baseMethod = "readFromBBMap"
       val stateArray = ctx.freshName("stateArray")
       val localVar = ctx.freshName("tempVar")
       val localIndex = ctx.freshName("index")
       val localNullBool = ctx.freshName("isNull")
+      val remainder = ctx.freshName("remainder")
+      val pos = ctx.freshName("pos")
       val nullBoolEvalCode = if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
         s"""
-           |int remainder = $localIndex % 8;
-           |         |int pos = $localIndex / 8;
-           |         |boolean $localNullBool = ($nullBitTerm[pos] & (0x01 << remainder)) != 0;
+           |int $remainder = $localIndex % 8;
+           |int $pos = $localIndex / 8;
+           |$localNullBool = ($nullBitTerm[$pos] & (0x01 << $remainder)) != 0;
          """.stripMargin
       } else {
-        s"""boolean $localNullBool = ($nullBitTerm & ((($nullBitsCastTerm)0x01) << $localIndex)) != 0;"""
+        s"""$localNullBool = ($nullBitTerm & ((($nullBitsCastTerm)0x01) << $localIndex)) != 0;"""
       }
-
+      val nullCode = if (skipNullBitsCode) "" else nullBoolEvalCode
+      // this can handle only those aggs & keys whose index is not equal to skip length index
       val funcMapping = dataTypes.distinct.map(dt => {
         val methodName = ctx.freshName(baseMethod)
 
@@ -157,9 +158,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
              | $nullBitsCastTerm $nullBitTerm, int $localIndex, Object $vdBaseObjectTerm) {
              | long $currentValueOffsetTerm = (Long) $stateArray[0];
              | $varDataType $localVar = ${ctx.defaultValue(dt)};
-             | $nullBoolEvalCode
+             | boolean $localNullBool = false;
+             | $nullCode
              | if ($localNullBool) {
-             |  ${SHAMapAccessor.getOffsetIncrementCodeForNullAgg(currentValueOffsetTerm, dt)}
+             |${if (isKey) "" else SHAMapAccessor.getOffsetIncrementCodeForNullAgg(currentValueOffsetTerm, dt)}
              | } else {
              |   $partMethodBody
              | }
@@ -171,22 +173,40 @@ case class SHAMapAccessor(@transient session: SnappySession,
         dt -> methodName
       }).toMap
 
+
       val exprCodes = dataTypes.zip(varNames).zipWithIndex.map {
         case ((dt, varName), index) => {
-          val varDataType = ctx.javaType(dt);
-          val funcName = funcMapping.get(dt).get
-          val nullVar = s"$varName${SHAMapAccessor.nullVarSuffix}"
-          val code =
-            s"""
-               |$varName = (${SHAMapAccessor.getObjectTypeForPrimitiveType(varDataType)})$funcName($stateArray,
-               |$nullBitTerm, $index, $vdBaseObjectTerm);
-               |$nullVar = (Boolean)$stateArray[1];
-             """.stripMargin
-          ExprCode(code, nullVar, varName)
+          if (isKey && index == this.skipLenForAttribIndex) {
+            val code =
+              s"""
+                 |boolean $localNullBool = false;
+                 |int $localIndex = $index;
+                 |$nullCode
+                 |if (!$localNullBool) {
+                 |${readVarPartialFunction(currentValueOffsetTerm, 0, index, varName, dt).trim}
+                 |}
+                 |$stateArray[0] = $currentValueOffsetTerm;
+               """.stripMargin
+            ExprCode(code, localNullBool, varName)
+          } else {
+            val varDataType = ctx.javaType(dt);
+            val funcName = funcMapping.get(dt).get
+            val nullVar = s"$varName${SHAMapAccessor.nullVarSuffix}"
+            val nullDeclare = if (isKey) "boolean" else ""
+            val code = s"""
+              |$varName = (${SHAMapAccessor.getObjectTypeForPrimitiveType(varDataType)})$funcName(
+              |$stateArray, $nullBitTerm, $index, $vdBaseObjectTerm);
+              |$nullDeclare $nullVar = (Boolean)$stateArray[1];
+            """.stripMargin
+            ExprCode(code, nullVar, varName)
+          }
         }
       }
-
       Some(stateArray) -> exprCodes
+
+    } else {
+      (None, getBufferVars(dataTypes, varNames, currentValueOffsetTerm, isKey, nullBitTerm,
+        numBytesForNullBits, skipNullBitsCode, 0))
     }
   }
 

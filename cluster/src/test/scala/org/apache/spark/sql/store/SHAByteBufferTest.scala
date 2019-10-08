@@ -1344,7 +1344,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test")
   }
 
-  test("test code splitting") {
+  test("test code splitting of group by keys") {
     val snc1 = snc.newSession()
     snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2")
     snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "2")
@@ -1404,9 +1404,12 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test")
   }
 
-
-  test("test code splitting for aggregate functions") {
+  test("test code splitting of aggregate functions") {
     snc
+    val snc1 = snc.newSession()
+    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "40")
+    snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "5")
+
     val numIntCols = 450
 
     val intFieldsStr = (for (i <- 0 until numIntCols) yield {
@@ -1424,10 +1427,14 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       "?"
     }).mkString(",")
     val conn = getSqlConnection
+    // set data in ap
+    // such that
+    // a = j
+    // d =  j * 2
     val prepStmt = conn.prepareStatement(s"insert into test values ($prepStr)")
     for (i <- 0 until 100) {
       for (j <- 0 until numIntCols) {
-        prepStmt.setInt(j + 1, i * j )
+        prepStmt.setInt(j + 1, j + i )
       }
       for (j <- 0 until numStringCols) {
         prepStmt.setString(j + numIntCols + 1, s"str_${i % 5}" )
@@ -1445,22 +1452,22 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       s"sum(int_$i) summ_$i"
     }).mkString(",")
 
-    val rs = snc.sql(s"select $aggFunctionProjection from" +
+    val rs = snc1.sql(s"select $aggFunctionProjection from" +
       s" test group by $groupByClause order by summ_0 asc")
     val rows = rs.collect()
     assertEquals (5, rows.length)
-    val sum_col1_key1 = 100/2*(2 * 0 + (100 - 1) * 5)
-    val sum_col1_key2 = 100/2*(2 * 1 + (100 - 1) * 5)
-    val sum_col1_key3 = 100/2*(2 * 2 + (100 - 1) * 5)
-    val sum_col1_key4 = 100/2*(2 * 3 + (100 - 1) * 5)
-    val sum_col1_key5 = 100/2*(2 * 4 + (100 - 1) * 5)
-
-
-
+    val sum_col1_key1 = 20/2*(2 * 0 + (20 - 1) * 5)
+    val sum_col1_key2 = 20/2*(2 * 1 + (20 - 1) * 5)
+    val sum_col1_key3 = 20/2*(2 * 2 + (20 - 1) * 5)
+    val sum_col1_key4 = 20/2*(2 * 3 + (20 - 1) * 5)
+    val sum_col1_key5 = 20/2*(2 * 4 + (20 - 1) * 5)
+    assertEquals(sum_col1_key1, rows(0).getLong(0))
+    assertEquals(sum_col1_key2, rows(0).getLong(1))
+    assertEquals(sum_col1_key3, rows(0).getLong(2))
+    assertEquals(sum_col1_key4, rows(0).getLong(3))
+    assertEquals(sum_col1_key5, rows(0).getLong(4))
     snc.dropTable("test")
   }
-
-
 
   test("SNAP-3132") {
     snc
