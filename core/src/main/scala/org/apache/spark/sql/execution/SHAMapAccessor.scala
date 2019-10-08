@@ -219,6 +219,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
           }
         }
       }
+
+      ctx.addMutableState("Object[]", stateArray, s"$stateArray = new Object[2];")
       Some(stateArray) -> exprCodes
 
     } else {
@@ -2076,7 +2078,4 @@ object SHAMapAccessor {
     } else {
       primType.substring(0, 1).toUpperCase + primType.substring(1)
     }
-
-
-
 }
