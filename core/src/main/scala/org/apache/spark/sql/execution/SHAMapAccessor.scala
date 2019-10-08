@@ -155,13 +155,14 @@ case class SHAMapAccessor(@transient session: SnappySession,
         ctx.addNewFunction(methodName,
           s"""
              |private Object $methodName(Object[] $stateArray,
-             | $nullBitsCastTerm $nullBitTerm, int $localIndex, Object $vdBaseObjectTerm) {
+             | ${ if (skipNullBitsCode) "" else s"$nullBitsCastTerm $nullBitTerm,"}
+             | int $localIndex, Object $vdBaseObjectTerm) {
              | long $currentValueOffsetTerm = (Long) $stateArray[0];
              | $varDataType $localVar = ${ctx.defaultValue(dt)};
              | boolean $localNullBool = false;
              | $nullCode
              | if ($localNullBool) {
-             |${if (isKey) "" else SHAMapAccessor.getOffsetIncrementCodeForNullAgg(currentValueOffsetTerm, dt)}
+             | ${if (isKey) "" else SHAMapAccessor.getOffsetIncrementCodeForNullAgg(currentValueOffsetTerm, dt)}
              | } else {
              |   $partMethodBody
              | }
@@ -176,7 +177,15 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
       val exprCodes = dataTypes.zip(varNames).zipWithIndex.map {
         case ((dt, varName), index) => {
-          if (isKey && index == this.skipLenForAttribIndex) {
+          val nullVarName = if (skipNullBitsCode) {
+            "false"
+          } else if (isKey) {
+            ctx.freshName("isNullKey")
+          } else {
+            s"$varName${SHAMapAccessor.nullVarSuffix}"
+          }
+
+          if (isKey && ((index == this.skipLenForAttribIndex) || dt.isInstanceOf[StructType])) {
             val code =
               s"""
                  |boolean $localNullBool = false;
@@ -187,20 +196,26 @@ case class SHAMapAccessor(@transient session: SnappySession,
                  |  ${readVarPartialFunction(currentValueOffsetTerm, 0, index, varName, dt).trim}
                  |  $stateArray[0] = $currentValueOffsetTerm;
                  |}
-
+                 |${if (skipNullBitsCode) "" else s"boolean $nullVarName = $localNullBool;"}
                """.stripMargin
-            ExprCode(code, localNullBool, varName)
+            ExprCode(code, nullVarName, varName)
           } else {
             val varDataType = ctx.javaType(dt);
             val funcName = funcMapping.get(dt).get
-            val nullVar = s"$varName${SHAMapAccessor.nullVarSuffix}"
+
+
             val nullDeclare = if (isKey) "boolean" else ""
+
+            val nullVarCode = if (skipNullBitsCode) ""
+            else s"$nullDeclare $nullVarName = (Boolean)$stateArray[1];"
+
             val code = s"""
               |$varName = (${SHAMapAccessor.getObjectTypeForPrimitiveType(varDataType)})$funcName(
-              |$stateArray, $nullBitTerm, $index, $vdBaseObjectTerm);
-              |$nullDeclare $nullVar = (Boolean)$stateArray[1];
+              |$stateArray, ${if (skipNullBitsCode) "" else s"$nullBitTerm, "} $index,
+              |$vdBaseObjectTerm);
+              |$nullVarCode
             """.stripMargin
-            ExprCode(code, nullVar, varName)
+            ExprCode(code, nullVarName, varName)
           }
         }
       }

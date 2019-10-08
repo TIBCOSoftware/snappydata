@@ -1404,6 +1404,142 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test")
   }
 
+  test("test code splitting of group by keys with not null col - 1") {
+    val snc1 = snc.newSession()
+    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2")
+    snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "2")
+
+    val stringFieldsStr = (for (i <- 0 until 10 ) yield {
+      s"string_$i string not null"
+    }).mkString(",")
+
+    val intFieldsStr = (for (i <- 10 until 20 ) yield {
+      s"int_$i int not null"
+    }).mkString(",")
+
+    val longFieldsStr = (for (i <- 20 until 30 ) yield {
+      s"long_$i long not null"
+    }).mkString(",")
+
+    val doubleFieldsStr = (for (i <- 30 until 40 ) yield {
+      s"double_$i double not null"
+    }).mkString(",")
+
+    snc1.sql(s"create table test ($stringFieldsStr, $intFieldsStr, $longFieldsStr," +
+      s" $doubleFieldsStr) using column ")
+
+    val prepStr = (for (i <- 0 until 40) yield {
+      "?"
+    }).mkString(",")
+
+    val conn = getSqlConnection
+    val prepStmt = conn.prepareStatement(s"insert into test values ($prepStr)")
+    for (i <- 0 until 100) {
+      for (j <- 0 until 10) {
+        prepStmt.setString(j +  1, s"str_value_${i % 5}" )
+      }
+      for (j <- 10 until 20) {
+        prepStmt.setInt(j  + 1, i + j)
+      }
+
+      for (j <- 20 until 30) {
+        prepStmt.setLong(j  + 1, i + j)
+      }
+
+      for (j <- 30 until 40) {
+        prepStmt.setDouble(j  + 1, (i + j) *.753d)
+      }
+
+      prepStmt.addBatch()
+    }
+    prepStmt.executeBatch()
+
+    assertEquals(100, snc.sql("select count(*) from test").collect()(0).getLong(0))
+    val groupBy = (for (i <- 0 until 10) yield {
+      s"string_$i"
+    }).mkString(",")
+
+    val intAggs = (for (i <- 10 until 20) yield {
+      s"sum(int_$i) as summ_$i"
+    }).mkString(",")
+
+    val longAggs = (for (i <- 20 until 30) yield {
+      s"sum(long_$i) as summ_$i"
+    }).mkString(",")
+
+    val doubleAggs = (for (i <- 30 until 40) yield {
+      s"sum(double_$i) as summ_$i"
+    }).mkString(",")
+
+    val rs = snc1.sql(s"select $intAggs, $longAggs, $doubleAggs," +
+      s" $groupBy from test group by $groupBy")
+    val rows = rs.collect()
+
+    snc.dropTable("test")
+  }
+
+  test("test code splitting of group by keys with not null col and no aggregate splitting") {
+    val snc1 = snc.newSession()
+    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2")
+    snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "3")
+
+    val stringFieldsStr = (for (i <- 0 until 10 ) yield {
+      s"string_$i string not null"
+    }).mkString(",")
+
+    val intFieldsStr = (for (i <- 10 until 20 ) yield {
+      s"int_$i int not null"
+    }).mkString(",")
+
+    val longFieldsStr = (for (i <- 20 until 30 ) yield {
+      s"long_$i long not null"
+    }).mkString(",")
+
+    val doubleFieldsStr = (for (i <- 30 until 40 ) yield {
+      s"double_$i double not null"
+    }).mkString(",")
+
+    snc1.sql(s"create table test ($stringFieldsStr, $intFieldsStr, $longFieldsStr," +
+      s" $doubleFieldsStr) using column ")
+
+    val prepStr = (for (i <- 0 until 40) yield {
+      "?"
+    }).mkString(",")
+
+    val conn = getSqlConnection
+    val prepStmt = conn.prepareStatement(s"insert into test values ($prepStr)")
+    for (i <- 0 until 100) {
+      for (j <- 0 until 10) {
+        prepStmt.setString(j +  1, s"str_value_${i % 5}" )
+      }
+      for (j <- 10 until 20) {
+        prepStmt.setInt(j  + 1, i + j)
+      }
+
+      for (j <- 20 until 30) {
+        prepStmt.setLong(j  + 1, i + j)
+      }
+
+      for (j <- 30 until 40) {
+        prepStmt.setDouble(j  + 1, (i + j) *.753d)
+      }
+
+      prepStmt.addBatch()
+    }
+    prepStmt.executeBatch()
+
+    assertEquals(100, snc.sql("select count(*) from test").collect()(0).getLong(0))
+    val groupBy = (for (i <- 0 until 10) yield {
+      s"string_$i"
+    }).mkString(",")
+
+
+    val rs = snc1.sql(s"select sum(int_11) as summ, $groupBy from test group by $groupBy")
+    val rows = rs.collect()
+
+    snc.dropTable("test")
+  }
+
   test("test code splitting of aggregate functions") {
     snc
     val snc1 = snc.newSession()
@@ -1427,10 +1563,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       "?"
     }).mkString(",")
     val conn = getSqlConnection
-    // set data in ap
-    // such that
-    // a = j
-    // d =  j * 2
+
     val prepStmt = conn.prepareStatement(s"insert into test values ($prepStr)")
     for (i <- 0 until 100) {
       for (j <- 0 until numIntCols) {
