@@ -101,7 +101,7 @@ case class SnappyHashAggregateExec(
 
   val splitAggCode = this.aggregateAttributes.length > this.codeSplitThresholdSize
   // TODO fix the group by key spiltting code in the processNext function
-  val splitGroupByKeyCode =  false //this.groupingExpressions.length > this.codeSplitThresholdSize
+  val splitGroupByKeyCode = this.groupingExpressions.length > this.codeSplitThresholdSize
 
   override def nodeName: String =
     if (useByteBufferMapBasedAggregation) "BufferMapHashAggregate" else "SnappyHashAggregate"

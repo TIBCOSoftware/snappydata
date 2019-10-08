@@ -183,9 +183,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
                  |int $localIndex = $index;
                  |$nullCode
                  |if (!$localNullBool) {
-                 |${readVarPartialFunction(currentValueOffsetTerm, 0, index, varName, dt).trim}
+                 |  $currentValueOffsetTerm = (Long)$stateArray[0];
+                 |  ${readVarPartialFunction(currentValueOffsetTerm, 0, index, varName, dt).trim}
+                 |  $stateArray[0] = $currentValueOffsetTerm;
                  |}
-                 |$stateArray[0] = $currentValueOffsetTerm;
+
                """.stripMargin
             ExprCode(code, localNullBool, varName)
           } else {
