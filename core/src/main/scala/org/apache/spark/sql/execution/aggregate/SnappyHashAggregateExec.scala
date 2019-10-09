@@ -1232,24 +1232,69 @@ case class SnappyHashAggregateExec(
         s"$inputValTransferArray = new Object[${inputTemp.length}];")
       ctx.addMutableState("boolean[]", inputNullTransferArray,
         s"$inputNullTransferArray = new boolean[${inputTemp.length}];")
+      val functionMapping = scala.collection.mutable.Map[String, String]()
+      inputTemp.zip(this.child.output.map(_.dataType)).
+        grouped(codeSplitFuncParamsSize).zipWithIndex.flatMap {
+        case (group, index) => {
+            val paramTypesStr = group.map(_._2.toString).mkString(",")
+            val existingFunc = functionMapping.get(paramTypesStr)
 
-      inputTemp.zip(this.child.output.map(_.dataType)).zipWithIndex.map {
-        case ((orgExprCode, dt), index) => {
-          val code =
-            s"""${orgExprCode.code}
-               |${inputValTransferArray}[$index] = ${orgExprCode.value};
-               |${inputNullTransferArray}[$index] = ${orgExprCode.isNull};
-           """.stripMargin
-          val javaType = ctx.javaType(dt)
-          val castType = if (SHAMapAccessor.isPrimitive(dt)) {
-            SHAMapAccessor.getObjectTypeForPrimitiveType(javaType)
-          } else {
-            javaType
-          }
-          ExprCode(code, s"$inputNullTransferArray[$index]",
-            s"($castType)${inputValTransferArray}[$index]")
+            val initCode = existingFunc match {
+              case Some(funcName) => val argStr = group.map {
+                case (expr, _) => s"${expr.value}, ${expr.isNull}"
+              }.mkString("", ",", s", $index")
+              s"$funcName($argStr);";
+
+              case None =>
+                val parameterGroupSeq: Seq[(ExprCode, DataType)] = group.map {
+                  case (exprCode, dataType) => if (exprCode.isNull.isEmpty ||
+                    exprCode.isNull.equals("false") || exprCode.isNull.equals("true")) {
+                    (ExprCode("", ctx.freshName("isNull"), exprCode.value), dataType)
+                  } else {
+                    (exprCode, dataType)
+                  }
+                }
+                val functionName = ctx.freshName("initFunc")
+                val indexTerm = ctx.freshName("index")
+                val parameterString = parameterGroupSeq.map {
+                  case (expr, dt) => s"${ctx.javaType(dt)} ${expr.value}, boolean ${expr.isNull}"
+                }.mkString("", ",", s", int $indexTerm")
+                val methodBody = parameterGroupSeq.zipWithIndex.map {
+                  case ((exprCode, dt), innerIndex) =>
+                    s"""
+                       |$inputValTransferArray[$indexTerm + $innerIndex] = ${exprCode.value};
+                       |$inputNullTransferArray[$indexTerm + $innerIndex] = ${exprCode.isNull};
+                     """.stripMargin
+                }.mkString("\n")
+                ctx.addNewFunction(functionName,
+                  s"""
+                     |public void $functionName($parameterString) {
+                       |$methodBody
+                     |}
+           """.stripMargin)
+               functionMapping += (paramTypesStr -> functionName)
+                val argStr = group.map {
+                  case (expr, _) => s"${expr.value}, ${expr.isNull}"
+                }.mkString("", ",", s", $index")
+                s"$functionName($argStr);";
+            }
+            val newGroup = group.map {
+              case (orgExprCode: ExprCode, dtt) => {
+                val javaType = ctx.javaType(dtt)
+                val castType = if (SHAMapAccessor.isPrimitive(dtt)) {
+                  SHAMapAccessor.getObjectTypeForPrimitiveType(javaType)
+                } else {
+                  javaType
+                }
+                orgExprCode.copy(isNull = s"$inputNullTransferArray[$index]",
+                  value = s"($castType)${inputValTransferArray}[$index]")
+              }
+            }
+            val lastExpr = newGroup.last
+            val newLast = lastExpr.copy(code = s"${lastExpr.code} \n $initCode")
+            newGroup.dropRight(1) :+ newLast
         }
-      }
+      }.toSeq
     } else {
       inputTemp
     }
@@ -1480,7 +1525,6 @@ case class SnappyHashAggregateExec(
          | // common sub-expressions
          |$inputCodes
          |$evaluateAggregateAndUpdateBuffer
-
       """.stripMargin
 
     val updateCode = if (splitAggCode) {
