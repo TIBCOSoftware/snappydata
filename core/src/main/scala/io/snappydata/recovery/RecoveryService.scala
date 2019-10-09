@@ -113,27 +113,28 @@ object RecoveryService extends Logging {
       for (entry <- preProcessedqueue) {
         val qEntry = entry
         val qVal = qEntry.getValue
-        if (qVal.isInstanceOf[DDLConflatable]) {
-          val conflatable = qVal.asInstanceOf[DDLConflatable]
-          val schema = conflatable.getSchemaForTableNoThrow
-          if (conflatable.isCreateDiskStore) {
-            ddlBuffer.add(conflatable.getValueToConflate)
-          } else if (Misc.SNAPPY_HIVE_METASTORE == schema
-              || Misc.SNAPPY_HIVE_METASTORE == conflatable.getCurrentSchema
-              || Misc.SNAPPY_HIVE_METASTORE == conflatable.getRegionToConflate) {
-          } else if (conflatable.isAlterTable || conflatable.isCreateIndex ||
-              isGrantRevokeStatement(conflatable) ||
-              conflatable.isCreateTable || conflatable.isDropStatement ||
-              conflatable.isCreateSchemaText) {
-            val ddl = conflatable.getValueToConflate
-            val ddlLowerCase = ddl.toLowerCase()
-            if ("create[ ]+diskstore".r.findFirstIn(ddlLowerCase).isDefined ||
-                "create[ ]+index".r.findFirstIn(ddlLowerCase).isDefined ||
-                ddlLowerCase.trim.contains("^grant") ||
-                ddlLowerCase.trim.contains("^revoke")) {
-              ddlBuffer.add(ddl)
+        qVal match {
+          case conflatable: DDLConflatable =>
+            val schema = conflatable.getSchemaForTableNoThrow
+            if (conflatable.isCreateDiskStore) {
+              ddlBuffer.add(conflatable.getValueToConflate)
+            } else if (Misc.SNAPPY_HIVE_METASTORE == schema
+                | Misc.SNAPPY_HIVE_METASTORE == conflatable.getCurrentSchema
+                | Misc.SNAPPY_HIVE_METASTORE == conflatable.getRegionToConflate) {
+            } else if (conflatable.isAlterTable || conflatable.isCreateIndex ||
+                isGrantRevokeStatement(conflatable) ||
+                conflatable.isCreateTable || conflatable.isDropStatement ||
+                conflatable.isCreateSchemaText) {
+              val ddl = conflatable.getValueToConflate
+              val ddlLowerCase = ddl.toLowerCase()
+              if ("create[ ]+diskstore".r.findFirstIn(ddlLowerCase).isDefined ||
+                  "create[ ]+index".r.findFirstIn(ddlLowerCase).isDefined ||
+                  ddlLowerCase.trim.contains("^grant") ||
+                  ddlLowerCase.trim.contains("^revoke")) {
+                ddlBuffer.add(ddl)
+              }
             }
-          }
+          case _ =>
         }
       }
     } else {
@@ -163,7 +164,7 @@ object RecoveryService extends Logging {
       val funcRetType = func.className.split("__")(1)
       assert(func.resources.map(_.uri).length == 1, "Function resource should be singular.")
       val funcDdl = s"CREATE FUNCTION ${func.identifier} " +
-          s"AS ${funcClass} RETURNS ${funcRetType}  USING JAR '${func.resources.map(_.uri).head}'"
+          s"AS $funcClass RETURNS $funcRetType  USING JAR '${func.resources.map(_.uri).head}'"
       ddlBuffer.append(funcDdl)
     })
     allDatabases.foreach(db => {
@@ -184,10 +185,10 @@ object RecoveryService extends Logging {
       logDebug(s"RecoveryService: getAllDDLs: table: $table")
       val numPartsNTSKey = allkeys.filter(f => f.contains("numPartsOrgSqlText"))
 
-      if (!numPartsNTSKey.isEmpty) {
+      if (numPartsNTSKey.nonEmpty) {
         val numPartsnTS = numPartsNTSKey.head.split("_")
-        val numSqlTextParts = table.properties.getOrElse(numPartsNTSKey.head, null).toInt
-        assert(numSqlTextParts != null,
+        val numSqlTextParts = table.properties.getOrElse(numPartsNTSKey.head, "0").toInt
+        assert(numSqlTextParts != 0,
           s"numPartsOrgSqlText key not found in catalog table properties for" +
               s" table ${table.identifier}.")
         val createTimestamp = numPartsnTS(1).toLong
@@ -197,7 +198,7 @@ object RecoveryService extends Logging {
         tempTableBuffer append ((s"createTableString_$createTimestamp", createTableString))
       }
       // ========== covers alter statements ================
-      allkeys.filter(f => f.contains("altTxt")).toSeq.foreach(key =>
+      allkeys.filter(f => f.contains("altTxt")).foreach(key =>
         tempTableBuffer append ((key, table.properties(key))))
 
       // ============ covers view statements ============
@@ -215,7 +216,7 @@ object RecoveryService extends Logging {
     ddlBuffer.appendAll(tempViewBuffer)
 
     val biConsumer = new BiConsumer[String, String] {
-      def accept(alias: String, cmd: String) = {
+      def accept(alias: String, cmd: String): Unit = {
         val cmdFields = cmd.split("\\|", -1)
         if (cmdFields.length > 1) {
           val repos = cmdFields(1)
@@ -235,7 +236,7 @@ object RecoveryService extends Logging {
         } else {
           if (!(alias.contains(ContextJarUtils.functionKeyPrefix) ||
               alias.contains(ContextJarUtils.droppedFunctionsKey))) {
-            ddlBuffer.append(s"DEPLOY JAR ${alias} '${cmdFields(0)}'")
+            ddlBuffer.append(s"DEPLOY JAR $alias '${cmdFields(0)}'")
           }
         }
       }
@@ -258,7 +259,7 @@ object RecoveryService extends Logging {
       bucketPath = s"/${PartitionedRegionHelper.PR_ROOT_REGION_NAME}/$bucketName"
     }
     // for null region maps select random host
-    if(regionViewSortedSet.contains(bucketPath)) {
+    if (regionViewSortedSet.contains(bucketPath)) {
       regionViewSortedSet(bucketPath).map(e => {
         val hostCanonical = e.getExecutorHost
         val host = hostCanonical.split('(').head
@@ -272,42 +273,6 @@ object RecoveryService extends Logging {
     val hostCanonical = e.getExecutorHost
     val host = hostCanonical.split('(').head
     Seq(s"executor_${host}_$hostCanonical")
-  }
-
-  /* Table type, PR or replicated, DStore name, numBuckets */
-  def getTableDiskInfo(fqtn: String): (String, Boolean, String, Int) = {
-    val parts = fqtn.split('.')
-    val schema = parts(0)
-    val table = parts(1)
-    val cObject = mostRecentMemberObject.getCatalogObjects.toArray()
-    val cObjArr: Array[AnyRef] = cObject.filter {
-      case a: CatalogTableObject =>
-        if (a.schemaName == schema && a.tableName == table) {
-          true
-        } else {
-          false
-        }
-      case _ => false
-    }
-    val cObj = cObjArr.head.asInstanceOf[CatalogTableObject]
-    val tablePath = fqtn.replace(".", "/")
-    import collection.JavaConversions._
-    for ((s, i) <- mostRecentMemberObject.getPrToNumBuckets) {
-    }
-
-    val numBuckets = mostRecentMemberObject.getPrToNumBuckets.get(tablePath)
-    val robj = mostRecentMemberObject.getAllRegionViews.asScala.find(r => {
-      val regionPath = r.getRegionPath
-      if (PartitionedRegionHelper.isBucketRegion(regionPath)) {
-        val pr = PartitionedRegionHelper.getPRPath(regionPath)
-        tablePath == pr
-      } else {
-        tablePath == regionPath
-      }
-    })
-    (cObj.provider, numBuckets != null,
-        null,
-        numBuckets)
   }
 
   val regionViewSortedSet: mutable.Map[String,
@@ -326,14 +291,11 @@ object RecoveryService extends Logging {
     getTables.foreach(table => {
       // Create statements
       var versionCnt = 1
-
-      val numOfSchemaParts = table.properties.getOrElse("NoOfschemaParts", null).toInt
-      assert(numOfSchemaParts != null, "Schema string not found.")
+      val numOfSchemaParts = table.properties.getOrElse("NoOfschemaParts", "0").toInt
+      assert(numOfSchemaParts != 0, "Schema string not found.")
       val schemaJsonStr = (0 until numOfSchemaParts)
           .map { i => table.properties.getOrElse(s"schemaPart.$i", null) }.mkString
-
       logDebug(s"RecoveryService: createSchemaMap: Schema Json String : $schemaJsonStr")
-
       val fqtnKey = table.identifier.database match {
         case Some(schName) => schName + "_" + table.identifier.table
         case None => throw new Exception(
@@ -432,7 +394,7 @@ object RecoveryService extends Logging {
     if (memberContainsRegion) {
       (memberObject.getPrToNumBuckets.get(prName), false)
     } else {
-      if (memberObject.getReplicatedRegions().contains(prName)) {
+      if (memberObject.getReplicatedRegions.contains(prName)) {
         (1, true)
       } else (-1, false)
     }
@@ -479,7 +441,7 @@ object RecoveryService extends Logging {
     val nonHiveRegionViews = regionViewSortedSet.filterKeys(
       !_.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
     val regionToConsider =
-      if (nonHiveRegionViews.size != 0) {
+      if (nonHiveRegionViews.nonEmpty) {
         nonHiveRegionViews.keySet.toSeq.sortBy(nonHiveRegionViews.get(_).size).reverse.head
       } else {
         logInfo("No relevant RecoveryModePersistentViews found.")
@@ -531,7 +493,7 @@ object RecoveryService extends Logging {
   }
 
   def getProvider(tableName: String): String = {
-    logDebug(s"RecoveryService: tableName: ${tableName}")
+    logDebug(s"RecoveryService: tableName: $tableName")
     val res = mostRecentMemberObject.getCatalogObjects.asScala.filter(x => {
       x.isInstanceOf[CatalogTableObject] && {
         val cbo = x.asInstanceOf[CatalogTableObject]

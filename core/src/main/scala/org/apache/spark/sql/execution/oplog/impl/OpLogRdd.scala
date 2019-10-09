@@ -136,8 +136,11 @@ class OpLogRdd(
         }
       }
     }
-    // todo : handle properly
-    tableColIdsMap.getOrElse(s"$maxVersion#$fqtnLowerKey", null)(index)
+    if (!tableColIdsMap.contains(s"$maxVersion#$fqtnLowerKey")){
+      throw new IllegalStateException(s"tableColIdsMap might not be built properly." +
+          s" Missing key: $maxVersion#$fqtnLowerKey")
+    }
+    tableColIdsMap(s"$maxVersion#$fqtnLowerKey")(index)
   }
 
   def getSchemaColumnId(tableName: String, colName: String, version: Int): Int = {
