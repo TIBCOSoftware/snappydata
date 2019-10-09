@@ -248,7 +248,7 @@ function collect_on_remote {
   start_epoch="$7"
   end_epoch="$8"
   get_hprof="$9"
-  invert_pattern="$9"
+  invert_pattern="${10}"
 
   # Create a .tmpcda dir if not exists else empty it
   tmp_dir="$data_dir/.tmpcda"
