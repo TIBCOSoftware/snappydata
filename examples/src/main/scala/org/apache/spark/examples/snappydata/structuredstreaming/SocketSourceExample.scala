@@ -85,9 +85,54 @@ object SocketSourceExample {
         .format("console")
         .outputMode("append")
         .trigger(ProcessingTime("1 seconds"))
+        .queryName("Snappy1-Query-1")
         .start()
 
-    streamingQuery.awaitTermination(15000)
+    val structDF2 = socketDF.as[String].map(s => {
+      val fields = s.split(",")
+      DeviceData(fields(0), fields(1).toInt)
+    })
+
+    val streamingQuery2 = structDF2
+        .filter(_.signal > 10)
+        .writeStream
+        .format("console")
+        .outputMode("append")
+        .trigger(ProcessingTime("1 seconds"))
+        .queryName("Snappy1-Query-2")
+        .start()
+
+    streamingQuery.awaitTermination()
+    streamingQuery2.awaitTermination()
+
+    val snappy2 = new SnappySession(spark.sparkContext)
+
+    // Create DataFrame representing the stream of input lines from connection to host:port
+    val socketDF2 = snappy2
+        .readStream
+        .format("socket")
+        .option("host", "localhost")
+        .option("port", 9999)
+        .load()
+
+    // Creating a typed DeviceData from raw string received on socket.
+    val structDF3 = socketDF2.as[String].map(s => {
+      val fields = s.split(",")
+      DeviceData(fields(0), fields(1).toInt)
+    })
+
+    // A simple streaming query to filter signal value and show the output on console.
+    val streamingQuery3 = structDF3
+        .filter(_.signal > 10)
+        .writeStream
+        .format("console")
+        .outputMode("append")
+        .trigger(ProcessingTime("1 seconds"))
+        .queryName("Snappy2-Query-1")
+        .start()
+
+
+    streamingQuery3.awaitTermination()
 
     println("Exiting")
     System.exit(0)
