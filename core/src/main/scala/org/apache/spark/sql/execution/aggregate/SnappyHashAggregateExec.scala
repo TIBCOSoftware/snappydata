@@ -1236,13 +1236,14 @@ case class SnappyHashAggregateExec(
       inputTemp.zip(this.child.output.map(_.dataType)).
         grouped(codeSplitFuncParamsSize).zipWithIndex.flatMap {
         case (group, index) => {
+            val actualStartIndex = index * codeSplitFuncParamsSize
             val paramTypesStr = group.map(_._2.toString).mkString(",")
             val existingFunc = functionMapping.get(paramTypesStr)
 
             val initCode = existingFunc match {
               case Some(funcName) => val argStr = group.map {
                 case (expr, _) => s"${expr.value}, ${expr.isNull}"
-              }.mkString("", ",", s", $index")
+              }.mkString("", ",", s", $actualStartIndex")
               s"$funcName($argStr);";
 
               case None =>
@@ -1255,15 +1256,15 @@ case class SnappyHashAggregateExec(
                   }
                 }
                 val functionName = ctx.freshName("initFunc")
-                val indexTerm = ctx.freshName("index")
+                val startIndexTerm = ctx.freshName("startIndex")
                 val parameterString = parameterGroupSeq.map {
                   case (expr, dt) => s"${ctx.javaType(dt)} ${expr.value}, boolean ${expr.isNull}"
-                }.mkString("", ",", s", int $indexTerm")
+                }.mkString("", ",", s", int $startIndexTerm")
                 val methodBody = parameterGroupSeq.zipWithIndex.map {
-                  case ((exprCode, dt), innerIndex) =>
+                  case ((exprCode, dtt), innerIndex) =>
                     s"""
-                       |$inputValTransferArray[$indexTerm + $innerIndex] = ${exprCode.value};
-                       |$inputNullTransferArray[$indexTerm + $innerIndex] = ${exprCode.isNull};
+                       |$inputValTransferArray[$startIndexTerm + $innerIndex] = ${exprCode.value};
+                       |$inputNullTransferArray[$startIndexTerm + $innerIndex] = ${exprCode.isNull};
                      """.stripMargin
                 }.mkString("\n")
                 ctx.addNewFunction(functionName,
@@ -1275,19 +1276,20 @@ case class SnappyHashAggregateExec(
                functionMapping += (paramTypesStr -> functionName)
                 val argStr = group.map {
                   case (expr, _) => s"${expr.value}, ${expr.isNull}"
-                }.mkString("", ",", s", $index")
+                }.mkString("", ",", s", $actualStartIndex")
                 s"$functionName($argStr);";
             }
-            val newGroup = group.map {
-              case (orgExprCode: ExprCode, dtt) => {
+            val newGroup = group.zipWithIndex.map {
+              case ((orgExprCode, dtt), innerIndex) => {
                 val javaType = ctx.javaType(dtt)
                 val castType = if (SHAMapAccessor.isPrimitive(dtt)) {
                   SHAMapAccessor.getObjectTypeForPrimitiveType(javaType)
                 } else {
                   javaType
                 }
-                orgExprCode.copy(isNull = s"$inputNullTransferArray[$index]",
-                  value = s"($castType)${inputValTransferArray}[$index]")
+                orgExprCode.copy(isNull =
+                  s"$inputNullTransferArray[$actualStartIndex + $innerIndex]",
+                  value = s"($castType)${inputValTransferArray}[$actualStartIndex + $innerIndex]")
               }
             }
             val lastExpr = newGroup.last
