@@ -48,12 +48,6 @@ class OpLogFormatRelation(
     val fieldNames = new util.HashMap[String, Integer](schema.length)
     (0 until schema.length).foreach(i => fieldNames.put(schema(i).name.toLowerCase, i + 1))
     val projection = null
-    //      requiredColumns.map { c =>
-    //      val index = fieldNames.get(Utils.toLowerCase(c))
-    //      if (index == 0) Utils.analysisException(s"Column $c does not exist in $tableName")
-    //      index.toInt
-    //    }
-
     val provider = RecoveryService.getProvider(fqtn)
     val snappySession = SparkSession.builder().getOrCreate().asInstanceOf[SnappySession]
 

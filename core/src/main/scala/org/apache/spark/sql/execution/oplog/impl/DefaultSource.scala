@@ -24,7 +24,6 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.{SQLContext, SnappyParserConsts, SnappySession}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.store.StoreUtils.PARTITION_BY
 import org.apache.spark.sql.types.StructType
 
 class DefaultSource extends ExternalSchemaRelationProvider with SchemaRelationProvider

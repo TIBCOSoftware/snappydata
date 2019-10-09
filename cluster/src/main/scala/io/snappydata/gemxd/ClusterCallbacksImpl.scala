@@ -181,8 +181,8 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
       } match {
         case scala.util.Success(_) =>
         case scala.util.Failure(exception) =>
+          logError(s"Error recovering table: $table.")
           if (!ignoreError) {
-            logInfo(s"Error recovering table: $table.")
             throw new Exception(exception)
           }
       }
@@ -203,7 +203,6 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
       arrBuf.append(ddl.trim + ";\n")
     })
     session.sparkContext.parallelize(arrBuf, 1).saveAsTextFile(filePath)
-
   }
 
   override def setLeadClassLoader(): Unit = {
