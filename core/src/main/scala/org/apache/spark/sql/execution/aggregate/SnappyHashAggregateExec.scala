@@ -1289,7 +1289,7 @@ case class SnappyHashAggregateExec(
                 }
                 orgExprCode.copy(isNull =
                   s"$inputNullTransferArray[$actualStartIndex + $innerIndex]",
-                  value = s"($castType)${inputValTransferArray}[$actualStartIndex + $innerIndex]")
+                  value = s"(($castType)${inputValTransferArray}[$actualStartIndex + $innerIndex])")
               }
             }
             val lastExpr = newGroup.last
@@ -1319,27 +1319,8 @@ case class SnappyHashAggregateExec(
     val evaluatedInputCode = evaluateVariables(input)
 
     ctx.currentVars = input
-    val keysExpr_temp = ctx.generateExpressions(
+    val keysExpr = ctx.generateExpressions(
       groupingExpressions.map(e => BindReferences.bindReference[Expression](e, child.output)))
-    val keysExpr = if (splitAggCode) {
-      // Modify the key ExprCode such that they use new variable names with values taken from
-      // the defined Object array. This is required as these variable names become the
-      // parameter names in the split function to transfer the key variables for writing
-      keysExpr_temp.zipWithIndex.map { case (origExprCode, index) => {
-        val newKeyVarName = ctx.freshName("keyVar")
-        val newKeyIsNull = ctx.freshName("keyIsNull")
-        val code =
-          s"""
-             |${origExprCode.code}
-             |${ctx.javaType(groupingExpressions(index).dataType)} $newKeyVarName = ${origExprCode.value};
-             |boolean $newKeyIsNull = ${origExprCode.isNull};
-           """.stripMargin
-        ExprCode(code, newKeyIsNull, newKeyVarName)
-      }
-      }
-    } else {
-      keysExpr_temp
-    }
 
     val dictionaryCode = SHAMapAccessor.initDictionaryCodeForSingleKeyCase(input,
       byteBufferAccessor.keyExprs, child.output, ctx, byteBufferAccessor.session)
