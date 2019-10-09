@@ -1602,6 +1602,68 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test")
   }
 
+  ignore("test code size exceeding with large group by keys & large agg functions") {
+    snc
+    val snc1 = snc.newSession()
+    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "40")
+    snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "5")
+
+    val numIntCols = 450
+
+    val intFieldsStr = (for (i <- 0 until numIntCols) yield {
+      s"int_$i int"
+    }).mkString(",")
+
+    val numStringCols = 450
+
+    val stringFieldsStr = (for (i <- 0 until numStringCols) yield {
+      s"string_$i string"
+    }).mkString(",")
+
+    snc.sql(s"create table test ($intFieldsStr, $stringFieldsStr) using column ")
+    val prepStr = (for (i <- 0 until (numIntCols + numStringCols)) yield {
+      "?"
+    }).mkString(",")
+    val conn = getSqlConnection
+
+    val prepStmt = conn.prepareStatement(s"insert into test values ($prepStr)")
+    for (i <- 0 until 100) {
+      for (j <- 0 until numIntCols) {
+        prepStmt.setInt(j + 1, j + i )
+      }
+      for (j <- 0 until numStringCols) {
+        prepStmt.setString(j + numIntCols + 1, s"str_${i % 5}" )
+      }
+
+      prepStmt.addBatch()
+    }
+    prepStmt.executeBatch()
+    assertEquals(100, snc.sql("select count(*) from test").collect()(0).getLong(0))
+    val groupByClause = (for (i <- 0 until numStringCols) yield {
+      s"string_$i"
+    }).mkString(",")
+
+    val aggFunctionProjection = (for (i <- 0 until numIntCols) yield {
+      s"sum(int_$i) summ_$i"
+    }).mkString(",")
+
+    val rs = snc1.sql(s"select $aggFunctionProjection from" +
+      s" test group by $groupByClause order by summ_0 asc")
+    val rows = rs.collect()
+    assertEquals (5, rows.length)
+   /* val sum_col1_key1 = 20/2*(2 * 0 + (20 - 1) * 5)
+    val sum_col1_key2 = 20/2*(2 * 1 + (20 - 1) * 5)
+    val sum_col1_key3 = 20/2*(2 * 2 + (20 - 1) * 5)
+    val sum_col1_key4 = 20/2*(2 * 3 + (20 - 1) * 5)
+    val sum_col1_key5 = 20/2*(2 * 4 + (20 - 1) * 5)
+    assertEquals(sum_col1_key1, rows(0).getLong(0))
+    assertEquals(sum_col1_key2, rows(0).getLong(1))
+    assertEquals(sum_col1_key3, rows(0).getLong(2))
+    assertEquals(sum_col1_key4, rows(0).getLong(3))
+    assertEquals(sum_col1_key5, rows(0).getLong(4)) */
+    snc.dropTable("test")
+  }
+
   test("SNAP-3132") {
     snc
     snc.sql("drop table if exists test1")
