@@ -54,7 +54,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String,
   shaMapClassName: String, useCustomHashMap: Boolean,
   previousSingleKey_Position_LenTerm: Option[(String, String, String)],
-  codeSplitFuncParamsSize: Int, codeSplitThresholdSize: Int)
+  codeSplitFuncParamsSize: Int, codeSplitThresholdSize: Int, splitAggCode: Boolean,
+  splitGroupByKeyCode: Boolean)
   extends CodegenSupport {
   val unsafeArrayClass = classOf[UnsafeArrayData].getName
   val unsafeRowClass = classOf[UnsafeRow].getName
@@ -121,7 +122,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   def readVarsFromBBMap(dataTypes: Seq[DataType], varNames: Seq[String],
     currentValueOffsetTerm: String, isKey: Boolean, nullBitTerm: String,
-    numBytesForNullBits: Int, skipNullBitsCode: Boolean, splitCode: Boolean):
+    numBytesForNullBits: Int, skipNullBitsCode: Boolean,
+    splitCode: Boolean, useTheseNullVarsForAggBuffer: Option[Seq[String]]):
   (Option[String], Seq[ExprCode]) = {
     if (splitCode) {
       val nullBitsCastTerm = if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
@@ -182,7 +184,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
           } else if (isKey) {
             ctx.freshName("isNullKey")
           } else {
-            s"$varName${SHAMapAccessor.nullVarSuffix}"
+            useTheseNullVarsForAggBuffer.map(nullVars => nullVars(index)).
+              getOrElse(s"$varName${SHAMapAccessor.nullVarSuffix}")
           }
 
           if (isKey && ((index == this.skipLenForAttribIndex) || dt.isInstanceOf[StructType])) {
@@ -790,6 +793,36 @@ case class SHAMapAccessor(@transient session: SnappySession,
          |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
        """.stripMargin
 
+    val hashCodeCalcSnippet = generateHashCode(hashVar, keyVars, keysDataType)
+
+    val hashCodeGenCode = if (splitAggCode) {
+      val funcName = ctx.freshName("calcHashCode")
+      ctx.addNewFunction(funcName,
+        s"""
+           |private int $funcName() {
+              |$hashCodeCalcSnippet
+              |return ${hashVar(0)};
+           |}
+             """.stripMargin)
+      s"int ${hashVar(0)} = $funcName();"
+    } else {
+      hashCodeCalcSnippet
+    }
+
+    val keySizeCodeCalcSnippet = generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)
+    val keySizeGenCode = if (splitAggCode) {
+      val funcName = ctx.freshName("calcKeySize")
+      ctx.addNewFunction(funcName,
+        s"""
+           |private int $funcName() {
+             |return $keySizeCodeCalcSnippet;
+           |}
+             """.stripMargin)
+      s"$funcName()"
+    } else {
+      keySizeCodeCalcSnippet
+    }
+
     val keysPrepCodeCode =
       s"""
          |// evaluate key vars
@@ -803,9 +836,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
       }.mkString("\n")
       }
          | // evaluate hash code of the lookup key
-         |${generateHashCode(hashVar, keyVars, keysDataType)}
+         |$hashCodeGenCode
          |// get key size code
-         |$numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)};
+         |$numKeyBytesTerm = $keySizeGenCode;
          |// prepare the key
          |${generateKeyBytesHolderCodeOrEmptyString(numKeyBytesTerm, numValueBytes,
         keyVars, keysDataType, aggregateDataTypes, valueInitVars)
@@ -1197,6 +1230,31 @@ case class SHAMapAccessor(@transient session: SnappySession,
     if (useCustomHashMap) {
       ""
     } else {
+      val writeKeySnippet = writeKeyOrValue(baseKeyObject, currentOffset, keysDataType, keyVars,
+        nullKeysBitsetTerm, numBytesForNullKeyBits, true, numBytesForNullKeyBits == 0)
+
+      val writeKeyCode = if (splitAggCode) {
+        val funcName = ctx.freshName("writeKeys")
+        val nullKeysBitsetParam = if (numBytesForNullKeyBits == 0) {
+          ""
+        } else if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullKeyBits)) {
+          s", byte[] $nullKeysBitsetTerm"
+        } else {
+          s", ${SHAMapAccessor.getNullBitsCastTerm(numBytesForNullKeyBits)} $nullKeysBitsetTerm"
+        }
+        val paramStr = s"long $currentOffset, Object $baseKeyObject $nullKeysBitsetParam"
+        ctx.addNewFunction(funcName,
+          s"""
+             |private long $funcName($paramStr) {
+               |$writeKeySnippet
+               |return $currentOffset;
+             |}
+             """.stripMargin)
+        val argStr = s"$currentOffset, $baseKeyObject" +
+          s" ${ if (numBytesForNullKeyBits == 0) "" else s", $nullKeysBitsetTerm"}"
+        s"$currentOffset = $funcName($argStr);"
+      } else writeKeySnippet
+
       s"""
         if ($keyBytesHolderVarTerm == null || $keyHolderCapacityTerm <
       $numKeyBytesVar + $numValueBytes) {
@@ -1213,10 +1271,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
         long $currentOffset = $baseKeyHolderOffset;
         // first write key data
-        ${
-        writeKeyOrValue(baseKeyObject, currentOffset, keysDataType, keyVars,
-          nullKeysBitsetTerm, numBytesForNullKeyBits, true, numBytesForNullKeyBits == 0)
-      }
+        $writeKeyCode
     """.stripMargin
     }
   }
@@ -1914,7 +1969,7 @@ object SHAMapAccessor {
    def getExpressionForNullEvalFromMask(i: Int, numBytesForNullBits: Int,
      nullBitTerm: String ): String = {
      val castTerm = getNullBitsCastTerm(numBytesForNullBits)
-     if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
+     if (isByteArrayNeededForNullBits(numBytesForNullBits)) {
        val remainder = i % 8
        val index = i / 8
        s"""($nullBitTerm[$index] & (0x01 << $remainder)) != 0"""
@@ -1925,7 +1980,7 @@ object SHAMapAccessor {
 
   def getSizeOfValueBytes(aggDataTypes: Seq[DataType], numBytesForNullAggBits: Int): Int = {
     aggDataTypes.foldLeft(0)((size, dt) => size + dt.defaultSize) +
-      SHAMapAccessor.sizeForNullBits(numBytesForNullAggBits)
+      sizeForNullBits(numBytesForNullAggBits)
   }
 
   def getNullBitsCastTerm(numBytesForNullBits: Int): String = if (numBytesForNullBits == 1) {
@@ -1948,7 +2003,7 @@ object SHAMapAccessor {
     attribIndex: Int, nullBitsTerm: String, offsetTerm: String, dt: DataType,
     isKey: Boolean, writingCodeToEmbed: String): String = {
     val nullVar = expr.isNull
-    if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
+    if (isByteArrayNeededForNullBits(numBytesForNullBits)) {
       val remainder = attribIndex % 8
       val index = attribIndex / 8
       if (nullVar.isEmpty || nullVar == "false") {
@@ -1960,7 +2015,7 @@ object SHAMapAccessor {
           if (isKey) {
             ""
           } else {
-            SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+            getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
           }
         }
         """.stripMargin
@@ -1970,7 +2025,7 @@ object SHAMapAccessor {
                |$nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
                |${
                    if (isKey) ""
-                   else SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+                   else getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
                 }
              } else {
                |$writingCodeToEmbed
@@ -1979,13 +2034,13 @@ object SHAMapAccessor {
       }
     }
     else {
-      val castTerm = SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
+      val castTerm = getNullBitsCastTerm(numBytesForNullBits)
       if (nullVar.isEmpty || nullVar == "false") {
         s"""$writingCodeToEmbed"""
       } else if (nullVar == "true") {
         s""""$nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $attribIndex));
             |${ if (isKey) ""
-                else SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+                else getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
              }
          """.stripMargin
 
@@ -1994,7 +2049,7 @@ object SHAMapAccessor {
           |if ($nullVar) {
             |$nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $attribIndex));
             |${ if (isKey) ""
-                else SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+                else getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
               }
           |} else {
           | $writingCodeToEmbed
@@ -2008,7 +2063,7 @@ object SHAMapAccessor {
     attribIndex: String, nullBitsTerm: String, offsetTerm: String, dt: DataType,
     isKey: Boolean, writingCodeToEmbed: String, ctx: CodegenContext): String = {
     val nullVar = expr.isNull
-    if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
+    if (isByteArrayNeededForNullBits(numBytesForNullBits)) {
       val remainderTrm = ctx.freshName("remainder")
       val indexTerm = ctx.freshName("index")
       s"""
@@ -2016,18 +2071,18 @@ object SHAMapAccessor {
          |int $indexTerm = $attribIndex / 8;
          |if ($nullVar) {
             |$nullBitsTerm[$indexTerm] |= (byte) ((0x01 << $remainderTrm));
-            |${if (isKey) "" else SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
+            |${if (isKey) "" else getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
          |} else {
             |$writingCodeToEmbed
          |} """.stripMargin
     }
     else {
-      val castTerm = SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
+      val castTerm = getNullBitsCastTerm(numBytesForNullBits)
         s"""
            |if ($nullVar) {
              |$nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $attribIndex));
              |${ if (isKey) ""
-               else SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+               else getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
               }
            |} else {
              |$writingCodeToEmbed
