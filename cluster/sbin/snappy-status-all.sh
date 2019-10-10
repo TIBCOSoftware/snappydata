@@ -21,7 +21,7 @@
 # conf/locators, conf/leads and conf/servers files repsectively
 
 if [ "$#" -gt 0 ]; then
-  echo "Invalid argument::This shell script doesn't require any agrument."
+  echo "Usage: Run this script without any arguments."
   exit
 fi
 
