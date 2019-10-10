@@ -1563,10 +1563,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    */
   private[sql] def setCurrentSchema(schema: String, createIfNotExists: Boolean): Unit = {
     val schemaName = sessionCatalog.formatDatabaseName(schema)
-    if (createIfNotExists) {
-      sessionCatalog.createSchema(schemaName, ignoreIfExists = true, createInStore = false)
+    if (schemaName != getCurrentSchema) {
+      if (createIfNotExists) {
+        sessionCatalog.createSchema(schemaName, ignoreIfExists = true, createInStore = false)
+      }
+      sessionCatalog.setCurrentSchema(schemaName, force = true)
     }
-    sessionCatalog.setCurrentSchema(schemaName)
   }
 
   def getCurrentSchema: String = sessionCatalog.getCurrentSchema

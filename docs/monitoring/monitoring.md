@@ -4,7 +4,7 @@ SnappyData Monitoring Console is a dashboard that provides a real-time view into
 All the usage details are automatically refreshed after every five seconds.
 
 !!! Note
-	TIBCO ComputeDB Monitoring Console is not yet tested and supported on Internet Explorer.
+	SnappyData Monitoring Console is not yet tested and supported on Internet Explorer.
 
 To access SnappyData Monitoring Console, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
 
@@ -49,10 +49,6 @@ On the top of the dashboard, the date and time details about when the cluster is
 The Dashboard page graphically presents various cluster-level statistics that can be used to monitor the current health status of a cluster. The statistics on the dashboard page can be set to update automatically after every five seconds.  If you want to turn off the auto-refresh, use the **Auto Refresh** switch that is provided on the upper-right corner.
 ![](../Images/AutoRefresh-is-ON.png)
 
-You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
-![](../Images/CPU_cores.png)
-
-
 The **Dashboard** page displays the following sections:
 
 * [Cluster](#cluster)
@@ -70,6 +66,11 @@ You can use the search and sort functionalities in any of the sections, except f
 In the **Cluster** section, you can view the following graphs which are automatically refreshed:
 
 ![Cluster](../Images/Dashboard-Trends.png)
+
+On the Dashboard page, the **Cluster** section displays the date and time when the cluster was launched. It also displays the cluster's up-time since cluster was launched.
+
+You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
+![](../Images/CPU_cores.png)
 
 |Graphs|Description|
 |--------|--------|
@@ -256,20 +257,36 @@ On this page, you can view the total time required for all the tasks in a job to
 
 * **GC time**: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory, especially when you have row tables.
 
+<a id="historyserver"></a>
 ## Spark History Server
-The Spark History server is an HTTP server that let you analyze the Spark jobs.
+The Spark History server is a Spark UI extension. It is a web application that lets you analyze the running as well as completed SQL queries and the associated Spark jobs. The metadata collected in the form of event logs by the Spark History server can be shipped from a SnappyData cluster to another SnappyData cluster for further analysis.
 
 The first step in tuning query performance in SnappyData is to understand the query physical plan that is available through the SQL tab on the SnappyData Monitoring console. The detailed execution plan requires one to understand the jobs and tasks associated with the query. This is available in the Jobs/Tasks tab. However, if the SnappyData Monitoring console is not accessible to the investigator, it becomes a difficult exercise. To overcome this, TIBCO recommends to turn on the History server for production applications.
 
 To turn on the History server, do the following:
 
-1.	Ensure to provide a shared disk that can be accessed from all the SnappyData nodes. If you do not have the NFS access, use HDFS. Provide the permissions to access a shared folder when you start SnappyData.
-2.	Enable event logging for the Spark jobs. For example, if the server was configured with a log directory of hdfs://namenode/shared/spark-logs, then configure the following properties in the conf/lead: 
+1.	Ensure to provide a shared disk that can be accessed from all the SnappyData nodes. If you do not have the NFS access, use HDFS. Provide the necessary permissions to access a shared folder when you start SnappyData.
+2.	Enable event logging for the Spark jobs. For example, specify the following properties in **conf/lead**:
 
-            spark.eventLog.enabled true
-            spark.eventLog.dir hdfs://namenode/shared/spark-logs
+            -spark.eventLog.enabled=true -spark.eventLog.dir=hdfs://namenode/shared/spark-logs
 
-3.	Start the History server.
+3.	Additionally, set the following property in **conf/spark-defaults.conf** file (it defaults to **/tmp/spark-event**s):
+
+			spark.history.fs.logDirectory      hdfs://namenode/shared/spark-logs
+
+    If this property is not set and the directory **/tmp/spark-events** does not exist, Spark History server fails to start.
+
+5. By default, the history server loads only 1000 most recent events (SQL, Jobs, Stages). Older events will not be visible. To retain more number of events, set additional properties using **SPARK_HISTORY_OPTS**, and also increase the heap-size of the history server as follows in the file **conf/SPARK_ENV.sh**.
+
+             SPARK_HISTORY_OPTS="-Dspark.history.fs.numReplayThreads=16 -Dspark.ui.retainedJobs=10000 -Dspark.ui.retainedStages=20000 -Dspark.sql.ui.retainedExecutions=10000"
+             SPARK_DAEMON_MEMORY=12g
+     	
+    !!!Note 
+    	When you retain a high number of events, it increases the disk space requirement. Therefore, ensure that the disk store, where the events are stored, has adequate disk space.
+
+4.	Start the History server.
+
 			./sbin/start-history-server.sh
-	This creates a web interface at http://<server-url>:18080 by default, listing incomplete and completed instances of SQL queries and the associated Spark jobs and tasks.
+
+	This creates a web interface at *http://<server-url>:18080* by default, listing incomplete and completed instances of SQL queries and the associated Spark jobs and tasks.
     For more details about History server, refer to [Configuring History Server](https://spark.apache.org/docs/latest/monitoring.html#environment-variables).

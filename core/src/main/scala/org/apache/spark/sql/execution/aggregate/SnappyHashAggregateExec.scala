@@ -79,28 +79,22 @@ case class SnappyHashAggregateExec(
     hasDistinct: Boolean)
     extends NonRecursivePlans with UnaryExecNode with BatchConsumer {
 
-
   val useByteBufferMapBasedAggregation: Boolean = {
-    val useDictionaryOptimizationForSingleKey = (groupingExpressions.length == 1 &&
-      groupingExpressions.exists(_.dataType match {
-      case StringType => true
-      case _ => false
-    }) && !Property.UseOptimizedHashAggregateForSingleKey.get(
-      sqlContext.sparkSession.asInstanceOf[SnappySession].sessionState.conf))
+    val conf = sqlContext.sparkSession.sessionState.conf
+    val useOldImplementationForSingleKey = groupingExpressions.length == 1 &&
+        !Property.UseOptimizedHashAggregateForSingleKey.get(conf)
 
     aggregateBufferAttributes.forall(attr =>
       TypeUtilities.isFixedWidth(attr.dataType)) &&
-      Property.UseOptimzedHashAggregate.get(
-        sqlContext.sparkSession.asInstanceOf[SnappySession].sessionState.conf) &&
-      !groupingExpressions.isEmpty &&
-      groupingExpressions.forall(_.dataType.
-        existsRecursively(SHAMapAccessor.supportedDataTypes)) &&
-      !useDictionaryOptimizationForSingleKey
+        Property.UseOptimzedHashAggregate.get(conf) &&
+        groupingExpressions.nonEmpty &&
+        groupingExpressions.forall(_.dataType.
+            existsRecursively(SHAMapAccessor.supportedDataTypes)) &&
+        !useOldImplementationForSingleKey
   }
 
-
-
-  override def nodeName: String = "SnappyHashAggregate"
+  override def nodeName: String =
+    if (useByteBufferMapBasedAggregation) "BufferMapHashAggregate" else "SnappyHashAggregate"
 
   @transient def resultExpressions: Seq[NamedExpression] = __resultExpressions
 
@@ -984,8 +978,8 @@ case class SnappyHashAggregateExec(
           // of loop, causing the TPCHD query to crash the server as the string positions
           // referenced in the map are no longer valid. Adding it in the list will
           // prevent single hashmap from being gced
-          $overflowHashMapsTerm = ${classOf[java.util.Collections].getName}.<$hashSetClassName>singletonList(
-          $hashMapTerm);
+          $overflowHashMapsTerm = ${classOf[java.util.Collections].getName}.
+            <$hashSetClassName>singletonList($hashMapTerm);
           $overflowMapIter = $overflowHashMapsTerm.iterator();
           $overflowMapIter.next();
         }

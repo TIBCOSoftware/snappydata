@@ -525,7 +525,7 @@ object Utils extends Logging {
           // if both baseTable and schema have been specified, then both
           // should have matching schema
           try {
-            val tablePlan = catalog.lookupRelation(
+            val tablePlan = catalog.resolveRelation(
               catalog.snappySession.tableIdentifier(baseTableName))
             val tableSchema = tablePlan.schema
             if (catalog.compatibleSchema(tableSchema, s)) {
@@ -552,7 +552,7 @@ object Utils extends Logging {
           try {
             // parquet and other such external tables may have different
             // schema representation so normalize the schema
-            val tablePlan = catalog.lookupRelation(
+            val tablePlan = catalog.resolveRelation(
               catalog.snappySession.tableIdentifier(baseTable))
             (tablePlan.schema, Some(tablePlan))
           } catch {
