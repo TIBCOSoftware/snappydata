@@ -291,7 +291,9 @@ object Property extends Enumeration {
 
   val UseOptimizedHashAggregateForSingleKey: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.useOptimizedHashAggregateForSingleKey",
-    "use ByteBufferMap based SnappyHashAggregateExec even for single string group by",
+    "Use the new ByteBufferMap based SnappyHashAggregateExec even for single column group by." +
+        "The default value is false since the older implementation is substantially faster " +
+        "for most of single column group by cases (except if number of groups is very large).",
     Some(false))
 
   val ApproxMaxCapacityOfBBMap: SQLValue[Int] = SQLVal[Int](
