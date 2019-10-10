@@ -45,7 +45,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     snc.sql(HiveMetaStoreUtils.setExternalInBuiltCatalog)
     snc.sql("drop schema if exists TIBCO_DB")
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
-    alterTableCheck(snc, pw)
+//    alterTableCheck(snc, pw)
     pw.flush()
     createAndDropSchemaCheck(snc, beelineConnection, dataLocation, pw)
     pw.flush()
