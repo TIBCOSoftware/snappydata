@@ -91,16 +91,27 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   test("simple aggregate query") {
-    snc
-    snc.sql("drop table if exists test1")
-    snc.sql("create table test1 (col1 int, col2 int, col3 int, col4 int) " +
+    testSimpleAggregateQuery(snc)
+  }
+
+  test("simple aggregate query with code split") {
+    val snc1 = snc.newSession()
+    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2" )
+    snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "2" )
+    testSimpleAggregateQuery(snc1)
+  }
+
+  def testSimpleAggregateQuery(sncToUse: SnappyContext): Unit = {
+
+    sncToUse.sql("drop table if exists test1")
+    sncToUse.sql("create table test1 (col1 int, col2 int, col3 int, col4 int) " +
       "using column ")
     val range = 50
     val groupingDivisor = 10
-    val insertDF = snc.range(50).selectExpr("id", "id*2", "id * 3",
+    val insertDF = sncToUse.range(50).selectExpr("id", "id*2", "id * 3",
       s"id % $groupingDivisor ")
     insertDF.write.insertInto("test1")
-    val rs = snc.sql("select col4, sum(col1) as summ1, sum(col2) as summ2 " +
+    val rs = sncToUse.sql("select col4, sum(col1) as summ1, sum(col2) as summ2 " +
       " from test1 group by col4")
     val results = rs.collect()
     // assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
@@ -117,11 +128,20 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     })
     snc.dropTable("test1")
   }
+  test("Not Nullable Multiple Strings As Grouping Key") {
+    testNotNullableMultipleStringsAsGroupingKey(snc)
+  }
 
-  test("not nullable multiple strings as grouping key") {
-    snc
-    snc.sql("drop table if exists test1")
-    snc.sql("create table test1 (col1 int not null, col2 String not null , " +
+  test("Not Nullable Multiple Strings As Grouping Key with code split") {
+    val snc1 = snc.newSession()
+    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2" )
+    snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "2" )
+    testNotNullableMultipleStringsAsGroupingKey(snc1)
+  }
+
+  def testNotNullableMultipleStringsAsGroupingKey(sncToUse: SnappyContext): Unit = {
+    sncToUse.sql("drop table if exists test1")
+    sncToUse.sql("create table test1 (col1 int not null, col2 String not null , " +
       "col3 int not null, col4 String  not null) using column ")
     val range = 50
     val groupingDivisor = 10
@@ -137,27 +157,37 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       }
     }
     ps.executeBatch()
-    val rs = snc.sql("select col4, col2 , sum(col1) as summ1  from test1 group by col4, col2")
+    val rs = sncToUse.sql("select col4, col2 , sum(col1) as summ1  from test1 group by col4, col2")
     // import org.apache.spark.sql.execution.debug._
     // rs.debugCodegen()
     val results = rs.collect()
     // assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     assertEquals(groupingDivisor * groupingDivisor1, results.length)
 
-    snc.dropTable("test1")
+    sncToUse.dropTable("test1")
   }
 
   test("multiple aggregates query") {
-    snc
-    snc.sql("drop table if exists test1")
-    snc.sql("create table test1 (col1 int, col2 int, col3 int, col4 String) " +
+    testMultipleAggregatesQuery(snc)
+  }
+
+  test("multiple aggregates query with code split") {
+    val snc1 = snc.newSession()
+    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2" )
+    snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "2" )
+    testMultipleAggregatesQuery(snc1)
+  }
+
+  def testMultipleAggregatesQuery(sncToUse: SnappyContext): Unit = {
+    sncToUse.sql("drop table if exists test1")
+    sncToUse.sql("create table test1 (col1 int, col2 int, col3 int, col4 String) " +
       "using column ")
     val range = 50
     val groupingDivisor = 10
-    val insertDF = snc.range(50).selectExpr("id", "id*2", "id * 3",
+    val insertDF = sncToUse.range(50).selectExpr("id", "id*2", "id * 3",
       s"Concat( 'test', Cast(id % $groupingDivisor as string) ) ")
     insertDF.write.insertInto("test1")
-    val rs = snc.sql("select col4, sum(col1) as summ1, sum(col2) as summ2 " +
+    val rs = sncToUse.sql("select col4, sum(col1) as summ1, sum(col2) as summ2 " +
       " from test1 group by col4")
     // import org.apache.spark.sql.execution.debug._
     // rs.debugCodegen()
@@ -174,14 +204,24 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       assertEquals(sum1, sumAgg1)
       assertEquals(sum2, sumAgg2)
     })
-    snc.dropTable("test1")
+    sncToUse.dropTable("test1")
   }
 
   test("multiple aggregates query with null grouping keys") {
-    snc
+    testMultipleAggregatesQueryWithNullGroupingKeys(snc)
+  }
+
+  test("multiple aggregates query with null grouping keys with code split") {
+    val snc1 = snc.newSession()
+    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2" )
+    snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "2" )
+    testMultipleAggregatesQueryWithNullGroupingKeys(snc1)
+  }
+
+  def testMultipleAggregatesQueryWithNullGroupingKeys(sncToUse: SnappyContext): Unit = {
     val conn = getSqlConnection
-    snc.sql("drop table if exists test1")
-    snc.sql("create table test1 (col1 int, col2 int, col3 int, col4 String) " +
+    sncToUse.sql("drop table if exists test1")
+    sncToUse.sql("create table test1 (col1 int, col2 int, col3 int, col4 String) " +
       "using column ")
     val range = 200
     val groupingDivisor = 10
@@ -199,7 +239,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
     insertPs.executeBatch()
 
-    val rs = snc.sql("select col4, sum(col1) as summ1, sum(col2) as summ2 " +
+    val rs = sncToUse.sql("select col4, sum(col1) as summ1, sum(col2) as summ2 " +
       " from test1 group by col4")
     // import org.apache.spark.sql.execution.debug._
     // rs.debugCodegen()
@@ -224,10 +264,20 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   test("multiple aggregates query with null and two grouping keys") {
-    snc
+    testMultipleAggregatesQueryWithNullAndTwoGroupingKeys(snc)
+  }
+
+  test("multiple aggregates query with null and two grouping keys with code split") {
+    val snc1 = snc.newSession()
+    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2" )
+    snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "2" )
+    testMultipleAggregatesQueryWithNullAndTwoGroupingKeys(snc1)
+  }
+
+  def testMultipleAggregatesQueryWithNullAndTwoGroupingKeys(sncToUse: SnappyContext): Unit = {
     val conn = getSqlConnection
-    snc.sql("drop table if exists test1")
-    snc.sql("create table test1 (col1 int, col2 int, col3 int, col4 String, col5 String) " +
+    sncToUse.sql("drop table if exists test1")
+    sncToUse.sql("create table test1 (col1 int, col2 int, col3 int, col4 String, col5 String) " +
       "using column ")
     val range = 50
     val groupingDivisor1 = 10
@@ -252,7 +302,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
     insertPs.executeBatch()
 
-    val rs = snc.sql("select col4, col5, sum(col1) as summ1, sum(col2) as summ2 " +
+    val rs = sncToUse.sql("select col4, col5, sum(col1) as summ1, sum(col2) as summ2 " +
       " from test1 group by col4, col5")
     // import org.apache.spark.sql.execution.debug._
     // rs.debugCodegen()
@@ -276,18 +326,30 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test1")
   }
 
-
   test("Test incremental addition of grouping columns with the last grouping column as null") {
+    testIncrementalAdditionOfGroupingColumnsWithLastGroupingAsNull(snc)
+  }
+
+  test("Test incremental addition of grouping columns with the last grouping column as null" +
+    " with code split") {
+    val snc1 = snc.newSession()
+    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2" )
+    snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "2" )
+    testIncrementalAdditionOfGroupingColumnsWithLastGroupingAsNull(snc1)
+  }
+
+  def testIncrementalAdditionOfGroupingColumnsWithLastGroupingAsNull(sncToUse: SnappyContext):
+  Unit = {
     val numKeyCols = 100
-    snc
+
     val conn = getSqlConnection
 
-    snc.sql("drop table if exists test1")
+    sncToUse.sql("drop table if exists test1")
 
     val createTableStr = "create table test1 ( num1 int, num2 int," +
       (for (i <- 3 until numKeyCols + 3) yield s"col$i string").mkString(",") + ")"
 
-    snc.sql(s" $createTableStr using column ")
+    sncToUse.sql(s" $createTableStr using column ")
 
 
     val insertStr = "insert into test1 values(?, ?," +
@@ -310,7 +372,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       insertPs.executeBatch()
       // now query
 
-      val rs = snc.sql(sqlStr)
+      val rs = sncToUse.sql(sqlStr)
       // import org.apache.spark.sql.execution.debug._
       //  rs.debugCodegen()
       val results = rs.collect()
@@ -320,22 +382,34 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
         assertEquals(s"col${j + 1}", results(0).getString(j))
       }
       assertTrue(results(0).isNullAt(i - 1))
-      snc.sql("delete from test1")
+      sncToUse.sql("delete from test1")
     }
-    snc.dropTable("test1")
+    sncToUse.dropTable("test1")
   }
 
   test("null grouping key bit masking for 1 to 100 columns in group by") {
+    testNullGroupingKeyBitMaskingFor1To100ColumnsInGroupBy(snc)
+  }
+
+  test("null grouping key bit masking for 1 to 100 columns in group" +
+    " by with code split") {
+    val snc1 = snc.newSession()
+    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2" )
+    snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "2" )
+    testNullGroupingKeyBitMaskingFor1To100ColumnsInGroupBy(snc1)
+  }
+
+  def testNullGroupingKeyBitMaskingFor1To100ColumnsInGroupBy(sncToUse: SnappyContext): Unit = {
     val numKeyCols = 100
-    snc
+
     val conn = getSqlConnection
 
-    snc.sql("drop table if exists test1")
+    sncToUse.sql("drop table if exists test1")
 
     val createTableStr = "create table test1 ( num1 int, num2 int," +
       (for (i <- 3 until numKeyCols + 3) yield s"col$i string").mkString(",") + ")"
 
-    snc.sql(s" $createTableStr using column ")
+    sncToUse.sql(s" $createTableStr using column ")
     val range = 100
     val groupingDivisor = 10
     val insertStr = "insert into test1 values(?, ?," +
@@ -361,7 +435,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       val groupingCols = (for (j <- 3 to i) yield s"col$j").mkString(", ")
       val sqlStr = s"select sum(num1) as summ1, sum(num2) as summ2, $groupingCols " +
         s" from test1 group by $groupingCols"
-      val rs = snc.sql(sqlStr)
+      val rs = sncToUse.sql(sqlStr)
       // import org.apache.spark.sql.execution.debug._
       // rs.debugCodegen()
       val results = rs.collect()
@@ -372,7 +446,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     for (i <- 3 until numKeyCols + 3) {
       //  println(s"executing query number ${i -2} ")
-      snc.sql("delete from test1")
+      sncToUse.sql("delete from test1")
       // insert 100 rows with num1 as 1 and num2 as 2
       // string cols as col-n & rest as null
       val numRowsInBatch = 100
@@ -411,7 +485,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       val groupingCols = (for (j <- 3 to i) yield s"col$j").mkString(", ")
       val sqlStr = s"select sum(num1) as summ1, sum(num2) as summ2, $groupingCols " +
         s" from test1 group by $groupingCols"
-      val rs = snc.sql(sqlStr)
+      val rs = sncToUse.sql(sqlStr)
       val results = rs.collect()
       // assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
       assertEquals(2, results.length)
@@ -447,7 +521,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     }
 
-    snc.dropTable("test1")
+    sncToUse.dropTable("test1")
   }
 
 
@@ -1540,6 +1614,61 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test")
   }
 
+  test("Code splitting with group by keys having struct or array type") {
+    snc.sql("drop table if exists test1")
+    val structType2 = StructType(Seq(StructField("wife", StringType),
+      StructField("numOffsprings", IntegerType)))
+    val strucType1 = StructType(Seq(StructField("name", StringType),
+      StructField("zip", IntegerType), StructField("family", structType2)))
+    val structType = StructType(Seq(StructField("id", IntegerType),
+      StructField("id1", IntegerType), StructField("id2", IntegerType),
+      StructField("id3", IntegerType),
+      StructField("details", strucType1), StructField("occupation", StringType),
+      StructField("race", StringType),
+      StructField("incomes", ArrayType(IntegerType))))
+
+    val data = for (i <- 0 until 15) yield {
+      val num = i / 5
+      Row(i, i * 100, i * 1000, i * 10000, Row(s"name$num", num, Row(s"spouse$num", num)),
+        s"occupation_$num", s"race_$num", Array(num * 100, num * 1000, num * 10000))
+    }
+
+    val df = snc.createDataFrame(snc.sparkContext.parallelize(data), structType)
+    df.write.format("column").mode(SaveMode.Overwrite).saveAsTable("test1")
+
+    def runTest(session: SnappyContext): Unit = {
+      val rs = session.sql("select details, race, incomes, sum(id) as summ1, sum(id1) as summ2," +
+        " sum(id2) as summ3, sum(id3) as summ4 from test1 group by details, race, incomes")
+      val results = rs.collect()
+      // assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+      val expectedResult = mutable.Map[(String, Int, (String, Int)), Int](
+        ("name0", 0, ("spouse0", 0)) -> 10,
+        ("name1", 1, ("spouse1", 1)) -> 35, ("name2", 2, ("spouse2", 2)) -> 60)
+      assertEquals(expectedResult.size, results.length)
+      results.foreach(row => {
+        val str1 = row.getStruct(0)
+        val str2 = str1.getStruct(2)
+        val key = (str1.getString(0), str1.getInt(1), (str2.getString(0), str2.getInt(1)))
+        assertEquals(expectedResult.getOrElse(key, fail("key does not exist")), row.getLong(3))
+        expectedResult.remove(key)
+      })
+      assertTrue(expectedResult.isEmpty)
+    }
+
+    val newSession1 = snc.newSession()
+    newSession1.setConf(Property.TestExplodeComplexDataTypeInSHA.name, true.toString)
+    newSession1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2")
+    newSession1.setConf(Property.TestCodeSplitThresholdInSHA.name, "2")
+    runTest(newSession1)
+
+    val newSession2 = snc.newSession()
+    newSession2.setConf(Property.TestExplodeComplexDataTypeInSHA.name, false.toString)
+    newSession2.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "2")
+    newSession2.setConf(Property.TestCodeSplitThresholdInSHA.name, "2")
+    runTest(newSession2)
+    snc.dropTable("test1")
+  }
+
   test("test code splitting of aggregate functions") {
     snc
     val snc1 = snc.newSession()
@@ -1651,7 +1780,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       s" test group by $groupByClause order by summ_0 asc")
     val rows = rs.collect()
     assertEquals (5, rows.length)
-   /* val sum_col1_key1 = 20/2*(2 * 0 + (20 - 1) * 5)
+    val sum_col1_key1 = 20/2*(2 * 0 + (20 - 1) * 5)
     val sum_col1_key2 = 20/2*(2 * 1 + (20 - 1) * 5)
     val sum_col1_key3 = 20/2*(2 * 2 + (20 - 1) * 5)
     val sum_col1_key4 = 20/2*(2 * 3 + (20 - 1) * 5)
@@ -1660,7 +1789,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     assertEquals(sum_col1_key2, rows(0).getLong(1))
     assertEquals(sum_col1_key3, rows(0).getLong(2))
     assertEquals(sum_col1_key4, rows(0).getLong(3))
-    assertEquals(sum_col1_key5, rows(0).getLong(4)) */
+    assertEquals(sum_col1_key5, rows(0).getLong(4))
     snc.dropTable("test")
   }
 

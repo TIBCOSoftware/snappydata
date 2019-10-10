@@ -99,8 +99,12 @@ case class SnappyHashAggregateExec(
   val codeSplitThresholdSize = Property.TestCodeSplitThresholdInSHA.
     get(sqlContext.sparkSession.sessionState.conf)
 
-  val splitAggCode = this.aggregateAttributes.length > this.codeSplitThresholdSize
-  // TODO fix the group by key spiltting code in the processNext function
+  val splitAggCode = this.aggregateAttributes.length > this.codeSplitThresholdSize &&
+    !this.groupingExpressions.exists(_.dataType match {
+      case _: ArrayType | _ : StructType => true
+      case _ => false
+    })
+
   val splitGroupByKeyCode = this.groupingExpressions.length > this.codeSplitThresholdSize
 
   override def nodeName: String =
@@ -574,16 +578,19 @@ case class SnappyHashAggregateExec(
 
       val bufferEvalCode = evaluatedBufferVarsOpt.map(evaluatedBufferVars => {
         val aggReadSnippet =
-          s"""${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
-               byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits)
-              }
-             |${stateArrayVarOptForAggs.map(stateArrayVar =>
-               s"$stateArrayVar[0] = $iterValueOffsetTerm;").getOrElse("")
-               }
+          s"""${
+            byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
+              byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits)
+          }
+             |${
+            stateArrayVarOptForAggs.map(stateArrayVar =>
+              s"$stateArrayVar[0] = $iterValueOffsetTerm;").getOrElse("")
+          }
              |$evaluatedBufferVars
-             |${stateArrayVarOptForAggs.map(stateArrayVar =>
-               s"$iterValueOffsetTerm = (Long)$stateArrayVar[0];").getOrElse("")
-             }
+             |${
+            stateArrayVarOptForAggs.map(stateArrayVar =>
+              s"$iterValueOffsetTerm = (Long)$stateArrayVar[0];").getOrElse("")
+          }
          """.stripMargin
         if (splitAggCode) {
           val nullBitsCastTerm = if (SHAMapAccessor.
@@ -597,8 +604,8 @@ case class SnappyHashAggregateExec(
           ctx.addNewFunction(funcName,
             s"""
                |private long $funcName($methodParams) {
-                 |$aggReadSnippet
-                 |return $iterValueOffsetTerm;
+               |$aggReadSnippet
+               |return $iterValueOffsetTerm;
                |}
                 """.stripMargin)
           s"$iterValueOffsetTerm = $funcName($iterValueOffsetTerm," +
@@ -607,20 +614,24 @@ case class SnappyHashAggregateExec(
 
       }).getOrElse("")
 
-
       s"""
-      ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
-        byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)}
-      ${ stateArrayVarOptForKey.map(stateArrayVar =>
-        s"$stateArrayVar[0] = $iterValueOffsetTerm;").getOrElse("")
+      ${
+        byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
+          byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)
+      }
+      ${
+        stateArrayVarOptForKey.map(stateArrayVar =>
+          s"$stateArrayVar[0] = $iterValueOffsetTerm;").getOrElse("")
       }
       $evaluatedKeyVars
-      ${stateArrayVarOptForKey.map(stateArrayVar =>
-        s"$iterValueOffsetTerm = (Long)$stateArrayVar[0];").getOrElse("")}
+      ${
+        stateArrayVarOptForKey.map(stateArrayVar =>
+          s"$iterValueOffsetTerm = (Long)$stateArrayVar[0];").getOrElse("")
+      }
       $bufferEvalCode
       """.stripMargin
 
-      }
+    }
 
 
     if (modes.contains(Final) || modes.contains(Complete)) {
@@ -944,7 +955,7 @@ case class SnappyHashAggregateExec(
       if (cacheStoredKeyNullBits) Some(storedKeyNullBitsTerm) else None,
       aggregateBufferVars, keyHolderCapacityTerm, hashSetClassName,
       useCustomHashMap, previousSingleKey_Position_LengthTerm,
-      codeSplitFuncParamsSize, codeSplitThresholdSize, splitAggCode, splitGroupByKeyCode)
+      codeSplitFuncParamsSize, splitAggCode, splitGroupByKeyCode)
 
     if (useCustomHashMap) {
       ctx.addNewFunction(hashSetClassName, byteBufferAccessor.
@@ -1035,12 +1046,6 @@ case class SnappyHashAggregateExec(
            |}
          |}""".stripMargin)
 
-    // generate code for output
-    /*  val keyBufferTerm = ctx.freshName("keyBuffer")
-      val (initCode, keyBufferVars, _) = keyBufferAccessor.getColumnVars(
-        keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = false) */
-
-
 
     val (stateArrayVarOptForKey, keysExpr) = byteBufferAccessor.readVarsFromBBMap(keysDataType,
       KeyBufferVars, localIterValueOffsetTerm, true,
@@ -1052,7 +1057,7 @@ case class SnappyHashAggregateExec(
       val aggBuffNullArrayTerm = ctx.freshName("aggBuffNullArrayTerm")
       val numberClass = classOf[Number].getName
       ctx.addMutableState(s"$numberClass[]", aggBuffValueArrayTerm,
-        s"$aggBuffValueArrayTerm = new $numberClass[${aggBuffDataTypes.length}];" )
+        s"$aggBuffValueArrayTerm = new $numberClass[${aggBuffDataTypes.length}];")
       ctx.addMutableState(s"boolean[]", aggBuffNullArrayTerm,
         s"$aggBuffNullArrayTerm = new boolean[${aggBuffDataTypes.length}];")
       Some(aggBuffDataTypes.zipWithIndex.map {
@@ -1121,13 +1126,15 @@ case class SnappyHashAggregateExec(
       ${byteBufferAccessor.initKeyOrBufferVal(keysDataType, KeyBufferVars)}
       ${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
       ${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggsBits)}
-      ${KeyBufferVars.zip(keysDataType).map {
-          case (varName, dataType) => dataType match {
+      ${
+      KeyBufferVars.zip(keysDataType).map {
+        case (varName, dataType) => dataType match {
           case st: StructType =>
             recursiveApply(nestedStructNullBitsTermInitializer)(varName, st, 0).toString
           case _ => ""
         }
-      }.mkString("\n")}
+      }.mkString("\n")
+    }
 
       // output the result
       while($setBBMap()) {
