@@ -20,6 +20,11 @@
 # Start all snappy daemons - locator, lead and server on the nodes specified in the
 # conf/locators, conf/leads and conf/servers files repsectively
 
+if [ "$#" -gt 0 ]; then
+  echo "Invalid argument::This shell script doesn't require any agrument."
+  exit
+fi
+
 function absPath() {
   perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"
 }
