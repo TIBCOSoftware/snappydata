@@ -1602,10 +1602,10 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test")
   }
 
-  ignore("test code size exceeding with large group by keys & large agg functions") {
+  test("test code size exceeding with large group by keys & large agg functions") {
     snc
     val snc1 = snc.newSession()
-    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "40")
+    snc1.setConf(Property.TestCodeSplitFunctionParamsSizeInSHA.name, "80")
     snc1.setConf(Property.TestCodeSplitThresholdInSHA.name, "5")
 
     val numIntCols = 450

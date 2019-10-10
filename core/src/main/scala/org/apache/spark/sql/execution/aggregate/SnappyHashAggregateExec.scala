@@ -569,7 +569,45 @@ case class SnappyHashAggregateExec(
      */
 
 
-    def keyValueEvalCode(evaluatedKeyVars: String, evaluatedBufferVarsOpt: Option[String]): String =
+    def keyValueEvalCode(evaluatedKeyVars: String, evaluatedBufferVarsOpt: Option[String]):
+    String = {
+
+      val bufferEvalCode = evaluatedBufferVarsOpt.map(evaluatedBufferVars => {
+        val aggReadSnippet =
+          s"""${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
+               byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits)
+              }
+             |${stateArrayVarOptForAggs.map(stateArrayVar =>
+               s"$stateArrayVar[0] = $iterValueOffsetTerm;").getOrElse("")
+               }
+             |$evaluatedBufferVars
+             |${stateArrayVarOptForAggs.map(stateArrayVar =>
+               s"$iterValueOffsetTerm = (Long)$stateArrayVar[0];").getOrElse("")
+             }
+         """.stripMargin
+        if (splitAggCode) {
+          val nullBitsCastTerm = if (SHAMapAccessor.
+            isByteArrayNeededForNullBits(byteBufferAccessor.numBytesForNullAggBits)) {
+            "byte[]"
+          } else SHAMapAccessor.getNullBitsCastTerm(byteBufferAccessor.numBytesForNullAggBits)
+          val funcName = ctx.freshName("readAggFromBBMap")
+          val methodParams = s"long $iterValueOffsetTerm," +
+            s" Object ${byteBufferAccessor.vdBaseObjectTerm}," +
+            s" $nullBitsCastTerm ${byteBufferAccessor.nullAggsBitsetTerm}"
+          ctx.addNewFunction(funcName,
+            s"""
+               |private long $funcName($methodParams) {
+                 |$aggReadSnippet
+                 |return $iterValueOffsetTerm;
+               |}
+                """.stripMargin)
+          s"$iterValueOffsetTerm = $funcName($iterValueOffsetTerm," +
+            s" ${byteBufferAccessor.vdBaseObjectTerm}, ${byteBufferAccessor.nullAggsBitsetTerm});"
+        } else aggReadSnippet
+
+      }).getOrElse("")
+
+
       s"""
       ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)}
@@ -579,21 +617,10 @@ case class SnappyHashAggregateExec(
       $evaluatedKeyVars
       ${stateArrayVarOptForKey.map(stateArrayVar =>
         s"$iterValueOffsetTerm = (Long)$stateArrayVar[0];").getOrElse("")}
-      ${evaluatedBufferVarsOpt.map(evaluatedBufferVars => {
-        s"""
-           |${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
-             byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits)
-            }
-           |${stateArrayVarOptForAggs.map(stateArrayVar =>
-              s"$stateArrayVar[0] = $iterValueOffsetTerm;").getOrElse("")
-            }
-           |$evaluatedBufferVars
-           |${stateArrayVarOptForAggs.map(stateArrayVar =>
-              s"$iterValueOffsetTerm = (Long)$stateArrayVar[0];").getOrElse("")
-            }
-         """.stripMargin
-       }).getOrElse("")}
+      $bufferEvalCode
       """.stripMargin
+
+      }
 
 
     if (modes.contains(Final) || modes.contains(Complete)) {
@@ -881,7 +908,7 @@ case class SnappyHashAggregateExec(
 
     val storedKeyNullBitsTerm = ctx.freshName("storedKeyNullBit")
     val cacheStoredKeyNullBits = !SHAMapAccessor.isByteArrayNeededForNullBits(
-      numBytesForNullKeyBits) && numBytesForNullKeyBits > 0
+      numBytesForNullKeyBits) && numBytesForNullKeyBits > 0 && !splitAggCode
 
     // generate the map accessor to generate key/value class
     // and get map access methods
@@ -917,7 +944,7 @@ case class SnappyHashAggregateExec(
       if (cacheStoredKeyNullBits) Some(storedKeyNullBitsTerm) else None,
       aggregateBufferVars, keyHolderCapacityTerm, hashSetClassName,
       useCustomHashMap, previousSingleKey_Position_LengthTerm,
-      codeSplitFuncParamsSize, codeSplitThresholdSize)
+      codeSplitFuncParamsSize, codeSplitThresholdSize, splitAggCode, splitGroupByKeyCode)
 
     if (useCustomHashMap) {
       ctx.addNewFunction(hashSetClassName, byteBufferAccessor.
@@ -1018,11 +1045,27 @@ case class SnappyHashAggregateExec(
     val (stateArrayVarOptForKey, keysExpr) = byteBufferAccessor.readVarsFromBBMap(keysDataType,
       KeyBufferVars, localIterValueOffsetTerm, true,
       byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits,
-      byteBufferAccessor.numBytesForNullKeyBits == 0, splitGroupByKeyCode)
+      byteBufferAccessor.numBytesForNullKeyBits == 0, splitGroupByKeyCode, None)
+
+    val aggBufferVarsForProcessNext = if (splitAggCode) {
+      val aggBuffValueArrayTerm = ctx.freshName("aggBuffValueArrayTerm")
+      val aggBuffNullArrayTerm = ctx.freshName("aggBuffNullArrayTerm")
+      val numberClass = classOf[Number].getName
+      ctx.addMutableState(s"$numberClass[]", aggBuffValueArrayTerm,
+        s"$aggBuffValueArrayTerm = new $numberClass[${aggBuffDataTypes.length}];" )
+      ctx.addMutableState(s"boolean[]", aggBuffNullArrayTerm,
+        s"$aggBuffNullArrayTerm = new boolean[${aggBuffDataTypes.length}];")
+      Some(aggBuffDataTypes.zipWithIndex.map {
+        case (_, index) => s"$aggBuffValueArrayTerm[$index]" -> s"$aggBuffNullArrayTerm[$index]"
+      }.unzip)
+    } else None
 
     val (stateArrayVarOptForAggs, aggsExpr) = byteBufferAccessor.readVarsFromBBMap(aggBuffDataTypes,
-      aggregateBufferVars, localIterValueOffsetTerm, false, byteBufferAccessor.nullAggsBitsetTerm,
-      byteBufferAccessor.numBytesForNullAggBits, false, splitAggCode)
+      aggBufferVarsForProcessNext.map(_._1).getOrElse(aggregateBufferVars),
+      localIterValueOffsetTerm, false, byteBufferAccessor.nullAggsBitsetTerm,
+      byteBufferAccessor.numBytesForNullAggBits, false, splitAggCode,
+      aggBufferVarsForProcessNext.map(_._2), aggBufferVarsForProcessNext.isDefined)
+
 
     val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr, localIterValueOffsetTerm,
       stateArrayVarOptForKey, stateArrayVarOptForAggs)
@@ -1234,22 +1277,23 @@ case class SnappyHashAggregateExec(
         s"$inputNullTransferArray = new boolean[${inputTemp.length}];")
 
       inputTemp.zip(this.child.output.map(_.dataType)).zipWithIndex.map {
-        case ((orgExprCode, dt), index) => {
-          val code =
-            s"""${orgExprCode.code}
-               |${inputValTransferArray}[$index] = ${orgExprCode.value};
-               |${inputNullTransferArray}[$index] = ${orgExprCode.isNull};
-           """.stripMargin
-          val javaType = ctx.javaType(dt)
-          val castType = if (SHAMapAccessor.isPrimitive(dt)) {
-            SHAMapAccessor.getObjectTypeForPrimitiveType(javaType)
-          } else {
-            javaType
+        case ((exprCode, dt), index) => {
+          val origCode = exprCode.code
+
+            val javaType = ctx.javaType(dt)
+            val castType = if (SHAMapAccessor.isPrimitive(dt)) {
+              SHAMapAccessor.getObjectTypeForPrimitiveType(javaType)
+            } else {
+              javaType
+            }
+          val newCode = s"""$origCode
+                           |$inputNullTransferArray[$index] = ${exprCode.isNull};
+                           |$inputValTransferArray[$index] = ${exprCode.value};
+             """.stripMargin
+          ExprCode(newCode, s"$inputNullTransferArray[$index]",
+            s"(($castType)${inputValTransferArray}[$index])")
           }
-          ExprCode(code, s"$inputNullTransferArray[$index]",
-            s"($castType)${inputValTransferArray}[$index]")
         }
-      }
     } else {
       inputTemp
     }
@@ -1272,27 +1316,8 @@ case class SnappyHashAggregateExec(
     val evaluatedInputCode = evaluateVariables(input)
 
     ctx.currentVars = input
-    val keysExpr_temp = ctx.generateExpressions(
+    val keysExpr = ctx.generateExpressions(
       groupingExpressions.map(e => BindReferences.bindReference[Expression](e, child.output)))
-    val keysExpr = if (splitAggCode) {
-      // Modify the key ExprCode such that they use new variable names with values taken from
-      // the defined Object array. This is required as these variable names become the
-      // parameter names in the split function to transfer the key variables for writing
-      keysExpr_temp.zipWithIndex.map { case (origExprCode, index) => {
-        val newKeyVarName = ctx.freshName("keyVar")
-        val newKeyIsNull = ctx.freshName("keyIsNull")
-        val code =
-          s"""
-             |${origExprCode.code}
-             |${ctx.javaType(groupingExpressions(index).dataType)} $newKeyVarName = ${origExprCode.value};
-             |boolean $newKeyIsNull = ${origExprCode.isNull};
-           """.stripMargin
-        ExprCode(code, newKeyIsNull, newKeyVarName)
-      }
-      }
-    } else {
-      keysExpr_temp
-    }
 
     val dictionaryCode = SHAMapAccessor.initDictionaryCodeForSingleKeyCase(input,
       byteBufferAccessor.keyExprs, child.output, ctx, byteBufferAccessor.session)
@@ -1359,7 +1384,7 @@ case class SnappyHashAggregateExec(
       byteBufferAccessor.aggregateBufferVars,
       byteBufferAccessor.currentOffSetForMapLookupUpdt, false,
       byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits, false,
-      splitAggCode)
+      splitAggCode, None)
 
     val bufferEval = evaluateVariables(bufferVars)
 
@@ -1480,7 +1505,6 @@ case class SnappyHashAggregateExec(
          | // common sub-expressions
          |$inputCodes
          |$evaluateAggregateAndUpdateBuffer
-
       """.stripMargin
 
     val updateCode = if (splitAggCode) {
