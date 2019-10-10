@@ -123,7 +123,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   def readVarsFromBBMap(dataTypes: Seq[DataType], varNames: Seq[String],
     currentValueOffsetTerm: String, isKey: Boolean, nullBitTerm: String,
     numBytesForNullBits: Int, skipNullBitsCode: Boolean,
-    splitCode: Boolean, useTheseNullVarsForAggBuffer: Option[Seq[String]]):
+    splitCode: Boolean, useTheseNullVarsForAggBuffer: Option[Seq[String]],
+    castVarToDataType: Boolean = false):
   (Option[String], Seq[ExprCode]) = {
     if (splitCode) {
       val nullBitsCastTerm = if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
@@ -218,7 +219,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
               |$vdBaseObjectTerm);
               |$nullVarCode
             """.stripMargin
-            ExprCode(code, nullVarName, varName)
+            val processedVarName = if (castVarToDataType) {
+              s"((${SHAMapAccessor.getObjectTypeForPrimitiveType(varDataType)})$varName)"
+            } else varName
+            ExprCode(code, nullVarName, processedVarName)
           }
         }
       }

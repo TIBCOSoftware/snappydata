@@ -1064,7 +1064,8 @@ case class SnappyHashAggregateExec(
       aggBufferVarsForProcessNext.map(_._1).getOrElse(aggregateBufferVars),
       localIterValueOffsetTerm, false, byteBufferAccessor.nullAggsBitsetTerm,
       byteBufferAccessor.numBytesForNullAggBits, false, splitAggCode,
-      aggBufferVarsForProcessNext.map(_._2))
+      aggBufferVarsForProcessNext.map(_._2), aggBufferVarsForProcessNext.isDefined)
+
 
     val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr, localIterValueOffsetTerm,
       stateArrayVarOptForKey, stateArrayVarOptForAggs)
