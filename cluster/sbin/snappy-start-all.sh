@@ -75,6 +75,8 @@ while (( "$#" )); do
       clustermode="rowstore"
     ;;
     *)
+    echo "Invalid argument $1"
+    exit
     ;;
   esac
   shift
