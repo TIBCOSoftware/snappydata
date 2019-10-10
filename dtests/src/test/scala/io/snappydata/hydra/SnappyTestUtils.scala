@@ -157,7 +157,7 @@ object SnappyTestUtils {
           .option("inferSchema", "false")
           .option("nullValue", "NULL")
           .option("maxCharsPerColumn", "4096")
-          .load(s"${expectedFile}")
+          .load(s"${expectedFile.iterator.next().getAbsolutePath}")
 
       val missingDF: Array[Row] = sparkDF2.except(snappyDF).sort(sparkDF2.columns(0)).collect()
       val unexpectedDF: Array[Row] = snappyDF.except(sparkDF2).sort(sparkDF2.columns(0)).collect()
