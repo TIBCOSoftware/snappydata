@@ -310,9 +310,9 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     snc.sql(HiveMetaStoreUtils.dropTable + "snappyDB.snappy_regions")
     snc.sql("drop database if exists hiveDB")
     snc.sql("drop schema if exists snappyDB")
-    snc.sql("create database hiveDB")
+    snc.sql("create database if not exists hiveDB")
     snc.sql(HiveMetaStoreUtils.setExternalInBuiltCatalog)
-    snc.sql("create schema snappyDB")
+    snc.sql("create schema if not exists snappyDB")
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
     createHiveTable("hive_regions(RegionID int,RegionDescription string)", beelineConnection,
       "hiveDB")
