@@ -242,8 +242,6 @@ public class DataExtractorToolTest extends SnappyTest {
         orgName.delete();
         orgName.createNewFile();
         FileWriter fw = new FileWriter(orgName, true);
-     //   String dirPath = getCurrentDirPath();
-        String dirName = "";
         Log.getLogWriter().info("SP: The hostList size = " + hostList.size());
         for (int i = 0; i < hostList.size(); i++) {
           String nodeName = String.valueOf(hostList.get(i));
@@ -251,8 +249,8 @@ public class DataExtractorToolTest extends SnappyTest {
 
           String dirPath = getCurrentDirPath()+ File.separator + nodeName + "_" + i;
           File serverDir = new File(dirPath);
-          if (!serverDir.exists()) serverDir.mkdir();
-
+          if (!serverDir.exists())
+            serverDir.mkdir();
           String nodeInfo = nodeName + nodeConfigInfo + " -dir=" + dirPath;
           Log.getLogWriter().info("The nodeInfo is  " + nodeInfo);
           String nodeConfig = nodeInfo + "\n";
