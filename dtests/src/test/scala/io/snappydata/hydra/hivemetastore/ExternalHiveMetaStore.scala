@@ -59,8 +59,10 @@ class ExternalHiveMetaStore extends SnappySQLJob {
   }
 
   def connectToBeeline(): Connection = {
-    val beelineConnection: Connection = DriverManager.getConnection("jdbc:hive2://localhost:11000",
-      "APP", "mine");
+//    val beelineConnection: Connection = DriverManager.getConnection("jdbc:hive2://localhost:11000",
+//      "APP", "mine");
+       val beelineConnection: Connection = DriverManager.getConnection("jdbc:hive2://dev13:11000",
+        "hive", "Snappy!23")
     println("Connection with Beeline established.")
     beelineConnection
   }
