@@ -202,29 +202,54 @@ object SmartConnectorExternalHiveMetaStore {
       "staging_employee_territories using csv options(path '" +
       "file:///" + dataLocation + "employee_territories.csv" + "',header 'true')")
 
+
     snc.sql("create table if not exists " + schema + "." + "snappy_regions using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_regions")
+      " as select * from " + schema + "." + "staging_regions")
     snc.sql("create table if not exists " + schema + "." + "snappy_categories using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_categories")
+      " as select * from " + schema + "." + "staging_categories")
     snc.sql("create table if not exists " + schema + "." + "snappy_shippers using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_shippers")
+      " as select * from " + schema + "." + "staging_shippers")
     snc.sql("create table if not exists " + schema + "." + "snappy_employees using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_employees")
+      " as select * from " + schema + "." + "staging_employees")
     snc.sql("create table if not exists " + schema + "." + "snappy_customers using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_customers")
+      " as select * from " + schema + "." + "staging_customers")
     snc.sql("create table if not exists " + schema + "." + "snappy_orders using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_orders")
+      " as select * from " + schema + "." + "staging_orders")
     snc.sql("create table if not exists " + schema + "." + "snappy_order_details using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_order_details")
+      " as select * from " + schema + "." + "staging_order_details")
     snc.sql("create table if not exists " + schema + "." + "snappy_products using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." +  "staging_products")
+      " as select * from " + schema + "." +  "staging_products")
     snc.sql("create table if not exists " + schema + "." + "snappy_suppliers using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_suppliers")
+      " as select * from " + schema + "." + "staging_suppliers")
     snc.sql("create table if not exists " + schema + "." + "snappy_territories using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_territories")
+      " as select * from " + schema + "." + "staging_territories")
     snc.sql("create table if not exists " + schema + "." +
-      "snappy_employee_territories using column options(BUCKETS '8') " +
+      "snappy_employee_territories using column " +
       "as select * from " + schema + "." + "staging_employee_territories")
+
+//    snc.sql("create table if not exists " + schema + "." + "snappy_regions using column" +
+//      " options(BUCKETS '8') as select * from " + schema + "." + "staging_regions")
+//    snc.sql("create table if not exists " + schema + "." + "snappy_categories using column" +
+//      " options(BUCKETS '8') as select * from " + schema + "." + "staging_categories")
+//    snc.sql("create table if not exists " + schema + "." + "snappy_shippers using column" +
+//      " options(BUCKETS '8') as select * from " + schema + "." + "staging_shippers")
+//    snc.sql("create table if not exists " + schema + "." + "snappy_employees using column" +
+//      " options(BUCKETS '8') as select * from " + schema + "." + "staging_employees")
+//    snc.sql("create table if not exists " + schema + "." + "snappy_customers using column" +
+//      " options(BUCKETS '8') as select * from " + schema + "." + "staging_customers")
+//    snc.sql("create table if not exists " + schema + "." + "snappy_orders using column" +
+//      " options(BUCKETS '8') as select * from " + schema + "." + "staging_orders")
+//    snc.sql("create table if not exists " + schema + "." + "snappy_order_details using column" +
+//      " options(BUCKETS '8') as select * from " + schema + "." + "staging_order_details")
+//    snc.sql("create table if not exists " + schema + "." + "snappy_products using column" +
+//      " options(BUCKETS '8') as select * from " + schema + "." +  "staging_products")
+//    snc.sql("create table if not exists " + schema + "." + "snappy_suppliers using column" +
+//      " options(BUCKETS '8') as select * from " + schema + "." + "staging_suppliers")
+//    snc.sql("create table if not exists " + schema + "." + "snappy_territories using column" +
+//      " options(BUCKETS '8') as select * from " + schema + "." + "staging_territories")
+//    snc.sql("create table if not exists " + schema + "." +
+//      "snappy_employee_territories using column options(BUCKETS '8') " +
+//      "as select * from " + schema + "." + "staging_employee_territories")
   }
 
   def executeQueries(snc: SnappyContext, spark: SparkSession,
