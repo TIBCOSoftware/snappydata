@@ -51,7 +51,7 @@ import org.apache.spark.sql.{SnappySession, SparkSession}
  * After running this example you can also query the table from Snappy shell
  * e.g. select count(*) from TestColumnTable.
  *
- * bin/run-example snappydata.SmartConnectorExample
+ * bin/run-example snappydata.SmartConnectorExample spark.snappydata.connection=localhost:1527
  *
  */
 
