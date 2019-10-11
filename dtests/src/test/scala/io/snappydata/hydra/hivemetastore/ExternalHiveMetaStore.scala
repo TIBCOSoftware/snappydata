@@ -148,7 +148,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     loadDataToHiveTbls(dataLocation + "orders.csv", "hive_orders", beelineConnection, schema)
     createHiveTable("hive_order_details(OrderID int,ProductID int,UnitPrice " +
       "double,Quantity smallint,Discount double)", beelineConnection, schema)
-    loadDataToHiveTbls(dataLocation + "order-details.csv", "hive_order_details",
+    loadDataToHiveTbls(dataLocation + "order_details.csv", "hive_order_details",
       beelineConnection, schema)
     createHiveTable("hive_products(ProductID int,ProductName string,SupplierID int," +
       "CategoryID int,QuantityPerUnit string,UnitPrice double,UnitsInStock smallint," +
@@ -166,7 +166,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
       beelineConnection, schema)
     createHiveTable("hive_employee_territories(EmployeeID int," +
       "TerritoryID string)", beelineConnection, schema)
-    loadDataToHiveTbls(dataLocation + "employee-territories.csv",
+    loadDataToHiveTbls(dataLocation + "employee_territories.csv",
       "hive_employee_territories", beelineConnection, schema)
   }
 
@@ -186,7 +186,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
       " options(path '" + "file:///" + dataLocation + "orders.csv" + "',header 'true')")
     snc.sql("create external table if not exists " + schema + "." +
       "staging_order_details using csv options(path '" +
-      "file:///" + dataLocation + "order-details.csv" + "',header 'true')")
+      "file:///" + dataLocation + "order_details.csv" + "',header 'true')")
     snc.sql("create external table if not exists " + schema + "." + "staging_products using csv" +
       " options(path '" + "file:///" + dataLocation + "products.csv" + "',header 'true')")
     snc.sql("create external table if not exists " + schema + "." + "staging_suppliers using csv" +
@@ -196,7 +196,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
       "file:///" + dataLocation + "territories.csv" + "',header 'true')")
     snc.sql("create external table if not exists " + schema + "." +
       "staging_employee_territories using csv options(path '" +
-      "file:///" + dataLocation + "employee-territories.csv" + "',header 'true')")
+      "file:///" + dataLocation + "employee_territories.csv" + "',header 'true')")
 
     snc.sql("create table if not exists " + schema + "." + "snappy_regions using column" +
       " options(BUCKETS '8') as select * from " + schema + "." + "staging_regions")
