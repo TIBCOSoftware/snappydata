@@ -1,3 +1,4 @@
+// ---> JDBC connection -- Java Program
 //io/snappydata/hydra/externalHiveMetaStore/externalHiveMetaStore.conf
   //A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   //B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -6,17 +7,20 @@
   //dataFilesLocation="/home/cbhatt/NW_1GB/NW_1GB/"
   //dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
 
-
-  io/snappydata/hydra/externalHiveMetaStore/externalHiveStore.conf
-    A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-    B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-    C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
-    D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
-    dataFilesLocation="/export/shared/QA_DATA/NW_1GB/"
+// --->  Snappy Job - Embedded mode
+  //io/snappydata/hydra/externalHiveMetaStore/externalHiveStore.conf
+    //A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+    //B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+    //C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+    //D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
+    // --->  Data Location on colo
+    //dataFilesLocation="/export/shared/QA_DATA/NW_1GB/"
+    // --->   Data Location on Local (Laptop)
     //dataFilesLocation="/home/cbhatt/NW_1GB/NW_1GB/"
+    // --->   Data Location in Snappy Checkout
     //dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
 
-
+// --->  Snappy Job - Smart connector mode
     io/snappydata/hydra/externalHiveMetaStore/smartConnectorHiveMetaStore.conf
         A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
         B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
