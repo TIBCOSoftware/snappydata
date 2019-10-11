@@ -202,6 +202,8 @@ trait SamplingRelation extends BaseRelation with SchemaInsertableRelation {
    * True if underlying sample table is using a row table as reservoir store.
    */
   def isReservoirAsRegion: Boolean
+
+  def canBeOnBuildSide: Boolean
 }
 
 @DeveloperApi

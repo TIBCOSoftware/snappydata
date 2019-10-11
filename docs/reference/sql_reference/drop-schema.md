@@ -1,7 +1,7 @@
 # DROP SCHEMA
 
 ```pre
-DROP TABLE [schema-name] restrict;
+DROP SCHEMA [schema-name] restrict;
 ```
 
 ## Description
