@@ -50,7 +50,7 @@ import org.apache.spark.sql.internal.ContextJarUtils
 
 object RecoveryService extends Logging {
   var recoveryStats: (
-      Seq[SnappyRegionStats], Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = null
+      Seq[SnappyRegionStats], Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = _
 
   private def isGrantRevokeStatement(conflatable: DDLConflatable) = {
     val sqlText = conflatable.getValueToConflate
@@ -72,10 +72,10 @@ object RecoveryService extends Logging {
       val allTables = getTables
       var tblCounts: Seq[SnappyRegionStats] = Seq()
       allTables.foreach(table => {
-        logDebug(s"RecoveryService:getStats for table: $table")
         table.storage.locationUri match {
           case Some(_) => // external tables can be seen in show tables but filtered out in UI
           case None =>
+            logDebug(s"Querying table: $table for count")
             val recCount = snappySession.sql(s"SELECT count(1) FROM ${table.qualifiedName}")
                 .collect()(0).getLong(0)
             val (numBuckets, isReplicated) = RecoveryService
@@ -110,17 +110,15 @@ object RecoveryService extends Logging {
         allDDLs, null, null, null, false).iterator
 
       import scala.collection.JavaConversions._
-      for (entry <- preProcessedqueue) {
-        val qEntry = entry
-        val qVal = qEntry.getValue
-        qVal match {
+      for (queueEntry <- preProcessedqueue) {
+        queueEntry.getValue match {
           case conflatable: DDLConflatable =>
             val schema = conflatable.getSchemaForTableNoThrow
             if (conflatable.isCreateDiskStore) {
               ddlBuffer.add(conflatable.getValueToConflate)
-            } else if (Misc.SNAPPY_HIVE_METASTORE == schema
-                | Misc.SNAPPY_HIVE_METASTORE == conflatable.getCurrentSchema
-                | Misc.SNAPPY_HIVE_METASTORE == conflatable.getRegionToConflate) {
+            } else if (Misc.SNAPPY_HIVE_METASTORE == schema ||
+                Misc.SNAPPY_HIVE_METASTORE == conflatable.getCurrentSchema ||
+                Misc.SNAPPY_HIVE_METASTORE == conflatable.getRegionToConflate) {
             } else if (conflatable.isAlterTable || conflatable.isCreateIndex ||
                 isGrantRevokeStatement(conflatable) ||
                 conflatable.isCreateTable || conflatable.isDropStatement ||
@@ -186,12 +184,12 @@ object RecoveryService extends Logging {
       val numPartsNTSKey = allkeys.filter(f => f.contains("numPartsOrgSqlText"))
 
       if (numPartsNTSKey.nonEmpty) {
-        val numPartsnTS = numPartsNTSKey.head.split("_")
+        val numPartsNTS = numPartsNTSKey.head.split("_")
         val numSqlTextParts = table.properties.getOrElse(numPartsNTSKey.head, "0").toInt
         assert(numSqlTextParts != 0,
           s"numPartsOrgSqlText key not found in catalog table properties for" +
               s" table ${table.identifier}.")
-        val createTimestamp = numPartsnTS(1).toLong
+        val createTimestamp = numPartsNTS(1).toLong
         val createTableString = (0 until numSqlTextParts).map { i =>
           table.properties.getOrElse(s"sqlTextpart.$i", null)
         }.mkString
@@ -265,10 +263,14 @@ object RecoveryService extends Logging {
         val host = hostCanonical.split('(').head
         s"executor_${host}_$hostCanonical"
       }).toSeq
-    } else getRandomExecutorHost()
+    } else {
+      logWarning(s"Preferred host is not found for bucket id: $bucketId. " +
+          s"Choosing random host for $bucketPath")
+      getRandomExecutorHost
+    }
   }
 
-  def getRandomExecutorHost(): Seq[String] = {
+  def getRandomExecutorHost: Seq[String] = {
     val e = Random.shuffle(regionViewSortedSet.toList).head._2.firstKey
     val hostCanonical = e.getExecutorHost
     val host = hostCanonical.split('(').head
