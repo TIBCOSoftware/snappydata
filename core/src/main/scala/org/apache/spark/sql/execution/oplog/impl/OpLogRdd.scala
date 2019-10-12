@@ -34,7 +34,6 @@ import scala.annotation.meta.param
 import scala.io.Source
 
 import com.gemstone.gemfire.internal.cache.DiskEntry.Helper
-import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
 import com.gemstone.gemfire.internal.offheap.ByteSource
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.client.am.Types
@@ -58,6 +57,7 @@ class OpLogRdd(
     private var fqtn: String,
     private var internalFQTN: String,
     private var schema: StructType,
+    private var partitioningColumns: Seq[String],
     private var provider: String,
     private var projection: Array[Int],
     @transient private[sql] val filters: Array[Expression],
@@ -67,6 +67,8 @@ class OpLogRdd(
     var versionMap: mutable.Map[String, Int],
     var tableColIdsMap: mutable.Map[String, Array[Int]])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
+
+  val rowFormatterMap: mutable.Map[Int, RowFormatter] = mutable.Map()
 
   /**
    * Method gets DataValueDescritor type from given StructField
@@ -136,7 +138,7 @@ class OpLogRdd(
         }
       }
     }
-    if (!tableColIdsMap.contains(s"$maxVersion#$fqtnLowerKey")){
+    if (!tableColIdsMap.contains(s"$maxVersion#$fqtnLowerKey")) {
       throw new IllegalStateException(s"tableColIdsMap might not be built properly." +
           s" Missing key: $maxVersion#$fqtnLowerKey")
     }
@@ -167,6 +169,7 @@ class OpLogRdd(
    * @return RowFormatter
    */
   def getRowFormatter(versionNum: Int, schemaStruct: StructType): RowFormatter = {
+    if (rowFormatterMap.contains(versionNum)) return rowFormatterMap(versionNum)
     val cdl = new ColumnDescriptorList()
     schemaStruct.toList.foreach(field => {
       val cd = new ColumnDescriptor(
@@ -199,7 +202,9 @@ class OpLogRdd(
     }
     val schemaName = fqtn.split('.')(0)
     val tableName = fqtn.split('.')(1)
-    new RowFormatter(cdl, schemaName, tableName, versionNum, null, false)
+    val rowFormatter = new RowFormatter(cdl, schemaName, tableName, versionNum, null, false)
+    rowFormatterMap.put(versionNum, rowFormatter)
+    rowFormatter
   }
 
   def getFromDVD(schema: StructType, dvd: DataValueDescriptor, i: Integer,
@@ -256,8 +261,6 @@ class OpLogRdd(
     assert(tableSchemas.contains(tableKey),
       s"schema of $fqtn for Rowformatter version=$versionNum unavailable")
     var schemaOfVersion = tableSchemas(tableKey)
-    // todo: build a local cache = table ->rowformatters
-    // todo: so we don't have to create rowformatters for every record
 
     if ("row".equalsIgnoreCase(provider)) {
       val correctedFields = schemaOfVersion.map(field => {
@@ -273,6 +276,9 @@ class OpLogRdd(
       }).toArray
       schemaOfVersion = StructType(correctedFields)
     }
+    schemaOfVersion = StructType(schemaOfVersion.map(field =>
+      if (partitioningColumns.contains(field.name)) field.copy(nullable = false) else field
+    ).toArray)
     val rowFormatter = getRowFormatter(versionNum, schemaOfVersion)
     val dvdArr = new Array[DataValueDescriptor](schemaOfVersion.length)
     val projectColumns: Array[String] = schema.fields.map(_.name)
@@ -308,7 +314,7 @@ class OpLogRdd(
   def iterateRowData(phdrRow: PlaceHolderDiskRegion): Iterator[Row] = {
     if (phdrRow.getRegionMap == null || phdrRow.getRegionMap.isEmpty) return Iterator.empty
     val regionMap = phdrRow.getRegionMap
-    logDebug(s"RegionMap keys: ${regionMap.keySet()}")
+    logDebug(s"RegionMap keys for $phdrRow are: ${regionMap.keySet()}")
     val regMapItr = regionMap.regionEntries().iterator().asScala
     regMapItr.map { regEntry =>
       getValueInVMOrDiskWithoutFaultIn(phdrRow, regEntry) match {
@@ -327,7 +333,6 @@ class OpLogRdd(
       val schemaColId = getSchemaColumnId(fqtn.toLowerCase(), projectCol, versionNum)
       val colValue = if (projectColId == schemaColId) {
         // col is from latest schema not previous/dropped column
-        // todo remove case conversion
         val colNamesArr = schStruct.fields.map(_.name.toLowerCase)
         row(colNamesArr.indexOf(projectCol))
       } else null
@@ -372,8 +377,11 @@ class OpLogRdd(
     if (phdrCol.getRegionMap == null || phdrCol.getRegionMap.isEmpty) return Iterator.empty
     val regMap = phdrCol.getRegionMap
     // assert(regMap != null, "region map for column batch is null")
-    logDebug(s"RegionMap keys: ${regMap.keySet()}")
+    logDebug(s"RegionMap keys for $phdrCol are: ${regMap.keySet()}")
     regMap.keySet().iterator().asScala.flatMap {
+      // for every stats key there will be a key corresponding to every column in schema
+      // we can get keys and therefore values of a column batch from the stats key by
+      // changing the index to corresponding column index
       case k: ColumnFormatKey if k.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX =>
         // get required info about deletes
         val delKey = k.withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
@@ -483,8 +491,9 @@ class OpLogRdd(
                 val uv = getUpdatedValue(updatedDecoder.getCurrentDeltaBuffer, schema(colIndx))
                 uv
               } else {
-                val decodedValue = if (fieldIsNull) null else {getDecodedValue(colDecoder,
-                    colArray, schema(colIndx).dataType, rowNum + currentDeleted - colNullCounts(colIndx))
+                val decodedValue = if (fieldIsNull) null else {
+                  getDecodedValue(colDecoder, colArray,
+                  schema(colIndx).dataType, rowNum + currentDeleted - colNullCounts(colIndx))
                 }
                 decodedValue
               }
@@ -685,6 +694,7 @@ class OpLogRdd(
     super.write(kryo, output)
     output.writeString(internalFQTN)
     output.writeString(fqtn)
+    output.writeString(partitioningColumns.mkString(","))
     output.writeString(provider)
     output.writeInt(tableSchemas.size)
     tableSchemas.iterator.foreach(ele => {
@@ -709,6 +719,7 @@ class OpLogRdd(
     super.read(kryo, input)
     internalFQTN = input.readString()
     fqtn = input.readString()
+    partitioningColumns = input.readString().split(",")
     provider = input.readString()
     val schemaMapSize = input.readInt()
     tableSchemas = collection.mutable.Map().empty

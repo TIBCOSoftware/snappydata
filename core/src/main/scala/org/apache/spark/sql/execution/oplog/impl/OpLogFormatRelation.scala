@@ -31,11 +31,11 @@ import org.apache.spark.sql.types.StructType
 class OpLogFormatRelation(
     fqtn: String,
     _schema: StructType,
-    _partitioningColumns: Seq[String],
-    _context: SQLContext) extends BaseRelation with TableScan with Logging {
+    partitioningColumns: Seq[String],
+    context: SQLContext) extends BaseRelation with TableScan with Logging {
   val schema: StructType = _schema
-  var schemaName: String = fqtn.split('.')(0)
-  var tableName: String = fqtn.split('.')(1)
+  val schemaName: String = fqtn.split('.')(0)
+  val tableName: String = fqtn.split('.')(1)
 
   def columnBatchTableName(session: Option[SparkSession] = None): String = {
     schemaName + '.' + Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR +
@@ -55,12 +55,12 @@ class OpLogFormatRelation(
     val versionMap = RecoveryService.versionMap
     val tableColIdsMap = RecoveryService.tableColumnIds
     (new OpLogRdd(snappySession, fqtn.toUpperCase(), externalColumnTableName, schema,
-      provider, projection, filters, (filters eq null) || filters.length == 0,
+      partitioningColumns, provider, projection, filters, (filters eq null) || filters.length == 0,
       prunePartitions, tableSchemas, versionMap, tableColIdsMap), projection)
   }
 
 
-  override def sqlContext: SQLContext = _context
+  override def sqlContext: SQLContext = context
 
   override def buildScan(): RDD[Row] = {
     val externalColumnTableName = columnBatchTableName()
