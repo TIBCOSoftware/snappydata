@@ -298,9 +298,9 @@ public class SnappyCDCTest extends SnappyTest {
         tableCnt = rs.getInt(1);
       rs.close();
       String[] tableArr = new String[tableCnt];
-      Map<String, Integer> tableCntMap = null;
+      Map<String, Long> tableCntMap = null;
       if (SnappyBB.getBB().getSharedMap().containsKey("tableCntMap")){
-        tableCntMap = (Map<String,Integer>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
+        tableCntMap = (Map<String,Long>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
       }
       else
         tableCntMap = new HashMap<>();
@@ -314,7 +314,7 @@ public class SnappyCDCTest extends SnappyTest {
       }
       rs1.close();
       for (int i = 0; i < tableArr.length; i++) {
-        int count = 0;
+        long count = 0;
         String tableName = tableArr[i];
         String cntQry = "SELECT COUNT(*) FROM " + tableName;
         ResultSet rs3 = con.createStatement().executeQuery(cntQry);
@@ -348,19 +348,19 @@ public class SnappyCDCTest extends SnappyTest {
   public void validateDataCount() {
     Boolean isBeforeRestart = SnappyCDCPrms.getIsBeforeRestart();
     String fileName = SnappyCDCPrms.getDataLocation();
-    Map<String, Integer> tableCntMap = (Map<String, Integer>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
+    Map<String, Long> tableCntMap = (Map<String, Long>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
     Log.getLogWriter().info("tableCntMap size = " + tableCntMap.size() );
     try {
       Connection con = SnappyTest.getLocatorConnection();
-      for (Map.Entry<String, Integer> val : tableCntMap.entrySet()) {
-        int snappyCnt = 0;
+      for (Map.Entry<String, Long> val : tableCntMap.entrySet()) {
+        long snappyCnt = 0;
         String tableName = val.getKey();
-        int BBCnt = val.getValue();
+        long BBCnt = val.getValue();
         String cntQry = "SELECT COUNT(*) FROM " + tableName;
         Log.getLogWriter().info("The query to be executed is " + cntQry);
         ResultSet rs3 = con.createStatement().executeQuery(cntQry);
         while (rs3.next())
-          snappyCnt = rs3.getInt(1);
+          snappyCnt = rs3.getLong(1);
         rs3.close();
         if (snappyCnt == BBCnt)
           Log.getLogWriter().info("SUCCESS : The cnt for table " + tableName + " = " + snappyCnt + " is EQUAL to the BB count = " + BBCnt);
