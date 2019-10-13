@@ -225,9 +225,16 @@ class Spark232Internals extends SparkInternals {
 
   override def unresolvedRelationAlias(u: UnresolvedRelation): Option[String] = None
 
-  override def newSubqueryAlias(alias: String, child: LogicalPlan): SubqueryAlias = {
+  override def newSubqueryAlias(alias: String, child: LogicalPlan,
+      view: Option[TableIdentifier]): SubqueryAlias = {
+    if (view.isDefined) {
+      throw new AnalysisException(s"Spark $version does not support creating SubqueryAlias " +
+          s"with a VIEW: alias=$alias, view=${view.get}")
+    }
     SubqueryAlias(alias, child)
   }
+
+  override def getViewFromAlias(q: SubqueryAlias): Option[TableIdentifier] = None
 
   override def newAlias(child: Expression, name: String,
       copyAlias: Option[NamedExpression]): Alias = {

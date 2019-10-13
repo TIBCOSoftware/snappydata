@@ -297,9 +297,10 @@ class Spark210Internals extends SparkInternals {
 
   override def unresolvedRelationAlias(u: UnresolvedRelation): Option[String] = u.alias
 
-  override def newSubqueryAlias(alias: String, child: LogicalPlan): SubqueryAlias = {
-    SubqueryAlias(alias, child, view = None)
-  }
+  override def newSubqueryAlias(alias: String, child: LogicalPlan,
+      view: Option[TableIdentifier]): SubqueryAlias = SubqueryAlias(alias, child, view)
+
+  override def getViewFromAlias(q: SubqueryAlias): Option[TableIdentifier] = q.view
 
   override def newAlias(child: Expression, name: String,
       copyAlias: Option[NamedExpression]): Alias = {

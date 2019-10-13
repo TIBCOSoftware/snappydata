@@ -412,7 +412,8 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
 
           case a: SubqueryAlias if a.child.isInstanceOf[LogicalFilter] =>
             val lf = a.child.asInstanceOf[LogicalFilter]
-            LogicalFilter(lf.condition, internals.newSubqueryAlias(a.alias, lf.child))
+            LogicalFilter(lf.condition, internals.newSubqueryAlias(a.alias, lf.child,
+              internals.getViewFromAlias(a)))
 
           case LogicalFilter(condition1, LogicalFilter(condition2, child)) =>
             if (rlsConditionChecker(conditionEvaluator)(condition1)) {

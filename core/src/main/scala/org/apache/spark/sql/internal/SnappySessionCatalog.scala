@@ -855,6 +855,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
       alias: Option[String]): LogicalPlan = wrappedCatalog match {
     case None => synchronized {
       val tableName = formatTableName(name.table)
+      var view: Option[TableIdentifier] = Some(name)
       val relationPlan = (if (name.database.isEmpty) {
         getTempView(tableName) match {
           case None => globalTempViewManager.get(tableName)
@@ -890,12 +891,13 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
             } else if (CatalogObjectType.isPolicy(table)) {
               getPolicyPlan(table)
             } else {
+              view = None
               newCatalogRelation(schemaName, table)
             }
           }
         case Some(p) => p
       }
-      internals.newSubqueryAlias(if (alias.isEmpty) tableName else alias.get, relationPlan)
+      internals.newSubqueryAlias(if (alias.isEmpty) tableName else alias.get, relationPlan, view)
     }
 
     case Some(c) => c.resolveRelationWithAlias(name, alias)

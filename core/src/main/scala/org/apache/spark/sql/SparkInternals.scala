@@ -263,7 +263,13 @@ trait SparkInternals extends Logging {
   /**
    * Create an alias for a sub-query.
    */
-  def newSubqueryAlias(alias: String, child: LogicalPlan): SubqueryAlias
+  def newSubqueryAlias(alias: String, child: LogicalPlan,
+      view: Option[TableIdentifier] = None): SubqueryAlias
+
+  /**
+   * Get view, if defined, or else alias name of a SubqueryAlias.
+   */
+  def getViewFromAlias(q: SubqueryAlias): Option[TableIdentifier]
 
   /**
    * Create an alias with given parameters and optionally copying other fields from existing Alias.
