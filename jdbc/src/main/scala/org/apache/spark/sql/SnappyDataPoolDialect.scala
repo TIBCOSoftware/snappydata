@@ -83,10 +83,12 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
                 // releases where LocalRelation class primary constructor has changed signature
                 cons.newInstance(tableName, LocalRelation.apply(output: _*), None)
               } catch {
-                case _: Exception => // fallback to two argument constructor
-                  val cons = classOf[SubqueryAlias].getConstructor(classOf[String],
-                    classOf[LogicalPlan])
-                  cons.newInstance(tableName, LocalRelation.apply(output: _*))
+                case _: Exception => // fallback to two argument apply that works for both 2.3/2.4
+                  // class of companion class which is SubqueryAlias$ in bytecode
+                  val c = SubqueryAlias.getClass
+                  val m = c.getMethod("apply", classOf[String], classOf[LogicalPlan])
+                  m.invoke(c.getField("MODULE$").get(null),
+                    tableName, LocalRelation.apply(output: _*)).asInstanceOf[SubqueryAlias]
               }
             }
         }
