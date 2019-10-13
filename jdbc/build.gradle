@@ -47,9 +47,9 @@ dependencies {
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
-	compile project(':snappy-store:snappydata-store-client')
+    compile project(':snappy-store:snappydata-store-client')
   } else {
-	compile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
+    compile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
   }
 }
 

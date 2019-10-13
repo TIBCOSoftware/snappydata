@@ -808,6 +808,7 @@ gradle.taskGraph.whenReady { graph ->
           'APACHE_SPARK_HOME': sparkConnectorProductDir,
           'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
           'SPARK_TESTING': '1',
+          'SPARK_CONNECTOR_VERSION': sparkConnectorVersion,
           'SNAPPY_DIST_CLASSPATH': test.classpath.asPath
 
         def failureCount = new java.util.concurrent.atomic.AtomicInteger(0)

@@ -198,9 +198,9 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     var df = snc.sql(s"select sum(ol_1_int2_id)  from $t1 where ol_1_int_id=1")
     checkForShuffle(df.logicalPlan, snc, shuffleExpected = false)
 
-    // with limit shuffle is expected to SinglePartition when there is no CollectAggregateExec
+    // with limit
     df = snc.sql(s"select sum(ol_1_int2_id)  from $t1 where ol_1_int_id=1 limit 1")
-    checkForShuffle(df.logicalPlan, snc, shuffleExpected = true)
+    checkForShuffle(df.logicalPlan, snc, shuffleExpected = false)
 
     df = snc.sql(s"update $t1 set ol_1_str_id = '3' where ol_1_int_id in (" +
         s"select ol_1_int_id from $t2 where $t2.ol_1_int_id=1)")

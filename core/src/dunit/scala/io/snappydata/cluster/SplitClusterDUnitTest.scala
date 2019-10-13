@@ -789,9 +789,13 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     if (vm eq null) stopSpark()
     else vm.invoke(classOf[SplitClusterDUnitTest], "stopSpark")
 
-    // perform some operation thru spark-shell
+    // perform some operation through spark-shell
+    val sparkVersion = System.getenv("SPARK_CONNECTOR_VERSION") match {
+      case null => throw new IllegalStateException("SPARK_CONNECTOR_VERSION not set")
+      case v => v
+    }
     val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
-      "TIB_compute-core*.jar")
+      s"TIB_compute-spark${sparkVersion}_*.jar")
     var securityConf = ""
     if (props.containsKey(Attribute.USERNAME_ATTR)) {
       securityConf = s" --conf spark.snappydata.store.user=${props.getProperty(Attribute
