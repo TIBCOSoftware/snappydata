@@ -794,6 +794,8 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
       override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = aSelf.extendedResolutionRules
       override val postHocResolutionRules: Seq[Rule[LogicalPlan]] = aSelf.postHocResolutionRules
       override val extendedCheckRules: Seq[LogicalPlan => Unit] = aself.extendedCheckRules
+
+      override def execute(plan: LogicalPlan): LogicalPlan = aSelf.execute(plan)
     }
   }
 

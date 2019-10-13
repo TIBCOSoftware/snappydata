@@ -26,6 +26,7 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import io.snappydata.Property
 
 import org.apache.spark.Partition
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.{PromoteStrings, numericPrecedence}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, Star, UnresolvedAttribute}
@@ -50,7 +51,6 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager, WindowLogicalPlan}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Strategy, _}
 import org.apache.spark.streaming.Duration
 
 

@@ -781,6 +781,8 @@ class SnappySessionState21(override val snappySession: SnappySession)
     override lazy val baseAnalyzerInstance: Analyzer = new Analyzer(catalog, conf) {
       override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = self.extendedResolutionRules
       override val extendedCheckRules: Seq[LogicalPlan => Unit] = self.extendedCheckRules
+
+      override def execute(plan: LogicalPlan): LogicalPlan = self.execute(plan)
     }
   }
 
