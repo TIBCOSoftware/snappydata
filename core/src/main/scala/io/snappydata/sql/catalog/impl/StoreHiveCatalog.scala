@@ -512,9 +512,9 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     // Mask access key and secret access key in case of S3 URI
     private def maskLocationURI(locURI: String): String = {
       val uri = toLowerCase(locURI)
-      val maskedSrcPath = if (uri.startsWith("s3a://") ||
+      val maskedSrcPath = if ((uri.startsWith("s3a://") ||
           uri.startsWith("s3://") ||
-          uri.startsWith("s3n://")) {
+          uri.startsWith("s3n://")) && uri.contains("@")) {
         locURI.replace(locURI.slice(locURI.indexOf("//") + 2,
           locURI.indexOf("@")), "****:****")
       } else maskPassword(locURI)
