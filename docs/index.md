@@ -1,5 +1,5 @@
-## Introduction 
-SnappyData (aka TIBCO ComputeDB community edition) is a distributed, in-memory optimized analytics database. SnappyData delivers high throughput, low latency, and high concurrency for unified analytics workload. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources and stream processing all in one unified cluster.
+# Introduction 
+SnappyData (aka TIBCO ComputeDB) is a distributed, in-memory optimized, analytics database. TIBCO ComputeDB delivers high throughput, low latency, and high concurrency for unified analytics workloads. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources/formats and stream processing all in one unified cluster.
 
 One common use case for SnappyData is to provide analytics at interactive speeds over large volumes of data with minimal or no pre-processing of the dataset. For instance, there is no need to often pre-aggregate/reduce or generate cubes over your large data sets for ad-hoc visual analytics. This is made possible by smartly managing data in-memory, dynamically generating code using vectorization optimizations and maximizing the potential of modern multi-core CPUs.
 SnappyData enables complex processing on large data sets in sub-second timeframes. 
@@ -9,7 +9,7 @@ SnappyData enables complex processing on large data sets in sub-second timeframe
 !!!Note
 	*SnappyData is not another Enterprise Data Warehouse (EDW) platform, but rather a high performance computational and caching cluster that augments traditional EDWs and data lakes.*
 
-### Important Capabilities
+## Important Capabilities
 
 *	**Easily discover and catalog big data sets**</br>
 	You can connect and discover datasets in SQL DBs, Hadoop, NoSQL stores, file systems, or even cloud data stores such as S3 by using SQL, infer schemas automatically and register them in a secure catalog. A wide variety of data formats are supported out of the box such as JSON, CSV, text, Objects, Parquet, ORC, SQL, XML, and more.
@@ -67,10 +67,7 @@ You can find more information on options for running SnappyData [here](/quicksta
 
 If you are already using Apache Spark, you can experience upto 20x speedup for your query performance with SnappyData. Try this [test](https://github.com/SnappyDataInc/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala) using the Spark Shell.
 
-## Documentation
-To understand SnappyData and its features refer to the [documentation](http://snappydatainc.github.io/snappydata/).
-
-### Other Relevant content
+## Other Relevant content
 - [Paper](http://cidrdb.org/cidr2017/papers/p28-mozafari-cidr17.pdf) on Snappydata (Community Edition of TIBCO ComputeDB) at Conference on Innovative Data Systems Research (CIDR) - Info on key concepts and motivating problems.
 - [Another early Paper](https://www.snappydata.io/snappy-industrial) that focuses on overall architecture, use cases, and benchmarks. ACM Sigmod 2016.
 - [TPC-H benchmark](https://www.snappydata.io/whitepapers/snappydata-tpch) comparing Apache Spark with SnappyData
@@ -81,17 +78,17 @@ To understand SnappyData and its features refer to the [documentation](http://sn
 
 We monitor the following channels comments/questions:
 
-*	[Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata)![Stackoverflow](http://i.imgur.com/LPIdp12.png)
+*	[Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata) ![Stackoverflow](http://i.imgur.com/LPIdp12.png)
 
-*	[Slack](http://snappydata-slackin.herokuapp.com/)![Slack](http://i.imgur.com/h3sc6GM.png)
+*	[Slack](http://snappydata-slackin.herokuapp.com/) ![Slack](http://i.imgur.com/h3sc6GM.png)
 
-*	[Gitter](https://gitter.im/SnappyDataInc/snappydata)![Gitter](http://i.imgur.com/jNAJeOn.jpg)
+*	[Gitter](https://gitter.im/SnappyDataInc/snappydata) ![Gitter](http://i.imgur.com/jNAJeOn.jpg)
 
-*	[Mailing List](https://groups.google.com/forum/#!forum/snappydata-user)![Mailing List](http://i.imgur.com/YomdH4s.png)
+*	[Mailing List](https://groups.google.com/forum/#!forum/snappydata-user) ![Mailing List](http://i.imgur.com/YomdH4s.png)
 
-*	[Reddit](https://www.reddit.com/r/snappydata)![Reddit](http://i.imgur.com/AB3cVtj.png)          
+*	[Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)          
 
-*	[JIRA](https://jira.snappydata.io/projects/SNAP/issues)![JIRA](http://i.imgur.com/E92zntA.png)
+*	[JIRA](https://jira.snappydata.io/projects/SNAP/issues) ![JIRA](http://i.imgur.com/E92zntA.png)
 
 ## Link with SnappyData Distribution
 
@@ -143,7 +140,7 @@ If you would like to build SnappyData from source, refer to the [documentation o
 Apache Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and is capable of working with disparate data sources. While this provides rich unified access to data, this can also be quite inefficient and expensive. Analytic processing requires massive data sets to be repeatedly copied and data to be reformatted to suit Apache Spark. In many cases, it ultimately fails to deliver the promise of interactive analytic performance.
 For instance, each time an aggregation is run on a large Cassandra table, it necessitates streaming the entire table into Apache Spark to do the aggregation. Caching within Apache Spark is immutable and results in stale insight.
 
-### The SnappyData Approach
+## The SnappyData Approach
 
 ##### Snappy Architecture
 
