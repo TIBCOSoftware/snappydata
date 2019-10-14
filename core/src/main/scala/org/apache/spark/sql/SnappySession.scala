@@ -17,11 +17,13 @@
 package org.apache.spark.sql
 
 import java.sql.{Connection, SQLException, SQLWarning}
+import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Calendar, Properties}
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
@@ -58,7 +60,7 @@ import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
-import org.apache.spark.sql.execution.command.{CreateDataSourceTableAsSelectCommand, ExecutedCommandExec, UncacheTableCommand}
+import org.apache.spark.sql.execution.command.{CreateDataSourceTableAsSelectCommand, ExecutedCommandExec, ShowCreateTableCommand, UncacheTableCommand}
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{CreateTable, DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.BroadcastExchangeExec
@@ -1404,18 +1406,36 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             sessionCatalog.resolveExistingTable(b).unquotedString
       }
     }
+    val orgSqlText = getContextObject[String]("orgSqlText") match {
+      case Some(s) => s
+      case None => {
+        // case when create api was used - sql text cannot be captured in this case.
+        userSpecifiedSchema match {
+          case Some(schema) => s"create table ${resolvedName.table} (${getDDLSchema(schema)})"
+          case None => ""
+        }
+      }
+    }
     // if there is no path option for external DataSources, then mark as MANAGED except for JDBC
     val storage = DataSource.buildStorageFormatFromOptions(fullOptions)
     val tableType = if (!providerIsBuiltIn && storage.locationUri.isEmpty &&
         !Utils.toLowerCase(provider).contains("jdbc")) {
       CatalogTableType.MANAGED
     } else CatalogTableType.EXTERNAL
+    val orgSqlTextParts = orgSqlText.grouped(3500).toSeq
+    val sqlTextMap = mutable.Map(s"numPartsOrgSqlText_${System.currentTimeMillis()}"
+        -> orgSqlTextParts.size.toString)
+    orgSqlText.grouped(3500).toSeq.zipWithIndex.foreach{
+      case(part, index) => sqlTextMap += (s"sqlTextpart.$index" -> s"$part")
+    }
+
     val tableDesc = CatalogTable(
       identifier = resolvedName,
       tableType = tableType,
       storage = storage,
       schema = schema,
       provider = Some(provider),
+      properties = sqlTextMap.toMap,
       partitionColumnNames = partitionColumns,
       bucketSpec = bucketSpec)
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
@@ -1426,6 +1446,34 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     snappyContextFunctions.postRelationCreation(relation, this)
     df
+  }
+
+  def getDDLSchema(schema: StructType): String = {
+    schema.fields.map(f => s"${f.name} ${getSQLType(f.dataType)}").mkString(", ")
+  }
+
+  def getSQLType(dataType: DataType): String = {
+    dataType match {
+      case IntegerType => "integer"
+      case LongType => "long"
+      case StringType => "string"
+      case FloatType => "float"
+      case DoubleType => "double"
+      case t: DecimalType => s"decimal(${t.precision},${t.scale})"
+      case DateType => "date"
+      case TimestampType => "timestamp"
+      case BooleanType => "boolean"
+      case ByteType => "byte"
+      case ShortType => "short"
+      case BinaryType => "binary"
+      case v: VarcharType => s"varchar(${v.length})"
+      case a: ArrayType => s"array<${a.elementType}>"
+      case m: MapType => s"map<${m.keyType}, ${m.valueType}>"
+      case s: StructType => {
+        val structFields = s.fields.map(f => s" ${f.name}:${f.dataType} ").mkString(",")
+        s"struct<${structFields}>"
+      }
+    }
   }
 
   private[sql] def addBaseTableOption(baseTable: Option[String],
@@ -1501,11 +1549,24 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     if (sessionCatalog.isTemporaryTable(tableIdent)) {
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
+    val orgSqlText = getContextObject[String]("orgSqlText") match {
+      case Some(str) => str
+      case None => {
+        if (isAddColumn) {
+          s"alter table ${tableIdent.table} add column ${column.name}" +
+              s" ${getSQLType(column.dataType)}"
+        } else {
+          s"alter table ${tableIdent.table} drop column ${column.name}"
+        }
+      }
+    }
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
         ar.alterTable(tableIdent, isAddColumn, column, extensions)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
-        sessionCatalog.alterTable(metadata.copy(schema = ar.schema))
+        sessionCatalog.alterTable(metadata.copy(schema = ar.schema,
+          properties = metadata.properties +
+              (s"altTxt_${System.currentTimeMillis()}" -> orgSqlText)))
       case _ => throw new AnalysisException(
         s"ALTER TABLE ${tableIdent.unquotedString} supported only for row tables")
     }
@@ -2328,6 +2389,7 @@ object SnappySession extends Logging {
       session.currentKey = key
       try {
         val execution = session.executePlan(plan)
+        session.addContextObject[String]("orgSqlText", sqlText)
         cachedDF = evaluatePlan(execution, session, sqlShortText, sqlText, paramLiterals, paramsId)
         // put in cache if the DF has to be cached
         if (planCaching && cachedDF.isCached) {
