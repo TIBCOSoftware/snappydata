@@ -16,24 +16,32 @@
  */
 package io.snappydata.gemxd
 
-import java.io.InputStream
+import java.io.{File, InputStream}
+import java.lang
 import java.util.{Iterator => JIterator}
+
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Try
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.Version
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ClassPathLoader, GemFireVersion}
+import com.pivotal.gemfirexd.Attribute
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
+import io.snappydata.recovery.RecoveryService
 import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
 
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
+import org.apache.spark.sql.SaveMode
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -129,6 +137,72 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
       is.close()
     }
     GemFireVersion.getClusterType
+  }
+
+  override def dumpData(connId: lang.Long, exportUri: String,
+      formatType: String, tableNames: String, ignoreError: lang.Boolean): Unit = {
+    val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
+    if (Misc.isSecurityEnabled) {
+      session.conf.set(Attribute.USERNAME_ATTR,
+        Misc.getMemStore.getBootProperty(Attribute.USERNAME_ATTR))
+      session.conf.set(Attribute.PASSWORD_ATTR,
+        Misc.getMemStore.getBootProperty(Attribute.PASSWORD_ATTR))
+    }
+
+    val tablesArr = if (tableNames.equalsIgnoreCase("all")) {
+      val catalogTables = RecoveryService.getTables
+      val tablesArr = catalogTables.map(ct => {
+        ct.identifier.database match {
+          case Some(db) =>
+            db + "." + ct.identifier.table
+          case None => ct.identifier.table
+        }
+      })
+      tablesArr
+    } else {
+      tableNames.split(",").map(_.trim).toSeq
+    }
+    logDebug(s"Using connection ID: $connId\n Export path:" +
+        s" $exportUri\n Format Type: $formatType\n Table names: $tableNames")
+
+    val filePath = if (exportUri.endsWith(File.separator)) {
+      exportUri.substring(0, exportUri.length - 1) +
+          s"_${System.currentTimeMillis()}" + File.separator
+    } else {
+      exportUri + s"_${System.currentTimeMillis()}" + File.separator
+    }
+
+    tablesArr.foreach(f = table => {
+      Try {
+        val tableData = session.sql(s"select * from $table;")
+        logDebug(s"Querying table $table.")
+        tableData.write.mode(SaveMode.Overwrite).option("header", "true").format(formatType)
+            .save(filePath + File.separator + table.toUpperCase)
+      } match {
+        case scala.util.Success(_) =>
+        case scala.util.Failure(exception) =>
+          logError(s"Error recovering table: $table.")
+          if (!ignoreError) {
+            throw new Exception(exception)
+          }
+      }
+    })
+  }
+
+  override def dumpDDLs(connId: lang.Long, exportUri: String): Unit = {
+    val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
+    val filePath = if (exportUri.endsWith(File.separator)) {
+      exportUri.substring(0, exportUri.length - 1) +
+          s"_${System.currentTimeMillis()}" + File.separator
+    } else {
+      exportUri + s"_${System.currentTimeMillis()}" + File.separator
+    }
+    val arrBuf: ArrayBuffer[String] = ArrayBuffer.empty
+
+    RecoveryService.getAllDDLs.foreach(ddl => {
+      arrBuf.append(ddl.trim + ";\n")
+    })
+    session.sparkContext.parallelize(arrBuf, 1).saveAsTextFile(filePath)
   }
 
   override def setLeadClassLoader(): Unit = {
