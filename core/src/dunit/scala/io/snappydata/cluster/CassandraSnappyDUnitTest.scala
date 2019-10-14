@@ -462,5 +462,11 @@ class CassandraSnappyDUnitTest(val s: String)
       s"--conf spark.cassandra.connection.host=localhost" +
           s" --conf connectorJar=$cassandraConnectorJarLoc")
     logInfo("Job Completed Successfully")
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 1)
+    stmt1.execute("undeploy cassJar")
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 0)
   }
 }

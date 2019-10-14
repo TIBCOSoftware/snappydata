@@ -43,6 +43,18 @@ object SNAP3152TestJob extends SnappySQLJob {
     assert(sc.sql("list packages").count() == 0)
     println("Undeployed successfully")
     sc.sql("drop table customer11")
+    try {
+      sc.sql("create external table customer1111 " +
+          "using org.apache.spark.sql.cassandra options" +
+          " (table 'customer', keyspace 'test'," +
+          " spark.cassandra.input.fetch.size_in_rows '200000'," +
+          " spark.cassandra.read.timeout_ms '10000')")
+      assert(assertion = false, s"Expected an exception!")
+    } catch {
+      case sqle: ClassNotFoundException if sqle.getMessage.contains("Failed to find " +
+          "data source: org.apache.spark.sql.cassandra") => // expected
+      case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
+    }
 
 
     // test for SNAP-3152 with deploy jar
@@ -60,6 +72,19 @@ object SNAP3152TestJob extends SnappySQLJob {
     assert(sc.sql("list packages").count() == 0)
     println("Undeployed successfully")
     sc.sql("drop table customer12")
+    try {
+      sc.sql("create external table customer2222 " +
+          "using org.apache.spark.sql.cassandra options" +
+          " (table 'customer', keyspace 'test'," +
+          " spark.cassandra.input.fetch.size_in_rows '200000'," +
+          " spark.cassandra.read.timeout_ms '10000')")
+      assert(assertion = false, s"Expected an exception!")
+    } catch {
+      case sqle: ClassNotFoundException if sqle.getMessage.contains("Failed to find " +
+          "data source: org.apache.spark.sql.cassandra") => // expected
+      case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
+    }
 
+    sc.sql(s"deploy jar cassJar '$connectorJarLoc'")
   }
 }
