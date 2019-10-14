@@ -68,7 +68,7 @@ class OpLogRdd(
     var tableColIdsMap: mutable.Map[String, Array[Int]])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
-  val rowFormatterMap: mutable.Map[Int, RowFormatter] = mutable.Map()
+  var rowFormatterMap: mutable.Map[Int, RowFormatter] = null
 
   /**
    * Method gets DataValueDescritor type from given StructField
@@ -169,6 +169,7 @@ class OpLogRdd(
    * @return RowFormatter
    */
   def getRowFormatter(versionNum: Int, schemaStruct: StructType): RowFormatter = {
+    if (rowFormatterMap == null) rowFormatterMap = mutable.Map()
     if (rowFormatterMap.contains(versionNum)) return rowFormatterMap(versionNum)
     val cdl = new ColumnDescriptorList()
     schemaStruct.toList.foreach(field => {
