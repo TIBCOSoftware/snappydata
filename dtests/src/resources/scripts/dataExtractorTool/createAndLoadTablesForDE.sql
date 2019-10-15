@@ -55,7 +55,7 @@ CREATE TABLE BANK(
   INSERT into BANK select id,id,abs(rand()*1000),abs(rand()*1000),'BNK_FULL_NM','RTNG_NUM',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),'src_sys_ref_id','src_sys_rec_id' from range(4000000);
 
 DROP TABLE IF EXISTS ORDERS_DETAILS;
-CREATE EXTERNAL TABLE staging_orders_details USING com.databricks.spark.csv  OPTIONS (path '/home/apps/Downloads/ORDERS_DETAILS.dat', header 'true', inferSchema 'false',nullValue 'NULL', maxCharsPerColumn '4096');
+CREATE EXTERNAL TABLE staging_orders_details USING com.databricks.spark.csv  OPTIONS (path ':dataLocation/ORDERS_DETAILS.dat', header 'true', inferSchema 'false',nullValue 'NULL', maxCharsPerColumn '4096');
 CREATE TABLE ORDERS_DETAILS
              (SINGLE_ORDER_DID BIGINT ,SYS_ORDER_ID VARCHAR(64) ,SYS_ORDER_VER INTEGER ,DATA_SNDG_SYS_NM VARCHAR(128) ,
              SRC_SYS VARCHAR(20) ,SYS_PARENT_ORDER_ID VARCHAR(64) ,SYS_PARENT_ORDER_VER SMALLINT ,PARENT_ORDER_TRD_DATE VARCHAR(20),
@@ -192,7 +192,7 @@ CREATE VIEW FamousPeopleView AS  SELECT country, explode(celebrities) FROM Famou
 
 DROP TABLE IF EXISTS EXEC_DETAILS;
 CREATE EXTERNAL TABLE staging_exec_details USING com.databricks.spark.csv
-             OPTIONS (path '/home/apps/Downloads/EXEC_DETAILS.dat', header 'true', inferSchema 'false', nullValue 'NULL', maxCharsPerColumn '4096');
+             OPTIONS (path ':dataLocation/EXEC_DETAILS.dat', header 'true', inferSchema 'false', nullValue 'NULL', maxCharsPerColumn '4096');
 
 CREATE TABLE EXEC_DETAILS(
              EXEC_DID BIGINT,SYS_EXEC_VER INTEGER,SYS_EXEC_ID VARCHAR(64),TRD_DATE VARCHAR(20),ALT_EXEC_ID VARCHAR(64),SYS_EXEC_STAT VARCHAR(20),
