@@ -129,10 +129,6 @@ trait SmartConnectorExternalCatalog extends SnappyExternalCatalog with Connector
     connectorHelper.setCurrentSchema(schema)
   }
 
-  override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
-    throw new UnsupportedOperationException("Schema/database definitions cannot be altered")
-  }
-
   protected def createTableImpl(table: CatalogTable, ignoreIfExists: Boolean): Unit = {
     val request = new CatalogMetadataDetails()
     request.setCatalogTable(ConnectorExternalCatalog.convertFromCatalogTable(table))

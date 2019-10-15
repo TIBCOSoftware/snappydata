@@ -46,13 +46,15 @@ import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{AccessUtils, FunctionIdentifier, InternalRow, TableIdentifier}
-import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, DescribeTableCommand, RunnableCommand}
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
+import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, CreateTableLikeCommand, DescribeTableCommand, RunnableCommand}
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
+import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.ui.{SQLAppStatusListener, SQLAppStatusStore, SnappySQLAppListener}
-import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
-import org.apache.spark.sql.hive.{HiveConditionalRule, HiveSessionResourceLoader, SnappyAnalyzer, SnappyHiveCatalogBase, SnappyHiveExternalCatalog, SnappySessionState}
-import org.apache.spark.sql.sources.{BaseRelation, Filter, ResolveQueryHints}
+import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, PartitionedDataSourceScan, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
+import org.apache.spark.sql.hive._
+import org.apache.spark.sql.sources.{BaseRelation, Filter, JdbcExtendedUtils, ResolveQueryHints}
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.storage.StorageLevel
@@ -123,6 +125,29 @@ class Spark232Internals extends SparkInternals {
       s"unexpected copyPredicateSubquery call in Spark $version module")
   }
 
+  // scalastyle:off
+
+  override def columnTableScan(output: Seq[Attribute], dataRDD: RDD[Any],
+      otherRDDs: Seq[RDD[InternalRow]], numBuckets: Int, partitionColumns: Seq[Expression],
+      partitionColumnAliases: Seq[Seq[Attribute]], baseRelation: PartitionedDataSourceScan,
+      relationSchema: StructType, allFilters: Seq[Expression],
+      schemaAttributes: Seq[AttributeReference], caseSensitive: Boolean,
+      isForSampleReservoirAsRegion: Boolean): ColumnTableScan = {
+    new ColumnTableScan23(output, dataRDD, otherRDDs, numBuckets, partitionColumns,
+      partitionColumnAliases, baseRelation, relationSchema, allFilters, schemaAttributes,
+      caseSensitive, isForSampleReservoirAsRegion)
+  }
+
+  // scalastyle:on
+
+  override def rowTableScan(output: Seq[Attribute], schema: StructType, dataRDD: RDD[Any],
+      numBuckets: Int, partitionColumns: Seq[Expression],
+      partitionColumnAliases: Seq[Seq[Attribute]], table: String,
+      baseRelation: PartitionedDataSourceScan, caseSensitive: Boolean): RowTableScan = {
+    new RowTableScan23(output, schema, dataRDD, numBuckets, partitionColumns,
+      partitionColumnAliases, JdbcExtendedUtils.toLowerCase(table), baseRelation, caseSensitive)
+  }
+
   override def newWholeStagePlan(plan: SparkPlan): WholeStageCodegenExec = {
     WholeStageCodegenExec(plan)(codegenStageId = 0)
   }
@@ -183,6 +208,21 @@ class Spark232Internals extends SparkInternals {
     DescribeTableCommand(table, partitionSpec, isExtended)
   }
 
+  override def newCreateTableLikeCommand(targetIdent: TableIdentifier,
+      sourceIdent: TableIdentifier, location: Option[String],
+      allowExisting: Boolean): RunnableCommand = {
+    CreateTableLikeCommand(targetIdent, sourceIdent, location, allowExisting)
+  }
+
+  override def lookupRelation(catalog: SessionCatalog, name: TableIdentifier,
+      alias: Option[String]): LogicalPlan = {
+    if (alias.isDefined) {
+      throw new AnalysisException(s"Spark $version does not support lookupRelation " +
+          s"with an alias: alias=$alias, name=$name")
+    }
+    catalog.lookupRelation(name)
+  }
+
   override def newClearCacheCommand(): LogicalPlan = ClearCacheCommand()
 
   override def resolveMavenCoordinates(coordinates: String, remoteRepos: Option[String],
@@ -192,9 +232,10 @@ class Spark232Internals extends SparkInternals {
   }
 
   override def copyAttribute(attr: AttributeReference)(name: String,
-      dataType: DataType, nullable: Boolean, metadata: Metadata): AttributeReference = {
+      dataType: DataType, nullable: Boolean, metadata: Metadata,
+      exprId: ExprId): AttributeReference = {
     attr.copy(name = name, dataType = dataType, nullable = nullable, metadata = metadata)(
-      exprId = attr.exprId, qualifier = attr.qualifier)
+      exprId, qualifier = attr.qualifier)
   }
 
   override def withNewChild(insert: InsertIntoTable, newChild: LogicalPlan): InsertIntoTable = {
@@ -501,6 +542,12 @@ class Spark232Internals extends SparkInternals {
     PreWriteCheck
   }
 
+  override def hiveConditionalStrategies(sessionState: SnappySessionState): Seq[Strategy] = {
+    // DataSinks in older Spark releases is now taken care of by HiveAnalysis
+    new HiveConditionalStrategy(_.HiveTableScans, sessionState) ::
+        new HiveConditionalStrategy(_.Scripts, sessionState) :: Nil
+  }
+
   override def newCacheManager(): CacheManager = new SnappyCacheManager23
 
   override def buildConf(key: String): ConfigBuilder = SQLConf.buildConf(key)
@@ -581,7 +628,7 @@ final class SnappyEmbeddedHiveCatalog23(override val conf: SparkConf,
   override protected def doDropDatabase(schema: String, ignoreIfNotExists: Boolean,
       cascade: Boolean): Unit = dropDatabaseImpl(schema, ignoreIfNotExists, cascade)
 
-  override protected def doAlterDatabase(schemaDefinition: CatalogDatabase): Unit =
+  override def doAlterDatabase(schemaDefinition: CatalogDatabase): Unit =
     alterDatabaseImpl(schemaDefinition)
 
   override protected def doCreateTable(table: CatalogTable, ignoreIfExists: Boolean): Unit =
@@ -593,12 +640,12 @@ final class SnappyEmbeddedHiveCatalog23(override val conf: SparkConf,
   override protected def doRenameTable(schema: String, oldName: String, newName: String): Unit =
     renameTableImpl(schema, oldName, newName)
 
-  override protected def doAlterTable(table: CatalogTable): Unit = alterTableImpl(table)
+  override def doAlterTable(table: CatalogTable): Unit = alterTableImpl(table)
 
-  override protected def doAlterTableDataSchema(schemaName: String, table: String,
+  override def doAlterTableDataSchema(schemaName: String, table: String,
       newSchema: StructType): Unit = alterTableSchemaImpl(schemaName, table, newSchema)
 
-  override protected def doAlterTableStats(schema: String, table: String,
+  override def doAlterTableStats(schema: String, table: String,
       stats: Option[CatalogStatistics]): Unit = {
     withHiveExceptionHandling(super.doAlterTableStats(schema, table, stats))
   }
@@ -700,6 +747,10 @@ class SnappySessionCatalog23(override val snappySession: SnappySession,
     extends SessionCatalog(snappyExternalCatalog, globalTempViewManager, functionRegistry,
       sqlConf, hadoopConf, parser, functionResourceLoader) with SnappySessionCatalog {
 
+  override def functionNotFound(name: String): Nothing = {
+    super.failFunctionLookup(FunctionIdentifier(name, None))
+  }
+
   override protected def newView(table: CatalogTable, child: LogicalPlan): LogicalPlan =
     View(desc = table, output = table.schema.toAttributes, child)
 
@@ -732,7 +783,7 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
 
   self =>
 
-  override protected val conf: SQLConf = {
+  override protected lazy val conf: SQLConf = {
     val conf = parentState.map(_.conf.clone()).getOrElse(new SnappyConf(session))
     mergeSparkConf(conf, session.sparkContext.conf)
     conf
@@ -774,8 +825,7 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
     private def state: SnappySessionState = session.sessionState
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = {
-      (new HiveConditionalRule(_.catalog.ParquetConversions, state) ::
-          new HiveConditionalRule(_.catalog.OrcConversions, state) ::
+      (new HiveConditionalRule(_ => new ResolveHiveSerdeTable(state.hiveSession), state) ::
           new PreprocessTable(state) ::
           state.ResolveAliasInGroupBy ::
           new FindDataSourceTable(session) ::
@@ -784,9 +834,13 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
     }
 
     override val postHocResolutionRules: Seq[Rule[LogicalPlan]] = {
-      (PreprocessTableCreation(session) ::
+      (new HiveConditionalRule(_ => new DetermineTableStats(session), state) ::
+          new HiveConditionalRule(s =>
+            RelationConversions(s.conf, s.catalog.asInstanceOf[HiveSessionCatalog]), state) ::
+          PreprocessTableCreation(session) ::
           PreprocessTableInsertion(conf) ::
           DataSourceAnalysis(conf) ::
+          new HiveConditionalRule(_ => HiveAnalysis, state) ::
           state.AnalyzeMutableOperations(session, analyzer) ::
           ResolveQueryHints(session) ::
           state.RowLevelSecurity ::
@@ -800,7 +854,7 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
     override lazy val baseAnalyzerInstance: Analyzer = new Analyzer(catalog, conf) {
       override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = aSelf.extendedResolutionRules
       override val postHocResolutionRules: Seq[Rule[LogicalPlan]] = aSelf.postHocResolutionRules
-      override val extendedCheckRules: Seq[LogicalPlan => Unit] = aself.extendedCheckRules
+      override val extendedCheckRules: Seq[LogicalPlan => Unit] = aSelf.extendedCheckRules
 
       override def execute(plan: LogicalPlan): LogicalPlan = aSelf.execute(plan)
     }

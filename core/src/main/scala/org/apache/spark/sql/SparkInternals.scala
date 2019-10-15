@@ -32,10 +32,12 @@ import org.apache.spark.sql.catalyst.json.JSONOptions
 import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, InsertIntoTable, LogicalPlan, RepartitionByExpression, Sample, Statistics, SubqueryAlias}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, TableIdentifier}
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.Exchange
-import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, RowDataSourceScanExec, SparkPlan, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.row.RowTableScan
+import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, PartitionedDataSourceScan, RowDataSourceScanExec, SparkPlan, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.{SnappyHiveExternalCatalog, SnappySessionState}
 import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SharedState}
 import org.apache.spark.sql.sources.{BaseRelation, Filter}
@@ -132,6 +134,33 @@ trait SparkInternals extends Logging {
    */
   def copyPredicateSubquery(expr: Expression, newPlan: LogicalPlan, newExprId: ExprId): Expression
 
+  // scalastyle:off
+
+  /**
+   * Create an instance of [[ColumnTableScan]] for the current Spark version.
+   *
+   * The primary reason is the difference between "sameResult" implementation which is
+   * final in newer Spark versions and needs to override doCanonicalize instead.
+   */
+  def columnTableScan(output: Seq[Attribute], dataRDD: RDD[Any],
+      otherRDDs: Seq[RDD[InternalRow]], numBuckets: Int, partitionColumns: Seq[Expression],
+      partitionColumnAliases: Seq[Seq[Attribute]], baseRelation: PartitionedDataSourceScan,
+      relationSchema: StructType, allFilters: Seq[Expression],
+      schemaAttributes: Seq[AttributeReference], caseSensitive: Boolean,
+      isSampleReservoirAsRegion: Boolean = false): ColumnTableScan
+
+  // scalastyle:on
+
+  /**
+   * Create an instance of [[RowTableScan]] for the current Spark version.
+   *
+   * The primary reason is the difference between "sameResult" implementation which is
+   * final in newer Spark versions and needs to override doCanonicalize instead.
+   */
+  def rowTableScan(output: Seq[Attribute], schema: StructType, dataRDD: RDD[Any], numBuckets: Int,
+      partitionColumns: Seq[Expression], partitionColumnAliases: Seq[Seq[Attribute]],
+      table: String, baseRelation: PartitionedDataSourceScan, caseSensitive: Boolean): RowTableScan
+
   /**
    * Compile the given [[SparkPlan]] using whole-stage code generation and return
    * the generated code along with the [[CodegenContext]] use for code generation.
@@ -211,6 +240,18 @@ trait SparkInternals extends Logging {
   def newClearCacheCommand(): LogicalPlan
 
   /**
+   * Create a [[LogicalPlan]] for CREATE TABLE ... LIKE
+   */
+  def newCreateTableLikeCommand(targetIdent: TableIdentifier, sourceIdent: TableIdentifier,
+      location: Option[String], allowExisting: Boolean): RunnableCommand
+
+  /**
+   * Lookup a relation in catalog.
+   */
+  def lookupRelation(catalog: SessionCatalog, name: TableIdentifier,
+      alias: Option[String]): LogicalPlan
+
+  /**
    * Resolve Maven coordinates for a package, cache the jars and return the required CLASSPATH.
    */
   def resolveMavenCoordinates(coordinates: String, remoteRepos: Option[String],
@@ -221,7 +262,7 @@ trait SparkInternals extends Logging {
    */
   def copyAttribute(attr: AttributeReference)(name: String = attr.name,
       dataType: DataType = attr.dataType, nullable: Boolean = attr.nullable,
-      metadata: Metadata = attr.metadata): AttributeReference
+      metadata: Metadata = attr.metadata, exprId: ExprId = attr.exprId): AttributeReference
 
   /**
    * Create a copy of [[InsertIntoTable]] plan with a new child.
@@ -530,6 +571,11 @@ trait SparkInternals extends Logging {
    * Return the Spark plan for check pre-conditions before a write operation.
    */
   def newPreWriteCheck(sessionState: SnappySessionState): LogicalPlan => Unit
+
+  /**
+   * Return list of HiveConditionalStrategies to be applied when hive external catalog is enabled.
+   */
+  def hiveConditionalStrategies(sessionState: SnappySessionState): Seq[Strategy]
 
   /**
    * Create a new SnappyData extended CacheManager to clear cached plans on cached data changes.

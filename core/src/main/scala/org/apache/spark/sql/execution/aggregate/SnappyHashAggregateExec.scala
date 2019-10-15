@@ -934,7 +934,7 @@ case class SnappyHashAggregateExec(
     val localNumRowsIterated = ctx.freshName("localNumRowsIterated")
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
-    ctx.copyResult = false
+    internals.resetCopyResult(ctx)
 
     val aggTime = metricTerm(ctx, "aggTime")
     val beforeAgg = ctx.freshName("beforeAgg")

@@ -342,9 +342,10 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def createTableLike: Rule1[LogicalPlan] = rule {
-    CREATE ~ TABLE ~ ifNotExists ~ tableIdentifier ~ LIKE ~ tableIdentifier ~>
-        ((allowExisting: Boolean, targetIdent: TableIdentifier, sourceIdent: TableIdentifier) =>
-          CreateTableLikeCommand(targetIdent, sourceIdent, allowExisting))
+    CREATE ~ TABLE ~ ifNotExists ~ tableIdentifier ~ LIKE ~ tableIdentifier ~
+        (LOCATION ~ stringLiteral).? ~> ((allowExisting: Boolean, targetIdent: TableIdentifier,
+        sourceIdent: TableIdentifier, location: Any) => internals.newCreateTableLikeCommand(
+      targetIdent, sourceIdent, location.asInstanceOf[Option[String]], allowExisting))
   }
 
   protected final def booleanLiteral: Rule1[Boolean] = rule {

@@ -47,12 +47,13 @@ class TestHiveSnappySession(@transient protected val sc: SparkContext,
   override lazy val sharedState: SnappySharedState = SnappyContext.sharedState(sparkContext)
 
   override def hiveDefaultTableFilePath(name: TableIdentifier): String =
-    sessionState.hiveState.catalog.hiveDefaultTableFilePath(name)
+    sessionState.catalog.hiveSessionCatalog.hiveDefaultTableFilePath(name)
 
   override def getCachedDataSourceTable(table: TableIdentifier): LogicalPlan =
-    sessionState.hiveState.catalog.getCachedDataSourceTable(table)
+    sessionState.catalog.hiveSessionCatalog.getCachedDataSourceTable(table)
 
-  override def metadataHive: HiveClient = sessionState.hiveState.metadataHive
+  override def metadataHive: HiveClient =
+    sessionState.hiveState.asInstanceOf[HiveSessionState].metadataHive
 
   override def newSession(): SnappySession = new TestHiveSnappySession(sc, loadTestTables)
 

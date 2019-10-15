@@ -42,10 +42,10 @@ import io.snappydata.ResultSetWithNull
 
 import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{SharedUtils, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.encoding._
@@ -64,7 +64,7 @@ import org.apache.spark.{Dependency, Logging, Partition, RangeDependency, SparkC
  * This plan overrides outputPartitioning and makes it inline with the
  * partitioning of the underlying DataSource.
  */
-private[sql] final case class ColumnTableScan(
+abstract case class ColumnTableScan(
     output: Seq[Attribute],
     dataRDD: RDD[Any],
     otherRDDs: Seq[RDD[InternalRow]],
@@ -89,20 +89,6 @@ private[sql] final case class ColumnTableScan(
   @transient private lazy val session: Option[SnappySession] = sqlContext match {
     case null => None
     case c => Some(c.sparkSession.asInstanceOf[SnappySession])
-  }
-
-  lazy val tableIdentifier: Option[TableIdentifier] = baseRelation match {
-    case null => None
-    case r => session match {
-      case Some(s) => Some(s.tableIdentifier(r.table, resolve = true))
-      case None => Some(SnappySession.tableIdentifier(r.table, catalog = null, resolve = false))
-    }
-  }
-
-  override def sameResult(plan: SparkPlan): Boolean = plan match {
-    case r: ColumnTableScan => r.tableIdentifier == tableIdentifier &&
-        r.numBuckets == numBuckets && r.schema == schema
-    case _ => false
   }
 
   @transient private val MAX_SCHEMA_LENGTH = 40

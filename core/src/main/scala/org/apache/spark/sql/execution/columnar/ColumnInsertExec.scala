@@ -31,7 +31,7 @@ import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, Seria
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
-import org.apache.spark.sql.execution.{SparkPlan, TableExec, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{SparkPlan, TableExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.CompressionCodecId
 import org.apache.spark.sql.types._
@@ -779,7 +779,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   override protected def doExecute(): RDD[InternalRow] = {
     // don't expect code generation to fail
     try {
-      WholeStageCodegenExec(this).execute()
+      internals.newWholeStagePlan(this).execute()
     }
     finally {
       sqlContext.sparkSession.asInstanceOf[SnappySession].clearWriteLockOnTable()

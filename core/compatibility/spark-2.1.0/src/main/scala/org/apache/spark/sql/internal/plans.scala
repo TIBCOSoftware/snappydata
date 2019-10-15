@@ -18,9 +18,14 @@ package org.apache.spark.sql.internal
 
 import io.snappydata.{HintName, QueryHint}
 
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference}
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, InsertIntoTable, LogicalPlan, OverwriteOptions}
-import org.apache.spark.sql.types.LongType
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
+import org.apache.spark.sql.execution.row.RowTableScan
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, SparkPlan}
+import org.apache.spark.sql.types.{LongType, StructType}
 
 
 /**
@@ -60,5 +65,36 @@ class PlanWithHints21(_child: LogicalPlan,
   override def productElement(n: Int): Any = n match {
     case 0 => child
     case 1 => allHints
+  }
+}
+
+final class ColumnTableScan21(output: Seq[Attribute], dataRDD: RDD[Any],
+    otherRDDs: Seq[RDD[InternalRow]], numBuckets: Int,
+    partitionColumns: Seq[Expression],
+    partitionColumnAliases: Seq[Seq[Attribute]],
+    baseRelation: PartitionedDataSourceScan, relationSchema: StructType,
+    allFilters: Seq[Expression], schemaAttributes: Seq[AttributeReference],
+    caseSensitive: Boolean, isForSampleReservoirAsRegion: Boolean)
+    extends ColumnTableScan(output, dataRDD, otherRDDs, numBuckets, partitionColumns,
+      partitionColumnAliases, baseRelation, relationSchema, allFilters, schemaAttributes,
+      caseSensitive, isForSampleReservoirAsRegion) {
+
+  override def sameResult(plan: SparkPlan): Boolean = plan match {
+    case r: ColumnTableScan => r.baseRelation.table == baseRelation.table &&
+        r.numBuckets == numBuckets && r.schema == schema
+    case _ => false
+  }
+}
+
+final class RowTableScan21(output: Seq[Attribute], schema: StructType, dataRDD: RDD[Any],
+    numBuckets: Int, partitionColumns: Seq[Expression],
+    partitionColumnAliases: Seq[Seq[Attribute]], table: String,
+    baseRelation: PartitionedDataSourceScan, caseSensitive: Boolean)
+    extends RowTableScan(output, schema, dataRDD, numBuckets, partitionColumns,
+      partitionColumnAliases, table, baseRelation, caseSensitive) {
+
+  override def sameResult(plan: SparkPlan): Boolean = plan match {
+    case r: RowTableScan => r.table == table && r.numBuckets == numBuckets && r.schema == schema
+    case _ => false
   }
 }

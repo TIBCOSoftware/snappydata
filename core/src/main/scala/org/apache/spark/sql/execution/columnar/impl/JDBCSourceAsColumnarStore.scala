@@ -597,7 +597,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       val gen = CodeGeneration.compileCode(
         tableName + ".columnTable.decompress", schema.fields, () => {
           val schemaAttrs = schema.toAttributes
-          val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
+          val tableScan = internals.columnTableScan(schemaAttrs, dataRDD = null,
             otherRDDs = Nil, numBuckets = -1,
             partitionColumns = Nil, partitionColumnAliases = Nil,
             baseRelation = null, schema, allFilters = Nil, schemaAttrs,

@@ -21,7 +21,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow}
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{CurrentDatabase, Expression, ExpressionDescription, ExpressionInfo, LeafExpression, Nondeterministic}
@@ -43,7 +43,7 @@ object SnappyDataFunctions {
   /**
    * List all the additional builtin functions here.
    */
-  val builtin: Seq[(String, ExpressionInfo, FunctionBuilder)] = Seq(
+  val builtin: Seq[(FunctionIdentifier, ExpressionInfo, FunctionBuilder)] = Seq(
     buildZeroArgExpression("dsid", classOf[DSID], DSID),
     // add current_schema() as an alias for current_database()
     buildZeroArgExpression("current_schema", classOf[CurrentDatabase], CurrentDatabase),
@@ -62,8 +62,8 @@ object SnappyDataFunctions {
   }
 
   def buildZeroArgExpression(name: String, fnClass: Class[_],
-      fn: () => Expression): (String, ExpressionInfo, FunctionBuilder) = {
-    (name, expressionInfo(name, fnClass), e => {
+      fn: () => Expression): (FunctionIdentifier, ExpressionInfo, FunctionBuilder) = {
+    (FunctionIdentifier(name, None), expressionInfo(name, fnClass), e => {
       if (e.nonEmpty) {
         throw Utils.analysisException(s"Argument(s) passed for zero argument function $name")
       }

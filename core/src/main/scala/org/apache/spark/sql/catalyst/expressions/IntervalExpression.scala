@@ -53,7 +53,7 @@ case class IntervalExpression(children: Seq[Expression], units: Seq[Long])
   override def foldable: Boolean =
     if (children.length == 1) children.head.foldable else children.forall(_.foldable)
 
-  override def deterministic: Boolean =
+  override lazy val deterministic: Boolean =
     if (children.length == 1) children.head.deterministic else children.forall(_.deterministic)
 
   override def nullable: Boolean =

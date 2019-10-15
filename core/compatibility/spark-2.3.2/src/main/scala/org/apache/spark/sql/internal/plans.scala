@@ -18,10 +18,15 @@ package org.apache.spark.sql.internal
 
 import io.snappydata.{HintName, QueryHint}
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.JoinStrategy
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference}
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{HintInfo, InsertIntoTable, LogicalPlan, ResolvedHint}
-import org.apache.spark.sql.types.LongType
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
+import org.apache.spark.sql.execution.row.RowTableScan
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, SparkPlan}
+import org.apache.spark.sql.types.{LongType, StructType}
 
 /**
  * Unlike Spark's InsertIntoTable this plan provides the count of rows
@@ -62,5 +67,36 @@ class ResolvedPlanWithHints23(child: LogicalPlan,
     case 0 => child
     case 1 => hints
     case 2 => allHints
+  }
+}
+
+final class ColumnTableScan23(output: Seq[Attribute], dataRDD: RDD[Any],
+    otherRDDs: Seq[RDD[InternalRow]], numBuckets: Int,
+    partitionColumns: Seq[Expression],
+    partitionColumnAliases: Seq[Seq[Attribute]],
+    baseRelation: PartitionedDataSourceScan, relationSchema: StructType,
+    allFilters: Seq[Expression], schemaAttributes: Seq[AttributeReference],
+    caseSensitive: Boolean, isSampleReservoirAsRegion: Boolean)
+    extends ColumnTableScan(output, dataRDD, otherRDDs, numBuckets, partitionColumns,
+      partitionColumnAliases, baseRelation, relationSchema, allFilters, schemaAttributes,
+      caseSensitive, isSampleReservoirAsRegion) {
+
+  override protected def doCanonicalize(): SparkPlan = if (isCanonicalizedPlan) this else {
+    new ColumnTableScan23(output, dataRDD = null, otherRDDs = Nil, numBuckets,
+      partitionColumns = Nil, partitionColumnAliases = Nil, baseRelation, relationSchema,
+      allFilters = Nil, schemaAttributes = Nil, caseSensitive = false, isSampleReservoirAsRegion)
+  }
+}
+
+final class RowTableScan23(output: Seq[Attribute], schema: StructType, dataRDD: RDD[Any],
+    numBuckets: Int, partitionColumns: Seq[Expression],
+    partitionColumnAliases: Seq[Seq[Attribute]], table: String,
+    baseRelation: PartitionedDataSourceScan, caseSensitive: Boolean)
+    extends RowTableScan(output, schema, dataRDD, numBuckets, partitionColumns,
+      partitionColumnAliases, table, baseRelation, caseSensitive) {
+
+  override protected def doCanonicalize(): SparkPlan = if (isCanonicalizedPlan) this else {
+    new RowTableScan23(output, schema, dataRDD = null, numBuckets, partitionColumns = Nil,
+      partitionColumnAliases = Nil, table, baseRelation, caseSensitive = false)
   }
 }

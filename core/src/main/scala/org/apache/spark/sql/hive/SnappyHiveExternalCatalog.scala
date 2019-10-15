@@ -311,15 +311,6 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
     }
   }
 
-  override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
-    try {
-      withHiveExceptionHandling(super.alterDatabase(schemaDefinition))
-    } catch {
-      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
-        throw SnappyExternalCatalog.schemaNotFoundException(schemaDefinition.name)
-    }
-  }
-
   // --------------------------------------------------------------------------
   // Tables
   // --------------------------------------------------------------------------

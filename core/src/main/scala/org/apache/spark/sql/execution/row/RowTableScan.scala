@@ -28,7 +28,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan, SparkPlan}
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 
@@ -39,7 +39,7 @@ import org.apache.spark.sql.types._
  * and Broadcast joins. This plan overrides outputPartitioning and
  * makes it inline with the partitioning of the underlying DataSource.
  */
-private[sql] final case class RowTableScan(
+abstract case class RowTableScan(
     output: Seq[Attribute],
     _schema: StructType,
     dataRDD: RDD[Any],
@@ -64,12 +64,6 @@ private[sql] final case class RowTableScan(
       case c =>
         Some(c.sparkSession.asInstanceOf[SnappySession].tableIdentifier(r.table, resolve = true))
     }
-  }
-
-  override def sameResult(plan: SparkPlan): Boolean = plan match {
-    case r: RowTableScan => r.tableIdentifier == tableIdentifier &&
-        r.numBuckets == numBuckets && r.schema == schema
-    case _ => false
   }
 
   override def doProduce(ctx: CodegenContext): String = {

@@ -561,15 +561,8 @@ class SnappyParser(session: SnappySession)
       child: LogicalPlan,
       aggregations: Seq[NamedExpression],
       groupByExprs: Seq[Expression],
-      groupingSets: Seq[Seq[Expression]]): GroupingSets = {
-    val keyMap = groupByExprs.zipWithIndex.toMap
-    val numExpressions = keyMap.size
-    val mask = (1 << numExpressions) - 1
-    val bitmasks: Seq[Int] = groupingSets.map(set => set.foldLeft(mask)((bitmap, col) => {
-      require(keyMap.contains(col), s"$col doesn't show up in the GROUP BY list")
-      bitmap & ~(1 << (numExpressions - 1 - keyMap(col)))
-    }))
-    GroupingSets(bitmasks, groupByExprs, child, aggregations)
+      groupingSets: Seq[Seq[Expression]]): LogicalPlan = {
+    internals.newGroupingSet(groupingSets, groupByExprs, child, aggregations)
   }
 
   protected final def groupingSetExpr: Rule1[Seq[Expression]] = rule {
@@ -691,7 +684,7 @@ class SnappyParser(session: SnappySession)
   protected final def relationLeaf: Rule1[LogicalPlan] = rule {
     tableIdentifier ~ (
         expressionList ~> ((ident: TableIdentifier, e: Seq[Expression]) =>
-          UnresolvedTableValuedFunction(ident.unquotedString, e)) |
+          internals.newUnresolvedTableValuedFunction(ident.unquotedString, e, Nil)) |
         streamWindowOptions.? ~> ((tableIdent: TableIdentifier, window: Any) =>
           window.asInstanceOf[Option[(Duration, Option[Duration])]] match {
             case None => internals.newUnresolvedRelation(tableIdent, None)
@@ -1081,7 +1074,7 @@ class SnappyParser(session: SnappySession)
         g: Any, h: Any, q: LogicalPlan => LogicalPlan) =>
       val base = f match {
         case Some(plan) => plan.asInstanceOf[LogicalPlan]
-        case _ => if (_fromRelations.isEmpty) OneRowRelation else _fromRelations.top
+        case _ => if (_fromRelations.isEmpty) internals.newOneRowRelation() else _fromRelations.top
       }
       val withFilter = (child: LogicalPlan) => w match {
         case Some(expr) => Filter(expr.asInstanceOf[Expression], child)

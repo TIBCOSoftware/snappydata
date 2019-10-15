@@ -44,7 +44,7 @@ import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
-import org.apache.spark.sql.hive.execution.{CreateHiveTableAsSelectCommand, HiveTableScanExec, InsertIntoHiveTable}
+import org.apache.spark.sql.hive.execution.{CreateHiveTableAsSelectCommand, HiveTableScanExec}
 import org.apache.spark.sql.internal._
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources._
@@ -92,8 +92,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
     session
   }
 
-  private[sql] lazy val hiveState: HiveSessionState =
-    hiveSession.sessionState.asInstanceOf[HiveSessionState]
+  private[sql] def hiveState: SessionState = hiveSession.sessionState
 
   /**
    * Execute a method switching the session and shared states in the session to external hive.
@@ -665,10 +664,8 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
       Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
 
     experimentalMethods.extraStrategies = experimentalMethods.extraStrategies ++
-        Seq(new HiveConditionalStrategy(_.HiveTableScans, this),
-          new HiveConditionalStrategy(_.DataSinks, this),
-          new HiveConditionalStrategy(_.Scripts, this),
-          SnappyStrategies, StoreStrategy, StreamQueryStrategy) ++ storeOptimizedRules
+        internals.hiveConditionalStrategies(this) ++
+        Seq(SnappyStrategies, StoreStrategy, StreamQueryStrategy) ++ storeOptimizedRules
   }
 
   protected def beforeExecutePlan(plan: LogicalPlan): Unit = {
@@ -712,7 +709,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
 }
 
-class HiveConditionalRule(rule: HiveSessionState => Rule[LogicalPlan], state: SnappySessionState)
+class HiveConditionalRule(rule: SessionState => Rule[LogicalPlan], state: SnappySessionState)
     extends Rule[LogicalPlan] {
   override def apply(plan: LogicalPlan): LogicalPlan = {
     // Parquet/Orc conversion rules will indirectly read the session state from the session
@@ -727,7 +724,7 @@ class HiveConditionalStrategy(strategy: HiveStrategies => Strategy, state: Snapp
     extends Strategy {
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
     // some strategies like DataSinks read the session state and expect it to be
-    // HiveSessionState so switch it before invoking the strategy and restore at the end
+    // hive-enabled SessionState so switch it before invoking the strategy and restore at the end
     if (state.snappySession.enableHiveSupport) state.withHiveSession {
       strategy(state.hiveState.planner.asInstanceOf[HiveStrategies])(plan)
     } else Nil
@@ -790,7 +787,7 @@ trait SnappyAnalyzer extends Analyzer {
    */
   object SnappyPromoteStrings extends Rule[LogicalPlan] {
     override def apply(plan: LogicalPlan): LogicalPlan = {
-      plan resolveExpressions {
+      plan transformAllExpressions {
         case e if !e.childrenResolved => e
         case p@BinaryComparison(left@StringType(), right@QuestionMark(_))
           if right.dataType == NullType =>
@@ -815,7 +812,7 @@ case class OptimizeSortAndFilePlans(conf: SnappyConf) extends Rule[SparkPlan] {
   override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
     case join@joins.SortMergeJoinExec(_, _, _, _, _, sort@SortExec(_, _, child, _)) =>
       join.copy(right = SnappySortExec(sort, child))
-    case s@(_: FileSourceScanExec | _: HiveTableScanExec | _: InsertIntoHiveTable |
+    case s@(_: FileSourceScanExec | _: HiveTableScanExec |
             ExecutedCommandExec(_: InsertIntoHadoopFsRelationCommand |
                                 _: CreateHiveTableAsSelectCommand)) =>
       conf.setDynamicCpusPerTask()

@@ -45,13 +45,15 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, SQLBuilder, TableIdentifier}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, DescribeTableCommand, RunnableCommand}
+import org.apache.spark.sql.execution.columnar.ColumnTableScan
+import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, CreateTableLikeCommand, DescribeTableCommand, RunnableCommand}
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchange}
+import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.ui.{SQLTab, SnappySQLListener}
-import org.apache.spark.sql.hive.{HiveConditionalRule, SnappyAnalyzer, SnappyHiveCatalogBase, SnappyHiveExternalCatalog, SnappySessionState}
+import org.apache.spark.sql.hive.{HiveConditionalRule, HiveConditionalStrategy, HiveSessionCatalog, SnappyAnalyzer, SnappyHiveCatalogBase, SnappyHiveExternalCatalog, SnappySessionState}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
-import org.apache.spark.sql.sources.{BaseRelation, Filter, ResolveQueryHints}
+import org.apache.spark.sql.sources.{BaseRelation, Filter, JdbcExtendedUtils, ResolveQueryHints}
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.streaming.SnappyStreamingContext
@@ -160,6 +162,29 @@ class Spark210Internals extends SparkInternals {
     expr.asInstanceOf[PredicateSubquery].copy(plan = newPlan, exprId = newExprId)
   }
 
+  // scalastyle:off
+
+  override def columnTableScan(output: Seq[Attribute], dataRDD: RDD[Any],
+      otherRDDs: Seq[RDD[InternalRow]], numBuckets: Int, partitionColumns: Seq[Expression],
+      partitionColumnAliases: Seq[Seq[Attribute]], baseRelation: PartitionedDataSourceScan,
+      relationSchema: StructType, allFilters: Seq[Expression],
+      schemaAttributes: Seq[AttributeReference], caseSensitive: Boolean,
+      isSampleReservoirAsRegion: Boolean): ColumnTableScan = {
+    new ColumnTableScan21(output, dataRDD, otherRDDs, numBuckets, partitionColumns,
+      partitionColumnAliases, baseRelation, relationSchema, allFilters, schemaAttributes,
+      caseSensitive, isSampleReservoirAsRegion)
+  }
+
+  // scalastyle:on
+
+  override def rowTableScan(output: Seq[Attribute], schema: StructType, dataRDD: RDD[Any],
+      numBuckets: Int, partitionColumns: Seq[Expression],
+      partitionColumnAliases: Seq[Seq[Attribute]], table: String,
+      baseRelation: PartitionedDataSourceScan, caseSensitive: Boolean): RowTableScan = {
+    new RowTableScan21(output, schema, dataRDD, numBuckets, partitionColumns,
+      partitionColumnAliases, JdbcExtendedUtils.toLowerCase(table), baseRelation, caseSensitive)
+  }
+
   override def newWholeStagePlan(plan: SparkPlan): WholeStageCodegenExec = {
     WholeStageCodegenExec(plan)
   }
@@ -248,6 +273,20 @@ class Spark210Internals extends SparkInternals {
     DescribeTableCommand(table, partitionSpec, isExtended, isFormatted)
   }
 
+  override def newCreateTableLikeCommand(targetIdent: TableIdentifier,
+      sourceIdent: TableIdentifier, location: Option[String],
+      allowExisting: Boolean): RunnableCommand = {
+    if (location.isDefined) {
+      throw new ParseException(s"CREATE TABLE LIKE does not support LOCATION in Spark $version")
+    }
+    CreateTableLikeCommand(targetIdent, sourceIdent, allowExisting)
+  }
+
+  override def lookupRelation(catalog: SessionCatalog, name: TableIdentifier,
+      alias: Option[String]): LogicalPlan = {
+    catalog.lookupRelation(name, alias)
+  }
+
   override def newClearCacheCommand(): LogicalPlan = ClearCacheCommand
 
   override def resolveMavenCoordinates(coordinates: String, remoteRepos: Option[String],
@@ -256,9 +295,10 @@ class Spark210Internals extends SparkInternals {
   }
 
   override def copyAttribute(attr: AttributeReference)(name: String,
-      dataType: DataType, nullable: Boolean, metadata: Metadata): AttributeReference = {
+      dataType: DataType, nullable: Boolean, metadata: Metadata,
+      exprId: ExprId): AttributeReference = {
     attr.copy(name = name, dataType = dataType, nullable = nullable, metadata = metadata)(
-      exprId = attr.exprId, qualifier = attr.qualifier, isGenerated = attr.isGenerated)
+      exprId, qualifier = attr.qualifier, isGenerated = attr.isGenerated)
   }
 
   override def withNewChild(insert: InsertIntoTable, newChild: LogicalPlan): InsertIntoTable = {
@@ -564,6 +604,12 @@ class Spark210Internals extends SparkInternals {
     PreWriteCheck(sessionState.conf, sessionState.wrapperCatalog)
   }
 
+  override def hiveConditionalStrategies(sessionState: SnappySessionState): Seq[Strategy] = {
+    new HiveConditionalStrategy(_.HiveTableScans, sessionState) ::
+        new HiveConditionalStrategy(_.DataSinks, sessionState) ::
+        new HiveConditionalStrategy(_.Scripts, sessionState) :: Nil
+  }
+
   override def newCacheManager(): CacheManager = {
     // load by reflection since this class is not visible when compiling for 2.1.1 compatibility
     Utils.classForName("org.apache.spark.sql.internal.SnappyCacheManager210")
@@ -720,6 +766,10 @@ class SnappySessionCatalog21(override val snappySession: SnappySession,
     extends SessionCatalog(snappyExternalCatalog, globalTempViewManager, functionResourceLoader,
       functionRegistry, sqlConf, hadoopConf) with SnappySessionCatalog {
 
+  override def functionNotFound(name: String): Nothing = {
+    super.failFunctionLookup(name)
+  }
+
   override def getTableMetadataOption(name: TableIdentifier): Option[CatalogTable] = {
     super.getTableMetadataOption(name) match {
       case None => None
@@ -759,11 +809,14 @@ class SnappySessionState21(override val snappySession: SnappySession)
 
     private def state: SnappySessionState = session.sessionState
 
+    private def hiveCatalog(state: SessionState): HiveSessionCatalog =
+      state.catalog.asInstanceOf[HiveSessionCatalog]
+
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] = {
       val extensions1 = session.contextFunctions.getExtendedResolutionRules
       val extensions2 = session.contextFunctions.getPostHocResolutionRules
-      val rules = new HiveConditionalRule(_.catalog.ParquetConversions, state) ::
-          new HiveConditionalRule(_.catalog.OrcConversions, state) ::
+      val rules = new HiveConditionalRule(hiveCatalog(_).ParquetConversions, state) ::
+          new HiveConditionalRule(hiveCatalog(_).OrcConversions, state) ::
           AnalyzeCreateTable(session) ::
           new PreprocessTable(state) ::
           ResolveAliasInGroupBy ::

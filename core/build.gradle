@@ -188,8 +188,10 @@ shadowJar {
   zip64 = true
   // avoid conflict with the 0.9.2 version in stock Spark
   relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
-  // relocate koloboke for possible conflicts with user dependencies
-  relocate 'com.koloboke', 'io.snappydata.com.koloboke'
+  // avoid conflict with spark-unsafe in Spark >= 2.4.0
+  relocate 'org.apache.spark.unsafe', 'io.snappydata.org.apache.spark.unsafe'
+  // relocate eclipse collections for possible conflicts with user dependencies
+  relocate 'org.eclipse.collections', 'io.snappydata.org.eclipse.collections'
   // relocate the guava's com.google packages
   relocate 'com.google.common', 'io.snappydata.com.google.common'
 

@@ -69,6 +69,8 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
   val parser: SnappySqlParser
   val wrappedCatalog: Option[SnappySessionCatalog]
 
+  def functionNotFound(name: String): Unit
+
   final def contextFunctions: SnappyContextFunctions = snappySession.contextFunctions
 
   /**
@@ -111,8 +113,8 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
    * Fallback session state to lookup from external hive catalog in case
    * "snappydata.sql.hive.enabled" is set on the session.
    */
-  protected final lazy val hiveSessionCatalog: HiveSessionCatalog =
-    snappySession.sessionState.hiveState.catalog
+  protected[sql] final lazy val hiveSessionCatalog: HiveSessionCatalog =
+    snappySession.sessionState.hiveState.catalog.asInstanceOf[HiveSessionCatalog]
 
   /**
    * Return true if the given table needs to be checked in the builtin catalog
@@ -226,8 +228,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
         queryLR.get.output.map(_.exprId)).toMap
       filter.transformAllExpressions {
         case ar: AttributeReference if mappingInfo.contains(ar.exprId) =>
-          AttributeReference(ar.name, ar.dataType, ar.nullable,
-            ar.metadata)(mappingInfo(ar.exprId), ar.qualifier, ar.isGenerated)
+          internals.copyAttribute(ar)(exprId = mappingInfo(ar.exprId))
       }
     }
   }
@@ -266,7 +267,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
   final def resolveRelationWithAlias(tableIdent: TableIdentifier,
       alias: Option[String] = None): LogicalPlan = {
     // resolve the relation right away with alias around
-    new FindDataSourceTable(snappySession)(lookupRelation(tableIdent, alias))
+    new FindDataSourceTable(snappySession)(lookupRelationImpl(tableIdent, alias, wrapped = None))
   }
 
   /**
@@ -835,7 +836,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
       case Some(t) => snappySession.tableIdentifier(t)
       case None => throw new IllegalStateException("Target Table for the policy not found")
     }
-    /* val targetRelation = snappySession.sessionState.catalog.lookupRelation(tableIdent)
+    /* val targetRelation = lookupRelationImpl(tableIdent, None)
      val isTargetExternalRelation = targetRelation.find(x => x match {
        case _: ExternalRelation => true
        case _ => false
@@ -851,8 +852,8 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
 
   protected def newCatalogRelation(schemaName: String, table: CatalogTable): LogicalPlan
 
-  protected final def lookupRelationImpl(name: TableIdentifier,
-      alias: Option[String]): LogicalPlan = wrappedCatalog match {
+  protected final def lookupRelationImpl(name: TableIdentifier, alias: Option[String],
+      wrapped: Option[SnappySessionCatalog] = wrappedCatalog): LogicalPlan = wrapped match {
     case None => synchronized {
       val tableName = formatTableName(name.table)
       var view: Option[TableIdentifier] = Some(name)
@@ -878,7 +879,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
                   // catalog from the session every time so use withHiveState to switch the catalog
                   val state = snappySession.sessionState
                   if (hiveSessionCatalog.databaseExists(schemaName)) state.withHiveSession {
-                    return hiveSessionCatalog.lookupRelation(
+                    return internals.lookupRelation(hiveSessionCatalog,
                       TableIdentifier(tableName, Some(schemaName)), alias)
                   }
                 }
@@ -1118,10 +1119,6 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
     ContextJarUtils.removeFunctionArtifacts(snappyExternalCatalog, Option(this),
       qualifiedName.database.get, qualifiedName.funcName, isEmbeddedMode, ignoreIfNotExists)
     super.dropFunction(name, ignoreIfNotExists)
-  }
-
-  override def failFunctionLookup(name: String): Nothing = {
-    super.failFunctionLookup(name)
   }
 
   override def createFunction(funcDefinition: CatalogFunction, ignoreIfExists: Boolean): Unit = {

@@ -1524,8 +1524,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
     sessionCatalog.resolveRelation(tableIdent) match {
-      case LogicalRelation(r: JDBCMutableRelation, _, _) =>
-        r.executeUpdate(sql, JdbcExtendedUtils.toUpperCase(getCurrentSchema))
+      case lr: LogicalRelation if lr.relation.isInstanceOf[JDBCMutableRelation] =>
+        lr.relation.asInstanceOf[JDBCMutableRelation].executeUpdate(sql,
+          JdbcExtendedUtils.toUpperCase(getCurrentSchema))
       case _ => throw new AnalysisException(
         s"ALTER TABLE ${tableIdent.unquotedString} variant only supported for row tables")
     }
@@ -2260,7 +2261,7 @@ object SnappySession extends Logging {
            _: BroadcastExchangeExec | _: InMemoryTableScanExec |
            _: RangeExec | _: LocalTableScanExec | _: RDDScanExec => true
       case p if HiveClientUtil.isHiveExecPlan(p) => true
-      case dsc: DataSourceScanExec => !dsc.relation.isInstanceOf[PartitionedDataSourceScan]
+      case _: DataSourceScanExec => true
       case _ => false
     }.isEmpty
 

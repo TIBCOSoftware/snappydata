@@ -17,8 +17,7 @@
 
 String scalaBinaryVersion = '2.11'
 String sparkVersion = '2.1.1'
-String sparkConnectorVersion = rootProject.hasProperty('spark.connector.version')
-    ? rootProject.property('spark.connector.version') : sparkVersion
+String sparkConnectorVersion = System.getProperty('spark.connector.version', sparkVersion)
 rootProject.name = 'snappydata_' + scalaBinaryVersion
 
 include ':snappy-jdbc_' + scalaBinaryVersion

@@ -126,7 +126,7 @@ object ContextJarUtils extends Logging {
       case e: AnalysisException =>
         if (!ignoreIfNotExists) {
           sessionCatalog match {
-            case Some(ssc) => ssc.failFunctionLookup(functionName)
+            case Some(ssc) => ssc.functionNotFound(functionName)
             case None => throw new NoSuchFunctionException(schemaName, identifier.funcName)
           }
         } else { // Log, just in case.

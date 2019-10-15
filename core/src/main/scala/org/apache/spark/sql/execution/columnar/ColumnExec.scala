@@ -26,7 +26,6 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.WholeStageCodegenExec
 import org.apache.spark.sql.execution.columnar.impl.{JDBCSourceAsColumnarStore, SnapshotConnectionListener}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.store.StoreUtils
@@ -88,7 +87,7 @@ trait ColumnExec extends RowExec {
   override protected def doExecute(): RDD[InternalRow] = {
     // don't expect code generation to fail
     try {
-      WholeStageCodegenExec(this).execute()
+      internals.newWholeStagePlan(this).execute()
     }
     finally {
       sqlContext.sparkSession.asInstanceOf[SnappySession].clearWriteLockOnTable()

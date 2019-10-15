@@ -31,7 +31,6 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupportOnExecutor, LeafExecNode}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
@@ -82,7 +81,7 @@ final class ColumnBatchCreator(
         // the lookup key does not depend on tableName since the generated
         // code does not (which is passed in the references separately)
         val gen = CodeGeneration.compileCode("columnTable.batch", schema.fields, () => {
-          val tableScan = RowTableScan(schema.toAttributes, schema,
+          val tableScan = internals.rowTableScan(schema.toAttributes, schema,
             dataRDD = null, numBuckets = -1, partitionColumns = Nil,
             partitionColumnAliases = Nil, tableName, baseRelation = null, caseSensitive = true)
           // sending negative values for batch size and delta rows will create

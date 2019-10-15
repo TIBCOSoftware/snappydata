@@ -114,8 +114,7 @@ allprojects {
     spark232Version = '2.3.2'
 
     sparkVersion = spark211Version
-    sparkConnectorVersion = rootProject.hasProperty('spark.connector.version')
-        ? rootProject.property('spark.connector.version') : sparkVersion
+    sparkConnectorVersion = System.getProperty('spark.connector.version', sparkVersion)
     snappySparkVersion = '2.1.1.7'
     coreProjectName = sparkVersion == sparkConnectorVersion
         ? ":snappy-core_${scalaBinaryVersion}" : ":snappy-core-product_${scalaBinaryVersion}"

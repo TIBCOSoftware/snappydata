@@ -58,8 +58,8 @@ class SnappyContextFunctions(val session: SnappySession) extends SparkSupport {
   def postRelationCreation(relation: Option[BaseRelation]): Unit = {}
 
   def registerSnappyFunctions(): Unit = {
-    val registry = session.sessionState.functionRegistry
-    SnappyDataFunctions.builtin.foreach(fn => registry.registerFunction(fn._1, fn._2, fn._3))
+    SnappyDataFunctions.builtin.foreach(
+      fn => internals.registerFunction(session, fn._1, fn._2, fn._3))
   }
 
   private def missingAQPException(): AnalysisException =

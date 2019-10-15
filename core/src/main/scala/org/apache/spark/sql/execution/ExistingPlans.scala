@@ -19,19 +19,20 @@ package org.apache.spark.sql.execution
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
+
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.{RDD, ZippedPartitionsBaseRDD}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, TableIdentifier}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ConnectionType
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnarStorePartitionedRDD, IndexColumnFormatRelation, SmartConnectorColumnRDD}
-import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.exchange.ReusedExchangeExec
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
-import org.apache.spark.sql.execution.row.{RowFormatRelation, RowFormatScanRDD, RowTableScan}
+import org.apache.spark.sql.execution.row.{RowFormatRelation, RowFormatScanRDD}
 import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession, SparkSupport}
@@ -52,10 +53,8 @@ private[sql] abstract class PartitionedPhysicalScan(
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     partitionColumnAliases: Seq[Seq[Attribute]],
-    @transient override val relation: BaseRelation,
-    // not used currently (if need to use then get from relation.table)
-    override val metastoreTableIdentifier: Option[TableIdentifier] = None)
-    extends DataSourceScanExec with CodegenSupportOnExecutor
+    @transient val relation: BaseRelation)
+    extends LeafExecNode with CodegenSupportOnExecutor
         with NonRecursivePlans with SparkSupport {
 
   def getMetrics: Map[String, SQLMetric] = {
@@ -65,8 +64,6 @@ private[sql] abstract class PartitionedPhysicalScan(
   }
 
   override lazy val metrics: Map[String, SQLMetric] = getMetrics
-
-  override def metadata: Map[String, String] = Map.empty
 
   private lazy val extraInformation = if (relation != null) {
     relation.toString
@@ -144,7 +141,7 @@ private[sql] abstract class PartitionedPhysicalScan(
   }
 }
 
-private[sql] object PartitionedPhysicalScan {
+private[sql] object PartitionedPhysicalScan extends SparkSupport {
 
   private[sql] val CT_BLOB_POSITION = 4
   private val EMPTY_PARAMS = Array.empty[ParamLiteral]
@@ -163,7 +160,7 @@ private[sql] object PartitionedPhysicalScan {
     relation match {
       case i: IndexColumnFormatRelation =>
         val caseSensitive = i.sqlContext.conf.caseSensitiveAnalysis
-        val columnScan = ColumnTableScan(output, rdd, otherRDDs, numBuckets,
+        val columnScan = internals.columnTableScan(output, rdd, otherRDDs, numBuckets,
           partitionColumns, partitionColumnAliases, relation, relation.schema,
           allFilters, schemaAttributes, caseSensitive)
         val table = i.getBaseTableRelation
@@ -174,7 +171,7 @@ private[sql] object PartitionedPhysicalScan {
         def resolveCol(left: Attribute, right: AttributeReference) =
           columnScan.sqlContext.sessionState.analyzer.resolver(left.name, right.name)
 
-        val rowBufferScan = RowTableScan(output, StructType.fromAttributes(
+        val rowBufferScan = internals.rowTableScan(output, StructType.fromAttributes(
           output), baseTableRDD, numBuckets, Nil, Nil, table.table, table, caseSensitive)
         val otherPartKeys = partitionColumns.map(_.transform {
           case a: AttributeReference => rowBufferScan.output.find(resolveCol(_, a)).getOrElse {
@@ -187,22 +184,22 @@ private[sql] object PartitionedPhysicalScan {
         ZipPartitionScan(columnScan, columnScan.partitionColumns,
           rowBufferScan, otherPartKeys)
       case c: BaseColumnFormatRelation =>
-        ColumnTableScan(output, rdd, otherRDDs, numBuckets,
+        internals.columnTableScan(output, rdd, otherRDDs, numBuckets,
           partitionColumns, partitionColumnAliases, relation, relation.schema,
           allFilters, schemaAttributes, c.sqlContext.conf.caseSensitiveAnalysis)
       case r: SamplingRelation =>
         if (r.isReservoirAsRegion) {
-          ColumnTableScan(output, rdd, Nil, numBuckets, partitionColumns,
+          internals.columnTableScan(output, rdd, Nil, numBuckets, partitionColumns,
             partitionColumnAliases, relation, relation.schema, allFilters,
             schemaAttributes, r.sqlContext.conf.caseSensitiveAnalysis,
-            isForSampleReservoirAsRegion = true)
+            isSampleReservoirAsRegion = true)
         } else {
-          ColumnTableScan(output, rdd, otherRDDs, numBuckets,
+          internals.columnTableScan(output, rdd, otherRDDs, numBuckets,
             partitionColumns, partitionColumnAliases, relation, relation.schema,
             allFilters, schemaAttributes, r.sqlContext.conf.caseSensitiveAnalysis)
         }
       case r: RowFormatRelation =>
-        RowTableScan(output, StructType.fromAttributes(output), rdd, numBuckets,
+        internals.rowTableScan(output, StructType.fromAttributes(output), rdd, numBuckets,
           partitionColumns, partitionColumnAliases, relation.table, relation,
           r.sqlContext.conf.caseSensitiveAnalysis)
     }
@@ -495,7 +492,7 @@ trait BatchConsumer extends CodegenSupport {
 
   /**
    * Generate Java source code to do any processing before a batch is consumed
-   * by a [[DataSourceScanExec]] that does batch processing (e.g. per-batch
+   * by a [[PartitionedPhysicalScan]] that does batch processing (e.g. per-batch
    * optimizations, initializations etc).
    * <p>
    * Implementations should use this for additional optimizations that can be

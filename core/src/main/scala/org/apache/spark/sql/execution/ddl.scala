@@ -34,7 +34,6 @@ import io.snappydata.Property
 import io.snappydata.util.ServiceUtils
 
 import org.apache.spark.SparkContext
-import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
@@ -595,7 +594,7 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
   }
 }
 
-case class UnDeployCommand(alias: String) extends RunnableCommand {
+case class UnDeployCommand(alias: String) extends RunnableCommand with SparkSupport {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     var value = ""
@@ -616,8 +615,7 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
         val coordinates = value.substring(0, indexOf)
         val repos = Option(value.substring(indexOf + 1, lastIndexOf))
         val jarCache = Option(value.substring(lastIndexOf + 1, value.length))
-        val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates,
-          repos, jarCache)
+        val jarsstr = internals.resolveMavenCoordinates(coordinates, repos, jarCache, Nil)
         if (jarsstr.nonEmpty) {
           val pkgs = jarsstr.split(",")
           RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, pkgs)
