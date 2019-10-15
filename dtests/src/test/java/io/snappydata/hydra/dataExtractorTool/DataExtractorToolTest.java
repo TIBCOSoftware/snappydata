@@ -356,6 +356,7 @@ public class DataExtractorToolTest extends SnappyTest {
       snappyTest.executeProcess(pbClustStart, logFile);
       Long totalTime1 = (System.currentTimeMillis() - startTime1);
       Log.getLogWriter().info("The cluster took " + totalTime1 + " ms to start in recovery mode");
+      sleepForMs(60);
     } catch (Exception ex) {
       throw new io.snappydata.test.util.TestException("Caught ioException in  startClusterIn Recovery Mode method " + ex.getMessage());
     }
