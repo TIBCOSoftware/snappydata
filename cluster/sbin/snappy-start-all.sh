@@ -51,6 +51,7 @@ function checkIfOkayToStartLeads() {
 
 BACKGROUND=-bg
 clustermode=
+recover=
 CONF_DIR_ARG=
 
 while (( "$#" )); do
@@ -62,6 +63,9 @@ while (( "$#" )); do
     ;;
     -fg | --foreground)
       BACKGROUND=-fg
+    ;;
+    -r  | --recover)
+      recover="-recover"
     ;;
     -conf | --config)
       conf_dir="$2"
@@ -83,18 +87,24 @@ while (( "$#" )); do
   shift
 done
 
+if [ ! -z "$clustermode" -a ! -z "$recover" ] ; then
+  echo "recovery is not supported for rowstore mode"
+  exit 1
+fi
 
+
+# TODO: Why is "$@" there. The args are parsed and shifted above making $@ empty. Isn't it?
 # Start Locators
-"$sbin"/snappy-locators.sh $CONF_DIR_ARG start $clustermode "$@"
+"$sbin"/snappy-locators.sh $CONF_DIR_ARG start $clustermode $recover "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh $BACKGROUND $CONF_DIR_ARG start $clustermode "$@"
+"$sbin"/snappy-servers.sh $BACKGROUND $CONF_DIR_ARG start $clustermode $recover "$@"
 
 # Start Leads
 if [ "$clustermode" != "rowstore" ]; then
   checkIfOkayToStartLeads
   if [ "$CAN_START_LEAD" = "1" ]; then
-    "$sbin"/snappy-leads.sh $CONF_DIR_ARG start
+    "$sbin"/snappy-leads.sh $CONF_DIR_ARG start $recover
   else
     echo "Cannot start lead components. At least one server should be"
     echo "in running state."

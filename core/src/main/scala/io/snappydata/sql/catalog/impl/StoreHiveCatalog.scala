@@ -17,6 +17,7 @@
 package io.snappydata.sql.catalog.impl
 
 import java.sql.SQLException
+import java.util.Collections
 import java.util.concurrent.{Callable, ExecutionException, ExecutorService, Executors, Future, TimeUnit}
 import java.util.{Collections, List => JList}
 
@@ -44,7 +45,7 @@ import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable}
+import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.DataSource
@@ -74,6 +75,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   private val UPDATE_METADATA = 9
   private val CLOSE_HMC = 10
   private val REMOVE_TABLE_UNSAFE = 11
+  private val GET_ALL_HIVE_ENTRIES = 12
 
   private val catalogQueriesExecutorService: ExecutorService = {
     val hmsThreadGroup = LogWriterImpl.createThreadGroup(THREAD_GROUP_NAME, Misc.getI18NLogWriter)
@@ -157,6 +159,13 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       tableName = null, schemaName = null)
     handleFutureResult(catalogQueriesExecutorService.submit(q)).groupBy(p => p._1)
         .mapValues(_.map(_._2).asJava).asJava
+  }
+
+  // GET_ALL_HIVE_ENTRIES
+  override def getAllHiveEntries: java.util.List[java.lang.Object] = {
+    val q = new CatalogQuery[Seq[java.lang.Object]](GET_ALL_HIVE_ENTRIES,
+      tableName = null, schemaName = null)
+    handleFutureResult(catalogQueriesExecutorService.submit(q)).asJava
   }
 
   override def removeTableIfExists(schema: String, table: String, skipLocks: Boolean): Unit = {
@@ -335,6 +344,25 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           CatalogObjectType.getTableType(table)) =>
           toUpperCase(table.database) -> toUpperCase(table.identifier.table)
       }.asInstanceOf[R]
+
+      case GET_ALL_HIVE_ENTRIES => {
+        val dbList = externalCatalog.listDatabases("*").filter(dbName =>
+          !(dbName.equals("SYS") || dbName.equals("DEFAULT")))
+        val allSchemas = dbList.map(externalCatalog.getDatabase(_))
+        var allHiveEntries: Seq[java.lang.Object] = allSchemas
+        val allFunctions = dbList.flatMap(dbName => { externalCatalog.listFunctions(dbName, "*")
+              .map(externalCatalog.getFunction(dbName, _))
+        })
+        allHiveEntries = allHiveEntries ++ allFunctions
+        val allTables = externalCatalog.getAllTables()
+        allHiveEntries = allHiveEntries ++ allTables
+
+        allHiveEntries.collect {
+          case table: CatalogTable => ConnectorExternalCatalog.convertFromCatalogTable(table)
+          case db: CatalogDatabase => ConnectorExternalCatalog.convertFromCatalogDatabase(db)
+          case func: CatalogFunction => ConnectorExternalCatalog.convertFromCatalogFunction(func)
+        }.asInstanceOf[R]
+      }
 
       case REMOVE_TABLE_IF_EXISTS => try {
         externalCatalog.dropTable(formattedSchema, formattedTable,
