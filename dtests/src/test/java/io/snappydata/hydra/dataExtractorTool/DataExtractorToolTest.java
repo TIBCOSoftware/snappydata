@@ -127,9 +127,9 @@ public class DataExtractorToolTest extends SnappyTest {
       ProcessBuilder p = new ProcessBuilder("/bin/bash", "-c", cmd);
       snappyTest.executeProcess(p, logFile);
       conn = getLocatorConnection();
-      String query1 = "call sys.DUMP_DATA('" + dataPath + "','parquet','all','true')";
+      String query1 = "call sys.EXPORT_DATA('" + dataPath + "','parquet','all','true')";
       conn.createStatement().execute(query1);
-      String query2 = "call sys.DUMP_DDLS('" + ddlPath + "')";
+      String query2 = "call sys.EXPORT_DDLS('" + ddlPath + "')";
       conn.createStatement().execute(query2);
     } catch (Exception ex) {
       throw new io.snappydata.test.util.TestException("Task HydraTask_ExtractData failed with : \n" + ex.getMessage());
