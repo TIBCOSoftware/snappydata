@@ -29,14 +29,15 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     // scalastyle:off println
     println("External Hive MetaStore Embedded mode Job started...")
     val dataLocation = jobConfig.getString("dataFilesLocation")
-    val externalThriftServerHostAndPort = jobConfig.getString("thriftServerHostNameAndPort")
+    val externalThriftServerHostName = jobConfig.getString("externalThriftServerHostName")
+    val externalThriftServerPort = jobConfig.getString("externalThriftServerPort")
     val outputFile = "ValidateJoinQuery" + "_" + "column" +
       System.currentTimeMillis() + jobConfig.getString("logFileName")
     val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
     val spark: SparkSession = SparkSession.builder().getOrCreate()
     val snc: SnappyContext = snappySession.sqlContext
 
-    val beelineClientConnection: Connection = getBeelineClientConnection(externalThriftServerHostAndPort)
+    val beelineClientConnection: Connection = getBeelineClientConnection(externalThriftServerHostName, externalThriftServerPort)
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
 
     dropHiveTables(snc, HiveMetaStoreUtils.dropTable)
@@ -78,8 +79,8 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     println("External Hive MetaStore Embedded mode job is successful")
   }
 
-  def getBeelineClientConnection(externalThriftServerHostAndPort : String): Connection = {
-       val beelineClientConnection: Connection = DriverManager.getConnection("jdbc:hive2://" + externalThriftServerHostAndPort,
+  def getBeelineClientConnection(externalThriftServerHostName : String, externalThriftServerPort : String): Connection = {
+       val beelineClientConnection: Connection = DriverManager.getConnection("jdbc:hive2://" + externalThriftServerHostName + ":" + externalThriftServerPort,
         "hive", "Snappy!23")
     println("Connection with Beeline established.")
     beelineClientConnection
@@ -379,34 +380,18 @@ class ExternalHiveMetaStore extends SnappySQLJob {
 
   def executeQueriesOnHiveTables(snc : SnappyContext, beelineClientConnection : Connection,
                                  dataLocation : String, pw : PrintWriter): Unit = {
-//    beelineClientConnection.createStatement().execute(HiveMetaStoreUtils.createDB + "HIVE_DB")
-//    snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
-//    snc.sql(HiveMetaStoreUtils.createDB + "TIBCO_DB")
-//    snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
-//    createHiveTblsAndLoadData(beelineClientConnection, dataLocation, "HIVE_DB")
-//    createSnappyTblsAndLoadData(snc, dataLocation, "TIBCO_DB")
     for(index <- 0 to HiveMetaStoreUtils.beeLineQueries.length-1) {
       executeQueries(snc, HiveMetaStoreUtils.beeLineQueries(index),
         HiveMetaStoreUtils.snappyQueries(index), pw, index, 0)
     }
-//    dropHiveTables(snc, HiveMetaStoreUtils.dropTable, "HIVE_DB")
-//    dropSnappyTables(snc, HiveMetaStoreUtils.dropTable, "TIBCO_DB")
-//    snc.sql("drop database if exists HIVE_DB")
-//    snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
-//    snc.sql("drop schema if exists TIBCO_DB")
-//    snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
   }
 
   def executeJoinQueriesOnHiveAndSnappy(snc : SnappyContext, beelineClientConnection : Connection,
                                         dataLocation : String, pw : PrintWriter) : Unit = {
-//    createHiveTblsAndLoadData(beelineClientConnection, dataLocation)
-//    createSnappyTblsAndLoadData(snc, dataLocation)
     for (index <- 0 to (HiveMetaStoreUtils.joinHiveSnappy.length - 1)) {
       executeQueries(snc, HiveMetaStoreUtils.joinHiveSnappy(index),
         HiveMetaStoreUtils.validateJoin(index), pw, index, 1)
       pw.flush()
     }
-//    dropHiveTables(snc, HiveMetaStoreUtils.dropTable)
-//    dropSnappyTables(snc, HiveMetaStoreUtils.dropTable)
   }
 }
