@@ -19,7 +19,7 @@ package io.snappydata.hydra.hivemetastore
 object HiveMetaStoreUtils {
   val setExternalHiveCatalog: String =
     "set spark.sql.catalogImplementation=hive"
-  val setExternalInBuiltCatalog: String =
+  val setSnappyInBuiltCatalog: String =
     "set spark.sql.catalogImplementation=in-memory"
   val showTblsApp: String =
     "show tables in app"
