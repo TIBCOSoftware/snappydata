@@ -1085,7 +1085,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
   def testSnap3192(tableType: String) {
     snc
     snc.dropTable("test", true)
-    snc.sql(s"create table test (id int, sample float, channel string) using $tableType")
+    snc.sql(s"create table test (id int, sample float, channel varchar(128)) using $tableType")
     if (tableType.equalsIgnoreCase("row")) {
       snc.sql("create index channel_index on test (channel)")
     }
