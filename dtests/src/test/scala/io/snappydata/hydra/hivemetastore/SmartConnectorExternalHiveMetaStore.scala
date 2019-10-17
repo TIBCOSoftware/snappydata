@@ -382,34 +382,18 @@ object SmartConnectorExternalHiveMetaStore {
 
   def executeQueriesOnHiveTables(snc : SnappyContext, beelineClientConnection : Connection,
                                  dataLocation : String, pw : PrintWriter): Unit = {
-//    beelineClientConnection.createStatement().execute(HiveMetaStoreUtils.createDB + "HIVE_DB")
-//    snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
-//    snc.sql(HiveMetaStoreUtils.createDB + "TIBCO_DB")
-//    snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
-//    createHiveTblsAndLoadData(beelineClientConnection, dataLocation, "HIVE_DB")
-//    createSnappyTblsAndLoadData(snc, dataLocation, "TIBCO_DB")
     for(index <- 0 to HiveMetaStoreUtils.beeLineQueries.length-1) {
       executeQueries(snc, HiveMetaStoreUtils.beeLineQueries(index),
         HiveMetaStoreUtils.snappyQueries(index), pw, index, 0)
     }
-//    dropHiveTables(snc, HiveMetaStoreUtils.dropTable, "HIVE_DB")
-//    dropSnappyTables(snc, HiveMetaStoreUtils.dropTable, "TIBCO_DB")
-//    snc.sql("drop database if exists HIVE_DB")
-//    snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
-//    snc.sql("drop schema if exists TIBCO_DB")
-//    snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
   }
 
   def executeJoinQueriesOnHiveAndSnappy(snc : SnappyContext, beelineClientConnection : Connection,
                                         dataLocation : String, pw : PrintWriter) : Unit = {
-//    createHiveTblsAndLoadData(beelineClientConnection, dataLocation)
-//    createSnappyTblsAndLoadData(snc, dataLocation)
     for (index <- 0 to 4) {
        executeQueries(snc, HiveMetaStoreUtils.joinHiveSnappy(index),
         HiveMetaStoreUtils.validateJoin(index), pw, index, 1)
       pw.flush()
     }
-//    dropHiveTables(snc, HiveMetaStoreUtils.dropTable)
-//    dropSnappyTables(snc, HiveMetaStoreUtils.dropTable)
   }
 }
