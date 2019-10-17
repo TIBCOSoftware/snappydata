@@ -47,7 +47,7 @@ snc.table(basetable).groupBy("hack_license").count().withError(.6,.90,"do_nothin
 Create a sample table using function "hour(pickup_datetime) as QCS
 
 ```pre
-Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '8', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
+Sample Table:create sample table nyctaxi_hourly_sample on nyctaxi options (buckets '8', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
 ```
 
 **SQL Query:**
@@ -64,7 +64,7 @@ snc.table(basetable).groupBy(hour(col("pickup_datetime"))).agg(Map("trip_time_in
 If you want a higher assurance of accurate answers for your query, match the QCS to "group by columns" followed by any filter condition columns. Here is a sample using multiple columns.
 
 ```pre
-Sample Tablecreate sample table nyctaxi_hourly_sample on nyctaxi options (buckets '8', qcs 'hack_license, year(pickup_datetime), month(pickup_datetime)', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
+Sample Table:create sample table nyctaxi_hourly_sample on nyctaxi options (buckets '8', qcs 'hack_license, year(pickup_datetime), month(pickup_datetime)', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
 ```
 
 **SQL Query:**
