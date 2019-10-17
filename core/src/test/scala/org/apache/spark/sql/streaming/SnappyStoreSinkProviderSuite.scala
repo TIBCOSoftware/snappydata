@@ -454,10 +454,10 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
               " current session. Please start query with new SnappySession.;"
           Assert.assertEquals(expectedMessage, x.getMessage)
       } finally {
-        streamingQuery.processAllAvailable()
+        streamingQuery.stop()
       }
     } finally {
-      memorySinkQuery.processAllAvailable()
+      memorySinkQuery.stop()
     }
   }
 

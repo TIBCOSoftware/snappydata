@@ -36,13 +36,14 @@ import io.snappydata.cluster.SplitClusterDUnitTest
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
+import org.junit.Assert
 
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.kafka010.KafkaTestUtils
 import org.apache.spark.sql.streaming.SnappySinkProviderDUnitTest.{adminUser, getConn, ldapGroup, locatorNetPort}
 import org.apache.spark.sql.streaming.SnappyStoreSinkProvider.TEST_FAILBATCH_OPTION
 import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
-import org.apache.spark.sql.{Dataset, Row, SnappyContext, SnappySession, ThinClientConnectorMode}
+import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappyContext, SnappySession, ThinClientConnectorMode}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -175,6 +176,11 @@ class SnappySinkProviderDUnitTest(s: String)
 
   def testStateTableSchemaNotProvided(): Unit = {
     vm.invoke(getClass, "doTestStateTableSchemaNotProvided",
+      Int.box(locatorNetPort))
+  }
+
+  def testAllowOnlyOneSnappySinkQueryPerSession(): Unit = {
+    vm.invoke(getClass, "doTestAllowOnlyOneSnappySinkQueryPerSession",
       Int.box(locatorNetPort))
   }
 
@@ -368,6 +374,46 @@ object SnappySinkProviderDUnitTest extends Logging {
         case x: IllegalStateException =>
           val expectedMessage = "'stateTableSchema' is a mandatory option when security is enabled."
           assert(x.getMessage.equals(expectedMessage))
+      }
+    } finally {
+      teardown()
+    }
+  }
+
+  def doTestAllowOnlyOneSnappySinkQueryPerSession(locatorClientPort: Int): Unit = {
+    try {
+      val testId = s"test_${testIdGenerator.getAndIncrement()}"
+      setup(locatorClientPort)
+      kafkaTestUtils.createTopic(testId, partitions = 3)
+
+      val memorySinkQuery = snc
+          .readStream
+          .format("kafka")
+          .option("kafka.bootstrap.servers", kafkaTestUtils.brokerAddress)
+          .option("subscribe", testId)
+          .option("startingOffsets", "earliest")
+          .load().writeStream
+          .queryName("memorysink")
+          .option("checkpointLocation", checkpointDirectory + "/memorysink")
+          .format("memory")
+          .start()
+
+      try {
+        // This query should start successfully as earlier started query is using memory sink
+        val streamingQuery1 = createAndStartStreamingQuery(testId)
+        try {
+          val streamingQuery2 = createAndStartStreamingQuery(testId)
+          Assert.fail("StreamingQueryException expected.")
+        } catch {
+          case x: AnalysisException =>
+            val expectedMessage = "A streaming query with snappy sink is already running with" +
+                " current session. Please start query with new SnappySession.;"
+            Assert.assertEquals(expectedMessage, x.getMessage)
+        } finally {
+          streamingQuery1.stop()
+        }
+      } finally {
+        memorySinkQuery.stop()
       }
     } finally {
       teardown()
