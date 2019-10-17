@@ -27,6 +27,7 @@ object SmartConnectorExternalHiveMetaStore {
     // scalastyle:off println
     println("Smart Connector External Hive MetaStore Job started...")
     val dataLocation = args(0)
+    val externalThriftServerHostAndPort = args(1)
     val outputFile = "ValidateJoinQuery" + "_" + "column" +
       System.currentTimeMillis() + "_sparkApp"
     val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
@@ -39,40 +40,56 @@ object SmartConnectorExternalHiveMetaStore {
     val snc : SnappyContext = SnappyContext(sc)
     val spark: SparkSession = SparkSession.builder().getOrCreate()
 
-    val beelineConnection: Connection = connectToBeeline()
+    val beelineClientConnection: Connection = getBeelineClientConnection(externalThriftServerHostAndPort)
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
-    dropBeelineTablesFromSnappy(snc, HiveMetaStoreUtils.dropTable)
+    dropHiveTables(snc, HiveMetaStoreUtils.dropTable)
     dropSnappyTables(snc, HiveMetaStoreUtils.dropTable)
-    dropBeelineTablesFromSnappy(snc, HiveMetaStoreUtils.dropTable, "HIVE_DB")
+    dropHiveTables(snc, HiveMetaStoreUtils.dropTable, "HIVE_DB")
     dropSnappyTables(snc, HiveMetaStoreUtils.dropTable, "TIBCO_DB")
+    //  Test Case-1
     snc.sql("drop database if exists HIVE_DB")
-    snc.sql(HiveMetaStoreUtils.setExternalInBuiltCatalog)
+    snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
     snc.sql("drop schema if exists TIBCO_DB")
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
-//    alterTableCheck(snc, pw)
+//    alterHiveTable_ChangeTableName(snc, pw)
     pw.flush()
-    createAndDropSchemaCheck(snc, beelineConnection, dataLocation, pw)
+    //  Test Case-2
+    createAndDropHiveSchema(snc, beelineClientConnection, dataLocation, pw)
     pw.flush()
-    executeQueriesOnHiveTables(snc, spark, beelineConnection, dataLocation, pw)
-    executeJoinQueriesOnHiveAndSnappy(snc, spark, beelineConnection, dataLocation, pw)
-    dropBeelineTablesFromSnappy(snc, HiveMetaStoreUtils.dropTable, "HIVE_DB")
+    //  Test Case-3
+    beelineClientConnection.createStatement().execute(HiveMetaStoreUtils.createDB + "HIVE_DB")
+    snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
+    snc.sql(HiveMetaStoreUtils.createDB + "TIBCO_DB")
+    snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
+    createHiveTblsAndLoadData(beelineClientConnection, dataLocation, "HIVE_DB")
+    createSnappyTblsAndLoadData(snc, dataLocation, "TIBCO_DB")
+    createHiveTblsAndLoadData(beelineClientConnection, dataLocation)
+    createSnappyTblsAndLoadData(snc, dataLocation)
+    executeQueriesOnHiveTables(snc, beelineClientConnection, dataLocation, pw)
+    executeJoinQueriesOnHiveAndSnappy(snc, beelineClientConnection, dataLocation, pw)
+    dropHiveTables(snc, HiveMetaStoreUtils.dropTable, "HIVE_DB")
     dropSnappyTables(snc, HiveMetaStoreUtils.dropTable, "TIBCO_DB")
+    snc.sql("drop database if exists HIVE_DB")
+    snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
+    snc.sql("drop schema if exists TIBCO_DB")
+    snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
+    dropHiveTables(snc, HiveMetaStoreUtils.dropTable)
+    dropSnappyTables(snc, HiveMetaStoreUtils.dropTable)
+    beelineClientConnection.close()
     pw.flush()
     pw.close()
     println("Smart Connector External Hive MetaStore job is successful finished.")
   }
 
-  def connectToBeeline(): Connection = {
-//    val beelineConnection: Connection = DriverManager.getConnection("jdbc:hive2://localhost:11000",
-//      "APP", "mine");
-        val beelineConnection: Connection = DriverManager.getConnection("jdbc:hive2://dev13:11000",
+  def getBeelineClientConnection(externalThriftServerHostAndPort : String): Connection = {
+        val beelineClientConnection: Connection = DriverManager.getConnection("jdbc:hive2://" + externalThriftServerHostAndPort,
        "hive", "Snappy!23")
     println("Connection with Beeline established.")
-    beelineConnection
+    beelineClientConnection
   }
 
-  def dropBeelineTablesFromSnappy(snc: SnappyContext, dropTable: String,
-                                  schema: String = "default"): Unit = {
+  def dropHiveTables(snc: SnappyContext, dropTable: String,
+                     schema: String = "default"): Unit = {
     snc.sql(dropTable + schema + ".hive_regions")
     snc.sql(dropTable + schema + ".hive_categories")
     snc.sql(dropTable + schema + ".hive_shippers")
@@ -111,8 +128,8 @@ object SmartConnectorExternalHiveMetaStore {
     snc.sql(dropTable + schema + ".snappy_employee_territories")
   }
 
-  def createHiveTable(tableDef: String, beelineConnection: Connection, schema: String): Unit = {
-    beelineConnection.createStatement().execute("create table " + schema + "." + tableDef
+  def createHiveTable(tableDef: String, beelineClientConnection: Connection, schema: String): Unit = {
+    beelineClientConnection.createStatement().execute("create table " + schema + "." + tableDef
       + " row format delimited fields terminated by ',' ")
   }
 
@@ -122,56 +139,56 @@ object SmartConnectorExternalHiveMetaStore {
       + "' overwrite into table " + schema + "." + tblName)
   }
 
-  def createHiveTblsAndLoadData(beelineConnection: Connection, dataLocation: String,
+  def createHiveTblsAndLoadData(beelineClientConnection: Connection, dataLocation: String,
                                 schema: String = "default"): Unit = {
     createHiveTable("hive_regions(RegionID int,RegionDescription string)",
-      beelineConnection, schema)
-    loadDataToHiveTbls(dataLocation + "regions.csv", "hive_regions", beelineConnection, schema)
+      beelineClientConnection, schema)
+    loadDataToHiveTbls(dataLocation + "regions.csv", "hive_regions", beelineClientConnection, schema)
     createHiveTable("hive_categories" +
       "(CategoryID int,CategoryName string,Description string,Picture string)",
-      beelineConnection, schema)
+      beelineClientConnection, schema)
     loadDataToHiveTbls(dataLocation + "categories.csv", "hive_categories",
-      beelineConnection, schema)
+      beelineClientConnection, schema)
     createHiveTable("hive_shippers(ShipperID int ,CompanyName string ,Phone string)",
-      beelineConnection, schema)
-    loadDataToHiveTbls(dataLocation + "shippers.csv", "hive_shippers", beelineConnection, schema)
+      beelineClientConnection, schema)
+    loadDataToHiveTbls(dataLocation + "shippers.csv", "hive_shippers", beelineClientConnection, schema)
     createHiveTable("hive_employees(EmployeeID int,LastName string,FirstName string,Title string," +
       "TitleOfCourtesy string,BirthDate timestamp,HireDate timestamp,Address string," +
       "City string,Region string,PostalCode string,Country string," +
       "HomePhone string,Extension string,Photo string," +
-      "Notes string,ReportsTo int,PhotoPath string)", beelineConnection, schema)
-    loadDataToHiveTbls(dataLocation + "employees.csv", "hive_employees", beelineConnection, schema)
+      "Notes string,ReportsTo int,PhotoPath string)", beelineClientConnection, schema)
+    loadDataToHiveTbls(dataLocation + "employees.csv", "hive_employees", beelineClientConnection, schema)
     createHiveTable("hive_customers(CustomerID string,CompanyName string,ContactName string," +
       "ContactTitle string,Address string,City string,Region string," +
-      "PostalCode string,Country string,Phone string,Fax string)", beelineConnection, schema)
-    loadDataToHiveTbls(dataLocation + "customers.csv", "hive_customers", beelineConnection, schema)
+      "PostalCode string,Country string,Phone string,Fax string)", beelineClientConnection, schema)
+    loadDataToHiveTbls(dataLocation + "customers.csv", "hive_customers", beelineClientConnection, schema)
     createHiveTable("hive_orders(OrderID int,CustomerID string,EmployeeID int," +
       "OrderDate timestamp,RequiredDate timestamp,ShippedDate timestamp," +
       "ShipVia int,Freight double,ShipName string,ShipAddress string,ShipCity string," +
-      "ShipRegion string,ShipPostalCode string,ShipCountry string)", beelineConnection, schema)
-    loadDataToHiveTbls(dataLocation + "orders.csv", "hive_orders", beelineConnection, schema)
+      "ShipRegion string,ShipPostalCode string,ShipCountry string)", beelineClientConnection, schema)
+    loadDataToHiveTbls(dataLocation + "orders.csv", "hive_orders", beelineClientConnection, schema)
     createHiveTable("hive_order_details(OrderID int,ProductID int,UnitPrice " +
-      "double,Quantity smallint,Discount double)", beelineConnection, schema)
+      "double,Quantity smallint,Discount double)", beelineClientConnection, schema)
     loadDataToHiveTbls(dataLocation + "order_details.csv", "hive_order_details",
-      beelineConnection, schema)
+      beelineClientConnection, schema)
     createHiveTable("hive_products(ProductID int,ProductName string,SupplierID int," +
       "CategoryID int,QuantityPerUnit string,UnitPrice double,UnitsInStock smallint," +
       "UnitsOnOrder smallint,ReorderLevel smallint,Discontinued smallint)",
-      beelineConnection, schema)
-    loadDataToHiveTbls(dataLocation + "products.csv", "hive_products", beelineConnection, schema)
+      beelineClientConnection, schema)
+    loadDataToHiveTbls(dataLocation + "products.csv", "hive_products", beelineClientConnection, schema)
     createHiveTable("hive_suppliers(SupplierID int,CompanyName string,ContactName string," +
       "ContactTitle string,Address string,City string,Region string," +
       "PostalCode string,Country string,Phone string," +
-      "Fax string,HomePage string)", beelineConnection, schema)
-    loadDataToHiveTbls(dataLocation + "suppliers.csv", "hive_suppliers", beelineConnection, schema)
+      "Fax string,HomePage string)", beelineClientConnection, schema)
+    loadDataToHiveTbls(dataLocation + "suppliers.csv", "hive_suppliers", beelineClientConnection, schema)
     createHiveTable("hive_territories(TerritoryID string,TerritoryDescription string," +
-      "RegionID string)", beelineConnection, schema)
+      "RegionID string)", beelineClientConnection, schema)
     loadDataToHiveTbls(dataLocation + "territories.csv", "hive_territories",
-      beelineConnection, schema)
+      beelineClientConnection, schema)
     createHiveTable("hive_employee_territories(EmployeeID int," +
-      "TerritoryID string)", beelineConnection, schema)
+      "TerritoryID string)", beelineClientConnection, schema)
     loadDataToHiveTbls(dataLocation + "employee_territories.csv",
-      "hive_employee_territories", beelineConnection, schema)
+      "hive_employee_territories", beelineClientConnection, schema)
   }
 
   def createSnappyTblsAndLoadData(snc: SnappyContext, dataLocation: String,
@@ -227,8 +244,7 @@ object SmartConnectorExternalHiveMetaStore {
       "as select * from " + schema + "." + "staging_employee_territories")
   }
 
-  def executeQueries(snc: SnappyContext, spark: SparkSession,
-                     query1: String, query2: String, pw: PrintWriter,
+  def executeQueries(snc: SnappyContext, query1: String, query2: String, pw: PrintWriter,
                      index: Int, id : Int): Unit = {
     var isDiff1: Boolean = false
     var isDiff2: Boolean = false
@@ -282,7 +298,7 @@ object SmartConnectorExternalHiveMetaStore {
     pw.println("* * * * * * * * * * * * * * * * * * * * * * * * *")
   }
 
-  def alterTableCheck(snc: SnappyContext, pw: PrintWriter): Unit = {
+  def alterHiveTable_ChangeTableName(snc: SnappyContext, pw: PrintWriter): Unit = {
     snc.sql(HiveMetaStoreUtils.dropTable + "default.Table1")
     snc.sql(HiveMetaStoreUtils.dropTable + "default.Table2")
     snc.sql("create table if not exists default.Table1(id int, name String) using hive")
@@ -307,8 +323,8 @@ object SmartConnectorExternalHiveMetaStore {
     snc.dropTable("default.Table2", true)
   }
 
-  def createAndDropSchemaCheck(snc: SnappyContext, beelineConnection: Connection,
-                               dataLocation: String, pw: PrintWriter): Unit = {
+  def createAndDropHiveSchema(snc: SnappyContext, beelineClientConnection: Connection,
+                              dataLocation: String, pw: PrintWriter): Unit = {
     var isDiff1 = false
     var isDiff2 = false
     snc.sql(HiveMetaStoreUtils.dropTable + "hiveDB.hive_regions")
@@ -317,12 +333,12 @@ object SmartConnectorExternalHiveMetaStore {
     snc.sql("drop database if exists hiveDB")
     snc.sql("drop schema if exists snappyDB")
     snc.sql("create database hiveDB")
-    snc.sql(HiveMetaStoreUtils.setExternalInBuiltCatalog)
+    snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
     snc.sql("create schema snappyDB")
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
-    createHiveTable("hive_regions(RegionID int,RegionDescription string)", beelineConnection,
+    createHiveTable("hive_regions(RegionID int,RegionDescription string)", beelineClientConnection,
       "hiveDB")
-    loadDataToHiveTbls(dataLocation + "regions.csv", "hive_regions", beelineConnection, "hiveDB")
+    loadDataToHiveTbls(dataLocation + "regions.csv", "hive_regions", beelineClientConnection, "hiveDB")
     snc.sql("create external table if not exists snappyDB.staging_regions using csv" +
       " options(path '" + "file:///" + dataLocation + "regions.csv" + "',header 'true')")
     snc.sql("create table if not exists snappyDB.snappy_regions using column" +
@@ -359,43 +375,41 @@ object SmartConnectorExternalHiveMetaStore {
     snc.sql(HiveMetaStoreUtils.dropTable + "snappyDB.staging_regions")
     snc.sql(HiveMetaStoreUtils.dropTable + "snappyDB.snappy_regions")
     snc.sql("drop database if exists hiveDB")
-    snc.sql(HiveMetaStoreUtils.setExternalInBuiltCatalog)
+    snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
     snc.sql("drop schema if exists snappyDB")
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
   }
 
-  def executeQueriesOnHiveTables(snc : SnappyContext,
-                                 spark : SparkSession, beelineConnection : Connection,
+  def executeQueriesOnHiveTables(snc : SnappyContext, beelineClientConnection : Connection,
                                  dataLocation : String, pw : PrintWriter): Unit = {
-    beelineConnection.createStatement().execute(HiveMetaStoreUtils.createDB + "HIVE_DB")
-    snc.sql(HiveMetaStoreUtils.setExternalInBuiltCatalog)
-    snc.sql(HiveMetaStoreUtils.createDB + "TIBCO_DB")
-    snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
-    createHiveTblsAndLoadData(beelineConnection, dataLocation, "HIVE_DB")
-    createSnappyTblsAndLoadData(snc, dataLocation, "TIBCO_DB")
+//    beelineClientConnection.createStatement().execute(HiveMetaStoreUtils.createDB + "HIVE_DB")
+//    snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
+//    snc.sql(HiveMetaStoreUtils.createDB + "TIBCO_DB")
+//    snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
+//    createHiveTblsAndLoadData(beelineClientConnection, dataLocation, "HIVE_DB")
+//    createSnappyTblsAndLoadData(snc, dataLocation, "TIBCO_DB")
     for(index <- 0 to HiveMetaStoreUtils.beeLineQueries.length-1) {
-      executeQueries(snc, spark, HiveMetaStoreUtils.beeLineQueries(index),
+      executeQueries(snc, HiveMetaStoreUtils.beeLineQueries(index),
         HiveMetaStoreUtils.snappyQueries(index), pw, index, 0)
     }
-    dropBeelineTablesFromSnappy(snc, HiveMetaStoreUtils.dropTable, "HIVE_DB")
-    dropSnappyTables(snc, HiveMetaStoreUtils.dropTable, "TIBCO_DB")
-    snc.sql("drop database if exists HIVE_DB")
-    snc.sql(HiveMetaStoreUtils.setExternalInBuiltCatalog)
-    snc.sql("drop schema if exists TIBCO_DB")
-    snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
+//    dropHiveTables(snc, HiveMetaStoreUtils.dropTable, "HIVE_DB")
+//    dropSnappyTables(snc, HiveMetaStoreUtils.dropTable, "TIBCO_DB")
+//    snc.sql("drop database if exists HIVE_DB")
+//    snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
+//    snc.sql("drop schema if exists TIBCO_DB")
+//    snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
   }
 
-  def executeJoinQueriesOnHiveAndSnappy(snc : SnappyContext,
-                                        spark : SparkSession, beelineConnection : Connection,
+  def executeJoinQueriesOnHiveAndSnappy(snc : SnappyContext, beelineClientConnection : Connection,
                                         dataLocation : String, pw : PrintWriter) : Unit = {
-    createHiveTblsAndLoadData(beelineConnection, dataLocation)
-    createSnappyTblsAndLoadData(snc, dataLocation)
+//    createHiveTblsAndLoadData(beelineClientConnection, dataLocation)
+//    createSnappyTblsAndLoadData(snc, dataLocation)
     for (index <- 0 to 4) {
-       executeQueries(snc, spark, HiveMetaStoreUtils.joinHiveSnappy(index),
+       executeQueries(snc, HiveMetaStoreUtils.joinHiveSnappy(index),
         HiveMetaStoreUtils.validateJoin(index), pw, index, 1)
       pw.flush()
     }
-    dropBeelineTablesFromSnappy(snc, HiveMetaStoreUtils.dropTable)
-    dropSnappyTables(snc, HiveMetaStoreUtils.dropTable)
+//    dropHiveTables(snc, HiveMetaStoreUtils.dropTable)
+//    dropSnappyTables(snc, HiveMetaStoreUtils.dropTable)
   }
 }

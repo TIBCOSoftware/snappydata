@@ -15,6 +15,7 @@
    D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
 // --->  Data Location on colo
    dataFilesLocation="/export/shared/QA_DATA/NW_1GB/"
+   thriftServerHostNameAndPort="dev13:11000"
 // --->   Data Location on Local (Laptop)
    //dataFilesLocation="/home/cbhatt/NW_1GB/NW_1GB/"
 // --->   Data Location in Snappy Checkout
@@ -28,6 +29,7 @@
      D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
 // --->  Data Location on colo
      dataFilesLocation="/export/shared/QA_DATA/NW_1GB/"
+     thriftServerHostNameAndPort="dev13:11000"
 // --->   Data Location on Local (Laptop)
      //dataFilesLocation="/home/cbhatt/NW_1GB/NW_1GB/"
 
