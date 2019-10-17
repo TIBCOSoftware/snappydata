@@ -56,7 +56,14 @@ private[sql] final case class RowTableScan(
   override val nodeName: String = "RowTableScan"
 
   override def sameResult(plan: SparkPlan): Boolean = plan match {
-    case r: RowTableScan => r.table == table && r.numBuckets == numBuckets && r.schema == schema
+    case r: RowTableScan => r.table == table && r.numBuckets == numBuckets &&
+      r.schema == schema && (this.dataRDD match {
+      case rowRdd: RowFormatScanRDD => rowRdd.filters.zip(
+        r.dataRDD.asInstanceOf[RowFormatScanRDD].filters).forall {
+        case (expr1, expr2) => expr1.semanticEquals(expr2)
+      }
+      case _ => true
+    })
     case _ => false
   }
 
