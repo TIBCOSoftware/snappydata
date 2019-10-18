@@ -39,6 +39,7 @@ class SchedulerPoolTest extends SnappyFunSuite with BeforeAndAfter with BeforeAn
 
   override def beforeAll() {
     super.beforeAll()
+    sc.stop()
     kafkaTestUtils = new KafkaTestUtils
     kafkaTestUtils.setup()
   }
