@@ -58,8 +58,11 @@ private[sql] final case class RowTableScan(
   override def sameResult(plan: SparkPlan): Boolean = plan match {
     case r: RowTableScan => r.table == table && r.numBuckets == numBuckets &&
       r.schema == schema && (this.dataRDD match {
-      case rowRdd: RowFormatScanRDD => rowRdd.filters.zip(
-        r.dataRDD.asInstanceOf[RowFormatScanRDD].filters).forall {
+      case rowRdd: RowFormatScanRDD =>
+        val rdd2 = r.dataRDD.asInstanceOf[RowFormatScanRDD]
+        rowRdd.filters.length == rdd2.filters.length &&
+        rowRdd.filters.zip(
+        rdd2.filters).forall {
         case (expr1, expr2) => expr1.semanticEquals(expr2)
       }
       case _ => true
