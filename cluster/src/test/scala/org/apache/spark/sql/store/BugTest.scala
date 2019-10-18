@@ -1202,6 +1202,31 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
+  test("SNAP-3193: Float Column type ddl in column & row table result in different schema") {
+    // create row table rowTable
+    snc.sql("CREATE TABLE rowTable(floatCol FLOAT) using row")
+    // create col table colTable
+    snc.sql("CREATE TABLE colTable(floatCol FLOAT) using column")
+
+    snc.table("rowTable").schema.zip(
+      snc.table("colTable").schema).foreach(tup => {
+      assertTrue(tup._1.dataType.equals(tup._2.dataType))
+    })
+
+    snc.sql("insert into rowTable values (1.0E8)")
+    snc.sql("insert into rowTable values (-2.225E-307)")
+    snc.sql("insert into colTable values (1.0E8)")
+    snc.sql("insert into colTable values (-2.225E-307)")
+
+    val rs1 = snc.sql("select floatCol from rowTable order by floatCol asc ").collect()
+    val rs2 = snc.sql("select floatCol from colTable order by floatCol asc ").collect()
+    rs1.zip(rs2).foreach {
+      case (r1, r2) => assertEquals(r1.getFloat(0), r2.getFloat(0), 0)
+    }
+    snc.dropTable("rowTable", true)
+    snc.dropTable("colTable", true)
+  }
+
   private def insertDataAndTestSNAP3082(conn: Connection, stmt: Statement,
       dataTypeForSetParams: String): Unit = {
     // scalastyle:off println
