@@ -105,12 +105,12 @@ class SchedulerPoolTest extends SnappyFunSuite with BeforeAndAfter with BeforeAn
     val streamingQuery = streamingDF.writeStream.format("snappysink")
         .queryName(queryName)
         .trigger(ProcessingTime("1 seconds"))
-        .option("streamqueryid", queryName)
         .option("sinkcallback", callback)
         .option("checkpointLocation", checkPointDir)
         .start()
 
     streamingQuery.processAllAvailable()
+    streamingQuery.stop()
   }
 }
 
