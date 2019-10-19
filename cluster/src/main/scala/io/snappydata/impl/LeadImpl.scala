@@ -26,7 +26,6 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
@@ -43,13 +42,13 @@ import com.pivotal.gemfirexd.{Attribute, Constants, FabricService, NetworkInterf
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
 import io.snappydata.cluster.ExecutorInitiator
+import io.snappydata.metrics.SnappyMetricsClass
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
+import io.snappydata._
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
-
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.SecurityUtils
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
@@ -183,6 +182,7 @@ class LeadImpl extends ServerImpl with Lead
           set("spark.scheduler.mode", "FAIR").
           setIfMissing("spark.memory.manager",
             ExecutorInitiator.SNAPPY_MEMORY_MANAGER)
+          .set("spark.metrics.namespace", "")
 
       Utils.setDefaultSerializerAndCodec(conf)
 
@@ -316,6 +316,8 @@ class LeadImpl extends ServerImpl with Lead
 
       // update the Spark UI to add the dashboard and other SnappyData pages
       ToolsCallbackInit.toolsCallback.updateUI(sc)
+
+      SnappyMetricsClass.init(sc)
 
       // start other add-on services (job server)
       startAddOnServices(conf, confFile, jobServerConfig)
