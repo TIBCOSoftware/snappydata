@@ -398,7 +398,7 @@ object Utils extends Logging {
     if (s.trim.equals("*")) {
       (true, Set.empty[String])
     } else {
-      (false, parseCSVList(s, session.snappyParser).toSet)
+      (false, parseCSVList(s, session.snappyParserStateless).toSet)
     }
   }
 

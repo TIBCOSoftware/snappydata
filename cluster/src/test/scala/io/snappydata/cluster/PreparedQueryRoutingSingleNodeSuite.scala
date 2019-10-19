@@ -1117,6 +1117,15 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
+
+  test("insert/put routing with VALUES") {
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+
+    PreparedQueryRoutingSingleNodeSuite.testInsertPutRoutingWithVALUES(conn, snc.snappySession)
+
+    conn.close()
+  }
 }
 
 object PreparedQueryRoutingSingleNodeSuite extends Assertions with Logging {
@@ -1412,5 +1421,125 @@ object PreparedQueryRoutingSingleNodeSuite extends Assertions with Logging {
     } finally {
       SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
+  }
+
+  def testInsertPutRoutingWithVALUES(conn: Connection, snc: SnappySession): Unit = {
+    val stmt = conn.createStatement()
+
+    for (table <- Array("t1", "std.t1")) {
+      stmt.execute(s"drop table if exists $table")
+      stmt.execute("drop schema if exists std1 cascade")
+      stmt.execute(s"create table $table(id integer, str string) using column options" +
+          "(key_columns 'id', COLUMN_MAX_DELTA_ROWS '7', BUCKETS '2')")
+      var ps: PreparedStatement = null
+      for (i <- 1 to 10) {
+        snc.sql(s"insert into $table values(" + i + ",'str" + i + "')")
+      }
+
+      val rscnt = stmt.executeQuery(s"select count(*) from $table")
+      rscnt.next()
+      assert(rscnt.getInt(1) === 10)
+
+      val rs = stmt.executeQuery(s"select * from $table order by id")
+      var i = 1
+      while (rs.next()) {
+        assert(rs.getInt(1) === i)
+        assert(rs.getString(2) === "str" + i)
+        i += 1
+      }
+
+      val query2 = s"put into $table values(?,?)"
+      ps = conn.prepareStatement(query2)
+      for (i <- 1 to 20) {
+        ps.setInt(1, i)
+        ps.setString(2, "str_" + i)
+        ps.executeUpdate()
+      }
+      val rscnt2 = stmt.executeQuery(s"select count(*) from $table")
+      rscnt2.next()
+      assert(rscnt2.getInt(1) === 20)
+
+      val rs2 = stmt.executeQuery(s"select * from $table order by id")
+      var i2 = 0
+      while (rs.next()) {
+        assert(rs2.getInt(1) === i2)
+        assert(rs2.getString(2) === "str_" + i2)
+        i2 += 1
+      }
+
+      val query1 = s"put into $table values(?,?)"
+      ps = conn.prepareStatement(query1)
+      for (i <- 1 to 30) {
+        ps.setInt(1, i)
+        ps.setString(2, "strings_" + i)
+        ps.addBatch()
+        if (i % 10 == 0) {
+          ps.executeBatch()
+        }
+      }
+      ps.executeBatch()
+
+      val rscnt1 = stmt.executeQuery(s"select count(*) from $table")
+      rscnt1.next()
+      assert(rscnt1.getInt(1) === 30)
+
+      val rs1 = stmt.executeQuery(s"select * from $table order by id")
+      var i1 = 1
+      while (rs1.next()) {
+        assert(rs1.getInt(1) === i1)
+        assert(rs1.getString(2) === "strings_" + i1)
+        i1 += 1
+      }
+
+      val query3 = s"put into $table(str,id) values(?,?)"
+      ps = conn.prepareStatement(query3)
+      for (i <- 11 to 20) {
+        ps.setString(1, "str123_" + i)
+        ps.setInt(2, i)
+        ps.addBatch()
+        if (i % 10 == 0) {
+          ps.executeBatch()
+        }
+      }
+      ps.executeBatch()
+
+      val rscnt3 = stmt.executeQuery(s"select count(*) from $table")
+      rscnt3.next()
+      assert(rscnt3.getInt(1) === 30)
+
+      val rs3 = stmt.executeQuery(s"select * from $table where id >= 11 and id <= 20 order by id")
+      var i3 = 11
+      while (rs3.next()) {
+        assert(rs3.getInt(1) === i3)
+        assert(rs3.getString(2) === "str123_" + i3)
+        i3 += 1
+      }
+
+      val query4 = s"put into $table(id) values(?)"
+      ps = conn.prepareStatement(query4)
+      for (i <- 31 to 40) {
+        ps.setInt(1, i)
+        ps.addBatch()
+        if (i % 10 == 0) {
+          ps.executeBatch()
+        }
+      }
+      ps.executeBatch()
+
+      val rscnt4 = stmt.executeQuery(s"select count(*) from $table")
+      rscnt4.next()
+      assert(rscnt4.getInt(1) === 40)
+
+      val rs4 = stmt.executeQuery(s"select * from $table where id >= 31 and id <= 40 order by id")
+      var i4 = 31
+      while (rs4.next()) {
+        assert(rs4.getInt(1) === i4)
+        assert(rs4.getString(2) === null)
+        i4 += 1
+      }
+
+      stmt.execute(s"drop table $table")
+    }
+    stmt.execute("drop schema if exists std")
   }
 }

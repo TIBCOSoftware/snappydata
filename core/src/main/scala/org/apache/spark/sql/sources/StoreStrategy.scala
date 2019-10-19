@@ -57,7 +57,7 @@ object StoreStrategy extends Strategy {
       case _ => Nil
     }
 
-    case PutIntoTable(table, query) => findLogicalRelation[RowPutRelation](table) match {
+    case PutIntoTable(table, query, _) => findLogicalRelation[RowPutRelation](table) match {
       case Some(l) => ExecutePlan(l.relation.asInstanceOf[RowPutRelation].getPutPlan(
         l, planLater(query))) :: Nil
       case _ => Nil
@@ -114,7 +114,7 @@ case class ExternalTableDMLCmd(
   override lazy val output: Seq[Attribute] = childOutput
 }
 
-case class PutIntoTable(table: LogicalPlan, child: LogicalPlan)
+case class PutIntoTable(table: LogicalPlan, child: LogicalPlan, childStr: String = "")
     extends LogicalPlan with TableMutationPlan {
 
   override def children: Seq[LogicalPlan] = table :: child :: Nil
@@ -139,18 +139,20 @@ final class Insert(
     partition: Map[String, Option[String]],
     child: LogicalPlan,
     overwrite: OverwriteOptions,
-    ifNotExists: Boolean)
+    ifNotExists: Boolean)(val childStr: String = "")
     extends InsertIntoTable(table, partition, child, overwrite, ifNotExists) {
 
   override def output: Seq[Attribute] = AttributeReference(
     "count", LongType)() :: Nil
+
+  override protected def otherCopyArgs: Seq[AnyRef] = childStr :: Nil
 
   override def copy(table: LogicalPlan = table,
       partition: Map[String, Option[String]] = partition,
       child: LogicalPlan = child,
       overwrite: OverwriteOptions = overwrite,
       ifNotExists: Boolean = ifNotExists): Insert = {
-    new Insert(table, partition, child, overwrite, ifNotExists)
+    new Insert(table, partition, child, overwrite, ifNotExists)(childStr)
   }
 }
 

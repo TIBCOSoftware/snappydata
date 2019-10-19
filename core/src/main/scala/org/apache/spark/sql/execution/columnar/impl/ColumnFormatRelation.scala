@@ -224,7 +224,7 @@ abstract class BaseColumnFormatRelation(
     origOptions.get(ExternalStoreUtils.KEY_COLUMNS) match {
       case None => Nil
       case Some(keyCols) =>
-        val parser = session.snappyParser
+        val parser = session.snappyParserStateless
         parser.parseSQLOnly(keyCols, parser.parseIdentifiers.run())
     }
   }
@@ -554,7 +554,7 @@ class ColumnFormatRelation(
       case Some(t) => throw new UnsupportedOperationException(
         s"CREATE INDEX of type '$t' is not supported for column tables")
     }
-    val parser = session.snappyParser
+    val parser = session.snappyParserStateless
     val indexCols = indexColumns.map { p =>
       p._2 match {
         case Some(Descending) => throw new UnsupportedOperationException(s"Cannot create index " +
@@ -644,7 +644,7 @@ class ColumnFormatRelation(
     val keys = origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
     keys match {
       case Some(x) =>
-        val parser = session.snappyParser
+        val parser = session.snappyParserStateless
         Some(parser.parseSQLOnly(x, parser.parseIdentifiers.run()))
       case None => None
     }

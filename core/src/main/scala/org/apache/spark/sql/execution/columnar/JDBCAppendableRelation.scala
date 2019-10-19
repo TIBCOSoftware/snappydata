@@ -134,7 +134,7 @@ abstract case class JDBCAppendableRelation(
         partition = Map.empty[String, Option[String]],
         child = data.logicalPlan,
         OverwriteOptions(overwrite),
-        ifNotExists = false)).toRdd
+        ifNotExists = false)()).toRdd
   }
 
   def getColumnBatchParams: (Int, Int, String) = {

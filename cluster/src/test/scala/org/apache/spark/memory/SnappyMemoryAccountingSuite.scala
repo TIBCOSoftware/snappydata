@@ -586,7 +586,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     }
 
     // wait a lot
-    awaitAll(20000000L, tasks: _*)
+    awaitAll(200000L, tasks: _*)
 
     // Rough estimation of 120 bytes per row
     assert(SparkEnv.get.memoryManager.storageMemoryUsed >= 120 * 100 * 5 )

@@ -91,7 +91,7 @@ object ColumnTableBulkOps {
         }
         val insertPlan = new Insert(table, Map.empty[String,
             Option[String]], Project(subQuery.output, insertChild),
-          OverwriteOptions(enabled = false), ifNotExists = false)
+          OverwriteOptions(enabled = false), ifNotExists = false)()
 
         transFormedPlan = PutIntoColumnTable(table, insertPlan, analyzedUpdate)
       case _ => // Do nothing, original putInto plan is enough
@@ -101,7 +101,7 @@ object ColumnTableBulkOps {
 
   def validateOp(originalPlan: PutIntoTable) {
     originalPlan match {
-      case PutIntoTable(LogicalRelation(t: BulkPutRelation, _, _), query) =>
+      case PutIntoTable(LogicalRelation(t: BulkPutRelation, _, _), query, _) =>
         val srcRelations = query.collect {
           case LogicalRelation(src: BaseRelation, _, _) => src
         }
@@ -192,7 +192,7 @@ object ColumnTableBulkOps {
         partition = Map.empty[String, Option[String]],
         child = ds.logicalPlan,
         overwrite = OverwriteOptions(enabled = false),
-        ifNotExists = false)
+        ifNotExists = false)()
     }
     session.sessionState.executePlan(plan).executedPlan.executeCollect()
         // always expect to create a TableInsertExec

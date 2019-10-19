@@ -124,6 +124,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   def snappyParser: SnappyParser = sessionState.sqlParser.sqlParser
 
+  /**
+   * A "state-less" instance of SnappyParser which is used for temporary parsing of
+   * identifiers etc and does not depend on any state inside nor touches the state of
+   * primary [[snappyParser]] of this session.
+   */
+  private[sql] def snappyParserStateless: SnappyParser = sessionState.sqlParser.sqlParserStateless
+
   private[spark] def snappyContextFunctions = sessionState.contextFunctions
 
   SnappyContext.initGlobalSnappyContext(sparkContext, this)

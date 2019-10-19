@@ -556,15 +556,15 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         "BUCKETS '1'," +
         "REDUNDANCY '2')")
 
-    snc.sql("insert into COLUMNTABLE4 VALUES(1,11)")
-    snc.sql("insert into COLUMNTABLE4 VALUES(2,11)")
-    snc.sql("insert into COLUMNTABLE4 VALUES(3,11)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(1, 11, null, null)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(2, 11, null, null)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(3, 11, null, null)")
 
-    snc.sql("insert into COLUMNTABLE4 VALUES(4,11)")
-    snc.sql("insert into COLUMNTABLE4 VALUES(5,11)")
-    snc.sql("insert into COLUMNTABLE4 VALUES(6,11)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(4, 11, null, null)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(5, 11, null, null)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(6, 11, null, null)")
 
-    snc.sql("insert into COLUMNTABLE4 VALUES(7,11)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(7, 11, null, null)")
 
     var data =
       Seq(Seq(1, 2, 3, 4), Seq(7, 8, 9, 10), Seq(9, 2, 3, 4), Seq(4, 2, 5, 7), Seq(5, 6, 2, 3))

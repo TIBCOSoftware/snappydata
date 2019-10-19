@@ -23,7 +23,7 @@ import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.sources.JdbcExtendedUtils
-import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext, TableNotFoundException}
+import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext}
 
 /**
  * Some basic tests to detect catalog inconsistency and repair it
@@ -71,8 +71,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       snc.snappySession.sessionCatalog.lookupRelation(
         snc.snappySession.tableIdentifier("column_table1"))
     } catch {
-      case t: TableNotFoundException => // expected exception
-      case unknown: Throwable => throw unknown
+      case _: AnalysisException => // expected exception
     }
 
     val routeQueryDisabledConn = getClientConnection(netPort1, false)
@@ -115,8 +114,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       snc.snappySession.sessionCatalog.lookupRelation(
         snc.snappySession.tableIdentifier("column_table1"))
     } catch {
-      case t: TableNotFoundException => // expected exception
-      case unknown: Throwable => throw unknown
+      case _: AnalysisException => // expected exception
     }
 
     val connection = getClientConnection(netPort1)

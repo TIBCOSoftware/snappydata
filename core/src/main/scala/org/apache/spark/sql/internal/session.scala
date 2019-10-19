@@ -575,7 +575,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
           state.catalog.tableExists(tableIdent)) {
         new Insert(table = UnresolvedRelation(tableIdent),
           partition = Map.empty, child = queryOpt.get,
-          overwrite = OverwriteOptions(enabled = false), ifNotExists = false)
+          overwrite = OverwriteOptions(enabled = false), ifNotExists = false)()
       } else if (isBuiltin) {
         val tableName = tableIdent.unquotedString
         // dependent tables are stored as comma-separated so don't allow comma in table name
@@ -620,7 +620,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
     // Need to eliminate subqueries here. Unlike InsertIntoTable whose
     // subqueries have already been eliminated by special check in
     // ResolveRelations, no such special rule has been added for PUT
-    case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
+    case p@PutIntoTable(table, child, _) if table.resolved && child.resolved =>
       EliminateSubqueryAliases(table) match {
         case l@LogicalRelation(ir: RowInsertableRelation, _, _) =>
           // First, make sure the data to be inserted have the same number of
@@ -720,7 +720,7 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
 
   def apply(plan: LogicalPlan): Unit = {
     plan.foreach {
-      case PutIntoTable(LogicalRelation(t: RowPutRelation, _, _), query) =>
+      case PutIntoTable(LogicalRelation(t: RowPutRelation, _, _), query, _) =>
         // Get all input data source relations of the query.
         val srcRelations = query.collect {
           case LogicalRelation(src: BaseRelation, _, _) => src
@@ -731,7 +731,7 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
         } else {
           // OK
         }
-      case PutIntoTable(table, _) =>
+      case PutIntoTable(table, _, _) =>
         throw Utils.analysisException(s"$table does not allow puts.")
       case _ => // OK
     }

@@ -31,6 +31,13 @@ class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
   @transient protected[sql] val sqlParser: SnappyParser =
     new SnappyParser(session)
 
+  /**
+   * A "state-less" instance of SnappyParser which is used for temporary parsing of
+   * identifiers etc and does not depend on any state inside nor touches the state of
+   * primary [[sqlParser]] of this session.
+   */
+  @transient protected[sql] lazy val sqlParserStateless: SnappyParser = sqlParser.newInstance()
+
   @transient private val substitutor =
     new VariableSubstitution(session.sessionState.conf)
 
@@ -40,22 +47,21 @@ class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
 
   /** Creates/Resolves DataType for a given SQL string. */
   override def parseDataType(sqlText: String): DataType = {
-    sqlParser.parse(sqlText, sqlParser.parseDataType.run())
+    sqlParserStateless.parse(sqlText, sqlParserStateless.parseDataType.run())
   }
 
   /** Creates Expression for a given SQL string. */
   override def parseExpression(sqlText: String): Expression = {
-    sqlParser.parse(withSubstitution(sqlText), sqlParser.parseExpression.run())
+    sqlParserStateless.parse(withSubstitution(sqlText), sqlParserStateless.parseExpression.run())
   }
 
   /** Creates TableIdentifier for a given SQL string. */
   override def parseTableIdentifier(sqlText: String): TableIdentifier = {
-    sqlParser.parse(sqlText, sqlParser.parseTableIdentifier.run())
+    sqlParserStateless.parse(sqlText, sqlParserStateless.parseTableIdentifier.run())
   }
 
-  override def parsePlan(sqlText: String): LogicalPlan = {
-    sqlParser.parse(withSubstitution(sqlText), sqlParser.sql.run())
-  }
+  override def parsePlan(sqlText: String): LogicalPlan =
+    parsePlan(sqlText, clearExecutionData = false)
 
   def parsePlan(sqlText: String, clearExecutionData: Boolean): LogicalPlan = {
     sqlParser.parse(withSubstitution(sqlText), sqlParser.sql.run(), clearExecutionData)
