@@ -41,16 +41,6 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
 
   override def render(request: HttpServletRequest): Seq[Node] = {
 
-    selectedQueryId = {
-      if (request.getParameter("query") != null
-          && request.getParameter("query").nonEmpty)
-        {
-          request.getParameter("query")
-        } else {
-        activeQueries.values.head
-      }
-    }
-
     val pageHeaderText: String = SnappyStructuredStreamingPage.pageHeaderText
     val cssStylesheets = <link rel="stylesheet" type="text/css"
                                href={prependBaseUri("/static/snappydata/snappy-streaming.css")}/>
@@ -58,25 +48,46 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
                             UIUtils.prependBaseUri("/static/snappydata/snappy-streaming.js")
                             }></script>
 
-    val queryCountsSummaryNode = {
+    var errorMessage = <div></div>
 
-      val queryCountsMap = new collection.immutable.HashMap[String, Int]
-      queryCountsMap -> ("totalQueries", activeQueries.size)
-      queryCountsMap -> ("totalActiveQueries", 0)
-      queryCountsMap -> ("totalStoppedQueries", 0)
+    if (activeQueries.isEmpty) {
 
-      createQueryCountsSummaryNode(queryCountsMap)
+      errorMessage = <div>No active streaming queries present..</div>
+      UIUtils.headerSparkPage(pageHeaderText, errorMessage, parent, Some(500),
+        useDataTables = true)
+
+    } else {
+
+      selectedQueryId = {
+        if (request.getParameter("query") != null
+            && request.getParameter("query").nonEmpty)
+        {
+          request.getParameter("query")
+        } else {
+          activeQueries.values.head
+        }
+      }
+
+      val queryCountsSummaryNode = {
+
+        val queryCountsMap = new collection.immutable.HashMap[String, Int]
+        queryCountsMap -> ("totalQueries", activeQueries.size)
+        queryCountsMap -> ("totalActiveQueries", 0)
+        queryCountsMap -> ("totalStoppedQueries", 0)
+
+        createQueryCountsSummaryNode(queryCountsMap)
+      }
+
+      val mainContent = {
+        createMainContent
+      }
+
+      val pageContent = cssStylesheets ++ jsScripts ++
+          queryCountsSummaryNode ++ mainContent
+
+      UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500),
+        useDataTables = true)
     }
-
-    val mainContent = {
-      createMainContent
-    }
-
-    val pageContent = cssStylesheets ++ jsScripts ++
-                      queryCountsSummaryNode ++ mainContent
-
-    UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500),
-      useDataTables = true)
 
   }
 
@@ -153,19 +164,6 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
     }
     val sqpEntryValue = sqpEntry._2
     val aqpEntry = allQueriesBasicDetails.get(sqpEntry._1).get
-
-    // println("aqpEntry: ")
-    // println(aqpEntry)
-
-    // println("aqpEntry aqpEntry.get(\"startTime\").get: ")
-    // println(aqpEntry.get("startTime").get)
-
-    // println("aqpEntry.get(\"startTime\")")
-    // println(aqpEntry.get("startTime"))
-
-    // println("--------------------------------------------------------------------------")
-    // println(sqpEntryValue)
-    // println("--------------------------------------------------------------------------")
 
     <div id="querydetails">
       <div class="container-fluid details-section">

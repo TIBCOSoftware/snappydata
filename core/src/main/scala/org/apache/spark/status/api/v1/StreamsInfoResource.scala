@@ -16,24 +16,27 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+package org.apache.spark.status.api.v1
 
-package org.apache.spark.ui
+import javax.ws.rs.{GET, Produces}
+import javax.ws.rs.core.MediaType
 
-import org.apache.spark.internal.Logging
-import org.apache.spark.status.api.v1.SnappyStreamingApiRootResource
-import org.apache.spark.streaming.SnappyStreamingQueryListener
+import scala.collection.mutable.ListBuffer
 
-class SnappyStreamingTab (sparkUI: SparkUI, streamingListener: SnappyStreamingQueryListener)
-    extends SparkUITab(sparkUI, "structurestreaming") with Logging {
+import org.apache.spark.streaming.StreamingRepository
 
-  override val name = "Structure Streaming"
+// scalastyle:off
 
-  val parent = sparkUI
-  val listener = streamingListener
+@Produces(Array(MediaType.APPLICATION_JSON))
+private[v1] class StreamsInfoResource {
+  @GET
+  def streamInfo(): Seq[StreamsSummary] = {
+    val streamingRepo = StreamingRepository.getInstance
 
-  attachPage(new SnappyStructuredStreamingPage(this))
-  // Attach Tab
-  parent.attachTab(this)
-  // parent.attachHandler(SnappyStreamingApiRootResource.getServletHandler(parent))
+    val streamsBuff: ListBuffer[StreamsSummary] = ListBuffer.empty[StreamsSummary]
+    streamsBuff += new StreamsSummary (streamingRepo.activeQueries,
+      streamingRepo.inactiveQueries, streamingRepo.allQueries)
 
+    streamsBuff.toList
+  }
 }

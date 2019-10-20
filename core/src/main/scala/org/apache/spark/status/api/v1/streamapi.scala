@@ -16,24 +16,17 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+package org.apache.spark.status.api.v1
 
-package org.apache.spark.ui
+import java.util.UUID
 
-import org.apache.spark.internal.Logging
-import org.apache.spark.status.api.v1.SnappyStreamingApiRootResource
-import org.apache.spark.streaming.SnappyStreamingQueryListener
+import scala.collection.mutable
 
-class SnappyStreamingTab (sparkUI: SparkUI, streamingListener: SnappyStreamingQueryListener)
-    extends SparkUITab(sparkUI, "structurestreaming") with Logging {
+import org.apache.spark.streaming.StreamingQueryStatistics
 
-  override val name = "Structure Streaming"
 
-  val parent = sparkUI
-  val listener = streamingListener
-
-  attachPage(new SnappyStructuredStreamingPage(this))
-  // Attach Tab
-  parent.attachTab(this)
-  // parent.attachHandler(SnappyStreamingApiRootResource.getServletHandler(parent))
-
-}
+class StreamsSummary private[spark](
+    val activeQueries: mutable.HashMap[UUID, String],
+    val inactiveQueries: mutable.HashMap[UUID, String],
+    val allQueries: mutable.HashMap[UUID, StreamingQueryStatistics]
+)

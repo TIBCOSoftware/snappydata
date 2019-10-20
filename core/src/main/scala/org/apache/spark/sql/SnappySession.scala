@@ -70,7 +70,9 @@ import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTab
 import org.apache.spark.sql.row.{JDBCMutableRelation, SnappyStoreDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.streaming.StreamingQueryManager
 import org.apache.spark.sql.types._
+import org.apache.spark.status.api.v1.SnappyStreamingApiRootResource
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{SnappyStreamingQueryListener, Time}
 import org.apache.spark.streaming.dstream.DStream
@@ -2033,9 +2035,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private def updateUI() = {
     // scalastyle:off
 
-    val strmQueryManager = this.streams
     val ssqListener = new SnappyStreamingQueryListener(_sc)
-    strmQueryManager.addListener(ssqListener)
+    this.streams.addListener(ssqListener)
 
     if (_sc.ui.isDefined
         && !SnappyContext.getClusterMode(_sc).isInstanceOf[SnappyEmbeddedMode]) {
@@ -2057,6 +2058,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         if (!structStreamTabPresent) {
           logInfo(("Creating Structure Streaming UI Tab"))
           println("Creating Structure Streaming UI Tab")
+
+          // Streaming web service
+          ui.attachHandler(SnappyStreamingApiRootResource.getServletHandler(ui))
+          // Streaming tab
           new SnappyStreamingTab(ui, ssqListener)
         }
       })

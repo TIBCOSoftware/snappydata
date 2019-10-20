@@ -30,12 +30,12 @@ import org.apache.spark.sql.streaming.{StreamingQueryListener, StreamingQueryPro
 class SnappyStreamingQueryListener(sparkContext: SparkContext) extends StreamingQueryListener {
   // scalastyle:off
 
-  val numRecordsToHold = 100
+  val streamingRepo = StreamingRepository.getInstance
 
-  val activeQueries = new HashMap[UUID, String]
-  val allQueriesBasicDetails = new HashMap[UUID, HashMap[String, Any]]
-  val activeQueryProgress = new HashMap[UUID, StreamingQueryProgress]
-  val stoppedQueries = new HashMap[UUID, String]
+  val activeQueries = HashMap.empty[UUID, String]
+  val allQueriesBasicDetails = HashMap.empty[UUID, HashMap[String, Any]]
+  val activeQueryProgress = HashMap.empty[UUID, StreamingQueryProgress]
+  val stoppedQueries = HashMap.empty[UUID, String]
 
   override def onQueryStarted(event: StreamingQueryListener.QueryStartedEvent): Unit = {
     println("====== ====== ====== Query started: event.id :: " + event.id + " | event.name :: " + event.name)
@@ -44,18 +44,38 @@ class SnappyStreamingQueryListener(sparkContext: SparkContext) extends Streaming
       "isActive"-> true, "uptime" -> 0, "isRestarted" -> false,
       "attemptCount" -> 0)
     allQueriesBasicDetails.put(event.id, qMap)
+
+    streamingRepo.activeQueries.put(event.id, event.name)
+    streamingRepo.allQueries.put(event.id,
+      new StreamingQueryStatistics(event.id, event.name, event.runId, System.currentTimeMillis()))
+
   }
 
   override def onQueryProgress(event: StreamingQueryListener.QueryProgressEvent): Unit = {
     val pr = event.progress
     activeQueryProgress.put(pr.id, pr)
     println("====== ====== ====== Query made progress: event.progress :: " + pr.id + " | event.name :: " + pr.name)
-    println(" Query id:: " + pr.id + " \n Run id :: " + pr.runId + "\n Batch Id: " + pr.batchId)
+    println(" Query id:: " + pr.id + "\n Time: "+ pr.timestamp + " \n Run id :: " + pr.runId + "\n Batch Id: " + pr.batchId)
+
+    if (streamingRepo.allQueries.contains(pr.id)) {
+      val sqs = streamingRepo.allQueries.get(pr.id).get
+      sqs.updateQueryStatistics(event)
+    } else {
+      val sqs = new StreamingQueryStatistics(pr.id, pr.name, pr.runId, System.currentTimeMillis())
+      sqs.updateQueryStatistics(event)
+      streamingRepo.allQueries.put(pr.id, sqs)
+    }
+
   }
 
   override def onQueryTerminated(event: StreamingQueryListener.QueryTerminatedEvent): Unit = {
     println("====== ====== ====== Query terminated: event.id :: " + event.id)
     activeQueries.remove(event.id)
+
+    val q = streamingRepo.activeQueries.remove(event.id).get
+    streamingRepo.inactiveQueries.put(event.id, q)
+
+    streamingRepo.allQueries.get(event.id).get.setStatus(false)
   }
 
   // scalastyle:on
