@@ -49,13 +49,12 @@ class DefaultSource extends ExternalSchemaRelationProvider with SchemaRelationPr
       session, parameters, forManagedTable = true, forColumnTable = false)
     val partitioningColumns = StoreUtils.getAndSetPartitioningAndKeyColumns(session, schema , parameters)
     logDebug(s"Creating OpLogFormatRelation with Table Name: $tableName, schema: $schema")
-    new OpLogFormatRelation(tableName, schema, partitioningColumns.toSeq, sqlContext)
+    new OpLogFormatRelation(tableName, schema, partitioningColumns, sqlContext, options)
   }
 
   override def createRelation(
       sqlContext: SQLContext,
       options: Map[String, String]): BaseRelation = {
-    // TODO hmeka to check and handle schema when not provided
     createRelation(sqlContext, options, null)
   }
 }
