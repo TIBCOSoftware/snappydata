@@ -287,6 +287,29 @@ object RecoveryService extends Logging {
   val versionMap: mutable.Map[String, Int] = collection.mutable.Map.empty
   val tableColumnIds: mutable.Map[String, Array[Int]] = mutable.Map.empty
 
+  def updateMetadataMaps(fqtnKey: String, alteredSchema: StructType, versionCnt: Int ): Int = {
+    schemaStructMap.put(s"$versionCnt#$fqtnKey", alteredSchema)
+    val idArray: Array[Int] = new Array[Int](alteredSchema.fields.length)
+    val prevSchema = schemaStructMap.getOrElse(s"${versionCnt - 1}#$fqtnKey", null)
+    val prevIdArray: Array[Int] =
+      tableColumnIds.getOrElse(s"${versionCnt - 1}#$fqtnKey", null)
+    assert(prevSchema != null && prevIdArray != null)
+    for (i <- alteredSchema.fields.indices) {
+      val prevFieldIndex = prevSchema.fields.indexOf(alteredSchema.fields(i))
+      idArray(i) = if (prevFieldIndex == -1) {
+        // Alter Add column case
+        idArray(i - 1) + 1
+      } else {
+        // Common column to previous schema
+        prevIdArray(prevFieldIndex)
+      }
+    }
+    // idArray contains column ids from alter statement
+    tableColumnIds.put(s"$versionCnt#$fqtnKey", idArray)
+    versionMap.put(fqtnKey, versionCnt)
+    versionCnt + 1
+  }
+
   def createSchemasMap(snappyHiveExternalCatalog: SnappyHiveExternalCatalog): Unit = {
     val snappySession = new SnappySession(SnappyContext().sparkContext)
     val colParser = new SnappyParser(snappySession)
@@ -346,35 +369,21 @@ object RecoveryService extends Logging {
                 new IllegalArgumentException("alter statement contains no parsable field")
           }
           alteredSchema = new StructType((schema ++ new StructType(Array(field))).toArray)
+          schema = alteredSchema
+          assert(schema != null, s"schema for version $versionCnt is null")
+          versionCnt = updateMetadataMaps(fqtnKey, alteredSchema, versionCnt)
         } else if (stmt.contains("DROP COLUMN ")) {
           val dropColName = stmt.substring(stmt.indexOf("DROP COLUMN ") + 12).trim
           // loop through schema and delete sruct field matching name and type
 
           alteredSchema = new StructType(
             schema.toArray.filter(!_.name.equalsIgnoreCase(dropColName)))
+          schema = alteredSchema
+          assert(schema != null, s"schema for version $versionCnt is null")
+          versionCnt = updateMetadataMaps(fqtnKey, alteredSchema, versionCnt)
+        } else {
+          // do nothing in case of "alter table add constraint"
         }
-        schema = alteredSchema
-        assert(schema != null, s"schema for version $versionCnt is null")
-        schemaStructMap.put(s"$versionCnt#$fqtnKey", alteredSchema)
-        val idArray: Array[Int] = new Array[Int](alteredSchema.fields.length)
-        val prevSchema = schemaStructMap.getOrElse(s"${versionCnt - 1}#$fqtnKey", null)
-        val prevIdArray: Array[Int] =
-          tableColumnIds.getOrElse(s"${versionCnt - 1}#$fqtnKey", null)
-        assert(prevSchema != null && prevIdArray != null)
-        for (i <- alteredSchema.fields.indices) {
-          val prevFieldIndex = prevSchema.fields.indexOf(alteredSchema.fields(i))
-          idArray(i) = if (prevFieldIndex == -1) {
-            // Alter Add column case
-            idArray(i - 1) + 1
-          } else {
-            // Common column to previous schema
-            prevIdArray(prevFieldIndex)
-          }
-        }
-        // idArray contains column ids from alter statement
-        tableColumnIds.put(s"$versionCnt#$fqtnKey", idArray)
-        versionMap.put(fqtnKey, versionCnt)
-        versionCnt += 1
       })
     })
     logDebug(
@@ -418,14 +427,17 @@ object RecoveryService extends Logging {
         .getOrCreateExternalCatalog(snapCon.sparkContext, snapCon.sparkContext.getConf)
     while (itr.hasNext) {
       val persistentViewObj = itr.next().asInstanceOf[PersistentStateInRecoveryMode]
+      logInfo(s"PP:RS: persistentViewObj: $persistentViewObj\n\n\n")
       persistentObjectMemberMap += persistentViewObj.getMember -> persistentViewObj
       val regionItr = persistentViewObj.getAllRegionViews.iterator()
       while (regionItr.hasNext) {
         val persistentView = regionItr.next()
         val regionPath = persistentView.getRegionPath
         val set = regionViewSortedSet.get(regionPath)
+        logInfo(s"PP:sortedset persistentView: ${persistentView}")
         if (set.isDefined) {
-          set.get += persistentView
+          logInfo(s"\nset contains ${persistentView} :${set.contains(persistentView)}\n")
+                    set.get += persistentView
         } else {
           var newset = mutable.SortedSet.empty[RecoveryModePersistentView]
           newset += persistentView
@@ -440,19 +452,19 @@ object RecoveryService extends Logging {
       hiveRegionViews.keySet.toSeq.sortBy(hiveRegionViews.get(_).size).reverse.head
     val mostUptodateRegionView = regionViewSortedSet(hiveRegionToConsider).lastKey
     val memberToConsiderForHiveCatalog = mostUptodateRegionView.getMember
+    mostRecentMemberObject = persistentObjectMemberMap(memberToConsiderForHiveCatalog)
     val nonHiveRegionViews = regionViewSortedSet.filterKeys(
       !_.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
     val regionToConsider =
       if (nonHiveRegionViews.nonEmpty) {
         nonHiveRegionViews.keySet.toSeq.sortBy(nonHiveRegionViews.get(_).size).reverse.head
       } else {
-        logInfo("No relevant RecoveryModePersistentViews found.")
+        logError("No relevant RecoveryModePersistentViews found.")
         throw new Exception("Cannot start empty cluster in Recovery Mode.")
       }
     val regionView = regionViewSortedSet(regionToConsider).lastKey
     val memberToConsider = regionView.getMember
     memberObject = persistentObjectMemberMap(memberToConsider)
-    mostRecentMemberObject = persistentObjectMemberMap(memberToConsiderForHiveCatalog)
     logDebug(s"The selected PersistentStateInRecoveryMode used for populating" +
         s" the new catalog:\n$mostRecentMemberObject")
     val catalogObjects = mostRecentMemberObject.getCatalogObjects
