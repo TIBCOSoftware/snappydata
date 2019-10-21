@@ -32,7 +32,8 @@ class OpLogFormatRelation(
     fqtn: String,
     _schema: StructType,
     partitioningColumns: Seq[String],
-    context: SQLContext) extends BaseRelation with TableScan with Logging {
+    context: SQLContext,
+    options: Map[String, String]) extends BaseRelation with TableScan with Logging {
   val schema: StructType = _schema
   val schemaName: String = fqtn.split('.')(0)
   val tableName: String = fqtn.split('.')(1)
@@ -54,9 +55,12 @@ class OpLogFormatRelation(
     val tableSchemas = RecoveryService.schemaStructMap
     val versionMap = RecoveryService.versionMap
     val tableColIdsMap = RecoveryService.tableColumnIds
+
+    val keyColumns = options.getOrElse("key_columns", "")
+
     (new OpLogRdd(snappySession, fqtn.toUpperCase(), externalColumnTableName, schema,
       partitioningColumns, provider, projection, filters, (filters eq null) || filters.length == 0,
-      prunePartitions, tableSchemas, versionMap, tableColIdsMap), projection)
+      prunePartitions, tableSchemas, versionMap, tableColIdsMap, keyColumns), projection)
   }
 
 

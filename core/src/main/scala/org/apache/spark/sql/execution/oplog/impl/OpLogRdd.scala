@@ -65,10 +65,11 @@ class OpLogRdd(
     @(transient@param) partitionPruner: () => Int,
     var tableSchemas: mutable.Map[String, StructType],
     var versionMap: mutable.Map[String, Int],
-    var tableColIdsMap: mutable.Map[String, Array[Int]])
+    var tableColIdsMap: mutable.Map[String, Array[Int]],
+    private var keyColumnsString: String)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
-  var rowFormatterMap: mutable.Map[Int, RowFormatter] = null
+  var rowFormatterMap: mutable.Map[Int, RowFormatter] = _
 
   /**
    * Method gets DataValueDescritor type from given StructField
@@ -277,8 +278,10 @@ class OpLogRdd(
       }).toArray
       schemaOfVersion = StructType(correctedFields)
     }
+    val keyColumns = keyColumnsString.split(",").map(_.toLowerCase.trim)
     schemaOfVersion = StructType(schemaOfVersion.map(field =>
-      if (partitioningColumns.contains(field.name)) field.copy(nullable = false) else field
+      if (partitioningColumns.contains(field.name) &&
+          !keyColumns.contains(field.name)) field.copy(nullable = false) else field
     ).toArray)
     val rowFormatter = getRowFormatter(versionNum, schemaOfVersion)
     val dvdArr = new Array[DataValueDescriptor](schemaOfVersion.length)
@@ -366,7 +369,7 @@ class OpLogRdd(
         v = deserVal
       }
     }
-    return v
+    v
   }
 
   /**
@@ -404,8 +407,7 @@ class OpLogRdd(
           if (!hasTombstone && entry.isTombstone) {
             hasTombstone = true
           }
-          if (hasTombstone) null
-          else {
+          if (hasTombstone) null else {
             val value = getValueInVMOrDiskWithoutFaultIn(phdrCol, entry)
                 .asInstanceOf[ColumnFormatValue]
             val valueBuffer = value.getValueRetain(FetchRequest.DECOMPRESS).getBuffer
@@ -422,8 +424,8 @@ class OpLogRdd(
         if (hasTombstone) Iterator.empty
         else {
           val statsEntry = regMap.getEntry(k)
-          val statsValue = (getValueInVMOrDiskWithoutFaultIn(phdrCol, statsEntry)
-              .asInstanceOf[ColumnFormatValue]).getValueRetain(FetchRequest.DECOMPRESS)
+          val statsValue = getValueInVMOrDiskWithoutFaultIn(phdrCol, statsEntry)
+              .asInstanceOf[ColumnFormatValue].getValueRetain(FetchRequest.DECOMPRESS)
           val numStatsColumns = schema.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
           val stats = org.apache.spark.sql.collection.SharedUtils
               .toUnsafeRow(statsValue.getBuffer, numStatsColumns)
@@ -494,7 +496,7 @@ class OpLogRdd(
               } else {
                 val decodedValue = if (fieldIsNull) null else {
                   getDecodedValue(colDecoder, colArray,
-                  schema(colIndx).dataType, rowNum + currentDeleted - colNullCounts(colIndx))
+                    schema(colIndx).dataType, rowNum + currentDeleted - colNullCounts(colIndx))
                 }
                 decodedValue
               }
@@ -606,8 +608,7 @@ class OpLogRdd(
       value: Array[Byte],
       dataType: DataType,
       rowNum: Int): Any = {
-    if (decoder.isNullAt(value, rowNum)) null
-    else dataType match {
+    dataType match {
       case LongType => decoder.readLong(value, rowNum)
       case IntegerType => decoder.readInt(value, rowNum)
       case BooleanType => decoder.readBoolean(value, rowNum)
@@ -696,6 +697,7 @@ class OpLogRdd(
     output.writeString(internalFQTN)
     output.writeString(fqtn)
     output.writeString(partitioningColumns.mkString(","))
+    output.writeString(keyColumnsString)
     output.writeString(provider)
     output.writeInt(tableSchemas.size)
     tableSchemas.iterator.foreach(ele => {
@@ -721,6 +723,7 @@ class OpLogRdd(
     internalFQTN = input.readString()
     fqtn = input.readString()
     partitioningColumns = input.readString().split(",")
+    keyColumnsString = input.readString()
     provider = input.readString()
     val schemaMapSize = input.readInt()
     tableSchemas = collection.mutable.Map().empty
