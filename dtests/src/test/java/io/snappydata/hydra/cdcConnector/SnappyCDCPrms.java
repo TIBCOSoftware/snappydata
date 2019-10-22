@@ -151,6 +151,11 @@ public class SnappyCDCPrms extends SnappyPrms {
    */
   public static Long isKeepOrgConf;
 
+  /**
+   * Boolean value to determine whether to restart a cluster
+   */
+  public static Long isClusterRestart;
+
   public static String getNodeInfoForHA() {
     String nodeInfo = tasktab().stringAt(nodeInfoForHA, tab().stringAt
         (nodeInfoForHA, null));
@@ -283,6 +288,12 @@ public class SnappyCDCPrms extends SnappyPrms {
     Long key = initStartRange;
     return tasktab().intAt(key, tab().intAt(key, 1));
   }
+
+  public static boolean getIsClusterRestart() {
+    Long key = isClusterRestart;
+    return tasktab().booleanAt(key, true);
+  }
+
 
   public static int getInitEndRange() {
     Long key = initEndRange;

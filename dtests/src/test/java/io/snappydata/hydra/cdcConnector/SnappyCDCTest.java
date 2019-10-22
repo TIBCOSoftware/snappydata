@@ -1,13 +1,5 @@
 package io.snappydata.hydra.cdcConnector;
 
-import java.io.*;
-import java.net.InetAddress;
-import java.rmi.RemoteException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-
 import com.gemstone.gemfire.GemFireConfigException;
 import com.gemstone.gemfire.cache.query.Struct;
 import com.gemstone.gemfire.cache.query.internal.types.StructTypeImpl;
@@ -22,6 +14,14 @@ import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
 import io.snappydata.test.util.TestException;
 import org.apache.commons.io.FileUtils;
 import sql.sqlutil.ResultSetHelper;
+
+import java.io.*;
+import java.net.InetAddress;
+import java.rmi.RemoteException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
 
 public class SnappyCDCTest extends SnappyTest {
   public static SnappyCDCTest snappyCDCTest;
@@ -42,6 +42,7 @@ public class SnappyCDCTest extends SnappyTest {
     File logFile, log = null, serverKillOutput;
     Set<String> pidList;
     Boolean isStopStart = SnappyCDCPrms.getIsStopStartCluster();
+    Boolean isClusterRestart = SnappyCDCPrms.getIsClusterRestart();
     String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
     String nodeType = SnappyCDCPrms.getNodeType();
     int numNodes = SnappyCDCPrms.getNumNodesToStop();
@@ -95,8 +96,10 @@ public class SnappyCDCTest extends SnappyTest {
       String s = "Exception occurred while waiting for the process execution : " + pr;
       throw new util.TestException(s, e);
     }
-    Log.getLogWriter().info("The parameters for clusterRestart are snappyPath = " + snappyPath + "\nnodeType = " + nodeType + "\n isStopStart = " + isStopStart);
-    clusterRestart(snappyPath, isStopStart, nodeType, false, "", false);
+    if(isClusterRestart) {
+      Log.getLogWriter().info("The parameters for clusterRestart are snappyPath = " + snappyPath + "\nnodeType = " + nodeType + "\n isStopStart = " + isStopStart);
+      clusterRestart(snappyPath, isStopStart, nodeType, false, "", false);
+    }
   }
 
   public static void HydraTask_performRebalance() {
