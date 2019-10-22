@@ -1604,6 +1604,16 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(r: JDBCMutableRelation, _, _) =>
         r.executeUpdate(sql, JdbcExtendedUtils.toUpperCase(getCurrentSchema))
+
+        // when "alter table add constraint" is fired, it directly fires the sql
+        // as in on gemfire layer... to capture the sql string in catalog properties for ddls
+        // export, we can we just add sql string to properties in CatalogTable
+        // and update it into the metastore.
+
+        val metadata = sessionCatalog.getTableMetadata(tableIdent)
+        sessionCatalog.alterTable(metadata.copy(properties = metadata.properties +
+              (s"altTxt_${System.currentTimeMillis()}" -> sql)))
+
       case _ => throw new AnalysisException(
         s"ALTER TABLE ${tableIdent.unquotedString} variant only supported for row tables")
     }
