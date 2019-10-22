@@ -324,10 +324,8 @@ object RecoveryService extends Logging {
           .sortBy(_.split("_")(1).toLong)
       altStmtKeysSorted.foreach(k => {
         val stmt = table.properties(k).toUpperCase()
-
         var alteredSchema: StructType = null
         if (stmt.contains(" ADD COLUMN ")) {
-          // TODO replace ; at the end also add regex match instead of contains
           val columnString = stmt.substring(stmt.indexOf("ADD COLUMN ") + 11)
           val colNameAndType = (columnString.split("[ ]+")(0), columnString.split("[ ]+")(1))
           // along with not null other column definitions should be handled
@@ -541,6 +539,25 @@ object RecoveryService extends Logging {
         } in the catalog.")
     }
   }
+
+  case class DumpDataArgs(formatType: String, tables: Seq[String],
+      outputDir: String, ignoreError: Boolean)
+  val dataDumpArgs: mutable.MutableList[DumpDataArgs] = mutable.MutableList.empty
+
+  /**
+   * capture the arguments used by the procedure DUMP_DATA and cache them for later generating
+   * helper scripts to load all this data back into new cluster
+   *
+   * @param formatType spark output format
+   * @param tables comma separated qualified names of tables
+   * @param outputDir base output path for one call of DUMP_DATA procedure
+   * @param ignoreError whether to move on to next table in case of failure
+   */
+  def captureArguments(formatType: String, tables: Seq[String],
+      outputDir: String, ignoreError: Boolean): Unit = {
+    dataDumpArgs += new DumpDataArgs(formatType, tables, outputDir, ignoreError)
+  }
+
 }
 
 object RegionDiskViewOrdering extends Ordering[RecoveryModePersistentView] {
