@@ -171,11 +171,11 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     } else {
       exportUri + s"_${System.currentTimeMillis()}" + File.separator
     }
-
+    RecoveryService.captureArguments(formatType, tablesArr, filePath, ignoreError)
     tablesArr.foreach(f = table => {
       Try {
         val tableData = session.sql(s"select * from $table;")
-        logDebug(s"Querying table $table.")
+        logDebug(s"DUMP_DATA procedure is writing table: $table.")
         tableData.write.mode(SaveMode.Overwrite).option("header", "true").format(formatType)
             .save(filePath + File.separator + table.toUpperCase)
       } match {
@@ -203,6 +203,40 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
       arrBuf.append(ddl.trim + ";\n")
     })
     session.sparkContext.parallelize(arrBuf, 1).saveAsTextFile(filePath)
+  }
+
+  /**
+   * generates spark-shell code which helps user to reload data dumped through DUMP_DATA procedure
+   *
+   */
+  def generateLoadScripts(connId: lang.Long): Unit = {
+    val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
+    var loadScriptString = ""
+
+    RecoveryService.dataDumpArgs.foreach(d => {
+      val generatedScriptPath = s"${d.outputDir.replaceAll("/$", "")}_load_scripts"
+      d.tables.foreach(table => {
+        val tableExternal = s"temp_${table.replace('.', '_')}"
+        val additionalOptions = d.formatType match {
+          case "csv" => ",header 'true'"
+          case _ => ""
+        }
+        // todo do testing for all formats and ensure generated scripts handles all scenarios
+        loadScriptString += s"""
+          |CREATE EXTERNAL TABLE $tableExternal USING ${d.formatType}
+          |OPTIONS (PATH '${d.outputDir}/${table.toUpperCase}'${additionalOptions});
+          |INSERT OVERWRITE $table SELECT * FROM $tableExternal;
+          |
+        """.stripMargin
+//        loadScriptString += s"""
+//                               |var $tableExternal = sn.read.${d.formatType}("${d.outputDir}/${table.toUpperCase}")
+//                               |$tableExternal.write.mode("overwrite").insertInto("${table}")
+//                               |$tableExternal = null
+//                               |
+//      """.stripMargin
+      })
+      session.sparkContext.parallelize(Seq(loadScriptString), 1).saveAsTextFile(generatedScriptPath)
+    })
   }
 
   override def setLeadClassLoader(): Unit = {

@@ -43,7 +43,6 @@ class DefaultSource extends ExternalSchemaRelationProvider with SchemaRelationPr
       case _ => throw new IllegalArgumentException(
         "table name not defined while trying to create relation")
     }
-    // ExternalStoreUtils.removeInternalProps(parameters)
 
     ExternalStoreUtils.getAndSetTotalPartitions(
       session, parameters, forManagedTable = true, forColumnTable = false)
