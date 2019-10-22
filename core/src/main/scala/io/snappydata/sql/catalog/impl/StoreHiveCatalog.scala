@@ -105,6 +105,12 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     (table ne null) && CatalogObjectType.isColumnTable(CatalogObjectType.getTableType(table))
   }
 
+  override def isSampleTable(schema: String, tableName: String, skipLocks: Boolean): Boolean = {
+    val q = new CatalogQuery[CatalogTable](GET_TABLE, tableName, schema)
+    val table = handleFutureResult(catalogQueriesExecutorService.submit(q))
+    (table ne null) && CatalogObjectType.isSampleTable(CatalogObjectType.getTableType(table))
+  }
+
   override def getCatalogTables: JList[ExternalTableMetaData] = {
     // skip if this is already the catalog lookup thread (Hive dropTable
     //   invokes getTables again)
@@ -795,5 +801,9 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
     case _ => throw new IllegalArgumentException(
       s"Unexpected catalog metadata write operation = $operation, args = $request")
+  }
+
+  def hasDependentSampleTable(table: String): Boolean = {
+    false
   }
 }
