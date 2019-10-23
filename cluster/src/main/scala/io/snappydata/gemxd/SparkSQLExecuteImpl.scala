@@ -29,6 +29,7 @@ import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
+import com.pivotal.gemfirexd.internal.engine.distributed.execution.LeadNodeExecutionObject
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdHeapDataOutputStream, SnappyResultHolder}
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
@@ -96,7 +97,7 @@ class SparkSQLExecuteImpl(val sql: String,
   private val (allAsClob, columnsAsClob) = SparkSQLExecuteImpl.getClobProperties(session)
 
   override def packRows(msg: LeadNodeExecutorMsg,
-      snappyResultHolder: SnappyResultHolder): Unit = {
+      snappyResultHolder: SnappyResultHolder, execObject: LeadNodeExecutionObject): Unit = {
 
     var srh = snappyResultHolder
     val isLocalExecution = msg.isLocallyExecuted
@@ -139,7 +140,7 @@ class SparkSQLExecuteImpl(val sql: String,
             // prepare SnappyResultHolder with all data and create new one
             SparkSQLExecuteImpl.handleLocalExecution(srh, hdos)
             msg.sendResult(srh)
-            srh = new SnappyResultHolder(this, msg.isUpdateOrDeleteOrPut)
+            srh = new SnappyResultHolder(this, execObject.isUpdateOrDeleteOrPut)
           } else {
             // throttle sending if target node is CRITICAL_UP
             val targetMember = msg.getSender
