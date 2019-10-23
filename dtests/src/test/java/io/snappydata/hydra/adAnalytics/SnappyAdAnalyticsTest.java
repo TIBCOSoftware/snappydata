@@ -417,7 +417,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         String aggType = SnappySchemaPrms.getAggregateType();
         switch (aggType.toUpperCase()) {
           case "JOIN":
-            query = "select tp.*,pd.language from temp_person tp,  person_details pd where tp.id=pd.id";
+            query = "select tp.*,pd.language from temp_persoon tp,  person_details pd where tp.id=pd.id";
             break;
           case "AVG":
             query = "select id, avg(age) as avg_age, avg(numChild) as avg_numchild from temp_persoon group by id";
@@ -447,7 +447,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       String errMsg = testInstance.compareFiles(queryResultDirPath, streamTableFile, tmpTableFile,
           false, "streaming");
       if(errMsg.length()> 0 ){
-        throw new TestException("Got exception while validating results");
+        throw new TestException("Got exception while validating results : " + errMsg);
       }
     } catch (SQLException se) {
       Log.getLogWriter().info("Got exception while verifying results");

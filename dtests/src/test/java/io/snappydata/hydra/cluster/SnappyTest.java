@@ -2294,6 +2294,29 @@ public class SnappyTest implements Serializable {
     return command;
   }
 
+  public String getLog4jFile(String dest) {
+    String log4jFileName = "";
+    try {
+      log4jFileName = getCurrentDirPath() + File.separator + "log4j_" + getMyTid() + ".properties";
+      Log.getLogWriter().info("log4j path :" + log4jFileName);
+      File log4jFile = new File(log4jFileName);
+      FileWriter fw = new FileWriter(log4jFile);
+      fw.write("log4j.rootCategory=DEBUG, file\n");
+      fw.write("log4j.appender.file=org.apache.log4j.RollingFileAppender\n");
+      fw.write("log4j.appender.file.append=true\n");
+      fw.write("log4j.appender.file.file=" + dest + "\n");
+      fw.write("log4j.appender.file.MaxFileSize=1GB\n");
+      fw.write("log4j.appender.file.MaxBackupIndex=10000\n");
+      fw.write("log4j.appender.file.layout=io.snappydata.log4j.PatternLayout\n");
+      fw.write("log4j.appender.file.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss.SSS zzz} %t %p %c{1}: %m%n\n");
+      fw.close();
+    } catch (IOException e) {
+      throw new TestException("IOException occurred while retriving log4j file at path " +
+          log4jFileName + "\nError Message:" + e.getMessage());
+    }
+    return log4jFileName;
+  }
+
   public void executeSparkJob(Vector jobClassNames, String logFileName) {
     String snappyJobScript = getScriptLocation("spark-submit");
     boolean isCDCStream = SnappyCDCPrms.getIsCDCStream();
@@ -2301,6 +2324,7 @@ public class SnappyTest implements Serializable {
     File log = null, logFile = null;
     userAppJar = SnappyPrms.getUserAppJar();
     snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
+    boolean isSparkDebug = SnappyPrms.isSparkDebugEnabled();
     try {
       for (int i = 0; i < jobClassNames.size(); i++) {
         String userJob = (String) jobClassNames.elementAt(i);
@@ -2322,13 +2346,16 @@ public class SnappyTest implements Serializable {
             throw new TestException("dml props for thread " + getMyTid() + " is null)");
           userAppArgs = userAppArgs + " " + dmlProps;
         }
+        String log4jFile = (isSparkDebug)?getLog4jFile(dest):"";
         if (SnappyCDCPrms.getIsCDC()) {
           command = setCDCSparkAppCmds(userAppArgs, commonArgs, snappyJobScript, userJob, masterHost, masterPort, logFile);
         } else {
           command = snappyJobScript + " --class " + userJob +
               " --master spark://" + masterHost + ":" + masterPort + " " +
               SnappyPrms.getExecutorMemory() + " " +
-              SnappyPrms.getSparkSubmitExtraPrms() + " " + commonArgs + " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
+              SnappyPrms.getSparkSubmitExtraPrms() + " " + commonArgs + " " +
+              ((isSparkDebug)?(" --driver-java-options -Dlog4j.configuration=file://" + log4jFile):"") + " " +
+              snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
               userAppArgs + " " + primaryLocatorHost + ":" + primaryLocatorPort;
         }
         Log.getLogWriter().info("spark-submit command is : " + command);
@@ -2511,11 +2538,12 @@ public class SnappyTest implements Serializable {
         FileInputStream fis = new FileInputStream(commandOutput);
         BufferedReader br = new BufferedReader(new InputStreamReader(fis));
         line = null;
-        String searchString = "Connection reset by peer";
+        String connResetErr = "Connection reset by peer";
+        String askTimedOutErr = "Ask timed out on ";
         while ((line = br.readLine()) != null && !found) {
-          if (line.toLowerCase().contains(searchString.toLowerCase())) {
+          if (line.toLowerCase().contains(connResetErr.toLowerCase()) || line.toLowerCase().contains(askTimedOutErr.toLowerCase())) {
             found = true;
-            Log.getLogWriter().info("Connection reset by peer...");
+            Log.getLogWriter().info("Job submission failed with : " + line);
           }
         }
         br.close();
