@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -133,8 +133,11 @@ public final class SnappySharedState extends SharedState {
     if (clusterMode instanceof ThinClientConnectorMode) {
       this.embedCatalog = null;
     } else {
-      // ensure store catalog is initialized
-      Misc.getMemStoreBooting().getExistingExternalCatalog();
+        // store catalog is not initialized for leader in recovery mode until this point.
+      if (!Misc.getGemFireCache().isSnappyRecoveryMode()) {
+        // ensure store catalog is initialized
+        Misc.getMemStoreBooting().getExistingExternalCatalog();
+      }
       this.embedCatalog = HiveClientUtil$.MODULE$.getOrCreateExternalCatalog(
           sparkContext, sparkContext.conf());
     }

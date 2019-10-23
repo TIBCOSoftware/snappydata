@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -92,7 +92,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     }
     defaultName = formatDatabaseName(IdUtil.getUserAuthorizationId(defaultName).replace('-', '_'))
     createSchema(defaultName, ignoreIfExists = true)
-    setCurrentSchema(defaultName)
+    setCurrentSchema(defaultName, force = true)
     defaultName
   }
 
@@ -332,8 +332,12 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     if (externalCatalog.databaseExists(schemaName)) {
       if (!ignoreIfExists) throw new AnalysisException(s"Schema '$schemaName' already exists")
     } else {
+      val orgSqlText = snappySession.getContextObject[String]("orgSqlText") match {
+        case Some(s) => s
+        case None => ""
+      }
       super.createDatabase(CatalogDatabase(schemaName, schemaDescription(schemaName),
-        getDefaultDBPath(schemaName), Map.empty), ignoreIfExists)
+        getDefaultDBPath(schemaName), Map("orgSqlText" -> orgSqlText)), ignoreIfExists)
     }
 
     // then in store if catalog was successful
@@ -497,19 +501,21 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   }
 
   override def setCurrentDatabase(schema: String): Unit =
-    setCurrentSchema(formatDatabaseName(schema))
+    setCurrentSchema(formatDatabaseName(schema), force = false)
 
   /**
    * Identical to [[setCurrentDatabase]] but assumes that the passed name
    * has already been formatted by a call to [[formatDatabaseName]].
    */
-  private[sql] def setCurrentSchema(schemaName: String): Unit = {
-    validateSchemaName(schemaName, checkForDefault = false)
-    super.setCurrentDatabase(schemaName)
-    externalCatalog.setCurrentDatabase(schemaName)
-    // no need to set the current schema in external hive metastore since the
-    // database may not exist and all calls to it will already ensure fully qualified
-    // table names
+  private[sql] def setCurrentSchema(schemaName: String, force: Boolean): Unit = {
+    if (force || schemaName != getCurrentSchema) {
+      validateSchemaName(schemaName, checkForDefault = false)
+      super.setCurrentDatabase(schemaName)
+      externalCatalog.setCurrentDatabase(schemaName)
+      // no need to set the current schema in external hive metastore since the
+      // database may not exist and all calls to it will already ensure fully qualified
+      // table names
+    }
   }
 
   override def getDatabaseMetadata(schema: String): CatalogDatabase = {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -354,6 +354,7 @@ object CatalogObjectType extends Enumeration {
 
   val Row: Type = Value("ROW")
   val Column: Type = Value("COLUMN")
+  val Oplog: Type = Value("OPLOG")
   val View: Type = Value("VIEW")
   val Index: Type = Value("INDEX")
   val Stream: Type = Value("STREAM")

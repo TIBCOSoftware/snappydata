@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -49,6 +49,13 @@ class SnappyBasicAuthenticator extends BasicAuthenticator with Logging {
 
     if (result != null) {
       val msg = s"ACCESS DENIED, user [$username]. $result"
+      if (GemFireXDUtils.TraceAuthentication) {
+        SanityManager.DEBUG_PRINT(GfxdConstants.TRACE_AUTHENTICATION, msg)
+      }
+      null
+    } else if (Misc.getGemFireCache.isSnappyRecoveryMode &&
+        !username.equals(memStore.getBootProperty(Attribute.USERNAME_ATTR))) {
+      val msg = s"ACCESS DENIED, user [$username]. Only admin-user is allowed in recovery mode."
       if (GemFireXDUtils.TraceAuthentication) {
         SanityManager.DEBUG_PRINT(GfxdConstants.TRACE_AUTHENTICATION, msg)
       }

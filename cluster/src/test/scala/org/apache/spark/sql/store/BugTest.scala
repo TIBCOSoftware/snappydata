@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -32,8 +32,10 @@ import org.scalatest.BeforeAndAfterAll
 import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd}
 import org.apache.spark.sql.catalog.Column
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.apache.spark.sql.{Row, SaveMode, SnappyContext, SparkSession}
 
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -1003,6 +1005,136 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
   }
 
+  // spark.sql.autoBroadcastJoinThreshold
+
+  test("SNAP-3192 self join query giving wrong results - with broadcasthashjoin disabled") {
+    val sncToUse = snc.newSession()
+    sncToUse.setConf("spark.sql.autoBroadcastJoinThreshold", "-1")
+   // sncToUse.setConf("snappydata.sql.tokenize", "false")
+   // sncToUse.setConf("spark.sql.exchange.reuse", "false")
+
+    testSnap3192HashJoinBehaviour(sncToUse)
+  }
+  test("SNAP-3192 self join query giving wrong results - with broadcasthashjoin enabled") {
+    testSnap3192HashJoinBehaviour(snc)
+  }
+
+  def testSnap3192HashJoinBehaviour(sncToUse: SnappyContext) {
+    sncToUse.sql("drop table if exists SAMPLES")
+    val propsSAMPLES = Map("partition_by" -> "CHANNEL", "buckets" -> "4")
+    val schSAMPLES = "(TIMESTAMP bigint, SPOT_TIME timestamp, CHANNEL varchar(128), SAMPLE double)"
+    sncToUse.createTable("SAMPLES", "row", schSAMPLES, propsSAMPLES, false)
+    sncToUse.sql("CREATE UNIQUE INDEX SAMPLES_TIMESTAMP ON SAMPLES( TIMESTAMP, CHANNEL )")
+    sncToUse.sql("CREATE INDEX SAMPLES_CHANNEL ON SAMPLES( CHANNEL )")
+    sncToUse.sql("CREATE INDEX SAMPLES_SPOT_TIME ON SAMPLES( SPOT_TIME )")
+    val hfile: String = getClass.getResource("/snap-3192.csv").getPath
+    val stagingDF = sncToUse.read.option("header", "true").csv(hfile)
+    stagingDF.write.insertInto("samples")
+    var rs = sncToUse.sql("select s1.timestamp, s1.sample as vCar, s2.sample as NGears" +
+      " from samples as s1, samples as s2 where s1.timestamp = s2.timestamp" +
+      " and s1.channel = 'vCar' and s2.channel = 'NGears'" +
+      "  ")
+    rs.show()
+    rs.collect().foreach(row => assertTrue(row.getDouble(1) != row.getDouble(2)))
+
+    rs = sncToUse.sql("select s1.timestamp, s1.sample as vCar, s2.sample as NGears" +
+      " from samples as s1, samples as s2 where s1.timestamp = s2.timestamp" +
+      " and s1.channel = 'vCar' and s2.channel = 'NGears'" +
+      "  ")
+    rs.show()
+    rs.collect().foreach(row => assertTrue(row.getDouble(1) != row.getDouble(2)))
+
+    rs = sncToUse.sql("select s1.timestamp, s1.sample as vCar, s2.sample as NGears" +
+      " from samples as s1, samples as s2 where s1.timestamp = s2.timestamp" +
+      " and s1.channel = 'vCar' and s2.channel = 'NGears'" +
+      " order by s1.timestamp asc limit 10")
+    rs.show()
+    rs.collect().foreach(row => assertTrue(row.getDouble(1) != row.getDouble(2)))
+
+    rs = sncToUse.sql("select s1.timestamp, s1.sample as vCar, s2.sample as NGears" +
+      " from samples as s1, samples as s2 where s1.timestamp = s2.timestamp" +
+      " and s1.channel = 'vCar' and s2.channel = 'NGears'" +
+      " order by s1.timestamp asc limit 10")
+    rs.show()
+    rs.collect().foreach(row => assertTrue(row.getDouble(1) != row.getDouble(2)))
+
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    val stmt = conn.createStatement()
+    val res = stmt.executeQuery("select s1.timestamp, s1.sample as vCar, s2.sample as NGears" +
+      " from samples as s1, samples as s2 where s1.timestamp = s2.timestamp" +
+      " and s1.channel = 'vCar' and s2.channel = 'NGears'" +
+      " order by s1.timestamp asc limit 10")
+
+    while(res.next()) {
+      assertTrue(res.getDouble(2) != res.getDouble(3))
+    }
+
+    sncToUse.dropIndex("SAMPLES_TIMESTAMP", true)
+    sncToUse.dropIndex("SAMPLES_CHANNEL", true)
+    sncToUse.dropIndex("SAMPLES_SPOT_TIME", true)
+    sncToUse.dropTable("samples", true)
+  }
+
+  test("SNAP-3192, SNAP-3193 self join query giving wrong results - check row table") {
+    testSnap3192("row")
+  }
+  test("SNAP-3192 self join query giving wrong results - check column table") {
+    testSnap3192("column")
+  }
+  def testSnap3192(tableType: String) {
+    snc
+    snc.dropTable("test", true)
+    snc.sql(s"create table test (id int, sample float, channel varchar(128)) using $tableType")
+    if (tableType.equalsIgnoreCase("row")) {
+      snc.sql("create index channel_index on test (channel)")
+    }
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    val ps = conn.prepareStatement("insert into test values (?,?, ?)")
+    ps.setInt(1, 1)
+    ps.setFloat(2, 1.0f)
+    ps.setString(3, "gear")
+    ps.addBatch()
+    ps.setInt(1, 1)
+    ps.setFloat(2, 75342.75f)
+    ps.setString(3, "car")
+    ps.addBatch()
+
+    ps.setInt(1, 2)
+    ps.setFloat(2, 2.0f)
+    ps.setString(3, "gear")
+    ps.addBatch()
+    ps.setInt(1, 2)
+    ps.setFloat(2, 7552442.75f)
+    ps.setString(3, "car")
+    ps.addBatch()
+
+    ps.executeBatch()
+    val query = "select s1.id , s1.sample as car_sample, s2.sample as gear_sample from " +
+      " test as s1, test as s2 where s1.id = s2.id and s1.channel = 'car' and s2.channel = 'gear'" +
+      " order by s1.id asc limit 10"
+    var rs = snc.sql(query)
+    rs.collect().foreach(row => assertTrue(row.getFloat(1) != row.getFloat(2)))
+    rs = snc.sql(query)
+    rs.collect.foreach(row => assertTrue(row.getFloat(1) != row.getFloat(2)))
+
+    val stmt = conn.createStatement()
+    var rs1 = stmt.executeQuery(query)
+    while(rs1.next()) {
+      assertTrue(rs1.getFloat(2) != rs1.getFloat(3))
+    }
+    println("\n\n")
+
+    rs1 = stmt.executeQuery(query)
+    while(rs1.next()) {
+      assertTrue(rs1.getFloat(2) != rs1.getFloat(3))
+    }
+    snc.dropIndex("channel_index", true)
+    snc.dropTable("test", true)
+    TestUtil.stopNetServer()
+  }
+
 
   test("SNAP-3045. Incorrect Hashjoin result-2") {
     snc
@@ -1068,6 +1200,31 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     insertDataAndTestSNAP3082(conn, stmt, "DECIMAL")
     // scalastyle:on println
 
+  }
+
+  test("SNAP-3193: Float Column type ddl in column & row table result in different schema") {
+    // create row table rowTable
+    snc.sql("CREATE TABLE rowTable(floatCol FLOAT) using row")
+    // create col table colTable
+    snc.sql("CREATE TABLE colTable(floatCol FLOAT) using column")
+
+    snc.table("rowTable").schema.zip(
+      snc.table("colTable").schema).foreach(tup => {
+      assertTrue(tup._1.dataType.equals(tup._2.dataType))
+    })
+
+    snc.sql("insert into rowTable values (1.0E8)")
+    snc.sql("insert into rowTable values (-2.225E-307)")
+    snc.sql("insert into colTable values (1.0E8)")
+    snc.sql("insert into colTable values (-2.225E-307)")
+
+    val rs1 = snc.sql("select floatCol from rowTable order by floatCol asc ").collect()
+    val rs2 = snc.sql("select floatCol from colTable order by floatCol asc ").collect()
+    rs1.zip(rs2).foreach {
+      case (r1, r2) => assertEquals(r1.getFloat(0), r2.getFloat(0), 0)
+    }
+    snc.dropTable("rowTable", true)
+    snc.dropTable("colTable", true)
   }
 
   private def insertDataAndTestSNAP3082(conn: Connection, stmt: Statement,
@@ -1167,5 +1324,54 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       "results of prepared and unprepared statements do not match")
     // scalastyle:on println
 
+  }
+
+  test("SNAP-3123: check for GUI plans and SNAP-3141: code gen failure") {
+    val session = snc.snappySession.newSession()
+    session.sql(s"set ${Property.UseOptimzedHashAggregate.name} = true")
+    session.sql(s"set ${Property.UseOptimizedHashAggregateForSingleKey.name} = true")
+
+    val numRows = 1000000
+    val sleepTime = 7000L
+    session.sql("create table test1 (id long, data string) using column " +
+        s"options (buckets '8') as select id, 'data_' || id from range($numRows)")
+    val ds = session.sql(
+      "select avg(id) average, id % 10 from test1 group by id % 10 order by average")
+    Thread.sleep(sleepTime)
+    ds.collect()
+
+    // check UI timings and plan details
+    val listener = ExternalStoreUtils.getSQLListener.get
+    // last one should be the query above
+    val queryUIData = listener.getCompletedExecutions.last
+    val duration = queryUIData.completionTime.get - queryUIData.submissionTime
+    // never expect the query above to take more than 7 secs
+    assert(duration > 0L)
+    assert(duration < sleepTime)
+    assert(queryUIData.succeededJobs.length === 2)
+
+    val metrics = listener.getExecutionMetrics(queryUIData.executionId)
+    val scanNode = queryUIData.physicalPlanGraph.allNodes.find(_.name == "ColumnTableScan").get
+    val numRowsMetric = scanNode.metrics.find(_.name == "number of output rows").get
+    assert(metrics(numRowsMetric.accumulatorId) ===
+        SQLMetrics.stringValue(numRowsMetric.metricType, numRows :: Nil))
+  }
+
+  test("Bug SNAP-2728. SQL Built in functions throwing exception") {
+    snc.dropTable("test1", true)
+    snc.sql("SELECT sort_array(array('b', 'd', 'c', 'a'), true)").collect()
+    snc.sql("SELECT sort_array(array('b', 'd', 'c', 'a'), true)").collect()
+    val numRows = 100
+    snc.sql("create table test1 (id long, data string) using column " +
+      s"options (buckets '8') as select id, 'data_' || id from range($numRows)")
+    snc.sql("select first_value(id, true) from test1").collect()
+    snc.sql("select first_value(id, true) from test1").collect()
+    snc.sql("select last_value(id, true) from test1").collect()
+    snc.sql("select last_value(id, true) from test1").collect()
+    snc.sql("select rand(0)").collect()
+    snc.sql("select rand(0)").collect()
+    snc.sql("select randn(0)").collect()
+    snc.sql("select randn(0)").collect()
+    snc.dropTable("test1")
   }
 }

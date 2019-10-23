@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -29,7 +29,9 @@ import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.CancelException
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui.{MemberStatistics, SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
+import io.snappydata.recovery.RecoveryService
 
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.collection.Utils
@@ -56,7 +58,9 @@ trait TableStatsProviderService extends Logging {
 
   protected def aggregateStats(): Unit = synchronized {
     try {
-      if (doRun) {
+      // TODO: Need to be addressed - Disabling aggregateStats as a temporary fix.
+      val cache = Misc.getGemFireCacheNoThrow
+      if (doRun && cache != null ) {
         val prevTableSizeInfo = tableSizeInfo
         running = true
         try {
@@ -185,7 +189,11 @@ trait TableStatsProviderService extends Logging {
   def getAggregatedStatsOnDemand: (Map[String, SnappyRegionStats],
       Map[String, SnappyIndexStats], Map[String, SnappyExternalTableStats]) = {
     if (!doRun) return (Map.empty, Map.empty, Map.empty)
-    val (tableStats, indexStats, externalTableStats) = getStatsFromAllServers()
+    val (tableStats, indexStats, externalTableStats) =
+      if (Misc.getGemFireCacheNoThrow != null &&
+          Misc.getGemFireCache.isSnappyRecoveryMode) {
+        RecoveryService.getStats
+      } else getStatsFromAllServers()
 
     val aggregatedStats = scala.collection.mutable.Map[String, SnappyRegionStats]()
     val aggregatedExtTableStats = scala.collection.mutable.Map[String, SnappyExternalTableStats]()

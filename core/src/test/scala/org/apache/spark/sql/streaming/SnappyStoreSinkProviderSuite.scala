@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -24,13 +24,15 @@ import scala.reflect.io.Path
 
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH
 import io.snappydata.SnappyFunSuite
+import org.junit.Assert
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.sql.{Dataset, Row, SnappyContext, SnappySession}
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.execution.CatalogStaleException
 import org.apache.spark.sql.kafka010.KafkaTestUtils
+import org.apache.spark.sql.streaming.SnappyStoreSinkProvider.{ATTEMPTS, TEST_FAILBATCH_OPTION}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappyContext, SnappySession}
 
 class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     with BeforeAndAfter with BeforeAndAfterAll {
@@ -84,7 +86,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
 
     streamingQuery.processAllAvailable()
-
+    streamingQuery.stop()
     val rows = Array(Row(1, "name11", 40, "lname1"), Row(2, "name2", 10, "lname2"),
       Row(3, "name3", 30, "lname3"), Row(4, "name4", 50, "lname4"))
     assertData(rows)
@@ -103,7 +105,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray)
 
     streamingQuery.processAllAvailable()
-
+    streamingQuery.stop()
     val rows = Array(Row(1, "name1", 30, "lname1"), Row(1, "name1", 30, "lname1"),
       Row(2, "name2", 10, "lname2"), Row(3, "name3", 30, "lname3"))
     assertData(rows)
@@ -125,7 +127,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
       Seq(3, "name3", 30, "lname3", 0), Seq(4, "name4", 10, "lname4", 2))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
     streamingQuery.processAllAvailable()
-
+    streamingQuery.stop()
     assertData(Array(Row(1, "name11", 30, "lname1"), Row(3, "name3", 30, "lname3")))
   }
 
@@ -141,6 +143,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val thrown = intercept[StreamingQueryException] {
       val streamingQuery = createAndStartStreamingQuery(topic, testId)
       streamingQuery.processAllAvailable()
+      streamingQuery.stop()
     }
 
     val errorMessage = "_eventType is present in data but key columns are not defined on table."
@@ -164,7 +167,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
 
     streamingQuery.processAllAvailable()
-
+    streamingQuery.stop()
     val rows = Array(Row(1, "name11", 40, "lname1"), Row(2, "name2", 10, "lname2"),
       Row(3, "name3", 30, "lname3"), Row(4, "name4", 50, "lname4"))
     assertData(rows)
@@ -183,7 +186,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray)
 
     streamingQuery.processAllAvailable()
-
+    streamingQuery.stop()
     val rows = Array(Row(1, "name1", 30, "lname1"), Row(1, "name1", 30, "lname1"),
       Row(2, "name2", 10, "lname2"), Row(3, "name3", 30, "lname3"))
     assertData(rows)
@@ -205,7 +208,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
       Seq(3, "name3", 30, "lname3", 0), Seq(4, "name4", 10, "lname4", 2))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
     streamingQuery.processAllAvailable()
-
+    streamingQuery.stop()
     assertData(Array(Row(1, "name11", 30, "lname1"), Row(3, "name3", 30, "lname3")))
   }
 
@@ -227,7 +230,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     streamingQuery.stop()
   }
 
-  test("test idempotency") {
+  test("idempotency") {
     val testId = testIdGenerator.getAndIncrement()
     createTable()()
     val topic = getTopic(testId)
@@ -240,7 +243,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     streamingQuery.stop()
 
     val streamingQuery1: StreamingQuery = createAndStartStreamingQuery(topic, testId
-      , options = Map("internal___failBatch" -> "true"))
+      , options = Map(TEST_FAILBATCH_OPTION -> "true"))
     kafkaTestUtils.sendMessages(topic, (11 to 20).map(i => s"$i,name$i,$i,lname$i,0").toArray)
     try {
       streamingQuery1.processAllAvailable()
@@ -255,11 +258,11 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     kafkaTestUtils.sendMessages(topic, (21 to 30).map(i => s"$i,name$i,$i,lname$i,0").toArray)
     waitTillTheBatchIsPickedForProcessing(1, testId)
     streamingQuery2.processAllAvailable()
-
+    streamingQuery2.stop()
     assertData((0 to 30).map(i => Row(i, s"name$i", i, s"lname$i")).toArray)
   }
 
-  test("test conflation enabled") {
+  test("conflation enabled") {
     val testId = testIdGenerator.getAndIncrement()
     createTable()()
     val topic = getTopic(testId)
@@ -276,7 +279,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
       options = Map("conflation" -> "true"))
 
     streamingQuery.processAllAvailable()
-
+    streamingQuery.stop()
     assertData(Array(Row(1, "name999", 999, "lname1")))
   }
 
@@ -293,7 +296,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
       withEventTypeColumn = false, options = Map("conflation" -> "true"))
 
     streamingQuery.processAllAvailable()
-
+    streamingQuery.stop()
     assertData(Array(Row(1, "name3", 30, "lname1")))
   }
 
@@ -310,6 +313,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
       val streamingQuery = createAndStartStreamingQuery(topic, testId,
         withEventTypeColumn = false, options = Map("conflation" -> "true"))
       streamingQuery.processAllAvailable()
+      streamingQuery.stop()
     }
     val errorMessage = "Key column(s) or primary key must be defined on table in order " +
         "to perform conflation."
@@ -333,11 +337,11 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     kafkaTestUtils.sendMessages(topic, batch2.map(r => r.mkString(",")).toArray)
 
     streamingQuery.processAllAvailable()
-
+    streamingQuery.stop()
     assertData(Array(Row(1, "name1", 30, "lname1")))
   }
 
-  test("test conflation disabled") {
+  test("conflation disabled") {
     val testId = testIdGenerator.getAndIncrement()
     createTable()()
     val topic = getTopic(testId)
@@ -349,6 +353,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
 
     streamingQuery.processAllAvailable()
+    streamingQuery.stop()
     // The delete will be processed prior to insert event irrespective of their order or arrival.
     // Hence when conflation is disabled, both the events are processed resulting into one record.
     assertData(Array(Row(1, "name1", 1, "lname1")))
@@ -378,7 +383,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val streamingQuery = createAndStartStreamingQuery(topic, testId,
       options = Map("withQueryName" -> "false",
         "sinkCallback" -> "org.apache.spark.sql.streaming.TestSinkCallback",
-        "internal___attempts" -> "3", "attempts" -> "4"))
+        ATTEMPTS -> "3", "attempts" -> "4"))
 
     try {
       streamingQuery.processAllAvailable()
@@ -397,8 +402,9 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val streamingQuery = createAndStartStreamingQuery(topic, testId,
       options = Map("withQueryName" -> "false",
         "sinkCallback" -> "org.apache.spark.sql.streaming.TestSinkCallback",
-        "internal___attempts" -> "3", "attempts" -> "3"))
+        ATTEMPTS -> "3", "attempts" -> "3"))
     streamingQuery.processAllAvailable()
+    streamingQuery.stop()
   }
 
   test("Streaming query fails on the first attempt itself when failure is not due" +
@@ -421,6 +427,40 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     }
   }
 
+  test("At max only one streaming query with snappy sink allowed to run in single session") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    val memorySinkQuery = session
+        .readStream
+        .format("kafka")
+        .option("kafka.bootstrap.servers", kafkaTestUtils.brokerAddress)
+        .option("subscribe", topic)
+        .option("startingOffsets", "earliest")
+        .load().writeStream
+        .queryName("memorysink")
+        .option("checkpointLocation", checkpointDirectory + "/memorysink")
+        .format("memory")
+        .start()
+    try {
+      // This query should start successfully as earlier started query is using memory sink
+      val streamingQuery = createAndStartStreamingQuery(topic, testId * 100)
+      try {
+        val streamingQuery2 = createAndStartStreamingQuery(topic, testId * 200)
+        fail("StreamingQueryException expected.")
+      } catch {
+        case x: AnalysisException =>
+          val expectedMessage = "A streaming query with snappy sink is already running with" +
+              " current session. Please start query with new SnappySession.;"
+          Assert.assertEquals(expectedMessage, x.getMessage)
+      } finally {
+        streamingQuery.stop()
+      }
+    } finally {
+      memorySinkQuery.stop()
+    }
+  }
+
   private def waitTillTheBatchIsPickedForProcessing(batchId: Int, testId: Int,
       retries: Int = 15): Unit = {
     if (retries == 0) {
@@ -429,25 +469,21 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val sqlString = s"select batch_id from APP.${SnappyStoreSinkProvider.SINK_STATE_TABLE} " +
         s"where stream_query_id = '${streamName(testId)}'"
     val batchIdFromTable = session.sql(sqlString).collect()
-
     if (batchIdFromTable.isEmpty || batchIdFromTable(0)(0) != batchId) {
       Thread.sleep(1000)
       waitTillTheBatchIsPickedForProcessing(batchId, testId, retries - 1)
     }
   }
 
-  private def assertData(expectedData: Array[Row]) = {
+  private def assertData(expectedData: Array[Row]): Unit = {
     val actualData = session.sql(s"select * from $tableName order by id, last_name").collect()
     assertResult(expectedData)(actualData)
   }
 
   private def createTable(withKeyColumn: Boolean = true)(isRowTable: Boolean = false) = {
     def provider = if (isRowTable) "row" else "column"
-
     def options = if (!isRowTable && withKeyColumn) "options(key_columns 'id,last_name')" else ""
-
     def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id,last_name)" else ""
-
     val s = s"create table IF NOT EXISTS $tableName  (id long , first_name varchar(40), age int, " +
         s"last_name varchar(40) $primaryKey) using $provider $options "
     session.sql(s)
@@ -467,9 +503,9 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     def structFields() = {
       StructField("id", LongType, nullable = false) ::
-          StructField("firstName", StringType, nullable = true) ::
-          StructField("age", IntegerType, nullable = true) ::
-          StructField("last_name", StringType, nullable = true) ::
+          StructField("firstName", StringType) ::
+          StructField("age", IntegerType) ::
+          StructField("last_name", StringType) ::
           (if (withEventTypeColumn) {
             StructField("_eventType", IntegerType, nullable = false) :: Nil
           }
@@ -480,8 +516,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     val schema = StructType(structFields())
 
-    implicit val encoder = RowEncoder(schema)
-
+    implicit val encoder: ExpressionEncoder[Row] = RowEncoder(schema)
 
     var streamWriter = streamingDF.selectExpr("CAST(value AS STRING)")
         .as[String]

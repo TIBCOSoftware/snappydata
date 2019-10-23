@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -48,7 +48,7 @@ import org.apache.spark.sql.internal._
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager, WindowLogicalPlan}
+import org.apache.spark.sql.streaming.{LogicalDStreamPlan, SnappyStreamingQueryManager, StreamingQueryManager, WindowLogicalPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Strategy, _}
 import org.apache.spark.streaming.Duration
@@ -76,7 +76,7 @@ class SnappySessionState(val snappySession: SnappySession)
     // this session including non-streaming queries.
 
     HashAggregateSize.set(conf, "-1")
-    new StreamingQueryManager(snappySession)
+    new SnappyStreamingQueryManager(snappySession)
   }
 
   private[sql] lazy val hiveSession: SparkSession = {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -92,6 +92,7 @@ object HiveClientUtil extends Logging {
         SystemProperties.SNAPPY_HIVE_METASTORE)
       dbURL
     }
+
     if (SnappyHiveExternalCatalog.getInstance eq null) {
       logInfo(s"Using dbURL = $logURL for Hive metastore initialization")
     }
@@ -121,7 +122,18 @@ object HiveClientUtil extends Logging {
     val oldSkipCatalogCalls = skipFlags.skipHiveCatalogCalls
     skipFlags.skipHiveCatalogCalls = true
     try {
-      SnappyHiveExternalCatalog.getInstance(sparkConf, metadataConf)
+      // In case of data extractor - recovery mode, derby should be used as hive metastore
+      if (Misc.getGemFireCache.isSnappyRecoveryMode &&
+          !(Misc.getMemStore.getMyVMKind.isLocator || Misc.getMemStore.getMyVMKind.isStore)) {
+        logInfo("Using derby as hive metastore.")
+        logDebug("Spark conf being used for SnappyHiveExternalCatalog: " + sparkConf.toDebugString)
+        val recoveryModeHiveConf = new SnappyHiveConf
+        recoveryModeHiveConf.setVar(ConfVars.METASTORECONNECTURLKEY,
+          "jdbc:derby:memory:metastore_db;create=true")
+        SnappyHiveExternalCatalog.getInstance(sparkConf, recoveryModeHiveConf)
+      } else {
+        SnappyHiveExternalCatalog.getInstance(sparkConf, metadataConf)
+      }
     } finally {
       skipFlags.skipHiveCatalogCalls = oldSkipCatalogCalls
       // clear the system properties set for hive

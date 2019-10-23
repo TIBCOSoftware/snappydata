@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,6 +21,8 @@ import java.io.File
 
 import scala.util.Try
 
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, QueryHint}
@@ -975,12 +977,18 @@ abstract class SnappyDDLParser(session: SnappySession)
         ((pairs: Any) => pairs.asInstanceOf[Seq[(String, String)]].toMap)
   }
 
+  protected final def allowDDL: Rule0 = rule {
+    MATCH ~> (() => test({
+      SnappyContext.getClusterMode(session.sparkContext).isInstanceOf[ThinClientConnectorMode] || !Misc.getGemFireCache.isSnappyRecoveryMode
+    }))
+  }
+
   protected def ddl: Rule1[LogicalPlan] = rule {
-    createTableLike | createHiveTable | createTable | describe | refreshTable | dropTable |
-    truncateTable | createView | createTempViewUsing | dropView | alterView | createSchema |
+    describe | allowDDL ~ (createTableLike | createHiveTable | createTable | refreshTable |
+    dropTable | truncateTable | createView | createTempViewUsing | dropView | alterView | createSchema |
     dropSchema | alterTableToggleRowLevelSecurity | createPolicy | dropPolicy |
     alterTableProps | alterTableOrView | alterTable | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | passThrough
+    createIndex | dropIndex | createFunction | dropFunction | passThrough)
   }
 
   protected def partitionSpec: Rule1[Map[String, Option[String]]]

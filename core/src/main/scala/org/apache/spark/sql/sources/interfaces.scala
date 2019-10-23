@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -202,6 +202,8 @@ trait SamplingRelation extends BaseRelation with SchemaInsertableRelation {
    * True if underlying sample table is using a row table as reservoir store.
    */
   def isReservoirAsRegion: Boolean
+
+  def canBeOnBuildSide: Boolean
 }
 
 @DeveloperApi

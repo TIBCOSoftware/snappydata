@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,8 +20,8 @@ import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
 import io.snappydata.hydra.northwind.NWTestJob
-import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
+import org.apache.spark.sql.{SaveMode, SnappySession, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+
 
 import scala.util.{Failure, Success, Try}
 
@@ -48,7 +48,8 @@ object LoadDataFromJson extends SnappySQLJob {
                            fromVal: Int, untilVal: Int): Unit = {
     for (i <- fromVal to untilVal) {
       val jsonDF = snSession.read.json(file)
-      jsonDF.write.putInto(tableName + i)
+    //  jsonDF.write.putInto(tableName + i)
+      jsonDF.write.format("column").mode(SaveMode.Append).saveAsTable(tableName + i)
     }
   }
 

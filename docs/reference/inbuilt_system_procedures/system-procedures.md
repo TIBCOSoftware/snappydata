@@ -18,6 +18,7 @@ The following built-in procedures are available:
 * [SYS.SET_CRITICAL_HEAP_PERCENTAGE](set_critical_heap_percentage.md)
 
 * [SYS.SET_TRACE_FLAG](set-trace-flag.md)
+* [SYS.REMOVE_METASTORE_ENTRY](sys_remove_metastore_entry.md)
 
 The following built-in function is available:
 

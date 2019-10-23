@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -47,7 +47,7 @@ import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
-import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd, SparkListenerExecutorAdded}
 import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -609,11 +609,10 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   /**
    * Set current database/schema.
    *
-   * @param schemaName        schema name which goes in the catalog
-   * @param createIfNotExists create the schema if it does not exist
+   * @param schemaName schema name which goes in the catalog
    */
-  def setCurrentSchema(schemaName: String, createIfNotExists: Boolean = false): Unit = {
-    snappySession.setCurrentSchema(schemaName, createIfNotExists)
+  def setCurrentSchema(schemaName: String): Unit = {
+    snappySession.setCurrentSchema(schemaName)
   }
 
   /**
@@ -807,8 +806,11 @@ object SnappyContext extends Logging {
 
   @volatile private[this] var _globalContextInitialized: Boolean = false
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
+  @volatile private[sql] var executorAssigned = false
+
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
+  private[sql] val resourceLock = new AnyRef
 
   @GuardedBy("contextLock") private var hiveSession: SparkSession = _
 
@@ -828,6 +830,9 @@ object SnappyContext extends Logging {
 
   private val builtinSources = new CaseInsensitiveMutableHashMap[
       (String, CatalogObjectType.Type)](Map(
+    ParserConsts.OPLOG_SOURCE ->
+      (classOf[execution.oplog.impl.DefaultSource].getCanonicalName ->
+        CatalogObjectType.Oplog),
     ParserConsts.COLUMN_SOURCE ->
         (classOf[execution.columnar.impl.DefaultSource].getCanonicalName ->
             CatalogObjectType.Column),
@@ -1204,6 +1209,13 @@ object SnappyContext extends Logging {
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
       stopSnappyContext()
+    }
+    override def onExecutorAdded(execList: SparkListenerExecutorAdded): Unit = {
+      logDebug(s"SparkContextListener: onExecutorAdded: added $execList")
+      resourceLock.synchronized {
+        executorAssigned = true
+        resourceLock.notifyAll()
+      }
     }
   }
 

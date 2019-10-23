@@ -17,7 +17,9 @@ import hydra.RemoteTestModule;
 import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyStartUpTest;
 import io.snappydata.hydra.cluster.SnappyTest;
+import io.snappydata.hydra.dataExtractorTool.SnappyDataExtractorToolTestPrms;
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
+import io.snappydata.test.util.TestException;
 import org.apache.commons.io.FileUtils;
 import sql.sqlutil.ResultSetHelper;
 
@@ -291,17 +293,23 @@ public class SnappyCDCTest extends SnappyTest {
     int tableCnt = 0;
     Boolean isBeforeRestart = SnappyCDCPrms.getIsBeforeRestart();
     String fileName = SnappyCDCPrms.getDataLocation();
+    String schema = SnappyDataExtractorToolTestPrms.getSchemaName();
     try {
       Connection con = SnappyTest.getLocatorConnection();
-      String tableCntQry = "SELECT COUNT(*) FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='APP' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
+      String tableCntQry = "SELECT COUNT(*) FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='" +schema+ "' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
       ResultSet rs = con.createStatement().executeQuery(tableCntQry);
       while (rs.next())
         tableCnt = rs.getInt(1);
       rs.close();
       String[] tableArr = new String[tableCnt];
-      Map<String, Integer> tableCntMap = new HashMap<>();
+      Map<String, Long> tableCntMap = null;
+      if (SnappyBB.getBB().getSharedMap().containsKey("tableCntMap")){
+        tableCntMap = (Map<String,Long>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
+      }
+      else
+        tableCntMap = new HashMap<>();
       int cnt = 0;
-      String tableQry = "SELECT TABLENAME FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='APP' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
+      String tableQry = "SELECT TABLENAME FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='" +schema+ "' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
       ResultSet rs1 = con.createStatement().executeQuery(tableQry);
       while (rs1.next()) {
         String tableName = rs1.getString("TABLENAME");
@@ -310,20 +318,27 @@ public class SnappyCDCTest extends SnappyTest {
       }
       rs1.close();
       for (int i = 0; i < tableArr.length; i++) {
-        int count = 0;
+        long count = 0;
         String tableName = tableArr[i];
         String cntQry = "SELECT COUNT(*) FROM " + tableName;
         ResultSet rs3 = con.createStatement().executeQuery(cntQry);
-        while (rs3.next())
+        while (rs3.next()) {
           count = rs3.getInt(1);
-        tableCntMap.put(tableName, count);
-        rs3.close();
+          Log.getLogWriter().info("SP: The tableName = " + tableName + " count = " + count);
+        }
+        if(!tableCntMap.containsKey(tableName)) //To avoid overwriting the existing key(table)
+        {
+          Log.getLogWriter().info("SP: Inserting in the table as " + tableName + " not in the map" );
+          tableCntMap.put(tableName, count);
+        }
+          rs3.close();
       }
       SnappyBB.getBB().getSharedMap().put("tableCntMap", tableCntMap);
-      getResultSet(con, isBeforeRestart, fileName);
+   //  if(!isBeforeRestart)
+        getResultSet(con, isBeforeRestart, fileName);
       con.close();
     } catch (SQLException ex) {
-      Log.getLogWriter().info("Caught exception in storeDataCount() " + ex.getMessage() + " SQL State is " + ex.getSQLState());
+      throw new io.snappydata.test.util.TestException("Caught exception in storeDataCount() " + ex.getMessage() + " SQL State is " + ex.getSQLState());
     }
   }
 
@@ -337,19 +352,19 @@ public class SnappyCDCTest extends SnappyTest {
   public void validateDataCount() {
     Boolean isBeforeRestart = SnappyCDCPrms.getIsBeforeRestart();
     String fileName = SnappyCDCPrms.getDataLocation();
-    Map<String, Integer> tableCntMap = (Map<String, Integer>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
-    Log.getLogWriter().info("tableCntMap size = " + tableCntMap.size());
+    Map<String, Long> tableCntMap = (Map<String, Long>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
+    Log.getLogWriter().info("tableCntMap size = " + tableCntMap.size() );
     try {
       Connection con = SnappyTest.getLocatorConnection();
-      for (Map.Entry<String, Integer> val : tableCntMap.entrySet()) {
-        int snappyCnt = 0;
+      for (Map.Entry<String, Long> val : tableCntMap.entrySet()) {
+        long snappyCnt = 0;
         String tableName = val.getKey();
-        int BBCnt = val.getValue();
+        long BBCnt = val.getValue();
         String cntQry = "SELECT COUNT(*) FROM " + tableName;
         Log.getLogWriter().info("The query to be executed is " + cntQry);
         ResultSet rs3 = con.createStatement().executeQuery(cntQry);
         while (rs3.next())
-          snappyCnt = rs3.getInt(1);
+          snappyCnt = rs3.getLong(1);
         rs3.close();
         if (snappyCnt == BBCnt)
           Log.getLogWriter().info("SUCCESS : The cnt for table " + tableName + " = " + snappyCnt + " is EQUAL to the BB count = " + BBCnt);
@@ -358,15 +373,17 @@ public class SnappyCDCTest extends SnappyTest {
       }
       getResultSet(con, isBeforeRestart, fileName);
     } catch (SQLException ex) {
-      Log.getLogWriter().info("ValidateDataCount got SQLException " + ex.getMessage());
+      throw new io.snappydata.test.util.TestException("ValidateDataCount got SQLException " + ex.getMessage());
     } catch (Exception ex) {
-      Log.getLogWriter().info("ValidateDataCount got exception " + ex.getMessage());
+      throw new io.snappydata.test.util.TestException("ValidateDataCount got exception " + ex.getMessage());
     }
   }
 
   public void getResultSet(Connection conn, Boolean isBeforeRestart, String fileName) {
     SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
-    String logFile = getCurrentDirPath();
+    String logFile = getCurrentDirPath()+ File.separator + "queryResultFiles";
+    File queryResultDir = new File(logFile);
+    if (!queryResultDir.exists()) queryResultDir.mkdir();
     String outputFile;
     try {
       ArrayList<String> queryList = getQueryList(fileName);
@@ -374,8 +391,9 @@ public class SnappyCDCTest extends SnappyTest {
         if (isBeforeRestart) {
           outputFile = logFile + File.separator + "beforeRestartResultSet_query_" + i + ".out";
         } else
-          outputFile = logFile + File.separator + "afterRestartResultSet_query_" + i + ".out";
+          outputFile = logFile + File.separator + "afterRestartResultSet_query_" +System.currentTimeMillis() + "_" + i + ".out";
         String qStr = queryList.get(i);
+        Log.getLogWriter().info("The query for validation is " + qStr);
         ResultSet snappyRS = conn.createStatement().executeQuery(qStr);
         StructTypeImpl snappySti = ResultSetHelper.getStructType(snappyRS);
         List<Struct> snappyList = ResultSetHelper.asList(snappyRS, snappySti, false);
@@ -383,11 +401,17 @@ public class SnappyCDCTest extends SnappyTest {
         testInstance.listToFile(snappyList, outputFile);
         if (!isBeforeRestart) {
           String beforeRestartFileName = logFile + File.separator + "beforeRestartResultSet_query_" + i + ".out";
-          testInstance.compareFiles(logFile, outputFile, beforeRestartFileName, true, "query_" + i);
+          String mismatchStr = testInstance.compareFiles(logFile, outputFile, beforeRestartFileName, true, "query_" + i);
+          if(mismatchStr.length() > 0){
+            throw new TestException("Observed data mismatch in query  " + qStr);
+          }
         }
       }
     } catch (SQLException ex) {
-      Log.getLogWriter().info("Caught sqlException in getResultSet method " + ex.getMessage());
+      throw new io.snappydata.test.util.TestException("Caught sqlException in getResultSet method " + ex.getMessage());
+    }
+    catch (Exception ex) {
+      throw new io.snappydata.test.util.TestException("Caught exception in getResultSet " + ex.getMessage());
     }
   }
 
@@ -689,11 +713,11 @@ public class SnappyCDCTest extends SnappyTest {
   }
 
   public void removeDiskStore() {
-    String dirPath = SnappyCDCPrms.getDataLocation();
-    Log.getLogWriter().info("the dirPath is " + dirPath);
-    removeDiskStoreFiles(dirPath);
+    Vector hostList = SnappyCDCPrms.getNodeName();
+    String nodeName = String.valueOf(hostList.get(0));
+    Log.getLogWriter().info("the nodeName is " + nodeName);
+    removeDiskStoreFiles(nodeName);
   }
-
 
   public void stopCluster(String snappyPath, File logFile) {
     ProcessBuilder pbClustStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");
@@ -737,9 +761,13 @@ public class SnappyCDCTest extends SnappyTest {
     snappyTest.executeProcess(pbStart, logFile);
   }
 
-  public void removeDiskStoreFiles(String dirPath) {
+  public void removeDiskStoreFiles(String nodeName) {
     try {
+      String dirName = "vm_2_snappyStore1_"+nodeName;
+      String dirPath = getCurrentDirPath() + File.separator + dirName;
+      Log.getLogWriter().info("SP:The dir path is " + dirPath);
       File dir = new File(dirPath);
+
       String[] extensions = new String[]{"crf", "drf", "krf", "idxkrf", "if"};
       Log.getLogWriter().info("Getting files with specified extension " + dir.getCanonicalPath());
       List<File> files = (List<File>) FileUtils.listFiles(dir, extensions, false);

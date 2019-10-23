@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -423,7 +423,8 @@ object SnappyParserConsts {
     // rand() plans are not to be cached since each run should use different seed
     // and the Spark impls create the seed in constructor rather than in generated code
     "rand" -> Array.emptyIntArray, "randn" -> Array.emptyIntArray,
-    "like" -> Array(1), "rlike" -> Array(1), "approx_count_distinct" -> Array(1)))
+    "like" -> Array(1), "rlike" -> Array(1), "first_value" -> Array(1), "last_value" -> Array(1),
+    "sort_array" -> Array(1), "approx_count_distinct" -> Array(1)))
 
   /**
    * Registering a Keyword with this method marks it a reserved keyword,
@@ -456,6 +457,7 @@ object SnappyParserConsts {
 
   final val COLUMN_SOURCE = "column"
   final val ROW_SOURCE = "row"
+  final val OPLOG_SOURCE = "oplog"
   final val DEFAULT_SOURCE = ROW_SOURCE
 
   // reserved keywords
