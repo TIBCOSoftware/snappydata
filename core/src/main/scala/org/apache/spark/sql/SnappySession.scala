@@ -1879,6 +1879,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
+
   /**
    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
    * {{{

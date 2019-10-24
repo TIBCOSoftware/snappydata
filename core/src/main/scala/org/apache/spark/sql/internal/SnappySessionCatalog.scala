@@ -125,6 +125,9 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   final def formatName(name: String): String =
     if (sqlConf.caseSensitiveAnalysis) name else JdbcExtendedUtils.toLowerCase(name)
 
+  def getSampleRelations(baseTable: TableIdentifier): Seq[(LogicalPlan, String)] = Seq.empty
+  def getSamples(base: LogicalPlan): Seq[LogicalPlan] = Seq.empty
+
   /** API to get primary key or Key Columns of a SnappyData table */
   def getKeyColumns(table: String): Seq[Column] = getKeyColumnsAndPositions(table).map(_._1)
 
