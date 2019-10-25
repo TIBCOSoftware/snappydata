@@ -13,16 +13,18 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorWithMixedDataType.conf
 
 
    io/snappydata/hydra/dataExtractorTool/dataExtractorWithServerMeanKill.conf
-      A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+      A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
       B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
       C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
       snappyBinPath="$GEMFIRE/../snappy"
-      dataFilesLocation="/export/shared/QA_DATA/insertVal.sql"
       scriptName=createAndLoadDataForHA.sql
       queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueriesForHA.sql"
       extractedDDLPath="/tmp/recover_ddls"
       extractedDataPath="/tmp/recover_data_parquet"
       dropTableQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dropTables.sql"
+      dmlOpsFileLocation1 = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/insertVal1.sql"
+      dmlOpsFileLocation2 = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/insertVal2.sql"
+      dmlOpsFileLocation3 = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/insertVal3.sql"
 
 /*
 io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf

@@ -1,0 +1,1 @@
+insert into t1 select id,id from range(5000);
