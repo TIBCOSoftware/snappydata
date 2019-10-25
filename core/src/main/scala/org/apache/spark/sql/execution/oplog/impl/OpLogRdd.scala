@@ -43,7 +43,7 @@ import io.snappydata.thrift.CatalogTableObject
 
 import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
+import org.apache.spark.sql.catalyst.util.{DateTimeUtils, SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.execution.RDDKryo
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnDeltaDecoder, ColumnEncoding, ColumnStatsSchema, UpdatedColumnDecoder}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
@@ -584,8 +584,9 @@ class OpLogRdd(
       case ShortType => currentDeltaBuffer.readShort
       case TimestampType => new Timestamp(currentDeltaBuffer.readTimestamp / 1000)
       case StringType => currentDeltaBuffer.readUTF8String
-      case DateType => val daysSinceEpoch = currentDeltaBuffer.readDate
-        new java.sql.Date(1L * daysSinceEpoch * 24 * 60 * 60 * 1000)
+      case DateType =>
+        val daysSinceEpoch = currentDeltaBuffer.readDate
+        DateTimeUtils.toJavaDate(daysSinceEpoch)
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
         currentDeltaBuffer.readLongDecimal(d.precision, d.scale)
       case d: DecimalType => currentDeltaBuffer.readDecimal(d.precision, d.scale)
@@ -623,7 +624,8 @@ class OpLogRdd(
       case StringType => decoder.readUTF8String(value, rowNum)
       case DateType =>
         val daysSinceEpoch = decoder.readDate(value, rowNum)
-        new java.sql.Date(1L * daysSinceEpoch * 24 * 60 * 60 * 1000)
+        // adjust for timezone of machine
+        DateTimeUtils.toJavaDate(daysSinceEpoch)
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
         decoder.readLongDecimal(value, d.precision, d.scale, rowNum)
       case d: DecimalType => decoder.readDecimal(value, d.precision, d.scale, rowNum)
