@@ -26,7 +26,7 @@ import org.apache.spark.streaming.SnappyStreamingQueryListener
 class SnappyStreamingTab (sparkUI: SparkUI, streamingListener: SnappyStreamingQueryListener)
     extends SparkUITab(sparkUI, "structurestreaming") with Logging {
 
-  override val name = "Structure Streaming"
+  override val name = "Structured Streaming"
 
   val parent = sparkUI
   val listener = streamingListener

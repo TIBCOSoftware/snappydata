@@ -25,28 +25,27 @@ import javax.servlet.http.HttpServletRequest
 import scala.xml.Node
 
 import org.apache.spark.internal.Logging
-import org.apache.spark.ui.UIUtils.prependBaseUri
 import java.text.SimpleDateFormat
 // scalastyle:off
 
 private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
     extends WebUIPage("") with Logging {
 
-  val simpleDateFormat = new SimpleDateFormat("dd-MMM-YYYY hh:mm:ss")
-
   val activeQueries = parent.listener.activeQueries
-  val activeQueryProgress = parent.listener.activeQueryProgress
-  val allQueriesBasicDetails = parent.listener.allQueriesBasicDetails
-  var selectedQueryId: String = ""
+
+  def commonHeaderNodesSnappy: Seq[Node] = {
+    <link rel="stylesheet" type="text/css"
+          href={UIUtils.prependBaseUri("/static/snappydata/snappy-streaming.css")}/>
+    <script src={UIUtils.prependBaseUri("/static/snappydata/d3.js")}></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src={UIUtils.prependBaseUri("/static/snappydata/jquery.sparkline.min.js")}></script>
+    <script src={UIUtils.prependBaseUri("/static/snappydata/snappy-commons.js")}></script>
+    <script src={UIUtils.prependBaseUri("/static/snappydata/snappy-streaming.js")}></script>
+  }
 
   override def render(request: HttpServletRequest): Seq[Node] = {
 
     val pageHeaderText: String = SnappyStructuredStreamingPage.pageHeaderText
-    val cssStylesheets = <link rel="stylesheet" type="text/css"
-                               href={prependBaseUri("/static/snappydata/snappy-streaming.css")}/>
-    val jsScripts = <script src={
-                            UIUtils.prependBaseUri("/static/snappydata/snappy-streaming.js")
-                            }></script>
 
     var errorMessage = <div></div>
 
@@ -58,65 +57,16 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
 
     } else {
 
-      selectedQueryId = {
-        if (request.getParameter("query") != null
-            && request.getParameter("query").nonEmpty)
-        {
-          request.getParameter("query")
-        } else {
-          activeQueries.values.head
-        }
-      }
-
-      val queryCountsSummaryNode = {
-
-        val queryCountsMap = new collection.immutable.HashMap[String, Int]
-        queryCountsMap -> ("totalQueries", activeQueries.size)
-        queryCountsMap -> ("totalActiveQueries", 0)
-        queryCountsMap -> ("totalStoppedQueries", 0)
-
-        createQueryCountsSummaryNode(queryCountsMap)
-      }
-
       val mainContent = {
         createMainContent
       }
 
-      val pageContent = cssStylesheets ++ jsScripts ++
-          queryCountsSummaryNode ++ mainContent
+      val pageContent = commonHeaderNodesSnappy ++ mainContent
 
       UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500),
         useDataTables = true)
     }
 
-  }
-
-  private def createQueryCountsSummaryNode(queryCountsMap: Map[String, Int]): Seq[Node] = {
-    <div class="row-fluid">
-      <div class="span12">
-        <div style="position: absolute; width: 410px; right: 25px;">
-          <div style="width: 100%; max-height: 60px;
-           background-color: #A0DFFF; border: 2px solid #9EBFE4; border-radius: 5px;
-           position: relative; margin: -5px auto; overflow: auto;">
-            <div style="width: 100%; float: right; font-weight: bold; text-align: center;
-                        line-height: 30px;">
-              <span style="padding-left: 5px;">Total Queries:</span>
-              <span id="totalCores">
-                {queryCountsMap.getOrElse("totalQueries", 0)}
-              </span>
-              <span style="padding-left: 5px;">Active Queries:</span>
-              <span id="totalCores">
-                {queryCountsMap.getOrElse("totalActiveQueries", 0)}
-              </span>
-              <span style="padding-left: 5px;">Inactive Queries:</span>
-              <span id="totalCores">
-                {queryCountsMap.getOrElse("totalStoppedQueries", 0)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   }
 
   private def createMainContent: Seq[Node] = {
@@ -130,22 +80,20 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
 
   private def createNavigationPanel: Seq[Node] = {
     <div class="left-navigation-panel">
-      <div class="vertical-menu-heading">
-        <div>
-          Streaming Queries
-        </div>
-      </div>
-      <div class="vertical-menu">
-        {
-          activeQueries.map(ql => {
-            val qid = "" + ql._2
-            val url = "/structurestreaming/?query=" + qid;
-            <a id={qid} href={url}
-               class={if(qid.equalsIgnoreCase(selectedQueryId)) "active" else ""}>
-              {ql._2}
-            </a>
-          })
-        }
+      <div style="width:100%;">
+        <table id="streamingQueriesGrid" class="table table-bordered table-condensed"
+               style="background-color: #bdbdbd; margin: 0px !important;">
+          <thead>
+            <tr>
+              <th class="table-th-col-heading" style="font-size: medium;">
+                <span data-toggle="tooltip" title=""
+                      data-original-title="Streaming Queries">
+                  { SnappyStructuredStreamingPage.leftNavPanelTitle }
+                </span>
+              </th>
+            </tr>
+          </thead>
+        </table>
       </div>
     </div>
   }
@@ -158,76 +106,38 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
 
   private def createQueryDetailsEntry (): Seq[Node] = {
 
-    val sqpEntry = activeQueryProgress.find(_._2.name.equalsIgnoreCase(selectedQueryId)).getOrElse(null)
-    if(sqpEntry == null) {
-      <div id="querydetails"> Query details not found </div>
-    }
-    val sqpEntryValue = sqpEntry._2
-    val aqpEntry = allQueriesBasicDetails.get(sqpEntry._1).get
-
     <div id="querydetails">
       <div class="container-fluid details-section">
-        <div class="basic-details">
-          <div style="margin: 10px;width: auto;height: auto;">
-            <div style="text-align: left;width: 100%;">
-              <div style="float: left; padding: 10px; width: 30%; font-size: medium;
-                          font-weight: bold;">
-                Start Date &amp; Time :
-              </div>
-              <div style="/*! float: left; */padding: 10px;width: 70%;">
-                {simpleDateFormat.format(aqpEntry("startTime"))}
-              </div>
-            </div>
-            <div style="text-align: left;width: 100%;">
-              <div style="float: left; padding: 10px; width: 30%; font-size: medium;
-                          font-weight: bold;">
-                Duration :
-              </div>
-              <div style="/*! float: left; */padding: 10px;width: 70%;">
-                {
-                  val st = aqpEntry("startTime").toString.toLong
-                  val ct = System.currentTimeMillis()
-                  UIUtils.formatDurationVerbose(ct -st)
-                }
-              </div>
-            </div>
-          </div>
+        <div id="selectedQueryName"
+             style="margin: 10px; padding: 10px; font-size: 18px; font-weight: bold; text-align: left;">
         </div>
+      </div>
+      <div class="container-fluid details-section">
         <div class="basic-details">
-          <div style="margin: 10px;width: auto;height: auto;">
-            <div style="text-align: left;width: 100%;">
-              <div style="float: left; padding: 10px; width: 20%; font-size: medium;
+          <div style="line-height:25px;">
+            <div style="text-align: left; width: 33%; float: left;">
+              <div style="float: left; padding: 10px; width: 30%; font-size: medium;
                           font-weight: bold;">
-                Restarted
+                { SnappyStructuredStreamingPage.streamingStats("startDateTime") }
               </div>
-              <div style="float: left;padding: 10px;width: 25%;">
-                {
-                  if (aqpEntry("isRestarted").toString.toBoolean) "YES" else "NO"
-                }
-              </div>
-              <div style="float: left; padding: 10px; width: 20%; font-size: medium;
-                          font-weight: bold;">
-                Attempt #
-              </div>
-              <div style="float: left;padding: 10px;width: 20%;">
-                {aqpEntry("attemptCount")}
-              </div>
+              <div id="startDateTime"
+                   style="/*! float: left; */padding: 10px;width: 70%;">&nbsp;</div>
             </div>
-            <div style="text-align: left;width: 100%;">
-              <div style="float: left; padding: 10px; width: 20%; font-size: medium;
+            <div style="text-align: left;width: 33%; float: left;">
+              <div style="float: left; padding: 10px; width: 30%; font-size: medium;
                           font-weight: bold;">
-                Batch Interval
+                { SnappyStructuredStreamingPage.streamingStats("uptime") }
               </div>
-              <div style="float: left;padding: 10px;width: 25%;">
-                5 Secs
-              </div>
-              <div style="float: left; padding: 10px; width: 20%; font-size: medium;
+              <div id="uptime"
+                   style="/*! float: left; */padding: 10px;width: 70%;">&nbsp;</div>
+            </div>
+            <div style="text-align: left;width: 33%;float: left;">
+              <div style="float: left; padding: 10px; width: 50%; font-size: medium;
                           font-weight: bold;">
-                Batches Proceesed
+                { SnappyStructuredStreamingPage.streamingStats("batchesProcessed") }
               </div>
-              <div style="float: left;padding: 10px;width: 20%;">
-                TBD
-              </div>
+              <div id="numBatchesProcessed"
+                   style="/*! float: left; */padding: 10px;width: 70%;">&nbsp;</div>
             </div>
           </div>
         </div>
@@ -235,84 +145,117 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
       <div class="container-fluid details-section">
         <div class="stats-block" style="width: 14%;">
           <div style="margin: 10px; width: auto; height: 80%;">
-            <div style="font-weight: bold;font-size: large;">STATUS</div>
-            <div style="margin-top: 20px;font-size: 20px;">
-              {sqpEntryValue.numInputRows}
+            <div style="height: 45px; font-weight: bold; font-size: large;">
+              { SnappyStructuredStreamingPage.streamingStats("status") }
             </div>
+            <div id="status"
+                 style="font-size: 20px;">&nbsp;</div>
           </div>
         </div>
         <div class="stats-block" style="width: 15%;">
           <div style="margin: 10px; width: auto; height: 80%;">
-            <div style="font-weight: bold;font-size: large;">TOTAL INPUT ROWS</div>
-            <div style="margin-top: 20px;font-size: 20px;">
-              {sqpEntryValue.numInputRows}
+            <div style="height: 45px; font-weight: bold;font-size: large;">
+              { SnappyStructuredStreamingPage.streamingStats("totalInputRows") }
             </div>
+            <div id="totalInputRows"
+                 style="font-size: 20px;">&nbsp;</div>
           </div>
         </div>
         <div class="stats-block" style="width: 15%;">
           <div style="margin: 10px; width: auto; height: 80%;">
-            <div style="font-weight: bold;font-size: large;">INPUT ROWS / SEC</div>
-            <div style="margin-top: 20px;font-size: 20px;">
-              {sqpEntryValue.inputRowsPerSecond}
+            <div style="height: 45px; font-weight: bold;font-size: large;">
+              { SnappyStructuredStreamingPage.streamingStats("totalInputRowsPerSec") }
             </div>
+            <div id="totalInputRowsPerSec"
+                 style="font-size: 20px;">&nbsp;</div>
           </div>
         </div>
         <div class="stats-block" style="width: 15%;">
           <div style="margin: 10px; width: auto; height: 80%;">
-            <div style="font-weight: bold;font-size: large;">Heading</div>
-            <div style="margin-top: 20px;font-size: 20px;">TBD</div>
+            <div style="height: 45px; font-weight: bold;font-size: large;">
+              { SnappyStructuredStreamingPage.streamingStats("totalProcessedRowsPerSec") }
+            </div>
+            <div id="totalProcessedRowsPerSec"
+                 style="font-size: 20px;">&nbsp;</div>
           </div>
         </div>
         <div class="stats-block" style="width: 15%;">
           <div style="margin: 10px; width: auto; height: 80%;">
-            <div style="font-weight: bold;font-size: large;">Heading</div>
-            <div style="margin-top: 20px;font-size: 20px;">TBD</div>
+            <div style="height: 45px; font-weight: bold;font-size: large;">
+              { SnappyStructuredStreamingPage.streamingStats("totalProcessingTime") }
+            </div>
+            <div id="totalProcessingTime"
+                 style="font-size: 20px;">&nbsp;</div>
           </div>
         </div>
         <div class="stats-block" style="width: 15%;">
           <div style="margin: 10px; width: auto; height: 80%;">
-            <div style="font-weight: bold;font-size: large;">Heading</div>
-            <div style="margin-top: 20px;font-size: 20px;">TBD</div>
+            <div style="height: 45px; font-weight: bold;font-size: large;">
+              { SnappyStructuredStreamingPage.streamingStats("avgProcessingTime") }
+            </div>
+            <div id="avgProcessingTime"
+                 style="font-size: 20px;">&nbsp;</div>
           </div>
         </div>
       </div>
+      <div class="container-fluid" style="text-align: center;">
+        <div id="googleChartsErrorMsg"
+             style="text-align: center; color: #ff0f3f; display:none;">
+          { SnappyStructuredStreamingPage.googleChartsErrorMsg }
+        </div>
+      </div>
       <div class="container-fluid details-section">
-        <div id="cpuUsageContainer" class="graph-container">TBD Chart
+        <div id="inputTrendsContainer" class="graph-container">
         </div>
-        <div id="heapUsageContainer" class="graph-container">TBD Chart
+        <div id="processingTrendContainer" class="graph-container">
         </div>
-        <div id="offheapUsageContainer" class="graph-container">TBD Chart
+        <div id="processingTimeContainer" class="graph-container">
         </div>
-        <div id="diskSpaceUsageContainer" class="graph-container">TBD Chart
+        <!-- <div id="stateOparatorContainer" class="graph-container">
+        </div> -->
+        <div id="delayTrendContainer" class="graph-container">
         </div>
       </div>
       <div class="container-fluid details-section">
         <div style="width: 5%;display: inline-block;border: 1px #8e8e8e solid;"></div>
         <div style="width: 10%;display: inline-block;font-size: 20px;font-weight: bold;">
-          Sources
+          { SnappyStructuredStreamingPage.sourcesTitle }
         </div>
         <div style="width: 84%;display: inline-block;border: 1px #8e8e8e solid;"></div>
       </div>
-      <div class="container-fluid details-section"
-           style="height: 100px; border: 1px solid grey; padding: 10px; margin: 10px;">
-        {sqpEntryValue.sources} <span>{sqpEntryValue.name}</span>
-      </div>
+      <div id="sourcesDetailsContainer" class="container-fluid details-section"
+           style="height: 100px; border: 1px solid grey; padding: 10px; margin: 10px;">&nbsp;</div>
       <div class="container-fluid details-section">
         <div style="width: 5%;display: inline-block;border: 1px #8e8e8e solid;"></div>
         <div style="width: 10%;display: inline-block;font-size: 20px;font-weight: bold;">
-          Sink
+          { SnappyStructuredStreamingPage.sinkTitle }
         </div>
         <div style="width: 84%;display: inline-block;border: 1px #8e8e8e solid;"></div>
       </div>
-      <div class="container-fluid details-section"
-           style="height: 100px; border: 1px solid grey; padding: 10px; margin: 10px;">
-        {sqpEntryValue.sink}
-      </div>
+      <div id="sinkDetailsContainer" class="container-fluid details-section"
+           style="height: 100px; border: 1px solid grey; padding: 10px; margin: 10px;">&nbsp;</div>
     </div>
   }
 }
 
 object SnappyStructuredStreamingPage {
   val pageHeaderText = "Structured Streaming Queries"
+
+  val streamingStats = scala.collection.mutable.HashMap.empty[String, Any]
+  streamingStats += ("startDateTime" -> "Start Date & Time")
+  streamingStats += ("uptime" -> "Uptime")
+  streamingStats += ("status" -> "Status")
+  streamingStats += ("batchesProcessed" -> "Batches Processed")
+  streamingStats += ("totalInputRows" -> "Total Input Records")
+  streamingStats += ("totalInputRowsPerSec" -> "Input Records / Sec")
+  streamingStats += ("totalProcessedRowsPerSec" -> "Processed Records / Sec")
+  streamingStats += ("totalProcessingTime" -> "Total Processing Time")
+  streamingStats += ("avgProcessingTime" -> "Avg. Batch Processing Time")
+
+  val googleChartsErrorMsg = "Error while loading charts. Please check your internet connection."
+
+  val leftNavPanelTitle = "Query Names"
+  val sourcesTitle = "Sources"
+  val sinkTitle = "Sink"
 
 }

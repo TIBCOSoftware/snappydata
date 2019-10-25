@@ -45,8 +45,6 @@ class StreamingRepository {
 
 object StreamingRepository {
 
-  val MAX_SAMPLE_SIZE = 180
-
   private val _instance: StreamingRepository = new StreamingRepository
 
   def getInstance: StreamingRepository = _instance
@@ -56,12 +54,16 @@ object StreamingRepository {
 
 class StreamingQueryStatistics (qId: UUID, qName: String, runId: UUID, startTime: Long) {
 
+  private val MAX_SAMPLE_SIZE = 180
+
+  private val simpleDateFormat = new SimpleDateFormat("dd-MMM-YYYY hh:mm:ss")
   private val timestampFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'") // ISO8601
   timestampFormat.setTimeZone(TimeZone.getTimeZone("UTC"))
 
   val queryUUID: UUID = qId
   val queryName: String = qName
   val queryStartTime: Long = startTime
+  val queryStartTimeText: String = simpleDateFormat.format(startTime)
   var queryUptime: Long = 0L
   var queryUptimeText: String = ""
 
@@ -69,38 +71,57 @@ class StreamingQueryStatistics (qId: UUID, qName: String, runId: UUID, startTime
 
   var isActive: Boolean = true
 
-  var currentBatchId: Long = 0L
+  var currentBatchId: Long = -1L
 
   var sources = Array.empty[SourceProgress]
   var sink: SinkProgress = null
 
   var trendInterval: Int = 0
 
-  val timeLine = new CircularFifoBuffer(StreamingRepository.MAX_SAMPLE_SIZE)
-  val numInputRowsTrend = new CircularFifoBuffer(StreamingRepository.MAX_SAMPLE_SIZE)
-  val inputRowsPerSecondTrend = new CircularFifoBuffer(StreamingRepository.MAX_SAMPLE_SIZE)
-  val processedRowsPerSecondTrend =
-    new CircularFifoBuffer(StreamingRepository.MAX_SAMPLE_SIZE)
-  val processingTimeTrend = new CircularFifoBuffer(StreamingRepository.MAX_SAMPLE_SIZE)
-  val batchIds = new CircularFifoBuffer(StreamingRepository.MAX_SAMPLE_SIZE)
+  var totalInputRows: Long = 0L
+  var avgInputRowsPerSec: Double = 0.0
+  var avgProcessedRowsPerSec: Double = 0.0
+  var totalProcessingTime: Long = 0L
+  var avgProcessingTime: Double = 0.0
+  var numBatchesProcessed: Long = 0L
+
+  val timeLine = new CircularFifoBuffer(MAX_SAMPLE_SIZE)
+  val numInputRowsTrend = new CircularFifoBuffer(MAX_SAMPLE_SIZE)
+  val inputRowsPerSecondTrend = new CircularFifoBuffer(MAX_SAMPLE_SIZE)
+  val processedRowsPerSecondTrend = new CircularFifoBuffer(MAX_SAMPLE_SIZE)
+  val processingTimeTrend = new CircularFifoBuffer(MAX_SAMPLE_SIZE)
+  val batchIds = new CircularFifoBuffer(MAX_SAMPLE_SIZE)
 
   def updateQueryStatistics(event: StreamingQueryListener.QueryProgressEvent): Unit = {
     val progress = event.progress
+
+    if(this.currentBatchId < progress.batchId){
+      this.numBatchesProcessed = this.numBatchesProcessed + 1
+    }
+
+    this.currentBatchId = progress.batchId
+    this.batchIds.add(progress.batchId)
 
     val currDateTime: Date = timestampFormat.parse(progress.timestamp)
     this.queryUptime = currDateTime.getTime - this.queryStartTime
     this.queryUptimeText = UIUtils.formatDurationVerbose(this.queryUptime)
 
     this.timeLine.add(currDateTime.getTime)
-    this.numInputRowsTrend.add(
-      if (progress.numInputRows.isNaN) 0 else progress.numInputRows)
-    this.inputRowsPerSecondTrend.add(
-      if (progress.inputRowsPerSecond.isNaN) 0.0 else progress.inputRowsPerSecond)
-    this.processedRowsPerSecondTrend.add(
-      if (progress.processedRowsPerSecond.isNaN) 0.0 else progress.processedRowsPerSecond)
-    this.processingTimeTrend.add(progress.durationMs.get("triggerExecution"))
-    this.batchIds.add(progress.batchId)
-    this.currentBatchId = progress.batchId
+
+    val tmpNumInpRows = { if (progress.numInputRows.isNaN) 0 else progress.numInputRows }
+    this.numInputRowsTrend.add(tmpNumInpRows)
+    this.totalInputRows = this.totalInputRows + tmpNumInpRows
+
+    val tmpInputRowsPerSec = { if (progress.inputRowsPerSecond.isNaN) 0.0 else progress.inputRowsPerSecond }
+    this.inputRowsPerSecondTrend.add(tmpInputRowsPerSec)
+
+    val tmpProcessedRowsPerSec = { if (progress.processedRowsPerSecond.isNaN) 0.0 else progress.processedRowsPerSecond }
+    this.processedRowsPerSecondTrend.add(tmpProcessedRowsPerSec)
+
+    val tmpProcessingTime = progress.durationMs.get("triggerExecution")
+    this.processingTimeTrend.add(tmpProcessingTime)
+    this.totalProcessingTime = this.totalProcessingTime + tmpProcessingTime
+    this.avgProcessingTime = this.totalProcessingTime / this.numBatchesProcessed
 
     this.sources = progress.sources
     this.sink = progress.sink

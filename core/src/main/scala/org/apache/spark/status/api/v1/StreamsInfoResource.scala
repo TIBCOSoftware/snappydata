@@ -35,7 +35,7 @@ private[v1] class StreamsInfoResource {
 
     val streamsBuff: ListBuffer[StreamsSummary] = ListBuffer.empty[StreamsSummary]
     streamsBuff += new StreamsSummary (streamingRepo.activeQueries,
-      streamingRepo.inactiveQueries, streamingRepo.allQueries)
+      streamingRepo.inactiveQueries, streamingRepo.allQueries.values.toList)
 
     streamsBuff.toList
   }

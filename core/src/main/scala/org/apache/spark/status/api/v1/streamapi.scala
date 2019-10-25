@@ -28,5 +28,5 @@ import org.apache.spark.streaming.StreamingQueryStatistics
 class StreamsSummary private[spark](
     val activeQueries: mutable.HashMap[UUID, String],
     val inactiveQueries: mutable.HashMap[UUID, String],
-    val allQueries: mutable.HashMap[UUID, StreamingQueryStatistics]
+    val allQueries: Seq[StreamingQueryStatistics]
 )
