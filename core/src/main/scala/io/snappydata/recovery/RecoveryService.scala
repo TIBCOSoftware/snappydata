@@ -79,7 +79,8 @@ object RecoveryService extends Logging {
             val recCount = snappySession.sql(s"SELECT count(1) FROM ${table.qualifiedName}")
                 .collect()(0).getLong(0)
             val (numBuckets, isReplicated) = RecoveryService
-                .getNumBuckets(table.qualifiedName.split('.')(0), table.qualifiedName.split('.')(1))
+                .getNumBuckets(table.qualifiedName.split('.')(0).toUpperCase(),
+                  table.qualifiedName.split('.')(1).toUpperCase())
             val regionStats = new SnappyRegionStats()
             regionStats.setRowCount(recCount)
             regionStats.setTableName(table.qualifiedName)
@@ -248,21 +249,22 @@ object RecoveryService extends Logging {
     // Expecting table in the format fqtn i.e. schemaname.tablename
     val schemaName = fqtn.split('.')(0)
     val tableName = fqtn.split('.')(1)
-    val (_, isReplicated) = getNumBuckets(schemaName, tableName)
+    val replicated = isReplicated(schemaName, tableName)
     // using row region path as column regions will be colocated on same host
     val tablePath = '/' + fqtn.replace(".", "/")
     var bucketPath = tablePath
-    if (!isReplicated) {
+    if (!replicated) {
       val bucketName = PartitionedRegionHelper.getBucketName(tablePath, bucketId)
       bucketPath = s"/${PartitionedRegionHelper.PR_ROOT_REGION_NAME}/$bucketName"
     }
     // for null region maps select random host
     if (regionViewSortedSet.contains(bucketPath)) {
-      regionViewSortedSet(bucketPath).map(e => {
+     val hosts =  regionViewSortedSet(bucketPath).map(e => {
         val hostCanonical = e.getExecutorHost
         val host = hostCanonical.split('(').head
         s"executor_${host}_$hostCanonical"
       }).toSeq
+      if (hosts.isEmpty) hosts else Seq(hosts.last)
     } else {
       logWarning(s"Preferred host is not found for bucket id: $bucketId. " +
           s"Choosing random host for $bucketPath")
@@ -397,7 +399,7 @@ object RecoveryService extends Logging {
 
 
   def getNumBuckets(schemaName: String, tableName: String): (Integer, Boolean) = {
-    val prName = s"/$schemaName/$tableName".toUpperCase()
+    val prName = s"/$schemaName/$tableName"
     val memberContainsRegion = memberObject
         .getPrToNumBuckets.containsKey(prName)
     if (memberContainsRegion) {
@@ -405,9 +407,15 @@ object RecoveryService extends Logging {
     } else {
       if (memberObject.getReplicatedRegions.contains(prName)) {
         (1, true)
-      } else (-1, false)
+      } else{
+        (-1, false)
+//        throw new IllegalStateException(s"Buckets not found for $prName")
+      }
     }
   }
+
+  def isReplicated(schemaName: String, tableName: String): Boolean =
+    memberObject.getReplicatedRegions.contains(s"/$schemaName/$tableName")
 
   def collectViewsAndPrepareCatalog(): Unit = {
     // Send a message to all the servers and locators to send back their
@@ -425,16 +433,14 @@ object RecoveryService extends Logging {
         .getOrCreateExternalCatalog(snapCon.sparkContext, snapCon.sparkContext.getConf)
     while (itr.hasNext) {
       val persistentViewObj = itr.next().asInstanceOf[PersistentStateInRecoveryMode]
-      logInfo(s"PP:RS: persistentViewObj: $persistentViewObj\n\n\n")
+      logInfo(s"PP:PersistentStateInRecoveryMode : $persistentViewObj")
       persistentObjectMemberMap += persistentViewObj.getMember -> persistentViewObj
       val regionItr = persistentViewObj.getAllRegionViews.iterator()
       while (regionItr.hasNext) {
         val persistentView = regionItr.next()
         val regionPath = persistentView.getRegionPath
         val set = regionViewSortedSet.get(regionPath)
-        logInfo(s"PP:sortedset persistentView: ${persistentView}")
         if (set.isDefined) {
-          logInfo(s"\nset contains ${persistentView} :${set.contains(persistentView)}\n")
                     set.get += persistentView
         } else {
           var newset = mutable.SortedSet.empty[RecoveryModePersistentView]
@@ -447,24 +453,26 @@ object RecoveryService extends Logging {
     val hiveRegionViews = regionViewSortedSet.filterKeys(
       _.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
     val hiveRegionToConsider =
-      hiveRegionViews.keySet.toSeq.sortBy(hiveRegionViews.get(_).size).reverse.head
+      hiveRegionViews.keySet.toSeq.sortBy(hiveRegionViews.get(_).size).last
     val mostUptodateRegionView = regionViewSortedSet(hiveRegionToConsider).lastKey
     val memberToConsiderForHiveCatalog = mostUptodateRegionView.getMember
     mostRecentMemberObject = persistentObjectMemberMap(memberToConsiderForHiveCatalog)
+    logDebug(s"The selected PersistentStateInRecoveryMode used for populating" +
+        s" the new catalog:\n$mostRecentMemberObject")
     val nonHiveRegionViews = regionViewSortedSet.filterKeys(
       !_.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
     val regionToConsider =
       if (nonHiveRegionViews.nonEmpty) {
-        nonHiveRegionViews.keySet.toSeq.sortBy(nonHiveRegionViews.get(_).size).reverse.head
+        nonHiveRegionViews.keySet.toSeq.sortBy(nonHiveRegionViews.get(_).size).last
       } else {
         logError("No relevant RecoveryModePersistentViews found.")
         throw new Exception("Cannot start empty cluster in Recovery Mode.")
       }
     val regionView = regionViewSortedSet(regionToConsider).lastKey
     val memberToConsider = regionView.getMember
-    memberObject = persistentObjectMemberMap(memberToConsider)
-    logDebug(s"The selected PersistentStateInRecoveryMode used for populating" +
-        s" the new catalog:\n$mostRecentMemberObject")
+//    memberObject = persistentObjectMemberMap(memberToConsider)
+    memberObject = mostRecentMemberObject
+    logDebug(s"The selected non-Hive PersistentStateInRecoveryMode : $memberObject")
     val catalogObjects = mostRecentMemberObject.getCatalogObjects
     import scala.collection.JavaConverters._
     val catalogArr = catalogObjects.asScala.map(catObj => {

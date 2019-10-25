@@ -38,8 +38,6 @@ import com.gemstone.gemfire.internal.offheap.ByteSource
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.client.am.Types
 import io.snappydata.recovery.RecoveryService
-import io.snappydata.recovery.RecoveryService.mostRecentMemberObject
-import io.snappydata.thrift.CatalogTableObject
 
 import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.catalyst.expressions.Expression
@@ -70,7 +68,7 @@ class OpLogRdd(
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   var rowFormatterMap: mutable.Map[Int, RowFormatter] = _
-
+  var fqtnUpper = fqtn.toUpperCase()
   /**
    * Method gets DataValueDescritor type from given StructField
    *
@@ -123,7 +121,7 @@ class OpLogRdd(
   }
 
   def getProjectColumnId(tableName: String, columnName: String): Int = {
-    val fqtnLowerKey = tableName.replace(".", "_").toLowerCase
+    val fqtnLowerKey = tableName.replace(".", "_")
     assert(versionMap.contains(fqtnLowerKey))
     val maxVersion = versionMap.getOrElse(fqtnLowerKey, null)
     assert(maxVersion != null)
@@ -131,7 +129,7 @@ class OpLogRdd(
     val fieldsArr = tableSchemas.getOrElse(s"$maxVersion#$fqtnLowerKey", null).fields
     breakable {
       for (i <- fieldsArr.indices) {
-        if (fieldsArr(i).name.toUpperCase() == columnName.toUpperCase()) {
+        if (fieldsArr(i).name == columnName) {
           index = i
           break()
         } else {
@@ -147,12 +145,12 @@ class OpLogRdd(
   }
 
   def getSchemaColumnId(tableName: String, colName: String, version: Int): Int = {
-    val fqtnLowerKey = tableName.replace('.', '_').toLowerCase
+    val fqtnLowerKey = tableName.replace('.', '_')
     var index = -1
     val fieldsArr = tableSchemas.getOrElse(s"$version#$fqtnLowerKey", null).fields
     breakable {
       for (i <- fieldsArr.indices) {
-        if (fieldsArr(i).name.toUpperCase() == colName.toUpperCase()) {
+        if (fieldsArr(i).name == colName) {
           index = i
           break()
         } else {
@@ -202,8 +200,8 @@ class OpLogRdd(
         0L,
         false))
     }
-    val schemaName = fqtn.split('.')(0)
-    val tableName = fqtn.split('.')(1)
+    val schemaName = fqtnUpper.split('.')(0)
+    val tableName = fqtnUpper.split('.')(1)
     val rowFormatter = new RowFormatter(cdl, schemaName, tableName, versionNum, null, false)
     rowFormatterMap.put(versionNum, rowFormatter)
     rowFormatter
@@ -259,7 +257,7 @@ class OpLogRdd(
     assert(versionNum >= 0 || versionNum == RowFormatter.TOKEN_RECOVERY_VERSION,
       "unexpected schemaVersion=" + versionNum + " for RowFormatter#readVersion")
 
-    val tableKey = versionNum + "#" + fqtn.toLowerCase.replace(".", "_")
+    val tableKey = versionNum + "#" + fqtn.replace(".", "_")
     assert(tableSchemas.contains(tableKey),
       s"schema of $fqtn for Rowformatter version=$versionNum unavailable")
     var schemaOfVersion = tableSchemas(tableKey)
@@ -333,11 +331,11 @@ class OpLogRdd(
     val resArr = new Array[Any](projectColumns.length)
     var i = 0
     projectColumns.foreach(projectCol => {
-      val projectColId = getProjectColumnId(fqtn.toLowerCase(), projectCol)
-      val schemaColId = getSchemaColumnId(fqtn.toLowerCase(), projectCol, versionNum)
+      val projectColId = getProjectColumnId(fqtn, projectCol)
+      val schemaColId = getSchemaColumnId(fqtn, projectCol, versionNum)
       val colValue = if (projectColId == schemaColId) {
         // col is from latest schema not previous/dropped column
-        val colNamesArr = schStruct.fields.map(_.name.toLowerCase)
+        val colNamesArr = schStruct.fields.map(_.name)
         row(colNamesArr.indexOf(projectCol))
       } else null
       resArr(i) = colValue
@@ -508,12 +506,12 @@ class OpLogRdd(
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
-    logDebug(s"starting compute for partition ${split.index} of table $fqtn")
+    logDebug(s"starting compute for partition ${split.index} of table $fqtnUpper")
     try {
       val diskStores = Misc.getGemFireCache.listDiskStores()
       var diskStrCol: DiskStoreImpl = null
       var diskStrRow: DiskStoreImpl = null
-      val tableName = fqtn.split('.')(1)
+      val tableName = fqtnUpper.split('.')(1)
 
       val colRegPath = if (Misc.getRegionPath(internalFQTN.toUpperCase) == null) {
         throw new IllegalStateException(s"regionPath for $internalFQTN not found")
@@ -521,7 +519,7 @@ class OpLogRdd(
         val regionPath = Misc.getRegionPath(internalFQTN.toUpperCase)
         s"/_PR//B_${regionPath.substring(1, regionPath.length - 1)}/_${split.index}"
       }
-      val rowRegPath = s"/_PR//B_${fqtn.replace('.', '/')}/${split.index}"
+      val rowRegPath = s"/_PR//B_${fqtnUpper.replace('.', '/')}/${split.index}"
 
       var phdrRow: PlaceHolderDiskRegion = null
       var phdrCol: PlaceHolderDiskRegion = null
@@ -547,7 +545,7 @@ class OpLogRdd(
             diskStrRow = diskStore
             phdrRow = adr.asInstanceOf[PlaceHolderDiskRegion]
           } else if (!adr.isBucket && adrUnescapePath
-              .equals('/' + fqtn.replace('.', '/'))) {
+              .equals('/' + fqtnUpper.replace('.', '/'))) {
             diskStrRow = diskStore
             phdrRow = adr.asInstanceOf[PlaceHolderDiskRegion]
           }
@@ -567,7 +565,7 @@ class OpLogRdd(
     } catch {
       // in case of error log and return empty iterator. cluster shouldn't go down
       case x@(_: Exception | _: AssertionError) =>
-        logError(s"Unable to read $fqtn.", x)
+        logError(s"Unable to read $fqtnUpper.", x)
         Seq.empty.iterator
     }
   }
@@ -634,32 +632,6 @@ class OpLogRdd(
     }
   }
 
-  /**
-   * Returns number of buckets for a given schema and table name
-   *
-   * @param schemaName schema name which the table belongs to
-   * @param tableName  name of the table
-   * @return number of buckets
-   */
-  def getNumBuckets(schemaName: String, tableName: String): Integer = {
-    val catalogObjects = mostRecentMemberObject.getCatalogObjects
-    var numBuckets: Integer = null
-    catalogObjects.toArray.foreach(catObj =>
-      if (numBuckets == null) {
-        numBuckets = catObj match {
-          case c: CatalogTableObject =>
-            if (c.schemaName.equals(schemaName) && c.tableName.equals(tableName)) {
-              val numBucketsStr = c.storage.properties.get("buckets")
-              assert(numBucketsStr != null, "property 'buckets' not found in CatalogTableObject")
-              Integer.parseInt(numBucketsStr)
-            } else null
-          case _ => null
-        }
-      }
-    )
-    numBuckets
-  }
-
   def getPartitionEvaluator: () => Array[Partition] = () => getPartitions
 
   /**
@@ -668,9 +640,10 @@ class OpLogRdd(
    * @return number of buckets
    */
   override protected def getPartitions: Array[Partition] = {
-    val schemaName = fqtn.split('.')(0)
-    val tableName = fqtn.split('.')(1)
+    val schemaName = fqtnUpper.split('.')(0)
+    val tableName = fqtnUpper.split('.')(1)
     val (numBuckets, _) = RecoveryService.getNumBuckets(schemaName, tableName)
+    if (numBuckets == 0) logWarning(s"Number of buckets for $schemaName.$tableName is 0.")
     val partition = (0 until numBuckets).map { p =>
       new Partition {
         override def index: Int = p
@@ -687,7 +660,7 @@ class OpLogRdd(
    * @return sequence of hostnames
    */
   override def getPreferredLocations(split: Partition): Seq[String] = {
-    val preferredHosts = RecoveryService.getExecutorHost(fqtn, split.index)
+    val preferredHosts = RecoveryService.getExecutorHost(fqtnUpper, split.index)
     logDebug(s"Preferred hosts for partition ${split.index} of $fqtn are $preferredHosts")
     preferredHosts
   }
@@ -722,6 +695,7 @@ class OpLogRdd(
     super.read(kryo, input)
     internalFQTN = input.readString()
     fqtn = input.readString()
+    fqtnUpper = fqtn.toUpperCase()
     partitioningColumns = input.readString().split(",")
     keyColumnsString = input.readString()
     provider = input.readString()

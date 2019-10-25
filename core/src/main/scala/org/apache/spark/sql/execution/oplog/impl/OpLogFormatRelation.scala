@@ -58,7 +58,7 @@ class OpLogFormatRelation(
 
     val keyColumns = options.getOrElse("key_columns", "")
 
-    (new OpLogRdd(snappySession, fqtn.toUpperCase(), externalColumnTableName, schema,
+    (new OpLogRdd(snappySession, fqtn, externalColumnTableName, schema,
       partitioningColumns, provider, projection, filters, (filters eq null) || filters.length == 0,
       prunePartitions, tableSchemas, versionMap, tableColIdsMap, keyColumns), projection)
   }
