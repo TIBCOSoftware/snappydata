@@ -1,13 +1,13 @@
 # Recovering Data During Cluster Failures
 In scenarios where the TIBCO ComputeDB cluster fails to come up due to some issues, the Data Extractor utility can be used to retrieve the data in a standard format along with the schema definitions.
 
-Typically the TIBCO ComputeDB cluster starts when all the instances of the server, lead, and locator within the cluster is started. However, sometimes the cluster does not come up and in such situations, the data in the cluster remains either completely or partially unavailable. 
-When a user faces such situations, they must first refer to the [Troubleshooting section](../troubleshooting/troubleshooting.md) in the SnappyData product documentation, fix the corresponding issues, and bring up the cluster. In case the user still cannot start the cluster successfully, Data Extractor utility can be used to start the cluster in Recovery mode and salvage the data. 
+Typically, the TIBCO ComputeDB cluster starts when all the instances of the servers, leads, and locators within the cluster are started. However, sometimes the cluster does not come up and in such situations, there is a possibility that the data inside the cluster remains either completely or partially unavailable.
+In such situations, you must first refer to the [Troubleshooting section](../troubleshooting/troubleshooting.md) in the TIBCO ComputeDB product documentation, fix the corresponding issues, and bring up the cluster. Even after this, if the cluster cannot be started successfully due to unforeseen circumstances, you can use the Data Extractor utility to start the cluster in Recovery mode and salvage the data.
 
-Data Extractor utility is a read-only mode of the cluster. It minimizes the inter-dependencies between nodes during the startup process thereby reducing the chances of failures during startup. A cluster thus started in a minimalistic mode is called the Recovery Mode.
+Data Extractor utility is a read-only mode of the cluster. In this mode, you cannot make any changes to the data such as INSERT, UPDATE, DELETE etc. Moreover, the inter-dependencies between the nodes during the startup process is minimized in this mode thereby reducing the chances of failures during startup. A cluster thus started in a minimalistic mode is called the Recovery mode.
 
 In the Recovery mode:
-*	Operations with DDLs and DMLs are not allowed.
+*	You cannot perform operations with Data Definition Language (DDL) and Data Manipulation Language (DML).
 *	You are provided with procedures to extract data, DDLs etc.
 *	You can launch the Snappy shell and run SELECT/SHOW/DESCRIBE queries.
 
@@ -30,17 +30,17 @@ snappy-start-all.sh -r
 	* DDL or DML cannot be executed in a Recovery Mode.
 	* Recovery mode does not repair the existing cluster.
 
-### Retrieving Metadata and Table’s Data
+### Retrieving Metadata and Table Data
 
-After the cluster is brought into recovery mode, you can retrieve the metadata and the table’s data in the cluster. The following two system procedures are provided for this purpose:
+After the cluster is brought into recovery mode, you can retrieve the metadata and the table data in the cluster. The following two system procedures are provided for this purpose:
 
 *	`DUMP_DDLS`
-*	`DUMP_DATA`
+*	`EXPORT_DATA`
 
 Thus the table definitions and tables that are defined in a specific format can be exported and used later to launch a new cluster. 
 
 !!!Caution
-	Ensure to provide enough disk space, that is double the existing cluster size or more since the DUMP procedures make a fresh copy of the cluster’s content and based on the format of the dumped data, more disk space may be required than that of the existing cluster.
+	Ensure to provide enough disk space, that is double the existing cluster size, to store recovered data.
 
 #### Export Table Definitions in text format
 You can use the DUMP_DDLS system procedure to export table definitions in text format.  The DUMP_DDLS system procedure takes a single argument `exportUri`. You can provide any spark supported URI such as s3, local path, or HDFS. All the cluster definitions like TABLE, VIEW, DATABASE, FUNCTION, DEPLOY, ALTER, UPDATE, GRANT are exported in a text format into the provided `exportUri` argument.
@@ -66,9 +66,9 @@ part-00000  _SUCCESS
 
 #### Export Tables Defined in a Specific Format
 
-You can use the DUMP_DATA system procedure to export the tables that are defined in a specified format into the provided path.
+You can use the EXPORT_DATA system procedure to export the tables that are defined in a specified format into the provided path.
 
-The DUMP_DATA procedure accepts the following arguments:
+The EXPORT_DATA procedure accepts the following arguments:
 
 | Arguments | Description |
 |--------|--------|
@@ -80,13 +80,13 @@ The DUMP_DATA procedure accepts the following arguments:
 **Syntax**
 
 ```
-call sys.DUMP_DATA('<exportUri>', '<formatType>', '<tableNames>', '<ignoreError>');
+call sys.EXPORT_DATA('<exportUri>', '<formatType>', '<tableNames>', '<ignoreError>');
 ```
 
 **Examples**
 
 ```
-call sys.DUMP_DATA('/home/xyz/extracted/data/', 'csv', 'all', 'true');
+call sys.EXPORT_DATA('/home/xyz/extracted/data/', 'csv', 'all', 'true');
 ```
 
 **Folder Structure**
