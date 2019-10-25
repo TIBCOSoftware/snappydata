@@ -123,7 +123,7 @@ This results in a batch, where there is at most a single entry per key.
 By default the `conflation` property is set to `false`. Therefore, the event processing semantics only ensures consistency when incoming events in a batch are for the unique key column(s).
 
 **For example:**</br>If an incoming batch contains an **Insert(key1)** event followed by a **Delete(key1)** event, the record for **key1** is shown in the target table after the batch is processed. This is because all the Delete events are processed before Insert events as per the event processing order explained [here](#abovementioned).
-In such cases, you should enable the Conflation by setting the **conflation** property to true. Now, if a batch contains **Insert(key1)** event followed by a Dele**te(key1)** event, then SnappyData Sink conflates these two events into a single event by selecting the last event which is **Delete(key1)** and only that event is processed for **key1**.
+In such cases, you should enable the Conflation by setting the **conflation** property to true. Now, if a batch contains **Insert(key1)** event followed by a **Delete(key1)** event, then SnappyData Sink conflates these two events into a single event by selecting the last event which is **Delete(key1)** and only that event is processed for **key1**.
 Processing **Delete(key1)** event without processing **Insert(key1)** event does not result in a failure, as Delete events are ignored if corresponding records do not exist in the target table.
 
 <a id= sinkstatetable> </a>
