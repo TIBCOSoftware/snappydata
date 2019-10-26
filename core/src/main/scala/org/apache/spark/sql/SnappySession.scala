@@ -2516,7 +2516,8 @@ object SnappySession extends Logging {
     case _ => StringType
   }
 
-  def getValue(dvd: stypes.DataValueDescriptor): Any = dvd match {
+  def getValue(dvd: stypes.DataValueDescriptor, returnUTF8String: Boolean = true): Any =
+    dvd match {
     case i: stypes.SQLInteger => i.getInt
     case si: stypes.SQLSmallint => si.getShort
     case ti: stypes.SQLTinyint => ti.getByte
@@ -2530,11 +2531,19 @@ object SnappySession extends Logging {
       val charArray = cl.getCharArray()
       if (charArray != null) {
         val str = String.valueOf(charArray)
-        UTF8String.fromString(str)
+        if (returnUTF8String) {
+          UTF8String.fromString(str)
+        } else str
       } else null
-    case lvc: stypes.SQLLongvarchar => UTF8String.fromString(lvc.getString)
-    case vc: stypes.SQLVarchar => UTF8String.fromString(vc.getString)
-    case c: stypes.SQLChar => UTF8String.fromString(c.getString)
+    case lvc: stypes.SQLLongvarchar => if (returnUTF8String) {
+      UTF8String.fromString(lvc.getString)
+    } else lvc.getString
+    case vc: stypes.SQLVarchar => if (returnUTF8String) {
+      UTF8String.fromString(vc.getString)
+    } else vc.getString
+    case c: stypes.SQLChar => if (returnUTF8String) {
+      UTF8String.fromString(c.getString)
+    } else c.getString
     case ts: stypes.SQLTimestamp => ts.getTimestamp(null)
     case t: stypes.SQLTime => t.getTime(null)
     case d: stypes.SQLDate =>

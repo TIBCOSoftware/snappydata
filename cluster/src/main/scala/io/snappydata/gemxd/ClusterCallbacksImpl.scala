@@ -103,7 +103,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     v: Version, dvdRows: util.List[Array[DataValueDescriptor]]): SparkSQLExecute = {
     import scala.collection.JavaConverters._
      val rows = dvdRows.asScala.map(dvdArr =>
-       Row.fromSeq(dvdArr.map(org.apache.spark.sql.SnappySession.getValue(_))))
+       Row.fromSeq(dvdArr.map(org.apache.spark.sql.SnappySession.getValue(_, false))))
      new SparkSampleInsertExecuteImpl(baseTable, rows, ctx, v)
   }
 

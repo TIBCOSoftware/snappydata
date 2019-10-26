@@ -45,6 +45,7 @@ import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.{TableIdentifier, expressions}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources.SamplingRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{CachedDataFrame, Row, SnappyContext, SnappySession}
@@ -90,27 +91,12 @@ class SparkSampleInsertExecuteImpl(val baseTable: String,
     // get sample tables tracked in catalog
     val aqpRelations = catalog.getSampleRelations(ti)
     val isLocalExecution = msg.isLocallyExecuted
-    aqpRelations.foreach(_._1.asInstanceOf[SamplingRelation].insert(ds, false))
+    aqpRelations.foreach {
+      case (LogicalRelation(sr: SamplingRelation, _, _), _) => sr.insert(ds, false)
+    }
     msg.lastResult(snappyResultHolder)
   }
 
-  override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit =
-    SparkSQLExecuteImpl.serializeRows(out, hasMetadata, hdos)
-
-  private lazy val (tableNames, nullability) = SparkSQLExecuteImpl.
-    getTableNamesAndNullability(session, df.queryExecution.analyzed.output)
-
-  def getColumnNames: Array[String] = {
-    querySchema.fieldNames
-  }
-
-  private def getColumnTypes: Array[(Int, Int, Int)] =
-    querySchema.map(f => {
-      SparkSQLExecuteImpl.getSQLType(f.dataType, complexTypeAsJson,
-        f.metadata, Utils.toLowerCase(f.name), allAsClob, columnsAsClob)
-    }).toArray
-
-  private def getColumnDataTypes: Array[DataType] =
-    querySchema.map(_.dataType).toArray
+  override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit = {}
 }
 
