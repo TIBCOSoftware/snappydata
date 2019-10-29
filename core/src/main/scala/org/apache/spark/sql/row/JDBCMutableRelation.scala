@@ -143,7 +143,7 @@ abstract case class JDBCMutableRelation(
   final lazy val rowInsertStr: String = JdbcExtendedUtils.getInsertOrPutString(
     table, schema, putInto = false)
 
-  override def getInsertPlan(relation: LogicalRelation,
+  override def getBasicInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
     RowInsertExec(child, putInto = false, partitionColumns,
       partitionExpressions(relation), numBuckets, isPartitioned, schema, Some(this),

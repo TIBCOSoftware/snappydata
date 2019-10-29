@@ -30,9 +30,11 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.aqp.SampleInsertExec
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JDBCRDD}
+import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -56,7 +58,20 @@ trait PlanInsertableRelation extends DestroyRelation with InsertableRelation {
    * Get a spark plan for insert. The result of SparkPlan execution should
    * be a count of number of inserted rows.
    */
-  def getInsertPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
+  def getInsertPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan = {
+    val baseTableInsert = getBasicInsertPlan(relation, child);
+    val catalog = child.sqlContext.sessionState.catalog.asInstanceOf[SnappySessionCatalog]
+
+    val sampleRelations = catalog.getSampleRelations(TableIdentifier(resolvedName))
+    if (sampleRelations.isEmpty) {
+      baseTableInsert
+    } else {
+      SampleInsertExec (baseTableInsert, child, resolvedName, relation.schema)
+    }
+  }
+
+  def getBasicInsertPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
+  def resolvedName: String
 }
 
 trait RowPutRelation extends DestroyRelation {

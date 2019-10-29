@@ -26,10 +26,11 @@ import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecuto
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.{DataFrame, Row, SnappySession}
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.SamplingRelation
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, Partition, TaskContext}
@@ -77,16 +78,21 @@ class SparkSampleInsertExecuteImpl(val baseTable: String,
     val ds = session.internalCreateDataFrame(localRDD, schema) */
    val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
           rows.map(encoder.toRow(_).copy())), schema)
-
+    SparkSampleInsertExecuteImpl.insertIntoSampletables(ti, ds, catalog)
     // get sample tables tracked in catalog
-    val aqpRelations = catalog.getSampleRelations(ti)
-    val isLocalExecution = msg.isLocallyExecuted
-    aqpRelations.foreach {
-      case (LogicalRelation(sr: SamplingRelation, _, _), _) => sr.insert(ds, false)
-    }
+
     msg.lastResult(snappyResultHolder)
   }
 
   override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit = {}
 }
 
+object SparkSampleInsertExecuteImpl {
+  def insertIntoSampletables(baseTable: TableIdentifier, ds: DataFrame,
+    catalog: SnappySessionCatalog): Unit = {
+    val aqpRelations = catalog.getSampleRelations(baseTable)
+    aqpRelations.foreach {
+      case (LogicalRelation(sr: SamplingRelation, _, _), _) => sr.insert(ds, false)
+    }
+  }
+}
