@@ -16,42 +16,23 @@
  */
 package io.snappydata.gemxd
 
-import java.io.{CharArrayWriter, DataOutput}
-import java.sql.SQLWarning
+import java.io.DataOutput
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable.ArrayBuffer
-
-import com.gemstone.gemfire.DataSerializer
-import com.gemstone.gemfire.cache.CacheClosedException
-import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, Version}
-import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
+import com.gemstone.gemfire.internal.shared.Version
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
+import com.pivotal.gemfirexd.internal.engine.distributed.SnappyResultHolder
 import com.pivotal.gemfirexd.internal.engine.distributed.execution.LeadNodeExecutionObject
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdHeapDataOutputStream, SnappyResultHolder}
-import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
-import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
-import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLChar}
-import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
-import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
+import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
-import io.snappydata.{Constant, Property, QueryHint}
 
-import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.{TableIdentifier, expressions}
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources.SamplingRelation
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.{CachedDataFrame, Row, SnappyContext, SnappySession}
-import org.apache.spark.storage.RDDBlockId
 import org.apache.spark.util.SnappyUtils
-import org.apache.spark.{Logging, SparkEnv}
+import org.apache.spark.{Logging, Partition, TaskContext}
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -85,8 +66,17 @@ class SparkSampleInsertExecuteImpl(val baseTable: String,
     val baseTableMetadata = catalog.getTableMetadata(ti)
     val schema = baseTableMetadata.schema
     val encoder = RowEncoder(schema)
-    val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
-      rows.map(encoder.toRow)), schema)
+   /* val internalRows = rows.map(encoder.toRow(_).copy)
+    val localRDD = new RDD[InternalRow](session.sparkContext, Seq.empty) {
+      def compute(split: Partition, context: TaskContext): Iterator[InternalRow] =
+        internalRows.iterator
+      protected def getPartitions: Array[Partition] = Array(new Partition {
+        override def index: Int = 0
+      })
+    }
+    val ds = session.internalCreateDataFrame(localRDD, schema) */
+   val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
+          rows.map(encoder.toRow(_).copy())), schema)
 
     // get sample tables tracked in catalog
     val aqpRelations = catalog.getSampleRelations(ti)
