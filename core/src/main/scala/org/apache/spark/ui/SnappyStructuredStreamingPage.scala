@@ -108,93 +108,78 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
 
     <div id="querydetails">
       <div class="container-fluid details-section">
-        <div id="selectedQueryName"
-             style="margin: 10px; padding: 10px; font-size: 18px; font-weight: bold; text-align: left;">
+        <div id="selectedQueryName">
         </div>
       </div>
       <div class="container-fluid details-section">
         <div class="basic-details">
-          <div style="line-height:25px;">
-            <div style="text-align: left; width: 33%; float: left;">
-              <div style="float: left; padding: 10px; width: 30%; font-size: medium;
-                          font-weight: bold;">
-                { SnappyStructuredStreamingPage.streamingStats("startDateTime") }
-              </div>
-              <div id="startDateTime"
-                   style="/*! float: left; */padding: 10px;width: 70%;">&nbsp;</div>
+          <div>
+            <div class="basic-details-title">
+              { SnappyStructuredStreamingPage.streamingStats("startDateTime") }
             </div>
-            <div style="text-align: left;width: 33%; float: left;">
-              <div style="float: left; padding: 10px; width: 30%; font-size: medium;
-                          font-weight: bold;">
-                { SnappyStructuredStreamingPage.streamingStats("uptime") }
-              </div>
-              <div id="uptime"
-                   style="/*! float: left; */padding: 10px;width: 70%;">&nbsp;</div>
+            <div id="startDateTime" class="basic-details-value">&nbsp;</div>
+          </div>
+          <div>
+            <div class="basic-details-title">
+              { SnappyStructuredStreamingPage.streamingStats("uptime") }
             </div>
-            <div style="text-align: left;width: 33%;float: left;">
-              <div style="float: left; padding: 10px; width: 50%; font-size: medium;
-                          font-weight: bold;">
-                { SnappyStructuredStreamingPage.streamingStats("batchesProcessed") }
-              </div>
-              <div id="numBatchesProcessed"
-                   style="/*! float: left; */padding: 10px;width: 70%;">&nbsp;</div>
+            <div id="uptime" class="basic-details-value">&nbsp;</div>
+          </div>
+          <div>
+            <div class="basic-details-title" style="width: 50%;">
+              { SnappyStructuredStreamingPage.streamingStats("batchesProcessed") }
             </div>
+            <div id="numBatchesProcessed" class="basic-details-value">&nbsp;</div>
           </div>
         </div>
       </div>
       <div class="container-fluid details-section">
         <div class="stats-block" style="width: 14%;">
-          <div style="margin: 10px; width: auto; height: 80%;">
-            <div style="height: 45px; font-weight: bold; font-size: large;">
+          <div>
+            <div class="stats-block-title">
               { SnappyStructuredStreamingPage.streamingStats("status") }
             </div>
-            <div id="status"
-                 style="font-size: 20px;">&nbsp;</div>
+            <div id="status" class="stats-block-value">&nbsp;</div>
           </div>
         </div>
-        <div class="stats-block" style="width: 15%;">
-          <div style="margin: 10px; width: auto; height: 80%;">
-            <div style="height: 45px; font-weight: bold;font-size: large;">
+        <div class="stats-block">
+          <div>
+            <div class="stats-block-title">
               { SnappyStructuredStreamingPage.streamingStats("totalInputRows") }
             </div>
-            <div id="totalInputRows"
-                 style="font-size: 20px;">&nbsp;</div>
+            <div id="totalInputRows" class="stats-block-value">&nbsp;</div>
           </div>
         </div>
-        <div class="stats-block" style="width: 15%;">
-          <div style="margin: 10px; width: auto; height: 80%;">
-            <div style="height: 45px; font-weight: bold;font-size: large;">
+        <div class="stats-block">
+          <div>
+            <div class="stats-block-title">
               { SnappyStructuredStreamingPage.streamingStats("totalInputRowsPerSec") }
             </div>
-            <div id="totalInputRowsPerSec"
-                 style="font-size: 20px;">&nbsp;</div>
+            <div id="totalInputRowsPerSec" class="stats-block-value">&nbsp;</div>
           </div>
         </div>
-        <div class="stats-block" style="width: 15%;">
-          <div style="margin: 10px; width: auto; height: 80%;">
-            <div style="height: 45px; font-weight: bold;font-size: large;">
+        <div class="stats-block">
+          <div>
+            <div class="stats-block-title">
               { SnappyStructuredStreamingPage.streamingStats("totalProcessedRowsPerSec") }
             </div>
-            <div id="totalProcessedRowsPerSec"
-                 style="font-size: 20px;">&nbsp;</div>
+            <div id="totalProcessedRowsPerSec" class="stats-block-value">&nbsp;</div>
           </div>
         </div>
-        <div class="stats-block" style="width: 15%;">
-          <div style="margin: 10px; width: auto; height: 80%;">
-            <div style="height: 45px; font-weight: bold;font-size: large;">
+        <div class="stats-block">
+          <div>
+            <div class="stats-block-title">
               { SnappyStructuredStreamingPage.streamingStats("totalProcessingTime") }
             </div>
-            <div id="totalProcessingTime"
-                 style="font-size: 20px;">&nbsp;</div>
+            <div id="totalProcessingTime" class="stats-block-value">&nbsp;</div>
           </div>
         </div>
-        <div class="stats-block" style="width: 15%;">
-          <div style="margin: 10px; width: auto; height: 80%;">
-            <div style="height: 45px; font-weight: bold;font-size: large;">
+        <div class="stats-block">
+          <div>
+            <div class="stats-block-title">
               { SnappyStructuredStreamingPage.streamingStats("avgProcessingTime") }
             </div>
-            <div id="avgProcessingTime"
-                 style="font-size: 20px;">&nbsp;</div>
+            <div id="avgProcessingTime" class="stats-block-value">&nbsp;</div>
           </div>
         </div>
       </div>
