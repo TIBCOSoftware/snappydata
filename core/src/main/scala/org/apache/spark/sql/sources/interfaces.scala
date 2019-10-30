@@ -61,12 +61,19 @@ trait PlanInsertableRelation extends DestroyRelation with InsertableRelation {
   def getInsertPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan = {
     val baseTableInsert = getBasicInsertPlan(relation, child);
     val catalog = child.sqlContext.sessionState.catalog.asInstanceOf[SnappySessionCatalog]
-
-    val sampleRelations = catalog.getSampleRelations(TableIdentifier(resolvedName))
+    val fqn = resolvedName
+    val dot = fqn.indexOf('.')
+    val (schemaName, tableName) = if (dot == -1) {
+      (None, fqn)
+    } else {
+      (Some(fqn.substring(0, dot)), fqn.substring(dot + 1))
+    }
+    val ti = TableIdentifier(tableName, schemaName)
+    val sampleRelations = catalog.getSampleRelations(ti)
     if (sampleRelations.isEmpty) {
       baseTableInsert
     } else {
-      SampleInsertExec (baseTableInsert, child, resolvedName, relation.schema)
+      SampleInsertExec (baseTableInsert, child, ti, sampleRelations, relation.schema)
     }
   }
 
