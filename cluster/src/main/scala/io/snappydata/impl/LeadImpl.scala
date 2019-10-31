@@ -20,7 +20,7 @@ import java.lang.reflect.{Constructor, Method}
 import java.net.{URL, URLClassLoader}
 import java.security.Permission
 import java.sql.SQLException
-import java.util.Properties
+import java.util.{Properties, UUID}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -375,12 +375,17 @@ class LeadImpl extends ServerImpl with Lead
         val primaryLeaderLock = new DistributedMemberLock(dls,
           LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
           DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
-
+        var clusterUuid = ""
         val startStatus = primaryLeaderLock.tryLock()
         // noinspection SimplifyBooleanMatch
         startStatus match {
           case true =>
             logInfo("Primary lead lock acquired.")
+            clusterUuid = Misc.getMemStore.getMetadataCmdRgn.get("__ClusterID__")
+            if (clusterUuid == null) {
+              val region = Misc.getMemStore.getMetadataCmdRgn
+              region.put("__ClusterID__", UUID.randomUUID().toString)
+            }
 
             LocalDirectoryCleanupUtil.save()
           // let go.

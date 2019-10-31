@@ -34,9 +34,9 @@ object SnappyMemberMetrics {
     val DATE_FORMAT = "dd/MM/yyyy HH:mm:ss.SSS z"
     val sdf = new SimpleDateFormat(DATE_FORMAT, Locale.US)
     val dd = sdf.format(startTime)
-    Misc.getCacheLogWriter.info("========= [SnappyMemberMetrics rep] StartTime : " + dd)
+    // Misc.getCacheLogWriter.info("========= [SnappyMemberMetrics rep] StartTime : " + dd)
 
-    createGauge("clusterUptime started", dd.asInstanceOf[AnyVal])
+    // createGauge("clusterUptime started", dd.asInstanceOf[AnyVal])
 
     val shortDirName = memberDetails.getUserDir.substring(
       memberDetails.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)

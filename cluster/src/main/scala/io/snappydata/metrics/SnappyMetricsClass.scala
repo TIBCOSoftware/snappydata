@@ -35,8 +35,8 @@ import scala.collection.mutable
 object SnappyMetricsClass {
   def init(sc: SparkContext): Unit = {
     val startTime = Calendar.getInstance().getTime
-
-    UserMetricsSystem.initialize(sc, "")
+    val clusterUuid = Misc.getMemStore.getMetadataCmdRgn.get("__ClusterID__")
+    UserMetricsSystem.initialize(sc, clusterUuid)
     val timeInterval = 3000
     val runnable = new Runnable {
       override def run(): Unit = {
@@ -52,6 +52,7 @@ object SnappyMetricsClass {
             setMetricsForExternalTableStatDetails(externalTableBuff)
             val memberBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
             setMetricsForMemberStatDetails(memberBuff)
+            putMembersDiskStoreIdInRegion(memberBuff)
           }
           catch {
             case e: InterruptedException => e.printStackTrace()
@@ -150,5 +151,14 @@ object SnappyMetricsClass {
     // val DATE_FORMAT = "dd/MM/yyyy HH:mm:ss.SSS z"
     // val sdf = new SimpleDateFormat(DATE_FORMAT, Locale.US)
     // Misc.getCacheLogWriter.info("Date=== " + sdf.format(totalTime))
+  }
+
+  def putMembersDiskStoreIdInRegion(membersBuff: mutable.Map[String, MemberStatistics]): Unit = {
+    for ((k, v) <- membersBuff) {
+      val shortDirName = v.getUserDir.substring(
+        v.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
+      val region = Misc.getMemStore.getMetadataCmdRgn
+      region.put("__" + shortDirName + "__", v.getDiskStoreUUID.toString)
+    }
   }
 }
