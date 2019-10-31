@@ -24,8 +24,6 @@ import org.apache.spark.groupon.metrics.{SparkHistogram, UserMetricsSystem}
 
 import scala.collection.mutable
 
-case class StringHashMap(value: mutable.HashMap[String, Any])
-
 object SnappyClusterMetrics {
 
   def convertStatsToMetrics(key: String, clusterStats: Any) {
@@ -34,7 +32,7 @@ object SnappyClusterMetrics {
     var clusterInfo = mutable.HashMap.empty[String, Any]
 
     clusterStats match {
-      case i1: StringHashMap =>
+      case i1: mutable.HashMap[String, Any] =>
         clusterInfo = i1.asInstanceOf[mutable.HashMap[String, Any]]
         clusterInfo.foreach({
           case (k, v) => createGauge(s"$namespace.$k", v.asInstanceOf[AnyVal])
@@ -45,23 +43,7 @@ object SnappyClusterMetrics {
         for (i <- clusterInfoArray) {
           tempHistogram.update(i.asInstanceOf[Number].longValue())
         }
-      case _ =>
-        Misc.getCacheLogWriter.info("No values")
     }
-    /* if (clusterStats.isInstanceOf[mutable.HashMap[String, Any]]) {
-      clusterInfo = clusterStats.asInstanceOf[mutable.HashMap[String, Any]]
-      clusterInfo.foreach({
-        case (k, v) => createGauge(s"$namespace.$k", v.asInstanceOf[AnyVal])
-      })
-    } else if (clusterStats.isInstanceOf[Array[AnyRef]]) {
-      var clusterInfoArray = clusterStats.asInstanceOf[Array[AnyRef]]
-      lazy val tempHistogram: SparkHistogram = UserMetricsSystem.histogram(s"$namespace")
-      for (i <- clusterInfoArray) {
-        tempHistogram.update(i.asInstanceOf[Number].longValue())
-      }
-    } else {
-      Misc.getCacheLogWriter.info("no values")
-    } */
   }
 
 }

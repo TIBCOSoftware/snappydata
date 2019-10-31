@@ -561,30 +561,32 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
     val rows = new ArrayBuffer[Row]
     commands.forEach(new Consumer[Entry[String, String]] {
       override def accept(t: Entry[String, String]): Unit = {
-        var alias = t.getKey
-        // Skip dropped functions entry
-        if (alias.contains(ContextJarUtils.droppedFunctionsKey)) return
-        // Explicitly mark functions as UDF while listing jars/packages.
-        alias = alias.replace(ContextJarUtils.functionKeyPrefix, "[UDF]")
-        val value = t.getValue
-        val indexOf = value.indexOf('|')
-        if (indexOf > 0) {
-          // It is a package
-          val pkg = value.substring(0, indexOf)
-          rows += Row(alias, pkg, true)
-        }
-        else {
-          // It is a jar
-          val jars = value.split(',')
-          val jarfiles = jars.map(f => {
-            val lastIndexOf = f.lastIndexOf('/')
-            val length = f.length
-            if (lastIndexOf > 0) f.substring(lastIndexOf + 1, length)
-            else {
-              f
-            }
-          })
-          rows += Row(alias, jarfiles.mkString(","), false)
+        if (!t.getKey.startsWith("__")) {
+          var alias = t.getKey
+          // Skip dropped functions entry
+          if (alias.contains(ContextJarUtils.droppedFunctionsKey)) return
+          // Explicitly mark functions as UDF while listing jars/packages.
+          alias = alias.replace(ContextJarUtils.functionKeyPrefix, "[UDF]")
+          val value = t.getValue
+          val indexOf = value.indexOf('|')
+          if (indexOf > 0) {
+            // It is a package
+            val pkg = value.substring(0, indexOf)
+            rows += Row(alias, pkg, true)
+          }
+          else {
+            // It is a jar
+            val jars = value.split(',')
+            val jarfiles = jars.map(f => {
+              val lastIndexOf = f.lastIndexOf('/')
+              val length = f.length
+              if (lastIndexOf > 0) f.substring(lastIndexOf + 1, length)
+              else {
+                f
+              }
+            })
+            rows += Row(alias, jarfiles.mkString(","), false)
+          }
         }
       }
     })
