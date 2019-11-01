@@ -62,11 +62,13 @@ public class DataExtractorToolTest extends SnappyTest {
     ArrayList queryArray = getQueryArr(queryFile);
     try {
       conn = getLocatorConnection();
+      Log.getLogWriter().info("SP: queryArray size = "+queryArray.size());
       for (int i = 0; i < queryArray.size(); i++) {
         try {
+          Log.getLogWriter().info("SP1");
           String queryStr = (String) queryArray.get(i);
           conn.createStatement().execute(queryStr);
-          Log.getLogWriter().info("Query executed successfully");
+          Log.getLogWriter().info("Query " + queryStr +"\n executed successfully");
         } catch (SQLException se) {
           if (expectedExcptCnt != 0) {
             if (se.getMessage().contains("SELECT")) {

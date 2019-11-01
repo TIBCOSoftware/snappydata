@@ -50,7 +50,7 @@ CREATE TABLE BANK(
   RTNG_NUM VARCHAR(35) NOT NULL,
   VLD_FRM_DT TIMESTAMP NOT NULL,
   VLD_TO_DT TIMESTAMP,
-  SRC_SYS_REF_ID VARCHAR(10) NOT NULL,
+  SRC_SYS_REF_ID VARCHAR(50) NOT NULL,
   SRC_SYS_REC_ID VARCHAR(150)) USING column OPTIONS(partition_by 'BNK_ORG_ID', buckets '32',key_columns 'CLIENT_ID,BNK_ORG_ID,BNK_ID ',redundancy '1') ;
   INSERT into BANK select id,id,abs(rand()*1000),abs(rand()*1000),'BNK_FULL_NM','RTNG_NUM',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),'src_sys_ref_id','src_sys_rec_id' from range(4000000);
 
