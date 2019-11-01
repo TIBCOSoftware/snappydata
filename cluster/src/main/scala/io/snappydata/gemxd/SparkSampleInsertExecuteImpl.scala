@@ -17,12 +17,16 @@
 package io.snappydata.gemxd
 
 import java.io.DataOutput
+import java.util
 
+import com.gemstone.gemfire.DataSerializer
+import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
 import com.gemstone.gemfire.internal.shared.Version
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.distributed.SnappyResultHolder
+import com.pivotal.gemfirexd.internal.engine.distributed.{DVDIOUtil, SnappyResultHolder}
 import com.pivotal.gemfirexd.internal.engine.distributed.execution.LeadNodeExecutionObject
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
+import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
 import org.apache.spark.rdd.RDD
@@ -39,8 +43,8 @@ import org.apache.spark.{Logging, Partition, TaskContext}
  * Encapsulates a Spark execution for use in query routing from JDBC.
  */
 class SparkSampleInsertExecuteImpl(val baseTable: String,
-  rows: Seq[Row],
-  val ctx: LeadNodeExecutionContext,
+  dvdRows: util.List[Array[DataValueDescriptor]],
+  serializedDVDs: Array[Byte], val ctx: LeadNodeExecutionContext,
   senderVersion: Version) extends SparkSQLExecute with Logging {
 
   // spark context will be constructed by now as this will be invoked when
@@ -63,6 +67,13 @@ class SparkSampleInsertExecuteImpl(val baseTable: String,
   override def packRows(msg: LeadNodeExecutorMsg,
     snappyResultHolder: SnappyResultHolder, execObject: LeadNodeExecutionObject): Unit = {
     val ti = session.tableIdentifier(baseTable)
+    val rows = if (this.dvdRows != null) {
+      import scala.collection.JavaConverters._
+      dvdRows.asScala.map(dvdArr =>
+        Row.fromSeq(dvdArr.map(org.apache.spark.sql.SnappySession.getValue(_, false))))
+    } else {
+       this.deserializedDVDs()
+    }
     val catalog = session.sessionState.catalog
     val baseTableMetadata = catalog.getTableMetadata(ti)
     val schema = baseTableMetadata.schema
@@ -84,7 +95,28 @@ class SparkSampleInsertExecuteImpl(val baseTable: String,
     msg.lastResult(snappyResultHolder)
   }
 
-  override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit = {}
+  override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit = {
+    DataSerializer.writeIntArray(null, out)
+  }
+
+  def deserializedDVDs(): Seq[Row] = {
+    val baid = new ByteArrayDataInput()
+    baid.initialize(this.serializedDVDs, null)
+    val numEightColGroups = DataSerializer.readPrimitiveInt(baid);
+    val numPartCols = DataSerializer.readPrimitiveByte(baid);
+    val dvdTypes = DataSerializer.readIntArray(baid);
+    val numCols = dvdTypes.length / 3
+    val numRows = DataSerializer.readPrimitiveInt(baid);
+    val dvdArray = Array.tabulate[DataValueDescriptor](numCols)(i => {
+      SnappyResultHolder.getNewNullDVD(dvdTypes(i * 3), i, null,
+        dvdTypes(i * 3 + 1), dvdTypes(i * 3 + 2), false)
+    })
+    for (i <- 0 until numRows) yield {
+      dvdArray.foreach(_.setToNull())
+      DVDIOUtil.readDVDArray(dvdArray, baid, numEightColGroups, numPartCols);
+      Row.fromSeq(dvdArray.map(org.apache.spark.sql.SnappySession.getValue(_, false)))
+    }
+  }
 }
 
 object SparkSampleInsertExecuteImpl {

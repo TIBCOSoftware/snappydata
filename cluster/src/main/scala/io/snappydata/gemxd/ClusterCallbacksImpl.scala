@@ -100,11 +100,9 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override  def getSampleInsertExecute(baseTable: String, ctx: LeadNodeExecutionContext,
-    v: Version, dvdRows: util.List[Array[DataValueDescriptor]]): SparkSQLExecute = {
-    import scala.collection.JavaConverters._
-     val rows = dvdRows.asScala.map(dvdArr =>
-       Row.fromSeq(dvdArr.map(org.apache.spark.sql.SnappySession.getValue(_, false))))
-     new SparkSampleInsertExecuteImpl(baseTable, rows, ctx, v)
+    v: Version, dvdRows: util.List[Array[DataValueDescriptor]],
+    serializedDVDs: Array[Byte]): SparkSQLExecute = {
+     new SparkSampleInsertExecuteImpl(baseTable, dvdRows, serializedDVDs, ctx, v)
   }
 
   override def readDataType(in: ByteArrayDataInput): AnyRef = {
