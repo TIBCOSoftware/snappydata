@@ -19,16 +19,10 @@ package org.apache.spark.sql
 
 import java.io.File
 
-import scala.util.Try
-
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, QueryHint}
-import org.parboiled2._
-import shapeless.{::, HNil}
-
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
@@ -46,6 +40,10 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
+import org.parboiled2._
+import shapeless.{::, HNil}
+
+import scala.util.Try
 
 abstract class SnappyDDLParser(session: SnappySession)
     extends SnappyBaseParser(session) {
@@ -120,6 +118,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
   final def CLUSTERED: Rule0 = rule { keyword(Consts.CLUSTERED) }
+  final def CODE: Rule0 = rule { keyword(Consts.CODE) }
   final def CODEGEN: Rule0 = rule { keyword(Consts.CODEGEN) }
   final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
   final def COLUMNS: Rule0 = rule { keyword(Consts.COLUMNS) }
@@ -157,6 +156,8 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def INDEX: Rule0 = rule { keyword(Consts.INDEX) }
   final def INIT: Rule0 = rule { keyword(Consts.INIT) }
   final def INTERVAL: Rule0 = rule { keyword(Consts.INTERVAL) }
+  final def INTP: Rule0 = rule { keyword(Consts.INTP) }
+  final def INTERPRET: Rule0 = rule { keyword(Consts.INTERPRET) }
   final def JAR: Rule0 = rule { keyword(Consts.JAR) }
   final def JARS: Rule0 = rule { keyword(Consts.JARS) }
   final def LAST: Rule0 = rule { keyword(Consts.LAST) }
@@ -469,6 +470,29 @@ abstract class SnappyDDLParser(session: SnappySession)
     (capture(beforeDDLEnd.*) ~> ((s: String) =>
       new StringBuilder().append(s))) ~ tableEnd1
   }
+
+  /**
+   *  INTP options (...) code {  ...... }
+   * @return LogicalPlan
+   */
+  protected def interpretCode: Rule1[LogicalPlan] = rule {
+    (INTP | INTERPRET) ~ (OPTIONS ~ options).? ~ ws ~ CODE ~ ws ~ codeChunk ~> {
+      ( opts: Any, code: String) =>
+        val parameters = opts.asInstanceOf[Option[Map[String, String]]]
+          .getOrElse(Map.empty[String, String])
+
+        InterpretCodeCommand(code, parameters)
+    }
+  }
+
+
+  protected def codeChunk: Rule1[String] = rule {
+    capture(ANY.*) ~ EOI ~> ((code : String) => code )
+    /***
+    '{' ~ capture(ANY) ~ '}' ~> ((code : String) => code )
+     ***/
+  }
+
 
   protected def createIndex: Rule1[LogicalPlan] = rule {
     (CREATE ~ (GLOBAL ~ HASH ~ push(false) | UNIQUE ~ push(true)).? ~ INDEX) ~
@@ -988,7 +1012,7 @@ abstract class SnappyDDLParser(session: SnappySession)
     dropTable | truncateTable | createView | createTempViewUsing | dropView | alterView | createSchema |
     dropSchema | alterTableToggleRowLevelSecurity | createPolicy | dropPolicy |
     alterTableProps | alterTableOrView | alterTable | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | passThrough)
+    createIndex | dropIndex | createFunction | dropFunction | passThrough | interpretCode )
   }
 
   protected def partitionSpec: Rule1[Map[String, Option[String]]]
