@@ -55,12 +55,12 @@ class OpLogFormatRelation(
     val tableSchemas = RecoveryService.schemaStructMap
     val versionMap = RecoveryService.versionMap
     val tableColIdsMap = RecoveryService.tableColumnIds
-
-    val keyColumns = options.getOrElse("key_columns", "")
+    val catalogTable = snappySession.externalCatalog.getTable(schemaName, tableName)
+    val primaryKeys = catalogTable.properties.getOrElse("primary_keys", "")
 
     (new OpLogRdd(snappySession, fqtn, externalColumnTableName, schema,
       partitioningColumns, provider, projection, filters, (filters eq null) || filters.length == 0,
-      prunePartitions, tableSchemas, versionMap, tableColIdsMap, keyColumns), projection)
+      prunePartitions, tableSchemas, versionMap, tableColIdsMap, primaryKeys), projection)
   }
 
 
