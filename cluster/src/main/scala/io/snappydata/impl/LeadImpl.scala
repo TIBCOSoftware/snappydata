@@ -42,9 +42,9 @@ import com.pivotal.gemfirexd.{Attribute, Constants, FabricService, NetworkInterf
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
 import io.snappydata.cluster.ExecutorInitiator
-import io.snappydata.metrics.SnappyMetricsClass
+import io.snappydata.recovery.RecoveryService
 import io.snappydata.util.ServiceUtils
-import io.snappydata._
+import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
@@ -305,7 +305,7 @@ class LeadImpl extends ServerImpl with Lead
       // start the service to gather table statistics
       SnappyTableStatsProviderService.start(sc, url = null)
 
-      if (startHiveServer) {
+      if (startHiveServer && !Misc.getGemFireCache.isSnappyRecoveryMode) {
         val hiveService = SnappyHiveThriftServer2.start(useHiveSession)
         if (jobServerWait) SnappyHiveThriftServer2.getHostPort(hiveService) match {
           case None => addStartupMessage(s"Started hive thrift server ($hiveSessionKind)")
@@ -325,6 +325,11 @@ class LeadImpl extends ServerImpl with Lead
       // finally start embedded zeppelin interpreter if configured and security is not enabled.
       if (!authSpecified) {
         checkAndStartZeppelinInterpreter(zeppelinEnabled, bootProperties)
+      }
+
+      // If recovery mode then initialize the recovery service
+      if(Misc.getGemFireCache.isSnappyRecoveryMode) {
+        RecoveryService.collectViewsAndPrepareCatalog()
       }
 
       if (jobServerWait) {
