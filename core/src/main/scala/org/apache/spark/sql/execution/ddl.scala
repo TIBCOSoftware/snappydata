@@ -24,7 +24,6 @@ import java.util.Map.Entry
 import java.util.function.Consumer
 
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
@@ -33,8 +32,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Property
 import io.snappydata.util.ServiceUtils
-
-import org.apache.spark.SparkContext
+import org.apache.spark.{SparkContext, Success}
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -54,6 +52,46 @@ import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 import org.apache.spark.unsafe.types.CalendarInterval
+
+import scala.tools.nsc.{GenericRunnerSettings, Settings}
+import scala.tools.nsc.interpreter.IMain
+
+
+/**
+ * Allow execution of adhoc scala code on the Lead node.
+ * Creates a new Scala interpreter for a Snappy Session. But, cached for the life of the
+ * session. Subsequent invocations of the 'interpret' command will resuse the cached
+ * interpreter. Allowing any variables (e.g. dataframe) to be preserved across invocations.
+ * State will not be preserved during Lead node failover.
+ * <p> Application is injected (1) The SnappySession in variable called 'session' and
+ * (2) The Options in a variable called 'intp_options'.
+ * <p> To return values set a variable called 'intp_return' - a Seq[Row].
+ */
+case class InterpretCodeCommand(
+     code: String,
+     options: Map[String, String]) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+
+    val session = sparkSession.asInstanceOf[SnappySession]
+
+    val settings = new Settings
+    settings.processArgumentString("-deprecation -feature -Xfatal-warnings -Xlint")
+
+    val intp = new IMain(settings)
+    intp.bind("session", session)
+    intp.bind("options", options)
+    import scala.tools.nsc.interpreter.Results.Success
+    val res = intp.interpret(code) match {
+      case Success => "OK!"
+      case _       => throw new AnalysisException("Interpretation failed. Exception likely in Leader log")
+    }
+    println(res)
+
+    Seq.empty[Row]
+  }
+}
+
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
@@ -700,3 +738,4 @@ case class PutIntoValuesColumnTable(db: String, tableName: String,
     }
   }
 }
+
