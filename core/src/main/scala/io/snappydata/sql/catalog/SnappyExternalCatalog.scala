@@ -354,6 +354,7 @@ object CatalogObjectType extends Enumeration {
 
   val Row: Type = Value("ROW")
   val Column: Type = Value("COLUMN")
+  val Oplog: Type = Value("OPLOG")
   val View: Type = Value("VIEW")
   val Index: Type = Value("INDEX")
   val Stream: Type = Value("STREAM")
