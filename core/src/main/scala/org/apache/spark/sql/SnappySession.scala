@@ -1445,7 +1445,51 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case l: LogicalRelation => l.relation
     }
     snappyContextFunctions.postRelationCreation(relation, this)
+    var catalogTable = externalCatalog.getTable(resolvedName.database.get, resolvedName.table)
+    val primaryKeys = getPrimaryKeys(resolvedName.database.get, resolvedName.table)
+    if (primaryKeys.nonEmpty) {
+      sessionCatalog.alterTable(catalogTable.copy(properties =
+          catalogTable.properties + (s"primary_keys" -> primaryKeys.mkString(","))))
+    }
     df
+  }
+
+  /**
+   * Queries sys.indexes table and returns csv string of primary column names of given table
+   *
+   * @param schema schema  that the table belongs to
+   * @param table  table for which primary keys are to be found
+   * @return primary keys of given table as csv string
+   */
+  def getPrimaryKeys(schema: String, table: String): Array[String] = {
+    var primaryKeys = Array.empty[String]
+    val conn = getConnection
+    try {
+      val sql = s"""SELECT COLUMNS_AND_ORDER FROM sys.indexes WHERE
+                   |INDEXTYPE = 'PRIMARY KEY' AND schemaname = '${schema.toUpperCase}' AND
+                   |tablename = '${table.toUpperCase}'""".stripMargin
+      val ps = conn.prepareStatement(sql)
+      val rs = ps.executeQuery()
+      if (rs.next()) {
+        val keys = rs.getString(1)
+        if (keys != null && !keys.eq(""))
+          // keys for table with c1, c2 as primary key looks like '+c1+c2'
+          primaryKeys = keys.split("\\+").filter(!_.equals(""))
+      }
+    } catch {
+      case sqle: SQLException =>
+        if (sqle.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${sqle.getMessage}\n" +
+              "Ensure that the 'driver' option is set appropriately and " +
+              "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw sqle
+        }
+    } finally {
+      conn.commit()
+      conn.close()
+    }
+    primaryKeys
   }
 
   def getDDLSchema(schema: StructType): String = {
@@ -1611,8 +1655,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         // and update it into the metastore.
 
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
-        sessionCatalog.alterTable(metadata.copy(properties = metadata.properties +
-              (s"altTxt_${System.currentTimeMillis()}" -> sql)))
+        val primaryKeys = getPrimaryKeys(metadata.identifier.database.get, metadata.identifier.table)
+        sessionCatalog.alterTable(metadata.copy(
+          properties = metadata.properties +
+              (s"altTxt_${System.currentTimeMillis()}" -> sql) +
+              (s"primary_keys" -> primaryKeys.mkString(","))
+        ))
+        val ct = externalCatalog.getTable(metadata.identifier.database.get, metadata.identifier.table)
 
       case _ => throw new AnalysisException(
         s"ALTER TABLE ${tableIdent.unquotedString} variant only supported for row tables")
@@ -1841,12 +1890,20 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
-  private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
+  /**
+   * creates a internal connection to snappydata and returns it
+   * @return connection to snappydata
+   */
+  private def getConnection: Connection = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
       Some(this), ExternalStoreUtils.emptyCIMutableMap)
     val jdbcOptions = new JDBCOptions(connProperties.url, "",
       connProperties.connProps.asScala.toMap)
-    val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
+    JdbcUtils.createConnectionFactory(jdbcOptions)()
+  }
+
+  private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
+    val conn = getConnection
     try {
       val sql = constructDropSQL(indexName, ifExists)
       JdbcExtendedUtils.executeUpdate(sql, conn)

@@ -51,6 +51,8 @@ import org.apache.spark.sql.internal.ContextJarUtils
 object RecoveryService extends Logging {
   var recoveryStats: (
       Seq[SnappyRegionStats], Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = _
+  val snappyHiveExternalCatalog = HiveClientUtil
+      .getOrCreateExternalCatalog(SnappyContext().sparkContext, SnappyContext().sparkContext.getConf)
 
   private def isGrantRevokeStatement(conflatable: DDLConflatable) = {
     val sqlText = conflatable.getValueToConflate
@@ -150,8 +152,6 @@ object RecoveryService extends Logging {
     }
 
     val snappyContext = SnappyContext()
-    val snappyHiveExternalCatalog = HiveClientUtil
-        .getOrCreateExternalCatalog(snappyContext.sparkContext, snappyContext.sparkContext.getConf)
     val dbList = snappyHiveExternalCatalog.listDatabases("*").filter(dbName =>
       !(dbName.equalsIgnoreCase("SYS") || dbName.equalsIgnoreCase("DEFAULT")))
 
@@ -289,7 +289,7 @@ object RecoveryService extends Logging {
   val versionMap: mutable.Map[String, Int] = collection.mutable.Map.empty
   val tableColumnIds: mutable.Map[String, Array[Int]] = mutable.Map.empty
 
-  def updateMetadataMaps(fqtnKey: String, alteredSchema: StructType, versionCnt: Int ): Int = {
+  def updateMetadataMaps(fqtnKey: String, alteredSchema: StructType, versionCnt: Int): Int = {
     schemaStructMap.put(s"$versionCnt#$fqtnKey", alteredSchema)
     val idArray: Array[Int] = new Array[Int](alteredSchema.fields.length)
     val prevSchema = schemaStructMap.getOrElse(s"${versionCnt - 1}#$fqtnKey", null)
@@ -312,7 +312,7 @@ object RecoveryService extends Logging {
     versionCnt + 1
   }
 
-  def createSchemasMap(snappyHiveExternalCatalog: SnappyHiveExternalCatalog): Unit = {
+  def createSchemasMap: Unit = {
     val snappySession = new SnappySession(SnappyContext().sparkContext)
     val colParser = new SnappyParser(snappySession)
     getTables.foreach(table => {
@@ -407,9 +407,9 @@ object RecoveryService extends Logging {
     } else {
       if (memberObject.getReplicatedRegions.contains(prName)) {
         (1, true)
-      } else{
-        (-1, false)
-//        throw new IllegalStateException(s"Buckets not found for $prName")
+      } else {
+        logWarning(s"Number of partitions for $prName not found in ${memberObject.getMember}")
+        (0, false)
       }
     }
   }
@@ -441,7 +441,7 @@ object RecoveryService extends Logging {
         val regionPath = persistentView.getRegionPath
         val set = regionViewSortedSet.get(regionPath)
         if (set.isDefined) {
-                    set.get += persistentView
+          set.get += persistentView
         } else {
           var newset = mutable.SortedSet.empty[RecoveryModePersistentView]
           newset += persistentView
@@ -453,7 +453,7 @@ object RecoveryService extends Logging {
     val hiveRegionViews = regionViewSortedSet.filterKeys(
       _.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
     val hiveRegionToConsider =
-      hiveRegionViews.keySet.toSeq.sortBy(hiveRegionViews.get(_).size).last
+      hiveRegionViews.keySet.toSeq.maxBy(hiveRegionViews.get(_).size)
     val mostUptodateRegionView = regionViewSortedSet(hiveRegionToConsider).lastKey
     val memberToConsiderForHiveCatalog = mostUptodateRegionView.getMember
     mostRecentMemberObject = persistentObjectMemberMap(memberToConsiderForHiveCatalog)
@@ -462,11 +462,11 @@ object RecoveryService extends Logging {
     val nonHiveRegionViews = regionViewSortedSet.filterKeys(
       !_.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
     val regionToConsider =
-      if (nonHiveRegionViews.nonEmpty) {
-        nonHiveRegionViews.keySet.toSeq.sortBy(nonHiveRegionViews.get(_).size).last
-      } else {
+      if (nonHiveRegionViews.isEmpty) {
         logError("No relevant RecoveryModePersistentViews found.")
         throw new Exception("Cannot start empty cluster in Recovery Mode.")
+      } else {
+        nonHiveRegionViews.keySet.toSeq.maxBy(nonHiveRegionViews.get(_).size)
       }
     val regionView = regionViewSortedSet(regionToConsider).lastKey
     val memberToConsider = regionView.getMember
@@ -488,7 +488,7 @@ object RecoveryService extends Logging {
       }
     })
     RecoveryService.populateCatalog(catalogArr, snapCon.sparkContext)
-    createSchemasMap(snappyHiveExternalCatalog)
+    createSchemasMap
 
     val dbList = snappyHiveExternalCatalog.listDatabases("*")
     val allFunctions = dbList.map(dbName =>
@@ -506,10 +506,8 @@ object RecoveryService extends Logging {
   }
 
   def getTables: Seq[CatalogTable] = {
-    val snappyContext = SnappyContext()
-    val snappyHiveExternalCatalog = HiveClientUtil
-        .getOrCreateExternalCatalog(snappyContext.sparkContext, snappyContext.sparkContext.getConf)
-    snappyHiveExternalCatalog.getAllTables().filter(!_.tableType.name.equalsIgnoreCase("view"))
+    snappyHiveExternalCatalog.getAllTables()
+        .filter(!_.tableType.name.equalsIgnoreCase("view"))
   }
 
   def getProvider(tableName: String): String = {
@@ -568,9 +566,9 @@ object RecoveryService extends Logging {
    * capture the arguments used by the procedure DUMP_DATA and cache them for later generating
    * helper scripts to load all this data back into new cluster
    *
-   * @param formatType spark output format
-   * @param tables comma separated qualified names of tables
-   * @param outputDir base output path for one call of DUMP_DATA procedure
+   * @param formatType  spark output format
+   * @param tables      comma separated qualified names of tables
+   * @param outputDir   base output path for one call of DUMP_DATA procedure
    * @param ignoreError whether to move on to next table in case of failure
    */
   def captureArguments(formatType: String, tables: Seq[String],
