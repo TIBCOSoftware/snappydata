@@ -833,13 +833,23 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *                        name is present, else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
-      baseTable: Option[String],
-      samplingOptions: Map[String, String],
-      allowExisting: Boolean): DataFrame = {
-    createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
+    baseTable: Option[String],
+    samplingOptions: Map[String, String],
+    allowExisting: Boolean): DataFrame = {
+    val df = createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
+    this.populateSampleTableOnCreation(df, baseTable)
+    df
+  }
+
+  private def populateSampleTableOnCreation(sampleDf: DataFrame,
+    baseTable: Option[String]): Unit = {
+    val srOpt = sampleDf.queryExecution.analyzed.collectFirst {
+      case l: LogicalRelation => l.relation.asInstanceOf[SamplingRelation]
+    }
+    baseTable.foreach(baseTable => srOpt.foreach(_.insert(this.table(baseTable), false)))
   }
 
   /**
@@ -854,8 +864,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *                        name is present, else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
-      baseTable: String, samplingOptions: java.util.Map[String, String],
-      allowExisting: Boolean): DataFrame = {
+    baseTable: String, samplingOptions: java.util.Map[String, String],
+    allowExisting: Boolean): DataFrame = {
     createSampleTable(tableName, Option(baseTable),
       samplingOptions.asScala.toMap, allowExisting)
   }
@@ -874,14 +884,16 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *                        name is present, else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
-      baseTable: Option[String],
-      schema: StructType,
-      samplingOptions: Map[String, String],
-      allowExisting: Boolean = false): DataFrame = {
-    createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
+    baseTable: Option[String],
+    schema: StructType,
+    samplingOptions: Map[String, String],
+    allowExisting: Boolean = false): DataFrame = {
+    val df = createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       Some(JdbcExtendedUtils.normalizeSchema(schema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
+    this.populateSampleTableOnCreation(df, baseTable)
+    df
   }
 
   /**
@@ -897,9 +909,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *                        name is present, else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
-      baseTable: String, schema: StructType,
-      samplingOptions: java.util.Map[String, String],
-      allowExisting: Boolean): DataFrame = {
+    baseTable: String, schema: StructType,
+    samplingOptions: java.util.Map[String, String],
+    allowExisting: Boolean): DataFrame = {
     createSampleTable(tableName, Option(baseTable), schema,
       samplingOptions.asScala.toMap, allowExisting)
   }
