@@ -19,25 +19,12 @@
 
 package io.snappydata.metrics
 
-import java.text.SimpleDateFormat
-import java.util.{Calendar, Date, Locale}
-import io.snappydata.metrics.SnappyMetricsClass.{createGauge, createHistogram}
-import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.metrics.SnappyMetricsClass.{createGauge, updateHistogram}
 import com.pivotal.gemfirexd.internal.engine.ui.MemberStatistics
-import org.apache.spark.groupon.metrics.{SparkGauge, SparkHistogram, UserMetricsSystem}
 
 object SnappyMemberMetrics {
 
-  val startTime = System.currentTimeMillis()// Calendar.getInstance().getTime
-
-  def convertStatsToMetrics(member: String, memberDetails: MemberStatistics): Long = {
-    val DATE_FORMAT = "dd/MM/yyyy HH:mm:ss.SSS z"
-    val sdf = new SimpleDateFormat(DATE_FORMAT, Locale.US)
-    val dd = sdf.format(startTime)
-    // Misc.getCacheLogWriter.info("========= [SnappyMemberMetrics rep] StartTime : " + dd)
-
-    // createGauge("clusterUptime started", dd.asInstanceOf[AnyVal])
-
+  def convertStatsToMetrics(member: String, memberDetails: MemberStatistics) {
     val shortDirName = memberDetails.getUserDir.substring(
       memberDetails.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
 
@@ -101,22 +88,27 @@ object SnappyMemberMetrics {
     createGauge(s"$namespace.offHeapMemorySize", memberDetails.getOffHeapMemorySize)
     createGauge(s"$namespace.offHeapMemoryUsed", memberDetails.getOffHeapMemoryUsed)
     createGauge(s"$namespace.diskStoreDiskSpace", memberDetails.getDiskStoreDiskSpace)
-    createHistogram(s"$namespace.timeLine", MemberStatistics.TREND_TIMELINE)
-    createHistogram(s"$namespace.cpuUsageTrends", MemberStatistics.TREND_CPU_USAGE)
-    createHistogram(s"$namespace.jvmUsageTrends", MemberStatistics.TREND_JVM_HEAP_USAGE)
-    createHistogram(s"$namespace.heapUsageTrends", MemberStatistics.TREND_HEAP_USAGE)
-    createHistogram(s"$namespace.heapStorageUsageTrends", MemberStatistics.TREND_HEAP_STORAGE_USAGE)
-    createHistogram(s"$namespace.heapExecutionUsageTrends",
-      MemberStatistics.TREND_HEAP_EXECUTION_USAGE)
-    createHistogram(s"$namespace.offHeapUsageTrends", MemberStatistics.TREND_OFFHEAP_USAGE)
-    createHistogram(s"$namespace.offHeapStorageUsageTrends",
-      MemberStatistics.TREND_OFFHEAP_STORAGE_USAGE)
-    createHistogram(s"$namespace.offHeapExecutionUsageTrends",
-      MemberStatistics.TREND_OFFHEAP_EXECUTION_USAGE)
-    createHistogram(s"$namespace.aggrMemoryUsageTrends", MemberStatistics.TREND_AGGR_MEMORY_USAGE)
-    createHistogram(s"$namespace.diskStoreDiskSpaceTrend",
-      MemberStatistics.TREND_DISKSTORE_DISKSPACE_USAGE)
-
-    startTime
+    updateHistogram(s"$namespace.timeLine", 11,
+      memberDetails.getUsageTrends(MemberStatistics.TREND_TIMELINE).toList)
+    updateHistogram(s"$namespace.cpuUsageTrend", 12,
+      memberDetails.getUsageTrends(MemberStatistics.TREND_CPU_USAGE).toList)
+    updateHistogram(s"$namespace.jvmUsageTrend", 13,
+      memberDetails.getUsageTrends(MemberStatistics.TREND_JVM_HEAP_USAGE).toList)
+    updateHistogram(s"$namespace.heapUsageTrend", 14,
+      memberDetails.getUsageTrends(MemberStatistics.TREND_HEAP_USAGE).toList)
+    updateHistogram(s"$namespace.heapStorageUsageTrend", 15,
+      memberDetails.getUsageTrends(MemberStatistics.TREND_HEAP_STORAGE_USAGE).toList)
+    updateHistogram(s"$namespace.heapExecutionUsageTrend", 16,
+      memberDetails.getUsageTrends(MemberStatistics.TREND_HEAP_EXECUTION_USAGE).toList)
+    updateHistogram(s"$namespace.offHeapUsageTrend", 17,
+      memberDetails.getUsageTrends(MemberStatistics.TREND_OFFHEAP_USAGE).toList)
+    updateHistogram(s"$namespace.offHeapStorageUsageTrend", 18,
+      memberDetails.getUsageTrends(MemberStatistics.TREND_OFFHEAP_STORAGE_USAGE).toList)
+    updateHistogram(s"$namespace.offHeapExecutionUsageTrend", 19,
+      memberDetails.getUsageTrends(MemberStatistics.TREND_OFFHEAP_EXECUTION_USAGE).toList)
+    updateHistogram(s"$namespace.aggrMemoryUsageTrend", 20,
+      memberDetails.getUsageTrends(MemberStatistics.TREND_AGGR_MEMORY_USAGE).toList)
+    updateHistogram(s"$namespace.diskStoreDiskSpaceTrend", 21,
+      memberDetails.getUsageTrends(MemberStatistics.TREND_DISKSTORE_DISKSPACE_USAGE).toList)
   }
 }

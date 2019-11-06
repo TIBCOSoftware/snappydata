@@ -42,6 +42,7 @@ import com.pivotal.gemfirexd.{Attribute, Constants, FabricService, NetworkInterf
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
 import io.snappydata.cluster.ExecutorInitiator
+import io.snappydata.metrics.SnappyMetricsClass
 import io.snappydata.recovery.RecoveryService
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
@@ -317,7 +318,17 @@ class LeadImpl extends ServerImpl with Lead
       // update the Spark UI to add the dashboard and other SnappyData pages
       ToolsCallbackInit.toolsCallback.updateUI(sc)
 
+      // start snappy metric system
       SnappyMetricsClass.init(sc)
+
+      // store every member diskStore ID to metadataCmdRgn
+      val membersBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
+      val region = Misc.getMemStore.getMetadataCmdRgn
+      for ((k, v) <- membersBuff) {
+        val shortDirName = v.getUserDir.substring(
+          v.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
+        region.put("__" + shortDirName + "__", v.getDiskStoreUUID.toString)
+      }
 
       // start other add-on services (job server)
       startAddOnServices(conf, confFile, jobServerConfig)
@@ -380,13 +391,14 @@ class LeadImpl extends ServerImpl with Lead
         val primaryLeaderLock = new DistributedMemberLock(dls,
           LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
           DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
-        var clusterUuid = ""
         val startStatus = primaryLeaderLock.tryLock()
         // noinspection SimplifyBooleanMatch
         startStatus match {
           case true =>
             logInfo("Primary lead lock acquired.")
-            clusterUuid = Misc.getMemStore.getMetadataCmdRgn.get("__ClusterID__")
+
+            // store unique cluster id to metadataCmdRgn
+            var clusterUuid = Misc.getMemStore.getMetadataCmdRgn.get("__ClusterID__")
             if (clusterUuid == null) {
               val region = Misc.getMemStore.getMetadataCmdRgn
               region.put("__ClusterID__", UUID.randomUUID().toString)

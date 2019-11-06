@@ -18,41 +18,49 @@
  */
 package io.snappydata.metrics
 
-import java.text.SimpleDateFormat
-import java.util.{Calendar, Date, Locale}
-
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.ui.{MemberStatistics, SnappyExternalTableStats, SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{ClusterStatistics, MemberStatistics, SnappyExternalTableStats, SnappyRegionStats}
 import io.snappydata.SnappyTableStatsProviderService
 import org.apache.spark.SparkContext
 import org.apache.spark.groupon.metrics.UserMetricsSystem
 import org.apache.spark.groupon.metrics._
-import org.apache.spark.status.api.v1.MemberDetails.getMemberSummary
-import org.apache.spark.status.api.v1.{ClusterDetails, ClusterSummary, MemberDetails, MemberSummary}
 
 import scala.collection.mutable
 
 object SnappyMetricsClass {
+
+  val oldSizeArr = Array.fill[Int](22)(0)
+
   def init(sc: SparkContext): Unit = {
-    val startTime = Calendar.getInstance().getTime
+
+    // initialize metric system with cluster id as metrics namespace
     val clusterUuid = Misc.getMemStore.getMetadataCmdRgn.get("__ClusterID__")
     UserMetricsSystem.initialize(sc, clusterUuid)
-    val timeInterval = 3000
+
+    val timeInterval = 1000
+
+    // concurrently executing threads to get stats from StatsProviderServices
     val runnable = new Runnable {
       override def run(): Unit = {
         while (true) {
           try {
             Thread.sleep(timeInterval)
-            val clusterBuff = ClusterDetails.getClusterDetailsInfo
-            setMetricsForClusterStatDetails(clusterBuff)
+
+            // get cluster stats and publish into metrics system
+            setMetricsForClusterStatDetails()
+
+            // get table stats and publish into metrics system
             val tableBuff = SnappyTableStatsProviderService.getService.getAllTableStatsFromService
             setMetricsForTableStatDetails(tableBuff)
+
+            // get external table stats and publish into metrics system
             val externalTableBuff =
               SnappyTableStatsProviderService.getService.getAllExternalTableStatsFromService
             setMetricsForExternalTableStatDetails(externalTableBuff)
+
+            // get member stats and publish into metrics system
             val memberBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
             setMetricsForMemberStatDetails(memberBuff)
-            putMembersDiskStoreIdInRegion(memberBuff)
           }
           catch {
             case e: InterruptedException => e.printStackTrace()
@@ -64,23 +72,50 @@ object SnappyMetricsClass {
     thread.start()
   }
 
-
   def createGauge(metricName: String, metricValue: AnyVal): Unit = {
     lazy val tempGauge: SparkGauge = UserMetricsSystem.gauge(metricName)
     tempGauge.set(metricValue)
   }
 
-  def createHistogram(metricName: String, metricValue: Int): Unit = {
+  def createHistogram(metricName: String, metricValue: Long): Unit = {
     lazy val tempHistogram: SparkHistogram = UserMetricsSystem.histogram(metricName)
     tempHistogram.update(metricValue)
   }
 
-  def setMetricsForClusterStatDetails(clusterBuff: Seq[ClusterSummary]): Unit = {
-      for (c <- clusterBuff) {
-        for ((k, v) <- c.clusterInfo) {
-          SnappyClusterMetrics.convertStatsToMetrics(k, v)
-        }
+  def setMetricsForClusterStatDetails(): Unit = {
+    val csInstance = ClusterStatistics.getInstance()
+    createGauge("ClusterMetrics.coresInfo.totalCores", csInstance.getTotalCPUCores)
+    updateHistogram("ClusterMetrics.timeLine", 0,
+      csInstance.getUsageTrends(ClusterStatistics.TREND_TIMELINE).toList)
+    updateHistogram("ClusterMetrics.cpuUsageTrend", 1,
+      csInstance.getUsageTrends(ClusterStatistics.TREND_CPU_USAGE).toList)
+    updateHistogram("ClusterMetrics.jvmUsageTrend", 2,
+      csInstance.getUsageTrends(ClusterStatistics.TREND_JVM_HEAP_USAGE).toList)
+    updateHistogram("ClusterMetrics.heapUsageTrend", 3,
+      csInstance.getUsageTrends(ClusterStatistics.TREND_HEAP_USAGE).toList)
+    updateHistogram("ClusterMetrics.heapStorageUsageTrend", 4,
+      csInstance.getUsageTrends(ClusterStatistics.TREND_HEAP_STORAGE_USAGE).toList)
+    updateHistogram("ClusterMetrics.heapExecutionUsageTrend", 5,
+      csInstance.getUsageTrends(ClusterStatistics.TREND_HEAP_EXECUTION_USAGE).toList)
+    updateHistogram("ClusterMetrics.offHeapUsageTrend", 6,
+      csInstance.getUsageTrends(ClusterStatistics.TREND_OFFHEAP_USAGE).toList)
+    updateHistogram("ClusterMetrics.offHeapStorageUsageTrend", 7,
+      csInstance.getUsageTrends(ClusterStatistics.TREND_OFFHEAP_STORAGE_USAGE).toList)
+    updateHistogram("ClusterMetrics.offHeapExecutionUsageTrend", 8,
+      csInstance.getUsageTrends(ClusterStatistics.TREND_OFFHEAP_EXECUTION_USAGE).toList)
+    updateHistogram("ClusterMetrics.aggrMemoryUsageTrend", 9,
+      csInstance.getUsageTrends(ClusterStatistics.TREND_AGGR_MEMORY_USAGE).toList)
+    updateHistogram("ClusterMetrics.diskStoreDiskSpaceTrend", 10,
+      csInstance.getUsageTrends(ClusterStatistics.TREND_DISKSTORE_DISKSPACE_USAGE).toList)
+  }
+
+  def updateHistogram(metricName: String, index: Int, newList: List[AnyRef]) {
+    if (oldSizeArr(index) < newList.size) {
+      for (i <- oldSizeArr(index) until newList.size) {
+        createHistogram(metricName, newList(i).asInstanceOf[Number].longValue())
       }
+    }
+    oldSizeArr(index) = newList.size
   }
 
   def setMetricsForTableStatDetails(tableBuff: Map[String, SnappyRegionStats]): Unit = {
@@ -142,23 +177,8 @@ object SnappyMetricsClass {
     createGauge(s"MemberMetrics.dataServerCount", dataServerCount)
     createGauge(s"MemberMetrics.connectorCount", connectorCount)
 
-    var startTime: Long = 0
     for ((k, v) <- membersBuff) {
-      startTime = SnappyMemberMetrics.convertStatsToMetrics(k, v)
-    }
-    // var totalTime = (System.currentTimeMillis() - startTime)
-    // Misc.getCacheLogWriter.info("Total time " + totalTime)
-    // val DATE_FORMAT = "dd/MM/yyyy HH:mm:ss.SSS z"
-    // val sdf = new SimpleDateFormat(DATE_FORMAT, Locale.US)
-    // Misc.getCacheLogWriter.info("Date=== " + sdf.format(totalTime))
-  }
-
-  def putMembersDiskStoreIdInRegion(membersBuff: mutable.Map[String, MemberStatistics]): Unit = {
-    for ((k, v) <- membersBuff) {
-      val shortDirName = v.getUserDir.substring(
-        v.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
-      val region = Misc.getMemStore.getMetadataCmdRgn
-      region.put("__" + shortDirName + "__", v.getDiskStoreUUID.toString)
+      SnappyMemberMetrics.convertStatsToMetrics(k, v)
     }
   }
 }
