@@ -1,10 +1,8 @@
 # How to Import Data from Hive Table into TIBCO ComputeDB Table
 
-When working with Hive, you can instantiate Snappy session with Hive support, including connectivity to a persistent Apache Hive metastore, support for Apache Hive SerDes, and Apache Hive user-defined functions. To instantiate the Snappy session with Hive support, you must do the following:
+When working with Hive, you can instantiate Snappy session with Hive support, including connectivity to a persistent Apache Hive metastore, support for Apache Hive SerDes, and Apache Hive user-defined functions. Currently, this is tested on HDFS as the storage layer and with default Apache Hive Metastore, that is embedded Derby database. To instantiate the Snappy session with Hive support, you must do the following:
 
-If the underlying storage for Apache Hive is HDFS, you can configure Apache Hive.  For achieving this, do the following:
-
-1.	Place **hive-site.xml**file in the **conf/** folder. 
+1.	Place **hive-site.xml** file in the **conf/** folder. 
            
 2. In the **hive-site.xml**, you must configure the parameters as per your requirement. With Derby as Metastore, the following are the **hive-site.xml** configurations:
 
@@ -18,13 +16,12 @@ If the underlying storage for Apache Hive is HDFS, you can configure Apache Hive
                 </description>
             </property>
             ```
-	TIBCO ComputeDB is tested with default Apache Hive database, that is embedded Derby database.
-
+	
 Run the following steps to access Hive tables from TIBCO ComputeDB using Apache Hive Metastore:
 
 1.	Start the Hadoop daemons.
 2.	Start the Snappy Shell. 
-3.	After starting the Snappy Shell, you can do the following:
+3.	After starting the Snappy Shell, do the following:
 
 	*	To point to external hive catalog from snappy session, set the following property. This property can be set at the session level and global level.
                 
@@ -34,20 +31,24 @@ Run the following steps to access Hive tables from TIBCO ComputeDB using Apache 
      	        
                 snappy-sql> set spark.sql.catalogImplementation=in-memory;
 
-	*	To access hive tables use the following command:
+	*	To access the Hive tables from TIBCO ComputeDB, you must specify the schema name of the Hive table. 
+		If schema is not defined in Hive, then specify **default** as the schema name to list the tables. For example,
         		
                 snappy-sql> show tables in default;
                 
-        It is mandatory to specify the schema **default** if any other schema is not created.
-        If any other schema is created then use the created schema name.
-        For example, if schema / database hiveDB created then use,
+        If schema is defined in Hive, then specify the schema name to list the tables. For example, if schema / database named hiveDB is created in Hive, then use:
+        
                 snappy-sql> show tables in hiveDB;
 
-	*	To read the hive tables from snappy:
+		To read the Hive tables from TIBCO ComputeDB when the schema is specfied:
+        		
+                snappy-sql> SELECT FirstName, LastName FROM hiveDB.hiveemployees ORDER BY LastName;
+                
+   		To read the Hive tables from TIBCO ComputeDB when the schema is not specfied:
         		
                 snappy-sql> SELECT FirstName, LastName FROM default.hiveemployees ORDER BY LastName;
 
-	*	To join Snappy tables and Hive tables:
+	*	To join Hive tables and TIBCO ComputeDB tables:
             
             	snappy-sql> SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID, o.OrderDate FROM default.hive_employees emp JOIN snappy_orders o ON (emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderDate;
 
@@ -61,7 +62,9 @@ In case you start the Hadoop/Hive daemons, with incorrect configurations in **hi
 ```
 No Datastore found in the Distributed System for 'execution on remote node null'.
 ```
-If you have connected to Apache Hive/Hadoop and in case the configuration files get removed or deleted, errors or exceptions are not shown. Moreover, you cannot perform any DDL and DML operations in Hive.
+
+!!!Note
+If you have connected to Apache Hive Metastore and in case the configuration files get removed or deleted, errors or exceptions are not shown. Moreover, you cannot perform any DDL and DML operations in Hive tables.
 
 For more details, refer the following links:
 
