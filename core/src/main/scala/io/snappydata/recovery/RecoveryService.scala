@@ -239,7 +239,7 @@ object RecoveryService extends Logging {
         }
       }
     }
-    Misc.getMemStore.getGlobalCmdRgn.forEach(biConsumer)
+    Misc.getMemStore.getMetadataCmdRgn.forEach(biConsumer)
     ddlBuffer
   }
 
