@@ -64,11 +64,15 @@ class OpLogRdd(
     var tableSchemas: mutable.Map[String, StructType],
     var versionMap: mutable.Map[String, Int],
     var tableColIdsMap: mutable.Map[String, Array[Int]],
+    private var primaryKeysString: String,
     private var keyColumnsString: String)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   var rowFormatterMap: mutable.Map[Int, RowFormatter] = _
   var fqtnUpper = fqtn.toUpperCase()
+  var primaryKeys: Array[String] = null
+  var keyColumns: Array[String] = null
+
   /**
    * Method gets DataValueDescritor type from given StructField
    *
@@ -276,11 +280,16 @@ class OpLogRdd(
       }).toArray
       schemaOfVersion = StructType(correctedFields)
     }
-    val keyColumns = keyColumnsString.split(",").map(_.toLowerCase.trim)
-    schemaOfVersion = StructType(schemaOfVersion.map(field =>
-      if (partitioningColumns.contains(field.name) &&
-          !keyColumns.contains(field.name)) field.copy(nullable = false) else field
-    ).toArray)
+    schemaOfVersion = StructType(schemaOfVersion.map(field => {
+      provider.toLowerCase match {
+        case "row" =>
+          if (primaryKeys.contains(field.name)) field.copy(nullable = false) else field
+        case "column" =>
+          if (partitioningColumns.contains(field.name) && !keyColumns.contains(field.name))
+            field.copy(nullable = false) else field
+      }
+    }).toArray)
+
     val rowFormatter = getRowFormatter(versionNum, schemaOfVersion)
     val dvdArr = new Array[DataValueDescriptor](schemaOfVersion.length)
     val projectColumns: Array[String] = schema.fields.map(_.name)
@@ -318,6 +327,8 @@ class OpLogRdd(
     val regionMap = phdrRow.getRegionMap
     logDebug(s"RegionMap keys for $phdrRow are: ${regionMap.keySet()}")
     val regMapItr = regionMap.regionEntries().iterator().asScala
+    if (primaryKeys == null) primaryKeys = primaryKeysString.split(",").map(_.toLowerCase.trim)
+    if (keyColumns == null) keyColumns = keyColumnsString.split(",").map(_.toLowerCase.trim)
     regMapItr.map { regEntry =>
       getValueInVMOrDiskWithoutFaultIn(phdrRow, regEntry) match {
         case valueArr@(_: Array[Byte] | _: Array[Array[Byte]]) => getRow(valueArr)
@@ -672,6 +683,7 @@ class OpLogRdd(
     output.writeString(internalFQTN)
     output.writeString(fqtn)
     output.writeString(partitioningColumns.mkString(","))
+    output.writeString(primaryKeysString)
     output.writeString(keyColumnsString)
     output.writeString(provider)
     output.writeInt(tableSchemas.size)
@@ -699,6 +711,7 @@ class OpLogRdd(
     fqtn = input.readString()
     fqtnUpper = fqtn.toUpperCase()
     partitioningColumns = input.readString().split(",")
+    primaryKeysString = input.readString()
     keyColumnsString = input.readString()
     provider = input.readString()
     val schemaMapSize = input.readInt()
