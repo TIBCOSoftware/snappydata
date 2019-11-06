@@ -29,7 +29,7 @@ import scala.collection.mutable
 
 object SnappyMetricsClass {
 
-  val oldSizeArr = Array.fill[Int](22)(0)
+  val oldSizeMap = collection.mutable.Map.empty[String, Int]
 
   def init(sc: SparkContext): Unit = {
 
@@ -85,37 +85,40 @@ object SnappyMetricsClass {
   def setMetricsForClusterStatDetails(): Unit = {
     val csInstance = ClusterStatistics.getInstance()
     createGauge("ClusterMetrics.coresInfo.totalCores", csInstance.getTotalCPUCores)
-    updateHistogram("ClusterMetrics.timeLine", 0,
+    updateHistogram("ClusterMetrics.timeLine",
       csInstance.getUsageTrends(ClusterStatistics.TREND_TIMELINE).toList)
-    updateHistogram("ClusterMetrics.cpuUsageTrend", 1,
+    updateHistogram("ClusterMetrics.cpuUsageTrend",
       csInstance.getUsageTrends(ClusterStatistics.TREND_CPU_USAGE).toList)
-    updateHistogram("ClusterMetrics.jvmUsageTrend", 2,
+    updateHistogram("ClusterMetrics.jvmUsageTrend",
       csInstance.getUsageTrends(ClusterStatistics.TREND_JVM_HEAP_USAGE).toList)
-    updateHistogram("ClusterMetrics.heapUsageTrend", 3,
+    updateHistogram("ClusterMetrics.heapUsageTrend",
       csInstance.getUsageTrends(ClusterStatistics.TREND_HEAP_USAGE).toList)
-    updateHistogram("ClusterMetrics.heapStorageUsageTrend", 4,
+    updateHistogram("ClusterMetrics.heapStorageUsageTrend",
       csInstance.getUsageTrends(ClusterStatistics.TREND_HEAP_STORAGE_USAGE).toList)
-    updateHistogram("ClusterMetrics.heapExecutionUsageTrend", 5,
+    updateHistogram("ClusterMetrics.heapExecutionUsageTrend",
       csInstance.getUsageTrends(ClusterStatistics.TREND_HEAP_EXECUTION_USAGE).toList)
-    updateHistogram("ClusterMetrics.offHeapUsageTrend", 6,
+    updateHistogram("ClusterMetrics.offHeapUsageTrend",
       csInstance.getUsageTrends(ClusterStatistics.TREND_OFFHEAP_USAGE).toList)
-    updateHistogram("ClusterMetrics.offHeapStorageUsageTrend", 7,
+    updateHistogram("ClusterMetrics.offHeapStorageUsageTrend",
       csInstance.getUsageTrends(ClusterStatistics.TREND_OFFHEAP_STORAGE_USAGE).toList)
-    updateHistogram("ClusterMetrics.offHeapExecutionUsageTrend", 8,
+    updateHistogram("ClusterMetrics.offHeapExecutionUsageTrend",
       csInstance.getUsageTrends(ClusterStatistics.TREND_OFFHEAP_EXECUTION_USAGE).toList)
-    updateHistogram("ClusterMetrics.aggrMemoryUsageTrend", 9,
+    updateHistogram("ClusterMetrics.aggrMemoryUsageTrend",
       csInstance.getUsageTrends(ClusterStatistics.TREND_AGGR_MEMORY_USAGE).toList)
-    updateHistogram("ClusterMetrics.diskStoreDiskSpaceTrend", 10,
+    updateHistogram("ClusterMetrics.diskStoreDiskSpaceTrend",
       csInstance.getUsageTrends(ClusterStatistics.TREND_DISKSTORE_DISKSPACE_USAGE).toList)
   }
 
-  def updateHistogram(metricName: String, index: Int, newList: List[AnyRef]) {
-    if (oldSizeArr(index) < newList.size) {
-      for (i <- oldSizeArr(index) until newList.size) {
+  def updateHistogram(metricName: String, newList: List[AnyRef]) {
+    if (!oldSizeMap.contains(metricName)) {
+      oldSizeMap.put(metricName, 0)
+    }
+    if (oldSizeMap(metricName) < newList.size) {
+      for (i <- oldSizeMap(metricName) until newList.size) {
         createHistogram(metricName, newList(i).asInstanceOf[Number].longValue())
       }
     }
-    oldSizeArr(index) = newList.size
+    oldSizeMap.update(metricName, newList.size)
   }
 
   def setMetricsForTableStatDetails(tableBuff: Map[String, SnappyRegionStats]): Unit = {

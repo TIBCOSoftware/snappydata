@@ -88,27 +88,27 @@ object SnappyMemberMetrics {
     createGauge(s"$namespace.offHeapMemorySize", memberDetails.getOffHeapMemorySize)
     createGauge(s"$namespace.offHeapMemoryUsed", memberDetails.getOffHeapMemoryUsed)
     createGauge(s"$namespace.diskStoreDiskSpace", memberDetails.getDiskStoreDiskSpace)
-    updateHistogram(s"$namespace.timeLine", 11,
+    updateHistogram(s"$namespace.timeLine",
       memberDetails.getUsageTrends(MemberStatistics.TREND_TIMELINE).toList)
-    updateHistogram(s"$namespace.cpuUsageTrend", 12,
+    updateHistogram(s"$namespace.cpuUsageTrend",
       memberDetails.getUsageTrends(MemberStatistics.TREND_CPU_USAGE).toList)
-    updateHistogram(s"$namespace.jvmUsageTrend", 13,
+    updateHistogram(s"$namespace.jvmUsageTrend",
       memberDetails.getUsageTrends(MemberStatistics.TREND_JVM_HEAP_USAGE).toList)
-    updateHistogram(s"$namespace.heapUsageTrend", 14,
+    updateHistogram(s"$namespace.heapUsageTrend",
       memberDetails.getUsageTrends(MemberStatistics.TREND_HEAP_USAGE).toList)
-    updateHistogram(s"$namespace.heapStorageUsageTrend", 15,
+    updateHistogram(s"$namespace.heapStorageUsageTrend",
       memberDetails.getUsageTrends(MemberStatistics.TREND_HEAP_STORAGE_USAGE).toList)
-    updateHistogram(s"$namespace.heapExecutionUsageTrend", 16,
+    updateHistogram(s"$namespace.heapExecutionUsageTrend",
       memberDetails.getUsageTrends(MemberStatistics.TREND_HEAP_EXECUTION_USAGE).toList)
-    updateHistogram(s"$namespace.offHeapUsageTrend", 17,
+    updateHistogram(s"$namespace.offHeapUsageTrend",
       memberDetails.getUsageTrends(MemberStatistics.TREND_OFFHEAP_USAGE).toList)
-    updateHistogram(s"$namespace.offHeapStorageUsageTrend", 18,
+    updateHistogram(s"$namespace.offHeapStorageUsageTrend",
       memberDetails.getUsageTrends(MemberStatistics.TREND_OFFHEAP_STORAGE_USAGE).toList)
-    updateHistogram(s"$namespace.offHeapExecutionUsageTrend", 19,
+    updateHistogram(s"$namespace.offHeapExecutionUsageTrend",
       memberDetails.getUsageTrends(MemberStatistics.TREND_OFFHEAP_EXECUTION_USAGE).toList)
-    updateHistogram(s"$namespace.aggrMemoryUsageTrend", 20,
+    updateHistogram(s"$namespace.aggrMemoryUsageTrend",
       memberDetails.getUsageTrends(MemberStatistics.TREND_AGGR_MEMORY_USAGE).toList)
-    updateHistogram(s"$namespace.diskStoreDiskSpaceTrend", 21,
+    updateHistogram(s"$namespace.diskStoreDiskSpaceTrend",
       memberDetails.getUsageTrends(MemberStatistics.TREND_DISKSTORE_DISKSPACE_USAGE).toList)
   }
 }
