@@ -408,7 +408,7 @@ object RecoveryService extends Logging {
       if (memberObject.getReplicatedRegions.contains(prName)) {
         (1, true)
       } else {
-        logWarning(s"Number of partitions for $prName not found in ${memberObject.getMember}")
+        logWarning(s"Number of buckets for $prName not found in ${memberObject.getMember}")
         (0, false)
       }
     }
@@ -470,8 +470,8 @@ object RecoveryService extends Logging {
       }
     val regionView = regionViewSortedSet(regionToConsider).lastKey
     val memberToConsider = regionView.getMember
-//    memberObject = persistentObjectMemberMap(memberToConsider)
-    memberObject = mostRecentMemberObject
+    memberObject = persistentObjectMemberMap(memberToConsider)
+//    memberObject = mostRecentMemberObject
     logDebug(s"The selected non-Hive PersistentStateInRecoveryMode : $memberObject")
     val catalogObjects = mostRecentMemberObject.getCatalogObjects
     import scala.collection.JavaConverters._
