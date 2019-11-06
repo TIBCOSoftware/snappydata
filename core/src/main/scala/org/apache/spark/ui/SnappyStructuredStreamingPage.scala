@@ -47,25 +47,13 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
 
     val pageHeaderText: String = SnappyStructuredStreamingPage.pageHeaderText
 
-    var errorMessage = <div></div>
-
-    if (activeQueries.isEmpty) {
-
-      errorMessage = <div>No active streaming queries present..</div>
-      UIUtils.headerSparkPage(pageHeaderText, errorMessage, parent, Some(500),
-        useDataTables = true)
-
-    } else {
-
-      val mainContent = {
-        createMainContent
-      }
-
-      val pageContent = commonHeaderNodesSnappy ++ mainContent
-
-      UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500),
-        useDataTables = true)
+    val mainContent = {
+      createMainContent
     }
+
+    val pageContent = commonHeaderNodesSnappy ++ mainContent
+
+    UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500), useDataTables = true)
 
   }
 
@@ -98,6 +86,44 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
     </div>
   }
 
+  private def createSourcesTable: Seq[Node] = {
+
+    <div style="width:100%;">
+      <table id="querySourcesGrid" class="table table-bordered table-condensed"
+             style="background-color: #DDD; /*margin: 0px !important;*/">
+        <thead>
+          <tr>
+            <th class="table-th-col-heading" style="font-size: medium;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title="Source Description">
+                { "Description" }
+              </span>
+            </th>
+            <th class="table-th-col-heading" style="font-size: medium;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title="Sources Description">
+                { "Input Records" }
+              </span>
+            </th>
+            <th class="table-th-col-heading" style="font-size: medium;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title="Sources Description">
+                { "Input Rate" }
+              </span>
+            </th>
+            <th class="table-th-col-heading" style="font-size: medium;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title="Sources Description">
+                { "Processing Rate" }
+              </span>
+            </th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+
+  }
+
   private def createQueryDetailsPanel: Seq[Node] = {
     <div class="right-details-panel">
       {createQueryDetailsEntry}
@@ -108,8 +134,10 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
 
     <div id="querydetails">
       <div class="container-fluid details-section">
-        <div id="selectedQueryName">
+        <div id="selectedQueryTitle">
+          Query Name:
         </div>
+        <div id="selectedQueryName"></div>
       </div>
       <div class="container-fluid details-section">
         <div class="basic-details">
@@ -196,10 +224,10 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
         </div>
         <div id="processingTimeContainer" class="graph-container">
         </div>
-        <!-- <div id="stateOparatorContainer" class="graph-container">
-        </div> -->
-        <div id="delayTrendContainer" class="graph-container">
+        <div id="stateOperatorContainer" class="graph-container">
         </div>
+        <!-- <div id="delayTrendContainer" class="graph-container">
+        </div> -->
       </div>
       <div class="container-fluid details-section">
         <div style="width: 5%;display: inline-block;border: 1px #8e8e8e solid;"></div>
@@ -209,7 +237,9 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
         <div style="width: 84%;display: inline-block;border: 1px #8e8e8e solid;"></div>
       </div>
       <div id="sourcesDetailsContainer" class="container-fluid details-section"
-           style="height: 100px; border: 1px solid grey; padding: 10px; margin: 10px;">&nbsp;</div>
+           style="margin: 10px;">
+        { createSourcesTable }
+      </div>
       <div class="container-fluid details-section">
         <div style="width: 5%;display: inline-block;border: 1px #8e8e8e solid;"></div>
         <div style="width: 10%;display: inline-block;font-size: 20px;font-weight: bold;">
@@ -218,7 +248,7 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
         <div style="width: 84%;display: inline-block;border: 1px #8e8e8e solid;"></div>
       </div>
       <div id="sinkDetailsContainer" class="container-fluid details-section"
-           style="height: 100px; border: 1px solid grey; padding: 10px; margin: 10px;">&nbsp;</div>
+           style="/*height: 100px;*/ border: 1px solid grey; padding: 10px; margin: 10px;">&nbsp;</div>
     </div>
   }
 }
@@ -232,8 +262,8 @@ object SnappyStructuredStreamingPage {
   streamingStats += ("status" -> "Status")
   streamingStats += ("batchesProcessed" -> "Batches Processed")
   streamingStats += ("totalInputRows" -> "Total Input Records")
-  streamingStats += ("totalInputRowsPerSec" -> "Input Records / Sec")
-  streamingStats += ("totalProcessedRowsPerSec" -> "Processed Records / Sec")
+  streamingStats += ("totalInputRowsPerSec" -> "Input Rate")
+  streamingStats += ("totalProcessedRowsPerSec" -> "Processing Rate")
   streamingStats += ("totalProcessingTime" -> "Total Processing Time")
   streamingStats += ("avgProcessingTime" -> "Avg. Batch Processing Time")
 

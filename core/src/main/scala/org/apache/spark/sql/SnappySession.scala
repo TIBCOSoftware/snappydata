@@ -2038,8 +2038,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val ssqListener = new SnappyStreamingQueryListener(_sc)
     this.streams.addListener(ssqListener)
 
-    if (_sc.ui.isDefined
-        && !SnappyContext.getClusterMode(_sc).isInstanceOf[SnappyEmbeddedMode]) {
+    if (_sc.ui.isDefined) {
       logInfo("Updating Web UI [for Snappy Session : " + this.id + "]")
       println("Updating Web UI [for Snappy Session : " + this.id + "]")
       _sc.ui.foreach(ui => {

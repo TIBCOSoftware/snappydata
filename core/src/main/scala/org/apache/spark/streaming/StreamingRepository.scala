@@ -54,7 +54,7 @@ object StreamingRepository {
 
 class StreamingQueryStatistics (qId: UUID, qName: String, runId: UUID, startTime: Long) {
 
-  private val MAX_SAMPLE_SIZE = 180
+  private val MAX_SAMPLE_SIZE = 100
 
   private val simpleDateFormat = new SimpleDateFormat("dd-MMM-YYYY hh:mm:ss")
   private val timestampFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'") // ISO8601
@@ -92,6 +92,11 @@ class StreamingQueryStatistics (qId: UUID, qName: String, runId: UUID, startTime
   val processingTimeTrend = new CircularFifoBuffer(MAX_SAMPLE_SIZE)
   val batchIds = new CircularFifoBuffer(MAX_SAMPLE_SIZE)
 
+  var currStateOpNumRowsTotal = 0L
+  var currStateOpNumRowsUpdated = 0L
+  val stateOpNumRowsTotalTrend = new CircularFifoBuffer(MAX_SAMPLE_SIZE)
+  val stateOpNumRowsUpdatedTrend = new CircularFifoBuffer(MAX_SAMPLE_SIZE)
+
   def updateQueryStatistics(event: StreamingQueryListener.QueryProgressEvent): Unit = {
     val progress = event.progress
 
@@ -114,9 +119,11 @@ class StreamingQueryStatistics (qId: UUID, qName: String, runId: UUID, startTime
 
     val tmpInputRowsPerSec = { if (progress.inputRowsPerSecond.isNaN) 0.0 else progress.inputRowsPerSecond }
     this.inputRowsPerSecondTrend.add(tmpInputRowsPerSec)
+    this.avgInputRowsPerSec = calcAvgOfGivenTrend(this.inputRowsPerSecondTrend)
 
     val tmpProcessedRowsPerSec = { if (progress.processedRowsPerSecond.isNaN) 0.0 else progress.processedRowsPerSecond }
     this.processedRowsPerSecondTrend.add(tmpProcessedRowsPerSec)
+    this.avgProcessedRowsPerSec = calcAvgOfGivenTrend(this.processedRowsPerSecondTrend)
 
     val tmpProcessingTime = progress.durationMs.get("triggerExecution")
     this.processingTimeTrend.add(tmpProcessingTime)
@@ -126,6 +133,41 @@ class StreamingQueryStatistics (qId: UUID, qName: String, runId: UUID, startTime
     this.sources = progress.sources
     this.sink = progress.sink
 
+    val stateOperators = progress.stateOperators
+    if (stateOperators.size > 0) {
+
+      var sumAllSTNumRowsTotal = 0L
+      var sumAllSTNumRowsUpdated = 0L
+
+      stateOperators.foreach(so => {
+        sumAllSTNumRowsTotal = sumAllSTNumRowsTotal + so.numRowsTotal
+        sumAllSTNumRowsUpdated = sumAllSTNumRowsUpdated + so.numRowsUpdated
+      })
+
+      if (currStateOpNumRowsTotal < sumAllSTNumRowsTotal) {
+        this.currStateOpNumRowsTotal = sumAllSTNumRowsTotal
+      }
+      this.stateOpNumRowsTotalTrend.add(sumAllSTNumRowsTotal)
+
+      if (currStateOpNumRowsUpdated < sumAllSTNumRowsUpdated) {
+        this.currStateOpNumRowsUpdated = sumAllSTNumRowsUpdated
+      }
+      this.stateOpNumRowsUpdatedTrend.add(sumAllSTNumRowsUpdated)
+
+    }
+  }
+
+  def calcAvgOfGivenTrend (trend: CircularFifoBuffer) : Double = {
+    val arrValues = trend.toArray()
+    var sumOfElements = 0.0
+
+    arrValues.foreach(value => {
+      sumOfElements = sumOfElements + value.asInstanceOf[Double]
+    })
+
+    val avgValue = sumOfElements / arrValues.size
+
+    avgValue
   }
 
   def setStatus (status: Boolean) = {
