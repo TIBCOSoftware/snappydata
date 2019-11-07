@@ -105,12 +105,6 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     (table ne null) && CatalogObjectType.isColumnTable(CatalogObjectType.getTableType(table))
   }
 
-  override def isSampleTable(schema: String, tableName: String, skipLocks: Boolean): Boolean = {
-    val q = new CatalogQuery[CatalogTable](GET_TABLE, tableName, schema)
-    val table = handleFutureResult(catalogQueriesExecutorService.submit(q))
-    (table ne null) && CatalogObjectType.isSampleTable(CatalogObjectType.getTableType(table))
-  }
-
   override def getCatalogTables: JList[ExternalTableMetaData] = {
     // skip if this is already the catalog lookup thread (Hive dropTable
     //   invokes getTables again)
@@ -298,11 +292,14 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
               case None => ""
               case Some(c) => c
             }
+            val dependentRelations = SnappyExternalCatalog.getDependents(table.properties)
+            val hasDependentSampleTables = dependentRelations.exists(
+              isSampleTable(_, table.database))
             // exclude policies also from the list of hive tables
             val metaData = new ExternalTableMetaData(table.identifier.table,
               table.database, tableType.toString, null, -1,
               -1, null, null, null, null,
-              tblDataSourcePath, driverClass)
+              tblDataSourcePath, driverClass, hasDependentSampleTables)
             metaData.provider = table.provider match {
               case None => ""
               case Some(p) => p
@@ -407,6 +404,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           val dmls = JdbcExtendedUtils.
               getInsertOrPutString(qualifiedName, schema, putInto = false)
           val dependentRelations = SnappyExternalCatalog.getDependents(table.properties)
+          val hasSampleTableAsDependents = dependentRelations.exists(
+            isSampleTable(_, formattedSchema))
           val columnBatchSize = parameters.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
             case None => 0
             case Some(s) => ExternalStoreUtils.sizeAsBytes(s, ExternalStoreUtils.COLUMN_BATCH_SIZE)
@@ -430,7 +429,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           new ExternalTableMetaData(qualifiedName, schema, tableType.toString,
             ExternalStoreUtils.getExternalStoreOnExecutor(parameters, partitions, qualifiedName,
               schema), columnBatchSize, columnMaxDeltaRows, compressionCodec, baseTable, dmls,
-            dependentRelations, tblDataSourcePath, driverClass).asInstanceOf[R]
+            dependentRelations, tblDataSourcePath, driverClass, hasSampleTableAsDependents).
+            asInstanceOf[R]
       }
 
       case GET_METADATA =>
@@ -803,7 +803,17 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       s"Unexpected catalog metadata write operation = $operation, args = $request")
   }
 
-  def hasDependentSampleTable(table: String): Boolean = {
-    false
+  def isSampleTable(depName: String, defaultSchema: String): Boolean = {
+    val dotIndex = depName.indexOf('.')
+    val (depSchema, depTableName) = if (dotIndex != -1) {
+      (depName.substring(0, dotIndex), depName.substring(dotIndex + 1))
+    } else {
+      (defaultSchema, depName)
+    }
+    externalCatalog.getTableOption(depSchema, depTableName) match {
+      case None => false
+      case Some(depTab) => CatalogObjectType.isSampleTable(
+        CatalogObjectType.getTableType(depTab))
+    }
   }
 }

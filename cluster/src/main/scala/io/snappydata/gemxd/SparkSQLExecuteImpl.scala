@@ -483,7 +483,14 @@ object SnappySessionPerConnection {
     new java.util.concurrent.ConcurrentHashMap[java.lang.Long, SnappySession]()
 
   def getSnappySessionForConnection(connId: Long): SnappySession = {
-    connectionIdMap.computeIfAbsent(Long.box(connId), CreateNewSession)
+    val session = connectionIdMap.
+      computeIfAbsent(Long.box(connId), CreateNewSession)
+    if (session.sparkContext.isStopped) {
+      connectionIdMap.remove(Long.box(connId))
+      connectionIdMap.computeIfAbsent(Long.box(connId), CreateNewSession)
+    } else {
+      session
+    }
   }
 
   def getAllSessions: Seq[SnappySession] = connectionIdMap.values().asScala.toSeq
