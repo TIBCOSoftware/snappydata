@@ -206,7 +206,7 @@ abstract class BaseColumnFormatRelation(
             s"""Cannot resolve column "$colName" among (${relation.output})""")))
   }
 
-  override def getInsertPlan(relation: LogicalRelation,
+  override def getBasicInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
     withTableWriteLock() { () =>
       new ColumnInsertExec(child, partitionColumns, partitionExpressions(relation),
