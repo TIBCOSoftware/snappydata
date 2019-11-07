@@ -37,7 +37,7 @@ resultDir=$1
 mkdir -p $resultDir
 shift
 
-$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1 -l  $SNAPPYDATA_SOURCE_DIR/store/tests/sql/build-artifacts/linux/classes/main/io/snappydata/hydra/cluster/local.startEmbeddedModeClusterWithUserConfs.conf -d false io/snappydata/hydra/cluster/startEmbeddedModeClusterWithUserConfs.bt
+$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1 -l /export/dev7a/users/smahajan/local.metricsMonitoring.conf -d false io/snappydata/hydra/cluster/startEmbeddedModeClusterWithUserConfs.bt
 sleep 30;
 
 $SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/metricsMonitoring/metricsMonitoring.bt
