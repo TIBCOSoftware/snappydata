@@ -181,17 +181,17 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
         <div class="stats-block">
           <div>
             <div class="stats-block-title">
-              { SnappyStructuredStreamingPage.streamingStats("totalInputRowsPerSec") }
+              { SnappyStructuredStreamingPage.streamingStats("currInputRowsPerSec") }
             </div>
-            <div id="totalInputRowsPerSec" class="stats-block-value">&nbsp;</div>
+            <div id="currInputRowsPerSec" class="stats-block-value">&nbsp;</div>
           </div>
         </div>
         <div class="stats-block">
           <div>
             <div class="stats-block-title">
-              { SnappyStructuredStreamingPage.streamingStats("totalProcessedRowsPerSec") }
+              { SnappyStructuredStreamingPage.streamingStats("currProcessedRowsPerSec") }
             </div>
-            <div id="totalProcessedRowsPerSec" class="stats-block-value">&nbsp;</div>
+            <div id="currProcessedRowsPerSec" class="stats-block-value">&nbsp;</div>
           </div>
         </div>
         <div class="stats-block">
@@ -262,9 +262,9 @@ object SnappyStructuredStreamingPage {
   streamingStats += ("status" -> "Status")
   streamingStats += ("batchesProcessed" -> "Batches Processed")
   streamingStats += ("totalInputRows" -> "Total Input Records")
-  streamingStats += ("totalInputRowsPerSec" -> "Input Rate")
-  streamingStats += ("totalProcessedRowsPerSec" -> "Processing Rate")
-  streamingStats += ("totalProcessingTime" -> "Total Processing Time")
+  streamingStats += ("currInputRowsPerSec" -> "Current Input Rate")
+  streamingStats += ("currProcessedRowsPerSec" -> "Current Processing Rate")
+  streamingStats += ("totalProcessingTime" -> "Total Batch Processing Time")
   streamingStats += ("avgProcessingTime" -> "Avg. Batch Processing Time")
 
   val googleChartsErrorMsg = "Error while loading charts. Please check your internet connection."
