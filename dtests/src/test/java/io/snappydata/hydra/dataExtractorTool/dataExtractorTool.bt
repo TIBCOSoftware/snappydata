@@ -64,6 +64,7 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorWithMissingDiskStore.conf
   dataFilesLocation="/home/apps/Downloads"
   extractedDDLPath="/tmp/recover_ddls"
   extractedDataPath="/tmp/recover_data_parquet"
+  dataFilesLocation="/export/shared/QA_DATA/ct"
   nodeName=localhost
   queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueries.sql"
 
