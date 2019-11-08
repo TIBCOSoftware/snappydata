@@ -500,14 +500,12 @@ class OpLogRdd(
               val updatedDecoder = updatedDecoders(colIndx)
               if ((updatedDecoder ne null) && !updatedDecoder.unchanged(rowNum + currentDeleted) &&
                   updatedDecoder.readNotNull) {
-                val uv = getUpdatedValue(updatedDecoder.getCurrentDeltaBuffer, schema(colIndx))
-                uv
+                getUpdatedValue(updatedDecoder.getCurrentDeltaBuffer, schema(colIndx))
               } else {
-                val decodedValue = if (fieldIsNull) null else {
+                if (fieldIsNull) null else {
                   getDecodedValue(colDecoder, colArray,
                     schema(colIndx).dataType, rowNum + currentDeleted - colNullCounts(colIndx))
                 }
-                decodedValue
               }
             })
           }.toIterator
