@@ -30,7 +30,7 @@ object SnappyMemberMetrics {
     val shortDirName = memberDetails.getUserDir.substring(
       memberDetails.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
 
-    val memberUuid = memberEntries.get("__" + shortDirName + "__").toString
+    val memberUuid = memberEntries.get("__" + shortDirName + member + "__").toString
 
     val pId = memberDetails.getProcessId
 
