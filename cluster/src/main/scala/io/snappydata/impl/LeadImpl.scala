@@ -318,17 +318,11 @@ class LeadImpl extends ServerImpl with Lead
       // update the Spark UI to add the dashboard and other SnappyData pages
       ToolsCallbackInit.toolsCallback.updateUI(sc)
 
+      // store every member diskStore ID to metadataCmdRgn
+      SnappyMetricsClass.putMembersDiskStoreIdInRegion()
+
       // start snappy metric system
       SnappyMetricsClass.init(sc)
-
-      // store every member diskStore ID to metadataCmdRgn
-      val membersBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
-      val region = Misc.getMemStore.getMetadataCmdRgn
-      for ((k, v) <- membersBuff) {
-        val shortDirName = v.getUserDir.substring(
-          v.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
-        region.put("__" + shortDirName + "__", v.getDiskStoreUUID.toString)
-      }
 
       // start other add-on services (job server)
       startAddOnServices(conf, confFile, jobServerConfig)
