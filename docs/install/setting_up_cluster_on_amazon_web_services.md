@@ -615,14 +615,14 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
 		./sbin/snappy-start-all.sh
 
-21. One way to connect to this cluster is using snappy shell.
+21. Make sure the security group associated with the ec2 instances have ports 1527-1528 accessible for the public IP of the ec2 instances before proceeding further. 
 
-    To connect from within the same EC2 instance, make sure you have opened ports 1527-1528 for the public IP of this EC2 instance in its security group, before proceeding further.
+22. One way to connect to this cluster is using snappy shell.
 
 		./bin/snappy
 		snappy> connect client '(local-ip-of-EC2-instance):1527';
 
-    To connect from outside the AWS, make sure you have opened ports 1527-1528 for the public IP of your laptop or the system where snappy shell utility is available, in the security group of the EC2 instance, before proceeding further.
+23. To connect from outside the AWS, make sure the security group associated with the ec2 instances have ports 1527-1528 accessible to your laptop (i.e. machine with snappydata installed), before proceeding further. 
 
 		./bin/snappy
 		snappy> connect client '<public-ip-of-EC2-instance>:1527';
