@@ -33,6 +33,7 @@ import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.mutable
 import scala.util.Random
 
+import com.gemstone.gemfire.distributed.internal.DistributionManager
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
@@ -51,8 +52,9 @@ import org.apache.spark.sql.internal.ContextJarUtils
 object RecoveryService extends Logging {
   var recoveryStats: (
       Seq[SnappyRegionStats], Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = _
-  val snappyHiveExternalCatalog = HiveClientUtil.getOrCreateExternalCatalog(
-    SnappyContext().sparkContext, SnappyContext().sparkContext.getConf)
+  var catalogTableCount = 0
+  val snappyHiveExternalCatalog = HiveClientUtil
+      .getOrCreateExternalCatalog(SnappyContext().sparkContext, SnappyContext().sparkContext.getConf)
 
   private def isGrantRevokeStatement(conflatable: DDLConflatable) = {
     val sqlText = conflatable.getValueToConflate
@@ -62,7 +64,7 @@ object RecoveryService extends Logging {
   }
 
   def getStats: (Seq[SnappyRegionStats], Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
-    if (recoveryStats == null) {
+    if (recoveryStats == null || catalogTableCount != getTables.size) {
       val snappyContext = SnappyContext()
       val snappySession: SnappySession = snappyContext.snappySession
       if (Misc.isSecurityEnabled) {
@@ -73,15 +75,19 @@ object RecoveryService extends Logging {
       }
       val allTables = getTables
       var tblCounts: Seq[SnappyRegionStats] = Seq()
+      catalogTableCount = allTables.length
       allTables.foreach(table => {
         table.storage.locationUri match {
           case Some(_) => // external tables can be seen in show tables but filtered out in UI
           case None =>
-            logDebug(s"Querying table: $table for count")
+            if (recoveryStats == null ||
+                !recoveryStats._1.map(_.getTableName).contains(table.qualifiedName))
+              logDebug(s"Querying table: $table for count")
             val recCount = snappySession.sql(s"SELECT count(1) FROM ${table.qualifiedName}")
                 .collect()(0).getLong(0)
-            val (numBuckets, isReplicated) = RecoveryService.getNumBuckets(
-              table.qualifiedName.split('.')(0), table.qualifiedName.split('.')(1))
+            val (numBuckets, isReplicated) = RecoveryService
+                .getNumBuckets(table.qualifiedName.split('.')(0).toUpperCase(),
+                  table.qualifiedName.split('.')(1).toUpperCase())
             val regionStats = new SnappyRegionStats()
             regionStats.setRowCount(recCount)
             regionStats.setTableName(table.qualifiedName)
@@ -149,8 +155,6 @@ object RecoveryService extends Logging {
         }
       })
     }
-
-    val snappyContext = SnappyContext()
     val dbList = snappyHiveExternalCatalog.listDatabases("*").filter(dbName =>
       !(dbName.equalsIgnoreCase("SYS") || dbName.equalsIgnoreCase("DEFAULT")))
 
@@ -280,6 +284,8 @@ object RecoveryService extends Logging {
 
   val regionViewSortedSet: mutable.Map[String,
       mutable.SortedSet[RecoveryModePersistentView]] = mutable.Map.empty
+
+  var locatorMember: InternalDistributedMember = _
   val persistentObjectMemberMap: mutable.Map[
       InternalDistributedMember, PersistentStateInRecoveryMode] = mutable.Map.empty
   var mostRecentMemberObject: PersistentStateInRecoveryMode = _
@@ -427,10 +433,11 @@ object RecoveryService extends Logging {
     logDebug(s"Number of PersistentStateInRecoveryMode received" +
         s" from members: ${persistentData.size()}")
     val itr = persistentData.iterator()
-    val snapCon = SnappyContext()
     while (itr.hasNext) {
       val persistentViewObj = itr.next().asInstanceOf[PersistentStateInRecoveryMode]
       logInfo(s"PP:PersistentStateInRecoveryMode : $persistentViewObj")
+      locatorMember = if (persistentViewObj.getMember.getVmKind ==
+          DistributionManager.LOCATOR_DM_TYPE && locatorMember == null) persistentViewObj.getMember else locatorMember
       persistentObjectMemberMap += persistentViewObj.getMember -> persistentViewObj
       val regionItr = persistentViewObj.getAllRegionViews.iterator()
       while (regionItr.hasNext) {
@@ -446,14 +453,11 @@ object RecoveryService extends Logging {
         }
       }
     }
-    // identify which members catalog object to be used
-    val hiveRegionViews = regionViewSortedSet.filterKeys(
-      _.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
-    val hiveRegionToConsider =
-      hiveRegionViews.keySet.toSeq.sortBy(hiveRegionViews.get(_).size).reverse.head
-    val mostUptodateRegionView = regionViewSortedSet(hiveRegionToConsider).lastKey
-    val memberToConsiderForHiveCatalog = mostUptodateRegionView.getMember
-    mostRecentMemberObject = persistentObjectMemberMap(memberToConsiderForHiveCatalog)
+    assert(locatorMember != null)
+    // todo: handle the case when there are two locators - decide on basis of rvv in tha case
+    mostRecentMemberObject = persistentObjectMemberMap(locatorMember)
+
+
     logDebug(s"The selected PersistentStateInRecoveryMode used for populating" +
         s" the new catalog:\n$mostRecentMemberObject")
     val nonHiveRegionViews = regionViewSortedSet.filterKeys(
@@ -462,11 +466,13 @@ object RecoveryService extends Logging {
       if (nonHiveRegionViews.isEmpty) {
         logError("No relevant RecoveryModePersistentViews found.")
         throw new Exception("Cannot start empty cluster in Recovery Mode.")
-      } else nonHiveRegionViews.keySet.toSeq.sortBy(nonHiveRegionViews.get(_).size).last
+      } else {
+        nonHiveRegionViews.keySet.toSeq.maxBy(nonHiveRegionViews.get(_).size)
+      }
     val regionView = regionViewSortedSet(regionToConsider).lastKey
     val memberToConsider = regionView.getMember
     memberObject = persistentObjectMemberMap(memberToConsider)
-//    memberObject = mostRecentMemberObject
+
     logDebug(s"The selected non-Hive PersistentStateInRecoveryMode : $memberObject")
     val catalogObjects = mostRecentMemberObject.getCatalogObjects
     import scala.collection.JavaConverters._
@@ -479,10 +485,10 @@ object RecoveryService extends Logging {
           ConnectorExternalCatalog.convertToCatalogDatabase(catDBObj)
         case catTabObj: CatalogTableObject =>
           ConnectorExternalCatalog.convertToCatalogTable(
-            catalogMetadataDetails.setCatalogTable(catTabObj), snapCon.sparkSession)._1
+            catalogMetadataDetails.setCatalogTable(catTabObj), SnappyContext().sparkSession)._1
       }
     })
-    RecoveryService.populateCatalog(catalogArr, snapCon.sparkContext)
+    RecoveryService.populateCatalog(catalogArr)
     createSchemasMap
 
     val dbList = snappyHiveExternalCatalog.listDatabases("*")
@@ -525,11 +531,9 @@ object RecoveryService extends Logging {
    * database type of catalog objects is supported.
    *
    * @param catalogObjSeq Sequence of catalog objects to be inserted in the catalog
-   * @param sc            Spark Context
    */
-
-  def populateCatalog(catalogObjSeq: Seq[Any], sc: SparkContext): Unit = {
-    val extCatalog = HiveClientUtil.getOrCreateExternalCatalog(sc, sc.getConf)
+  def populateCatalog(catalogObjSeq: Seq[Any]): Unit = {
+    val extCatalog = snappyHiveExternalCatalog
     catalogObjSeq.foreach {
       case catDB: CatalogDatabase =>
         extCatalog.createDatabase(catDB, ignoreIfExists = true)
@@ -551,22 +555,23 @@ object RecoveryService extends Logging {
     }
   }
 
-  case class DumpDataArgs(formatType: String, tables: Seq[String],
+  case class ExportDataArgs(formatType: String, tables: Seq[String],
       outputDir: String, ignoreError: Boolean)
-  val dataDumpArgs: mutable.MutableList[DumpDataArgs] = mutable.MutableList.empty
+
+  val exportDataArgsList: mutable.MutableList[ExportDataArgs] = mutable.MutableList.empty
 
   /**
-   * capture the arguments used by the procedure DUMP_DATA and cache them for later generating
+   * capture the arguments used by the procedure EXPORT_DATA and cache them for later generating
    * helper scripts to load all this data back into new cluster
    *
    * @param formatType  spark output format
    * @param tables      comma separated qualified names of tables
-   * @param outputDir   base output path for one call of DUMP_DATA procedure
+   * @param outputDir   base output path for one call of EXPORT_DATA procedure
    * @param ignoreError whether to move on to next table in case of failure
    */
   def captureArguments(formatType: String, tables: Seq[String],
       outputDir: String, ignoreError: Boolean): Unit = {
-    dataDumpArgs += new DumpDataArgs(formatType, tables, outputDir, ignoreError)
+    exportDataArgsList += new ExportDataArgs(formatType, tables, outputDir, ignoreError)
   }
 
 }
