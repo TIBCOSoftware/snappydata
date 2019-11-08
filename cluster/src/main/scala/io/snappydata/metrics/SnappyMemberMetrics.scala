@@ -55,7 +55,7 @@ object SnappyMemberMetrics {
       }
     }
 
-    val namespace = s"MemberMetrics.$shortDirName($pId).$memberUuid"
+    val namespace = s"MemberMetrics.$shortDirName-$memberUuid"
 
     createGauge(s"$namespace.memberId", memberDetails.getId.asInstanceOf[AnyVal])
     createGauge(s"$namespace.nameOrId", nameOrId.asInstanceOf[AnyVal])
