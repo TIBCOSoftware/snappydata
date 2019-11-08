@@ -1,7 +1,7 @@
 <a id="setting-up-cluster-on-amazon-web-services-aws"></a>
 # Setting up Cluster on Amazon Web Services (AWS)
 
-Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that is important for SnappyData are Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).
+Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that is important for TIBCO ComputeDB are Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).
 You can set up TIBCO ComputeDB cluster on Amazon Web Services using one of the following options:
 
 <!---*	[TIBCO ComputeDB CloudBuilder](#usingcloudbuiler)--->
@@ -177,11 +177,12 @@ This section covers the following:
 * Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`. You can find information about generating these keys in the AWS IAM console page.<br/>
 If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file.
 
-For example:
-```pre
-export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112
-export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
-```
+    For example:
+    
+        ```pre
+        export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112
+        export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
+        ```
 
 * Ensure Python v 2.7 or later is installed on your local computer.
 
@@ -267,7 +268,7 @@ This section covers the following:
 <a id="ec2custombuild"></a>
 #### Using Custom Build
 
-This script by default uses the SnappyData build available on the GitHub releases page to launch the cluster.
+This script by default uses the TIBCO ComputeDB build available on the GitHub releases page to launch the cluster.
 To select a version of the OSS build available on GitHub, use option `--snappydata-version`.
 
 You can also provide your own TIBCO ComputeDB build to the script to launch the cluster, by using
@@ -512,7 +513,7 @@ Options:
 <a id="ec2knownlimit"></a>
 ### Known Limitations
 
-* Launching the cluster on custom AMI (specified via `--ami` option) does not work if the user 'ec2-user' does not have sudo permissions.
+* Launching the cluster on custom AMI (specified via `--ami` option) does not work if the user **ec2-user** does not have sudo permissions.
 
 * Support for option `--user` is incomplete.
 
@@ -523,7 +524,7 @@ Options:
 !!! Note
 	TIBCO has not yet made an AMI of TIBCO ComputeDB available on AWS.  This page will be updated after that is made available.
 
-You can launch a TIBCO ComputeDB cluster on Amazon EC2 instance(s) using the AMIs of earlier version of SnappyData (1.0.2.1). For more information
+You can launch a TIBCO ComputeDB cluster on Amazon EC2 instance(s) using the AMIs of earlier version of TIBCO ComputeDB (1.0.2.1). For more information
 on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
 This section covers the following:
 
@@ -546,7 +547,7 @@ To launch the instance and start the TIBCO ComputeDB cluster:
 
 4. On the **Choose an Amazon Machine Image (AMI)** page, select **Community AMIs** from the left pane.
 
-5. Enter **SnappyData** in the search box, and press **Enter** on your keyboard.
+5. Enter **TIBCO ComputeDB** in the search box, and press **Enter** on your keyboard.
 
 6. The search result is displayed. From the search results, click **Select** to choose the AMI with the latest release version.
 
@@ -568,7 +569,7 @@ To launch the instance and start the TIBCO ComputeDB cluster:
 
 12. Click **Refresh** to view the updated list and the status of the instance creation.
 
-13. Once the status of the instance changes to **running**, you have successfully created and launched the instance with the SnappyData AMI.
+13. Once the status of the instance changes to **running**, you have successfully created and launched the instance with the TIBCO ComputeDB AMI.
 
 14. Use SSH to connect to the instance using the **Ubuntu** username. You require:
 
