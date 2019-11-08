@@ -148,7 +148,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     GemFireVersion.getClusterType
   }
 
-  override def dumpData(connId: lang.Long, exportUri: String,
+  override def exportData(connId: lang.Long, exportUri: String,
       formatType: String, tableNames: String, ignoreError: lang.Boolean): Unit = {
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     if (Misc.isSecurityEnabled) {
@@ -184,7 +184,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     tablesArr.foreach(f = table => {
       Try {
         val tableData = session.sql(s"select * from $table;")
-        logDebug(s"DUMP_DATA procedure is writing table: $table.")
+        logDebug(s"EXPORT_DATA procedure is writing table: $table.")
         tableData.write.mode(SaveMode.Overwrite).option("header", "true").format(formatType)
             .save(filePath + File.separator + table.toUpperCase)
       } match {
@@ -198,7 +198,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     })
   }
 
-  override def dumpDDLs(connId: lang.Long, exportUri: String): Unit = {
+  override def exportDDLs(connId: lang.Long, exportUri: String): Unit = {
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     val filePath = if (exportUri.endsWith(File.separator)) {
       exportUri.substring(0, exportUri.length - 1) +
@@ -215,25 +215,25 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   /**
-   * generates spark-shell code which helps user to reload data dumped through DUMP_DATA procedure
+   * generates spark-shell code which helps user to reload data exported through EXPORT_DATA procedure
    *
    */
   def generateLoadScripts(connId: lang.Long): Unit = {
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     var loadScriptString = ""
 
-    RecoveryService.dataDumpArgs.foreach(d => {
-      val generatedScriptPath = s"${d.outputDir.replaceAll("/$", "")}_load_scripts"
-      d.tables.foreach(table => {
+    RecoveryService.exportDataArgsList.foreach(args => {
+      val generatedScriptPath = s"${args.outputDir.replaceAll("/$", "")}_load_scripts"
+      args.tables.foreach(table => {
         val tableExternal = s"temp_${table.replace('.', '_')}"
-        val additionalOptions = d.formatType match {
+        val additionalOptions = args.formatType match {
           case "csv" => ",header 'true'"
           case _ => ""
         }
         // todo do testing for all formats and ensure generated scripts handles all scenarios
         loadScriptString += s"""
-          |CREATE EXTERNAL TABLE $tableExternal USING ${d.formatType}
-          |OPTIONS (PATH '${d.outputDir}/${table.toUpperCase}'${additionalOptions});
+          |CREATE EXTERNAL TABLE $tableExternal USING ${args.formatType}
+          |OPTIONS (PATH '${args.outputDir}/${table.toUpperCase}'${additionalOptions});
           |INSERT OVERWRITE $table SELECT * FROM $tableExternal;
           |
         """.stripMargin

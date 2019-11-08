@@ -38,7 +38,7 @@ class OpLogFormatRelation(
   val schemaName: String = fqtn.split('.')(0)
   val tableName: String = fqtn.split('.')(1)
 
-  def columnBatchTableName(session: Option[SparkSession] = None): String = {
+  def columnBatchTableName(): String = {
     schemaName + '.' + Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR +
         tableName + Constant.SHADOW_TABLE_SUFFIX
   }
