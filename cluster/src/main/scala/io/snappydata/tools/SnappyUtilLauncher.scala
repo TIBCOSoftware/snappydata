@@ -22,7 +22,7 @@ import java.util
 import com.gemstone.gemfire.internal.GemFireUtilLauncher.{CommandEntry, SCRIPT_NAME}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.{GemFireTerminateError, GemFireUtilLauncher}
-import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
+import com.pivotal.gemfirexd.internal.iapi.tools.i18n.{LocalizedOutput, LocalizedResource}
 import com.pivotal.gemfirexd.internal.impl.tools.ij.utilMain
 import com.pivotal.gemfirexd.internal.tools.ij
 import com.pivotal.gemfirexd.tools.GfxdUtilLauncher.GET_CANONICAL_PATH_ARG
@@ -31,6 +31,8 @@ import com.pivotal.gemfirexd.tools.{GfxdSystemAdmin, GfxdUtilLauncher}
 import io.snappydata.LocalizedMessages
 import io.snappydata.gemxd.{SnappyDataVersion, SnappySystemAdmin}
 import org.apache.spark.sql.execution.columnar.impl.StoreCallback
+
+import scala.util.Properties.{javaVersion, javaVmName, versionString}
 
 /**
  * Launcher class encompassing snappy processes command lines.
@@ -105,12 +107,21 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
 
 object SnappyUtilLauncher extends StoreCallback {
 
+  val SNAPPY_SPARK_SHELL = "snappy-shell"
+
+  var printNewWelcome = false
   init()
+
+  if (printNewWelcome) printWelcomeEnterprise()
 
   private def init(): Unit = {
     SCRIPT_NAME = System.getenv("SNAPPY_SCRIPT_NAME") match {
       case s if (s eq null) || s.length == 0 => "snappy"
       case s => s
+    }
+    if (SNAPPY_SPARK_SHELL.equals(SCRIPT_NAME)) {
+      System.setProperty("LAUNCHER_INTERPRETER_MODE", "true")
+      printNewWelcome = true
     }
   }
 
@@ -158,5 +169,47 @@ object SnappyUtilLauncher extends StoreCallback {
         }
         throw re;
     }
+  }
+
+  def printWelcomeEnterprise() {
+    import org.apache.spark.SPARK_VERSION
+    // scalastyle:off println
+    println("""Welcome to
+    ______                            __       ____  ____
+   / ____/___  ____ ___  ____  __  __/ /____  / __ \/ __ )
+  / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ / / / __  |
+ / /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /_/ / /_/ /  version %s on Spark version %s
+ \____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_____/_____/
+                     /_/""".format("1.2", SPARK_VERSION))
+    val welcomeMsg = "\nUsing Scala %s (%s, Java %s)".format(
+      versionString, javaVmName, javaVersion)
+    println(welcomeMsg)
+    println()
+    println("Connect to an existing cluster using the connect command")
+    println("Example: connect client 'localhost:1527';\n")
+    println("Once connected, type in expressions to have them evaluated.\n")
+    println("Spark context Web UI available at localhost:5050")
+    println("Spark context available as 'sc'")
+    println("Snappy session available as 'snappy'.\n")
+    // scalastyle:on println
+  }
+
+  def printWelcomeCommunity() {
+    import org.apache.spark.SPARK_VERSION
+    // scalastyle:off println
+    println("""Welcome to
+    _____                               ____        __
+   / ___/____  ____ _____  ____  __  __/ __ \____ _/ /_____ _
+   \__ \/ __ \/ __ `/ __ \/ __ \/ / / / / / / __ `/ __/ __ `/
+  ___/ / / / / /_/ / /_/ / /_/ / /_/ / /_/ / /_/ / /_/ /_/ /   version %s on Spark version %s
+ /____/_/ /_/\__,_/ .___/ .___/\__, /_____/\__,_/\__/\__,_/
+                 /_/   /_/    /____/
+ """.format("1.2", SPARK_VERSION))
+    val welcomeMsg = "Using Scala %s (%s, Java %s)".format(
+      versionString, javaVmName, javaVersion)
+    println(welcomeMsg)
+    println("Type in expressions to have them evaluated.")
+    println("Type :help for more information.")
+    // scalastyle:on println
   }
 }
