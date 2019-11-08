@@ -432,6 +432,10 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
     }
   }
 
+  // todo: add a test to test compareTo - see if sorted set's order is correct
+  // todo: ... also cover each case in the if else ladder in the method.
+
+
   //  test("test1 - Basic test to check commands like describe, show, procedures " +
   //      "and list tables names, schemas names and UDFs using LDAP") {
   def test1(): Unit = {
@@ -800,40 +804,40 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       val rsTest3tab2 = stmt.executeQuery("SELECT * FROM gemfire10.test3tab2 ORDER BY col2")
       compareResultSet("gemfire10.test3tab2", rsTest3tab2, false)
 
-     stmt.execute(
-            s"""CREATE TABLE gemfire10.test3Reptab2
-                  (col1 BIGINT , col2 INT , col3 INTEGER ,col4 long ,
-                   col5 short , col6 smallint , col7 byte , c1 tinyint ,
+
+      stmt.execute(
+        s"""CREATE TABLE gemfire10.test3Reptab2
+                  (col1 BIGINT , col2 INT , col3 INTEGER not null, col4 long ,
+                   col5 short not null, col6 smallint , col7 byte not null, c1 tinyint ,
                     c2 varchar(22) , c3 string , c5 boolean , c6 double ,
                          c8 timestamp , c9 date not null, c10 decimal(15,5) ,
                           c11 numeric(12,4) not null, c12 float ,c13 real not null, c14 binary,
                            c15 blob, primary key (col2)) using row
                        options ();
                        """)
+      stmt.execute(
+        s"""INSERT INTO gemfire10.test3Reptab2
+                  select id*100000000000000, id, id*100000000, id*100000000000000,
+                  id, id, cast(id as byte), cast(id as tinyint), cast(concat('var',id) as varchar(22)),
+                  cast(concat('str',id) as string), cast(id%2 as Boolean),
+                  cast((id*701*7699 + id*1342341*2267)/2 as double), CURRENT_TIMESTAMP, CURRENT_DATE,
+                  cast(id*241/11 as Decimal(15,5)), cast(id*701/11 as Numeric(12,4)),
+                  cast(concat(id*100,'.',(id+1)*7699) as float),
+                  cast(concat(id*100000000000,'.',(id+1)*2267*7699) as real), cast('aaaa' as binary),
+                   cast('yyyy' as blob) from range(5);
+                 """.stripMargin)
 
-        stmt.execute(
-          s"""INSERT INTO gemfire10.test3Reptab2
-            select id*100000000000000, id, id*100000000, id*100000000000000,
-            id, id, cast(id as byte), cast(id as tinyint), cast(concat('var',id) as varchar(22)),
-            cast(concat('str',id) as string), cast(id%2 as Boolean),
-            cast((id*701*7699 + id*1342341*2267)/2 as double), CURRENT_TIMESTAMP, CURRENT_DATE,
-            cast(id*241/11 as Decimal(15,5)), cast(id*701/11 as Numeric(12,4)),
-            cast(concat(id*100,'.',(id+1)*7699) as float),
-            cast(concat(id*100000000000,'.',(id+1)*2267*7699) as real), cast('aaaa' as binary),
-            cast('yyyy' as blob) from range(5);
-          """.stripMargin)
-
-      val rsTest3Reptab2 = stmt.executeQuery("SELECT * FROM gemfire10.test3Reptab2 ORDER BY col2")
-      compareResultSet("gemfire10.test3Reptab2", rsTest3Reptab2, false)
+//      val rsTest3Reptab2 = stmt.executeQuery("SELECT * FROM gemfire10.test3Reptab2 ORDER BY col2")
+//      compareResultSet("gemfire10.test3Reptab2", rsTest3Reptab2, false)
 
       // enable once support is added for primary key and binary,clob,blob
       // 3. Random mix n match data types
-          stmt.execute("CREATE TABLE test3tab3 (col1 binary, col2 clob, col3 blob, col4 varchar(44), col5 int, primary key (col5)) using row")
-          stmt.execute("INSERT INTO test3tab3 select cast('a' as binary), cast('b' as clob), cast('1' as blob), 'adsf', 123")
+      stmt.execute("CREATE TABLE gemfire10.test3tab3 (col1 binary, col2 clob, col3 blob, col4 varchar(44), col5 int, primary key (col5)) using row")
+      stmt.execute("INSERT INTO gemfire10.test3tab3 select cast('a' as binary), cast('b' as clob), cast('1' as blob), 'adsf', 123")
 
       // with option - key_columns
-      stmt.execute("""CREATE TABLE test3coltab4 (col1 int, col2 string, col3 float) USING
-          COLUMN OPTIONS (key_columns 'col1')""")
+      stmt.execute("CREATE TABLE test3coltab4 (col1 int, col2 string, col3 float) USING COLUMN" +
+          " OPTIONS (key_columns 'col1')")
       stmt.execute("INSERT INTO test3coltab4 VALUES(1,'aaa',123.122)")
       stmt.execute("INSERT INTO test3coltab4 VALUES(2,'bbb',4444.55)")
 
@@ -1003,13 +1007,11 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
             s"${rs3.getString(4)},${rs3.getInt(5)}")
       }
 
-
       val rs4 = stmtRec.executeQuery("select col1, col2, col3 from" +
           " gemfire10.test3coltab4 ORDER BY col1")
       arrBuf.clear()
       i = 0
       arrBuf ++= ArrayBuffer("1,aaa,123.122", "2,bbb,4444.55")
-      logDebug("Queried gemfire10.test3coltab4")
       while (rs4.next()) {
         assert(s"${rs4.getInt("col1")},${rs4.getString("col2")},${rs4.getFloat("col3")}"
             .equalsIgnoreCase(arrBuf(i)))
