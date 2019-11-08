@@ -51,8 +51,8 @@ import org.apache.spark.sql.internal.ContextJarUtils
 object RecoveryService extends Logging {
   var recoveryStats: (
       Seq[SnappyRegionStats], Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = _
-  val snappyHiveExternalCatalog = HiveClientUtil
-      .getOrCreateExternalCatalog(SnappyContext().sparkContext, SnappyContext().sparkContext.getConf)
+  val snappyHiveExternalCatalog = HiveClientUtil.getOrCreateExternalCatalog(
+    SnappyContext().sparkContext, SnappyContext().sparkContext.getConf)
 
   private def isGrantRevokeStatement(conflatable: DDLConflatable) = {
     val sqlText = conflatable.getValueToConflate
@@ -80,9 +80,8 @@ object RecoveryService extends Logging {
             logDebug(s"Querying table: $table for count")
             val recCount = snappySession.sql(s"SELECT count(1) FROM ${table.qualifiedName}")
                 .collect()(0).getLong(0)
-            val (numBuckets, isReplicated) = RecoveryService
-                .getNumBuckets(table.qualifiedName.split('.')(0).toUpperCase(),
-                  table.qualifiedName.split('.')(1).toUpperCase())
+            val (numBuckets, isReplicated) = RecoveryService.getNumBuckets(
+              table.qualifiedName.split('.')(0), table.qualifiedName.split('.')(1))
             val regionStats = new SnappyRegionStats()
             regionStats.setRowCount(recCount)
             regionStats.setTableName(table.qualifiedName)
@@ -429,8 +428,6 @@ object RecoveryService extends Logging {
         s" from members: ${persistentData.size()}")
     val itr = persistentData.iterator()
     val snapCon = SnappyContext()
-    val snappyHiveExternalCatalog = HiveClientUtil
-        .getOrCreateExternalCatalog(snapCon.sparkContext, snapCon.sparkContext.getConf)
     while (itr.hasNext) {
       val persistentViewObj = itr.next().asInstanceOf[PersistentStateInRecoveryMode]
       logInfo(s"PP:PersistentStateInRecoveryMode : $persistentViewObj")
@@ -453,7 +450,7 @@ object RecoveryService extends Logging {
     val hiveRegionViews = regionViewSortedSet.filterKeys(
       _.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
     val hiveRegionToConsider =
-      hiveRegionViews.keySet.toSeq.maxBy(hiveRegionViews.get(_).size)
+      hiveRegionViews.keySet.toSeq.sortBy(hiveRegionViews.get(_).size).reverse.head
     val mostUptodateRegionView = regionViewSortedSet(hiveRegionToConsider).lastKey
     val memberToConsiderForHiveCatalog = mostUptodateRegionView.getMember
     mostRecentMemberObject = persistentObjectMemberMap(memberToConsiderForHiveCatalog)
@@ -465,9 +462,7 @@ object RecoveryService extends Logging {
       if (nonHiveRegionViews.isEmpty) {
         logError("No relevant RecoveryModePersistentViews found.")
         throw new Exception("Cannot start empty cluster in Recovery Mode.")
-      } else {
-        nonHiveRegionViews.keySet.toSeq.maxBy(nonHiveRegionViews.get(_).size)
-      }
+      } else nonHiveRegionViews.keySet.toSeq.sortBy(nonHiveRegionViews.get(_).size).last
     val regionView = regionViewSortedSet(regionToConsider).lastKey
     val memberToConsider = regionView.getMember
     memberObject = persistentObjectMemberMap(memberToConsider)
@@ -505,10 +500,8 @@ object RecoveryService extends Logging {
          |${allFunctions.toString()}""".stripMargin)
   }
 
-  def getTables: Seq[CatalogTable] = {
-    snappyHiveExternalCatalog.getAllTables()
-        .filter(!_.tableType.name.equalsIgnoreCase("view"))
-  }
+  def getTables: Seq[CatalogTable] = snappyHiveExternalCatalog.getAllTables()
+      .filter(!_.tableType.name.equalsIgnoreCase("view"))
 
   def getProvider(tableName: String): String = {
     logDebug(s"RecoveryService: tableName: $tableName")

@@ -1661,8 +1661,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
               (s"altTxt_${System.currentTimeMillis()}" -> sql) +
               (s"primary_keys" -> primaryKeys.mkString(","))
         ))
-        val ct = externalCatalog.getTable(metadata.identifier.database.get, metadata.identifier.table)
-
       case _ => throw new AnalysisException(
         s"ALTER TABLE ${tableIdent.unquotedString} variant only supported for row tables")
     }
