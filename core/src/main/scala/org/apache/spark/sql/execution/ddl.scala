@@ -71,25 +71,8 @@ case class InterpretCodeCommand(
      code: String,
      options: Map[String, String]) extends RunnableCommand {
 
-  override def run(sparkSession: SparkSession): Seq[Row] = {
-
-    val session = sparkSession.asInstanceOf[SnappySession]
-
-    val settings = new Settings
-    settings.processArgumentString("-deprecation -feature -Xfatal-warnings -Xlint")
-    settings.classpath.value = sys.props("java.class.path")
-    val intp = new IMain(settings)
-    intp.bind("session", session)
-    intp.bind("options", options)
-    import scala.tools.nsc.interpreter.Results.Success
-    val res = intp.interpret(code) match {
-      case Success => "OK!"
-      case _ => throw new AnalysisException(
-        "Interpretation failed. Exception likely in Leader log")
-    }
-    // println(res)
-    Seq.empty[Row]
-  }
+  // This is handled directly by Remote Interpreter code
+  override def run(sparkSession: SparkSession): Seq[Row] = Nil
 }
 
 
