@@ -1076,18 +1076,18 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       assert(i != 0)
       rs7.close()
 
-      rs7 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3rowtab8 ORDER BY col2;")
-      arrBuf.clear()
-      i = 0
-      arrBuf ++= ArrayBuffer("qewradfs,111,asdfqewr,true,123.1234",
-        "adsffs,222,vzxcqewr,true,4745.345345", "xzcvadfs,444,zxcvzv,false,78768.34")
-      while (rs7.next()) {
-        assert(s"${rs7.getString(1)},${rs7.getInt(2)},${rs7.getString(3)}," +
-            s"${rs7.getBoolean(4)},${rs7.getDouble(5)}" === arrBuf(i))
-        i += 1
-      }
-      assert(i != 0)
-      rs7.close()
+//      rs7 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3rowtab8 ORDER BY col2;")
+//      arrBuf.clear()
+//      i = 0
+//      arrBuf ++= ArrayBuffer("qewradfs,111,asdfqewr,true,123.1234",
+//        "adsffs,222,vzxcqewr,true,4745.345345", "xzcvadfs,444,zxcvzv,false,78768.34")
+//      while (rs7.next()) {
+//        assert(s"${rs7.getString(1)},${rs7.getInt(2)},${rs7.getString(3)}," +
+//            s"${rs7.getBoolean(4)},${rs7.getDouble(5)}" === arrBuf(i))
+//        i += 1
+//      }
+//      assert(i != 0)
+//      rs7.close()
 
       rs7 = stmtRec.executeQuery("SELECT * FROM gemfire10.test3rowtab9 ORDER BY col2;")
       arrBuf.clear()
