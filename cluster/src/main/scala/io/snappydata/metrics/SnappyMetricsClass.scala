@@ -21,6 +21,7 @@ package io.snappydata.metrics
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui.{ClusterStatistics, MemberStatistics, SnappyExternalTableStats, SnappyRegionStats}
 import io.snappydata.SnappyTableStatsProviderService
+import java.util
 import org.apache.spark.SparkContext
 import org.apache.spark.groupon.metrics.UserMetricsSystem
 import org.apache.spark.groupon.metrics._
@@ -31,11 +32,15 @@ object SnappyMetricsClass {
 
   val oldSizeMap = collection.mutable.Map.empty[String, Int]
 
+  val region = Misc.getMemStore.getMetadataCmdRgn
+
   def init(sc: SparkContext): Unit = {
 
     // initialize metric system with cluster id as metrics namespace
-    val clusterUuid = Misc.getMemStore.getMetadataCmdRgn.get("__ClusterID__")
+    val clusterUuid = region.get("__ClusterID__")
     UserMetricsSystem.initialize(sc, clusterUuid)
+
+    val memberEntries = region.getAll(region.keySet())
 
     val timeInterval = 1000
 
@@ -60,7 +65,7 @@ object SnappyMetricsClass {
 
             // get member stats and publish into metrics system
             val memberBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
-            setMetricsForMemberStatDetails(memberBuff)
+            setMetricsForMemberStatDetails(memberBuff, memberEntries)
           }
           catch {
             case e: InterruptedException => e.printStackTrace()
@@ -70,6 +75,16 @@ object SnappyMetricsClass {
     }
     val thread: Thread = new Thread(runnable)
     thread.start()
+  }
+
+  def putMembersDiskStoreIdInRegion(): Unit = {
+
+    val membersBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
+    for ((k, v) <- membersBuff) {
+      val shortDirName = v.getUserDir.substring(
+        v.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
+      region.put("__" + shortDirName + "__", v.getDiskStoreUUID.toString)
+    }
   }
 
   def createGauge(metricName: String, metricValue: AnyVal): Unit = {
@@ -84,8 +99,8 @@ object SnappyMetricsClass {
 
   def setMetricsForClusterStatDetails(): Unit = {
     val csInstance = ClusterStatistics.getInstance()
-    createGauge("ClusterMetrics.coresInfo.totalCores", csInstance.getTotalCPUCores)
-    updateHistogram("ClusterMetrics.timeLine",
+    createGauge("ClusterMetrics.totalCores", csInstance.getTotalCPUCores)
+    updateHistogram("ClusterMetrics.timeLineTrend",
       csInstance.getUsageTrends(ClusterStatistics.TREND_TIMELINE).toList)
     updateHistogram("ClusterMetrics.cpuUsageTrend",
       csInstance.getUsageTrends(ClusterStatistics.TREND_CPU_USAGE).toList)
@@ -116,6 +131,7 @@ object SnappyMetricsClass {
     if (oldSizeMap(metricName) < newList.size) {
       for (i <- oldSizeMap(metricName) until newList.size) {
         createHistogram(metricName, newList(i).asInstanceOf[Number].longValue())
+        createGauge(metricName.replace("Trend", ""), newList(i).asInstanceOf[AnyVal])
       }
     }
     oldSizeMap.update(metricName, newList.size)
@@ -156,7 +172,8 @@ object SnappyMetricsClass {
     }
   }
 
-  def setMetricsForMemberStatDetails(membersBuff: mutable.Map[String, MemberStatistics]): Unit = {
+  def setMetricsForMemberStatDetails(membersBuff: mutable.Map[String, MemberStatistics],
+                                     memberEntries: util.Map[String, String]) {
 
     var leadCount, locatorCount, dataServerCount, connectorCount, totalMembersCount = 0
 
@@ -181,7 +198,7 @@ object SnappyMetricsClass {
     createGauge(s"MemberMetrics.connectorCount", connectorCount)
 
     for ((k, v) <- membersBuff) {
-      SnappyMemberMetrics.convertStatsToMetrics(k, v)
+      SnappyMemberMetrics.convertStatsToMetrics(k, v, memberEntries)
     }
   }
 }

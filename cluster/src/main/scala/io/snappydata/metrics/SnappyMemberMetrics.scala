@@ -21,12 +21,16 @@ package io.snappydata.metrics
 
 import io.snappydata.metrics.SnappyMetricsClass.{createGauge, updateHistogram}
 import com.pivotal.gemfirexd.internal.engine.ui.MemberStatistics
+import java.util
 
 object SnappyMemberMetrics {
 
-  def convertStatsToMetrics(member: String, memberDetails: MemberStatistics) {
+  def convertStatsToMetrics(member: String, memberDetails: MemberStatistics,
+                            memberEntries: util.Map[String, String]) {
     val shortDirName = memberDetails.getUserDir.substring(
       memberDetails.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
+
+    val memberUuid = memberEntries.get("__" + shortDirName + "__").toString
 
     val pId = memberDetails.getProcessId
 
@@ -51,7 +55,7 @@ object SnappyMemberMetrics {
       }
     }
 
-    val namespace = s"MemberMetrics.$shortDirName"
+    val namespace = s"MemberMetrics.$shortDirName.$memberUuid"
 
     createGauge(s"$namespace.memberId", memberDetails.getId.asInstanceOf[AnyVal])
     createGauge(s"$namespace.nameOrId", nameOrId.asInstanceOf[AnyVal])
@@ -88,7 +92,7 @@ object SnappyMemberMetrics {
     createGauge(s"$namespace.offHeapMemorySize", memberDetails.getOffHeapMemorySize)
     createGauge(s"$namespace.offHeapMemoryUsed", memberDetails.getOffHeapMemoryUsed)
     createGauge(s"$namespace.diskStoreDiskSpace", memberDetails.getDiskStoreDiskSpace)
-    updateHistogram(s"$namespace.timeLine",
+    updateHistogram(s"$namespace.timeLineTrend",
       memberDetails.getUsageTrends(MemberStatistics.TREND_TIMELINE).toList)
     updateHistogram(s"$namespace.cpuUsageTrend",
       memberDetails.getUsageTrends(MemberStatistics.TREND_CPU_USAGE).toList)
