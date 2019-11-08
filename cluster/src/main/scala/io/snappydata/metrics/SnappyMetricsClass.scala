@@ -83,7 +83,7 @@ object SnappyMetricsClass {
     for ((k, v) <- membersBuff) {
       val shortDirName = v.getUserDir.substring(
         v.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
-      region.put("__" + shortDirName + "__", v.getDiskStoreUUID.toString)
+      region.put("__" + shortDirName + k + "__", v.getDiskStoreUUID.toString)
     }
   }
 
