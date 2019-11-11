@@ -71,6 +71,8 @@ class RemoteInterpreterStateHolder(val connId: Long) {
       incomplete.setLength(0)
     } else {
       incomplete.append(tmpsb.toString())
+      outputStr = pw.toString
+      outputStr = outputStr + "\n" + "___INCOMPLETE___";
     }
     if (outputStr != null) outputStr.split("\n")
     else Array.empty
