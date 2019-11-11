@@ -33,7 +33,9 @@ object SparkApp {
       .getOrCreate()
 
     for(arg <- args){
+      // scalastyle:off println
       println(arg)
+      // scalastyle:on println
     }
 
     val sparkSqlProps = args(0).split(",")
@@ -48,6 +50,7 @@ object SparkApp {
     for (prop <- sparkSqlProps) {
       // scalastyle:off println
       println(prop)
+      // scalastyle:on println
       sc.sql(s"set $prop")
     }
 
@@ -61,11 +64,11 @@ object SparkApp {
     println(s"****************queries : $queries")
     // scalastyle:on println
 
-    /*catalog_page", "catalog_returns", "customer", "customer_address",
+    /* catalog_page", "catalog_returns", "customer", "customer_address",
       "customer_demographics", "date_dim", "household_demographics", "inventory", "item",
       "promotion", "store", "store_returns", "catalog_sales", "web_sales", "store_sales",
       "web_returns", "web_site", "reason", "call_center", "warehouse", "ship_mode", "income_band",
-      "time_dim", "web_page"*/
+      "time_dim", "web_page" */
 
     val tables = Seq("call_center", "catalog_page", "date_dim", "household_demographics",
       "income_band", "promotion", "reason", "ship_mode", "store", "time_dim",
@@ -128,7 +131,7 @@ object SparkApp {
     tableName = "web_returns"
     createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
-    partitionBy =  "ws_order_number"
+    partitionBy = "ws_order_number"
     tableName = "web_sales"
     createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
@@ -174,8 +177,7 @@ object SparkApp {
           cnts = null
         }
 
-        // scalastyle:off println
-        //println(s"${totalTime / runsForAverage}")
+        // println(s"${totalTime / runsForAverage}")
         println("-----------------------------------------------")
         avgPrintStream.println(s"$name, executionTime = ${totalTime / runsForAverage}")
         println("-----------------------------------------------")
@@ -192,8 +194,8 @@ object SparkApp {
 //    catch {
 //      case _ =>
 //    }
-    //TPCDSQuerySnappyBenchmark.snappy = snSession
-    //TPCDSQuerySnappyBenchmark.execute(dataLocation, queries, true, queryPath)
+    // TPCDSQuerySnappyBenchmark.snappy = snSession
+    // TPCDSQuerySnappyBenchmark.execute(dataLocation, queries, true, queryPath)
   }
 
 
@@ -213,6 +215,6 @@ object SparkApp {
     println("-----------------------------------------------")
   }
 
-    //TPCDSQuerySnappyBenchmark.spark = sc
-    //TPCDSQuerySnappyBenchmark.execute(dataLocation, queries, false, queryPath)
+    // TPCDSQuerySnappyBenchmark.spark = sc
+    // TPCDSQuerySnappyBenchmark.execute(dataLocation, queries, false, queryPath)
 }
