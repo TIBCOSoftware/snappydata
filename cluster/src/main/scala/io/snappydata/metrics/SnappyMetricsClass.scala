@@ -40,6 +40,9 @@ object SnappyMetricsClass {
     val clusterUuid = region.get("__ClusterID__")
     UserMetricsSystem.initialize(sc, clusterUuid)
 
+    // store every member diskStore ID to metadataCmdRgn
+    putMembersDiskStoreIdInRegion()
+
     val memberEntries = region.getAll(region.keySet())
 
     val timeInterval = 1000

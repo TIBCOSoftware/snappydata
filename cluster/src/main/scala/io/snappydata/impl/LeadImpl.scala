@@ -183,7 +183,6 @@ class LeadImpl extends ServerImpl with Lead
           set("spark.scheduler.mode", "FAIR").
           setIfMissing("spark.memory.manager",
             ExecutorInitiator.SNAPPY_MEMORY_MANAGER)
-          .set("spark.metrics.namespace", "")
 
       Utils.setDefaultSerializerAndCodec(conf)
 
@@ -317,9 +316,6 @@ class LeadImpl extends ServerImpl with Lead
 
       // update the Spark UI to add the dashboard and other SnappyData pages
       ToolsCallbackInit.toolsCallback.updateUI(sc)
-
-      // store every member diskStore ID to metadataCmdRgn
-      SnappyMetricsClass.putMembersDiskStoreIdInRegion()
 
       // start snappy metric system
       SnappyMetricsClass.init(sc)
