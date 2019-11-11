@@ -20,48 +20,71 @@
 package io.snappydata.remote.interpreter
 
 import java.io._
-import java.net.{URLClassLoader}
+import java.net.URLClassLoader
 
 import com.gemstone.gemfire.internal.shared.StringPrintWriter
 import org.apache.spark.SparkContext
+import org.apache.spark.repl.SparkILoop
 import org.apache.spark.sql.SnappySession
 
 import scala.collection.mutable
 import scala.tools.nsc.Settings
-import scala.tools.nsc.interpreter.IMain
+import scala.tools.nsc.interpreter.{IMain, Results}
 
 class RemoteInterpreterStateHolder(val connId: Long) {
-
-  lazy val intp: IMain = createIMain
-
-  val sc = SparkContext.getOrCreate()
-  val snappy = new SnappySession(sc)
-
-  intp.interpret("import org.apache.spark.SparkContext._")
-  intp.interpret("import spark.implicits._")
-  intp.interpret("import spark.sql")
-  intp.interpret("import org.apache.spark.sql.functions._")
-  intp.interpret("org.apache.spark.sql.SnappySession")
-
-  intp.bind("sc", sc)
-  intp.bind("snappy", snappy)
 
   lazy val pw = new StringPrintWriter()
   lazy val strOpStream = new StringOutputStrem(pw)
 
-  def interpret(code: Array[String]): Array[String] = {
-    pw.reset()
-    scala.Console.setOut(strOpStream)
-    val interp = intp
-    val str = code(0)
-    val newstr = str.replace("\n", " ")
-    val result = interp.interpret(newstr)
+  lazy val intp: SparkILoop = createSparkILoop
+  intp.interpret("import org.apache.spark.sql.functions._")
+  intp.interpret("org.apache.spark.sql.SnappySession")
 
-    val out = pw.toString
-    out.split("\n")
+  val sc = SparkContext.getOrCreate()
+  val snappy = new SnappySession(sc)
+
+  intp.bind("sc", sc)
+  intp.bind("snappy", snappy)
+  pw.reset()
+
+  var currentException: Throwable = null
+  var firstException: Throwable = null
+  var firstMsg: String = null
+
+
+  var currentResult: mutable.StringBuilder = new mutable.StringBuilder()
+
+  var lastResult: Results.Result = Results.Success
+
+  var incomplete = new mutable.StringBuilder()
+
+  def interpret(code: Array[String]): Array[String] = {
+    scala.Console.setOut(strOpStream)
+    val tmpsb = new StringBuilder
+    tmpsb.append(incomplete.toString())
+    incomplete.setLength(0)
+    var i = 0
+    while(i < code.length && !(lastResult == Results.Error)) {
+      val line = code(i)
+      if (tmpsb.isEmpty) tmpsb.append(line)
+      else (tmpsb.append("\n" + line))
+      lastResult = intp.interpret(tmpsb.toString())
+      i += 1
+    }
+
+    var outputStr: String = null
+    if (!(lastResult == Results.Incomplete)) {
+      outputStr = pw.toString
+      pw.reset()
+      incomplete.setLength(0)
+    } else {
+      incomplete.append(tmpsb.toString())
+    }
+    if (outputStr != null) outputStr.split("\n")
+    else Array.empty
   }
 
-  def createIMain: IMain = {
+  def createSparkILoop: SparkILoop = {
     val settings: Settings = new Settings
     var classpath: String = ""
     val paths: Seq[File] = currentClassPath
@@ -70,10 +93,12 @@ class RemoteInterpreterStateHolder(val connId: Long) {
       classpath += f.getAbsolutePath
     }
     val in = new BufferedReader(new StringReader(""))
-    val interp = new IMain(settings, pw)
+    val intp = new SparkILoop(null.asInstanceOf[BufferedReader], new PrintWriter(pw))
     settings.classpath.value = classpath
+    intp.settings = settings
+    intp.createInterpreter()
     pw.reset()
-    interp
+    intp
   }
 
   def close(): Unit = {
