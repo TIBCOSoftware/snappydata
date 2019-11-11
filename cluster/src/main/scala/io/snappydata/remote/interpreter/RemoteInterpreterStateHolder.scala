@@ -47,15 +47,6 @@ class RemoteInterpreterStateHolder(val connId: Long) {
   intp.bind("snappy", snappy)
   pw.reset()
 
-  var currentException: Throwable = null
-  var firstException: Throwable = null
-  var firstMsg: String = null
-
-
-  var currentResult: mutable.StringBuilder = new mutable.StringBuilder()
-
-  var lastResult: Results.Result = Results.Success
-
   var incomplete = new mutable.StringBuilder()
 
   def interpret(code: Array[String]): Array[String] = {
@@ -64,6 +55,7 @@ class RemoteInterpreterStateHolder(val connId: Long) {
     tmpsb.append(incomplete.toString())
     incomplete.setLength(0)
     var i = 0
+    var lastResult: Results.Result = Results.Success
     while(i < code.length && !(lastResult == Results.Error)) {
       val line = code(i)
       if (tmpsb.isEmpty) tmpsb.append(line)
