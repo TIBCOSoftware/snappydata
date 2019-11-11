@@ -2,7 +2,7 @@
 source PerfRun.conf
 
 echo "*****************Stop locator, server, lead***********************"
-sh $SnappyData/sbin/snappy-stop-all.sh
+$SnappyData/sbin/snappy-stop-all.sh
 
 rm -rf $SnappyData/work/*
 rm -rf $SnappyData/conf/leads

@@ -43,6 +43,7 @@ object QueryExecutionJob extends SnappySQLJob with Logging {
     val avgFileStream: FileOutputStream = new FileOutputStream(
       new File(s"Snappy_Average.out"))
     val avgPrintStream: PrintStream = new PrintStream(avgFileStream)
+    var queryPrintStream: PrintStream = null
 
     queries.foreach { name =>
       try {
@@ -53,7 +54,7 @@ object QueryExecutionJob extends SnappySQLJob with Logging {
         val queryFileName = s"$name.out"
 
         val queryFileStream: FileOutputStream = new FileOutputStream(new File(queryFileName))
-        val queryPrintStream: PrintStream = new PrintStream(queryFileStream)
+        queryPrintStream = new PrintStream(queryFileStream)
 
         var totalTime: Long = 0
 
@@ -108,6 +109,8 @@ object QueryExecutionJob extends SnappySQLJob with Logging {
 
       }
       catch {
+        case e: java.io.FileNotFoundException => logError( s"File $name does not exist.", e)
+          queryPrintStream.println(s"File $name does not exist.")
         case e: Exception => println(s"Failed $name")
           logError("Exception in job", e)
       }
