@@ -97,8 +97,8 @@ object HiveMetaStoreUtils {
   snappyQueries(10) = "SELECT ProductID,Productname,unitprice,unitsinstock " +
     "from hive_db.hive_products where productname like 'M%' order by productname"
 
-  val joinHiveSnappy = new Array[String](10)
-  val validateJoin = new Array[String](10)
+  val joinHiveSnappy = new Array[String](12)
+  val validateJoin = new Array[String](12)
   joinHiveSnappy(0) = "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID," +
     " o.OrderDate FROM default.hive_employees emp JOIN app.snappy_orders o ON " +
     "(emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderID"
@@ -160,6 +160,14 @@ object HiveMetaStoreUtils {
     " AS ProductSales FROM app.snappy_orders INNER JOIN default.hive_order_details " +
     "ON snappy_orders.OrderID = hive_order_details.OrderID " +
     "where snappy_orders.OrderID > 11000 GROUP BY ShipCountry order by ProductSales"
+  joinHiveSnappy(10) = "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID," +
+    " o.OrderDate FROM default.hive_employees emp JOIN default.hive_orders o ON " +
+    "(emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderID"
+  joinHiveSnappy(11) = "SELECT o.OrderID, c.CompanyName, e.FirstName, e.LastName " +
+    "FROM default.hive_orders o JOIN default.hive_employees e ON (e.EmployeeID = o.EmployeeID) " +
+    "JOIN default.hive_customers c ON (c.CustomerID = o.CustomerID) " +
+    "WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > Cast('1998-01-01' as TIMESTAMP) " +
+    "ORDER BY o.OrderID"
 
     validateJoin(0) = "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID," +
     " o.OrderDate FROM snappy_employees emp JOIN snappy_orders o ON " +
@@ -221,4 +229,12 @@ object HiveMetaStoreUtils {
     " AS ProductSales FROM app.snappy_orders INNER JOIN app.snappy_order_details " +
     "ON snappy_orders.OrderID = snappy_order_details.OrderID " +
     "where snappy_orders.OrderID > 11000 GROUP BY ShipCountry order by ProductSales"
+  validateJoin(10) = "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID," +
+    " o.OrderDate FROM snappy_employees emp JOIN snappy_orders o ON " +
+    "(emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderID"
+  validateJoin(11) = "SELECT o.OrderID, c.CompanyName, e.FirstName, e.LastName " +
+    "FROM snappy_orders o JOIN snappy_employees e ON (e.EmployeeID = o.EmployeeID) " +
+    "JOIN snappy_customers c ON (c.CustomerID = o.CustomerID) " +
+    "WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > Cast('1998-01-01' as TIMESTAMP) " +
+    "ORDER BY o.OrderID"
 }
