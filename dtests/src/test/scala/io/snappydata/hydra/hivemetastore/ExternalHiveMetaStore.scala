@@ -49,7 +49,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
     snc.sql("drop schema if exists TIBCO_DB")
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
-//    alterHiveTable_ChangeTableName(snc, pw)
+    alterHiveTable_ChangeTableName(snc, pw)
     pw.flush()
     //  Test Case-2
     createAndDropHiveSchema(snc, beelineClientConnection, dataLocation, pw)
@@ -60,7 +60,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     snc.sql(HiveMetaStoreUtils.createDB + "TIBCO_DB")
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
     createHiveTblsAndLoadData(beelineClientConnection, dataLocation, "HIVE_DB")
-    createSnappyTblsAndLoadData(snc, dataLocation, "TIBCO_DB")
+    createSnappyTblsAndLoadData(snc, dataLocation, "TIBCO_DB", "HIVE_DB")
     createHiveTblsAndLoadData(beelineClientConnection, dataLocation)
     createSnappyTblsAndLoadData(snc, dataLocation)
     executeQueriesOnHiveTables(snc, beelineClientConnection, dataLocation, pw)
@@ -102,27 +102,16 @@ class ExternalHiveMetaStore extends SnappySQLJob {
   }
 
   def dropSnappyTables(snc: SnappyContext, dropTable: String, schema: String = "app"): Unit = {
-    snc.sql(dropTable + schema + ".staging_regions")
     snc.sql(dropTable + schema + ".snappy_regions")
-    snc.sql(dropTable + schema + ".staging_categories")
     snc.sql(dropTable + schema + ".snappy_categories")
-    snc.sql(dropTable + schema + ".staging_shippers")
     snc.sql(dropTable + schema + ".snappy_shippers")
-    snc.sql(dropTable + schema + ".staging_employees")
     snc.sql(dropTable + schema + ".snappy_employees")
-    snc.sql(dropTable + schema + ".staging_customers")
     snc.sql(dropTable + schema + ".snappy_customers")
-    snc.sql(dropTable + schema + ".staging_orders")
     snc.sql(dropTable + schema + ".snappy_orders")
-    snc.sql(dropTable + schema + ".staging_order_details")
     snc.sql(dropTable + schema + ".snappy_order_details")
-    snc.sql(dropTable + schema + ".staging_products")
     snc.sql(dropTable + schema + ".snappy_products")
-    snc.sql(dropTable + schema + ".staging_suppliers")
     snc.sql(dropTable + schema + ".snappy_suppliers")
-    snc.sql(dropTable + schema + ".staging_territories")
     snc.sql(dropTable + schema + ".snappy_territories")
-    snc.sql(dropTable + schema + ".staging_employee_territories")
     snc.sql(dropTable + schema + ".snappy_employee_territories")
   }
 
@@ -167,7 +156,9 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     loadDataToHiveTbls(dataLocation + "orders.csv", "hive_orders", beelineClientConnection, schema)
     createHiveTable("hive_order_details(OrderID int,ProductID int,UnitPrice " +
       "double,Quantity smallint,Discount double)", beelineClientConnection, schema)
-    loadDataToHiveTbls(dataLocation + "order_details.csv", "hive_order_details",
+//    loadDataToHiveTbls(dataLocation + "order_details.csv", "hive_order_details",
+//      beelineClientConnection, schema)
+    loadDataToHiveTbls(dataLocation + "order-details.csv", "hive_order_details",
       beelineClientConnection, schema)
     createHiveTable("hive_products(ProductID int,ProductName string,SupplierID int," +
       "CategoryID int,QuantityPerUnit string,UnitPrice double,UnitsInStock smallint," +
@@ -185,61 +176,37 @@ class ExternalHiveMetaStore extends SnappySQLJob {
       beelineClientConnection, schema)
     createHiveTable("hive_employee_territories(EmployeeID int," +
       "TerritoryID string)", beelineClientConnection, schema)
-    loadDataToHiveTbls(dataLocation + "employee_territories.csv",
+//    loadDataToHiveTbls(dataLocation + "employee_territories.csv",
+//      "hive_employee_territories", beelineClientConnection, schema)
+    loadDataToHiveTbls(dataLocation + "employee-territories.csv",
       "hive_employee_territories", beelineClientConnection, schema)
   }
 
   def createSnappyTblsAndLoadData(snc: SnappyContext, dataLocation: String,
-                                  schema: String = "app"): Unit = {
-    snc.sql("create external table if not exists " + schema + "." + "staging_regions using csv" +
-      " options(path '" + "file:///" + dataLocation + "regions.csv" + "',header 'true')")
-    snc.sql("create external table if not exists " + schema + "." + "staging_categories using csv" +
-      " options(path '" + "file:///" + dataLocation + "categories.csv" + "',header 'true')")
-    snc.sql("create external table if not exists " + schema + "." + "staging_shippers using csv" +
-      " options(path '" + "file:///" + dataLocation + "shippers.csv" + "',header 'true')")
-    snc.sql("create external table if not exists " + schema + "." + "staging_employees using csv" +
-      " options(path '" + "file:///" + dataLocation + "employees.csv" + "',header 'true')")
-    snc.sql("create external table if not exists " + schema + "." + "staging_customers using csv" +
-      " options(path '" + "file:///" + dataLocation + "customers.csv" + "',header 'true')")
-    snc.sql("create external table if not exists " + schema + "." + "staging_orders using csv" +
-      " options(path '" + "file:///" + dataLocation + "orders.csv" + "',header 'true')")
-    snc.sql("create external table if not exists " + schema + "." +
-      "staging_order_details using csv options(path '" +
-      "file:///" + dataLocation + "order_details.csv" + "',header 'true')")
-    snc.sql("create external table if not exists " + schema + "." + "staging_products using csv" +
-      " options(path '" + "file:///" + dataLocation + "products.csv" + "',header 'true')")
-    snc.sql("create external table if not exists " + schema + "." + "staging_suppliers using csv" +
-      " options(path '" + "file:///" + dataLocation + "suppliers.csv" + "',header 'true')")
-    snc.sql("create external table if not exists " + schema +
-      "." + "staging_territories using csv options(path '" +
-      "file:///" + dataLocation + "territories.csv" + "',header 'true')")
-    snc.sql("create external table if not exists " + schema + "." +
-      "staging_employee_territories using csv options(path '" +
-      "file:///" + dataLocation + "employee_territories.csv" + "',header 'true')")
-
-    snc.sql("create table if not exists " + schema + "." + "snappy_regions using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_regions")
+                                  schema: String = "app", hiveSchema: String="default"): Unit = {
+    snc.sql("create table if not exists " + schema + "." + "snappy_regions using row" +
+      " as select * from " + hiveSchema + "." + "hive_regions")
     snc.sql("create table if not exists " + schema + "." + "snappy_categories using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_categories")
+      " options(BUCKETS '8') as select * from " + hiveSchema + "." + "hive_categories")
     snc.sql("create table if not exists " + schema + "." + "snappy_shippers using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_shippers")
+      " options(BUCKETS '8') as select * from " + hiveSchema + "." + "hive_shippers")
     snc.sql("create table if not exists " + schema + "." + "snappy_employees using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_employees")
+      " options(BUCKETS '8') as select * from " + hiveSchema + "." + "hive_employees")
     snc.sql("create table if not exists " + schema + "." + "snappy_customers using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_customers")
+      " options(BUCKETS '8') as select * from " + hiveSchema + "." + "hive_customers")
     snc.sql("create table if not exists " + schema + "." + "snappy_orders using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_orders")
+      " options(BUCKETS '8') as select * from " + hiveSchema + "." + "hive_orders")
     snc.sql("create table if not exists " + schema + "." + "snappy_order_details using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_order_details")
+      " options(BUCKETS '8') as select * from " + hiveSchema + "." + "hive_order_details")
     snc.sql("create table if not exists " + schema + "." + "snappy_products using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." +  "staging_products")
+      " options(BUCKETS '8') as select * from " + hiveSchema + "." +  "hive_products")
     snc.sql("create table if not exists " + schema + "." + "snappy_suppliers using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_suppliers")
+      " options(BUCKETS '8') as select * from " + hiveSchema + "." + "hive_suppliers")
     snc.sql("create table if not exists " + schema + "." + "snappy_territories using column" +
-      " options(BUCKETS '8') as select * from " + schema + "." + "staging_territories")
+      " options(BUCKETS '8') as select * from " + hiveSchema + "." + "hive_territories")
     snc.sql("create table if not exists " + schema + "." +
-      "snappy_employee_territories using column options(BUCKETS '8') " +
-      "as select * from " + schema + "." + "staging_employee_territories")
+      "snappy_employee_territories " +
+      "as select * from " + hiveSchema + "." + "hive_employee_territories")
   }
 
   def executeQueries(snc: SnappyContext, query1: String, query2: String, pw: PrintWriter,
@@ -299,8 +266,8 @@ class ExternalHiveMetaStore extends SnappySQLJob {
   def alterHiveTable_ChangeTableName(snc: SnappyContext, pw: PrintWriter): Unit = {
     snc.sql(HiveMetaStoreUtils.dropTable + "default.Table1")
     snc.sql(HiveMetaStoreUtils.dropTable + "default.Table2")
-    snc.sql("create table if not exists default.Table1(id int, name String) using hive")
-    snc.sql("insert into default.Table1 select id, concat('TIBCO_',id) from range(100000)")
+    snc.sql("create table if not exists default.Table1(id int, name String) row format delimited fields terminated by ','")
+//    snc.sql("insert into default.Table1 select id, concat('TIBCO_',id) from range(100000)")
     snc.sql("alter table default.Table1 rename to default.Table2")
     val countDF = snc.sql("select count(*) as Total from default.Table2")
     println("countDF : " + countDF.head())
