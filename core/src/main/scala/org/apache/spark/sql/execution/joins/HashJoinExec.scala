@@ -374,7 +374,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
             return pIndex;
           } else {
            for (int j = 0; j < buketsMapping.length; ++j) {
-               if (buketsMapping[j].equals(realBucketSet)) {
+               if (buketsMapping[j].containsAll(realBucketSet)) {
                  return j;
                }
             }
