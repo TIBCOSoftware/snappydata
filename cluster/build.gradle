@@ -207,4 +207,7 @@ if (rootProject.hasProperty('snappydata.enterprise')) {
     check.dependsOn dunitSecurityTest
 }
 
+if(!rootProject.hasProperty('recovery.skip')) {
+  check.dependsOn recoveryTest
+}
 archivesBaseName = 'snappydata-cluster_' + scalaBinaryVersion

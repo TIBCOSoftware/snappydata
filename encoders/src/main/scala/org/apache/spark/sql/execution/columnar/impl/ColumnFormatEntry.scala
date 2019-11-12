@@ -131,7 +131,7 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
             } else {
               val allocator = ColumnEncoding.getAllocator(buffer)
               // decrement by deleted row count
-              -ColumnEncoding.readInt(allocator.baseObject(buffer),
+              - ColumnEncoding.readInt(allocator.baseObject(buffer),
                 allocator.baseOffset(buffer) + buffer.position() + 8)
             }
           } else 0
@@ -144,7 +144,11 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
 
   def getColumnIndex: Int = columnIndex
 
-  private[columnar] def withColumnIndex(columnIndex: Int): ColumnFormatKey = {
+  def getPartitionId: Int = partitionId
+
+  def getUuid: Long = uuid
+
+  def withColumnIndex(columnIndex: Int): ColumnFormatKey = {
     if (columnIndex != this.columnIndex) new ColumnFormatKey(uuid, partitionId, columnIndex)
     else this
   }

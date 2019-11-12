@@ -830,6 +830,9 @@ object SnappyContext extends Logging {
 
   private val builtinSources = new CaseInsensitiveMutableHashMap[
       (String, CatalogObjectType.Type)](Map(
+    ParserConsts.OPLOG_SOURCE ->
+      (classOf[execution.oplog.impl.DefaultSource].getCanonicalName ->
+        CatalogObjectType.Oplog),
     ParserConsts.COLUMN_SOURCE ->
         (classOf[execution.columnar.impl.DefaultSource].getCanonicalName ->
             CatalogObjectType.Column),
