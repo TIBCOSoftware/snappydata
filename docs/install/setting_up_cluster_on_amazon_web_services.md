@@ -11,19 +11,19 @@ You can set up TIBCO ComputeDB cluster on Amazon Web Services using one of the f
 
 <!---<a id="usingcloudbuiler"></a>
 ## TIBCO ComputeDB CloudBuilder
-[TIBCO ComputeDB CloudBuilder](http://www.snappydata.io/cloudbuilder) is a web based utility that allows you to quickly launch TIBCO ComputeDB cluster on AWS instances. It also launches Apache Zeppelin server that allows you to build notebooks that visually represent key elements of your business.
+[TIBCO ComputeDB CloudBuilder](http://www.snappydata.io/cloudbuilder) is a web-based utility that allows you to quickly launch TIBCO ComputeDB cluster on AWS instances. It also launches Apache Zeppelin server that allows you to build notebooks that visually represent key elements of your business.
 
 This method is recommended as the fastest way to deploy TIBCO ComputeDB. All you need is an existing AWS account and login credentials to get started.
 
 * [Prerequisites](#prerequisitescloudbuiler)
-* [Deploying TIBCO ComputeDB Cloud Cluster Using TIBCO ComputeDB CloudBuilder](#DeployingClusterCloudFormation)
+* [Deploying TIBCO ComputeDB Cloud cluster Using TIBCO ComputeDB CloudBuilder](#DeployingClusterCloudFormation)
 
 <a id="prerequisitescloudbuiler"></a>
 ### Prerequisites
 
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources with AWS CloudFormation.
 
-* Sign into the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
+* Sign in to the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
 
 * Create an EC2 Key Pair in the region where you want to launch the TIBCO ComputeDB cluster.
 
@@ -31,8 +31,7 @@ This method is recommended as the fastest way to deploy TIBCO ComputeDB. All you
 ### Deploying TIBCO ComputeDB Cluster with TIBCO ComputeDB CloudBuilder
 TIBCO ComputeDB uses the AWS CloudFormation feature to automatically install, configure and start a TIBCO ComputeDB cluster.
 
-It is recommended that you select an instance type with higher processing power and more memory for the leads and servers  of the cluster.
-
+For best results, select an instance type with higher processing power and more memory for the leads and servers of the cluster.
 
 #### Step 1: Go to [TIBCO ComputeDB CloudBuilder](http://www.snappydata.io/cloudbuilder) page
 
@@ -113,7 +112,7 @@ It is recommended that you select an instance type with higher processing power 
 	!!! Note
     	The stack name must contain only letters, numbers, dashes, and should start with an alpha character.
 
-    * **KeyPairName**: Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster. Refer to the Amazon documentation for more information on [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
+    * **KeyPairName**: Enter a name of an existing EC2 KeyPair. This enables SSH access to the cluster. Refer to the Amazon documentation for more information on [generating your EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
 
     * **VPCID**: From the drop-down list, select *default* Virtual Private Cloud (VPC) ID of your selected region. Your instances are launched within this VPC.</br> Click **Next** to continue.
 
@@ -141,7 +140,7 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 
 		* **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the TIBCO ComputeDB CloudBuilder creation steps.
 
-		* **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.*
+		* **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails, and an error is reported.*
 
 !!! Warning
 	To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.
@@ -151,7 +150,7 @@ For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section o
 <a id="EC2"></a>
 ## TIBCO ComputeDB EC2 Scripts
 
-The TIBCO ComputeDB EC2 scripts enable you to quickly launch and manage TIBCO ComputeDB clusters on Amazon EC2 instances. They also allow you to provide custom configuration for the cluster via TIBCO ComputeDB configuration files, before launching the cluster.
+The TIBCO ComputeDB EC2 scripts enable you to launch and manage TIBCO ComputeDB clusters on Amazon EC2 instances quickly. They also allow you to provide custom configuration for the cluster via TIBCO ComputeDB configuration files, before launching the cluster.
 
 The `snappy-ec2` script is the entry point for these EC2 scripts and is derived from the `spark-ec2` script available in [Apache Spark 1.6](https://github.com/apache/spark/tree/branch-1.6/ec2).
 
@@ -172,7 +171,7 @@ This section covers the following:
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources
 
 * Create an EC2 Key Pair in the region where you want to launch the TIBCO ComputeDB Cloud cluster
-<br/>Refer to the Amazon Web Services EC2 documentation for more information on [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
+<br/>Refer to the Amazon Web Services EC2 documentation for more information on [generating your EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
 
 * Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`. You can find information about generating these keys in the AWS IAM console page.<br/>
 If you already have set up the AWS Command Line Interface on your local machine, the script automatically detects and uses the credentials from the AWS credentials file.
@@ -204,7 +203,7 @@ Here:
 
 * `<your-keyfile-path>` refers to the path to the key file.
 
-* `<action>` refers to the action to be performed. Some of the available actions are `launch`, `destroy`, `stop`, `start` and `reboot-cluster`.
+* `<action>` refers to the action to be performed. Some of the available actions are **launch**, **destroy**, **stop**, **start** and **reboot-cluster**.
 Use `launch` action to create a new cluster while `stop` and `start` actions work on existing clusters.
 
 By default, the script starts one instance of a locator, lead, and server each.
@@ -220,8 +219,8 @@ cluster and the region where the EC2 instances should be launched.
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin --region=us-west-1 launch my-cluster
 ```
 
-The above example launches a TIBCO ComputeDB cluster named **my-cluster** with 2 stores or servers.
-The locator is associated with security group named **my-cluster-locator** and the servers are associated with **my-cluster-store** security group.
+The above example launches a TIBCO ComputeDB cluster named **my-cluster** with two stores or servers.
+The locator is associated with a security group named **my-cluster-locator**, and the servers are associated with **my-cluster-store** security group.
 
 The cluster is launched in the **N. California (us-west-1)** region on AWS and has an Apache Zeppelin server running on the instance where the lead is running.</br>
 
@@ -235,10 +234,10 @@ An IAM user in AWS can gain additional (or different) permissions, or get permis
 	The Amazon Resource Name (ARN) of the IAM role to be assumed. This IAM role's credentials are used to launch the cluster. If you are using the switch role functionality, this property is mandatory.
     
 *	**assume-role-timeout**: 
-	Timeout in seconds for the temporary credentials of the assumed IAM role, min is 900 seconds and max is 3600 seconds.
+	Timeout in seconds for the temporary credentials of the assumed IAM role, min is 900 seconds, and max is 3600 seconds.
     
 *	**assume-role-session-name**:
-	Name of this session in which this IAM role is assumed by the user.
+	Name of this session in which IAM role is assumed by the user.
 
 **Example**
 
@@ -268,7 +267,7 @@ This section covers the following:
 <a id="ec2custombuild"></a>
 #### Using Custom Build
 
-This script by default uses the TIBCO ComputeDB build available on the GitHub releases page to launch the cluster.
+This script by default, uses the TIBCO ComputeDB build available on the GitHub releases page to launch the cluster.
 To select a version of the OSS build available on GitHub, use option `--snappydata-version`.
 
 You can also provide your own TIBCO ComputeDB build to the script to launch the cluster, by using
@@ -276,7 +275,7 @@ option `--snappydata-tarball` to the `launch` command.
 The build can be present either on a local filesystem or as a resource on the web.
 
 For example, to use **TIBCO ComputeDB Enterprise** build to launch the cluster, download the product tarball from
-https://edelivery.tibco.com to your local machine and give its path as value to above option.
+https://edelivery.tibco.com to your local machine and give its path as value to the above option.
 
 ```pre
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="/home/ec2-user/snappydata/distributions/TIB_compute_1.1.1_linux.tar.gz"
@@ -292,8 +291,8 @@ The build file should be in **.tar.gz** format.
 <a id="ecsspecifyprop"></a>
 #### Specifying Properties
 
-You can specify the configuration for the cluster via command line options. Use `--locator-conf` to specify the
-configuration properties for all the locators in the cluster. Similarly, `--server-conf` and `--lead-conf` allow you
+You can specify the configuration for the cluster via command-line options. Use `--locator-conf` to specify the
+configuration properties for all the locators in the cluster. Similarly, `--server-conf` and `--lead-conf` allows you
 to specify the configuration properties for servers and leads in the cluster, respectively.
 
 Following is a sample configuration for all the three processes in a TIBCO ComputeDB cluster:
@@ -308,16 +307,14 @@ Following is a sample configuration for all the three processes in a TIBCO Compu
 The utility also reads **snappy-env.sh**, if present in the directory where helper scripts are present.
 
 !!! Note
-  * The earlier method of specifying the configuration properties by placing the actual
-  configuration files in the directory, where helper scripts are available, is discontinued.
-  * Ensure that the configuration properties specified are correct. Otherwise, launching the
-  TIBCO ComputeDB cluster may fail but the EC2 instances would still be running.
+  * The earlier method of specifying the configuration properties by placing the actual configuration files in the directory, where helper scripts are available, is discontinued.
+  * Ensure that the configuration properties specified are correct. Otherwise, launching the TIBCO ComputeDB cluster may fail, but the EC2 instances would still be running.
 
 <a id="ec2stopcluster"></a>
 #### Stopping the Cluster
 
-When you stop a cluster, it shuts down the EC2 instances and any data saved on the local instance stores is lost.
-However, the data saved on EBS volumes is retained, unless the spot-instances are used.
+When you stop a cluster, it shuts down the EC2 instances, and any data saved on the local instance stores is lost.
+However, the data saved on EBS volumes are retained, unless the spot-instances are used.
 
 ```pre
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem stop cluster-name
@@ -370,7 +367,7 @@ This also deletes the security groups created for this cluster.
 <a id="ec2startclustrezeppelin"></a>
 #### Starting Cluster with Apache Zeppelin
 
-Optionally, you can start an instance of Apache Zeppelin server with the cluster.
+Optionally, you can start an instance of the Apache Zeppelin server with the cluster.
 [Apache Zeppelin](https://zeppelin.apache.org/) provides a web-based interactive notebook that is pre-configured to
 communicate with the TIBCO ComputeDB cluster. The Zeppelin server is launched on the same EC2 instance where the lead node is running.
 
@@ -380,8 +377,7 @@ communicate with the TIBCO ComputeDB cluster. The Zeppelin server is launched on
 <a id="ec2moreoption"></a>
 #### More Options
 
-For a complete list of options provided by the script, simply run `./snappy-ec2`. The options are also provided below
-for quick reference.
+For a complete list of options provided by the script, run `./snappy-ec2`. The options are also provided in the following list for quick reference:
 
 
 ```pre
@@ -413,7 +409,7 @@ Options:
   --locator-instance-type=LOCATOR_INSTANCE_TYPE
                         Locator instance type (default: t2.medium)
   -r REGION, --region=REGION
-                        EC2 region used to launch instances in, or to find
+                        EC2 region used to launch instances, or to find
                         them in (default: us-east-1)
   -z ZONE, --zone=ZONE  Availability zone to launch instances in, or 'all' to
                         spread stores across multiple (an additional $0.01/Gb
@@ -433,11 +429,10 @@ Options:
   -v SNAPPYDATA_VERSION, --snappydata-version=SNAPPYDATA_VERSION
                         Version of TIBCO ComputeDB to use: 'X.Y.Z' (default:
                         LATEST)
-  --with-zeppelin       Launch Apache Zeppelin server with the cluster. It'll
-                        be launched on the same instance where lead node will
-                        be running.
+  --with-zeppelin       Launch Apache Zeppelin server with the cluster. It launches 
+  						in the same instance where the lead node is running.
   --deploy-root-dir=DEPLOY_ROOT_DIR
-                        A directory to copy into / on the first locator. Must
+                        A directory to copy into/on the first locator. Must
                         be absolute. Note that a trailing slash is handled as
                         per rsync: If you omit it, the last directory of the
                         --deploy-root-dir path will be created in / before
@@ -521,71 +516,125 @@ Options:
 <a id="usingawsmgmtconsole"></a>
 ## AWS Management Console
 
-!!! Note
-	TIBCO has not yet made an AMI of TIBCO ComputeDB available on AWS.  This page will be updated after that is made available.
-
-You can launch a TIBCO ComputeDB cluster on Amazon EC2 instance(s) using the AMIs of earlier version of TIBCO ComputeDB (1.0.2.1). For more information
-on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
+You can launch a TIBCO ComputeDB cluster on Amazon EC2 instance(s) using Linux-based AMIs available on AWS. For more information on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
 This section covers the following:
 
 *	[Prerequisites](#prereqaws)
 *	[Launching the Instance](#launchawsinstance)
 
+!!! Attention
+	The AMIs of TIBCO ComputeDB are currently unavailable on AWS.
+
 <a id="prereqaws"></a>
 ### Prerequisites
-Ensure that you have an existing AWS account with required permissions to launch the EC2 resources.
+*   Ensure that you have an existing AWS account with required permissions to launch the EC2 resources.
+*   Create an EC2 Key Pair in the region where you want to launch the TIBCO ComputeDB cluster.
 
 <a id="launchawsinstance"></a>
 ### Deploying TIBCO ComputeDB Cluster with AWS Management Console
-To launch the instance and start the TIBCO ComputeDB cluster:
+To launch the instance and start the TIBCO ComputeDB cluster on a single EC2 instance:
 
-1. Open the [Amazon EC2 console](https://console.aws.amazon.com/ec2/) and sign in using your AWS login credentials.
+1. Open the [Amazon EC2 console](https://console.aws.amazon.com/ec2/) and sign in using your AWS login credentials. The current region is displayed at the top of the screen.
 
-2. The current region is displayed at the top of the screen. Select the region where you want to launch the instance.
+2. Select the region where you want to launch the instance.
 
 3. Click **Launch Instance** from the Amazon EC2 console dashboard.
 
-4. On the **Choose an Amazon Machine Image (AMI)** page, select **Community AMIs** from the left pane.
+4.	On the **Choose an Amazon Machine Image (AMI)** page, select your preferred Linux-based AMI. For example, you can select **Amazon Linux 2 AMI** or **Ubuntu Server 16.04 LTS**. See [this page](./system_requirements.md#operating-systems-supported) for recommended Operating Systems.
 
-5. Enter **TIBCO ComputeDB** in the search box, and press **Enter** on your keyboard.
+	!!!Note
+		The AMIs with pre-installed TIBCO ComputeDB distribution are currently unavailable under **AWS Marketplace** or **Community AMIs**.
 
-6. The search result is displayed. From the search results, click **Select** to choose the AMI with the latest release version.
-
-7. On the **Choose an Instance Type** page, select the instance type as per the requirement of your use case and then click **Review and Launch** to launch the instance with default configurations. <br/>
-
-	!!! Note
-
-		* You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.
-
-		*  When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to TIBCO ComputeDB Monitoring Console).
-
-8. You are directed to the last step **Review Instance Launch**. Check the details of your instance, and click **Launch**.
-
-9. In the **Select an existing key pair or create a new key pair** dialog box, select a key pair.
-
-10. Click **Launch**. The Launch Status page is displayed.
-
-11. Click **View Instances**. The dashboard which lists the instances is displayed.
-
-12. Click **Refresh** to view the updated list and the status of the instance creation.
-
-13. Once the status of the instance changes to **running**, you have successfully created and launched the instance with the TIBCO ComputeDB AMI.
-
-14. Use SSH to connect to the instance using the **Ubuntu** username. You require:
-
-	* The private key file of the key pair with which the instance was launched, and
-
-	* Details of the public hostname or IP address of the instance.
-Refer to the following documentation, for more information on [accessing an EC2 instance](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html).
-
+5.	On the **Choose an Instance Type** page, select the instance type as per the requirement of your use case and then click **Review and Launch** to launch the instance with default configurations. <br/>
 
 	!!! Note
 
-		* The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. 
-	
-		* The TIBCO ComputeDB product distribution is already downloaded and extracted in the **/opt/snappydata** directory and Java 8 is installed. 
+		* You can also continue customizing your instance before you launch the instance. Refer to the [AWS documentation](https://docs.aws.amazon.com/) for more information.
 
-15. Go to the **/opt/snappydata** directory. Run the following command to start a basic cluster with one data node, one lead, and one locator.
+		* On **Configure Security Group** page, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (to access TIBCO ComputeDB Monitoring Console) for the public IP address of your laptop or client terminal.
 
-	 	./sbin/snappy-start-all.sh
+		* If you need to connect to the TIBCO ComputeDB cluster via a JDBC client application or tool, open ports 1527 and 1528 for the public IP of the host where your application/tool is running, in the security group.
 
+6. You are directed to the last step **Review Instance Launch**. Check the details of your instance, and click **Launch**.
+
+7. In the **Select an existing key pair or create a new key pair** dialog box, select your key pair.
+
+8. Click **Launch**. The Launch Status page is displayed.
+
+9. Click **View Instances**. The dashboard which lists the EC2 instances is displayed.
+
+10. Click **Refresh** to view the updated list and the status of the instance you just created.
+
+11. Once the status of the instance changes to **running**, connect to the instance via SSH. You require:
+
+	*	The private key (.pem) file of the key pair with which the instance was launched.
+	*	The public DNS or IP address of the instance.
+	*	The username that is used to connect. It depends on the AMI you have selected. For example, it could be **ec2-user** for Amazon Linux AMIs or **ubuntu** for Ubuntu-based AMIs.
+
+	Refer to the following documentation for more information on [accessing an EC2 instance](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html).
+
+	!!!Note
+		The public DNS/IP of the instance is available on the **EC2 dashboard** > **Instances** page. Select your EC2 instance and search for it in the lower part of the page.
+
+12. Download the required TIBCO ComputeDB distribution (.tar.gz) into this EC2 instance. You can find the latest Enterprise edition release [here](https://edelivery.tibco.com/storefront/eval/tibco-computedb-enterprise-edition/prod12074.html).
+
+    !!!Note
+    	When TIBCO ComputeDB AMI is made available on AWS in the future, it will have the distribution pre-installed. In that case, you can jump directly to [step 15](#step15).
+
+13. Extract the tarball to **/opt/snappydata**.
+
+		tar -xvf snappydata-<version>-bin.tar.gz
+		sudo mv snappydata-<version>-bin /opt/snappydata
+		chown -R ec2-user:ec2-user /opt/snappydata
+
+14. Ensure that Java 8 is installed and set as default. For Amazon Linux 2018.03, you may need to uninstall Java 7 first. Following commands update OpenJDK to 8:
+
+		sudo yum -y -q remove  jre-1.7.0-openjdk
+		sudo yum -y -q install java-1.8.0-openjdk-devel
+		java -version  # Ensure it prints correct Java version
+
+15. Setup [passwordless ssh](../reference/misc/passwordless_ssh.md) on this instance. This requirement may be removed in future, for single-instance installation on AWS. <a id= step15> </a>
+
+16. Run the following commands to update the cluster configuration.
+
+		curl http://169.254.169.254/latest/meta-data/local-ipv4 > /opt/snappydata/conf/locators
+		curl http://169.254.169.254/latest/meta-data/local-ipv4 > /opt/snappydata/conf/servers
+		curl http://169.254.169.254/latest/meta-data/local-ipv4 > /opt/snappydata/conf/leads
+
+17. Go to the **/opt/snappydata** directory. Run the following command to start a basic cluster with one data node, one lead, and one locator.
+
+		./sbin/snappy-start-all.sh
+
+<a id="accesssnappydatacluster"></a>
+### Accessing TIBCO ComupteDB Cluster
+
+The quickest way to connect to your TIBCO ComupteDB cluster is probably using the Snappy Shell utility packaged with the distribution.
+
+You can launch the Snappy Shell either from the same EC2 instance or from your laptop, where you have TIBCO ComupteDB installed.
+
+#### Connecting to the Cluster from the Same EC2 instance:
+
+Launch Snappy Shell.
+
+		./bin/snappy
+
+!!!Note
+	Before connecting to the cluster, make sure the security group attached to this EC2 instance has ports 1527-1528 open for the public IP of the same ec2 instance.
+
+Now, connect to the cluster using its private IP (you can also use the public DNS/IP instead):
+
+		snappy> connect client '(private-ip-of-EC2-instance):1527';
+
+
+#### Connecting to Cluster from Laptop (or any Host Outside AWS VPC):
+
+Launch the Snappy Shell:
+
+		${SNAPPY_HOME}/bin/snappy
+
+!!!Note
+	Before connecting to the cluster, make sure the security group attached to this EC2 instance has ports **1527-1528** open for the public IP of your laptop that is the host with TIBCO ComupteDB installed.
+   
+Now, connect to the cluster using the public DNS/IP of its EC2 instance:
+    	
+		snappy> connect client '<public-ip-of-EC2-instance>:1527';
