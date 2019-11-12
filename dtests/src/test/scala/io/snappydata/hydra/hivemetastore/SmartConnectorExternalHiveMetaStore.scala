@@ -158,10 +158,10 @@ object SmartConnectorExternalHiveMetaStore {
     loadDataToHiveTbls(dataLocation + "orders.csv", "hive_orders", beelineClientConnection, schema)
     createHiveTable("hive_order_details(OrderID int,ProductID int,UnitPrice " +
       "double,Quantity smallint,Discount double)", beelineClientConnection, schema)
-    //    loadDataToHiveTbls(dataLocation + "order_details.csv", "hive_order_details",
-    //      beelineClientConnection, schema)
-    loadDataToHiveTbls(dataLocation + "order-details.csv", "hive_order_details",
-      beelineClientConnection, schema)
+        loadDataToHiveTbls(dataLocation + "order_details.csv", "hive_order_details",
+          beelineClientConnection, schema)
+//    loadDataToHiveTbls(dataLocation + "order-details.csv", "hive_order_details",
+//      beelineClientConnection, schema)
     createHiveTable("hive_products(ProductID int,ProductName string,SupplierID int," +
       "CategoryID int,QuantityPerUnit string,UnitPrice double,UnitsInStock smallint," +
       "UnitsOnOrder smallint,ReorderLevel smallint,Discontinued smallint)",
@@ -178,10 +178,10 @@ object SmartConnectorExternalHiveMetaStore {
       beelineClientConnection, schema)
     createHiveTable("hive_employee_territories(EmployeeID int," +
       "TerritoryID string)", beelineClientConnection, schema)
-    //    loadDataToHiveTbls(dataLocation + "employee_territories.csv",
-    //      "hive_employee_territories", beelineClientConnection, schema)
-    loadDataToHiveTbls(dataLocation + "employee-territories.csv",
-      "hive_employee_territories", beelineClientConnection, schema)
+        loadDataToHiveTbls(dataLocation + "employee_territories.csv",
+          "hive_employee_territories", beelineClientConnection, schema)
+//    loadDataToHiveTbls(dataLocation + "employee-territories.csv",
+//      "hive_employee_territories", beelineClientConnection, schema)
   }
 
   def createSnappyTblsAndLoadData(snc: SnappyContext, dataLocation: String,
