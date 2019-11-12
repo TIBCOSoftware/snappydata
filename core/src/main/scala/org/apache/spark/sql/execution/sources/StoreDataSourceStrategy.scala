@@ -36,7 +36,6 @@
 package org.apache.spark.sql.execution.sources
 
 import scala.collection.mutable
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, NamedExpression, ParamLiteral, PredicateHelper, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, LogicalPlan, Project, Filter => LFilter}
@@ -63,7 +62,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           filters,
           t.numBuckets,
           t.partitionColumns,
-          (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
+          (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)
+        ) :: Nil
       case l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _) =>
         pruneFilterProject(
           l,
@@ -226,11 +226,11 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
             (requestedColumns, candidatePredicates)
           )
         case baseRelation =>
-          RowDataSourceScanExec(
-            mappedProjects,
-            scanBuilder(requestedColumns, candidatePredicates)._1.asInstanceOf[RDD[InternalRow]],
-            baseRelation, UnknownPartitioning(0), getMetadata,
-            relation.catalogTable.map(_.identifier))
+            RowDataSourceScanExec(
+              mappedProjects,
+              scanBuilder(requestedColumns, candidatePredicates)._1.asInstanceOf[RDD[InternalRow]],
+              baseRelation, UnknownPartitioning(0), getMetadata,
+              relation.catalogTable.map(_.identifier))
       }
       if (projectOnlyAttributes || allDeterministic || filterCondition.isEmpty) {
         execution.ProjectExec(projects,
