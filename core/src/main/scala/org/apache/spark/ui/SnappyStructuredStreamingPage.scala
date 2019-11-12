@@ -25,7 +25,7 @@ import javax.servlet.http.HttpServletRequest
 import scala.xml.Node
 
 import org.apache.spark.internal.Logging
-import java.text.SimpleDateFormat
+
 // scalastyle:off
 
 private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
@@ -75,7 +75,7 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
             <tr>
               <th class="table-th-col-heading" style="font-size: medium;">
                 <span data-toggle="tooltip" title=""
-                      data-original-title="Streaming Queries">
+                      data-original-title={SnappyStructuredStreamingPage.tooltips("leftNavPanelTitle")}>
                   { SnappyStructuredStreamingPage.leftNavPanelTitle }
                 </span>
               </th>
@@ -95,26 +95,26 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
           <tr>
             <th class="table-th-col-heading" style="font-size: medium;">
               <span data-toggle="tooltip" title=""
-                    data-original-title="Source Description">
-                { "Description" }
+                    data-original-title={SnappyStructuredStreamingPage.tooltips("srcDescription")}>
+                { SnappyStructuredStreamingPage.streamingStats("srcDescription") }
               </span>
             </th>
             <th class="table-th-col-heading" style="font-size: medium;">
               <span data-toggle="tooltip" title=""
-                    data-original-title="Sources Description">
-                { "Input Records" }
+                    data-original-title={SnappyStructuredStreamingPage.tooltips("srcInputRecords")}>
+                { SnappyStructuredStreamingPage.streamingStats("srcInputRecords") }
               </span>
             </th>
             <th class="table-th-col-heading" style="font-size: medium;">
               <span data-toggle="tooltip" title=""
-                    data-original-title="Sources Description">
-                { "Input Rate" }
+                    data-original-title={SnappyStructuredStreamingPage.tooltips("srcInputRate")}>
+                { SnappyStructuredStreamingPage.streamingStats("srcInputRate") }
               </span>
             </th>
             <th class="table-th-col-heading" style="font-size: medium;">
               <span data-toggle="tooltip" title=""
-                    data-original-title="Sources Description">
-                { "Processing Rate" }
+                    data-original-title={SnappyStructuredStreamingPage.tooltips("srcProcessingRate")}>
+                { SnappyStructuredStreamingPage.streamingStats("srcProcessingRate") }
               </span>
             </th>
           </tr>
@@ -134,27 +134,31 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
 
     <div id="querydetails">
       <div class="container-fluid details-section">
-        <div id="selectedQueryTitle">
-          Query Name:
+        <div id="selectedQueryTitle" data-toggle="tooltip" title=""
+             data-original-title={SnappyStructuredStreamingPage.tooltips("queryName")}>
+          { SnappyStructuredStreamingPage.streamingStats("queryName") }:
         </div>
         <div id="selectedQueryName"></div>
       </div>
       <div class="container-fluid details-section">
         <div class="basic-details">
           <div>
-            <div class="basic-details-title">
+            <div class="basic-details-title" data-toggle="tooltip" title=""
+                 data-original-title={SnappyStructuredStreamingPage.tooltips("startDateTime")}>
               { SnappyStructuredStreamingPage.streamingStats("startDateTime") }
             </div>
             <div id="startDateTime" class="basic-details-value">&nbsp;</div>
           </div>
           <div>
-            <div class="basic-details-title">
+            <div class="basic-details-title" data-toggle="tooltip" title=""
+                 data-original-title={SnappyStructuredStreamingPage.tooltips("uptime")}>
               { SnappyStructuredStreamingPage.streamingStats("uptime") }
             </div>
             <div id="uptime" class="basic-details-value">&nbsp;</div>
           </div>
           <div>
-            <div class="basic-details-title" style="width: 50%;">
+            <div class="basic-details-title" style="width: 50%;" data-toggle="tooltip" title=""
+                 data-original-title={SnappyStructuredStreamingPage.tooltips("batchesProcessed")}>
               { SnappyStructuredStreamingPage.streamingStats("batchesProcessed") }
             </div>
             <div id="numBatchesProcessed" class="basic-details-value">&nbsp;</div>
@@ -164,7 +168,8 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
       <div class="container-fluid details-section">
         <div class="stats-block" style="width: 14%;">
           <div>
-            <div class="stats-block-title">
+            <div class="stats-block-title" data-toggle="tooltip" title=""
+                 data-original-title={SnappyStructuredStreamingPage.tooltips("status")}>
               { SnappyStructuredStreamingPage.streamingStats("status") }
             </div>
             <div id="status" class="stats-block-value">&nbsp;</div>
@@ -172,7 +177,8 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
         </div>
         <div class="stats-block">
           <div>
-            <div class="stats-block-title">
+            <div class="stats-block-title" data-toggle="tooltip" title=""
+                 data-original-title={SnappyStructuredStreamingPage.tooltips("totalInputRows")}>
               { SnappyStructuredStreamingPage.streamingStats("totalInputRows") }
             </div>
             <div id="totalInputRows" class="stats-block-value">&nbsp;</div>
@@ -180,7 +186,8 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
         </div>
         <div class="stats-block">
           <div>
-            <div class="stats-block-title">
+            <div class="stats-block-title" data-toggle="tooltip" title=""
+                 data-original-title={SnappyStructuredStreamingPage.tooltips("currInputRowsPerSec")}>
               { SnappyStructuredStreamingPage.streamingStats("currInputRowsPerSec") }
             </div>
             <div id="currInputRowsPerSec" class="stats-block-value">&nbsp;</div>
@@ -188,7 +195,8 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
         </div>
         <div class="stats-block">
           <div>
-            <div class="stats-block-title">
+            <div class="stats-block-title" data-toggle="tooltip" title=""
+                 data-original-title={SnappyStructuredStreamingPage.tooltips("currProcessedRowsPerSec")}>
               { SnappyStructuredStreamingPage.streamingStats("currProcessedRowsPerSec") }
             </div>
             <div id="currProcessedRowsPerSec" class="stats-block-value">&nbsp;</div>
@@ -196,7 +204,8 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
         </div>
         <div class="stats-block">
           <div>
-            <div class="stats-block-title">
+            <div class="stats-block-title" data-toggle="tooltip" title=""
+                 data-original-title={SnappyStructuredStreamingPage.tooltips("totalProcessingTime")}>
               { SnappyStructuredStreamingPage.streamingStats("totalProcessingTime") }
             </div>
             <div id="totalProcessingTime" class="stats-block-value">&nbsp;</div>
@@ -204,7 +213,8 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
         </div>
         <div class="stats-block">
           <div>
-            <div class="stats-block-title">
+            <div class="stats-block-title" data-toggle="tooltip" title=""
+                 data-original-title={SnappyStructuredStreamingPage.tooltips("avgProcessingTime")}>
               { SnappyStructuredStreamingPage.streamingStats("avgProcessingTime") }
             </div>
             <div id="avgProcessingTime" class="stats-block-value">&nbsp;</div>
@@ -231,7 +241,8 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
       </div>
       <div class="container-fluid details-section">
         <div style="width: 5%;display: inline-block;border: 1px #8e8e8e solid;"></div>
-        <div style="width: 10%;display: inline-block;font-size: 20px;font-weight: bold;">
+        <div style="width: 10%;display: inline-block;font-size: 20px;font-weight: bold;" data-toggle="tooltip" title=""
+             data-original-title={SnappyStructuredStreamingPage.tooltips("sources")}>
           { SnappyStructuredStreamingPage.sourcesTitle }
         </div>
         <div style="width: 84%;display: inline-block;border: 1px #8e8e8e solid;"></div>
@@ -242,7 +253,8 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
       </div>
       <div class="container-fluid details-section">
         <div style="width: 5%;display: inline-block;border: 1px #8e8e8e solid;"></div>
-        <div style="width: 10%;display: inline-block;font-size: 20px;font-weight: bold;">
+        <div style="width: 10%;display: inline-block;font-size: 20px;font-weight: bold;" data-toggle="tooltip" title=""
+             data-original-title={SnappyStructuredStreamingPage.tooltips("sink")}>
           { SnappyStructuredStreamingPage.sinkTitle }
         </div>
         <div style="width: 84%;display: inline-block;border: 1px #8e8e8e solid;"></div>
@@ -257,6 +269,7 @@ object SnappyStructuredStreamingPage {
   val pageHeaderText = "Structured Streaming Queries"
 
   val streamingStats = scala.collection.mutable.HashMap.empty[String, Any]
+  streamingStats += ("queryName" -> "Query Name")
   streamingStats += ("startDateTime" -> "Start Date & Time")
   streamingStats += ("uptime" -> "Uptime")
   streamingStats += ("status" -> "Status")
@@ -266,6 +279,30 @@ object SnappyStructuredStreamingPage {
   streamingStats += ("currProcessedRowsPerSec" -> "Current Processing Rate")
   streamingStats += ("totalProcessingTime" -> "Total Batch Processing Time")
   streamingStats += ("avgProcessingTime" -> "Avg. Batch Processing Time")
+  streamingStats += ("srcDescription" -> "Description")
+  streamingStats += ("srcInputRecords" -> "Input Records")
+  streamingStats += ("srcInputRate" -> "Input Rate")
+  streamingStats += ("srcProcessingRate" -> "Processing Rate")
+
+  val tooltips = scala.collection.mutable.HashMap.empty[String, String]
+  tooltips += ("leftNavPanelTitle" -> "Streaming Query Names")
+  tooltips += ("queryName" -> "Streaming Query Name")
+  tooltips += ("startDateTime" -> "Date & time when streaming query started its execution")
+  tooltips += ("uptime" -> "Total time since streaming query started its execution")
+  tooltips += ("batchesProcessed" -> "Number of batches processed since execution its started")
+  tooltips += ("status" -> "Streaming query status (Active / Inactive)")
+  tooltips += ("totalInputRows" -> "Total number of input records received since execution started")
+  tooltips += ("currInputRowsPerSec" -> "Records / second received in current trigger interval")
+  tooltips += ("currProcessedRowsPerSec" -> "Records processed / second in current trigger interval")
+  tooltips += ("totalProcessingTime" -> "Total processing time of all batches received since execution is started")
+  tooltips += ("avgProcessingTime" -> "Average processing time per batch")
+  tooltips += ("sources" -> "Streaming queries sources")
+  tooltips += ("srcDescription" -> "Description of streaming query source")
+  tooltips += ("srcInputRecords" -> "Number of records received from source in current interval")
+  tooltips += ("srcInputRate" -> "Number of records / second received from source in current interval")
+  tooltips += ("srcProcessingRate" -> "Number of records processed / second in current interval")
+  tooltips += ("sink" -> "Streaming queries sink")
+  tooltips += ("snkDescription" -> "Description of streaming query sink")
 
   val googleChartsErrorMsg = "Error while loading charts. Please check your internet connection."
 
