@@ -30,6 +30,7 @@ import org.eclipse.collections.api.block.procedure.Procedure
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 
 import org.apache.spark.memory.MemoryManagerCallback.releaseExecutionMemory
+import org.apache.spark.sql.execution.BucketSetIterator
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry}
 import org.apache.spark.sql.store.CompressionUtils
@@ -39,7 +40,7 @@ import org.apache.spark.{Logging, TaskContext, TaskContextImpl, TaskKilledExcept
 abstract class ResultSetIterator[A](conn: Connection,
                                     stmt: Statement, rs: ResultSet, context: TaskContext,
                                     closeConnectionOnResultsClose: Boolean = true)
-  extends Iterator[A] with Logging {
+  extends Iterator[A] with Logging with BucketSetIterator {
 
   protected[this] final var doMove = true
 
@@ -124,7 +125,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   private var currentStats: ByteBuffer = _
   private var currentDeltaStats: ByteBuffer = _
   private var rsHasNext: Boolean = rs.next()
-
+  def getBucketSet(): java.util.Set[Integer] = java.util.Collections.singleton(getCurrentBucketId)
   def getCurrentBatchId: Long = currentUUID
 
   def getCurrentBucketId: Int = partitionId

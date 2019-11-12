@@ -29,13 +29,13 @@ import io.snappydata.collection.ObjectHashSet
 
 import org.apache.spark._
 import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.rdd.RDD
+import org.apache.spark.rdd.{RDD, ZippedPartitionsPartition}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, Expression, SortOrder}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.physical._
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.streaming.PhysicalDStreamPlan
@@ -336,31 +336,105 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       s"${classOf[RDD[_]].getName}[]")
     val buildParts = rdds.map(_.partitions)
     val partitionClass = classOf[Partition].getName
-    val buildPartsVar = ctx.addReferenceObj("buildParts", buildParts.toArray,
+    val indexVar = ctx.freshName("index")
+    val buildPartsArray = buildParts.toArray
+    val multiBucketPartitionClass = classOf[MultiBucketExecutorPartition].getName
+    val realPartitionIndex = ctx.freshName("realPartitionIndex")
+    val tempPartition = ctx.freshName("tempPartition")
+    val tempBool = ctx.freshName("tempBool")
+    val zippedPartitionsClass = classOf[ZippedPartitionsPartition].getName
+
+    def getBucketSet(p: Partition): java.util.Set[Integer] = {
+      p match {
+        case x: ZippedPartitionsPartition => x.partitions.map(getBucketSet(_)).find(!_.isEmpty).
+          getOrElse(java.util.Collections.emptySet[Integer]())
+        case x: MultiBucketExecutorPartition => val set = new java.util.HashSet[Integer]()
+          set.addAll(x.buckets)
+          set
+        case _ => java.util.Collections.emptySet[Integer]()
+      }
+    }
+    val realBucketSet = ctx.freshName("realBucketSet")
+
+    val bucketMappingsPerRDD = buildPartsArray.map(partitionsArray =>
+     partitionsArray.map(getBucketSet(_)))
+    val multiBucketFound = bucketMappingsPerRDD.exists(_.exists(!_.isEmpty))
+    val javaSetClass = classOf[java.util.Set[Integer]].getName
+    val realbuildPartitionCode = if (multiBucketFound) {
+      val boundData = bucketMappingsPerRDD.map(x => if (x.forall(_.isEmpty)) {
+        null
+      } else {
+        x
+      })
+      val bucketSetMapping = ctx.addReferenceObj("bucketSetMapping", boundData,
+        s"$javaSetClass[][]")
+      val getRealPartitionId = ctx.freshName("getRealPartitionId")
+      val paramRddIndex = ctx.freshName("paramRddIndex")
+      ctx.addNewFunction(getRealPartitionId,
+        s"""
+        public final int $getRealPartitionId(int $paramRddIndex, $javaSetClass realBucketSet, int pIndex) {
+          $javaSetClass[] buketsMapping = $bucketSetMapping[$paramRddIndex];
+          if (buketsMapping == null || realBucketSet == null || realBucketSet.isEmpty() ) {
+            return pIndex;
+          } else {
+           for (int j = 0; j < buketsMapping.length; ++j) {
+               if (buketsMapping[j].equals(realBucketSet)) {
+                 System.out.println ("actual bucket set = " + realBucketSet);
+                 System.out.println ("found bucket set at index j = " + buketsMapping[j]);
+                 System.out.println ("found real partition id = " +j);
+                 return j;
+               }
+            }
+            return pIndex;
+          }
+        }
+      """)
+      s"""
+         |$realPartitionIndex = $getRealPartitionId($indexVar,$realBucketSet , partitionIndex);
+       """.stripMargin
+    } else {
+      ""
+    }
+    println("Build Parts lenngth at compile time = " + buildPartsArray.length)
+
+    val buildPartsVar = ctx.addReferenceObj("buildParts", buildPartsArray,
       s"$partitionClass[][]")
     val allIterators = ctx.freshName("allIterators")
-    val indexVar = ctx.freshName("index")
+
     val contextName = ctx.freshName("context")
     val taskContextClass = classOf[TaskContext].getName
     ctx.addMutableState(taskContextClass, contextName,
       s"this.$contextName = $taskContextClass.get();")
 
-
+    val bucketSetIteratorClass = classOf[BucketSetIterator].getName
     // switch inputs to use the buildPlan RDD iterators
     ctx.addMutableState("scala.collection.Iterator[]", allIterators,
       s"""
          |$allIterators = inputs;
+         |$javaSetClass $realBucketSet = null;
+         |for(scala.collection.Iterator tempIter : $allIterators) {
+            if (tempIter instanceof $bucketSetIteratorClass) {
+              $realBucketSet = (($bucketSetIteratorClass)tempIter).getBucketSet();
+              break;
+            }
+
+         }
          |inputs = new scala.collection.Iterator[$buildRDDs.length];
+         |System.out.println("Number of buildside RDDS="+${buildRDDs}.length);
+         |System.out.println("Build Parts length="+${buildPartsVar}.length);
          |$taskContextClass $contextName = $taskContextClass.get();
          |for (int $indexVar = 0; $indexVar < $buildRDDs.length; $indexVar++) {
          |  $partitionClass[] parts = $buildPartsVar[$indexVar];
+         |
          |  // check for replicate table
          |  if (parts.length == 1) {
          |    inputs[$indexVar] = $buildRDDs[$indexVar].iterator(
          |      parts[0], $contextName);
          |  } else {
+         |    int $realPartitionIndex = partitionIndex;
+         |    $realbuildPartitionCode
          |    inputs[$indexVar] = $buildRDDs[$indexVar].iterator(
-         |      parts[partitionIndex], $contextName);
+         |      parts[$realPartitionIndex], $contextName);
          |  }
          |}
       """.stripMargin)

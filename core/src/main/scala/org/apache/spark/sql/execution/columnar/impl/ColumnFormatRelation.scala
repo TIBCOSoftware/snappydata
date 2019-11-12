@@ -17,7 +17,9 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, PreparedStatement}
+import java.util
 
+import scala.collection.AbstractIterator
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
@@ -35,7 +37,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, RefreshMetadata, SparkPlan}
+import org.apache.spark.sql.execution.{BucketSetIterator, ConnectionPool, PartitionedDataSourceScan, RefreshMetadata, SparkPlan}
 import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
@@ -145,7 +147,23 @@ abstract class BaseColumnFormatRelation(
     } else columns
     val zipped = buildRowBufferRDD(partitionEvaluator, rowBufferColumns, filters,
       useResultSet = true, projection).zipPartitions(rdd) { (leftItr, rightItr) =>
-      Iterator[Any](leftItr, rightItr)
+      val x = Iterator[Any](leftItr, rightItr)
+      val bucketSet = (leftItr, rightItr) match {
+        case (x: BucketSetIterator, _) => x.getBucketSet()
+        case (_, x: BucketSetIterator) => x.getBucketSet()
+        case _ => java.util.Collections.emptySet[Integer]()
+      }
+      if (x.isEmpty) {
+        x
+      } else {
+        new AbstractIterator[Any] with BucketSetIterator {
+          override def getBucketSet(): util.Set[Integer] = bucketSet
+
+          override def hasNext: Boolean = x.hasNext
+
+          override def next(): Any = x.next()
+        }
+      }
     }
     (zipped, Nil)
   }
