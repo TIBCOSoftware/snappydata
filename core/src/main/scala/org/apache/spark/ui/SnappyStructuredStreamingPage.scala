@@ -48,7 +48,13 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
     val pageHeaderText: String = SnappyStructuredStreamingPage.pageHeaderText
 
     val mainContent = {
-      createMainContent
+      val connErrorMsgNode = {
+        <div id="AutoUpdateErrorMsgContainer">
+          <div id="AutoUpdateErrorMsg">
+          </div>
+        </div>
+      }
+      connErrorMsgNode ++ createMainContent
     }
 
     val pageContent = commonHeaderNodesSnappy ++ mainContent
