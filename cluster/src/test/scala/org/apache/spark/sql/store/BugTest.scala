@@ -1498,7 +1498,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     assertTrue(rs1.zip(rs2).forall(tup => tup._1.equals(tup._2)))
   }
 
-  test("Bug SNAP-3215 non colocated tables equi join should not use local HashJoinExec") {
+  test("Bug SNAP-3215") {
     snc.sql("CREATE SCHEMA IF NOT EXISTS xy")
     snc.sql("DROP TABLE IF EXISTS xy.ORDERS")
     snc.sql("CREATE TABLE xy.ORDERS(O_ORDERKEY INTEGER NOT NULL," +
@@ -1534,7 +1534,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     val results1 = snc1.sql(q)
     assertTrue(results1.queryExecution.executedPlan.collectFirst {
       case x: HashJoinExec => x
-    }.isEmpty)
+    }.isDefined)
     val rs1 = results1.collect().sortWith(sorter)
 
     val snc2 = snc.newSession()

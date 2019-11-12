@@ -293,7 +293,7 @@ private[sql] trait SnappyStrategies {
       val (rightCols, rightKeyOrder, rightNumPartitions) = getCompatiblePartitioning(
         rightPlan, rightKeys)
       if (leftKeyOrder.nonEmpty && leftNumPartitions == rightNumPartitions &&
-          leftKeyOrder == rightKeyOrder && isColocated(leftPlan, rightPlan)) {
+          leftKeyOrder == rightKeyOrder /* && isColocated(leftPlan, rightPlan) */) {
         (leftCols, leftKeyOrder, leftNumPartitions)
       } else if (leftNumPartitions == 1) {
         // replicate table is always collocated (used by recursive call for Join)
