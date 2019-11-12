@@ -16,6 +16,28 @@
  */
 package org.apache.spark.sql.execution
 
-trait BucketSetIterator {
+import java.util
+
+import scala.collection.AbstractIterator
+
+trait BucketsBasedIterator {
   def getBucketSet(): java.util.Set[Integer]
+}
+
+object BucketsBasedIterator {
+  def apply[T](iterators : Iterator[T]*): Iterator[Any] = {
+    val bucketsOpt = iterators.collectFirst {
+      case bucketBased: BucketsBasedIterator => bucketBased.getBucketSet()
+    }
+    val combinedIter = Iterator[Iterator[T]](iterators: _*)
+    bucketsOpt.map(bukets =>
+      new AbstractIterator[Iterator[T]] with BucketsBasedIterator {
+        val buckets = bukets
+        val iter = combinedIter
+        override def getBucketSet(): util.Set[Integer] = buckets
+        override def hasNext: Boolean = iter.hasNext
+        override def next(): Iterator[T] = iter.next()
+      }
+    ).getOrElse(combinedIter)
+  }
 }

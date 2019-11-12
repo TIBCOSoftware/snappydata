@@ -43,7 +43,7 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, Utils}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
-import org.apache.spark.sql.execution.{BucketSetIterator, RDDKryo, SecurityUtils}
+import org.apache.spark.sql.execution.{BucketsBasedIterator, RDDKryo, SecurityUtils}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.{Partition, TaskContext, TaskContextImpl, TaskKilledException}
@@ -465,7 +465,7 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 
 abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalRegion,
     bucketIds: java.util.Set[Integer], context: TaskContext) extends Iterator[T]
-with BucketSetIterator {
+with BucketsBasedIterator {
 
   def getBucketSet(): java.util.Set[Integer] = this.bucketIds
   protected type PRIterator = PartitionedRegion#PRLocalScanIterator

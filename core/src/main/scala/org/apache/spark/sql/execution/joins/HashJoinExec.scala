@@ -348,40 +348,33 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       p match {
         case x: ZippedPartitionsPartition => x.partitions.map(getBucketSet(_)).find(!_.isEmpty).
           getOrElse(java.util.Collections.emptySet[Integer]())
-        case x: MultiBucketExecutorPartition => val set = new java.util.HashSet[Integer]()
-          set.addAll(x.buckets)
-          set
+        case x: MultiBucketExecutorPartition => new java.util.HashSet[Integer](x.buckets)
         case _ => java.util.Collections.emptySet[Integer]()
       }
     }
     val realBucketSet = ctx.freshName("realBucketSet")
 
-    val bucketMappingsPerRDD = buildPartsArray.map(partitionsArray =>
-     partitionsArray.map(getBucketSet(_)))
-    val multiBucketFound = bucketMappingsPerRDD.exists(_.exists(!_.isEmpty))
+    val bucketMappingsPerRDD = buildPartsArray.map(partitionsArray => {
+     val arr = partitionsArray.map(getBucketSet(_))
+     if (arr.forall(_.isEmpty)) null else arr
+    })
+    val multiBucketFound = bucketMappingsPerRDD.exists(_ ne null)
     val javaSetClass = classOf[java.util.Set[Integer]].getName
     val realbuildPartitionCode = if (multiBucketFound) {
-      val boundData = bucketMappingsPerRDD.map(x => if (x.forall(_.isEmpty)) {
-        null
-      } else {
-        x
-      })
-      val bucketSetMapping = ctx.addReferenceObj("bucketSetMapping", boundData,
+      val bucketSetMapping = ctx.addReferenceObj("bucketSetMapping", bucketMappingsPerRDD,
         s"$javaSetClass[][]")
       val getRealPartitionId = ctx.freshName("getRealPartitionId")
       val paramRddIndex = ctx.freshName("paramRddIndex")
       ctx.addNewFunction(getRealPartitionId,
         s"""
-        public final int $getRealPartitionId(int $paramRddIndex, $javaSetClass realBucketSet, int pIndex) {
+        public final int $getRealPartitionId(int $paramRddIndex, $javaSetClass realBucketSet,
+         int pIndex) {
           $javaSetClass[] buketsMapping = $bucketSetMapping[$paramRddIndex];
-          if (buketsMapping == null || realBucketSet == null || realBucketSet.isEmpty() ) {
+          if (buketsMapping == null || realBucketSet == null || realBucketSet.isEmpty()) {
             return pIndex;
           } else {
            for (int j = 0; j < buketsMapping.length; ++j) {
                if (buketsMapping[j].equals(realBucketSet)) {
-                 System.out.println ("actual bucket set = " + realBucketSet);
-                 System.out.println ("found bucket set at index j = " + buketsMapping[j]);
-                 System.out.println ("found real partition id = " +j);
                  return j;
                }
             }
@@ -395,7 +388,6 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     } else {
       ""
     }
-    println("Build Parts lenngth at compile time = " + buildPartsArray.length)
 
     val buildPartsVar = ctx.addReferenceObj("buildParts", buildPartsArray,
       s"$partitionClass[][]")
@@ -406,22 +398,21 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     ctx.addMutableState(taskContextClass, contextName,
       s"this.$contextName = $taskContextClass.get();")
 
-    val bucketSetIteratorClass = classOf[BucketSetIterator].getName
+    val bucketSetIteratorClass = classOf[BucketsBasedIterator].getName
     // switch inputs to use the buildPlan RDD iterators
     ctx.addMutableState("scala.collection.Iterator[]", allIterators,
       s"""
          |$allIterators = inputs;
          |$javaSetClass $realBucketSet = null;
          |for(scala.collection.Iterator tempIter : $allIterators) {
-            if (tempIter instanceof $bucketSetIteratorClass) {
-              $realBucketSet = (($bucketSetIteratorClass)tempIter).getBucketSet();
-              break;
-            }
-
-         }
+            |if (tempIter instanceof $bucketSetIteratorClass) {
+              |$realBucketSet = (($bucketSetIteratorClass)tempIter).getBucketSet();
+              |if (!($realBucketSet == null || $realBucketSet.isEmpty())) {
+                |break;
+              |}
+            |}
+         |}
          |inputs = new scala.collection.Iterator[$buildRDDs.length];
-         |System.out.println("Number of buildside RDDS="+${buildRDDs}.length);
-         |System.out.println("Build Parts length="+${buildPartsVar}.length);
          |$taskContextClass $contextName = $taskContextClass.get();
          |for (int $indexVar = 0; $indexVar < $buildRDDs.length; $indexVar++) {
          |  $partitionClass[] parts = $buildPartsVar[$indexVar];
