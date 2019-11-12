@@ -519,7 +519,7 @@ class ColumnFormatRelation(
       _relationInfo) with BulkPutRelation {
 
   val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
-
+  def getColocatedTable: Option[String] = tableOptions.get(StoreUtils.COLOCATE_WITH)
   override def withKeyColumns(relation: LogicalRelation,
       keyColumns: Seq[String]): LogicalRelation = {
     // keyColumns should match the key fields required for update/delete
@@ -700,7 +700,7 @@ class IndexColumnFormatRelation(
       _relationInfo) {
 
   def baseTable: Option[String] = Some(baseTableName)
-
+  def getColocatedTable: Option[String] = None
   override def withKeyColumns(relation: LogicalRelation,
       keyColumns: Seq[String]): LogicalRelation = {
     val cr = relation.relation.asInstanceOf[IndexColumnFormatRelation]
