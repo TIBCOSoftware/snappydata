@@ -1,10 +1,9 @@
 io/snappydata/hydra/udfs/udf.conf
-  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
   udfJarPath="$GEMFIRE/../../../dtests/src/resources/lib/udf.jar"
-  //dataFilesLocation="/home/cbhatt/SNAP-2658"
   numRowsValidation = true
   fullResultSetValidation = true
   isSmokeRun = false

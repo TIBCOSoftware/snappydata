@@ -3,8 +3,7 @@ io/snappydata/hydra/udafs/udaf.conf
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
-  //dataFilesLocation="/home/cbhatt/SNAP-2658"
-   numRowsValidation = true
+  numRowsValidation = true
   fullResultSetValidation = true
   isSmokeRun = false
 
@@ -14,7 +13,6 @@ io/snappydata/hydra/udafs/smartConnectorUDAF.conf
    B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
    C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
    D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
-   //dataFilesLocation="/home/cbhatt/SNAP-2658"
    numRowsValidation = true
    fullResultSetValidation = true
    isSmokeRun = false
