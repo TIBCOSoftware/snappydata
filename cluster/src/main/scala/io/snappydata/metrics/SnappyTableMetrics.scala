@@ -51,5 +51,4 @@ object SnappyTableMetrics {
       externalTableStats.getDataSourcePath.asInstanceOf[AnyVal])
     createGauge(s"$namespace.tableType", externalTableStats.getTableType.asInstanceOf[AnyVal])
   }
-
 }

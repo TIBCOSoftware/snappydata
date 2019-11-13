@@ -43,9 +43,9 @@ object SnappyMetricsClass {
     // store every member diskStore ID to metadataCmdRgn
     putMembersDiskStoreIdInRegion()
 
-    val memberEntries = region.getAll(region.keySet())
+    val allMetaEntries = region.getAll(region.keySet())
 
-    val timeInterval = 1000
+    val timeInterval = 5000
 
     // concurrently executing threads to get stats from StatsProviderServices
     val runnable = new Runnable {
@@ -68,7 +68,7 @@ object SnappyMetricsClass {
 
             // get member stats and publish into metrics system
             val memberBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
-            setMetricsForMemberStatDetails(memberBuff, memberEntries)
+            setMetricsForMemberStatDetails(memberBuff, allMetaEntries)
           }
           catch {
             case e: InterruptedException => e.printStackTrace()
@@ -103,8 +103,6 @@ object SnappyMetricsClass {
   def setMetricsForClusterStatDetails(): Unit = {
     val csInstance = ClusterStatistics.getInstance()
     createGauge("ClusterMetrics.totalCores", csInstance.getTotalCPUCores)
-    updateHistogram("ClusterMetrics.timeLineTrend",
-      csInstance.getUsageTrends(ClusterStatistics.TREND_TIMELINE).toList)
     updateHistogram("ClusterMetrics.cpuUsageTrend",
       csInstance.getUsageTrends(ClusterStatistics.TREND_CPU_USAGE).toList)
     updateHistogram("ClusterMetrics.jvmUsageTrend",
@@ -161,7 +159,7 @@ object SnappyMetricsClass {
   }
 
   def setMetricsForExternalTableStatDetails(externalTableBuff:
-                                            Map[String, SnappyExternalTableStats]): Unit = {
+       Map[String, SnappyExternalTableStats]): Unit = {
     var externalTablesCount = 0
     externalTableBuff.values.foreach(v => {
       if (v.getTableType == "EXTERNAL") {
@@ -176,7 +174,7 @@ object SnappyMetricsClass {
   }
 
   def setMetricsForMemberStatDetails(membersBuff: mutable.Map[String, MemberStatistics],
-                                     memberEntries: util.Map[String, String]) {
+       allMetaEntries: util.Map[String, String]) {
 
     var leadCount, locatorCount, dataServerCount, connectorCount, totalMembersCount = 0
 
@@ -201,7 +199,7 @@ object SnappyMetricsClass {
     createGauge(s"MemberMetrics.connectorCount", connectorCount)
 
     for ((k, v) <- membersBuff) {
-      SnappyMemberMetrics.convertStatsToMetrics(k, v, memberEntries)
+      SnappyMemberMetrics.convertStatsToMetrics(k, v, allMetaEntries)
     }
   }
 }
