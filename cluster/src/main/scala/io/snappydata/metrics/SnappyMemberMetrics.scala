@@ -26,11 +26,11 @@ import java.util
 object SnappyMemberMetrics {
 
   def convertStatsToMetrics(member: String, memberDetails: MemberStatistics,
-                            memberEntries: util.Map[String, String]) {
+       allMetaEntries: util.Map[String, String]) {
     val shortDirName = memberDetails.getUserDir.substring(
       memberDetails.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
 
-    val memberUuid = memberEntries.get("__" + shortDirName + member + "__").toString
+    val memberUuid = allMetaEntries.get("__" + shortDirName + member + "__").toString
 
     val pId = memberDetails.getProcessId
 
@@ -92,8 +92,6 @@ object SnappyMemberMetrics {
     createGauge(s"$namespace.offHeapMemorySize", memberDetails.getOffHeapMemorySize)
     createGauge(s"$namespace.offHeapMemoryUsed", memberDetails.getOffHeapMemoryUsed)
     createGauge(s"$namespace.diskStoreDiskSpace", memberDetails.getDiskStoreDiskSpace)
-    updateHistogram(s"$namespace.timeLineTrend",
-      memberDetails.getUsageTrends(MemberStatistics.TREND_TIMELINE).toList)
     updateHistogram(s"$namespace.cpuUsageTrend",
       memberDetails.getUsageTrends(MemberStatistics.TREND_CPU_USAGE).toList)
     updateHistogram(s"$namespace.jvmUsageTrend",
