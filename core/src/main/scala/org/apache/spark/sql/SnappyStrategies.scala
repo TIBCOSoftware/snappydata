@@ -228,6 +228,26 @@ private[sql] trait SnappyStrategies {
         rightPlan: LogicalPlan, rightKeys: Seq[Expression],
         checkBroadcastJoin: Boolean): (Seq[NamedExpression], Seq[Int], Int) = {
 
+      def isColocated(left: LogicalPlan, right: LogicalPlan): Boolean = {
+        val leftPds = left match {
+          case PhysicalScan(_, _, LogicalRelation(scan: PartitionedDataSourceScan, _, _)) =>
+            Some(scan)
+          case _ => None
+        }
+
+        val rightPds = right match {
+          case PhysicalScan(_, _, LogicalRelation(scan: PartitionedDataSourceScan, _, _)) =>
+            Some(scan)
+          case _ => None
+        }
+        leftPds.isEmpty || rightPds.isEmpty ||
+          leftPds.get.getColocatedTable.map(_.equalsIgnoreCase(rightPds.get.table)).
+            getOrElse(false) || rightPds.get.getColocatedTable.
+          map(_.equalsIgnoreCase(leftPds.get.table)).getOrElse(false) ||
+          leftPds.get.table.equalsIgnoreCase(rightPds.get.table)
+
+      }
+
       def getCompatiblePartitioning(plan: LogicalPlan,
           joinKeys: Seq[Expression]): (Seq[NamedExpression], Seq[Int], Int) = plan match {
         case PhysicalScan(_, _, child) => child match {
@@ -273,7 +293,7 @@ private[sql] trait SnappyStrategies {
       val (rightCols, rightKeyOrder, rightNumPartitions) = getCompatiblePartitioning(
         rightPlan, rightKeys)
       if (leftKeyOrder.nonEmpty && leftNumPartitions == rightNumPartitions &&
-          leftKeyOrder == rightKeyOrder) {
+          leftKeyOrder == rightKeyOrder /* && isColocated(leftPlan, rightPlan) */) {
         (leftCols, leftKeyOrder, leftNumPartitions)
       } else if (leftNumPartitions == 1) {
         // replicate table is always collocated (used by recursive call for Join)
