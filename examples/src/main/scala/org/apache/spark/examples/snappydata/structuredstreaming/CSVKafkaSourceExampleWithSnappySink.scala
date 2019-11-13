@@ -96,7 +96,7 @@ object CSVKafkaSourceExampleWithSnappySink extends Logging {
       val structDF = df.select("key", "value").as[(String, String)].map(s => {
         // Note: this split won't handle CSV containing comma character as part of quotes values.
         val fields = s._2.split(",")
-        People(fields(0), fields(1).toInt, fields(2), fields(3), s._1)
+        Person(fields(0), fields(1).toInt, fields(2), fields(3), s._1)
       })
 
       val streamingQuery = structDF
@@ -122,6 +122,6 @@ object CSVKafkaSourceExampleWithSnappySink extends Logging {
     println("Exiting")
     System.exit(0)
   }
-  case class People(name: String, age : Int, city : String, state : String, country : String)
+  case class Person(name: String, age : Int, city : String, state : String, country : String)
 }
 
