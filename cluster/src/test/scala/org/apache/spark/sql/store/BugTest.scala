@@ -1037,28 +1037,28 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       " from samples as s1, samples as s2 where s1.timestamp = s2.timestamp" +
       " and s1.channel = 'vCar' and s2.channel = 'NGears'" +
       "  ")
-    rs.show()
+    // rs.show()
     rs.collect().foreach(row => assertTrue(row.getDouble(1) != row.getDouble(2)))
 
     rs = sncToUse.sql("select s1.timestamp, s1.sample as vCar, s2.sample as NGears" +
       " from samples as s1, samples as s2 where s1.timestamp = s2.timestamp" +
       " and s1.channel = 'vCar' and s2.channel = 'NGears'" +
       "  ")
-    rs.show()
+    // rs.show()
     rs.collect().foreach(row => assertTrue(row.getDouble(1) != row.getDouble(2)))
 
     rs = sncToUse.sql("select s1.timestamp, s1.sample as vCar, s2.sample as NGears" +
       " from samples as s1, samples as s2 where s1.timestamp = s2.timestamp" +
       " and s1.channel = 'vCar' and s2.channel = 'NGears'" +
       " order by s1.timestamp asc limit 10")
-    rs.show()
+    // rs.show()
     rs.collect().foreach(row => assertTrue(row.getDouble(1) != row.getDouble(2)))
 
     rs = sncToUse.sql("select s1.timestamp, s1.sample as vCar, s2.sample as NGears" +
       " from samples as s1, samples as s2 where s1.timestamp = s2.timestamp" +
       " and s1.channel = 'vCar' and s2.channel = 'NGears'" +
       " order by s1.timestamp asc limit 10")
-    rs.show()
+    // rs.show()
     rs.collect().foreach(row => assertTrue(row.getDouble(1) != row.getDouble(2)))
 
     var serverHostPort2 = TestUtil.startNetServer()
@@ -1417,16 +1417,19 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     }.isDefined)
     val rs1 = results1.collect().sortWith(sorter)
 
-       val snc2 = snc.newSession()
-       snc2.setConf("snappydata.sql.disableHashJoin", "true")
-       val results2 = snc2.sql(q)
+    val snc2 = snc.newSession()
+    snc2.setConf("snappydata.sql.disableHashJoin", "true")
+    val results2 = snc2.sql(q)
     assertTrue(results2.queryExecution.executedPlan.collectFirst {
       case x: HashJoinExec => x
     }.isEmpty)
-       val rs2 = results2.collect().sortWith(sorter)
+    val rs2 = results2.collect().sortWith(sorter)
 
-       assertEquals(rs1.length, rs2.length)
-       assertTrue(rs1.zip(rs2).forall(tup => tup._1.equals(tup._2)))
+    assertEquals(rs1.length, rs2.length)
+    assertTrue(rs1.zip(rs2).forall(tup => tup._1.equals(tup._2)))
+    snc.dropTable("xy.customer", true)
+    snc.dropTable("xy.orders", true)
+    snc.sql("drop schema xy")
   }
 
   test("Bug SNAP-3215 Left join yields wrong result with filter condition") {
@@ -1496,6 +1499,9 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     assertEquals(rs1.length, rs2.length)
     assertTrue(rs1.zip(rs2).forall(tup => tup._1.equals(tup._2)))
+    snc.dropTable("xy.customer", true)
+    snc.dropTable("xy.orders", true)
+    snc.sql("drop schema xy")
   }
 
   test("Bug SNAP-3215") {
@@ -1547,6 +1553,9 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     assertEquals(rs1.length, rs2.length)
     assertTrue(rs1.zip(rs2).forall(tup => tup._1.equals(tup._2)))
+    snc.dropTable("xy.customer", true)
+    snc.dropTable("xy.orders", true)
+    snc.sql("drop schema xy")
   }
 
 }
