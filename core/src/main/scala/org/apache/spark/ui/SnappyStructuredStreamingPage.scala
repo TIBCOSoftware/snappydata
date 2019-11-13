@@ -129,6 +129,24 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
     </div>
 
   }
+  private def createSinkTable: Seq[Node] = {
+
+    <div style="width:100%;">
+      <div style="width: 10%; float: left; line-height: 30px; height: 100%;">
+        <div style="padding: 0px 5px; font-weight: bold; font-size: medium;">
+          { SnappyStructuredStreamingPage.streamingStats("snkType") }
+        </div>
+        <div id="sinkType" style="padding: 0px 5px; text-align: center; font-size: medium;">&nbsp;</div>
+      </div>
+      <div style="height: 100%; width: 88%; float: left; font-size: medium; line-height: 30px; border-left: 2px solid #b0b0b0;">
+        <div style="padding: 0px 5px 0px 15px; float: left; font-weight: bold; font-size: medium;">
+          { SnappyStructuredStreamingPage.streamingStats("snkDescription") }
+        </div>
+        <div id="sinkDescription" style="float: left; padding: 0px 15px; text-align: left;">&nbsp;</div>
+      </div>
+    </div>
+
+  }
 
   private def createQueryDetailsPanel: Seq[Node] = {
     <div class="right-details-panel">
@@ -266,7 +284,9 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
         <div style="width: 84%;display: inline-block;border: 1px #8e8e8e solid;"></div>
       </div>
       <div id="sinkDetailsContainer" class="container-fluid details-section"
-           style="/*height: 100px;*/ border: 1px solid grey; padding: 10px; margin: 10px;">&nbsp;</div>
+           style="/*height: 100px;*/ border: 1px solid grey; padding: 10px; margin: 10px;">
+        { createSinkTable }
+      </div>
     </div>
   }
 }
@@ -289,6 +309,8 @@ object SnappyStructuredStreamingPage {
   streamingStats += ("srcInputRecords" -> "Input Records")
   streamingStats += ("srcInputRate" -> "Input Rate")
   streamingStats += ("srcProcessingRate" -> "Processing Rate")
+  streamingStats += ("snkType" -> "Type")
+  streamingStats += ("snkDescription" -> "Description")
 
   val tooltips = scala.collection.mutable.HashMap.empty[String, String]
   tooltips += ("leftNavPanelTitle" -> "Streaming Query Names")
