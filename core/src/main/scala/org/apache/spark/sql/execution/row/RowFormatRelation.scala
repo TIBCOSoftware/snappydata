@@ -37,7 +37,7 @@ import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.CodeGeneration
+import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 
 /**
  * A LogicalPlan implementation for an Snappy row table whose contents
@@ -62,7 +62,7 @@ class RowFormatRelation(
     with RowPutRelation {
 
   override def toString: String = s"RowFormatRelation[${Utils.toLowerCase(table)}]"
-
+  def getColocatedTable: Option[String] = origOptions.get(StoreUtils.COLOCATE_WITH)
   override val connectionType: ConnectionType.Value =
     ExternalStoreUtils.getConnectionType(dialect)
 
