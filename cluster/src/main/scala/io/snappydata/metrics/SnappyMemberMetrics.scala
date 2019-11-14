@@ -23,6 +23,8 @@ import io.snappydata.metrics.SnappyMetricsClass.{createGauge, updateHistogram}
 import com.pivotal.gemfirexd.internal.engine.ui.MemberStatistics
 import java.util
 
+import io.snappydata.Constant
+
 object SnappyMemberMetrics {
 
   def convertStatsToMetrics(member: String, memberDetails: MemberStatistics,
@@ -30,7 +32,8 @@ object SnappyMemberMetrics {
     val shortDirName = memberDetails.getUserDir.substring(
       memberDetails.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
 
-    val memberUuid = allMetaEntries.get("__" + shortDirName + member + "__").toString
+    val memberUuid = allMetaEntries.
+        get(Constant.MEMBER_ID_PREFIX + shortDirName + member + "__").toString
 
     val pId = memberDetails.getProcessId
 

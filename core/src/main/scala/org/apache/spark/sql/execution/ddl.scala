@@ -24,16 +24,14 @@ import java.util.Map.Entry
 import java.util.function.Consumer
 
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.iapi.reference.{Property => GemXDProperty}
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.Property
+import io.snappydata.{Constant, Property}
 import io.snappydata.util.ServiceUtils
-
 import org.apache.spark.SparkContext
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql._
@@ -561,7 +559,8 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
     val rows = new ArrayBuffer[Row]
     commands.forEach(new Consumer[Entry[String, String]] {
       override def accept(t: Entry[String, String]): Unit = {
-        if (!t.getKey.startsWith("__")) {
+        if (!(t.getKey.equals(Constant.CLUSTER_ID) ||
+            t.getKey.startsWith(Constant.MEMBER_ID_PREFIX))) {
           var alias = t.getKey
           // Skip dropped functions entry
           if (alias.contains(ContextJarUtils.droppedFunctionsKey)) return
