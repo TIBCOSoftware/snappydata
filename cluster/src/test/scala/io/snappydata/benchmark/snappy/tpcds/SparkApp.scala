@@ -179,7 +179,7 @@ object SparkApp {
 
       }
       catch {
-        case e: Exception => println(s"Failed $name  " + e.printStackTrace())
+        case e: Exception => println(s"Failed query $name  " + e.printStackTrace())
       }
     }
 
@@ -198,7 +198,7 @@ object SparkApp {
 
     // scalastyle:off println
     println("-----------------------------------------------")
-    println(s"Table Created...$tableName with $count rows")
+    println(s"Table $tableName created with $count rows")
     println("-----------------------------------------------")
   }
 
