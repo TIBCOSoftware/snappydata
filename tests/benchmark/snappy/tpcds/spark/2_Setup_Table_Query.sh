@@ -13,15 +13,7 @@ echo "******************Created conf/slaves******************"
 ssh $master bash $SnappyData/sbin/start-all.sh
 
 #Execute Spark App
-echo "\$SnappyData/bin/spark-submit \
-	--master spark://\$master:7077 \
-	--class io.snappydata.benchmark.snappy.tpcds.SparkApp \
-	\$appJar \$sparkSqlProperties \$dataDir \$queries \$queryPath \$buckets_ColumnTable \$ResultCollection \$WarmupRuns \$AverageRuns "
-
 bash $SnappyData/bin/spark-submit \
 --master spark://$master:7077 \
 --class io.snappydata.benchmark.snappy.tpcds.SparkApp \
-$appJar $sparkSqlProperties $dataDir $queries $queryPath $buckets_ColumnTable $ResultCollection $WarmupRuns $AverageRuns
-
-
-
+$appJar $sparkSqlProperties $dataDir $queries $queryPath $buckets_ColumnTable $ResultCollection $WarmupRuns $AverageRuns $cacheTables
