@@ -57,79 +57,94 @@ object TableCreationJob extends SnappySQLJob{
       //val cnt = df.collect().length;
       val cnt = df.count();
       // scalastyle:off println
+      val rowCount = snSession.sql(s"SELECT COUNT(*) FROM $tableName").first().getInt(0)
       println("-----------------------------------------------")
-      println(s"Table Created...$tableName with rows $cnt")
+      println(s"Table $tableName with $rowCount rows created from " +
+          s"file $dataLocation/$tableName with $cnt rows")
 
       println("-----------------------------------------------")
     }
 
+    var partitionBy : String = ""
 
-    //var props = Map(("PARTITION_BY" -> "cr_order_number"), ("BUCKETS" -> buckets_ColumnTable))
-    var props = Map(("PARTITION_BY" -> "cr_returned_date_sk"), ("BUCKETS" -> buckets_ColumnTable))
+    // partitionBy = "cr_order_number"
+    partitionBy = "cr_returned_date_sk"
+    var props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable))
     var tableName = "catalog_returns"
-    createColumnPartitionedTables(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName)
 
-    //props = Map(("PARTITION_BY" -> "cs_order_number"), ("BUCKETS" -> buckets_ColumnTable)),
-    props = Map(("PARTITION_BY" -> "cs_sold_date_sk"), ("BUCKETS" -> buckets_ColumnTable),
+    // partitionBy = "cs_order_number"
+    partitionBy = "cs_sold_date_sk"
+    props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable),
       ("COLOCATE_WITH" -> "CATALOG_RETURNS"))
     tableName = "catalog_sales"
-    createColumnPartitionedTables(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName)
 
-    //props = Map(("PARTITION_BY" -> "wr_order_number"), ("BUCKETS" -> buckets_ColumnTable)),
-    props = Map(("PARTITION_BY" -> "wr_returned_date_sk"), ("BUCKETS" -> buckets_ColumnTable),
+    // partitionBy = "wr_order_number"
+    partitionBy = "wr_returned_date_sk"
+    props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable),
       ("COLOCATE_WITH" -> "CATALOG_SALES"))
     tableName = "web_returns"
-    createColumnPartitionedTables(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName)
 
-    //props = Map(("PARTITION_BY" -> "ws_order_number"), ("BUCKETS" -> buckets_ColumnTable)),
-    props = Map(("PARTITION_BY" -> "ws_sold_date_sk"), ("BUCKETS" -> buckets_ColumnTable),
+    // partitionBy = "ws_order_number"
+    partitionBy = "ws_sold_date_sk"
+    props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable),
       ("COLOCATE_WITH" -> "WEB_RETURNS"))
     tableName = "web_sales"
-    createColumnPartitionedTables(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName)
 
-
-    props = Map(("PARTITION_BY" -> "inv_item_sk"), ("BUCKETS" -> buckets_ColumnTable))
+    partitionBy = "inv_item_sk"
+    props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable))
     tableName = "inventory"
-    createColumnPartitionedTables(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName)
 
-    props = Map(("PARTITION_BY" -> "sr_item_sk"), ("BUCKETS" -> buckets_ColumnTable),
+    partitionBy = "sr_item_sk"
+    props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable),
       ("COLOCATE_WITH" -> "INVENTORY"))
     tableName = "store_returns"
-    createColumnPartitionedTables(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName)
 
-    props = Map(("PARTITION_BY" -> "ss_item_sk"), ("BUCKETS" -> buckets_ColumnTable),
+    partitionBy = "ss_item_sk"
+    props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable),
       ("COLOCATE_WITH" -> "STORE_RETURNS"))
     tableName = "store_sales"
-    createColumnPartitionedTables(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName)
 
-
-    props = Map(("PARTITION_BY" -> "c_customer_sk"), ("BUCKETS" -> buckets_ColumnTable))
+    partitionBy = "c_customer_sk"
+    props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable))
     tableName = "customer"
-    createColumnPartitionedTables(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName)
 
-    props = Map(("PARTITION_BY" -> "ca_address_sk"), ("BUCKETS" -> buckets_ColumnTable))
+    partitionBy = "ca_address_sk"
+    props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable))
     tableName = "customer_address"
-    createColumnPartitionedTables(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName)
 
-    val avgFileStream: FileOutputStream = new FileOutputStream(
-      new File(s"Snappy_Average.out"))
-    val avgPrintStream: PrintStream = new PrintStream(avgFileStream)
+    // cleanup
+    loadPerfPrintStream.flush()
+    loadPerfFileStream.flush()
+    loadPerfFileStream.close()
+    loadPerfFileStream.close()
 
   }
 
-  def createColumnPartitionedTables(snappy: SnappySession,
-      props: Map[String, String] , tableName: String): Unit = {
+  def createColumnPartitionedTable(snappy: SnappySession,
+                                   props: Map[String, String], tableName: String): Unit = {
 
     val df = snappy.read.parquet(s"$dataLocation/$tableName")
     snappy.dropTable(tableName, ifExists = true)
     snappy.createTable(tableName, "column",
       new StructType(df.schema.map(_.copy(nullable = false)).toArray), props)
     df.write.insertInto(tableName)
-    //val cnt = df.collect().length
+    // val cnt = df.collect().length
+    // collect().length takes a very long time to run and may cause memory pressure
     val cnt = df.count()
     // scalastyle:off println
+    val rowCount = snappy.sql(s"SELECT COUNT(*) FROM $tableName").first().getInt(0)
     println("-----------------------------------------------")
-    println(s"Table Created...$tableName with rows $cnt")
+    println(s"Table $tableName with $rowCount rows created from " +
+        s"file $dataLocation/$tableName with $cnt rows")
     println("-----------------------------------------------")
   }
 

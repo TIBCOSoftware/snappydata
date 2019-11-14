@@ -6,4 +6,5 @@ source PerfRun.conf
 cp PerfRun.conf $leadDir
 
 echo "******************start Creating Table******************"
-. $SnappyData/bin/snappy-job.sh submit --lead $leads:8090 --app-name TableCreation --class io.snappydata.benchmark.snappy.tpcds.TableCreationJob --app-jar $appJar --conf sparkSqlProps=$sparkSqlProps --conf dataDir=$dataDir --conf Buckets_ColumnTable=$buckets_ColumnTable
+#. $SnappyData/bin/snappy-job.sh submit --lead $leads:8090 --app-name TableCreation --class io.snappydata.benchmark.snappy.tpcds.TableCreationJob --app-jar $appJar --conf sparkSqlProps=$sparkSqlProps --conf dataDir=$dataDir --conf Buckets_ColumnTable=$buckets_ColumnTable
+. $SnappyData/bin/snappy-job.sh submit --lead $leads:8090 --app-name TableCreation --class io.snappydata.benchmark.snappy.tpcds.NonCoLocatedTablesCreationJob --app-jar $appJar --conf sparkSqlProps=$sparkSqlProps --conf dataDir=$dataDir --conf Buckets_ColumnTable=$buckets_ColumnTable

@@ -109,12 +109,19 @@ object QueryExecutionJob extends SnappySQLJob with Logging {
 
       }
       catch {
-        case e: java.io.FileNotFoundException => logError( s"File $name does not exist.", e)
-          queryPrintStream.println(s"File $name does not exist.")
-        case e: Exception => println(s"Failed $name")
-          logError("Exception in job", e)
+        case e: java.io.FileNotFoundException =>
+          val message = s"Query file ${name} does not exist."
+          logError(message, e)
+          queryPrintStream.println(message)
+        case e: Exception =>
+          val message = s"Query $name failed"
+          println(message)
+          logError(message)
+          logError("Exception in job: " + System.lineSeparator(), e)
       }
     }
+
+    // cleanup
     avgPrintStream.close()
     avgFileStream.close()
     QueryExecutor.close
