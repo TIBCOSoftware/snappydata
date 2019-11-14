@@ -46,6 +46,7 @@ object SparkApp {
     var isResultCollection = args(5).toBoolean
     var warmUp = args(6).toInt
     var runsForAverage = args(7).toInt
+    var cacheTables = args(8).toBoolean
 
     for (prop <- sparkSqlProps) {
       // scalastyle:off println
@@ -72,7 +73,9 @@ object SparkApp {
     tables.map { tableName =>
 
       sc.read.parquet(s"$dataLocation/$tableName").createOrReplaceTempView(tableName)
-      snc.cacheTable(tableName)
+      if (cacheTables) {
+        snc.cacheTable(tableName)
+      }
       val count = sc.table(tableName).count()
       tableName -> count
 
@@ -80,6 +83,7 @@ object SparkApp {
       println("-----------------------------------------------")
       println(s"Table Created...$tableName with $count rows")
       println("-----------------------------------------------")
+      // scalastyle:on println
     }
 
     /*
@@ -96,39 +100,39 @@ object SparkApp {
 
     var partitionBy : String = "cr_order_number"
     var tableName : String = "catalog_returns"
-    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable, cacheTables)
 
     partitionBy = "cs_order_number"
     tableName = "catalog_sales"
-    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable, cacheTables)
 
     partitionBy = "c_customer_sk"
     tableName = "customer"
-    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable, cacheTables)
 
     partitionBy = "ca_address_sk"
     tableName = "customer_address"
-    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable, cacheTables)
 
     partitionBy = "inv_item_sk"
     tableName = "inventory"
-    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable, cacheTables)
 
     partitionBy = "sr_item_sk"
     tableName = "store_returns"
-    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable, cacheTables)
 
     partitionBy = "ss_item_sk"
     tableName = "store_sales"
-    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable, cacheTables)
 
     partitionBy = "wr_order_number"
     tableName = "web_returns"
-    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable, cacheTables)
 
     partitionBy = "ws_order_number"
     tableName = "web_sales"
-    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable, cacheTables)
 
 
     var avgFileStream: FileOutputStream = new FileOutputStream(
@@ -148,7 +152,6 @@ object SparkApp {
         println(s"Running Query $name now.")
 
         for (i <- 1 to (warmUp + runsForAverage)) {
-          // queryPrintStream.println(queryToBeExecuted)
           val startTime = System.currentTimeMillis()
           var cnts: Array[Row] = null
           if (i == 1) {
@@ -163,7 +166,6 @@ object SparkApp {
           val endTime = System.currentTimeMillis()
           val iterationTime = endTime - startTime
 
-          // scalastyle:off println
           println(s"iterationTime = $iterationTime")
 
           if (i > warmUp) {
@@ -187,12 +189,15 @@ object SparkApp {
 
 
   def createPartitionedTable(sc: SparkSession, dataLocation: String,
-                             partitionBy: String, tableName: String, buckets: Int): Unit = {
+                             partitionBy: String, tableName: String, buckets: Int,
+                             cacheTables: Boolean = true): Unit = {
     val df = sc.sqlContext.read.parquet(s"$dataLocation/$tableName")
     df.createOrReplaceTempView(tableName)
     df.repartition(buckets, df(partitionBy)).createOrReplaceTempView(tableName)
     df.createOrReplaceTempView(tableName)
-    sc.sqlContext.cacheTable(tableName)
+    if (cacheTables) {
+      sc.sqlContext.cacheTable(tableName)
+    }
     // tableName -> sc.table(tableName).count()
     val count = sc.table(tableName).count()
 
@@ -200,6 +205,7 @@ object SparkApp {
     println("-----------------------------------------------")
     println(s"Table $tableName created with $count rows")
     println("-----------------------------------------------")
+    // scalastyle:on println
   }
 
 }
