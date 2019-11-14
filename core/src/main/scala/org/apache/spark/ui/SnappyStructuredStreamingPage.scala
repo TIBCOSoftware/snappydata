@@ -93,31 +93,36 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
   }
 
   private def createSourcesTable: Seq[Node] = {
-
     <div style="width:100%;">
       <table id="querySourcesGrid" class="table table-bordered table-condensed"
              style="background-color: #DDD; /*margin: 0px !important;*/">
         <thead>
           <tr>
+            <th class="table-th-col-heading" style="font-size: medium; width: 200px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyStructuredStreamingPage.tooltips("srcType")}>
+                { SnappyStructuredStreamingPage.streamingStats("srcType") }
+              </span>
+            </th>
             <th class="table-th-col-heading" style="font-size: medium;">
               <span data-toggle="tooltip" title=""
                     data-original-title={SnappyStructuredStreamingPage.tooltips("srcDescription")}>
                 { SnappyStructuredStreamingPage.streamingStats("srcDescription") }
               </span>
             </th>
-            <th class="table-th-col-heading" style="font-size: medium;">
+            <th class="table-th-col-heading" style="font-size: medium; width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={SnappyStructuredStreamingPage.tooltips("srcInputRecords")}>
                 { SnappyStructuredStreamingPage.streamingStats("srcInputRecords") }
               </span>
             </th>
-            <th class="table-th-col-heading" style="font-size: medium;">
+            <th class="table-th-col-heading" style="font-size: medium; width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={SnappyStructuredStreamingPage.tooltips("srcInputRate")}>
                 { SnappyStructuredStreamingPage.streamingStats("srcInputRate") }
               </span>
             </th>
-            <th class="table-th-col-heading" style="font-size: medium;">
+            <th class="table-th-col-heading" style="font-size: medium; width: 200px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={SnappyStructuredStreamingPage.tooltips("srcProcessingRate")}>
                 { SnappyStructuredStreamingPage.streamingStats("srcProcessingRate") }
@@ -127,25 +132,30 @@ private[ui] class SnappyStructuredStreamingPage(parent: SnappyStreamingTab)
         </thead>
       </table>
     </div>
-
   }
+
   private def createSinkTable: Seq[Node] = {
-
     <div style="width:100%;">
-      <div style="width: 10%; float: left; line-height: 30px; height: 100%;">
-        <div style="padding: 0px 5px; font-weight: bold; font-size: medium;">
-          { SnappyStructuredStreamingPage.streamingStats("snkType") }
-        </div>
-        <div id="sinkType" style="padding: 0px 5px; text-align: center; font-size: medium;">&nbsp;</div>
-      </div>
-      <div style="height: 100%; width: 88%; float: left; font-size: medium; line-height: 30px; border-left: 2px solid #b0b0b0;">
-        <div style="padding: 0px 5px 0px 15px; float: left; font-weight: bold; font-size: medium;">
-          { SnappyStructuredStreamingPage.streamingStats("snkDescription") }
-        </div>
-        <div id="sinkDescription" style="float: left; padding: 0px 15px; text-align: left;">&nbsp;</div>
-      </div>
+      <table id="querySinkGrid" class="table table-bordered table-condensed"
+             style="background-color: #DDD; /*margin: 0px !important;*/">
+        <thead>
+          <tr>
+            <th class="table-th-col-heading" style="font-size: medium; width: 200px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyStructuredStreamingPage.tooltips("snkType")}>
+                { SnappyStructuredStreamingPage.streamingStats("snkType") }
+              </span>
+            </th>
+            <th class="table-th-col-heading" style="font-size: medium;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={SnappyStructuredStreamingPage.tooltips("snkDescription")}>
+                { SnappyStructuredStreamingPage.streamingStats("snkDescription") }
+              </span>
+            </th>
+          </tr>
+        </thead>
+      </table>
     </div>
-
   }
 
   private def createQueryDetailsPanel: Seq[Node] = {
@@ -305,6 +315,7 @@ object SnappyStructuredStreamingPage {
   streamingStats += ("currProcessedRowsPerSec" -> "Current Processing Rate")
   streamingStats += ("totalProcessingTime" -> "Total Batch Processing Time")
   streamingStats += ("avgProcessingTime" -> "Avg. Batch Processing Time")
+  streamingStats += ("srcType" -> "Type")
   streamingStats += ("srcDescription" -> "Description")
   streamingStats += ("srcInputRecords" -> "Input Records")
   streamingStats += ("srcInputRate" -> "Input Rate")
@@ -325,12 +336,14 @@ object SnappyStructuredStreamingPage {
   tooltips += ("totalProcessingTime" -> "Total processing time of all batches received since execution is started")
   tooltips += ("avgProcessingTime" -> "Average processing time per batch")
   tooltips += ("sources" -> "Streaming queries sources")
+  tooltips += ("srcType" -> "Type of streaming query source")
   tooltips += ("srcDescription" -> "Description of streaming query source")
   tooltips += ("srcInputRecords" -> "Number of records received from source in current interval")
   tooltips += ("srcInputRate" -> "Number of records / second received from source in current interval")
   tooltips += ("srcProcessingRate" -> "Number of records processed / second in current interval")
   tooltips += ("sink" -> "Streaming queries sink")
   tooltips += ("snkDescription" -> "Description of streaming query sink")
+  tooltips += ("snkType" -> "Type of streaming query sink")
 
   val googleChartsErrorMsg = "Error while loading charts. Please check your internet connection."
 
