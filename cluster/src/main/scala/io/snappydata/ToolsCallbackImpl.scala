@@ -186,7 +186,10 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
   override def getAllGlobalCmnds: Array[String] = {
     GemFireXDUtils.waitForNodeInitialization()
     val r = Misc.getMemStore.getMetadataCmdRgn
-    val keys = r.keySet().asScala.filter(p => !p.startsWith(ContextJarUtils.functionKeyPrefix))
+    val keys = r.keySet().asScala.filter(p =>
+      !(p.startsWith(ContextJarUtils.functionKeyPrefix) ||
+          p.equals(Constant.CLUSTER_ID) ||
+          p.startsWith(Constant.MEMBER_ID_PREFIX)))
     r.getAll(keys.asJava).values().toArray.map(_.asInstanceOf[String])
   }
 

@@ -388,10 +388,10 @@ class LeadImpl extends ServerImpl with Lead
             logInfo("Primary lead lock acquired.")
 
             // store unique cluster id to metadataCmdRgn
-            var clusterUuid = Misc.getMemStore.getMetadataCmdRgn.get("__ClusterID__")
+            var clusterUuid = Misc.getMemStore.getMetadataCmdRgn.get(Constant.CLUSTER_ID)
             if (clusterUuid == null) {
               val region = Misc.getMemStore.getMetadataCmdRgn
-              region.put("__ClusterID__", UUID.randomUUID().toString)
+              region.put(Constant.CLUSTER_ID, UUID.randomUUID().toString)
             }
 
             LocalDirectoryCleanupUtil.save()
