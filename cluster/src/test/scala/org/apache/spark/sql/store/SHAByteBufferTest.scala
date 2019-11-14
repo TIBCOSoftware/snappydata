@@ -42,6 +42,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
   var serverHostPort2: String = _
 
   override def beforeAll(): Unit = {
+    snc.sparkContext.stop()
     super.beforeAll()
     serverHostPort2 = TestUtil.startNetServer()
   }
@@ -70,6 +71,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
   override def afterAll(): Unit = {
     TestUtil.stopNetServer()
     super.afterAll()
+    snc.sparkContext.stop
     System.clearProperty("spark.testing")
   }
 
@@ -1816,7 +1818,6 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test1")
   }
 
-
   test("SNAP-3222") {
     snc.sql("drop table if exists test")
 
@@ -1838,8 +1839,6 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     snc.dropTable("test", true)
   }
-
-
 
 
   ignore("SNAP-3077 test if default max capacity nearing Integer.MAX_VALUE is reached." +
