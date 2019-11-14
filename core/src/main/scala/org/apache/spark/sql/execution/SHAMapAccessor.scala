@@ -761,6 +761,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
              |$vdBaseObjectTerm = $valueDataTerm.baseObject();
              |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
              |$keyExistedTerm = false;
+             |${previousSingleKey_Position_LenTerm.map{
+                case (keyTerm, posTerm, lenTerm) => s"$posTerm = -1;"
+               }.getOrElse("")
+             }
            |}
          |} else {
            |boolean $insertDoneTerm = false;
@@ -795,8 +799,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
              |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
            |}
          |}
-         |// position the offset to start of aggregate value
-         |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
+         |// position the offset to start of aggregate value BUT DO NOT ADD BASE OFFSET YET
+         |// AS IT IS SUBJECT TO CHANGE ON REHASH ETC. JUST ADD KEY LENGTH
+         |$valueOffsetTerm += $numKeyBytesTerm ;
        """.stripMargin
 
     val hashCodeCalcSnippet = generateHashCode(hashVar, keyVars, keysDataType)
@@ -856,7 +861,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
         if (SHAMapAccessor.isPrimitive(keysDataType.head)) {
           s"""
              |boolean $skipLookupTerm = false;
-             |if ($posTerm != -1 && !${keyVars.head.isNull} && $keyTerm == ${keyVars.head.value}) {
+             |if ($posTerm != -1 && !${keyVars.head.isNull} && $keyTerm == ${keyVars.head.value}
+             |&& $overflowHashMapsTerm == null) {
              |$skipLookupTerm = true;
              |$valueOffsetTerm = $posTerm;
              |$keyExistedTerm = true;
@@ -865,7 +871,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
              $lookUpInsertCode
              if (${keyVars.head.isNull}) {
                $posTerm = -1L;
-             } else {
+             } else if ($overflowHashMapsTerm == null){
                $posTerm = $valueOffsetTerm;
                $keyTerm = ${keyVars.head.value};
              }
@@ -893,7 +899,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
            if (!$skipLookupTerm) {
              ${if (!aggFuncDependentOnGroupByKey) keysPrepCodeCode else ""}
              $lookUpInsertCode
-             if (!${keyVars.head.isNull} && $dictionaryArrayTerm != null) {
+             if (!${keyVars.head.isNull} && $dictionaryArrayTerm != null && $overflowHashMapsTerm == null) {
                $dictionaryArrayTerm[${dictionaryCode.map(_.dictionaryIndex.value).get}]
                 = $valueOffsetTerm;
              }
@@ -903,14 +909,14 @@ case class SHAMapAccessor(@transient session: SnappySession,
         else {
           val actualKeyLen = if (numBytesForNullKeyBits == 0) lenTerm else s"($lenTerm - 1)"
           val equalityCheck = s"""$actualKeyLen == ${keyVars.head.value}.numBytes() &&
-               |$byteArrayEqualsClass.arrayEquals($vdBaseObjectTerm, $posTerm - $actualKeyLen,
+               |$byteArrayEqualsClass.arrayEquals($vdBaseObjectTerm, $posTerm - $actualKeyLen + $vdBaseOffsetTerm,
                |${keyVars.head.value}.getBaseObject(), ${keyVars.head.value}.getBaseOffset(),
                | $actualKeyLen)
              """.stripMargin
           s"""
              |boolean $skipLookupTerm = false;
              |if ($posTerm != -1 && !${keyVars.head.isNull} && $keyTerm == ${hashVar(0)}
-             | && $equalityCheck) {
+             | && $equalityCheck && $overflowHashMapsTerm == null) {
              |$skipLookupTerm = true;
              |$valueOffsetTerm = $posTerm;
              |$keyExistedTerm = true;
@@ -919,7 +925,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
              $lookUpInsertCode
              if (${keyVars.head.isNull}) {
                $posTerm = -1L;
-             } else {
+             } else if ($overflowHashMapsTerm == null) {
                $posTerm = $valueOffsetTerm;
                $keyTerm = ${hashVar(0)};
                $lenTerm = $numKeyBytesTerm;
@@ -938,6 +944,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
         |long $valueOffsetTerm = 0;
         |boolean $keyExistedTerm = false;
         |$lookUpInsertCodeWithSkip
+        | // Position the offset to the start of the value by adding current baseoffset
+        | $valueOffsetTerm += $vdBaseOffsetTerm;
         |long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;""".stripMargin
   }
 
