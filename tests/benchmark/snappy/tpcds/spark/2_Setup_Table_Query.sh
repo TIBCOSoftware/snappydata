@@ -10,7 +10,7 @@ for element in "${slaves[@]}";
 echo "******************Created conf/slaves******************"
 
 #Start master and slaves from master machines
-ssh $master sh $SnappyData/sbin/start-all.sh
+ssh $master bash $SnappyData/sbin/start-all.sh
 
 #Execute Spark App
 echo "\$SnappyData/bin/spark-submit \

@@ -64,11 +64,6 @@ object SparkApp {
     println(s"****************queries : $queries")
     // scalastyle:on println
 
-    /* catalog_page", "catalog_returns", "customer", "customer_address",
-      "customer_demographics", "date_dim", "household_demographics", "inventory", "item",
-      "promotion", "store", "store_returns", "catalog_sales", "web_sales", "store_sales",
-      "web_returns", "web_site", "reason", "call_center", "warehouse", "ship_mode", "income_band",
-      "time_dim", "web_page" */
 
     val tables = Seq("call_center", "catalog_page", "date_dim", "household_demographics",
       "income_band", "promotion", "reason", "ship_mode", "store", "time_dim",
@@ -83,7 +78,7 @@ object SparkApp {
 
       // scalastyle:off println
       println("-----------------------------------------------")
-      println(s"Table Created...$tableName with rows $count")
+      println(s"Table Created...$tableName with $count rows")
       println("-----------------------------------------------")
     }
 
@@ -101,39 +96,39 @@ object SparkApp {
 
     var partitionBy : String = "cr_order_number"
     var tableName : String = "catalog_returns"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "cs_order_number"
     tableName = "catalog_sales"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "c_customer_sk"
     tableName = "customer"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "ca_address_sk"
     tableName = "customer_address"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "inv_item_sk"
     tableName = "inventory"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "sr_item_sk"
     tableName = "store_returns"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "ss_item_sk"
     tableName = "store_sales"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "wr_order_number"
     tableName = "web_returns"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
     partitionBy = "ws_order_number"
     tableName = "web_sales"
-    createPartitionedTables(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
+    createPartitionedTable(sc, dataLocation, partitionBy, tableName, buckets_ColumnTable)
 
 
     var avgFileStream: FileOutputStream = new FileOutputStream(
@@ -188,19 +183,11 @@ object SparkApp {
       }
     }
 
-//    try {
-//      Thread.sleep(Long.MaxValue)
-//    }
-//    catch {
-//      case _ =>
-//    }
-    // TPCDSQuerySnappyBenchmark.snappy = snSession
-    // TPCDSQuerySnappyBenchmark.execute(dataLocation, queries, true, queryPath)
   }
 
 
-  def createPartitionedTables(sc: SparkSession, dataLocation: String,
-                                    partitionBy: String , tableName: String, buckets: Int): Unit = {
+  def createPartitionedTable(sc: SparkSession, dataLocation: String,
+                             partitionBy: String, tableName: String, buckets: Int): Unit = {
     val df = sc.sqlContext.read.parquet(s"$dataLocation/$tableName")
     df.createOrReplaceTempView(tableName)
     df.repartition(buckets, df(partitionBy)).createOrReplaceTempView(tableName)
@@ -211,10 +198,8 @@ object SparkApp {
 
     // scalastyle:off println
     println("-----------------------------------------------")
-    println(s"Table Created...$tableName with row $count")
+    println(s"Table Created...$tableName with $count rows")
     println("-----------------------------------------------")
   }
 
-    // TPCDSQuerySnappyBenchmark.spark = sc
-    // TPCDSQuerySnappyBenchmark.execute(dataLocation, queries, false, queryPath)
 }
