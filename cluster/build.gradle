@@ -133,6 +133,12 @@ dependencies {
     exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
   }
 
+  compile(group: 'org.apache.hadoop', name: 'hadoop-azure', version: hadoopVersion) {
+    // exclude some dependencies like in hadoop-aws to avoid conflicts with other deps
+    exclude(group: 'com.google.guava', module: 'guava')
+     
+  }
+
   testCompile project(':dunit')
   testCompile "it.unimi.dsi:fastutil:${fastutilVersion}"
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
