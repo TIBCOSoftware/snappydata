@@ -19,7 +19,7 @@
 
 package io.snappydata.metrics
 
-import io.snappydata.metrics.SnappyMetricsClass.{createGauge, updateHistogram}
+import io.snappydata.metrics.SnappyMetricsSystem.{createGauge, updateHistogram}
 import com.pivotal.gemfirexd.internal.engine.ui.MemberStatistics
 import java.util
 

@@ -19,7 +19,7 @@
 package io.snappydata.metrics
 
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyRegionStats}
-import io.snappydata.metrics.SnappyMetricsClass.createGauge
+import io.snappydata.metrics.SnappyMetricsSystem.createGauge
 
 object SnappyTableMetrics {
 

@@ -22,30 +22,32 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui._
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
 import java.util
+
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.groupon.metrics.UserMetricsSystem
 import org.apache.spark.groupon.metrics._
 
 import scala.collection.mutable
 
-object SnappyMetricsClass {
+object SnappyMetricsSystem {
 
   val oldSizeMap = collection.mutable.Map.empty[String, Int]
-
-  val region = Misc.getMemStore.getMetadataCmdRgn
   
   val MAX_SIZE = 180
 
   def init(sc: SparkContext): Unit = {
 
+    GemFireXDUtils.waitForNodeInitialization()
     // initialize metric system with cluster id as metrics namespace
-    val clusterUuid = region.get(Constant.CLUSTER_ID)
+    val clusterUuid = Misc.getMemStore.getMetadataCmdRgn.get(Constant.CLUSTER_ID)
     UserMetricsSystem.initialize(sc, clusterUuid)
 
     // store every member diskStore ID to metadataCmdRgn
     putMembersDiskStoreIdInRegion()
 
-    val allMetaEntries = region.getAll(region.keySet())
+    val allMetaEntries = Misc.getMemStore.getMetadataCmdRgn.
+        getAll(Misc.getMemStore.getMetadataCmdRgn.keySet())
 
     val timeInterval = 5000
 
@@ -88,7 +90,8 @@ object SnappyMetricsClass {
     for ((k, v) <- membersBuff) {
       val shortDirName = v.getUserDir.substring(
         v.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
-      region.put(Constant.MEMBER_ID_PREFIX + shortDirName + k + "__", v.getDiskStoreUUID.toString)
+      Misc.getMemStore.getMetadataCmdRgn.
+          put(Constant.MEMBER_ID_PREFIX + shortDirName + k + "__", v.getDiskStoreUUID.toString)
     }
   }
 
@@ -143,13 +146,15 @@ object SnappyMetricsClass {
         }
       }
     } else {
-      if (!metricName.contains("cpuUsage")) {
-        val convertedMBVal = (newList(MAX_SIZE - 1).asInstanceOf[Double] * 1024).asInstanceOf[Long]
-        createHistogram(metricName, convertedMBVal)
-        createGauge(metricName.replace("Trend", ""), newList(MAX_SIZE - 1).asInstanceOf[AnyVal])
-      } else {
-        createHistogram(metricName, newList(MAX_SIZE - 1).asInstanceOf[Number].longValue())
-        createGauge(metricName.replace("Trend", ""), newList(MAX_SIZE - 1).asInstanceOf[AnyVal])
+      if (oldSizeMap(metricName) == MAX_SIZE - 1) {
+        if (!metricName.contains("cpuUsage")) {
+          val convertedMBVal = (newList(MAX_SIZE - 1).asInstanceOf[Double] * 1024).asInstanceOf[Long]
+          createHistogram(metricName, convertedMBVal)
+          createGauge(metricName.replace("Trend", ""), newList(MAX_SIZE - 1).asInstanceOf[AnyVal])
+        } else {
+          createHistogram(metricName, newList(MAX_SIZE - 1).asInstanceOf[Number].longValue())
+          createGauge(metricName.replace("Trend", ""), newList(MAX_SIZE - 1).asInstanceOf[AnyVal])
+        }
       }
     }
     oldSizeMap.update(metricName, newList.size)
