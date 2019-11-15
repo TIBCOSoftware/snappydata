@@ -22,5 +22,5 @@ function absPath() {
 }
 bin="$(dirname "$(absPath "$0")")"
 
-export SNAPPY_SCRIPT_NAME=snappy-shell
+export SNAPPY_SCRIPT_NAME=snappy-scala
 exec "$bin/snappy" "$@"
