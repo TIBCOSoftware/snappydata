@@ -17,8 +17,12 @@
 package io.snappydata.gemxd
 
 import java.io.{File, InputStream}
-import java.lang
-import java.util.{Iterator => JIterator}
+import java.{lang, util}
+import java.util.{List, Iterator => JIterator}
+
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Try
+
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
@@ -41,7 +45,7 @@ import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
-import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.{Row, SaveMode}
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -97,6 +101,12 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     } else {
       new SparkSQLExecuteImpl(sql, schema, ctx, v, Option(pvs))
     }
+  }
+
+  override  def getSampleInsertExecute(baseTable: String, ctx: LeadNodeExecutionContext,
+    v: Version, dvdRows: util.List[Array[DataValueDescriptor]],
+    serializedDVDs: Array[Byte]): SparkSQLExecute = {
+     new SparkSampleInsertExecuteImpl(baseTable, dvdRows, serializedDVDs, ctx, v)
   }
 
   override def readDataType(in: ByteArrayDataInput): AnyRef = {

@@ -79,6 +79,9 @@ while (( "$#" )); do
       clustermode="rowstore"
     ;;
     *)
+    echo "Invalid argument: $1"
+    echo "Usage: ./snappy-start-all.sh [-bg | --background | -fg | --foreground] [-conf conf_dir | --config conf_dir] [rowstore]"
+    exit
     ;;
   esac
   shift

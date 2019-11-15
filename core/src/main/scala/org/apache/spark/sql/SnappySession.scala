@@ -833,14 +833,16 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *                        name is present, else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
-      baseTable: Option[String],
-      samplingOptions: Map[String, String],
-      allowExisting: Boolean): DataFrame = {
+    baseTable: Option[String],
+    samplingOptions: Map[String, String],
+    allowExisting: Boolean): DataFrame = {
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
   }
+
+
 
   /**
    * Create a stratified sample table. Java friendly version.
@@ -854,8 +856,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *                        name is present, else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
-      baseTable: String, samplingOptions: java.util.Map[String, String],
-      allowExisting: Boolean): DataFrame = {
+    baseTable: String, samplingOptions: java.util.Map[String, String],
+    allowExisting: Boolean): DataFrame = {
     createSampleTable(tableName, Option(baseTable),
       samplingOptions.asScala.toMap, allowExisting)
   }
@@ -874,10 +876,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *                        name is present, else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
-      baseTable: Option[String],
-      schema: StructType,
-      samplingOptions: Map[String, String],
-      allowExisting: Boolean = false): DataFrame = {
+    baseTable: Option[String],
+    schema: StructType,
+    samplingOptions: Map[String, String],
+    allowExisting: Boolean = false): DataFrame = {
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       Some(JdbcExtendedUtils.normalizeSchema(schema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
@@ -897,9 +899,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *                        name is present, else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
-      baseTable: String, schema: StructType,
-      samplingOptions: java.util.Map[String, String],
-      allowExisting: Boolean): DataFrame = {
+    baseTable: String, schema: StructType,
+    samplingOptions: java.util.Map[String, String],
+    allowExisting: Boolean): DataFrame = {
     createSampleTable(tableName, Option(baseTable), schema,
       samplingOptions.asScala.toMap, allowExisting)
   }
@@ -1879,6 +1881,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
+
   /**
    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
    * {{{
@@ -2515,7 +2518,8 @@ object SnappySession extends Logging {
     case _ => StringType
   }
 
-  def getValue(dvd: stypes.DataValueDescriptor): Any = dvd match {
+  def getValue(dvd: stypes.DataValueDescriptor, returnUTF8String: Boolean = true): Any =
+    dvd match {
     case i: stypes.SQLInteger => i.getInt
     case si: stypes.SQLSmallint => si.getShort
     case ti: stypes.SQLTinyint => ti.getByte
@@ -2529,11 +2533,19 @@ object SnappySession extends Logging {
       val charArray = cl.getCharArray()
       if (charArray != null) {
         val str = String.valueOf(charArray)
-        UTF8String.fromString(str)
+        if (returnUTF8String) {
+          UTF8String.fromString(str)
+        } else str
       } else null
-    case lvc: stypes.SQLLongvarchar => UTF8String.fromString(lvc.getString)
-    case vc: stypes.SQLVarchar => UTF8String.fromString(vc.getString)
-    case c: stypes.SQLChar => UTF8String.fromString(c.getString)
+    case lvc: stypes.SQLLongvarchar => if (returnUTF8String) {
+      UTF8String.fromString(lvc.getString)
+    } else lvc.getString
+    case vc: stypes.SQLVarchar => if (returnUTF8String) {
+      UTF8String.fromString(vc.getString)
+    } else vc.getString
+    case c: stypes.SQLChar => if (returnUTF8String) {
+      UTF8String.fromString(c.getString)
+    } else c.getString
     case ts: stypes.SQLTimestamp => ts.getTimestamp(null)
     case t: stypes.SQLTime => t.getTime(null)
     case d: stypes.SQLDate =>

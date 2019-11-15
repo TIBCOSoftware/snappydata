@@ -65,7 +65,6 @@ public class DataExtractorToolTest extends SnappyTest {
       Log.getLogWriter().info("SP: queryArray size = "+queryArray.size());
       for (int i = 0; i < queryArray.size(); i++) {
         try {
-          Log.getLogWriter().info("SP1");
           String queryStr = (String) queryArray.get(i);
           conn.createStatement().execute(queryStr);
           Log.getLogWriter().info("Query " + queryStr +"\n executed successfully");

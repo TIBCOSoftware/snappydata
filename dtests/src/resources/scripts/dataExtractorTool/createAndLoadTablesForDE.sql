@@ -54,6 +54,7 @@ CREATE TABLE BANK(
   SRC_SYS_REC_ID VARCHAR(150)) USING column OPTIONS(partition_by 'BNK_ORG_ID', buckets '32',key_columns 'CLIENT_ID,BNK_ORG_ID,BNK_ID ',redundancy '1') ;
   INSERT into BANK select id,id,abs(rand()*1000),abs(rand()*1000),'BNK_FULL_NM','RTNG_NUM',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),'src_sys_ref_id','src_sys_rec_id' from range(4000000);
 
+DROP TABLE IF EXISTS staging_orders_details;
 DROP TABLE IF EXISTS ORDERS_DETAILS;
 CREATE EXTERNAL TABLE staging_orders_details USING com.databricks.spark.csv  OPTIONS (path ':dataLocation/ORDERS_DETAILS.dat', header 'true', inferSchema 'false',nullValue 'NULL', maxCharsPerColumn '4096');
 CREATE TABLE ORDERS_DETAILS
@@ -190,6 +191,8 @@ INSERT INTO FamousPeople  SELECT 'India', MAP('Authors',ARRAY('Chetan Bhagat','J
 INSERT INTO FamousPeople  SELECT 'United States', MAP('Authors',ARRAY('Mark Twain','Walt Whitman','J.D. Salinger', 'Emily Dickinson','Willa Cather','William Faulkner'));
 CREATE VIEW FamousPeopleView AS  SELECT country, explode(celebrities) FROM FamousPeople;
 
+
+DROP TABLE IF EXISTS staging_exec_details;
 DROP TABLE IF EXISTS EXEC_DETAILS;
 CREATE EXTERNAL TABLE staging_exec_details USING com.databricks.spark.csv
              OPTIONS (path ':dataLocation/EXEC_DETAILS.dat', header 'true', inferSchema 'false', nullValue 'NULL', maxCharsPerColumn '4096');

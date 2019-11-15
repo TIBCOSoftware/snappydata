@@ -393,6 +393,11 @@ object CatalogObjectType extends Enumeration {
     case _ => false
   }
 
+  def isSampleTable(tableType: CatalogObjectType.Type): Boolean = tableType match {
+    case Sample => true
+    case _ => false
+  }
+
   def isTableBackedByRegion(tableType: CatalogObjectType.Type): Boolean = {
     tableType == Row || isColumnTable(tableType)
   }

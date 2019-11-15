@@ -292,11 +292,14 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
               case None => ""
               case Some(c) => c
             }
+            val dependentRelations = SnappyExternalCatalog.getDependents(table.properties)
+            val hasDependentSampleTables = dependentRelations.exists(
+              isSampleTable(_, table.database))
             // exclude policies also from the list of hive tables
             val metaData = new ExternalTableMetaData(table.identifier.table,
               table.database, tableType.toString, null, -1,
               -1, null, null, null, null,
-              tblDataSourcePath, driverClass)
+              tblDataSourcePath, driverClass, hasDependentSampleTables)
             metaData.provider = table.provider match {
               case None => ""
               case Some(p) => p
@@ -401,6 +404,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           val dmls = JdbcExtendedUtils.
               getInsertOrPutString(qualifiedName, schema, putInto = false)
           val dependentRelations = SnappyExternalCatalog.getDependents(table.properties)
+          val hasSampleTableAsDependents = dependentRelations.exists(
+            isSampleTable(_, formattedSchema))
           val columnBatchSize = parameters.get(ExternalStoreUtils.COLUMN_BATCH_SIZE) match {
             case None => 0
             case Some(s) => ExternalStoreUtils.sizeAsBytes(s, ExternalStoreUtils.COLUMN_BATCH_SIZE)
@@ -424,7 +429,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           new ExternalTableMetaData(qualifiedName, schema, tableType.toString,
             ExternalStoreUtils.getExternalStoreOnExecutor(parameters, partitions, qualifiedName,
               schema), columnBatchSize, columnMaxDeltaRows, compressionCodec, baseTable, dmls,
-            dependentRelations, tblDataSourcePath, driverClass).asInstanceOf[R]
+            dependentRelations, tblDataSourcePath, driverClass, hasSampleTableAsDependents).
+            asInstanceOf[R]
       }
 
       case GET_METADATA =>
@@ -512,9 +518,9 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     // Mask access key and secret access key in case of S3 URI
     private def maskLocationURI(locURI: String): String = {
       val uri = toLowerCase(locURI)
-      val maskedSrcPath = if (uri.startsWith("s3a://") ||
+      val maskedSrcPath = if ((uri.startsWith("s3a://") ||
           uri.startsWith("s3://") ||
-          uri.startsWith("s3n://")) {
+          uri.startsWith("s3n://")) && uri.contains("@")) {
         locURI.replace(locURI.slice(locURI.indexOf("//") + 2,
           locURI.indexOf("@")), "****:****")
       } else maskPassword(locURI)
@@ -795,5 +801,19 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
     case _ => throw new IllegalArgumentException(
       s"Unexpected catalog metadata write operation = $operation, args = $request")
+  }
+
+  def isSampleTable(depName: String, defaultSchema: String): Boolean = {
+    val dotIndex = depName.indexOf('.')
+    val (depSchema, depTableName) = if (dotIndex != -1) {
+      (depName.substring(0, dotIndex), depName.substring(dotIndex + 1))
+    } else {
+      (defaultSchema, depName)
+    }
+    externalCatalog.getTableOption(depSchema, depTableName) match {
+      case None => false
+      case Some(depTab) => CatalogObjectType.isSampleTable(
+        CatalogObjectType.getTableType(depTab))
+    }
   }
 }

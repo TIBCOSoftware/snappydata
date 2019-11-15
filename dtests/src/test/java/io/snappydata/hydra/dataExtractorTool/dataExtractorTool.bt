@@ -1,32 +1,30 @@
-/*io/snappydata/hydra/dataExtractorTool/dataExtractorWithMixedDataType.conf
-   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
-   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-   snappyBinPath="$GEMFIRE/../snappy"
-   scriptName=createAndLoadTablesForMixedDataTypes.sql
-   dataFilesLocation="/export/shared/QA_DATA/AllMixedDataTypeParquet"
-   queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueriesForMDT.sql"
-   extractedDDLPath="/tmp/recover_ddls"
-   extractedDataPath="/tmp/recover_data_parquet"
-   dmlOpsFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dmlOpsForMixedDataType.sql"
-   dropTableQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dropTables.sql"
+io/snappydata/hydra/dataExtractorTool/dataExtractorWithMixedDataType.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  snappyBinPath="$GEMFIRE/../snappy"
+  scriptName=createAndLoadTablesForMixedDataTypes.sql
+  dataFilesLocation="/export/shared/QA_DATA/AllMixedDataTypeParquet"
+  queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueriesForMDT.sql"
+  extractedDDLPath="/tmp/recover_ddls"
+  extractedDataPath="/tmp/recover_data_parquet"
+  dmlOpsFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dmlOpsForMixedDataType.sql"
+  dropTableQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dropTables.sql"
 
-*/
-   io/snappydata/hydra/dataExtractorTool/dataExtractorWithServerMeanKill.conf
-      A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
-      B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-      C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-      snappyBinPath="$GEMFIRE/../snappy"
-      scriptName=createAndLoadDataForHA.sql
-      queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueriesForHA.sql"
-      extractedDDLPath="/tmp/recover_ddls"
-      extractedDataPath="/tmp/recover_data_parquet"
-      dropTableQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dropTables.sql"
-      dmlOpsFileLocation1 = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/insertVal1.sql"
-      dmlOpsFileLocation2 = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/insertVal2.sql"
-      dmlOpsFileLocation3 = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/insertVal3.sql"
+io/snappydata/hydra/dataExtractorTool/dataExtractorWithServerMeanKill.conf
+  A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  snappyBinPath="$GEMFIRE/../snappy"
+  scriptName=createAndLoadDataForHA.sql
+  queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueriesForHA.sql"
+  extractedDDLPath="/tmp/recover_ddls"
+  extractedDataPath="/tmp/recover_data_parquet"
+  dropTableQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dropTables.sql"
+  dmlOpsFileLocation1 = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/insertVal1.sql"
+  dmlOpsFileLocation2 = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/insertVal2.sql"
+  dmlOpsFileLocation3 = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/insertVal3.sql"
 
-/*
 io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -42,6 +40,7 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf
   ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/ddlQuery.sql"
   dmlOpsFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dmlOps.sql"
 
+
 io/snappydata/hydra/dataExtractorTool/dataExtractorWithOOME.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=4
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -54,6 +53,7 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorWithOOME.conf
   extractedDataPath="/tmp/recover_data_parquet"
   dataFilesLocation="/export/shared/QA_DATA/ct"
   queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueries.sql"
+
 
 io/snappydata/hydra/dataExtractorTool/dataExtractorWithMissingDiskStore.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
@@ -108,5 +108,5 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorWithMissingDiskStore.conf
    extractedDDLPath="/tmp/recover_ddls"
    extractedDataPath="/tmp/recover_data_parquet"
   dmlOpsFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dmlOpsForMixedDataType.sql"
-*/
+
 
