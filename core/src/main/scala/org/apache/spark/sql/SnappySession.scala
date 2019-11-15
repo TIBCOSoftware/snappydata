@@ -70,13 +70,10 @@ import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTab
 import org.apache.spark.sql.row.{JDBCMutableRelation, SnappyStoreDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.streaming.StreamingQueryManager
 import org.apache.spark.sql.types._
-import org.apache.spark.status.api.v1.SnappyStreamingApiRootResource
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.streaming.{SnappyStreamingQueryListener, Time}
+import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.ui.SnappyStreamingTab
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Logging, ShuffleDependency, SparkContext, SparkEnv}
 
@@ -2031,46 +2028,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     (scalaTypeVal, SnappySession.getDataType(storeType, storePrecision, storeScale))
   }
-
-  private def updateUI() = {
-    // scalastyle:off
-
-    val ssqListener = new SnappyStreamingQueryListener(_sc)
-    this.streams.addListener(ssqListener)
-
-    if (_sc.ui.isDefined) {
-      logInfo("Updating Web UI [for Snappy Session : " + this.id + "]")
-      println("Updating Web UI [for Snappy Session : " + this.id + "]")
-      _sc.ui.foreach(ui => {
-        var structStreamTabPresent: Boolean = false
-        val tabsList = ui.getTabs
-        // Add remaining tabs in tabs list
-        tabsList.foreach(tab => {
-          // Check if Structure Streaming Tab is present or not
-          if (tab.prefix.equalsIgnoreCase("structurestreaming")) {
-            structStreamTabPresent = true
-            logInfo("Structure Streaming UI Tab is already present.")
-            println(("Structure Streaming UI Tab is already present."))
-          }
-        })
-        // Add Structure Streaming Tab, iff not present
-        if (!structStreamTabPresent) {
-          logInfo(("Creating Structure Streaming UI Tab"))
-          println("Creating Structure Streaming UI Tab")
-
-          // Streaming web service
-          ui.attachHandler(SnappyStreamingApiRootResource.getServletHandler(ui))
-          // Streaming tab
-          new SnappyStreamingTab(ui, ssqListener)
-        }
-      })
-      logInfo("Updating Web UI [for Snappy Session : " + this.id + "] is Done.")
-      println("Updating Web UI [for Snappy Session : " + this.id + "] is Done.")
-    }
-    // scalastyle:on
-  }
-
-  updateUI()
 }
 
 private class FinalizeSession(session: SnappySession)
