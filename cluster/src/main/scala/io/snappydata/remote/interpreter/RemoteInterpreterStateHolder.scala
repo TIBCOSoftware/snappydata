@@ -193,6 +193,10 @@ class RemoteInterpreterStateHolder(val connId: Long) {
     allInterpretedLinesForReplay.clear()
   }
 
+  def history(): Unit = {
+    allInterpretedLinesForReplay.foreach(println(_))
+  }
+
   class StringOutputStrem(val spw: StringPrintWriter) extends OutputStream {
     override def write(b: Int): Unit = {
       spw.write(b)
@@ -210,8 +214,12 @@ class RemoteILoop(spw: StringPrintWriter, intpHelper: RemoteInterpreterStateHold
     val inheritedCommands = sparkStandardCommands.filterNot(
       cmd => RemoteILoop.notTBeInheritedCommandNames.contains(cmd.name))
     val implementedCommands = RemoteILoop.snappyOverrideImpls.map {
-      case "replay" => LoopCommand.nullary("replay", "", intpHelper.replayCmd)
-      case "reset" => LoopCommand.nullary("reset", "", intpHelper.resetCmd)
+      case "replay" => LoopCommand.nullary(
+        "replay", "rerun all the commands since the start", intpHelper.replayCmd)
+      case "reset" => LoopCommand.nullary(
+        "reset", "reset the interpreter state", intpHelper.resetCmd)
+      case "history" => LoopCommand.nullary(
+        "history", "shows the history of commands", intpHelper.history)
       case x => throw new IllegalArgumentException(s"did not expect command $x")
     }
 
@@ -221,7 +229,8 @@ class RemoteILoop(spw: StringPrintWriter, intpHelper: RemoteInterpreterStateHold
 
 object RemoteILoop {
   private val notTBeInheritedCommandNames = Set(
-    "h?", "edit", "line", "load", "paste", "power", "quit", "replay", "reset", "settings")
+    "h?", "edit", "line", "load", "paste", "power",
+    "quit", "replay", "reset", "settings", "history")
 
-  private val snappyOverrideImpls = Set("replay", "reset")
+  private val snappyOverrideImpls = Set("replay", "reset", "history")
 }

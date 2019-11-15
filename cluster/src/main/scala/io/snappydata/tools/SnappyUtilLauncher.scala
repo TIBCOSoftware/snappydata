@@ -17,6 +17,7 @@
 package io.snappydata.tools
 
 import java.io.{File, IOException}
+import java.nio.file.{Files, Paths}
 import java.util
 
 import com.gemstone.gemfire.internal.GemFireUtilLauncher.{CommandEntry, SCRIPT_NAME}
@@ -107,12 +108,12 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
 
 object SnappyUtilLauncher extends StoreCallback {
 
-  val SNAPPY_SPARK_SHELL = "snappy-shell"
+  val SNAPPY_SPARK_SHELL = "snappy-scala"
+
+  var INTERPRETER_MODE = false
 
   var printNewWelcome = false
   init()
-
-  if (printNewWelcome) printWelcomeEnterprise()
 
   private def init(): Unit = {
     SCRIPT_NAME = System.getenv("SNAPPY_SCRIPT_NAME") match {
@@ -122,6 +123,7 @@ object SnappyUtilLauncher extends StoreCallback {
     if (SNAPPY_SPARK_SHELL.equals(SCRIPT_NAME)) {
       System.setProperty("LAUNCHER_INTERPRETER_MODE", "true")
       printNewWelcome = true
+      INTERPRETER_MODE = true
     }
   }
 
@@ -136,7 +138,12 @@ object SnappyUtilLauncher extends StoreCallback {
 
     try {
       // no args will default to using ij
-      if (args.length == 0) {
+      if (args.length == 0 || INTERPRETER_MODE) {
+        if (INTERPRETER_MODE) {
+          validateIntpArgs(args)
+          launcher.setInitialCommands(
+            SnappyUtilLauncher.CONNECT_STR, SnappyUtilLauncher.INITIAL_FILES_TO_RUN_STR)
+        }
         launcher.invoke(Array(SCRIPT_NAME))
       }
       // short-circuit for the internal "--get-canonical-path" argument used by
@@ -171,9 +178,82 @@ object SnappyUtilLauncher extends StoreCallback {
     }
   }
 
+  val intpUsage = s"\nUsage:\n" +
+    s"\n${SCRIPT_NAME} [--snappydata.connection | -conn | --connection locatorhost:port]" +
+    s"\n             default = locahost:1527\n" +
+    s"\n             [--snappydata.user | -user | --user username]" +
+    s"\n             default = APP\n" +
+    s"\n             [--snappydata.password | -passwd | --password password]" +
+    s"\n             default = APP\n" +
+    s"\n             [--run | -r | -run scala_file path or files (comma separated paths]" +
+    s"\n             [--help | -help | -h 'prints the command line options for the script']\n"
+
+
+  private def validateArgs(options: Map[Symbol, Any]): Unit = {
+    val hostport = options.get('connection) match {
+      case Some(x) => x.toString
+      case None => "localhost:1527"
+    }
+    val user = options.getOrElse('user, "APP")
+    val passwd = options.getOrElse('password, "APP")
+    CONNECT_STR = s"connect client '${hostport};user=${user};password=${passwd}'"
+    val filesToRun = options.get('run) match {
+      case Some(x) => val files = x.toString
+        files.split(",").foreach(p => {
+          val path = Paths.get(p)
+          if (!Files.exists(path)) {
+            println(s"File $path does not exists")
+            System.exit(1)
+          }
+        })
+        files
+      case None => ""
+    }
+    if (filesToRun.nonEmpty) {
+      INITIAL_FILES_TO_RUN_STR = filesToRun.toString
+    }
+  }
+
+  // expected comma separated files
+  private var INITIAL_FILES_TO_RUN_STR: String = null
+  private var CONNECT_STR: String = null;
+
+  private def validateIntpArgs(args: Array[String]): Unit = {
+    val arglist = args.toList
+    type ArgsMap = Map[Symbol, Any]
+
+    def isSwitch(s : String) = (s(0) == '-')
+
+    def nextOption(map : ArgsMap, list: List[String]) : ArgsMap = {
+
+      list match {
+        case Nil => map
+        case ("--snappydata.connection" | "-conn" | "--connection" ) :: value :: tail =>
+          nextOption(map ++ Map('connection -> value), tail)
+        case ("--snappydata.user" | "-user" | "--user") :: value :: tail =>
+          nextOption(map ++ Map('user -> value), tail)
+        case ("--snappydata.password" | "-passwd" | "--password" ) :: value :: tail =>
+          nextOption(map ++ Map('password -> value), tail)
+        case ("--run" | "-r" | "-run" ) :: value :: tail =>
+          nextOption(map ++ Map('run -> value), tail)
+        case ("--help" | "-h" | "-help" ) :: tail =>
+          println(intpUsage)
+          System.exit(0)
+          Map.empty
+        case option :: tail => println("\nUnknown or incomplete option " + option)
+          Map.empty
+      }
+    }
+
+    val options = nextOption(Map(),arglist)
+    if (printNewWelcome) printWelcomeEnterprise()
+    validateArgs(options)
+  }
+
   def printWelcomeEnterprise() {
     import org.apache.spark.SPARK_VERSION
     // scalastyle:off println
+    println()
     println("""Welcome to
     ______                            __       ____  ____
    / ____/___  ____ ___  ____  __  __/ /____  / __ \/ __ )
@@ -185,31 +265,9 @@ object SnappyUtilLauncher extends StoreCallback {
       versionString, javaVmName, javaVersion)
     println(welcomeMsg)
     println()
-    println("Connect to an existing cluster using the connect command")
-    println("Example: connect client 'localhost:1527';\n")
-    println("Once connected, type in expressions to have them evaluated.\n")
-    println("Spark context Web UI available at localhost:5050")
+    println("Type in expressions to have them evaluated.\n")
     println("Spark context available as 'sc'")
     println("Snappy session available as 'snappy'.\n")
-    // scalastyle:on println
-  }
-
-  def printWelcomeCommunity() {
-    import org.apache.spark.SPARK_VERSION
-    // scalastyle:off println
-    println("""Welcome to
-    _____                               ____        __
-   / ___/____  ____ _____  ____  __  __/ __ \____ _/ /_____ _
-   \__ \/ __ \/ __ `/ __ \/ __ \/ / / / / / / __ `/ __/ __ `/
-  ___/ / / / / /_/ / /_/ / /_/ / /_/ / /_/ / /_/ / /_/ /_/ /   version %s on Spark version %s
- /____/_/ /_/\__,_/ .___/ .___/\__, /_____/\__,_/\__/\__,_/
-                 /_/   /_/    /____/
- """.format("1.2", SPARK_VERSION))
-    val welcomeMsg = "Using Scala %s (%s, Java %s)".format(
-      versionString, javaVmName, javaVersion)
-    println(welcomeMsg)
-    println("Type in expressions to have them evaluated.")
-    println("Type :help for more information.")
     // scalastyle:on println
   }
 }
