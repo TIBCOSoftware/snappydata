@@ -72,8 +72,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   {
     // fire dummy queries to initialize more components of hive meta-store
     withHiveExceptionHandling {
-      // assert(!client.tableExists(SYS_SCHEMA, "dbs"))
-      // assert(!client.functionExists(SYS_SCHEMA, "funcs"))
+       assert(!client.tableExists(SYS_SCHEMA, "dbs"))
+       assert(!client.functionExists(SYS_SCHEMA, "funcs"))
     }
   }
 
