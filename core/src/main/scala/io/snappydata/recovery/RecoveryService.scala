@@ -19,6 +19,7 @@
 package io.snappydata.recovery
 
 import java.util.function.BiConsumer
+
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegionHelper
@@ -27,7 +28,7 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.ddl.{DDLConflatable, GfxdDDLQueueEntry, GfxdDDLRegionQueue}
 import com.pivotal.gemfirexd.internal.engine.distributed.RecoveryModeResultCollector
 import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode
-import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode.RecoveryModePersistentView
+import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode.{RecoveryModePersistentView, RecoveryModePersistentViewPair}
 import com.pivotal.gemfirexd.internal.engine.sql.execute.RecoveredMetadataRequestMessage
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.mutable
@@ -247,9 +248,19 @@ object RecoveryService extends Logging {
     ddlBuffer
   }
 
-  /* fqtn and bucket number for PR r Column table, -1 indicates replicated row table */
-  def getExecutorHost(fqtn: String, bucketId: Int = -1): Seq[String] = {
-    // Expecting table in the format fqtn i.e. schemaname.tablename
+  def getColRegionPath(schemaName: String, tableName: String, bucketNumber: Int): String = {
+    val internalFQTN = schemaName + '.' + Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR +
+        tableName + Constant.SHADOW_TABLE_SUFFIX
+
+    if (Misc.getRegionPath(internalFQTN.toUpperCase) == null) {
+      throw new IllegalStateException(s"regionPath for $internalFQTN not found")
+    } else {
+      val regionPath = Misc.getRegionPath(internalFQTN.toUpperCase)
+      s"/_PR//B_${regionPath.substring(1, regionPath.length - 1)}/_${bucketNumber}"
+    }
+  }
+
+  def getRowRegionPath(fqtn: String, bucketId: Int): String = {
     val schemaName = fqtn.split('.')(0)
     val tableName = fqtn.split('.')(1)
     val replicated = isReplicated(schemaName, tableName)
@@ -260,30 +271,42 @@ object RecoveryService extends Logging {
       val bucketName = PartitionedRegionHelper.getBucketName(tablePath, bucketId)
       bucketPath = s"/${PartitionedRegionHelper.PR_ROOT_REGION_NAME}/$bucketName"
     }
+    bucketPath
+  }
+
+  /* fqtn and bucket number for PR r Column table, -1 indicates replicated row table */
+  def getExecutorHost(fqtn: String, bucketId: Int = -1): Seq[String] = {
+    val rowRegionPath = getRowRegionPath(fqtn, bucketId)
     // for null region maps select random host
-    if (regionViewSortedSet.contains(bucketPath)) {
-     val hosts =  regionViewSortedSet(bucketPath).map(e => {
-        val hostCanonical = e.getExecutorHost
-        val host = hostCanonical.split('(').head
-        s"executor_${host}_$hostCanonical"
-      }).toSeq
-      if (hosts.isEmpty) hosts else Seq(hosts.last)
+    val rowRegionPathKey = combinedViewsMapSortedSet.keySet.filter(_.contains(rowRegionPath + "#$"))
+
+    if (rowRegionPathKey.size != 0) {
+      assert(rowRegionPathKey.size == 1, s"combinedViewsMapSortedSet should not contain multiple entries for the key $rowRegionPath")
+      val viewPair = combinedViewsMapSortedSet(rowRegionPathKey.head).lastKey
+      val hostCanonical = viewPair.getRowView.getExecutorHost
+      val host = hostCanonical.split('(').head
+      logDebug(s"Host chosen for bucket : ${rowRegionPathKey.head}  :" +
+          s"  ${Seq(s"executor_${host}_$hostCanonical")}")
+      Seq(s"executor_${host}_$hostCanonical")
     } else {
       logWarning(s"Preferred host is not found for bucket id: $bucketId. " +
-          s"Choosing random host for $bucketPath")
+          s"Choosing random host for $rowRegionPath")
       getRandomExecutorHost
     }
   }
 
   def getRandomExecutorHost: Seq[String] = {
-    val e = Random.shuffle(regionViewSortedSet.toList).head._2.firstKey
+    val e = Random.shuffle(regionViewMapSortedSet.toList).head._2.firstKey
     val hostCanonical = e.getExecutorHost
     val host = hostCanonical.split('(').head
     Seq(s"executor_${host}_$hostCanonical")
   }
 
-  val regionViewSortedSet: mutable.Map[String,
+  val regionViewMapSortedSet: mutable.Map[String,
       mutable.SortedSet[RecoveryModePersistentView]] = mutable.Map.empty
+
+  val combinedViewsMapSortedSet: mutable.Map[String,
+      mutable.SortedSet[RecoveryModePersistentViewPair]] = mutable.Map.empty
 
   var locatorMember: InternalDistributedMember = _
   val persistentObjectMemberMap: mutable.Map[
@@ -430,50 +453,43 @@ object RecoveryService extends Logging {
     val msg = new RecoveredMetadataRequestMessage(collector)
     msg.executeFunction()
     val persistentData = collector.getResult
-    logDebug(s"Number of PersistentStateInRecoveryMode received" +
-        s" from members: ${persistentData.size()}")
+    logDebug(s" Total Number of PersistentStateInRecoveryMode objects received ${persistentData.size()}")
     val itr = persistentData.iterator()
     while (itr.hasNext) {
-      val persistentViewObj = itr.next().asInstanceOf[PersistentStateInRecoveryMode]
-      logInfo(s"PP:PersistentStateInRecoveryMode : $persistentViewObj")
-      locatorMember = if (persistentViewObj.getMember.getVmKind ==
-          DistributionManager.LOCATOR_DM_TYPE && locatorMember == null) persistentViewObj.getMember else locatorMember
-      persistentObjectMemberMap += persistentViewObj.getMember -> persistentViewObj
-      val regionItr = persistentViewObj.getAllRegionViews.iterator()
+      val persistentStateObj = itr.next().asInstanceOf[PersistentStateInRecoveryMode]
+      locatorMember = if (persistentStateObj.getMember.getVmKind ==
+          DistributionManager.LOCATOR_DM_TYPE && locatorMember == null) {
+        persistentStateObj.getMember
+      }
+      else if (persistentStateObj.getMember.getVmKind ==
+          DistributionManager.LOCATOR_DM_TYPE && locatorMember != null) {
+        persistentStateObj.getMember
+      }
+      else {
+        locatorMember
+      }
+      persistentObjectMemberMap += persistentStateObj.getMember -> persistentStateObj
+      val regionItr = persistentStateObj.getAllRegionViews.iterator()
       while (regionItr.hasNext) {
         val persistentView = regionItr.next()
         val regionPath = persistentView.getRegionPath
-        val set = regionViewSortedSet.get(regionPath)
+        val set = regionViewMapSortedSet.get(regionPath)
         if (set.isDefined) {
           set.get += persistentView
         } else {
           var newset = mutable.SortedSet.empty[RecoveryModePersistentView]
           newset += persistentView
-          regionViewSortedSet += regionPath -> newset
+          regionViewMapSortedSet += regionPath -> newset
         }
       }
     }
     assert(locatorMember != null)
-    // todo: handle the case when there are two locators - decide on basis of rvv in tha case
     mostRecentMemberObject = persistentObjectMemberMap(locatorMember)
 
 
     logDebug(s"The selected PersistentStateInRecoveryMode used for populating" +
         s" the new catalog:\n$mostRecentMemberObject")
-    val nonHiveRegionViews = regionViewSortedSet.filterKeys(
-      !_.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
-    val regionToConsider =
-      if (nonHiveRegionViews.isEmpty) {
-        logError("No relevant RecoveryModePersistentViews found.")
-        throw new Exception("Cannot start empty cluster in Recovery Mode.")
-      } else {
-        nonHiveRegionViews.keySet.toSeq.maxBy(nonHiveRegionViews.get(_).size)
-      }
-    val regionView = regionViewSortedSet(regionToConsider).lastKey
-    val memberToConsider = regionView.getMember
-    memberObject = persistentObjectMemberMap(memberToConsider)
 
-    logDebug(s"The selected non-Hive PersistentStateInRecoveryMode : $memberObject")
     val catalogObjects = mostRecentMemberObject.getCatalogObjects
     import scala.collection.JavaConverters._
     val catalogArr = catalogObjects.asScala.map(catObj => {
@@ -489,7 +505,21 @@ object RecoveryService extends Logging {
       }
     })
     RecoveryService.populateCatalog(catalogArr)
+
+    // Identify best member to get bucket-related info, etc
+    val nonHiveRegionViews = regionViewMapSortedSet.filterKeys(
+      !_.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
+    if (nonHiveRegionViews.isEmpty) {
+      logError("No relevant RecoveryModePersistentViews found.")
+      throw new Exception("Cannot start empty cluster in Recovery Mode.")
+    }
+    val memberToConsider = persistentObjectMemberMap.keySet.toSeq.sortBy(e =>
+      persistentObjectMemberMap(e).getPrToNumBuckets.size() +
+          persistentObjectMemberMap(e).getReplicatedRegions.size()).last
+    memberObject = persistentObjectMemberMap(memberToConsider)
+    logDebug(s"The selected non-Hive PersistentStateInRecoveryMode : $memberObject")
     createSchemasMap
+    createCombinedSortedSet
 
     val dbList = snappyHiveExternalCatalog.listDatabases("*")
     val allFunctions = dbList.map(dbName =>
@@ -504,6 +534,79 @@ object RecoveryService extends Logging {
          |${allDatabases.toString()}
          |Functions:
          |${allFunctions.toString()}""".stripMargin)
+  }
+
+  def createCombinedSortedSet: Unit = {
+    snappyHiveExternalCatalog.getAllTables().foreach(table => {
+      val tableName = table.identifier.table
+      val schemaName = table.identifier.database.getOrElse("app")
+      val fqtn = (schemaName + "." + tableName).toUpperCase()
+      val tableType = getProvider(fqtn.toLowerCase())
+      val numBuckets = getNumBuckets(schemaName.toUpperCase(), tableName.toUpperCase())._1
+      var rowRegionPath: String = ""
+      var colRegionPath: String = ""
+      // TODO: check for tables with tables with _ in their name.
+      for (buckNum <- Range(0, numBuckets)) {
+
+        rowRegionPath = getRowRegionPath(fqtn, buckNum)
+        colRegionPath = if (tableType == "column") {
+          PartitionedRegionHelper
+              .escapePRPath(getColRegionPath(schemaName, tableName, buckNum))
+              .replaceFirst("___PR__B__", "/__PR/_B__")
+        } else ""
+
+        val ssKey = if (colRegionPath.isEmpty) {
+          rowRegionPath + "#$"
+        } else {
+          rowRegionPath + "#$" + colRegionPath
+        }
+        if (regionViewMapSortedSet.contains(rowRegionPath)) {
+          val rowViews = regionViewMapSortedSet(rowRegionPath)
+          val colViews =
+            if (colRegionPath.nonEmpty) regionViewMapSortedSet(colRegionPath)
+            else mutable.SortedSet.empty[RecoveryModePersistentView]
+
+          for (rowView <- rowViews) {
+            if (tableType == "column" && colViews.nonEmpty) {
+              for (colView <- colViews) {
+                if (rowView.getMember.equals(colView.getMember)) {
+                  val set = combinedViewsMapSortedSet.get(ssKey)
+                  if (set.isDefined) {
+                    set.get += new RecoveryModePersistentViewPair(rowView, colView)
+                  } else {
+                    var newSet = mutable.SortedSet.empty[RecoveryModePersistentViewPair]
+                    newSet += new RecoveryModePersistentViewPair(rowView, colView)
+                    combinedViewsMapSortedSet += ssKey -> newSet
+                  }
+                }
+              }
+            } else {
+              // case: when its a row table
+              val set = combinedViewsMapSortedSet.get(ssKey)
+              if (set.isDefined) {
+                set.get += new RecoveryModePersistentViewPair(rowView, null)
+              } else {
+                var newSet = mutable.SortedSet.empty[RecoveryModePersistentViewPair]
+                newSet += new RecoveryModePersistentViewPair(rowView, null)
+                combinedViewsMapSortedSet += ssKey -> newSet
+              }
+            }
+          }
+        }
+      }
+    })
+
+    logDebug("Printing combinedViewsMapSortedSet")
+    for (elem <- combinedViewsMapSortedSet) {
+      logDebug(s"bucket:${elem._1} :::::: Set size:${elem._2.size}\n")
+      for (viewPair <- elem._2) {
+        logDebug(s"Row View : ${viewPair.getRowView.getMember}")
+        if (viewPair.getColView != null)
+          logDebug(s"Col View : ${viewPair.getColView.getMember}")
+        logDebug("* ---------- *")
+      }
+      logDebug("\n\n\n")
+    }
   }
 
   def getTables: Seq[CatalogTable] = snappyHiveExternalCatalog.getAllTables()
