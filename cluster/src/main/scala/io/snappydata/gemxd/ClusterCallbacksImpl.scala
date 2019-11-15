@@ -159,18 +159,18 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     }
 
     val tablesArr = if (tableNames.equalsIgnoreCase("all")) {
-      val catalogTables = RecoveryService.getTables
-      val tablesArr = catalogTables.map(ct => {
-        ct.identifier.database match {
-          case Some(db) =>
-            db + "." + ct.identifier.table
-          case None => ct.identifier.table
+      RecoveryService.getTables.map(ct =>
+        ct.storage.locationUri match {
+          case Some(_) => null // external tables will not be exported
+          case None =>
+            ct.identifier.database match {
+              case Some(db) => db + "." + ct.identifier.table
+              case None => ct.identifier.table
+            }
         }
-      })
-      tablesArr
-    } else {
-      tableNames.split(",").map(_.trim).toSeq
-    }
+      ).filter(_ != null)
+    } else tableNames.split(",").map(_.trim).toSeq
+
     logDebug(s"Using connection ID: $connId\n Export path:" +
         s" $exportUri\n Format Type: $formatType\n Table names: $tableNames")
 
