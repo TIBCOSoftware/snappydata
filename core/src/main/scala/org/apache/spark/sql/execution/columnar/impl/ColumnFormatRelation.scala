@@ -17,7 +17,9 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, PreparedStatement}
+import java.util
 
+import scala.collection.AbstractIterator
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
@@ -35,7 +37,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan, RefreshMetadata, SparkPlan}
+import org.apache.spark.sql.execution.{BucketsBasedIterator, ConnectionPool, PartitionedDataSourceScan, RefreshMetadata, SparkPlan}
 import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
@@ -145,7 +147,7 @@ abstract class BaseColumnFormatRelation(
     } else columns
     val zipped = buildRowBufferRDD(partitionEvaluator, rowBufferColumns, filters,
       useResultSet = true, projection).zipPartitions(rdd) { (leftItr, rightItr) =>
-      Iterator[Any](leftItr, rightItr)
+      BucketsBasedIterator(leftItr, rightItr)
     }
     (zipped, Nil)
   }
@@ -501,7 +503,7 @@ class ColumnFormatRelation(
       _relationInfo) with BulkPutRelation {
 
   val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
-
+  def getColocatedTable: Option[String] = tableOptions.get(StoreUtils.COLOCATE_WITH)
   override def withKeyColumns(relation: LogicalRelation,
       keyColumns: Seq[String]): LogicalRelation = {
     // keyColumns should match the key fields required for update/delete
@@ -682,7 +684,7 @@ class IndexColumnFormatRelation(
       _relationInfo) {
 
   def baseTable: Option[String] = Some(baseTableName)
-
+  def getColocatedTable: Option[String] = None
   override def withKeyColumns(relation: LogicalRelation,
       keyColumns: Seq[String]): LogicalRelation = {
     val cr = relation.relation.asInstanceOf[IndexColumnFormatRelation]

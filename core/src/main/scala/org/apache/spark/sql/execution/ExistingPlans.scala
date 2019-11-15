@@ -331,6 +331,8 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
   def partitionColumns: Seq[String]
 
   def connectionType: ConnectionType.Value
+
+  def getColocatedTable: Option[String]
 }
 
 /** Combines two SparkPlan or one SparkPlan and another RDD and acts as a LeafExecNode for the
