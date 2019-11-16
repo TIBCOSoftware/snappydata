@@ -485,6 +485,14 @@ abstract class SnappyDDLParser(session: SnappySession)
     }
   }
 
+  protected def grantRevokeIntp: Rule1[LogicalPlan] = rule {
+    (GRANT ) ~ ws ~ INTP ~ ws ~ TO ~ capture(ANY.*) ~> {
+      (users: String) => GrantRevokeIntpCommand(true, users)
+    } |
+    (REVOKE ) ~ ws ~ INTP ~ ws ~ FROM ~ capture(ANY.*) ~> {
+        (users: String) => GrantRevokeIntpCommand(false, users)
+    }
+  }
 
   protected def codeChunk: Rule1[String] = rule {
     capture(ANY.*) ~ EOI ~> ((code : String) => code )
