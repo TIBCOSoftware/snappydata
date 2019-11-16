@@ -215,31 +215,35 @@ object RecoveryService extends Logging {
 
     val biConsumer = new BiConsumer[String, String] {
       def accept(alias: String, cmd: String): Unit = {
-        val cmdFields = cmd.split("\\|", -1)
-        if (cmdFields.length > 1) {
-          val repos = cmdFields(1)
-          val path = cmdFields(2)
-          if (!repos.isEmpty && !path.isEmpty) {
-            ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}' repos '$repos' path '$path'")
-          }
-          else if (!repos.isEmpty && path.isEmpty) {
-            ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}' repos '$repos'")
-          }
-          else if (repos.isEmpty && !path.isEmpty) {
-            ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}' path '$path'")
-          }
-          else {
-            ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}'")
-          }
-        } else {
-          if (!(alias.contains(ContextJarUtils.functionKeyPrefix) ||
-              alias.contains(ContextJarUtils.droppedFunctionsKey))) {
-            ddlBuffer.append(s"DEPLOY JAR $alias '${cmdFields(0)}'")
+        if (!(alias.equals(Constant.CLUSTER_ID) ||
+            alias.startsWith(Constant.MEMBER_ID_PREFIX))) {
+          logInfo("#RecoveryService " + alias + cmd)
+          val cmdFields = cmd.split("\\|", -1)
+          if (cmdFields.length > 1) {
+            val repos = cmdFields(1)
+            val path = cmdFields(2)
+            if (!repos.isEmpty && !path.isEmpty) {
+              ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}' repos '$repos' path '$path'")
+            }
+            else if (!repos.isEmpty && path.isEmpty) {
+              ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}' repos '$repos'")
+            }
+            else if (repos.isEmpty && !path.isEmpty) {
+              ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}' path '$path'")
+            }
+            else {
+              ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}'")
+            }
+          } else {
+            if (!(alias.contains(ContextJarUtils.functionKeyPrefix) ||
+                alias.contains(ContextJarUtils.droppedFunctionsKey))) {
+              ddlBuffer.append(s"DEPLOY JAR $alias '${cmdFields(0)}'")
+            }
           }
         }
       }
     }
-    Misc.getMemStore.getGlobalCmdRgn.forEach(biConsumer)
+    Misc.getMemStore.getMetadataCmdRgn.forEach(biConsumer)
     ddlBuffer
   }
 
