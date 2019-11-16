@@ -1,4 +1,17 @@
 /*
+io/snappydata/hydra/dataExtractorTool/dataExtractorWithMixedDataType.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  snappyBinPath="$GEMFIRE/../snappy"
+  scriptName=createAndLoadTablesForMixedDataTypes.sql
+  dataFilesLocation="/export/shared/QA_DATA/AllMixedDataTypes"
+  queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueriesForMDT.sql"
+  extractedDDLPath="/tmp/recover_ddls"
+  extractedDataPath="/tmp/recover_data_parquet"
+  dmlOpsFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dmlOpsForMixedDataType.sql"
+*/
+
 io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -14,6 +27,7 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf
   ddlFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/ddlQuery.sql"
   dmlOpsFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dmlOps.sql"
 
+/*
  io/snappydata/hydra/dataExtractorTool/dataExtractorWithOOME.conf
     A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=4
     B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -27,6 +41,7 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorToolTest.conf
     dataFilesLocation="/home/apps/Downloads"
     queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueries.sql"
 
+
 io/snappydata/hydra/dataExtractorTool/dataExtractorWithMissingDiskStore.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -34,10 +49,12 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorWithMissingDiskStore.conf
   snappyBinPath="$GEMFIRE/../snappy"
   scriptName=createAndLoadTablesForDE.sql
   dataFilesLocation="/home/apps/Downloads"
+  extractedDDLPath="/tmp/recover_ddls"
+  extractedDataPath="/tmp/recover_data_parquet"
   nodeName=localhost
   queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/validationQueries.sql"
 
-*/
+
  io/snappydata/hydra/dataExtractorTool/dataExtractorWithCPDE.conf
    A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
    B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -55,7 +72,7 @@ io/snappydata/hydra/dataExtractorTool/dataExtractorWithMissingDiskStore.conf
    dmlOpsFileLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dmlOps.sql"
    dropTableQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/dataExtractorTool/dropTables.sql"
 
- /*
+
  io/snappydata/hydra/dataExtractorTool/dataExtractorWithJsonTpcdsAO.conf
     A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
     B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2

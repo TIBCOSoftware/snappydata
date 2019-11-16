@@ -43,7 +43,7 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, Utils}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
-import org.apache.spark.sql.execution.{RDDKryo, SecurityUtils}
+import org.apache.spark.sql.execution.{BucketsBasedIterator, RDDKryo, SecurityUtils}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.{Partition, TaskContext, TaskContextImpl, TaskKilledException}
@@ -269,7 +269,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
     if (pushProjections) {
       val (conn, stmt, rs) = computeResultSet(thePart, context)
-      val itr = new ResultSetTraversal(conn, stmt, rs, context)
+      val itr = new ResultSetTraversal(conn, stmt, rs, context,
+        java.util.Collections.emptySet[Integer]())
       if (commitTx) {
         commitTxBeforeTaskCompletion(Option(conn), context)
       }
@@ -305,7 +306,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           val dataItr = itr.map(r =>
             if (r.hasByteArrays) r.getRowByteArrays(null) else r.getRowBytes(null): AnyRef).asJava
           val rs = new RawStoreResultSet(dataItr, container, container.getCurrentRowFormatter)
-          new ResultSetTraversal(conn = null, stmt = null, rs, context)
+          new ResultSetTraversal(conn = null, stmt = null, rs, context, bucketIds)
         } else itr
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart, context)
@@ -442,28 +443,31 @@ class RowFormatScanRDD(@transient val session: SnappySession,
  * This is primarily intended to be used for cleanup.
  */
 final class ResultSetTraversal(conn: Connection,
-    stmt: Statement, val rs: ResultSet, context: TaskContext)
+    stmt: Statement, val rs: ResultSet, context: TaskContext, bucketSet: java.util.Set[Integer])
     extends ResultSetIterator[Void](conn, stmt, rs, context) {
 
   lazy val defaultCal: GregorianCalendar =
     ClientSharedData.getDefaultCleanCalendar
 
   override protected def getCurrentValue: Void = null
+  def getBucketSet(): java.util.Set[Integer] = this.bucketSet
 }
 
 final class CompactExecRowIteratorOnRS(conn: Connection,
     stmt: Statement, ers: EmbedResultSet, context: TaskContext)
     extends ResultSetIterator[AbstractCompactExecRow](conn, stmt,
       ers, context) {
-
+  def getBucketSet(): java.util.Set[Integer] = java.util.Collections.emptySet[Integer]()
   override protected def getCurrentValue: AbstractCompactExecRow = {
     ers.currentRow.asInstanceOf[AbstractCompactExecRow]
   }
 }
 
 abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalRegion,
-    bucketIds: java.util.Set[Integer], context: TaskContext) extends Iterator[T] {
+    bucketIds: java.util.Set[Integer], context: TaskContext) extends Iterator[T]
+with BucketsBasedIterator {
 
+  def getBucketSet(): java.util.Set[Integer] = this.bucketIds
   protected type PRIterator = PartitionedRegion#PRLocalScanIterator
 
   protected[this] final val taskContext = context.asInstanceOf[TaskContextImpl]

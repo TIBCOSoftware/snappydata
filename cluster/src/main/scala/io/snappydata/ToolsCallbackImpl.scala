@@ -21,7 +21,6 @@ import java.lang.reflect.InvocationTargetException
 import java.net.{URI, URLClassLoader}
 
 import scala.collection.JavaConverters._
-
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -29,7 +28,6 @@ import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.{ExtendibleURLClassLoader, LeadImpl}
-
 import org.apache.spark.executor.SnappyExecutor
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -98,7 +96,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       deploySql: String, isPackage: Boolean = true): Unit = {
     if (alias != null) {
       try {
-        Misc.getMemStore.getGlobalCmdRgn.create(alias, deploySql)
+        Misc.getMemStore.getMetadataCmdRgn.create(alias, deploySql)
       } catch {
         case _: EntryExistsException => throw StandardException.newException(
           SQLState.LANG_DB2_DUPLICATE_NAMES, alias, "of deploying jars/packages")
@@ -140,7 +138,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       if (!args(0).isEmpty) { // args(0) = appname-filename
         val appName = args(0).split('-')(0)
         // This url points to the jar on the file server
-        val url = Misc.getMemStore.getGlobalCmdRgn.get(ContextJarUtils.functionKeyPrefix + appName)
+        val url = Misc.getMemStore.getMetadataCmdRgn.get(ContextJarUtils.functionKeyPrefix + appName)
         if (url != null && !url.isEmpty) {
           val executor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
           val cachedFileName = s"${url.hashCode}-1_cache"
@@ -185,19 +183,22 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
 
   override def getAllGlobalCmnds: Array[String] = {
     GemFireXDUtils.waitForNodeInitialization()
-    val r = Misc.getMemStore.getGlobalCmdRgn
-    val keys = r.keySet().asScala.filter(p => !p.startsWith(ContextJarUtils.functionKeyPrefix))
+    val r = Misc.getMemStore.getMetadataCmdRgn
+    val keys = r.keySet().asScala.filter(p =>
+      !(p.startsWith(ContextJarUtils.functionKeyPrefix) ||
+          p.equals(Constant.CLUSTER_ID) ||
+          p.startsWith(Constant.MEMBER_ID_PREFIX)))
     r.getAll(keys.asJava).values().toArray.map(_.asInstanceOf[String])
   }
 
   override def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]] = {
     GemFireXDUtils.waitForNodeInitialization()
-    Misc.getMemStore.getGlobalCmdRgn.entrySet()
+    Misc.getMemStore.getMetadataCmdRgn.entrySet()
   }
 
   override def removePackage(alias: String): Unit = {
     GemFireXDUtils.waitForNodeInitialization()
-    Misc.getMemStore.getGlobalCmdRgn.destroy(alias)
+    Misc.getMemStore.getMetadataCmdRgn.destroy(alias)
   }
 
   override def setLeadClassLoader(): Unit = {
@@ -244,5 +245,9 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     lead.urlclassloader = new ExtendibleURLClassLoader(lead.urlclassloader.getParent)
     updatedURLs.foreach(url => lead.urlclassloader.addURL(url))
     Thread.currentThread().setContextClassLoader(lead.urlclassloader)
+  }
+
+  override def updateIntpGrantRevoke(isGrant: Boolean, users: String): Unit = {
+
   }
 }
