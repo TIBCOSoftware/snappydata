@@ -43,19 +43,17 @@ class DefaultSource extends ExternalSchemaRelationProvider with SchemaRelationPr
       case _ => throw new IllegalArgumentException(
         "table name not defined while trying to create relation")
     }
-    // ExternalStoreUtils.removeInternalProps(parameters)
 
     ExternalStoreUtils.getAndSetTotalPartitions(
       session, parameters, forManagedTable = true, forColumnTable = false)
     val partitioningColumns = StoreUtils.getAndSetPartitioningAndKeyColumns(session, schema , parameters)
     logDebug(s"Creating OpLogFormatRelation with Table Name: $tableName, schema: $schema")
-    new OpLogFormatRelation(tableName, schema, partitioningColumns.toSeq, sqlContext)
+    new OpLogFormatRelation(tableName, schema, partitioningColumns, sqlContext, options)
   }
 
   override def createRelation(
       sqlContext: SQLContext,
       options: Map[String, String]): BaseRelation = {
-    // TODO hmeka to check and handle schema when not provided
     createRelation(sqlContext, options, null)
   }
 }
