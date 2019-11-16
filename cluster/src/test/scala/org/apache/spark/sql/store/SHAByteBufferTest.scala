@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.store
 
+import java.io.File
 import java.math.BigDecimal
 import java.sql.{Connection, Date, DriverManager, SQLException, SQLType, Timestamp, Types}
 import java.util.Random
@@ -41,6 +42,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
   var serverHostPort2: String = _
 
   override def beforeAll(): Unit = {
+    snc.sparkContext.stop()
     super.beforeAll()
     serverHostPort2 = TestUtil.startNetServer()
   }
@@ -58,9 +60,10 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     System.setProperty("spark.testing", "true")
     super.newSparkConf((conf: SparkConf) => {
       conf.set("spark.sql.codegen.maxFields", "110")
-      .set("spark.sql.codegen.fallback", "false")
-      .set("snappydata.sql.useOptimizedHashAggregateForSingleKey", "true")
-      .set(Property.TestDisableCodeGenFlag.name , "true")
+        .set("snappydata.store.memory-size", "8g")
+        .set("spark.sql.codegen.fallback", "false")
+        .set("snappydata.sql.useOptimizedHashAggregateForSingleKey", "true")
+        .set(Property.TestDisableCodeGenFlag.name, "true")
       conf
     })
   }
@@ -68,6 +71,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
   override def afterAll(): Unit = {
     TestUtil.stopNetServer()
     super.afterAll()
+    snc.sparkContext.stop
     System.clearProperty("spark.testing")
   }
 
@@ -1813,6 +1817,29 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       s" group by name, col3").collect
     snc.dropTable("test1")
   }
+
+  test("SNAP-3222") {
+    snc.sql("drop table if exists test")
+
+    snc.sql(s"CREATE TABLE test(col1 String, col2 string) USING column" +
+      s" OPTIONS(buckets '1') ")
+    val data = for (i <- 0 until 100000) yield {
+      Row(s"col1_${i % 10000}", s"col2_${i % 8192}")
+    }
+    import scala.collection.JavaConverters._
+    val df = snc.createDataFrame(data.asJava,
+      StructType(Seq(StructField("col1", StringType, true),
+        StructField("col2", StringType, true))))
+    df.write.format("column").mode(SaveMode.Append).saveAsTable("test")
+
+    val query = "SELECT col1, COUNT( * ) AS x  FROM test GROUP BY col1 "
+    val snc1 = snc.newSession()
+    snc1.setConf(Property.initialCapacityOfSHABBMap.name, "8")
+    val results = snc1.sql(query).collect()
+
+    snc.dropTable("test", true)
+  }
+
 
   ignore("SNAP-3077 test if default max capacity nearing Integer.MAX_VALUE is reached." +
     " Disabled due to heap requirements being more than 16G") {
