@@ -206,8 +206,7 @@ check.dependsOn test, scalaTest, dunitTest
 if (rootProject.hasProperty('snappydata.enterprise')) {
     check.dependsOn dunitSecurityTest
 }
-
-if(!rootProject.hasProperty('recovery.skip')) {
+if(rootProject.hasProperty('dataExtractor')) {
   check.dependsOn recoveryTest
 }
 archivesBaseName = 'snappydata-cluster_' + scalaBinaryVersion
