@@ -146,10 +146,6 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   /**
    * Start kafka zookeeper.
    */
-  public static synchronized void HydraTask_StartKafkaZookeeper() {
-    snappyAdAnalyticsTest.startZookeeper();
-  }
-
   protected void startZookeeper() {
     ProcessBuilder pb = null;
     try {
@@ -222,7 +218,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
 
   protected void startKafkaBroker() {
-    String command = "";
+
     int numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
     Log.getLogWriter().info("Test will start " + numServers + " kafka brokers.");
     String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-server-start.sh");
@@ -230,6 +226,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     File orgPropFile = new File(orgPropFilePath);
     try {
       for (int i = 1; i <= numServers; i++) {
+        String command = "";
         String broker = "broker" + i;
         String brokerLogDirPath = kafkaLogDir + sep + broker;
         new File(brokerLogDirPath).mkdir();
@@ -337,6 +334,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     ProcessBuilder pb = null;
     File log = null;
     File logFile = null;
+
     String userJarPath = getUserAppJarLocation(SnappyPrms.getUserAppJar(),jarPath);
     verifyDataForJobExecution(jobClassNames, userJarPath);
     leadHost = getLeadHost();
@@ -373,12 +371,12 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
           throw new TestException("Failed to start the streaming job. Please check the logs.");
       } else {
         Log.getLogWriter().info("JobID is : " + jobID);
-        SnappyBB.getBB().getSharedMap().put(appName, jobID);
         for (int j = 0; j < 3; j++) {
           if (!getJobStatus(jobID)) {
             throw new TestException("Got Exception while executing streaming job. Please check " +
                 "the job status output.");
           }
+          SnappyBB.getBB().getSharedMap().put(appName, jobID);
         }
       }
     }
@@ -417,7 +415,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         String aggType = SnappySchemaPrms.getAggregateType();
         switch (aggType.toUpperCase()) {
           case "JOIN":
-            query = "select tp.*,pd.language from temp_persoon tp,  person_details pd where tp.id=pd.id";
+            query = "select tp.*,pd.language from temp_persoon tp,  persoon_details pd where tp.id=pd.id";
             break;
           case "AVG":
             query = "select id, avg(age) as avg_age, avg(numChild) as avg_numchild from temp_persoon group by id";
@@ -784,6 +782,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     File logFile = null;
     leadHost = getLeadHost();
     String appName = SnappyPrms.getUserAppName();
+    Log.getLogWriter.info("User App Name is : " + appName);
     String leadPort = (String)SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
     String jobID = (String) SnappyBB.getBB().getSharedMap().get(appName);
     String snappyCmd = snappyJobScript + " stop --job-id " + jobID + " --lead " + leadHost + ":" + leadPort;

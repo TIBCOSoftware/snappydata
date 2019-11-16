@@ -13,5 +13,5 @@ TASK       taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = Hy
            io.snappydata.hydra.cluster.SnappyPrms-sleepTimeSecsBeforeRestart = 60
            maxTimesToRun = 1;
 
-CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = restoreLocatorConfigData
+ENDTASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = restoreLocatorConfigData
            threadGroups = snappyThreads;
