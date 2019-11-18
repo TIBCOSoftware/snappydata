@@ -50,4 +50,3 @@ CXL_REASON VARCHAR(64),name String,LastThreeMatchPerformance ARRAY<Int>,Roll MAP
 
 INSERT INTO ORDERS_DETAILS_MixedDataType SELECT * FROM staging_ORDERS_DETAILS_MixedDataType;
 DROP TABLE IF EXISTS staging_ORDERS_DETAILS_MixedDataType;
-
