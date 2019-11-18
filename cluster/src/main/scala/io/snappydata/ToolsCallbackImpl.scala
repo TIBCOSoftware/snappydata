@@ -28,6 +28,7 @@ import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.{ExtendibleURLClassLoader, LeadImpl}
+import io.snappydata.remote.interpreter.SnappyInterpreterExecute
 import org.apache.spark.executor.SnappyExecutor
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -38,6 +39,8 @@ import org.apache.spark.sql.internal.ContextJarUtils
 import org.apache.spark.ui.{JettyUtils, SnappyDashboardTab}
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkCallbacks, SparkContext, SparkFiles}
+
+import scala.collection.immutable.HashSet
 
 object ToolsCallbackImpl extends ToolsCallback with Logging {
 
@@ -247,7 +250,29 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     Thread.currentThread().setContextClassLoader(lead.urlclassloader)
   }
 
-  override def updateIntpGrantRevoke(isGrant: Boolean, users: String): Unit = {
-
+  override def updateIntpGrantRevoke(grantor: String, isGrant: Boolean, users: String): Unit = {
+    if(!Misc.isSecurityEnabled) return
+    val dbOwner = SnappyInterpreterExecute.dbOwner
+    if (!grantor.toLowerCase.equals(dbOwner)) {
+      throw StandardException.newException(
+        SQLState.AUTH_NO_OBJECT_PERMISSION, grantor, "grant/revoke intp", "ComputeDB", "cluster")
+    }
+    val key = SnappyInterpreterExecute.GRANT_REVOKE_KEY
+    val allowedIntpUsers = Misc.getMemStore.getMetadataCmdRgn.get(key)
+    val newUsers = users.split(",").toSet
+    if (allowedIntpUsers == null) {
+      if (!isGrant) return // nothing to do
+      if (users == null || users.isEmpty) return // Nothing to do
+      SnappyInterpreterExecute.doCleanupAsPerNewGrantRevoke(newUsers)
+      Misc.getMemStore.getMetadataCmdRgn.put(key, users)
+    } else {
+      val oldUsers = allowedIntpUsers.split(",").toSet
+      val newVal = {
+        if (isGrant) oldUsers ++ newUsers
+        else oldUsers -- newUsers
+      }.map(_.toLowerCase)
+      SnappyInterpreterExecute.doCleanupAsPerNewGrantRevoke(newVal)
+      Misc.getMemStore.getMetadataCmdRgn.put(key, newVal.mkString(","))
+    }
   }
 }

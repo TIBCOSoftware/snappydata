@@ -79,6 +79,15 @@ case class GrantRevokeIntpCommand(
 
   // This is handled directly by Remote Interpreter code
   override def run(sparkSession: SparkSession): Seq[Row] = {
+    val tcb = ToolsCallbackInit.toolsCallback
+    if (tcb == null) {
+      throw new AnalysisException("Granting/Revoking" +
+        " of INTP not supported from smart connector mode");
+    }
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val user = session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR)
+    println(s"UpdateIntpGrantRevoke going to be called for $user isGrant=$isGrant and users = $users")
+    tcb.updateIntpGrantRevoke(user, isGrant, users)
     Nil
   }
 }
