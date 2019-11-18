@@ -694,6 +694,7 @@ object SnappyParserConsts {
   final val PERCENT: Keyword = new Keyword("percent")
   final val POLICY: Keyword = new Keyword("policy")
   final val PRIMARY: Keyword = new Keyword("primary")
+  final val PRIVILEGE: Keyword = new Keyword("privilege")
   final val PURGE: Keyword = new Keyword("purge")
   final val PUT: Keyword = new Keyword("put")
   final val REFRESH: Keyword = new Keyword("refresh")

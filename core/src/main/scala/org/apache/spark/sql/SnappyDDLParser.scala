@@ -186,6 +186,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def PERCENT: Rule0 = rule { keyword(Consts.PERCENT) }
   final def POLICY: Rule0 = rule { keyword(Consts.POLICY) }
   final def PRIMARY: Rule0 = rule { keyword(Consts.PRIMARY) }
+  final def PRIVILEGE: Rule0 = rule { keyword(Consts.PRIVILEGE) }
   final def PURGE: Rule0 = rule { keyword(Consts.PURGE) }
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
@@ -486,10 +487,10 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def grantRevokeIntp: Rule1[LogicalPlan] = rule {
-    (GRANT ) ~ ws ~ INTP ~ ws ~ TO ~ capture(ANY.*) ~> {
+    GRANT ~ ws ~ PRIVILEGE ~ ws ~ INTP ~ ws ~ TO ~ capture(ANY.*) ~> {
       (users: String) => GrantRevokeIntpCommand(true, users)
     } |
-    (REVOKE ) ~ ws ~ INTP ~ ws ~ FROM ~ capture(ANY.*) ~> {
+    REVOKE ~ ws ~ PRIVILEGE ~ ws ~ INTP ~ ws ~ FROM ~ capture(ANY.*) ~> {
         (users: String) => GrantRevokeIntpCommand(false, users)
     }
   }
@@ -1020,7 +1021,7 @@ abstract class SnappyDDLParser(session: SnappySession)
     dropTable | truncateTable | createView | createTempViewUsing | dropView | alterView | createSchema |
     dropSchema | alterTableToggleRowLevelSecurity | createPolicy | dropPolicy |
     alterTableProps | alterTableOrView | alterTable | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | passThrough | interpretCode )
+    createIndex | dropIndex | createFunction | dropFunction | grantRevokeIntp | passThrough | interpretCode )
   }
 
   protected def partitionSpec: Rule1[Map[String, Option[String]]]

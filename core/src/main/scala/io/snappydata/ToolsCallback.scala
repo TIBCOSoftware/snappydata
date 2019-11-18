@@ -52,7 +52,7 @@ trait ToolsCallback {
   def addURIs(alias: String, jars: Array[String],
       deploySql: String, isPackage: Boolean = true): Unit
 
-  def updateIntpGrantRevoke(isGrant: Boolean, users: String): Unit
+  def updateIntpGrantRevoke(grantor: String, isGrant: Boolean, users: String): Unit
 
   def removeURIs(uris: Array[String], isPackage: Boolean = true): Unit
 

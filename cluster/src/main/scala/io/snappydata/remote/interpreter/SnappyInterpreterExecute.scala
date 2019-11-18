@@ -19,6 +19,11 @@
 
 package io.snappydata.remote.interpreter
 
+import java.util.concurrent.locks.ReentrantReadWriteLock
+
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.iapi.error.StandardException
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.InterpreterExecute
 import io.snappydata.gemxd.SnappySessionPerConnection
 import org.apache.spark.Logging
@@ -28,29 +33,74 @@ import scala.collection.mutable
 
 class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExecute with Logging {
 
-  override def execute(): Array[String] = {
+  override def execute(user: String): Array[String] = {
+    // TODO check for auth to execute intp
+    if (Misc.isSecurityEnabled && !user.equalsIgnoreCase(SnappyInterpreterExecute.dbOwner)) {
+      if (!SnappyInterpreterExecute.allowedUsers.contains(user)) {
+        // throw exception
+        throw StandardException.newException(
+          SQLState.AUTH_NO_EXECUTE_PERMISSION, user, "intp", "", "ComputeDB", "Cluster")
+      }
+    }
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     val lp = session.sessionState.sqlParser.parsePlan(sql).asInstanceOf[InterpretCodeCommand]
-    val interpreterHelper = SnappyInterpreterExecute.getOrCreateStateHolder(connId)
+    val interpreterHelper = SnappyInterpreterExecute.getOrCreateStateHolder(connId, user)
     interpreterHelper.interpret(Array(lp.code))
   }
 }
 
 object SnappyInterpreterExecute {
-  val connToIntpHelperMap = new mutable.HashMap[Long, RemoteInterpreterStateHolder]()
 
-  def getOrCreateStateHolder(connId: Long): RemoteInterpreterStateHolder = {
-    connToIntpHelperMap.getOrElse(connId, {
+  val intpRWLock = new ReentrantReadWriteLock()
+  val connToIntpHelperMap = new mutable.HashMap[Long, (String, RemoteInterpreterStateHolder)]
+  var allowedUsers: Set[String] = Set()
+
+  lazy val dbOwner = {
+    Misc.getMemStore.getDatabase.getDataDictionary.getAuthorizationDatabaseOwner.toLowerCase()
+  }
+
+  def getOrCreateStateHolder(connId: Long, user: String): RemoteInterpreterStateHolder = {
+    var lockTaken = false
+    try {
+      lockTaken = intpRWLock.writeLock().tryLock()
+      connToIntpHelperMap.getOrElse(connId, {
         val stateholder = new RemoteInterpreterStateHolder(connId)
-        connToIntpHelperMap.put(connId, stateholder)
-        stateholder
-    })
+        connToIntpHelperMap.put(connId, (user, stateholder))
+        (user, stateholder)
+      })._2
+    } finally {
+      if (lockTaken) intpRWLock.writeLock().unlock()
+    }
   }
 
   def closeRemoteInterpreter(connId: Long): Unit = {
-   connToIntpHelperMap.get(connId) match {
-     case Some(r) => r.close()
-     case None => // Ignore. No interpreter got create for this session.
-   }
+    var lockTaken = false
+    try {
+      lockTaken = intpRWLock.writeLock().tryLock()
+      connToIntpHelperMap.get(connId) match {
+        case Some(r) => r._2.close()
+          connToIntpHelperMap.remove(connId)
+        case None => // Ignore. No interpreter got create for this session.
+      }
+    } finally {
+      if (lockTaken) intpRWLock.writeLock().unlock()
+    }
   }
+
+  def doCleanupAsPerNewGrantRevoke(currentAllowedUsers: Set[String]): Unit = {
+    var lockTaken = false
+    try {
+      lockTaken = intpRWLock.writeLock().tryLock()
+      val notAllowed = connToIntpHelperMap.filterNot(x => currentAllowedUsers.contains(x._2._1))
+      for ((id, (_, holder)) <- notAllowed) {
+        connToIntpHelperMap.remove(id)
+        holder.close()
+      }
+      allowedUsers = currentAllowedUsers
+    } finally {
+      if (lockTaken) intpRWLock.writeLock().unlock()
+    }
+  }
+
+  val GRANT_REVOKE_KEY = "##_INTP__GRANT__REVOKE_##"
 }
