@@ -72,8 +72,8 @@ object SnappyDataFunctions {
   }
 
   def buildOneArgExpression(name: String, fnClass: Class[_],
-      fn: Expression => Expression): (String, ExpressionInfo, FunctionBuilder) = {
-    (name, expressionInfo(name, fnClass), e => {
+      fn: Expression => Expression): (FunctionIdentifier, ExpressionInfo, FunctionBuilder) = {
+    (FunctionIdentifier(name, None), expressionInfo(name, fnClass), e => {
       if (e.length == 1) {
         fn(e.head)
       } else {

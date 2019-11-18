@@ -129,7 +129,7 @@ allprojects {
     junitVersion = '4.12'
     mockitoVersion = '1.10.19'
     hadoopVersion = '2.7.7'
-    scalatestVersion = '2.2.6'
+    scalatestVersion = '3.0.8'
     jettyVersion = '9.2.26.v20180806'
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.1'

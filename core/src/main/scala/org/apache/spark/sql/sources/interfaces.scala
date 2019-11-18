@@ -30,6 +30,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JDBCRDD}
@@ -305,14 +306,29 @@ trait RowLevelSecurityRelation {
       enableRowLevelSecurity: Boolean)
 }
 
+/**
+ * ::DeveloperApi::
+ * Marker interface for data sources that allow for extended schema specification
+ * in CREATE TABLE (like constraints in RDBMS databases). The schema string is passed
+ * as [[SnappyExternalCatalog.SCHEMADDL_PROPERTY]] in the relation provider parameters.
+ */
 @DeveloperApi
-trait NativeTableRowLevelSecurityRelation extends DestroyRelation with RowLevelSecurityRelation {
+trait ExternalSchemaRelationProvider extends RelationProvider {
+
+  def getSchemaString(options: Map[String, String]): Option[String] =
+    JdbcExtendedUtils.readSplitProperty(SnappyExternalCatalog.SCHEMADDL_PROPERTY, options)
+}
+
+@DeveloperApi
+trait SnappyTableRelation extends DestroyRelation with RowLevelSecurityRelation {
 
   protected val connFactory: () => Connection
 
   protected def dialect: JdbcDialect
 
   def connProperties: ConnectionProperties
+
+  def origOptions: CaseInsensitiveMutableHashMap[String]
 
   protected def isRowTable: Boolean
 
@@ -458,19 +474,6 @@ trait NativeTableRowLevelSecurityRelation extends DestroyRelation with RowLevelS
       }
     }
   }
-}
-
-/**
- * ::DeveloperApi::
- * Marker interface for data sources that allow for extended schema specification
- * in CREATE TABLE (like constraints in RDBMS databases). The schema string is passed
- * as [[SnappyExternalCatalog.SCHEMADDL_PROPERTY]] in the relation provider parameters.
- */
-@DeveloperApi
-trait ExternalSchemaRelationProvider extends RelationProvider {
-
-  def getSchemaString(options: Map[String, String]): Option[String] =
-    JdbcExtendedUtils.readSplitProperty(SnappyExternalCatalog.SCHEMADDL_PROPERTY, options)
 }
 
 /**

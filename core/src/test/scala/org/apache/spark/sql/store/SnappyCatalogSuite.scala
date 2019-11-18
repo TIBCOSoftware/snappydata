@@ -35,16 +35,16 @@
 package org.apache.spark.sql.store
 
 import io.snappydata.SnappyFunSuite
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.sql.types.{StringType, StructField, StructType, IntegerType}
-import org.apache.spark.sql.{SnappySession, AnalysisException}
-import org.apache.spark.sql.catalog.{Column, Function, Table, Database}
-import org.apache.spark.sql.catalyst.{ScalaReflection, FunctionIdentifier, TableIdentifier}
+import org.apache.spark.sql.catalog.{Column, Database, Function, Table}
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
 import org.apache.spark.sql.catalyst.plans.logical.Range
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, ScalaReflection, TableIdentifier}
 import org.apache.spark.sql.internal.CatalogImpl
+import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
+import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSupport}
 import org.apache.spark.util.Utils
 
 /**
@@ -53,7 +53,7 @@ import org.apache.spark.util.Utils
 
 class SnappyCatalogSuite extends SnappyFunSuite
     with BeforeAndAfter
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll with SparkSupport {
 
   var snappySession: SnappySession = _
 
@@ -105,7 +105,7 @@ class SnappyCatalogSuite extends SnappyFunSuite
   private def createTempFunction(name: String): Unit = {
     val info = new ExpressionInfo("className", name)
     val tempFunc = (e: Seq[Expression]) => e.head
-    sessionCatalog.createTempFunction(name, info, tempFunc, ignoreIfExists = false)
+    internals.registerFunction(snappySession, FunctionIdentifier(name, None), info, tempFunc)
   }
 
   private def dropFunction(name: String, db: Option[String] = None): Unit = {
@@ -343,7 +343,7 @@ class SnappyCatalogSuite extends SnappyFunSuite
 /**
  * A collection of utility fields and methods for tests related to the [[ExternalCatalog]].
  */
-abstract class CatalogTestUtils {
+abstract class CatalogTestUtils extends SparkSupport {
 
   // Unimplemented methods
   val tableInputFormat: String
@@ -400,7 +400,7 @@ abstract class CatalogTestUtils {
   def newUriForDatabase(): String = Utils.createTempDir().toURI.toString.stripSuffix("/")
 
   def newDb(name: String): CatalogDatabase = {
-    CatalogDatabase(name, name + " description", newUriForDatabase(), Map.empty)
+    internals.newCatalogDatabase(name, name + " description", newUriForDatabase(), Map.empty)
   }
 
   def newTable(name: String, db: String): CatalogTable = newTable(name, Some(db))

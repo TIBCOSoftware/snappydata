@@ -47,7 +47,7 @@ class SnappyTempTableTest extends SnappyFunSuite
     val qName = snc.snappySession.tableIdentifier(tableName)
     val plan = catalog.resolveRelation(qName)
     plan match {
-      case LogicalRelation(_, _, _) => fail(" A RDD based temp table " +
+      case _: LogicalRelation => fail(" A RDD based temp table " +
           "should have been matched with LogicalPlan")
       case _ =>
     }
@@ -74,7 +74,7 @@ class SnappyTempTableTest extends SnappyFunSuite
     val qName = snc.snappySession.tableIdentifier(tableName)
     val plan = catalog.resolveRelation(qName)
     plan match {
-      case LogicalRelation(_, _, _) =>
+      case _: LogicalRelation =>
       case _ => fail("A CSV relation temp table should have been " +
           "matched with LogicalRelation")
     }

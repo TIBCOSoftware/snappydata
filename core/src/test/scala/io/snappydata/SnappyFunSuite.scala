@@ -29,8 +29,8 @@ import io.snappydata.util.TestUtils
 import org.scalatest.Assertions
 
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, EqualNullSafe, EqualTo, Exists, ExprId, Expression, ListQuery, PredicateHelper, PredicateSubquery, ScalarSubquery}
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LogicalPlan, OneRowRelation, Sample}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, EqualNullSafe, EqualTo, Exists, ExprId, Expression, ListQuery, PlanExpression, PredicateHelper, ScalarSubquery}
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LogicalPlan, Sample}
 import org.apache.spark.sql.catalyst.util.{sideBySide, stackTraceToString}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
@@ -63,17 +63,9 @@ abstract class SnappyFunSuite
   protected var testName: String = _
   protected val dirList: ArrayBuffer[String] = ArrayBuffer[String]()
 
-  protected def sc: SparkContext = {
-    val ctx = SnappyContext.globalSparkContext
-    if (ctx != null && !ctx.isStopped) {
-      ctx
-    } else {
-      cachedContext = null
-      new SparkContext(newSparkConf())
-    }
-  }
+  protected final def sc: SparkContext = sc(addOn = null)
 
-  protected def sc(addOn: SparkConf => SparkConf): SparkContext = {
+  protected final def sc(addOn: SparkConf => SparkConf): SparkContext = {
     val ctx = SnappyContext.globalSparkContext
     if (ctx != null && !ctx.isStopped) {
       ctx
@@ -272,7 +264,8 @@ object SnappyFunSuite extends Assertions with SparkSupport {
  * itself but its an abstract class & parent to all spark tests. Later we can revisit how best
  * we can reuse the spark test code.
  */
-trait PlanTest extends SnappyFunSuite with PredicateHelper {
+trait PlanTest extends SnappyFunSuite with PredicateHelper with SparkSupport {
+
   /**
    * Since attribute references are given globally unique ids during analysis,
    * we must normalize them to check if two different queries are identical.
@@ -285,8 +278,9 @@ trait PlanTest extends SnappyFunSuite with PredicateHelper {
         e.copy(exprId = ExprId(0))
       case l: ListQuery =>
         l.copy(exprId = ExprId(0))
-      case p: PredicateSubquery =>
-        p.copy(exprId = ExprId(0))
+      case p if internals.isPredicateSubquery(p) =>
+        internals.copyPredicateSubquery(p,
+          p.asInstanceOf[PlanExpression[LogicalPlan]].plan, ExprId(0))
       case a: AttributeReference =>
         AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(0))
       case a: Alias =>
@@ -310,7 +304,8 @@ trait PlanTest extends SnappyFunSuite with PredicateHelper {
         Filter(splitConjunctivePredicates(condition).map(rewriteEqual).sortBy(_.hashCode())
             .reduce(And), child)
       case sample: Sample =>
-        sample.copy(seed = 0L)(true)
+        internals.newTableSample(sample.lowerBound, sample.upperBound,
+          sample.withReplacement, seed = 0L, sample.child)
       case Join(left, right, joinType, condition) if condition.isDefined =>
         val newCondition =
           splitConjunctivePredicates(condition.get).map(rewriteEqual).sortBy(_.hashCode())
@@ -348,6 +343,7 @@ trait PlanTest extends SnappyFunSuite with PredicateHelper {
 
   /** Fails the test if the two expressions do not match */
   protected def compareExpressions(e1: Expression, e2: Expression): Unit = {
-    comparePlans(Filter(e1, OneRowRelation), Filter(e2, OneRowRelation))
+    comparePlans(Filter(e1, internals.newOneRowRelation()),
+      Filter(e2, internals.newOneRowRelation()))
   }
 }

@@ -56,6 +56,7 @@ import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources.{BaseRelation, Filter, JdbcExtendedUtils, ResolveQueryHints}
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
+import org.apache.spark.status.api.v1.RDDStorageInfo
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.util.Utils
@@ -127,9 +128,9 @@ class Spark210Internals extends SparkInternals {
   }
 
   override def addClassField(ctx: CodegenContext, javaType: String,
-      varName: String, initFunc: String => String,
+      varPrefix: String, initFunc: String => String,
       forceInline: Boolean, useFreshName: Boolean): String = {
-    val variableName = if (useFreshName) ctx.freshName(varName) else varName
+    val variableName = if (useFreshName) ctx.freshName(varPrefix) else varPrefix
     ctx.addMutableState(javaType, variableName, initFunc(variableName))
     variableName
   }
@@ -294,10 +295,10 @@ class Spark210Internals extends SparkInternals {
     SparkSubmitUtils.resolveMavenCoordinates(coordinates, remoteRepos, ivyPath, exclusions)
   }
 
-  override def copyAttribute(attr: AttributeReference)(name: String,
+  override def copyAttribute(attr: Attribute)(name: String,
       dataType: DataType, nullable: Boolean, metadata: Metadata,
       exprId: ExprId): AttributeReference = {
-    attr.copy(name = name, dataType = dataType, nullable = nullable, metadata = metadata)(
+    AttributeReference(name = name, dataType = dataType, nullable = nullable, metadata = metadata)(
       exprId, qualifier = attr.qualifier, isGenerated = attr.isGenerated)
   }
 
@@ -617,6 +618,12 @@ class Spark210Internals extends SparkInternals {
   }
 
   override def buildConf(key: String): ConfigBuilder = SQLConfigBuilder(key)
+
+  override def getCachedRDDInfos(context: SparkContext): Seq[RDDStorageInfo] = {
+    context.ui.get.storageListener.rddInfoList.map(info => new RDDStorageInfo(info.id, info.name,
+      info.numPartitions, info.numCachedPartitions, info.storageLevel.description,
+      info.memSize, info.diskSize, dataDistribution = None, partitions = None))
+  }
 }
 
 class SnappyEmbeddedHiveCatalog210(override val conf: SparkConf,
@@ -777,9 +784,9 @@ class SnappySessionCatalog21(override val snappySession: SnappySession,
     }
   }
 
-  override protected def newView(table: CatalogTable, child: LogicalPlan): LogicalPlan = child
+  override def newView(table: CatalogTable, child: LogicalPlan): LogicalPlan = child
 
-  override protected def newCatalogRelation(schemaName: String, table: CatalogTable): LogicalPlan =
+  override def newCatalogRelation(schemaName: String, table: CatalogTable): LogicalPlan =
     SimpleCatalogRelation(schemaName, table)
 
   override def lookupRelation(name: TableIdentifier, alias: Option[String]): LogicalPlan =

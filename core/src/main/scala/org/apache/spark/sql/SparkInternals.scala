@@ -43,6 +43,7 @@ import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SharedState
 import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.streaming.LogicalDStreamPlan
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
+import org.apache.spark.status.api.v1.RDDStorageInfo
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext}
@@ -92,7 +93,7 @@ trait SparkInternals extends Logging {
    * Add a mutable state variable to given [[CodegenContext]] and return the variable name.
    */
   def addClassField(ctx: CodegenContext, javaType: String,
-      varName: String, initFunc: String => String = emptyFunc,
+      varPrefix: String, initFunc: String => String = emptyFunc,
       forceInline: Boolean = false, useFreshName: Boolean = true): String
 
   /**
@@ -258,9 +259,9 @@ trait SparkInternals extends Logging {
       ivyPath: Option[String], exclusions: Seq[String]): String
 
   /**
-   * Create a copy of [[AttributeReference]] with given new arguments.
+   * Create a copy of [[Attribute]] as [[AttributeReference]] with given arguments.
    */
-  def copyAttribute(attr: AttributeReference)(name: String = attr.name,
+  def copyAttribute(attr: Attribute)(name: String = attr.name,
       dataType: DataType = attr.dataType, nullable: Boolean = attr.nullable,
       metadata: Metadata = attr.metadata, exprId: ExprId = attr.exprId): AttributeReference
 
@@ -586,6 +587,11 @@ trait SparkInternals extends Logging {
    * Create a new SQLConf entry with registration actions for the given key.
    */
   def buildConf(key: String): ConfigBuilder
+
+  /**
+   * Get the global list of cached RDDs (as list of [[RDDStorageInfo]]).
+   */
+  def getCachedRDDInfos(context: SparkContext): Seq[RDDStorageInfo]
 }
 
 /**

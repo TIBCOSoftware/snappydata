@@ -165,7 +165,8 @@ case class SnappyHashAggregateExec(
       internals.copyAttribute(sumAttr)(nullable = false) :: Nil
     case avg: Average if !avg.child.nullable =>
       val sumAttr = avg.aggBufferAttributes.head
-      internals.copyAttribute(sumAttr)(nullable = false) :: avg.aggBufferAttributes(1) :: Nil
+      internals.copyAttribute(sumAttr)(nullable = false) ::
+          avg.aggBufferAttributes(1) :: Nil
     case max: Max if !max.child.nullable =>
       val maxAttr = max.aggBufferAttributes.head
       internals.copyAttribute(maxAttr)(nullable = false) :: Nil

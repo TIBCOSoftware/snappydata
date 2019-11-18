@@ -57,6 +57,7 @@ import org.apache.spark.sql.hive._
 import org.apache.spark.sql.sources.{BaseRelation, Filter, JdbcExtendedUtils, ResolveQueryHints}
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
+import org.apache.spark.status.api.v1.RDDStorageInfo
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
@@ -90,9 +91,9 @@ class Spark232Internals extends SparkInternals {
   }
 
   override def addClassField(ctx: CodegenContext, javaType: String,
-      varName: String, initFunc: String => String,
+      varPrefix: String, initFunc: String => String,
       forceInline: Boolean, useFreshName: Boolean): String = {
-    ctx.addMutableState(javaType, varName, initFunc, forceInline, useFreshName)
+    ctx.addMutableState(javaType, varPrefix, initFunc, forceInline, useFreshName)
   }
 
   override def getInlinedClassFields(ctx: CodegenContext): (Seq[(String, String)], Seq[String]) =
@@ -231,10 +232,10 @@ class Spark232Internals extends SparkInternals {
       SparkSubmitUtils.buildIvySettings(remoteRepos, ivyPath), exclusions)
   }
 
-  override def copyAttribute(attr: AttributeReference)(name: String,
+  override def copyAttribute(attr: Attribute)(name: String,
       dataType: DataType, nullable: Boolean, metadata: Metadata,
       exprId: ExprId): AttributeReference = {
-    attr.copy(name = name, dataType = dataType, nullable = nullable, metadata = metadata)(
+    AttributeReference(name = name, dataType = dataType, nullable = nullable, metadata = metadata)(
       exprId, qualifier = attr.qualifier)
   }
 
@@ -551,6 +552,10 @@ class Spark232Internals extends SparkInternals {
   override def newCacheManager(): CacheManager = new SnappyCacheManager23
 
   override def buildConf(key: String): ConfigBuilder = SQLConf.buildConf(key)
+
+  override def getCachedRDDInfos(context: SparkContext): Seq[RDDStorageInfo] = {
+    context.ui.get.store.rddList()
+  }
 }
 
 
@@ -751,10 +756,10 @@ class SnappySessionCatalog23(override val snappySession: SnappySession,
     super.failFunctionLookup(FunctionIdentifier(name, None))
   }
 
-  override protected def newView(table: CatalogTable, child: LogicalPlan): LogicalPlan =
+  override def newView(table: CatalogTable, child: LogicalPlan): LogicalPlan =
     View(desc = table, output = table.schema.toAttributes, child)
 
-  override protected def newCatalogRelation(schemaName: String, table: CatalogTable): LogicalPlan =
+  override def newCatalogRelation(schemaName: String, table: CatalogTable): LogicalPlan =
     UnresolvedCatalogRelation(table)
 
   override def lookupRelation(name: TableIdentifier): LogicalPlan = lookupRelationImpl(name, None)

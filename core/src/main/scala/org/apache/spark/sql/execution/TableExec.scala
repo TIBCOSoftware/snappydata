@@ -25,7 +25,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference,
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
-import org.apache.spark.sql.sources.{DestroyRelation, JdbcExtendedUtils, NativeTableRowLevelSecurityRelation}
+import org.apache.spark.sql.sources.{DestroyRelation, JdbcExtendedUtils, SnappyTableRelation}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, SparkSupport, ThinClientConnectorMode}
@@ -60,7 +60,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor
     if (!onExecutor) {
       val catalogVersion: Option[Long] = Utils.executeIfSmartConnector(sqlContext.sparkContext) {
         relation match {
-          case Some(r: NativeTableRowLevelSecurityRelation) => r.relationInfo.catalogSchemaVersion
+          case Some(r: SnappyTableRelation) => r.relationInfo.catalogSchemaVersion
           case _ =>
             -1
         }

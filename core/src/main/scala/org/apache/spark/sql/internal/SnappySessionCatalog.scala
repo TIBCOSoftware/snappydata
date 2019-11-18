@@ -848,9 +848,9 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
           toSeq.filterNot(_.isEmpty))
   }
 
-  protected def newView(table: CatalogTable, child: LogicalPlan): LogicalPlan
+  def newView(table: CatalogTable, child: LogicalPlan): LogicalPlan
 
-  protected def newCatalogRelation(schemaName: String, table: CatalogTable): LogicalPlan
+  def newCatalogRelation(schemaName: String, table: CatalogTable): LogicalPlan
 
   protected final def lookupRelationImpl(name: TableIdentifier, alias: Option[String],
       wrapped: Option[SnappySessionCatalog] = wrappedCatalog): LogicalPlan = wrapped match {

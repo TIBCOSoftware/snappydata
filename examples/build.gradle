@@ -27,7 +27,7 @@ sourceSets.test.scala.srcDir 'src/test/scala'
 if (!(new File(rootDir, 'cluster/build.gradle').exists())) {
   ext {
     scalaBinaryVersion = '2.11'
-    scalatestVersion = '2.2.6'
+    scalatestVersion = '3.0.8'
     scalaVersion = scalaBinaryVersion + '.8'
     snappyVersion = '1.1.0'
   }

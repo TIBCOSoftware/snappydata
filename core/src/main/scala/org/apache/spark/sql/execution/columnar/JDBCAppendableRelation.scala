@@ -49,7 +49,7 @@ abstract case class JDBCAppendableRelation(
     provider: String,
     mode: SaveMode,
     userSchema: StructType,
-    origOptions: CaseInsensitiveMutableHashMap[String],
+    override val origOptions: CaseInsensitiveMutableHashMap[String],
     externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext) extends BaseRelation
     with PrunedUnsafeFilteredScan
@@ -58,7 +58,7 @@ abstract case class JDBCAppendableRelation(
     with DestroyRelation
     with IndexableRelation
     with Logging
-    with NativeTableRowLevelSecurityRelation
+    with SnappyTableRelation
     with SparkSupport
     with Serializable {
 

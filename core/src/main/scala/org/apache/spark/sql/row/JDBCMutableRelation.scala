@@ -53,7 +53,7 @@ abstract case class JDBCMutableRelation(
     mode: SaveMode,
     userSpecifiedString: String,
     parts: Array[Partition],
-    origOptions: CaseInsensitiveMutableHashMap[String],
+    override val origOptions: CaseInsensitiveMutableHashMap[String],
     @transient override val sqlContext: SQLContext)
     extends BaseRelation
     with PrunedUnsafeFilteredScan
@@ -65,7 +65,7 @@ abstract case class JDBCMutableRelation(
     with DestroyRelation
     with IndexableRelation
     with AlterableRelation
-    with NativeTableRowLevelSecurityRelation
+    with SnappyTableRelation
     with SparkSupport
     with Logging {
 

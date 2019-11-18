@@ -40,7 +40,7 @@ dependencies {
 
   compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
 
-  compileOnly (project(":snappy-core_${scalaBinaryVersion}")) {
+  compileOnly (project(coreProjectName)) {
     exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)

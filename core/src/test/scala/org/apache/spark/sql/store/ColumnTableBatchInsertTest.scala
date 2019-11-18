@@ -16,13 +16,14 @@
  */
 package org.apache.spark.sql.store
 
+import scala.collection.mutable
+
 import io.snappydata.core.{Data, TestData}
 import io.snappydata.{ConcurrentOpsTests, SnappyFunSuite}
-import org.apache.spark.sql._
-import org.apache.spark.{Logging, SparkContext}
 import org.scalatest.{Assertions, BeforeAndAfter}
 
-import scala.collection.mutable
+import org.apache.spark.sql._
+import org.apache.spark.{Logging, SparkContext}
 
 class ColumnTableBatchInsertTest extends SnappyFunSuite
     with Logging
@@ -457,25 +458,25 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
   }
 }
 
-object ColumnTableBatchInsertTest extends Assertions {
+object ColumnTableBatchInsertTest extends Assertions with SparkSupport {
 
   def testSparkCachingUsingSQL(sc: SparkContext, executeSQL: String => Dataset[Row],
       isTableCached: String => Boolean, isCached: Dataset[Row] => Boolean): Unit = {
     executeSQL("cache table cachedTable1 as select id, rand() from range(1000000)")
     // check that table has been cached and materialized
     assert(isTableCached("cachedTable1"))
-    var rddInfos = sc.ui.get.storageListener.rddInfoList
+    var rddInfos = internals.getCachedRDDInfos(sc)
     assert(rddInfos.length === 1)
     assert(rddInfos.head.name.contains("Range (0, 1000000"))
 
     assert(executeSQL("select count(*) from cachedTable1").collect()(0).getLong(0) === 1000000)
-    rddInfos = sc.ui.get.storageListener.rddInfoList
+    rddInfos = internals.getCachedRDDInfos(sc)
     assert(rddInfos.length === 1)
     assert(rddInfos.head.name.contains("Range (0, 1000000"))
 
     executeSQL("uncache table cachedTable1")
     assert(!isTableCached("cachedTable1"))
-    rddInfos = sc.ui.get.storageListener.rddInfoList
+    rddInfos = internals.getCachedRDDInfos(sc)
     assert(rddInfos.length === 0)
 
     // temporary table should still exist
@@ -484,10 +485,10 @@ object ColumnTableBatchInsertTest extends Assertions {
     executeSQL("cache lazy table cachedTable2 as select id, rand() from range(500000)")
     assert(isTableCached("cachedTable2"))
     // check that cache has not been materialized yet
-    rddInfos = sc.ui.get.storageListener.rddInfoList
+    rddInfos = internals.getCachedRDDInfos(sc)
     assert(rddInfos.length === 0)
     assert(executeSQL("select count(*) from cachedTable2").collect()(0).getLong(0) === 500000)
-    rddInfos = sc.ui.get.storageListener.rddInfoList
+    rddInfos = internals.getCachedRDDInfos(sc)
     assert(rddInfos.length === 1)
     assert(rddInfos.head.name.contains("Range (0, 500000"))
 
@@ -495,7 +496,7 @@ object ColumnTableBatchInsertTest extends Assertions {
     val table = executeSQL("select * from cachedTable2")
     executeSQL("drop table cachedTable2")
     assert(!isCached(table))
-    rddInfos = sc.ui.get.storageListener.rddInfoList
+    rddInfos = internals.getCachedRDDInfos(sc)
     assert(rddInfos.length === 0)
 
     executeSQL("drop table cachedTable1")
