@@ -19,7 +19,7 @@ package org.apache.spark.sql.test
 import java.io.File
 
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
-import org.scalatest.{Tag}
+import org.scalatest.Tag
 
 import org.apache.spark.SparkFunSuite
 
@@ -32,9 +32,11 @@ trait SnappySparkTestUtil extends SparkFunSuite {
   }
 
   def excluded: Seq[String] = Nil
+
   def ignored: Seq[String] = Nil
 
-  override protected def test(testName: String, testTags: Tag*)(testFun: => Unit) = {
+  override protected def test(testName: String, testTags: Tag*)(testFun: => Any /* Assertion */)
+      (implicit pos: org.scalactic.source.Position): Unit = {
     if (!excluded.contains(testName)) {
       if (ignored.contains(testName)) {
         super.ignore(testName, testTags: _*)(testFun)

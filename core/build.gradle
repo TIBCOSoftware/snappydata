@@ -95,6 +95,9 @@ dependencies {
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
+  testCompile(group: 'org.apache.kafka', name: 'kafka_' + scalaBinaryVersion, version: kafka010Version) {
+    exclude(group: 'net.jpountz.lz4', module: 'lz4')
+  }
 
   testCompile project(":snappy-core_${scalaBinaryVersion}:compat-spark${sparkConnectorVersion}")
 
