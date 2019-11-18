@@ -21,6 +21,7 @@ import java.util.Properties
 import java.util.regex.Pattern
 
 import scala.collection.JavaConverters._
+import scala.util.matching.Regex
 
 import _root_.com.gemstone.gemfire.distributed.DistributedMember
 import _root_.com.gemstone.gemfire.distributed.internal.DistributionConfig
@@ -33,6 +34,7 @@ import io.snappydata.{Constant, Property, ServerManager, SnappyTableStatsProvide
 import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.hive.HiveClientUtil
+import org.apache.spark.sql.sources.JdbcExtendedUtils.toLowerCase
 import org.apache.spark.sql.{SnappyContext, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.{SparkContext, SparkEnv}
 
@@ -41,6 +43,7 @@ import org.apache.spark.{SparkContext, SparkEnv}
  */
 object ServiceUtils {
 
+  val PASSWORD_MATCH: Regex = "(?i)(password|passwd|secret).*".r
   val LOCATOR_URL_PATTERN: Pattern = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])")
 
   private[snappydata] def getStoreProperties(
@@ -170,5 +173,23 @@ object ServiceUtils {
           case _: Throwable => false
         }
     }
+  }
+
+  /**
+   * Masks access key and secret access key in case of S3 URI
+   */
+  def maskLocationURI(locURI: String): String = {
+    val uri = toLowerCase(locURI)
+    val maskedSrcPath = if ((uri.startsWith("s3a://") ||
+        uri.startsWith("s3://") ||
+        uri.startsWith("s3n://")) && uri.contains("@")) {
+      locURI.replace(locURI.slice(locURI.indexOf("//") + 2,
+        locURI.indexOf("@")), "****:****")
+    } else maskPassword(locURI)
+    maskedSrcPath
+  }
+
+  private def maskPassword(s: String): String = {
+    PASSWORD_MATCH.replaceAllIn(s, "xxx")
   }
 }

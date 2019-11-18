@@ -34,6 +34,7 @@ import scala.reflect.runtime.universe.TypeTag
 
 import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.gemstone.gemfire.internal.cache.UpdateAttributesProcessor
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -1187,7 +1188,7 @@ object SnappyContext extends Logging {
   def newHiveSession(): SparkSession = contextLock.synchronized {
     val sc = globalSparkContext
     sc.conf.set(StaticSQLConf.CATALOG_IMPLEMENTATION.key, "hive")
-    if (this.hiveSession ne null) this.hiveSession.newSession()
+    val hiveSession = if (this.hiveSession ne null) this.hiveSession.newSession()
     else {
       val session = SparkSession.builder().enableHiveSupport().getOrCreate()
       if (session.sharedState.externalCatalog.isInstanceOf[HiveExternalCatalog] &&
@@ -1200,6 +1201,16 @@ object SnappyContext extends Logging {
         this.hiveSession
       }
     }
+    updateAndDistributeProfile()
+    hiveSession
+  }
+
+  //todo[vatsal]: can we push this logic to some util like GemFireXDUtils
+  private def updateAndDistributeProfile(): Unit = {
+    val profile = GemFireXDUtils.getMyProfile(true)
+    profile.setHiveEnabled(true)
+    val advisee = GemFireXDUtils.getGfxdAdvisor.getAdvisee
+    new UpdateAttributesProcessor(advisee).distribute(false)
   }
 
   def hasHiveSession: Boolean = contextLock.synchronized(this.hiveSession ne null)
