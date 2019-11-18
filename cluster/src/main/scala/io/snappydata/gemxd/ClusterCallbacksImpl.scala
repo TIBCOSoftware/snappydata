@@ -17,17 +17,15 @@
 package io.snappydata.gemxd
 
 import java.io.{File, InputStream}
+import java.util.{Iterator => JIterator}
 import java.{lang, util}
-import java.util.{List, Iterator => JIterator}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
-
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Try
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemFireCacheImpl}
 import com.gemstone.gemfire.internal.shared.Version
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ClassPathLoader, GemFireVersion}
 import com.pivotal.gemfirexd.Attribute
@@ -39,12 +37,20 @@ import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCa
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 import io.snappydata.recovery.RecoveryService
+import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
+import io.snappydata.util.ServiceUtils
 import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
 
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
-import org.apache.spark.sql.{Row, SaveMode}
+import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.catalyst.catalog.{CatalogStorageFormat, CatalogTable}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
+import org.apache.spark.sql.execution.datasources.DataSource
+import org.apache.spark.sql.internal.SnappySessionCatalog
+import org.apache.spark.sql.sources.DataSourceRegister
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -52,6 +58,8 @@ import org.apache.spark.sql.{Row, SaveMode}
 object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   CallbackFactoryProvider.setClusterCallbacks(this)
+
+  private val PASSWORD_MATCH = "(?i)(password|passwd|secret).*".r
 
   private[snappydata] def initialize(): Unit = {
     // nothing to be done; singleton constructor does all
@@ -215,7 +223,8 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   /**
-   * generates spark-shell code which helps user to reload data exported through EXPORT_DATA procedure
+   * generates spark-shell code which helps user to reload data exported through EXPORT_DATA
+   * procedure
    *
    */
   def generateLoadScripts(connId: lang.Long): Unit = {
@@ -233,16 +242,10 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
         // todo do testing for all formats and ensure generated scripts handles all scenarios
         loadScriptString += s"""
           |CREATE EXTERNAL TABLE $tableExternal USING ${args.formatType}
-          |OPTIONS (PATH '${args.outputDir}/${table.toUpperCase}'${additionalOptions});
+          |OPTIONS (PATH '${args.outputDir}/${table.toUpperCase}'$additionalOptions);
           |INSERT OVERWRITE $table SELECT * FROM $tableExternal;
           |
         """.stripMargin
-//        loadScriptString += s"""
-//                               |var $tableExternal = sn.read.${d.formatType}("${d.outputDir}/${table.toUpperCase}")
-//                               |$tableExternal.write.mode("overwrite").insertInto("${table}")
-//                               |$tableExternal = null
-//                               |
-//      """.stripMargin
       })
       session.sparkContext.parallelize(Seq(loadScriptString), 1).saveAsTextFile(generatedScriptPath)
     })
@@ -257,6 +260,83 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
           Thread.currentThread().setContextClassLoader(loader)
         }
       case _ =>
+    }
+  }
+
+  override def getHiveTablesMetadata(connectionId: Long): util.Collection[ExternalTableMetaData] = {
+    val session = SnappySessionPerConnection.getAllSessions.head
+    val catalogTables = session.sessionState.catalog.asInstanceOf[SnappySessionCatalog]
+        .getHiveCatalogTables
+    import scala.collection.JavaConverters._
+    getTablesMetadata(catalogTables).asJava
+  }
+
+  private def getTablesMetadata(catalogTables: Seq[CatalogTable]): Seq[ExternalTableMetaData] = {
+    catalogTables.map(catalogTableToMetadata)
+  }
+
+  //todo[vatsal] simplify this code. may be some conditions can be removed as tables will be always
+  // from hive metastore.
+  private def catalogTableToMetadata(table: CatalogTable) = {
+    val tableType = CatalogObjectType.getTableType(table)
+    val parameters = new CaseInsensitiveMutableHashMap[String](table.storage.properties)
+    val tblDataSourcePath = getDataSourcePath(parameters, table.storage)
+    val driverClass = parameters.get("driver") match {
+      case None => ""
+      case Some(c) => c
+    }
+    // exclude policies also from the list of hive tables
+    val metaData = new ExternalTableMetaData(table.identifier.table,
+      table.database, tableType.toString, null, -1,
+      -1, null, null, null, null,
+      tblDataSourcePath, driverClass, false)
+    metaData.provider = table.provider match {
+      case None => ""
+      case Some(p) => p
+    }
+    metaData.shortProvider = metaData.provider
+    try {
+      val c = DataSource.lookupDataSource(metaData.provider)
+      if (classOf[DataSourceRegister].isAssignableFrom(c)) {
+        metaData.shortProvider = c.newInstance.asInstanceOf[DataSourceRegister].shortName()
+      }
+    } catch {
+      case NonFatal(_) => // ignore
+    }
+    metaData.columns = ExternalStoreUtils.getColumnMetadata(table.schema)
+    if (tableType == CatalogObjectType.View) {
+      metaData.viewText = table.viewOriginalText match {
+        case None => table.viewText match {
+          case None => ""
+          case Some(t) => t
+        }
+        case Some(t) => t
+      }
+    }
+    metaData
+  }
+
+  private def getDataSourcePath(properties: scala.collection.Map[String, String],
+      storage: CatalogStorageFormat): String = {
+    properties.get("path") match {
+      case Some(p) if !p.isEmpty => ServiceUtils.maskLocationURI(p)
+      case _ => properties.get("region.path") match { // for external GemFire connector
+        case Some(p) if !p.isEmpty => ServiceUtils.maskLocationURI(p)
+        case _ => properties.get("url") match { // jdbc
+          case Some(p) if !p.isEmpty =>
+            // mask the password if present
+            val url = ServiceUtils.maskLocationURI(p)
+            // add dbtable if present
+            properties.get(SnappyExternalCatalog.DBTABLE_PROPERTY) match {
+              case Some(d) if !d.isEmpty => s"$url; ${SnappyExternalCatalog.DBTABLE_PROPERTY}=$d"
+              case _ => url
+            }
+          case _ => storage.locationUri match { // fallback to locationUri
+            case None => ""
+            case Some(l) => ServiceUtils.maskLocationURI(l)
+          }
+        }
+      }
     }
   }
 }

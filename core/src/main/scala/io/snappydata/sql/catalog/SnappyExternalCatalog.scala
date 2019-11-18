@@ -279,7 +279,6 @@ object SnappyExternalCatalog {
   val INDEXED_TABLE_LOWER: String = Utils.toLowerCase("INDEXED_TABLE")
 
   val EMPTY_SCHEMA: StructType = StructType(Nil)
-  private[sql] val PASSWORD_MATCH = "(?i)(password|passwd|secret).*".r
 
   val currentFunctionIdentifier = new ThreadLocal[FunctionIdentifier]
 
