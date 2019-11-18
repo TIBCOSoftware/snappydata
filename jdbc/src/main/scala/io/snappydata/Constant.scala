@@ -164,4 +164,8 @@ object Constant {
   val COMPLEX_TYPE_AS_JSON_HINT = "complexTypeAsJson"
 
   val COMPLEX_TYPE_AS_JSON_DEFAULT = true
+
+  val CLUSTER_ID = "__cluster_id__"
+
+  val MEMBER_ID_PREFIX = "__member_id__"
 }
