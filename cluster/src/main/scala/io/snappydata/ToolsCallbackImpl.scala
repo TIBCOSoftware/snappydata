@@ -257,12 +257,11 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       throw StandardException.newException(
         SQLState.AUTH_NO_OBJECT_PERMISSION, grantor, "grant/revoke intp", "ComputeDB", "cluster")
     }
-    val key = SnappyInterpreterExecute.GRANT_REVOKE_KEY
+    val key = Constant.GRANT_REVOKE_KEY
     val allowedIntpUsers = Misc.getMemStore.getMetadataCmdRgn.get(key)
     val newUsers = users.split(",").toSet
     if (allowedIntpUsers == null) {
       if (!isGrant) return // nothing to do
-      if (users == null || users.isEmpty) return // Nothing to do
       SnappyInterpreterExecute.doCleanupAsPerNewGrantRevoke(newUsers)
       Misc.getMemStore.getMetadataCmdRgn.put(key, users)
     } else {

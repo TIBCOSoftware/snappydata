@@ -25,6 +25,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.InterpreterExecute
+import io.snappydata.Constant
 import io.snappydata.gemxd.SnappySessionPerConnection
 import org.apache.spark.Logging
 import org.apache.spark.sql.execution.InterpretCodeCommand
@@ -34,7 +35,7 @@ import scala.collection.mutable
 class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExecute with Logging {
 
   override def execute(user: String): Array[String] = {
-    // TODO check for auth to execute intp
+    if (!SnappyInterpreterExecute.INITIALIZED) SnappyInterpreterExecute.init()
     if (Misc.isSecurityEnabled && !user.equalsIgnoreCase(SnappyInterpreterExecute.dbOwner)) {
       if (!SnappyInterpreterExecute.allowedUsers.contains(user)) {
         // throw exception
@@ -54,6 +55,8 @@ object SnappyInterpreterExecute {
   val intpRWLock = new ReentrantReadWriteLock()
   val connToIntpHelperMap = new mutable.HashMap[Long, (String, RemoteInterpreterStateHolder)]
   var allowedUsers: Set[String] = Set()
+
+  var INITIALIZED = false
 
   lazy val dbOwner = {
     Misc.getMemStore.getDatabase.getDataDictionary.getAuthorizationDatabaseOwner.toLowerCase()
@@ -87,6 +90,14 @@ object SnappyInterpreterExecute {
     }
   }
 
+  def init(): Unit = {
+    val key = Constant.GRANT_REVOKE_KEY
+    val allowedIntpUsers = Misc.getMemStore.getMetadataCmdRgn.get(key)
+    if (allowedIntpUsers != null)
+      allowedUsers = allowedIntpUsers.split(",").map(_.toLowerCase).toSet
+    INITIALIZED = true
+  }
+
   def doCleanupAsPerNewGrantRevoke(currentAllowedUsers: Set[String]): Unit = {
     var lockTaken = false
     try {
@@ -101,6 +112,4 @@ object SnappyInterpreterExecute {
       if (lockTaken) intpRWLock.writeLock().unlock()
     }
   }
-
-  val GRANT_REVOKE_KEY = "##_INTP__GRANT__REVOKE_##"
 }

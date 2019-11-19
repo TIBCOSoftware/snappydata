@@ -1114,6 +1114,7 @@ object SnappyContext extends Logging {
                     override def accept(t: Entry[String, String]): Unit = {
                       if (!(t.getKey.equals(Constant.CLUSTER_ID) ||
                           t.getKey.startsWith(Constant.MEMBER_ID_PREFIX) ||
+                          t.getKey.equals(Constant.GRANT_REVOKE_KEY) ||
                           t.getKey.startsWith(ContextJarUtils.functionKeyPrefix))) {
                         val d = t.getValue
                         val cmdFields = d.split('|') // split() removes empty elements
