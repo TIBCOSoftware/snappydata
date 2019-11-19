@@ -242,7 +242,7 @@ An IAM user in AWS can gain additional (or different) permissions, or get permis
 **Example**
 
 ```
--./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> stop snap_ec2_cluster --with-zeppelin --authorized-address=<Authorized IP Address> --assume-role-arn=<role-arn> --assume-role-timeout=<timeout> --assume-role-session-name=<name-for-session>
+./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> stop snap_ec2_cluster --with-zeppelin --authorized-address=<Authorized IP Address> --assume-role-arn=<role-arn> --assume-role-timeout=<timeout> --assume-role-session-name=<name-for-session>
 ```
 
 !!! Note
@@ -314,7 +314,7 @@ The utility also reads **snappy-env.sh**, if present in the directory where help
 #### Stopping the Cluster
 
 When you stop a cluster, it shuts down the EC2 instances, and any data saved on the local instance stores is lost.
-However, the data saved on EBS volumes are retained, unless the spot-instances are used.
+However, the data saved on EBS volumes is retained, unless the spot-instances are used.
 
 ```pre
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem stop cluster-name
@@ -409,8 +409,7 @@ Options:
   --locator-instance-type=LOCATOR_INSTANCE_TYPE
                         Locator instance type (default: t2.medium)
   -r REGION, --region=REGION
-                        EC2 region used to launch instances, or to find
-                        them in (default: us-east-1)
+                        Name of the EC2 region where instances are launched (default: us-east-1).
   -z ZONE, --zone=ZONE  Availability zone to launch instances in, or 'all' to
                         spread stores across multiple (an additional $0.01/Gb
                         for bandwidthbetween zones applies) (default: a single
@@ -432,8 +431,8 @@ Options:
   --with-zeppelin       Launch Apache Zeppelin server with the cluster. It launches 
   						in the same instance where the lead node is running.
   --deploy-root-dir=DEPLOY_ROOT_DIR
-                        A directory to copy into/on the first locator. Must
-                        be absolute. Note that a trailing slash is handled as
+                        A directory to copy into the root (/) directory on the first locator. 
+                        Must be absolute. Note that a trailing slash is handled as
                         per rsync: If you omit it, the last directory of the
                         --deploy-root-dir path will be created in / before
                         copying its contents. If you append the trailing
@@ -521,6 +520,7 @@ This section covers the following:
 
 *	[Prerequisites](#prereqaws)
 *	[Launching the Instance](#launchawsinstance)
+*	[Acccessing TIBCO ComputeDB Cluster](#accesssnappydatacluster)
 
 !!! Attention
 	The AMIs of TIBCO ComputeDB are currently unavailable on AWS.
@@ -576,12 +576,12 @@ To launch the instance and start the TIBCO ComputeDB cluster on a single EC2 ins
 	!!!Note
 		The public DNS/IP of the instance is available on the **EC2 dashboard** > **Instances** page. Select your EC2 instance and search for it in the lower part of the page.
 
-12. Download the required TIBCO ComputeDB distribution (.tar.gz) into this EC2 instance. You can find the latest Enterprise edition release [here](https://edelivery.tibco.com/storefront/eval/tibco-computedb-enterprise-edition/prod12074.html).
+12. Download the required TIBCO ComputeDB distribution into this EC2 instance. You can find the latest Enterprise edition release [here](https://edelivery.tibco.com/storefront/eval/tibco-computedb-enterprise-edition/prod12074.html).
 
     !!!Note
     	When TIBCO ComputeDB AMI is made available on AWS in the future, it will have the distribution pre-installed. In that case, you can jump directly to [step 15](#step15).
 
-13. Extract the tarball to **/opt/snappydata**.
+13. Download the zip file which contains the .tar.gz file and extract `tib-compute_<version>_linux.tar.gz` to **/opt/snappydata**.
 
 		tar -xvf snappydata-<version>-bin.tar.gz
 		sudo mv snappydata-<version>-bin /opt/snappydata
