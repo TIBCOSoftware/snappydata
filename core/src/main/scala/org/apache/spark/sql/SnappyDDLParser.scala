@@ -136,6 +136,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def DISKSTORE: Rule0 = rule { keyword(Consts.DISKSTORE) }
   final def ENABLE: Rule0 = rule { keyword(Consts.ENABLE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
+  final def EXEC: Rule0 = rule { keyword(Consts.EXEC) }
   final def EXECUTE: Rule0 = rule { keyword(Consts.EXECUTE) }
   final def EXPLAIN: Rule0 = rule { keyword(Consts.EXPLAIN) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
@@ -198,6 +199,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def RESTRICT: Rule0 = rule { keyword(Consts.RESTRICT) }
   final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
   final def RLIKE: Rule0 = rule { keyword(Consts.RLIKE) }
+  final def SCALA: Rule0 = rule { keyword(Consts.SCALA) }
   final def SCHEMAS: Rule0 = rule { keyword(Consts.SCHEMAS) }
   final def SECURITY: Rule0 = rule { keyword(Consts.SECURITY) }
   final def SEMI: Rule0 = rule { keyword(Consts.SEMI) }
@@ -477,7 +479,7 @@ abstract class SnappyDDLParser(session: SnappySession)
    * @return LogicalPlan
    */
   protected def interpretCode: Rule1[LogicalPlan] = rule {
-    (INTP | INTERPRET) ~ (OPTIONS ~ options).? ~ ws ~ CODE ~ ws ~ codeChunk ~> {
+    EXEC ~ ws ~ SCALA ~ ws ~ (OPTIONS ~ options).? ~ ws ~ CODE ~ ws ~ codeChunk ~> {
       ( opts: Any, code: String) =>
         val parameters = opts.asInstanceOf[Option[Map[String, String]]]
           .getOrElse(Map.empty[String, String])
@@ -487,10 +489,10 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def grantRevokeIntp: Rule1[LogicalPlan] = rule {
-    GRANT ~ ws ~ PRIVILEGE ~ ws ~ INTP ~ ws ~ TO ~ capture(ANY.*) ~> {
+    GRANT ~ ws ~ PRIVILEGE ~ ws ~ EXEC ~ ws ~ SCALA ~ ws ~ TO ~ capture(ANY.*) ~> {
       (users: String) => GrantRevokeIntpCommand(true, users)
     } |
-    REVOKE ~ ws ~ PRIVILEGE ~ ws ~ INTP ~ ws ~ FROM ~ capture(ANY.*) ~> {
+    REVOKE ~ ws ~ PRIVILEGE ~ ws ~ EXEC ~ ws ~ SCALA ~ ws ~ FROM ~ capture(ANY.*) ~> {
         (users: String) => GrantRevokeIntpCommand(false, users)
     }
   }

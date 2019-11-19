@@ -40,7 +40,7 @@ class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExe
       if (!SnappyInterpreterExecute.allowedUsers.contains(user)) {
         // throw exception
         throw StandardException.newException(
-          SQLState.AUTH_NO_EXECUTE_PERMISSION, user, "intp", "", "ComputeDB", "Cluster")
+          SQLState.AUTH_NO_EXECUTE_PERMISSION, user, "scala code execution", "", "ComputeDB", "Cluster")
       }
     }
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)

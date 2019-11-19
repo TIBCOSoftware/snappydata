@@ -255,7 +255,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     val dbOwner = SnappyInterpreterExecute.dbOwner
     if (!grantor.toLowerCase.equals(dbOwner)) {
       throw StandardException.newException(
-        SQLState.AUTH_NO_OBJECT_PERMISSION, grantor, "grant/revoke intp", "ComputeDB", "cluster")
+        SQLState.AUTH_NO_OBJECT_PERMISSION, grantor, "grant/revoke of scala code execution", "ComputeDB", "Cluster")
     }
     val key = Constant.GRANT_REVOKE_KEY
     val allowedIntpUsers = Misc.getMemStore.getMetadataCmdRgn.get(key)
