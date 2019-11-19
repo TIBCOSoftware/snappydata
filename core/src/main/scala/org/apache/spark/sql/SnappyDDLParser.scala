@@ -157,8 +157,6 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def INDEX: Rule0 = rule { keyword(Consts.INDEX) }
   final def INIT: Rule0 = rule { keyword(Consts.INIT) }
   final def INTERVAL: Rule0 = rule { keyword(Consts.INTERVAL) }
-  final def INTP: Rule0 = rule { keyword(Consts.INTP) }
-  final def INTERPRET: Rule0 = rule { keyword(Consts.INTERPRET) }
   final def JAR: Rule0 = rule { keyword(Consts.JAR) }
   final def JARS: Rule0 = rule { keyword(Consts.JARS) }
   final def LAST: Rule0 = rule { keyword(Consts.LAST) }
