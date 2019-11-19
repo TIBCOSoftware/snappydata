@@ -581,10 +581,11 @@ To launch the instance and start the TIBCO ComputeDB cluster on a single EC2 ins
     !!!Note
     	When TIBCO ComputeDB AMI is made available on AWS in the future, it will have the distribution pre-installed. In that case, you can jump directly to [step 15](#step15).
 
-13. Download the zip file which contains the .tar.gz file and extract `tib-compute_<version>_linux.tar.gz` to **/opt/snappydata**.
+13. Download and unzip `TIB_compute_<version>_linux.zip`, untar the tar.gz file in it and rename it to **/opt/snappydata**.
 
-		tar -xvf snappydata-<version>-bin.tar.gz
-		sudo mv snappydata-<version>-bin /opt/snappydata
+		unzip TIB_compute_<version>_linux.zip
+        tar -xvf TIB_compute_<version>_linux.tar.gz 
+		sudo mv TIB_compute_<version>_linux-bin /opt/snappydata
 		chown -R ec2-user:ec2-user /opt/snappydata
 
 14. Ensure that Java 8 is installed and set as default. For Amazon Linux 2018.03, you may need to uninstall Java 7 first. Following commands update OpenJDK to 8:
