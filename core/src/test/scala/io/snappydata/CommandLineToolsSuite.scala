@@ -18,9 +18,12 @@
 package io.snappydata
 
 import java.io._
+import java.sql.{Connection, DriverManager}
 
 import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process._
+
+import org.apache.spark.sql.collection.Utils
 
 class CommandLineToolsSuite extends SnappyTestRunner {
 
@@ -307,6 +310,25 @@ class CommandLineToolsSuite extends SnappyTestRunner {
         s"There failover tried but failed $consoleOutput")
     } finally {
 
+    }
+  }
+
+  test ("SNAP-3223 Routing query using driver class com.snappydata.jdbc.ClientDriver"){
+    def getJdbcConnectionWithComSnappyData(netPort: Int): Connection = {
+      val driver = "com.snappydata.jdbc.ClientDriver"
+      Utils.classForName(driver).newInstance
+      var url: String = "jdbc:snappydata://localhost:" + netPort + "/"
+      DriverManager.getConnection(url)
+    }
+
+    val jdbcConn = getJdbcConnection(1527)
+    val stmt = jdbcConn.createStatement()
+    assert(stmt.execute("show schemas"))
+    val result = stmt.getResultSet
+    var count = 0
+    while(result.next()){
+      println(result.getString(1))
+      count = count + 1
     }
   }
 }
