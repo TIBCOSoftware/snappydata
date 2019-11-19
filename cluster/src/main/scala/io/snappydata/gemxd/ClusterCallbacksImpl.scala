@@ -264,7 +264,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def getHiveTablesMetadata(connectionId: Long): util.Collection[ExternalTableMetaData] = {
-    val session = SnappySessionPerConnection.getAllSessions.head
+    val session = SnappySessionPerConnection.getSnappySessionForConnection(connectionId)
     val catalogTables = session.sessionState.catalog.asInstanceOf[SnappySessionCatalog]
         .getHiveCatalogTables
     import scala.collection.JavaConverters._
