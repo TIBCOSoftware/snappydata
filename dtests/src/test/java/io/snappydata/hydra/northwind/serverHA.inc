@@ -18,4 +18,4 @@ TASK       taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = Hy
            ;
 
 ENDTASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = restoreServerConfigData
-           threadGroups = snappyThreads;
+         clientNames = locator1;

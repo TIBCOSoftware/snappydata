@@ -146,6 +146,11 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   /**
    * Start kafka zookeeper.
    */
+
+  public static synchronized void HydraTask_StartKafkaZookeeper() {
+    snappyAdAnalyticsTest.startZookeeper();
+  }
+
   protected void startZookeeper() {
     ProcessBuilder pb = null;
     try {
@@ -415,7 +420,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         String aggType = SnappySchemaPrms.getAggregateType();
         switch (aggType.toUpperCase()) {
           case "JOIN":
-            query = "select tp.*,pd.language from temp_persoon tp,  persoon_details pd where tp.id=pd.id";
+            query = "select tp.*, pd.languages from temp_persoon tp, persoon_details pd where tp.id=pd.id";
             break;
           case "AVG":
             query = "select id, avg(age) as avg_age, avg(numChild) as avg_numchild from temp_persoon group by id";
@@ -782,7 +787,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     File logFile = null;
     leadHost = getLeadHost();
     String appName = SnappyPrms.getUserAppName();
-    Log.getLogWriter.info("User App Name is : " + appName);
+    Log.getLogWriter().info("User App Name is : " + appName);
     String leadPort = (String)SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
     String jobID = (String) SnappyBB.getBB().getSharedMap().get(appName);
     String snappyCmd = snappyJobScript + " stop --job-id " + jobID + " --lead " + leadHost + ":" + leadPort;

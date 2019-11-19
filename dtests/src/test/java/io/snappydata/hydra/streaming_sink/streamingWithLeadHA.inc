@@ -18,5 +18,5 @@ TASK       taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest t
            maxTimesToRun = 1;
 
 ENDTASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = restoreLeadConfigData
-           threadGroups = snappyThreads;
+         clientNames = locator1;
 

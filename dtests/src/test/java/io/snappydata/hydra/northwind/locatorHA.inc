@@ -16,7 +16,7 @@ TASK       taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = Hy
            ;
 
 ENDTASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = restoreLocatorConfigData
-           threadGroups = snappyThreads;
+         clientNames = locator1;
 
 CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJob
             io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.hydra.northwind.ValidateNWQueriesJob
