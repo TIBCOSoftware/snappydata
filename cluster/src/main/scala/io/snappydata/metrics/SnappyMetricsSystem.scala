@@ -21,7 +21,6 @@ package io.snappydata.metrics
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui._
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
-import java.util
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import org.apache.spark.SparkContext
@@ -43,12 +42,6 @@ object SnappyMetricsSystem {
     val clusterUuid = Misc.getMemStore.getMetadataCmdRgn.get(Constant.CLUSTER_ID)
     UserMetricsSystem.initialize(sc, clusterUuid)
 
-    // store every member diskStore ID to metadataCmdRgn
-    putMembersDiskStoreIdInRegion()
-
-    val allMetaEntries = Misc.getMemStore.getMetadataCmdRgn.
-        getAll(Misc.getMemStore.getMetadataCmdRgn.keySet())
-
     val timeInterval = 5000
 
     // concurrently executing threads to get stats from StatsProviderServices
@@ -57,6 +50,9 @@ object SnappyMetricsSystem {
         while (true) {
           try {
             Thread.sleep(timeInterval)
+
+            // store every member diskStore ID to metadataCmdRgn
+            putMembersDiskStoreIdInRegion()
 
             // get cluster stats and publish into metrics system
             setMetricsForClusterStatDetails()
@@ -72,7 +68,7 @@ object SnappyMetricsSystem {
 
             // get member stats and publish into metrics system
             val memberBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
-            setMetricsForMemberStatDetails(memberBuff, allMetaEntries)
+            setMetricsForMemberStatDetails(memberBuff)
           }
           catch {
             case e: InterruptedException => e.printStackTrace()
@@ -85,7 +81,6 @@ object SnappyMetricsSystem {
   }
 
   def putMembersDiskStoreIdInRegion(): Unit = {
-
     val membersBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
     for ((k, v) <- membersBuff) {
       val shortDirName = v.getUserDir.substring(
@@ -195,8 +190,7 @@ object SnappyMetricsSystem {
     }
   }
 
-  def setMetricsForMemberStatDetails(membersBuff: mutable.Map[String, MemberStatistics],
-       allMetaEntries: util.Map[String, String]) {
+  def setMetricsForMemberStatDetails(membersBuff: mutable.Map[String, MemberStatistics]) {
 
     var leadCount, locatorCount, dataServerCount, connectorCount, totalMembersCount = 0
 
@@ -221,7 +215,7 @@ object SnappyMetricsSystem {
     createGauge(s"MemberMetrics.connectorCount", connectorCount)
 
     for ((k, v) <- membersBuff) {
-      SnappyMemberMetrics.convertStatsToMetrics(k, v, allMetaEntries)
+      SnappyMemberMetrics.convertStatsToMetrics(k, v)
     }
   }
 }
