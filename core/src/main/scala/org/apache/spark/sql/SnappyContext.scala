@@ -34,10 +34,10 @@ import scala.reflect.runtime.universe.TypeTag
 
 import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import com.gemstone.gemfire.internal.cache.UpdateAttributesProcessor
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.engine.store.GemFireStore.StoreAdvisee
 import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog}
 import io.snappydata.util.ServiceUtils
@@ -1205,12 +1205,10 @@ object SnappyContext extends Logging {
     hiveSession
   }
 
-  //todo[vatsal]: can we push this logic to some util like GemFireXDUtils
   private def updateAndDistributeProfile(): Unit = {
-    val profile = GemFireXDUtils.getMyProfile(true)
-    profile.setHiveEnabled(true)
-    val advisee = GemFireXDUtils.getGfxdAdvisor.getAdvisee
-    new UpdateAttributesProcessor(advisee).distribute(false)
+    val advisee = GemFireXDUtils.getGfxdAdvisor.getAdvisee.asInstanceOf[StoreAdvisee]
+    advisee.setHiveSessionInitialized(true)
+    GemFireXDUtils.getGfxdAdvisor.distributeProfileUpdate()
   }
 
   def hasHiveSession: Boolean = contextLock.synchronized(this.hiveSession ne null)
