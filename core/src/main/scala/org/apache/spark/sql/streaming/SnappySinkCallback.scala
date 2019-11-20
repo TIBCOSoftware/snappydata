@@ -223,6 +223,11 @@ case class SnappyStoreSink(snappySession: SnappySession,
       ds.queryExecution.toRdd,
       StructType(ds.schema.fields))
   }
+
+  override def toString: String = {
+    val params = parameters + ("sinkCallback" -> sinkCallback.getClass.getName)
+    s"SnappyStoreSink[${params.mkString(",")}]"
+  }
 }
 
 import org.apache.spark.sql.snappy._
