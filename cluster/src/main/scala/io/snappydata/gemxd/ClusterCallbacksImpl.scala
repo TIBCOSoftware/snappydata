@@ -275,68 +275,23 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     catalogTables.map(catalogTableToMetadata)
   }
 
-  //todo[vatsal] simplify this code. may be some conditions can be removed as tables will be always
-  // from hive metastore.
   private def catalogTableToMetadata(table: CatalogTable) = {
     val tableType = CatalogObjectType.getTableType(table)
-    val parameters = new CaseInsensitiveMutableHashMap[String](table.storage.properties)
-    val tblDataSourcePath = getDataSourcePath(parameters, table.storage)
-    val driverClass = parameters.get("driver") match {
+    val tblDataSourcePath = table.storage.locationUri match {
       case None => ""
-      case Some(c) => c
+      case Some(l) => ServiceUtils.maskLocationURI(l)
     }
-    // exclude policies also from the list of hive tables
+
     val metaData = new ExternalTableMetaData(table.identifier.table,
       table.database, tableType.toString, null, -1,
       -1, null, null, null, null,
-      tblDataSourcePath, driverClass, false)
+      tblDataSourcePath, "", false)
     metaData.provider = table.provider match {
       case None => ""
       case Some(p) => p
     }
     metaData.shortProvider = metaData.provider
-    try {
-      val c = DataSource.lookupDataSource(metaData.provider)
-      if (classOf[DataSourceRegister].isAssignableFrom(c)) {
-        metaData.shortProvider = c.newInstance.asInstanceOf[DataSourceRegister].shortName()
-      }
-    } catch {
-      case NonFatal(_) => // ignore
-    }
     metaData.columns = ExternalStoreUtils.getColumnMetadata(table.schema)
-    if (tableType == CatalogObjectType.View) {
-      metaData.viewText = table.viewOriginalText match {
-        case None => table.viewText match {
-          case None => ""
-          case Some(t) => t
-        }
-        case Some(t) => t
-      }
-    }
     metaData
-  }
-
-  private def getDataSourcePath(properties: scala.collection.Map[String, String],
-      storage: CatalogStorageFormat): String = {
-    properties.get("path") match {
-      case Some(p) if !p.isEmpty => ServiceUtils.maskLocationURI(p)
-      case _ => properties.get("region.path") match { // for external GemFire connector
-        case Some(p) if !p.isEmpty => ServiceUtils.maskLocationURI(p)
-        case _ => properties.get("url") match { // jdbc
-          case Some(p) if !p.isEmpty =>
-            // mask the password if present
-            val url = ServiceUtils.maskLocationURI(p)
-            // add dbtable if present
-            properties.get(SnappyExternalCatalog.DBTABLE_PROPERTY) match {
-              case Some(d) if !d.isEmpty => s"$url; ${SnappyExternalCatalog.DBTABLE_PROPERTY}=$d"
-              case _ => url
-            }
-          case _ => storage.locationUri match { // fallback to locationUri
-            case None => ""
-            case Some(l) => ServiceUtils.maskLocationURI(l)
-          }
-        }
-      }
-    }
   }
 }
