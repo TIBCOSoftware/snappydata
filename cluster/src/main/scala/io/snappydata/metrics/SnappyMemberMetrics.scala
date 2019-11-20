@@ -21,19 +21,19 @@ package io.snappydata.metrics
 
 import io.snappydata.metrics.SnappyMetricsSystem.{createGauge, updateHistogram}
 import com.pivotal.gemfirexd.internal.engine.ui.MemberStatistics
-import java.util
-
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 
 object SnappyMemberMetrics {
 
-  def convertStatsToMetrics(member: String, memberDetails: MemberStatistics,
-       allMetaEntries: util.Map[String, String]) {
+  def convertStatsToMetrics(member: String, memberDetails: MemberStatistics) {
+
     val shortDirName = memberDetails.getUserDir.substring(
       memberDetails.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
 
-    val memberUuid = allMetaEntries.
-        get(Constant.MEMBER_ID_PREFIX + shortDirName + member + "__").toString
+    val memberUuid = Misc.getMemStore.getMetadataCmdRgn.
+        getAll(Misc.getMemStore.getMetadataCmdRgn.keySet()).
+        get(Constant.MEMBER_ID_PREFIX + shortDirName + member + "__")
 
     val pId = memberDetails.getProcessId
 
