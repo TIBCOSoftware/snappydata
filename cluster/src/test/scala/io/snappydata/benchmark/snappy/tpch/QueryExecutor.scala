@@ -47,7 +47,7 @@ object QueryExecutor {
     var rs: ResultSet = null
     try {
       // scalastyle:off println
-      println(s"Started executing $queryNumber")
+      println(s"Started executing query $queryNumber")
       if (isResultCollection) {
         rs = queryExecution(queryNumber, stmt)
         // queryPrintStream.println(s"$resultFormat")
@@ -62,8 +62,8 @@ object QueryExecutor {
           }
           queryPrintStream.println()
         }
-        println(s"Number of results : $count")
-        println(s"$queryNumber Result collected in file $queryNumber.out")
+        println(s"Number of rows in query $queryNumber result : $count")
+        println(s"Query $queryNumber Result collected in file $queryNumber.out")
         if (queryNumber.equals("13")) {
           stmt.execute("drop view ViewQ13")
         }
