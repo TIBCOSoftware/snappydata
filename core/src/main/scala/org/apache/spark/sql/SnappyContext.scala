@@ -1112,7 +1112,9 @@ object SnappyContext extends Logging {
                   val commandSet = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
                   commandSet.forEach(new Consumer[Entry[String, String]] {
                     override def accept(t: Entry[String, String]): Unit = {
-                      if (!t.getKey.startsWith(ContextJarUtils.functionKeyPrefix)) {
+                      if (!(t.getKey.equals(Constant.CLUSTER_ID) ||
+                          t.getKey.startsWith(Constant.MEMBER_ID_PREFIX) ||
+                          t.getKey.startsWith(ContextJarUtils.functionKeyPrefix))) {
                         val d = t.getValue
                         val cmdFields = d.split('|') // split() removes empty elements
                         if (d.contains('|')) {
@@ -1151,7 +1153,7 @@ object SnappyContext extends Logging {
 
   private def failOnJarUnavailability(k: String, jars: Array[String], e: Throwable): Unit = {
     GemFireXDUtils.waitForNodeInitialization()
-    Misc.getMemStore.getGlobalCmdRgn.remove(k)
+    Misc.getMemStore.getMetadataCmdRgn.remove(k)
     if (!jars.isEmpty) {
       val mutable = new ArrayBuffer[String]()
       mutable += "__REMOVE_FILES_ONLY__"
