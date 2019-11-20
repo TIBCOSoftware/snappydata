@@ -21,17 +21,8 @@ SnappyData=$HOME/SNAPPY/CHECKOUT/spark-2.1.1-bin-hadoop2.7
 #Whether to repartition dataframe
 rePartition=true
 
-#number of buckets for order and lineitem tables
-buckets_Order_Lineitem=113
-
-#number of buckets for Customer, Part and PartSupplier tables
-buckets_Cust_Part_PartSupp=113
-
-#Are Nation, Region, Supplier tables column tables?
-IsSupplierColumnTable=false
-
-#number of buckets for Nation, Region, Supplier
-buckets_Supplier=113
+#number of buckets for column tables
+buckets_ColumnTable=128
 
 #Loading from parquet or csv file
 Parquet=false
@@ -56,18 +47,18 @@ WarmupRuns=2
 #Actual runs whose average will be taken and repordted as performance
 AverageRuns=3
 
-# location of jar which has TPCH related class files
-TPCHJar=$HOME/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.1.-tests.jar
+# location of the jar that contains TPC-DS, TPC-H benchmark related class files
+appJar=$HOME/SNAPPY/CHECKOUT/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.1.1.-tests.jar
 
-#Size of the TPCH data. Do not chage format
+#Size of the TPC-DS data. Do not chage format
 dataSize=1GB_Stages
 #dataSize=1GB
 
-#Location of the TPCH Data. Make sure directory name is same as the dataSize specified above
-dataDir=$HOME/SNAPPY/DATA/TPCH/$dataSize
+#Location of the TPC-DS Data. Make sure directory name is same as the dataSize specified above
+dataDir=$HOME/SNAPPY/DATA/TPCDS/$dataSize
 
 #Location where final output will be collected
-outputLocation=$HOME/SNAPPY/OUTPUT/TPCH/SNAPPY_RESULT
+outputLocation=$HOME/SNAPPY/OUTPUT/TPCDS/SNAPPY_RESULT
 
 queryPath=$HOME/code/snappydata/spark/sql/core/src/test/resources/tpcds
 
