@@ -86,7 +86,6 @@ case class GrantRevokeIntpCommand(
     }
     val session = sparkSession.asInstanceOf[SnappySession]
     val user = session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR)
-    println(s"UpdateIntpGrantRevoke going to be called for $user isGrant=$isGrant and users = $users")
     tcb.updateIntpGrantRevoke(user, isGrant, users)
     Nil
   }
@@ -596,8 +595,8 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val commands = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
     val rows = new ArrayBuffer[Row]
-    commands.forEach(new Consumer[Entry[String, String]] {
-      override def accept(t: Entry[String, String]): Unit = {
+    commands.forEach(new Consumer[Entry[String, Object]] {
+      override def accept(t: Entry[String, Object]): Unit = {
         if (!(t.getKey.equals(Constant.CLUSTER_ID) ||
             t.getKey.startsWith(Constant.MEMBER_ID_PREFIX))) {
           var alias = t.getKey
@@ -605,25 +604,27 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
           if (alias.contains(ContextJarUtils.droppedFunctionsKey)) return
           // Explicitly mark functions as UDF while listing jars/packages.
           alias = alias.replace(ContextJarUtils.functionKeyPrefix, "[UDF]")
-          val value = t.getValue
-          val indexOf = value.indexOf('|')
-          if (indexOf > 0) {
-            // It is a package
-            val pkg = value.substring(0, indexOf)
-            rows += Row(alias, pkg, true)
-          }
-          else {
-            // It is a jar
-            val jars = value.split(',')
-            val jarfiles = jars.map(f => {
-              val lastIndexOf = f.lastIndexOf('/')
-              val length = f.length
-              if (lastIndexOf > 0) f.substring(lastIndexOf + 1, length)
-              else {
-                f
-              }
-            })
-            rows += Row(alias, jarfiles.mkString(","), false)
+          if (t.getValue.isInstanceOf[String]) {
+            val value = t.getValue.toString
+            val indexOf = value.indexOf('|')
+            if (indexOf > 0) {
+              // It is a package
+              val pkg = value.substring(0, indexOf)
+              rows += Row(alias, pkg, true)
+            }
+            else {
+              // It is a jar
+              val jars = value.split(',')
+              val jarfiles = jars.map(f => {
+                val lastIndexOf = f.lastIndexOf('/')
+                val length = f.length
+                if (lastIndexOf > 0) f.substring(lastIndexOf + 1, length)
+                else {
+                  f
+                }
+              })
+              rows += Row(alias, jarfiles.mkString(","), false)
+            }
           }
         }
       }
@@ -639,33 +640,35 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
     val sc = sparkSession.sparkContext
     if (alias != null) {
       val cmndsSet = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
-      cmndsSet.forEach(new Consumer[Entry[String, String]] {
-        override def accept(t: Entry[String, String]): Unit = {
+      cmndsSet.forEach(new Consumer[Entry[String, Object]] {
+        override def accept(t: Entry[String, Object]): Unit = {
           val alias1 = t.getKey
           if (alias == alias1) {
-            value = t.getValue
+            value = if (t.getValue.isInstanceOf[String]) t.getValue.asInstanceOf[String] else null
           }
         }
       })
-      val indexOf = value.indexOf("|")
-      val lastIndexOf = value.lastIndexOf("|")
-      if (indexOf > 0) {
-        val coordinates = value.substring(0, indexOf)
-        val repos = Option(value.substring(indexOf + 1, lastIndexOf))
-        val jarCache = Option(value.substring(lastIndexOf + 1, value.length))
-        val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates,
-          repos, jarCache)
-        if (jarsstr.nonEmpty) {
-          val pkgs = jarsstr.split(",")
-          RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, pkgs)
-          ToolsCallbackInit.toolsCallback.removeURIs(pkgs)
+      if (value != null) {
+        val indexOf = value.indexOf("|")
+        val lastIndexOf = value.lastIndexOf("|")
+        if (indexOf > 0) {
+          val coordinates = value.substring(0, indexOf)
+          val repos = Option(value.substring(indexOf + 1, lastIndexOf))
+          val jarCache = Option(value.substring(lastIndexOf + 1, value.length))
+          val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates,
+            repos, jarCache)
+          if (jarsstr.nonEmpty) {
+            val pkgs = jarsstr.split(",")
+            RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, pkgs)
+            ToolsCallbackInit.toolsCallback.removeURIs(pkgs)
+          }
         }
-      }
-      else {
-        if (value.nonEmpty) {
-          val jars = value.split(',')
-          RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, jars)
-          ToolsCallbackInit.toolsCallback.removeURIs(jars)
+        else {
+          if (value.nonEmpty) {
+            val jars = value.split(',')
+            RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, jars)
+            ToolsCallbackInit.toolsCallback.removeURIs(jars)
+          }
         }
       }
     }

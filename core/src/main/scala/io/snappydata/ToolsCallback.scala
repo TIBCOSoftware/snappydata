@@ -64,7 +64,7 @@ trait ToolsCallback {
 
   def getAllGlobalCmnds: Array[String]
 
-  def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]]
+  def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, Object]]
 
   def removePackage(alias: String): Unit
 
