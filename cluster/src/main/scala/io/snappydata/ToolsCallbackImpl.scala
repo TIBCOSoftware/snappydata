@@ -141,7 +141,8 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       if (!args(0).isEmpty) { // args(0) = appname-filename
         val appName = args(0).split('-')(0)
         // This url points to the jar on the file server
-        val url = Misc.getMemStore.getMetadataCmdRgn.get(ContextJarUtils.functionKeyPrefix + appName)
+        val urlObj = Misc.getMemStore.getMetadataCmdRgn.get(ContextJarUtils.functionKeyPrefix + appName)
+        val url: String = if (urlObj != null) urlObj.toString else null
         if (url != null && !url.isEmpty) {
           val executor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
           val cachedFileName = s"${url.hashCode}-1_cache"
@@ -191,10 +192,11 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       !(p.startsWith(ContextJarUtils.functionKeyPrefix) ||
           p.equals(Constant.CLUSTER_ID) ||
           p.startsWith(Constant.MEMBER_ID_PREFIX)))
-    r.getAll(keys.asJava).values().toArray.map(_.asInstanceOf[String])
+    r.getAll(keys.asJava).values().toArray.filter(
+      _.isInstanceOf[String]).map(_.asInstanceOf[String])
   }
 
-  override def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]] = {
+  override def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, Object]] = {
     GemFireXDUtils.waitForNodeInitialization()
     Misc.getMemStore.getMetadataCmdRgn.entrySet()
   }
@@ -251,27 +253,6 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
   }
 
   override def updateIntpGrantRevoke(grantor: String, isGrant: Boolean, users: String): Unit = {
-    if(!Misc.isSecurityEnabled) return
-    val dbOwner = SnappyInterpreterExecute.dbOwner
-    if (!grantor.toLowerCase.equals(dbOwner)) {
-      throw StandardException.newException(
-        SQLState.AUTH_NO_OBJECT_PERMISSION, grantor, "grant/revoke of scala code execution", "ComputeDB", "Cluster")
-    }
-    val key = Constant.GRANT_REVOKE_KEY
-    val allowedIntpUsers = Misc.getMemStore.getMetadataCmdRgn.get(key)
-    val newUsers = users.split(",").toSet
-    if (allowedIntpUsers == null) {
-      if (!isGrant) return // nothing to do
-      SnappyInterpreterExecute.doCleanupAsPerNewGrantRevoke(newUsers)
-      Misc.getMemStore.getMetadataCmdRgn.put(key, users)
-    } else {
-      val oldUsers = allowedIntpUsers.split(",").toSet
-      val newVal = {
-        if (isGrant) oldUsers ++ newUsers
-        else oldUsers -- newUsers
-      }.map(_.toLowerCase)
-      SnappyInterpreterExecute.doCleanupAsPerNewGrantRevoke(newVal)
-      Misc.getMemStore.getMetadataCmdRgn.put(key, newVal.mkString(","))
-    }
+    SnappyInterpreterExecute.handleNewPermissions(grantor, isGrant, users)
   }
 }

@@ -487,10 +487,11 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def grantRevokeIntp: Rule1[LogicalPlan] = rule {
-    GRANT ~ ws ~ PRIVILEGE ~ ws ~ EXEC ~ ws ~ SCALA ~ ws ~ TO ~ capture(ANY.*) ~> {
-      (users: String) => GrantRevokeIntpCommand(true, users)
-    } |
-    REVOKE ~ ws ~ PRIVILEGE ~ ws ~ EXEC ~ ws ~ SCALA ~ ws ~ FROM ~ capture(ANY.*) ~> {
+    GRANT ~ ws ~ PRIVILEGE ~ ws ~ EXEC ~ ws ~ SCALA ~ ws ~ TO ~
+      ws ~ capture(ANY.*) ~> {
+      (users: String) => GrantRevokeIntpCommand(true, users) } |
+    REVOKE ~ ws ~ PRIVILEGE ~ ws ~ EXEC ~ ws ~ SCALA ~ ws ~ FROM ~
+      ws ~ capture(ANY.*) ~> {
         (users: String) => GrantRevokeIntpCommand(false, users)
     }
   }
