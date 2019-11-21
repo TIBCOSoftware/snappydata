@@ -41,9 +41,11 @@ object QueryExecutionJob extends SnappySQLJob with Logging {
     }
 
     val avgFileStream: FileOutputStream = new FileOutputStream(
-      new File(s"Snappy_Average.out"))
+      new File(s"Snappy_Average.csv"))
     val avgPrintStream: PrintStream = new PrintStream(avgFileStream)
     var queryPrintStream: PrintStream = null
+
+    avgPrintStream.println(s"Query, Iteration, ExecutionTime")
 
     queries.foreach { name =>
       try {
@@ -90,6 +92,7 @@ object QueryExecutionJob extends SnappySQLJob with Logging {
             }
             val endTime = System.currentTimeMillis()
             val iterationTime = endTime - startTime
+            avgPrintStream.println(s"$name, $i , $iterationTime")
             // scalastyle:off println
             queryPrintStream.println(s"$iterationTime")
 
@@ -104,7 +107,7 @@ object QueryExecutionJob extends SnappySQLJob with Logging {
         // println(s"${totalTime / runsForAverage}")
         println("-----------------------------------------------")
         queryPrintStream.println(s"${totalTime / runsForAverage}")
-        avgPrintStream.println(s"$name, executionTime = ${totalTime / runsForAverage}")
+        avgPrintStream.println(s"$name, ${totalTime / runsForAverage}")
         println("-----------------------------------------------")
 
       }
