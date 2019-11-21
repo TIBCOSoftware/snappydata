@@ -245,8 +245,10 @@ class OpLogRdd(
           data
         } else null
       case BinaryType =>
+        if (!dvd.isNull){
         val blobValue = dvd.getObject.asInstanceOf[HarmonySerialBlob]
         Source.fromInputStream(blobValue.getBinaryStream).map(e => e.toByte).toArray
+        } else null
       case _ => dvd.getObject
     }
   }

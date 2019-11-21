@@ -725,12 +725,12 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
            | confdirpath: $confDirPath
            | ldapConf: $ldapConf""".stripMargin)
 
-      writeToFile(s"localhost  -peer-discovery-port=$locatorPort -dir=$workDirPath/locator-1" +
+      writeToFile(s"localhost  -peer-discovery-port=$locatorPort -recovery-state-chunk-size=20 -dir=$workDirPath/locator-1" +
           s" -client-port=$locNetPort $ldapConf", s"$confDirPath/locators")
       writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
           s" $waitForInit $ldapConf", s"$confDirPath/leads")
       writeToFile(
-        s"""localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf
+        s"""localhost  -locators=localhost[$locatorPort] -recovery-state-chunk-size=50 -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf
            |localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-2 -client-port=$netPort3 $ldapConf
            |""".stripMargin, s"$confDirPath/servers")
 
@@ -1196,7 +1196,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
           s" $waitForInit $ldapConf", s"$confDirPath/leads")
       writeToFile(
-        s"""localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf
+        s"""localhost  -locators=localhost[$locatorPort] -recovery-state-chunk-size=20 -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf
            |""".stripMargin, s"$confDirPath/servers")
 
       startSnappyCluster()
@@ -1369,7 +1369,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
           s" $waitForInit $ldapConf", s"$confDirPath/leads")
       writeToFile(
-        s"localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-1 " +
+        s"localhost  -locators=localhost[$locatorPort] -recovery-state-chunk-size=40 -dir=$workDirPath/server-1 " +
             s"-client-port=$netPort2 $ldapConf".stripMargin, s"$confDirPath/servers")
 
       startSnappyCluster()
