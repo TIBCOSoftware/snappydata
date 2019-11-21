@@ -82,11 +82,12 @@ object SnappyMetricsSystem {
 
   def putMembersDiskStoreIdInRegion(): Unit = {
     val membersBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
+    val sep = System.getProperty("file.separator")
+    val region = Misc.getMemStore.getMetadataCmdRgn
     for ((k, v) <- membersBuff) {
       val shortDirName = v.getUserDir.substring(
-        v.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
-      Misc.getMemStore.getMetadataCmdRgn.
-          put(Constant.MEMBER_ID_PREFIX + shortDirName + k + "__", v.getDiskStoreUUID.toString)
+        v.getUserDir.lastIndexOf(sep) + 1)
+      region.put(Constant.MEMBER_ID_PREFIX + shortDirName + k + "__", v.getDiskStoreUUID.toString)
     }
   }
 
