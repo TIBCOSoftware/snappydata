@@ -37,7 +37,7 @@ import scala.collection.mutable
 
 class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExecute with Logging {
 
-  override def execute(user: String): Array[String] = {
+  override def execute(user: String, authToken: String): Array[String] = {
     if (!SnappyInterpreterExecute.INITIALIZED) SnappyInterpreterExecute.init()
     val (allowed, group) = SnappyInterpreterExecute.permissions.isAllowed(user)
     if (Misc.isSecurityEnabled && !user.equalsIgnoreCase(SnappyInterpreterExecute.dbOwner)) {
@@ -49,7 +49,7 @@ class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExe
     }
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     val lp = session.sessionState.sqlParser.parsePlan(sql).asInstanceOf[InterpretCodeCommand]
-    val interpreterHelper = SnappyInterpreterExecute.getOrCreateStateHolder(connId, user, group)
+    val interpreterHelper = SnappyInterpreterExecute.getOrCreateStateHolder(connId, user, authToken, group)
     interpreterHelper.interpret(Array(lp.code))
   }
 }
@@ -135,12 +135,12 @@ object SnappyInterpreterExecute {
   }
 
   def getOrCreateStateHolder(connId: Long,
-      user: String, group: String): RemoteInterpreterStateHolder = {
+      user: String, authToken: String, group: String): RemoteInterpreterStateHolder = {
     var lockTaken = false
     try {
       lockTaken = intpRWLock.writeLock().tryLock()
       connToIntpHelperMap.getOrElse(connId, {
-        val stateholder = new RemoteInterpreterStateHolder(connId)
+        val stateholder = new RemoteInterpreterStateHolder(connId, user, authToken)
         connToIntpHelperMap.put(connId, (group, user, stateholder))
         (group, user, stateholder)
       })._3
