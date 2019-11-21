@@ -58,7 +58,7 @@ object TableCreationJob extends SnappySQLJob{
       val cnt = df.count();
       // scalastyle:off println
       // Get the number of rows in the table created by querying
-      val rowCount = snSession.sql(s"SELECT COUNT(*) FROM $tableName").first().getInt(0)
+      val rowCount = snSession.sql(s"SELECT COUNT(*) FROM $tableName").first().get(0)
       println("-----------------------------------------------")
       println(s"Table $tableName with $rowCount rows created from " +
           s"file $dataLocation/$tableName with $cnt rows")
