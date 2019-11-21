@@ -76,9 +76,10 @@ elif [ -z "$SNAPPY_NO_QUICK_LAUNCH" -a $# -ge 2 \
   . "${SPARK_HOME}"/bin/load-snappy-env.sh
 
   HOSTNAME_FOR_CLIENTS=
+  IMPLICIT_AWS_CLIENT_BIND_ADDRESS=
   if [ "$2" = "start" ]; then
     # set hostname-for-clients and SPARK_PUBLIC_DNS in AWS (only supported for Linux)
-    if [ -z "$SPARK_PUBLIC_DNS" ]; then
+    if [ -z "$SPARK_PUBLIC_DNS" -o -n "$IMPLICIT_CLIENT_BIND_ADDRESS" ]; then
       CHECK_AWS=1
       if [ -r /sys/hypervisor/uuid ]; then
         if ! grep -q '^ec2' /sys/hypervisor/uuid; then
@@ -93,19 +94,27 @@ elif [ -z "$SNAPPY_NO_QUICK_LAUNCH" -a $# -ge 2 \
         CHECK_AWS=
       fi
       if [ -n "$CHECK_AWS" ]; then
-        SPARK_PUBLIC_DNS="$(curl -s --connect-timeout 3 http://169.254.169.254/latest/meta-data/public-ipv4 | head -1)"
-        if [ -n "$SPARK_PUBLIC_DNS" ]; then
-          if ! echo $"${@// /\\ }" | grep -q 'hostname-for-clients='; then
-            HOSTNAME_FOR_CLIENTS="-hostname-for-clients=$SPARK_PUBLIC_DNS"
+        if [ -z "$SPARK_PUBLIC_DNS" ]; then
+          SPARK_PUBLIC_DNS="$(curl -s --connect-timeout 3 http://169.254.169.254/latest/meta-data/public-ipv4 | head -1)"
+          if [ -n "$SPARK_PUBLIC_DNS" ]; then
+            if ! echo $"${@// /\\ }" | grep -q 'hostname-for-clients='; then
+              HOSTNAME_FOR_CLIENTS="-hostname-for-clients=$SPARK_PUBLIC_DNS"
+            fi
+            export SPARK_PUBLIC_DNS
           fi
-          export SPARK_PUBLIC_DNS
         fi
+        if [ -n "$IMPLICIT_CLIENT_BIND_ADDRESS" ]; then
+          IMPLICIT_AWS_CLIENT_BIND_ADDRESS="-client-bind-address=0.0.0.0"
+        fi
+      else
+        IMPLICIT_AWS_CLIENT_BIND_ADDRESS="-client-bind-address=${IMPLICIT_CLIENT_BIND_ADDRESS}"
       fi
     fi
   fi
 
   JARS="`echo "${SPARK_HOME}"/jars/snappydata-launcher* "${SPARK_HOME}"/jars/gemfire-shared* "${SPARK_HOME}"/jars/jna-4.* | sed 's/ /:/g'`"
-  exec $RUNNER $JAVA_ARGS -Xverify:none -cp "$JARS" io.snappydata.tools.QuickLauncher "$@" $HOSTNAME_FOR_CLIENTS
+  exec $RUNNER $JAVA_ARGS -Xverify:none -cp "$JARS" io.snappydata.tools.QuickLauncher "$@" $HOSTNAME_FOR_CLIENTS $IMPLICIT_AWS_CLIENT_BIND_ADDRESS
+  IMPLICIT_AWS_CLIENT_BIND_ADDRESS=
 else
   # use full snappy launcher
   exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS io.snappydata.tools.SnappyUtilLauncher "$@"
