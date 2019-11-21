@@ -35,8 +35,9 @@ object TableCreationJob extends SnappySQLJob{
     snc.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000");
     val isSnappy = true
 
-    val loadPerfFileStream: FileOutputStream = new FileOutputStream(new File("Snappy_LoadPerf.out"))
+    val loadPerfFileStream: FileOutputStream = new FileOutputStream(new File("Snappy_LoadPerf.csv"))
     val loadPerfPrintStream: PrintStream = new PrintStream(loadPerfFileStream)
+    loadPerfPrintStream.println("Table,RowCount,CreationTimeInMilliSeconds")
 
     for (prop <- sqlSparkProperties) {
       snc.sql(s"set $prop")
@@ -47,13 +48,15 @@ object TableCreationJob extends SnappySQLJob{
       "warehouse", "web_page" , "web_site", "item", "customer_demographics")
 
     tables.map { tableName =>
-      // println(s"Table Creation Started...$tableName")
+      println(s"Table Creation Started...$tableName")
       val df = snSession.read.parquet(s"$dataLocation/$tableName")
       snSession.dropTable(tableName, ifExists = true)
+      val startTime = System.currentTimeMillis()
       snSession.createTable(tableName, "row",
         new StructType(df.schema.map(_.copy(nullable = true)).toArray),
         Map[String, String] ())
       df.write.insertInto(tableName)
+      val endTime = System.currentTimeMillis()
       //val cnt = df.collect().length; // avoid collect.length since it's slower than df.count
       val cnt = df.count();
       // scalastyle:off println
@@ -62,8 +65,8 @@ object TableCreationJob extends SnappySQLJob{
       println("-----------------------------------------------")
       println(s"Table $tableName with $rowCount rows created from " +
           s"file $dataLocation/$tableName with $cnt rows")
-
       println("-----------------------------------------------")
+      loadPerfPrintStream.println(s"$tableName,$rowCount,${endTime - startTime}")
     }
 
     var partitionBy : String = ""
@@ -142,7 +145,7 @@ object TableCreationJob extends SnappySQLJob{
     // collect().length takes a very long time to run and may cause memory pressure
     val cnt = df.count()
     // scalastyle:off println
-    val rowCount = snappy.sql(s"SELECT COUNT(*) FROM $tableName").first().getInt(0)
+    val rowCount = snappy.sql(s"SELECT COUNT(*) FROM $tableName").first().get(0)
     println("-----------------------------------------------")
     println(s"Table $tableName with $rowCount rows created from " +
         s"file $dataLocation/$tableName with $cnt rows")
