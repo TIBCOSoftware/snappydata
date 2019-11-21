@@ -56,8 +56,10 @@ object SnappyMetricsSystem {
     val itr = allMetaEntriesObj.entrySet().iterator()
     while (itr.hasNext) {
       val entry = itr.next()
-      val valStr = entry.getValue.asInstanceOf[String]
-      allMetaEntries.put(entry.getKey, valStr)
+      if (entry.getValue.isInstanceOf[String]) {
+        val valStr = entry.getValue.asInstanceOf[String]
+        allMetaEntries.put(entry.getKey, valStr)
+      }
     }
     val timeInterval = 5000
 

@@ -220,7 +220,8 @@ object RecoveryService extends Logging {
     val biConsumer = new BiConsumer[String, Object] {
       def accept(alias: String, cmdObj: Object): Unit = {
         if (!(alias.equals(Constant.CLUSTER_ID) ||
-            alias.startsWith(Constant.MEMBER_ID_PREFIX))) {
+            alias.startsWith(Constant.MEMBER_ID_PREFIX) ||
+            !cmdObj.isInstanceOf[String])) {
           val cmd = cmdObj.asInstanceOf[String]
           logInfo("#RecoveryService " + alias + cmd)
           val cmdFields = cmd.split("\\|", -1)
