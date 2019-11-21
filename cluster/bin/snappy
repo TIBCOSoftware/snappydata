@@ -114,7 +114,7 @@ elif [ -z "$SNAPPY_NO_QUICK_LAUNCH" -a $# -ge 2 \
 
   JARS="`echo "${SPARK_HOME}"/jars/snappydata-launcher* "${SPARK_HOME}"/jars/gemfire-shared* "${SPARK_HOME}"/jars/jna-4.* | sed 's/ /:/g'`"
   exec $RUNNER $JAVA_ARGS -Xverify:none -cp "$JARS" io.snappydata.tools.QuickLauncher "$@" $HOSTNAME_FOR_CLIENTS $IMPLICIT_AWS_CLIENT_BIND_ADDRESS
-  IMPLICIT_AWS_CLIENT_BIND_ADDRESS=
+  IMPLICIT_CLIENT_BIND_ADDRESS=
 else
   # use full snappy launcher
   exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS io.snappydata.tools.SnappyUtilLauncher "$@"
