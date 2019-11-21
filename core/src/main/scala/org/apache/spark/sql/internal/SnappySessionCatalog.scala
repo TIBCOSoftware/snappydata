@@ -897,12 +897,6 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     } else super.listTables(schema, pattern)
   }
 
-  def getHiveCatalogTables(schema: String): Seq[CatalogTable] =
-    if (snappySession.enableHiveSupport) {
-      hiveSessionCatalog.listTables(schema)
-          .map(ti => hiveSessionCatalog.getTableMetadata(ti))
-    } else Seq.empty[CatalogTable]
-
   override def refreshTable(name: TableIdentifier): Unit = {
     val table = addMissingGlobalTempSchema(name)
     if (isTemporaryTable(table)) {

@@ -50,6 +50,7 @@ import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd, SparkListenerExecutorAdded}
 import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
+import org.apache.spark.sql.catalyst.catalog.CatalogTable
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -873,6 +874,12 @@ object SnappyContext extends Logging {
       case b if (b ne null) && (b.blockId ne null) => Some(b)
       case _ => None
     }
+  }
+
+  def getHiveCatalogTables(skipSchemas: Seq[String] = "SYS" :: Nil): Seq[CatalogTable] = {
+    val catalog = hiveSession.sessionState.catalog
+    catalog.listDatabases().filter(s => skipSchemas.isEmpty || !skipSchemas.contains(s)).
+        flatMap(schema => catalog.listTables(schema).map(table => catalog.getTableMetadata(table)))
   }
 
   private[spark] def getBlockIdIfNull(
