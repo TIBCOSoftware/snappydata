@@ -477,7 +477,7 @@ abstract class SnappyDDLParser(session: SnappySession)
    * @return LogicalPlan
    */
   protected def interpretCode: Rule1[LogicalPlan] = rule {
-    EXEC ~ ws ~ SCALA ~ ws ~ (OPTIONS ~ options).? ~ ws ~ CODE ~ ws ~ codeChunk ~> {
+    EXEC ~ ws ~ SCALA ~ ws ~ (OPTIONS ~ options ~ ws).? ~ codeChunk ~> {
       ( opts: Any, code: String) =>
         val parameters = opts.asInstanceOf[Option[Map[String, String]]]
           .getOrElse(Map.empty[String, String])

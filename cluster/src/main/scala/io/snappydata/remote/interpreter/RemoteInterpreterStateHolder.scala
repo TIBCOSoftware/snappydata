@@ -24,6 +24,7 @@ import java.lang.reflect.Method
 import java.net.URLClassLoader
 
 import com.gemstone.gemfire.internal.shared.StringPrintWriter
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.SparkContext
 import org.apache.spark.repl.SparkILoop
@@ -33,10 +34,13 @@ import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.{IMain, LoopCommands, Results}
 
-class RemoteInterpreterStateHolder(val connId: Long) {
+class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authToken: String) {
 
   val sc: SparkContext = SparkContext.getOrCreate()
   val snappy = new SnappySession(sc)
+
+  snappy.conf.set(Attribute.USERNAME_ATTR, user)
+  snappy.conf.set(Attribute.PASSWORD_ATTR, authToken)
 
   lazy val pw = new StringPrintWriter()
   lazy val strOpStream = new StringOutputStrem(pw)
