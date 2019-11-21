@@ -22,7 +22,6 @@ import java.{lang, util}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
-import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemFireCacheImpl}
@@ -37,20 +36,16 @@ import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCa
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 import io.snappydata.recovery.RecoveryService
-import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
+import io.snappydata.sql.catalog.CatalogObjectType
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
 
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
-import org.apache.spark.sql.SaveMode
-import org.apache.spark.sql.catalyst.catalog.{CatalogStorageFormat, CatalogTable}
+import org.apache.spark.sql.catalyst.catalog.CatalogTable
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.execution.datasources.DataSource
-import org.apache.spark.sql.internal.SnappySessionCatalog
-import org.apache.spark.sql.sources.DataSourceRegister
+import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -263,11 +258,9 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     }
   }
 
-  override def getHiveTablesMetadata(connectionId: Long, schema: String):
+  override def getHiveTablesMetadata():
   util.Collection[ExternalTableMetaData] = {
-    val session = SnappySessionPerConnection.getSnappySessionForConnection(connectionId)
-    val catalogTables = session.sessionState.catalog.asInstanceOf[SnappySessionCatalog]
-        .getHiveCatalogTables(schema)
+    val catalogTables = SnappyContext.getHiveCatalogTables()
     import scala.collection.JavaConverters._
     getTablesMetadata(catalogTables).asJava
   }
