@@ -186,14 +186,14 @@ object SnappyUtilLauncher extends StoreCallback {
   }
 
   val intpUsage = s"\nUsage:\n" +
-    s"\n${SCRIPT_NAME} [--snappydata.connection | -conn | --connection] [locatorhost:port]" +
+    s"\n${SCRIPT_NAME} [--snappydata.connection|-conn|--connection] [locatorhost:port]" +
     s"\n             default = locahost:1527\n" +
-    s"\n             [--snappydata.user | -user | --user] [username]" +
+    s"\n             [--snappydata.user|-user|--user] [username]" +
     s"\n             default = APP\n" +
-    s"\n             [--snappydata.password | -passwd | --password] [password]" +
+    s"\n             [--snappydata.password|-passwd|--password] [password of the user]" +
     s"\n             default = APP\n" +
-    s"\n             [--run | -r | -run scala_file path or files (comma separated paths]" +
-    s"\n             [--help | -help | -h 'prints the command line options for the script']\n"
+    s"\n             [--run|-r|-run] [scala_file_path(s) (comma separated paths if multiple)]" +
+    s"\n             [--help|-help|-h] ['prints the command line options for the script']\n"
 
 
   private def validateArgs(options: Map[Symbol, Any]): Unit = {
