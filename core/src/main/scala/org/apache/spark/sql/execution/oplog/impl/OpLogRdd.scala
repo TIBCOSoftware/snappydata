@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution.oplog.impl
 
+import java.nio.ByteBuffer
 import java.sql.Timestamp
 
 import scala.collection.JavaConverters._
@@ -43,8 +44,10 @@ import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.util.{DateTimeUtils, SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.execution.RDDKryo
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnDeltaDecoder, ColumnEncoding, ColumnStatsSchema, UpdatedColumnDecoder}
-import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder,
+  ColumnDeltaDecoder, ColumnEncoding, ColumnStatsSchema, UpdatedColumnDecoder}
+import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry,
+  ColumnFormatKey, ColumnFormatValue}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SnappySession}
 import org.apache.spark.unsafe.Platform
@@ -86,8 +89,8 @@ class OpLogRdd(
 
     val dataTypeDescriptor = dataType match {
       case LongType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BIGINT, isNullable)
-      case IntegerType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.INTEGER, isNullable)
-      case BooleanType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BOOLEAN, isNullable)
+      case IntegerType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.INTEGER,isNullable)
+      case BooleanType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BOOLEAN,isNullable)
       case ByteType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.SMALLINT, isNullable)
       case FloatType => DataTypeDescriptor.getSQLDataTypeDescriptor("float", isNullable)
       case BinaryType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BLOB, isNullable)
@@ -424,7 +427,7 @@ class OpLogRdd(
             val valueBuffer = value.getValueRetain(FetchRequest.DECOMPRESS).getBuffer
             val decoder = ColumnEncoding.getColumnDecoder(valueBuffer, field)
             val valueArray = if (valueBuffer == null || valueBuffer.isDirect) {
-              null
+              valueBuffer
             } else {
               valueBuffer.array()
             }
@@ -490,7 +493,13 @@ class OpLogRdd(
             Row.fromSeq(schema.indices.map { colIndx =>
               val decoderAndValue = decodersAndValues(colIndx)
               val colDecoder = decoderAndValue._1
-              val colArray = decoderAndValue._2
+              var directBuffer: ByteBuffer = null
+              val colArray = decoderAndValue._2 match {
+                case b: ByteBuffer =>
+                  directBuffer = b // need reference to directBuffer till we are done reading
+                  null
+                case arr: Array[Byte] => arr
+              }
               val colNextNullPosition = colDecoder.getNextNullPosition
               val fieldIsNull = rowNum + currentDeleted == colNextNullPosition
               if (fieldIsNull) {
