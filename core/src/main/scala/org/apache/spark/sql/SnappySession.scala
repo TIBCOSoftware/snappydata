@@ -842,8 +842,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
   }
 
-
-
   /**
    * Create a stratified sample table. Java friendly version.
    *
@@ -1447,7 +1445,51 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case l: LogicalRelation => l.relation
     }
     snappyContextFunctions.postRelationCreation(relation, this)
+    var catalogTable = externalCatalog.getTable(resolvedName.database.get, resolvedName.table)
+    val primaryKeys = getPrimaryKeys(resolvedName.database.get, resolvedName.table)
+    if (primaryKeys.nonEmpty) {
+      sessionCatalog.alterTable(catalogTable.copy(properties =
+          catalogTable.properties + (s"primary_keys" -> primaryKeys.mkString(","))))
+    }
     df
+  }
+
+  /**
+   * Queries sys.indexes table and returns csv string of primary column names of given table
+   *
+   * @param schema schema  that the table belongs to
+   * @param table  table for which primary keys are to be found
+   * @return primary keys of given table as csv string
+   */
+  def getPrimaryKeys(schema: String, table: String): Array[String] = {
+    var primaryKeys = Array.empty[String]
+    val conn = getConnection
+    try {
+      val sql = s"""SELECT COLUMNS_AND_ORDER FROM sys.indexes WHERE
+                   |INDEXTYPE = 'PRIMARY KEY' AND schemaname = '${schema.toUpperCase}' AND
+                   |tablename = '${table.toUpperCase}'""".stripMargin
+      val ps = conn.prepareStatement(sql)
+      val rs = ps.executeQuery()
+      if (rs.next()) {
+        val keys = rs.getString(1)
+        if (keys != null && !keys.eq(""))
+          // keys for table with c1, c2 as primary key looks like '+c1+c2'
+          primaryKeys = keys.split("\\+").filter(!_.equals(""))
+      }
+    } catch {
+      case sqle: SQLException =>
+        if (sqle.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${sqle.getMessage}\n" +
+              "Ensure that the 'driver' option is set appropriately and " +
+              "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw sqle
+        }
+    } finally {
+      conn.commit()
+      conn.close()
+    }
+    primaryKeys
   }
 
   def getDDLSchema(schema: StructType): String = {
@@ -1606,6 +1648,19 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(r: JDBCMutableRelation, _, _) =>
         r.executeUpdate(sql, JdbcExtendedUtils.toUpperCase(getCurrentSchema))
+
+        // when "alter table add constraint" is fired, it directly fires the sql
+        // as in on gemfire layer... to capture the sql string in catalog properties for ddls
+        // export, we can we just add sql string to properties in CatalogTable
+        // and update it into the metastore.
+
+        val metadata = sessionCatalog.getTableMetadata(tableIdent)
+        val primaryKeys = getPrimaryKeys(metadata.identifier.database.get, metadata.identifier.table)
+        sessionCatalog.alterTable(metadata.copy(
+          properties = metadata.properties +
+              (s"altTxt_${System.currentTimeMillis()}" -> sql) +
+              (s"primary_keys" -> primaryKeys.mkString(","))
+        ))
       case _ => throw new AnalysisException(
         s"ALTER TABLE ${tableIdent.unquotedString} variant only supported for row tables")
     }
@@ -1833,12 +1888,20 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
-  private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
+  /**
+   * creates a internal connection to snappydata and returns it
+   * @return connection to snappydata
+   */
+  private def getConnection: Connection = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
       Some(this), ExternalStoreUtils.emptyCIMutableMap)
     val jdbcOptions = new JDBCOptions(connProperties.url, "",
       connProperties.connProps.asScala.toMap)
-    val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
+    JdbcUtils.createConnectionFactory(jdbcOptions)()
+  }
+
+  private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
+    val conn = getConnection
     try {
       val sql = constructDropSQL(indexName, ifExists)
       JdbcExtendedUtils.executeUpdate(sql, conn)
@@ -1880,7 +1943,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         s"$tableName is not a row insertable table")
     }
   }
-
 
   /**
    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
