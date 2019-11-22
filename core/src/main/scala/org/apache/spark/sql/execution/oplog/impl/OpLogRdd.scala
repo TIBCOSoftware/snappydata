@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution.oplog.impl
 
+import java.nio.ByteBuffer
 import java.sql.Timestamp
 
 import scala.collection.JavaConverters._
@@ -422,7 +423,7 @@ class OpLogRdd(
             val valueBuffer = value.getValueRetain(FetchRequest.DECOMPRESS).getBuffer
             val decoder = ColumnEncoding.getColumnDecoder(valueBuffer, field)
             val valueArray = if (valueBuffer == null || valueBuffer.isDirect) {
-              null
+              valueBuffer
             } else {
               valueBuffer.array()
             }
@@ -488,7 +489,13 @@ class OpLogRdd(
             Row.fromSeq(schema.indices.map { colIndx =>
               val decoderAndValue = decodersAndValues(colIndx)
               val colDecoder = decoderAndValue._1
-              val colArray = decoderAndValue._2
+              var directBuffer: ByteBuffer = null
+              val colArray = decoderAndValue._2 match {
+                case b: ByteBuffer =>
+                  directBuffer = b // need reference to directBuffer till we are done reading
+                  null
+                case arr: Array[Byte] => arr
+              }
               val colNextNullPosition = colDecoder.getNextNullPosition
               val fieldIsNull = rowNum + currentDeleted == colNextNullPosition
               if (fieldIsNull) {
