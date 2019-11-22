@@ -99,7 +99,6 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
       if (lastResult == Results.Success) tmpsb.clear()
       resultBuffer += pw.toString.stripLineEnd
       pw.reset()
-      println()
       i += 1
     }
     // return empty. process command will do the needful
