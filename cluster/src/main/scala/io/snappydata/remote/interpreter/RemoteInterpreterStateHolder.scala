@@ -26,6 +26,7 @@ import java.net.URLClassLoader
 import com.gemstone.gemfire.internal.shared.StringPrintWriter
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.gemxd.SnappySessionPerConnection
 import org.apache.spark.SparkContext
 import org.apache.spark.repl.SparkILoop
 import org.apache.spark.sql.SnappySession
@@ -37,7 +38,7 @@ import scala.tools.nsc.interpreter.{IMain, LoopCommands, Results}
 class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authToken: String) {
 
   val sc: SparkContext = SparkContext.getOrCreate()
-  val snappy = new SnappySession(sc)
+  val snappy = SnappySessionPerConnection.getSnappySessionForConnection(connId)
 
   snappy.conf.set(Attribute.USERNAME_ATTR, user)
   snappy.conf.set(Attribute.PASSWORD_ATTR, authToken)
