@@ -38,12 +38,10 @@ import com.gemstone.gemfire.internal.offheap.ByteSource
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.client.am.Types
 import io.snappydata.recovery.RecoveryService
-import io.snappydata.recovery.RecoveryService.mostRecentMemberObject
-import io.snappydata.thrift.CatalogTableObject
 
 import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
+import org.apache.spark.sql.catalyst.util.{DateTimeUtils, SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.execution.RDDKryo
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnDeltaDecoder, ColumnEncoding, ColumnStatsSchema, UpdatedColumnDecoder}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
@@ -65,10 +63,15 @@ class OpLogRdd(
     @(transient@param) partitionPruner: () => Int,
     var tableSchemas: mutable.Map[String, StructType],
     var versionMap: mutable.Map[String, Int],
-    var tableColIdsMap: mutable.Map[String, Array[Int]])
+    var tableColIdsMap: mutable.Map[String, Array[Int]],
+    private var primaryKeysString: String,
+    private var keyColumnsString: String)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
-  var rowFormatterMap: mutable.Map[Int, RowFormatter] = null
+  var rowFormatterMap: mutable.Map[Int, RowFormatter] = _
+  var fqtnUpper = fqtn.toUpperCase()
+  var primaryKeys: Array[String] = null
+  var keyColumns: Array[String] = null
 
   /**
    * Method gets DataValueDescritor type from given StructField
@@ -122,7 +125,7 @@ class OpLogRdd(
   }
 
   def getProjectColumnId(tableName: String, columnName: String): Int = {
-    val fqtnLowerKey = tableName.replace(".", "_").toLowerCase
+    val fqtnLowerKey = tableName.replace(".", "_")
     assert(versionMap.contains(fqtnLowerKey))
     val maxVersion = versionMap.getOrElse(fqtnLowerKey, null)
     assert(maxVersion != null)
@@ -130,7 +133,7 @@ class OpLogRdd(
     val fieldsArr = tableSchemas.getOrElse(s"$maxVersion#$fqtnLowerKey", null).fields
     breakable {
       for (i <- fieldsArr.indices) {
-        if (fieldsArr(i).name.toUpperCase() == columnName.toUpperCase()) {
+        if (fieldsArr(i).name == columnName) {
           index = i
           break()
         } else {
@@ -146,12 +149,12 @@ class OpLogRdd(
   }
 
   def getSchemaColumnId(tableName: String, colName: String, version: Int): Int = {
-    val fqtnLowerKey = tableName.replace('.', '_').toLowerCase
+    val fqtnLowerKey = tableName.replace('.', '_')
     var index = -1
     val fieldsArr = tableSchemas.getOrElse(s"$version#$fqtnLowerKey", null).fields
     breakable {
       for (i <- fieldsArr.indices) {
-        if (fieldsArr(i).name.toUpperCase() == colName.toUpperCase()) {
+        if (fieldsArr(i).name == colName) {
           index = i
           break()
         } else {
@@ -201,8 +204,8 @@ class OpLogRdd(
         0L,
         false))
     }
-    val schemaName = fqtn.split('.')(0)
-    val tableName = fqtn.split('.')(1)
+    val schemaName = fqtnUpper.split('.')(0)
+    val tableName = fqtnUpper.split('.')(1)
     val rowFormatter = new RowFormatter(cdl, schemaName, tableName, versionNum, null, false)
     rowFormatterMap.put(versionNum, rowFormatter)
     rowFormatter
@@ -258,7 +261,7 @@ class OpLogRdd(
     assert(versionNum >= 0 || versionNum == RowFormatter.TOKEN_RECOVERY_VERSION,
       "unexpected schemaVersion=" + versionNum + " for RowFormatter#readVersion")
 
-    val tableKey = versionNum + "#" + fqtn.toLowerCase.replace(".", "_")
+    val tableKey = versionNum + "#" + fqtn.replace(".", "_")
     assert(tableSchemas.contains(tableKey),
       s"schema of $fqtn for Rowformatter version=$versionNum unavailable")
     var schemaOfVersion = tableSchemas(tableKey)
@@ -277,9 +280,16 @@ class OpLogRdd(
       }).toArray
       schemaOfVersion = StructType(correctedFields)
     }
-    schemaOfVersion = StructType(schemaOfVersion.map(field =>
-      if (partitioningColumns.contains(field.name)) field.copy(nullable = false) else field
-    ).toArray)
+    schemaOfVersion = StructType(schemaOfVersion.map(field => {
+      provider.toLowerCase match {
+        case "row" =>
+          if (primaryKeys.contains(field.name)) field.copy(nullable = false) else field
+        case "column" =>
+          if (partitioningColumns.contains(field.name) && !keyColumns.contains(field.name))
+            field.copy(nullable = false) else field
+      }
+    }).toArray)
+
     val rowFormatter = getRowFormatter(versionNum, schemaOfVersion)
     val dvdArr = new Array[DataValueDescriptor](schemaOfVersion.length)
     val projectColumns: Array[String] = schema.fields.map(_.name)
@@ -317,6 +327,8 @@ class OpLogRdd(
     val regionMap = phdrRow.getRegionMap
     logDebug(s"RegionMap keys for $phdrRow are: ${regionMap.keySet()}")
     val regMapItr = regionMap.regionEntries().iterator().asScala
+    if (primaryKeys == null) primaryKeys = primaryKeysString.split(",").map(_.toLowerCase.trim)
+    if (keyColumns == null) keyColumns = keyColumnsString.split(",").map(_.toLowerCase.trim)
     regMapItr.map { regEntry =>
       getValueInVMOrDiskWithoutFaultIn(phdrRow, regEntry) match {
         case valueArr@(_: Array[Byte] | _: Array[Array[Byte]]) => getRow(valueArr)
@@ -330,11 +342,11 @@ class OpLogRdd(
     val resArr = new Array[Any](projectColumns.length)
     var i = 0
     projectColumns.foreach(projectCol => {
-      val projectColId = getProjectColumnId(fqtn.toLowerCase(), projectCol)
-      val schemaColId = getSchemaColumnId(fqtn.toLowerCase(), projectCol, versionNum)
+      val projectColId = getProjectColumnId(fqtn, projectCol)
+      val schemaColId = getSchemaColumnId(fqtn, projectCol, versionNum)
       val colValue = if (projectColId == schemaColId) {
         // col is from latest schema not previous/dropped column
-        val colNamesArr = schStruct.fields.map(_.name.toLowerCase)
+        val colNamesArr = schStruct.fields.map(_.name)
         row(colNamesArr.indexOf(projectCol))
       } else null
       resArr(i) = colValue
@@ -366,7 +378,7 @@ class OpLogRdd(
         v = deserVal
       }
     }
-    return v
+    v
   }
 
   /**
@@ -404,8 +416,7 @@ class OpLogRdd(
           if (!hasTombstone && entry.isTombstone) {
             hasTombstone = true
           }
-          if (hasTombstone) null
-          else {
+          if (hasTombstone) null else {
             val value = getValueInVMOrDiskWithoutFaultIn(phdrCol, entry)
                 .asInstanceOf[ColumnFormatValue]
             val valueBuffer = value.getValueRetain(FetchRequest.DECOMPRESS).getBuffer
@@ -422,8 +433,8 @@ class OpLogRdd(
         if (hasTombstone) Iterator.empty
         else {
           val statsEntry = regMap.getEntry(k)
-          val statsValue = (getValueInVMOrDiskWithoutFaultIn(phdrCol, statsEntry)
-              .asInstanceOf[ColumnFormatValue]).getValueRetain(FetchRequest.DECOMPRESS)
+          val statsValue = getValueInVMOrDiskWithoutFaultIn(phdrCol, statsEntry)
+              .asInstanceOf[ColumnFormatValue].getValueRetain(FetchRequest.DECOMPRESS)
           val numStatsColumns = schema.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
           val stats = org.apache.spark.sql.collection.SharedUtils
               .toUnsafeRow(statsValue.getBuffer, numStatsColumns)
@@ -489,14 +500,12 @@ class OpLogRdd(
               val updatedDecoder = updatedDecoders(colIndx)
               if ((updatedDecoder ne null) && !updatedDecoder.unchanged(rowNum + currentDeleted) &&
                   updatedDecoder.readNotNull) {
-                val uv = getUpdatedValue(updatedDecoder.getCurrentDeltaBuffer, schema(colIndx))
-                uv
+                getUpdatedValue(updatedDecoder.getCurrentDeltaBuffer, schema(colIndx))
               } else {
-                val decodedValue = if (fieldIsNull) null else {
+                if (fieldIsNull) null else {
                   getDecodedValue(colDecoder, colArray,
-                  schema(colIndx).dataType, rowNum + currentDeleted - colNullCounts(colIndx))
+                    schema(colIndx).dataType, rowNum + currentDeleted - colNullCounts(colIndx))
                 }
-                decodedValue
               }
             })
           }.toIterator
@@ -506,12 +515,12 @@ class OpLogRdd(
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
-    logDebug(s"starting compute for partition ${split.index} of table $fqtn")
+    logDebug(s"starting compute for partition ${split.index} of table $fqtnUpper")
     try {
       val diskStores = Misc.getGemFireCache.listDiskStores()
       var diskStrCol: DiskStoreImpl = null
       var diskStrRow: DiskStoreImpl = null
-      val tableName = fqtn.split('.')(1)
+      val tableName = fqtnUpper.split('.')(1)
 
       val colRegPath = if (Misc.getRegionPath(internalFQTN.toUpperCase) == null) {
         throw new IllegalStateException(s"regionPath for $internalFQTN not found")
@@ -519,7 +528,7 @@ class OpLogRdd(
         val regionPath = Misc.getRegionPath(internalFQTN.toUpperCase)
         s"/_PR//B_${regionPath.substring(1, regionPath.length - 1)}/_${split.index}"
       }
-      val rowRegPath = s"/_PR//B_${fqtn.replace('.', '/')}/${split.index}"
+      val rowRegPath = s"/_PR//B_${fqtnUpper.replace('.', '/')}/${split.index}"
 
       var phdrRow: PlaceHolderDiskRegion = null
       var phdrCol: PlaceHolderDiskRegion = null
@@ -545,7 +554,7 @@ class OpLogRdd(
             diskStrRow = diskStore
             phdrRow = adr.asInstanceOf[PlaceHolderDiskRegion]
           } else if (!adr.isBucket && adrUnescapePath
-              .equals('/' + fqtn.replace('.', '/'))) {
+              .equals('/' + fqtnUpper.replace('.', '/'))) {
             diskStrRow = diskStore
             phdrRow = adr.asInstanceOf[PlaceHolderDiskRegion]
           }
@@ -565,7 +574,7 @@ class OpLogRdd(
     } catch {
       // in case of error log and return empty iterator. cluster shouldn't go down
       case x@(_: Exception | _: AssertionError) =>
-        logError(s"Unable to read $fqtn.", x)
+        logError(s"Unable to read $fqtnUpper.", x)
         Seq.empty.iterator
     }
   }
@@ -582,8 +591,9 @@ class OpLogRdd(
       case ShortType => currentDeltaBuffer.readShort
       case TimestampType => new Timestamp(currentDeltaBuffer.readTimestamp / 1000)
       case StringType => currentDeltaBuffer.readUTF8String
-      case DateType => val daysSinceEpoch = currentDeltaBuffer.readDate
-        new java.sql.Date(1L * daysSinceEpoch * 24 * 60 * 60 * 1000)
+      case DateType =>
+        val daysSinceEpoch = currentDeltaBuffer.readDate
+        DateTimeUtils.toJavaDate(daysSinceEpoch)
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
         currentDeltaBuffer.readLongDecimal(d.precision, d.scale)
       case d: DecimalType => currentDeltaBuffer.readDecimal(d.precision, d.scale)
@@ -606,8 +616,7 @@ class OpLogRdd(
       value: Array[Byte],
       dataType: DataType,
       rowNum: Int): Any = {
-    if (decoder.isNullAt(value, rowNum)) null
-    else dataType match {
+    dataType match {
       case LongType => decoder.readLong(value, rowNum)
       case IntegerType => decoder.readInt(value, rowNum)
       case BooleanType => decoder.readBoolean(value, rowNum)
@@ -622,7 +631,8 @@ class OpLogRdd(
       case StringType => decoder.readUTF8String(value, rowNum)
       case DateType =>
         val daysSinceEpoch = decoder.readDate(value, rowNum)
-        new java.sql.Date(1L * daysSinceEpoch * 24 * 60 * 60 * 1000)
+        // adjust for timezone of machine
+        DateTimeUtils.toJavaDate(daysSinceEpoch)
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
         decoder.readLongDecimal(value, d.precision, d.scale, rowNum)
       case d: DecimalType => decoder.readDecimal(value, d.precision, d.scale, rowNum)
@@ -633,32 +643,6 @@ class OpLogRdd(
     }
   }
 
-  /**
-   * Returns number of buckets for a given schema and table name
-   *
-   * @param schemaName schema name which the table belongs to
-   * @param tableName  name of the table
-   * @return number of buckets
-   */
-  def getNumBuckets(schemaName: String, tableName: String): Integer = {
-    val catalogObjects = mostRecentMemberObject.getCatalogObjects
-    var numBuckets: Integer = null
-    catalogObjects.toArray.foreach(catObj =>
-      if (numBuckets == null) {
-        numBuckets = catObj match {
-          case c: CatalogTableObject =>
-            if (c.schemaName.equals(schemaName) && c.tableName.equals(tableName)) {
-              val numBucketsStr = c.storage.properties.get("buckets")
-              assert(numBucketsStr != null, "property 'buckets' not found in CatalogTableObject")
-              Integer.parseInt(numBucketsStr)
-            } else null
-          case _ => null
-        }
-      }
-    )
-    numBuckets
-  }
-
   def getPartitionEvaluator: () => Array[Partition] = () => getPartitions
 
   /**
@@ -667,9 +651,10 @@ class OpLogRdd(
    * @return number of buckets
    */
   override protected def getPartitions: Array[Partition] = {
-    val schemaName = fqtn.split('.')(0)
-    val tableName = fqtn.split('.')(1)
+    val schemaName = fqtnUpper.split('.')(0)
+    val tableName = fqtnUpper.split('.')(1)
     val (numBuckets, _) = RecoveryService.getNumBuckets(schemaName, tableName)
+    if (numBuckets == 0) logWarning(s"Number of buckets for $schemaName.$tableName is 0.")
     val partition = (0 until numBuckets).map { p =>
       new Partition {
         override def index: Int = p
@@ -686,7 +671,7 @@ class OpLogRdd(
    * @return sequence of hostnames
    */
   override def getPreferredLocations(split: Partition): Seq[String] = {
-    val preferredHosts = RecoveryService.getExecutorHost(fqtn, split.index)
+    val preferredHosts = RecoveryService.getExecutorHost(fqtnUpper, split.index)
     logDebug(s"Preferred hosts for partition ${split.index} of $fqtn are $preferredHosts")
     preferredHosts
   }
@@ -696,6 +681,8 @@ class OpLogRdd(
     output.writeString(internalFQTN)
     output.writeString(fqtn)
     output.writeString(partitioningColumns.mkString(","))
+    output.writeString(primaryKeysString)
+    output.writeString(keyColumnsString)
     output.writeString(provider)
     output.writeInt(tableSchemas.size)
     tableSchemas.iterator.foreach(ele => {
@@ -720,7 +707,10 @@ class OpLogRdd(
     super.read(kryo, input)
     internalFQTN = input.readString()
     fqtn = input.readString()
+    fqtnUpper = fqtn.toUpperCase()
     partitioningColumns = input.readString().split(",")
+    primaryKeysString = input.readString()
+    keyColumnsString = input.readString()
     provider = input.readString()
     val schemaMapSize = input.readInt()
     tableSchemas = collection.mutable.Map().empty

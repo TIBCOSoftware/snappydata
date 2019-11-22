@@ -98,7 +98,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       deploySql: String, isPackage: Boolean = true): Unit = {
     if (alias != null) {
       try {
-        Misc.getMemStore.getGlobalCmdRgn.create(alias, deploySql)
+        Misc.getMemStore.getMetadataCmdRgn.create(alias, deploySql)
       } catch {
         case _: EntryExistsException => throw StandardException.newException(
           SQLState.LANG_DB2_DUPLICATE_NAMES, alias, "of deploying jars/packages")
@@ -140,7 +140,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       if (!args(0).isEmpty) { // args(0) = appname-filename
         val appName = args(0).split('-')(0)
         // This url points to the jar on the file server
-        val url = Misc.getMemStore.getGlobalCmdRgn.get(ContextJarUtils.functionKeyPrefix + appName)
+        val url = Misc.getMemStore.getMetadataCmdRgn.get(ContextJarUtils.functionKeyPrefix + appName)
         if (url != null && !url.isEmpty) {
           val executor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
           val cachedFileName = s"${url.hashCode}-1_cache"
@@ -185,19 +185,22 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
 
   override def getAllGlobalCmnds: Array[String] = {
     GemFireXDUtils.waitForNodeInitialization()
-    val r = Misc.getMemStore.getGlobalCmdRgn
-    val keys = r.keySet().asScala.filter(p => !p.startsWith(ContextJarUtils.functionKeyPrefix))
+    val r = Misc.getMemStore.getMetadataCmdRgn
+    val keys = r.keySet().asScala.filter(p =>
+      !(p.startsWith(ContextJarUtils.functionKeyPrefix) ||
+          p.equals(Constant.CLUSTER_ID) ||
+          p.startsWith(Constant.MEMBER_ID_PREFIX)))
     r.getAll(keys.asJava).values().toArray.map(_.asInstanceOf[String])
   }
 
   override def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]] = {
     GemFireXDUtils.waitForNodeInitialization()
-    Misc.getMemStore.getGlobalCmdRgn.entrySet()
+    Misc.getMemStore.getMetadataCmdRgn.entrySet()
   }
 
   override def removePackage(alias: String): Unit = {
     GemFireXDUtils.waitForNodeInitialization()
-    Misc.getMemStore.getGlobalCmdRgn.destroy(alias)
+    Misc.getMemStore.getMetadataCmdRgn.destroy(alias)
   }
 
   override def setLeadClassLoader(): Unit = {

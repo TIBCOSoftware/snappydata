@@ -105,7 +105,7 @@ object ContextJarUtils extends Logging {
         }
       } finally {
         if (isEmbedded) {
-          Misc.getMemStore.getGlobalCmdRgn.remove(functionKeyPrefix + prefix)
+          Misc.getMemStore.getMetadataCmdRgn.remove(functionKeyPrefix + prefix)
         }
       }
     }
@@ -139,7 +139,7 @@ object ContextJarUtils extends Logging {
     val k = funcDefinition.identifier.copy(database = Some(schemaName)).toString
     // resources has just one jar
     val jarPath = if (funcDefinition.resources.isEmpty) "" else funcDefinition.resources.head.uri
-    Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + k, jarPath)
+    Misc.getMemStore.getMetadataCmdRgn.put(ContextJarUtils.functionKeyPrefix + k, jarPath)
     // Remove from the list in (__FUNC__DROPPED__, dropped-udf-list)
     removeFromTheListInCmdRegion(ContextJarUtils.droppedFunctionsKey, k + ContextJarUtils.DELIMITER)
   }
@@ -153,7 +153,7 @@ object ContextJarUtils extends Logging {
   }
 
   def addToTheListInCmdRegion(k: String, item: String, head: String): Unit = {
-    val r = Misc.getMemStore.getGlobalCmdRgn
+    val r = Misc.getMemStore.getMetadataCmdRgn
     var old1: String = null
     var old2: String = null
     do {
@@ -164,7 +164,7 @@ object ContextJarUtils extends Logging {
   }
 
   def removeFromTheListInCmdRegion(k: String, item: String): Unit = {
-    val r = Misc.getMemStore.getGlobalCmdRgn
+    val r = Misc.getMemStore.getMetadataCmdRgn
     var old1: String = null
     var old2: String = null
     do {
@@ -177,7 +177,7 @@ object ContextJarUtils extends Logging {
   }
 
   def checkItemExists(k: String, item: String): Boolean = {
-    val value = Misc.getMemStore.getGlobalCmdRgn.get(k)
+    val value = Misc.getMemStore.getMetadataCmdRgn.get(k)
     value != null && value.contains(item)
   }
 }
