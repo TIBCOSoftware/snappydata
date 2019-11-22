@@ -31,6 +31,7 @@ import com.pivotal.gemfirexd.tools.internal.{JarTools, MiscTools}
 import com.pivotal.gemfirexd.tools.{GfxdSystemAdmin, GfxdUtilLauncher}
 import io.snappydata.LocalizedMessages
 import io.snappydata.gemxd.{SnappyDataVersion, SnappySystemAdmin}
+import jline.console.ConsoleReader
 import org.apache.spark.sql.execution.columnar.impl.StoreCallback
 
 import scala.util.Properties.{javaVersion, javaVmName, versionString}
@@ -140,6 +141,7 @@ object SnappyUtilLauncher extends StoreCallback {
       // no args will default to using ij
       if (args.length == 0 || INTERPRETER_MODE) {
         if (INTERPRETER_MODE) {
+          System.setProperty(ConsoleReader.JLINE_EXPAND_EVENTS, "false")
           validateIntpArgs(args)
           launcher.setInitialCommands(
             SnappyUtilLauncher.CONNECT_STR, SnappyUtilLauncher.INITIAL_FILES_TO_RUN_STR)
