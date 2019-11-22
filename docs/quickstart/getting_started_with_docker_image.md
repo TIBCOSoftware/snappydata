@@ -8,14 +8,14 @@ The following instructions outline how to build a Docker image if you have the b
 
 Before building the Docker image, ensure the following:
 
-*	You have Docker installed, configured and it runs successfully on your machine. Refer to the [Docker documentation](http://docs.docker.com/installation) for more information on installing Docker.
+*	You have Docker installed, configured, and it runs successfully on your machine. Refer to the [Docker documentation](http://docs.docker.com/installation) for more information on installing Docker.
 *	The Docker containers have access to at least 4GB of RAM on your machine.
 
 !!!Note
 	To allow non-root users to run Docker commands, follow the instructions [here](https://docs.docker.com/install/linux/linux-postinstall)
 
 ## Verifying Docker Installation</br> 
-In the command prompt run the command:
+In the command prompt, run the command:
 
 ```pre
 $ docker run hello-world
@@ -25,7 +25,7 @@ $ docker run hello-world
 <a id="build-your-docker"></a>
 ## Building Docker Image of SnappyData</br>
 
-A sample Dockerfile is provided which you can use to create your own Docker image of SnappyData.
+A sample Dockerfile is provide which can be used to create your own Docker image of SnappyData.
 
 Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) script and place it into a directory. The Dockerfile contains a link to the latest SnappyData OSS version to build the image. 
 
@@ -63,7 +63,7 @@ This image will have a tag `1.1.1 ` .
 <a id="builddockerurl"></a>
 ### Building Image from URL of a Public Site Containing the Product Tarball
 
-If you want to create an image from a different version of SnappyData product, you can specify the URL in the command.
+If you want to create an image from a different version of the SnappyData product, you can specify the URL in the command.
 
 ```
 $ docker build -t myrepo/snappydata . --build-arg URL=<public-url>
@@ -86,7 +86,7 @@ $ docker build -t myrepo/snappydata -f Dockerfile . --build-arg URL=<tar-ball na
 
 ## Getting Details of Docker Images
 
-After the docker build is successful, you can check the details for docker images using the `docker images` command.
+After the Docker build is successful, you can check the details for Docker images using the `docker images` command.
 
 For example:
 
@@ -97,12 +97,11 @@ $ docker images
 
 ## Publishing the Docker Image
 
-If you want to push the image onto Docker hub, login to the Docker account using `docker login` command and provide your docker login credentials, followed by the `docker push` command. For more information, visit [here](https://docs.docker.com/engine/reference/commandline/login).
+If you want to push the image onto Docker hub, login to the Docker account using `docker login` command and provide your Docker login credentials, followed by the `docker push` command. For more information, visit [here](https://docs.docker.com/engine/reference/commandline/login).
 
 ```
 $ docker push <your-docker-repo-name>/<image_name>[:<image-tag>]
 ```
-
 Ensure to use the same name in the `docker push` that is used in `docker build`.
 
 For example:
@@ -134,13 +133,13 @@ $ docker run -itd --net=host --name snappydata myrepo/snappydata start all
 	If you are using MAC OS, you must redirect the ports manually. If you use `--net=host`, it may not work correctly on the Mac OS. The following modified command should be used for Mac OS:
 
 ```
-$ docker run -d --name=snappydata -p 5050:5050 -p 1527:1527 -p 1528:1528 myrepo/snappydata start all -h,ostname-for-clients=<Machine_IP/Public_IP>
+$ docker run -d --name=snappydata -p 5050:5050 -p 1527:1527 -p 1528:1528 myrepo/snappydata start all -hostname-for-clients=<Machine_IP/Public_IP>
 ```
 
 The `-hostname-for-clients` parameter sets the IP Address or Hostname that the server listens for client connections. The command may take some time to execute.
 
 
-## Commanly used Docker Commands
+## Commonly used Docker Commands
 
 | Description| Docker Commands |
 |--------|--------|
