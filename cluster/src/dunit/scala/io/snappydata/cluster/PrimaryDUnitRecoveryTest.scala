@@ -837,14 +837,13 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       stmt.execute("INSERT INTO gemfire10.test3tab3 select cast('a' as binary), cast('b' as clob), cast('1' as blob), 'adsf', 123")
 
       // with option - key_columns
-      stmt.execute("CREATE TABLE test3coltab4 (col1 int, col2 string, col3 float) USING COLUMN" +
+      stmt.execute("CREATE TABLE test3_coltab4 (col1 int, col2 string, col3 float) USING COLUMN" +
           " OPTIONS (key_columns 'col1')")
-      stmt.execute("INSERT INTO test3coltab4 VALUES(1,'aaa',123.122)")
-      stmt.execute("INSERT INTO test3coltab4 VALUES(2,'bbb',4444.55)")
+      stmt.execute("INSERT INTO test3_coltab4 VALUES(1,'aaa',123.122)")
+      stmt.execute("INSERT INTO test3_coltab4 VALUES(2,'bbb',4444.55)")
 
-      // row table - not null columns todo: add not null here
-      stmt.execute("CREATE TABLE test3rowtab5 (col1 FloaT, col2 TIMEstamp, col3 BOOLEAN ," +
-          " col4 varchar(1) , col5 integer ) using row")
+      stmt.execute("CREATE TABLE test3rowtab5 (col1 FloaT NOT NULL, col2 TIMEstamp NOT NULL, col3 BOOLEAN NOT NULL," +
+          " col4 varchar(1) NOT NULL, col5 integer NOT NULL) using row")
       stmt.execute("INSERT INTO test3rowtab5 VALUES(123.12321, '2019-02-18 15:31:55.333', 0, 'a',12)")
       stmt.execute("INSERT INTO test3rowtab5 VALUES(222.12321, '2019-02-18 16:31:56.333', 0, 'b',13)")
       stmt.execute("INSERT INTO test3rowtab5 VALUES(3333.12321, '2019-02-18 17:31:57.333', 'true', 'c',14)")
@@ -855,28 +854,14 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       stmt.execute("INSERT INTO test3coltab6 VALUES(200000000000001, 4, true)")
       stmt.execute("INSERT INTO test3coltab6 VALUES(300000000000001, 3, false)")
 
-      // column table - not null columns todo: add not null here
-      stmt.execute("CREATE TABLE test3coltab7 (col1 decimal(15,9), col2 float , col3 BIGint," +
-          " col4 date, col5 string ) using column options(BUCKETS '512')")
+      stmt.execute("CREATE TABLE test3coltab7 (col1 decimal(15,9) NOT NULL, col2 float NOT NULL, col3 BIGint NOT NULL," +
+          " col4 date NOT NULL, col5 string NOT NULL) using column options(BUCKETS '512')")
       stmt.execute("INSERT INTO test3coltab7 VALUES(891012.312321314, 1434124.123434134," +
           " 193471498234123, '2019-02-18', 'ZXcabcdefg')")
       stmt.execute("INSERT INTO test3coltab7 VALUES(91012.312321314, 34124.12343413," +
           " 243471498234123, '2019-04-18', 'qewrabcdefg')")
       stmt.execute("INSERT INTO test3coltab7 VALUES(1012.312321314, 4124.1234341," +
           " 333471498234123, '2019-03-18', 'adfcdefg')")
-
-
-      val rs71 = stmt.executeQuery("SELECT * FROM gemfire10.test3coltab7 ORDER BY col3;")
-//      arrBuf.clear()
-//      i = 0
-//
-//      arrBuf ++= ArrayBuffer("891012.312321314,1434124.125,193471498234123,2019-02-18,ZXcabcdefg",
-//        "91012.312321314,34124.125,243471498234123,2019-04-18,qewrabcdefg",
-//        "1012.312321314,4124.1234341,333471498234123,2019-03-18,adfcdefg")
-      while (rs71.next()) {
-        println(s"${rs71.getBigDecimal(2)},${rs71.getDouble(2)},${rs71.getFloat(2)}")
-      }
-      rs71.close()
 
 
       // todo: Paresh: the peculiar case
@@ -1009,7 +994,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       }
 
       val rs4 = stmtRec.executeQuery("select col1, col2, col3 from" +
-          " gemfire10.test3coltab4 ORDER BY col1")
+          " gemfire10.test3_coltab4 ORDER BY col1")
       arrBuf.clear()
       i = 0
       arrBuf ++= ArrayBuffer("1,aaa,123.122", "2,bbb,4444.55")
@@ -1252,15 +1237,14 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
 
       // row table - how nulls reflect in the recovered data files.
       // todo: fix this:default fails in createSchemasMap method of PrimaryDUnitRecoveryTest
-      stmt.execute("CREATE TABLE test5rowtab6 (col1 int, col2 string default 'DEF_VAL'," +
+      stmt.execute("CREATE TABLE test5_rowtab6 (col1 int, col2 string default 'DEF_VAL'," +
           " col3  long default -99999, col4 float default 0.0)")
-      //    stmt.execute("CREATE TABLE test5rowtab6 (col1 int, col2 string, col3  long, col4 float)")
-      stmt.execute("INSERT INTO test5rowtab6 values(null, 'afadsf', 134098245, 123.123)")
-      stmt.execute("INSERT INTO test5rowtab6 values(null, 'afadsf', 134098245, 123.123)")
-      stmt.execute("INSERT INTO test5rowtab6 values(null, null, null, null)")
-      stmt.execute("INSERT INTO test5rowtab6 (col1,col3) values(null, 134098245 )")
-      stmt.execute("INSERT INTO test5rowtab6 values(null, 'afadsf', 134098245 )")
-      stmt.execute("INSERT INTO test5rowtab6 (col1, col4) values(null, 345345.534)")
+      stmt.execute("INSERT INTO test5_rowtab6 values(null, 'afadsf', 134098245, 123.123)")
+      stmt.execute("INSERT INTO test5_rowtab6 values(null, 'afadsf', 134098245, 123.123)")
+      stmt.execute("INSERT INTO test5_rowtab6 values(null, null, null, null)")
+      stmt.execute("INSERT INTO test5_rowtab6 (col1,col3) values(null, 134098245 )")
+      stmt.execute("INSERT INTO test5_rowtab6 values(null, 'afadsf', 134098245 )")
+      stmt.execute("INSERT INTO test5_rowtab6 (col1, col4) values(null, 345345.534)")
 
       stmt.execute("CREATE TABLE test5coltab7 (c3 Array<Varchar(400)>, c4 Map < Int, Double > NOT NULL) using column")
 
