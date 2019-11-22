@@ -22,7 +22,6 @@ import java.util.Properties
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
-
 class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   val driverName = "io.snappydata.jdbc.ClientPoolDriver"
@@ -59,6 +58,33 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
     assert(null != conn1)
     conn1.close()
   }
+
+  test("GetTypeInfo-Boolean-Test") {
+    snc
+    val serverHostPort = TestUtil.startNetServer()
+    val driverName = "io.snappydata.jdbc.ClientDriver"
+    val url = s"JDBC:SNAPPYDATA://$serverHostPort"
+    // scalastyle:off
+    Class.forName(driverName)
+    val properties = null //new Properties
+    val conn = DriverManager.getConnection(url, properties)
+    assert(null != conn)
+    val stmt = conn.createStatement()
+    val resultSet = conn.getMetaData().getTypeInfo()
+    var count = 0;
+    while (resultSet.next()) {
+      count = count + 1;
+      if (count == 26) {
+        var typeName = resultSet.getString(1);
+        var typeNum = resultSet.getInt(2);
+        assert("BOOLEAN" == typeName)
+        assert(typeNum == -7)
+      }
+    }
+
+    conn.close()
+  }
+
 
   test("Test connection pool with pool and connection properties") {
     snc
