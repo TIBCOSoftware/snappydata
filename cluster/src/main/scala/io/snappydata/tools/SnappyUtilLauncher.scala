@@ -137,11 +137,16 @@ object SnappyUtilLauncher extends StoreCallback {
 
     val launcher = new SnappyUtilLauncher()
 
+    // TODO: this needs to be switched off because 'exec scala' executes
+    // scala code and can have a lot of '!' which is treated special by the
+    // console reader which we don't want.
+    // Will see if there can be a better workaround. Couldn't find any though
+    System.setProperty(ConsoleReader.JLINE_EXPAND_EVENTS, "false")
+
     try {
       // no args will default to using ij
       if (args.length == 0 || INTERPRETER_MODE) {
         if (INTERPRETER_MODE) {
-          System.setProperty(ConsoleReader.JLINE_EXPAND_EVENTS, "false")
           validateIntpArgs(args)
           launcher.setInitialCommands(
             SnappyUtilLauncher.CONNECT_STR, SnappyUtilLauncher.INITIAL_FILES_TO_RUN_STR)
@@ -181,11 +186,11 @@ object SnappyUtilLauncher extends StoreCallback {
   }
 
   val intpUsage = s"\nUsage:\n" +
-    s"\n${SCRIPT_NAME} [--snappydata.connection | -conn | --connection locatorhost:port]" +
+    s"\n${SCRIPT_NAME} [--snappydata.connection | -conn | --connection] [locatorhost:port]" +
     s"\n             default = locahost:1527\n" +
-    s"\n             [--snappydata.user | -user | --user username]" +
+    s"\n             [--snappydata.user | -user | --user] [username]" +
     s"\n             default = APP\n" +
-    s"\n             [--snappydata.password | -passwd | --password password]" +
+    s"\n             [--snappydata.password | -passwd | --password] [password]" +
     s"\n             default = APP\n" +
     s"\n             [--run | -r | -run scala_file path or files (comma separated paths]" +
     s"\n             [--help | -help | -h 'prints the command line options for the script']\n"
