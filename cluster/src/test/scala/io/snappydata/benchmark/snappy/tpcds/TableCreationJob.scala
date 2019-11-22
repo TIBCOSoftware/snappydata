@@ -75,7 +75,7 @@ object TableCreationJob extends SnappySQLJob{
     partitionBy = "cr_returned_date_sk"
     var props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable))
     var tableName = "catalog_returns"
-    createColumnPartitionedTable(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName, loadPerfPrintStream)
 
     // partitionBy = "cs_order_number"
     partitionBy = "cs_sold_date_sk"
@@ -89,41 +89,41 @@ object TableCreationJob extends SnappySQLJob{
     props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable),
       ("COLOCATE_WITH" -> "CATALOG_SALES"))
     tableName = "web_returns"
-    createColumnPartitionedTable(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName, loadPerfPrintStream)
 
     // partitionBy = "ws_order_number"
     partitionBy = "ws_sold_date_sk"
     props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable),
       ("COLOCATE_WITH" -> "WEB_RETURNS"))
     tableName = "web_sales"
-    createColumnPartitionedTable(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName, loadPerfPrintStream)
 
     partitionBy = "inv_item_sk"
     props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable))
     tableName = "inventory"
-    createColumnPartitionedTable(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName, loadPerfPrintStream)
 
     partitionBy = "sr_item_sk"
     props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable),
       ("COLOCATE_WITH" -> "INVENTORY"))
     tableName = "store_returns"
-    createColumnPartitionedTable(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName, loadPerfPrintStream)
 
     partitionBy = "ss_item_sk"
     props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable),
       ("COLOCATE_WITH" -> "STORE_RETURNS"))
     tableName = "store_sales"
-    createColumnPartitionedTable(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName, loadPerfPrintStream)
 
     partitionBy = "c_customer_sk"
     props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable))
     tableName = "customer"
-    createColumnPartitionedTable(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName, loadPerfPrintStream)
 
     partitionBy = "ca_address_sk"
     props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable))
     tableName = "customer_address"
-    createColumnPartitionedTable(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName, loadPerfPrintStream)
 
     // cleanup
     loadPerfPrintStream.flush()
@@ -133,14 +133,16 @@ object TableCreationJob extends SnappySQLJob{
 
   }
 
-  def createColumnPartitionedTable(snappy: SnappySession,
-                                   props: Map[String, String], tableName: String): Unit = {
+  def createColumnPartitionedTable(snappy: SnappySession, props: Map[String, String],
+                                   tableName: String, loadPerfPrintStream: PrintStream): Unit = {
 
     val df = snappy.read.parquet(s"$dataLocation/$tableName")
     snappy.dropTable(tableName, ifExists = true)
+    val startTime = System.currentTimeMillis()
     snappy.createTable(tableName, "column",
       new StructType(df.schema.map(_.copy(nullable = false)).toArray), props)
     df.write.insertInto(tableName)
+    val endTime = System.currentTimeMillis()
     // val cnt = df.collect().length
     // collect().length takes a very long time to run and may cause memory pressure
     val cnt = df.count()
@@ -150,6 +152,7 @@ object TableCreationJob extends SnappySQLJob{
     println(s"Table $tableName with $rowCount rows created from " +
         s"file $dataLocation/$tableName with $cnt rows")
     println("-----------------------------------------------")
+    loadPerfPrintStream.println(s"$tableName,$rowCount,${endTime - startTime}")
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
