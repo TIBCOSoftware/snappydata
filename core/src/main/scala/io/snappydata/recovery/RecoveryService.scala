@@ -20,15 +20,18 @@ package io.snappydata.recovery
 
 import java.util.function.BiConsumer
 
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats,
+  SnappyRegionStats}
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegionHelper
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.ddl.{DDLConflatable, GfxdDDLQueueEntry, GfxdDDLRegionQueue}
+import com.pivotal.gemfirexd.internal.engine.ddl.{DDLConflatable, GfxdDDLQueueEntry,
+  GfxdDDLRegionQueue}
 import com.pivotal.gemfirexd.internal.engine.distributed.RecoveryModeResultCollector
 import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode
-import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode.{RecoveryModePersistentView, RecoveryModePersistentViewPair}
+import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode
+.{RecoveryModePersistentView, RecoveryModePersistentViewPair}
 import com.pivotal.gemfirexd.internal.engine.sql.execute.RecoveredMetadataRequestMessage
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.mutable
@@ -42,12 +45,13 @@ import io.snappydata.Constant
 
 import org.apache.spark.sql.{SnappyContext, SnappyParser, SnappySession}
 import io.snappydata.sql.catalog.ConnectorExternalCatalog
-import io.snappydata.thrift.{CatalogFunctionObject, CatalogMetadataDetails, CatalogSchemaObject, CatalogTableObject}
+import io.snappydata.thrift.{CatalogFunctionObject, CatalogMetadataDetails, CatalogSchemaObject,
+  CatalogTableObject}
 
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogTable}
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructField, StructType}
-import org.apache.spark.{Logging, SparkContext}
-import org.apache.spark.sql.hive.{HiveClientUtil, SnappyHiveExternalCatalog}
+import org.apache.spark.Logging
+import org.apache.spark.sql.hive.HiveClientUtil
 import org.apache.spark.sql.internal.ContextJarUtils
 
 object RecoveryService extends Logging {
@@ -159,7 +163,8 @@ object RecoveryService extends Logging {
     val dbList = snappyHiveExternalCatalog.listDatabases("*").filter(dbName =>
       !(dbName.equalsIgnoreCase("SYS") || dbName.equalsIgnoreCase("DEFAULT")))
 
-    val allFunctions = dbList.flatMap(dbName => snappyHiveExternalCatalog.listFunctions(dbName, "*")
+    val allFunctions = dbList.flatMap(dbName => snappyHiveExternalCatalog
+        .listFunctions(dbName, "*")
         .map(func => snappyHiveExternalCatalog.getFunction(dbName, func)))
     val allDatabases = dbList.map(snappyHiveExternalCatalog.getDatabase)
     allFunctions.foreach(func => {
@@ -212,7 +217,8 @@ object RecoveryService extends Logging {
     })
 
     // the sorting is required to arrange statements amongst tables
-    val sortedTempTableBuffer = tempTableBuffer.sortBy(tup => tup._1.split("_")(1).toLong).map(_._2)
+    val sortedTempTableBuffer =
+      tempTableBuffer.sortBy(tup => tup._1.split("_")(1).toLong).map(_._2)
     ddlBuffer.appendAll(sortedTempTableBuffer)
 
     // view ddls should be at the end so that the extracted ddls won't fail when replayed as is.
@@ -222,13 +228,13 @@ object RecoveryService extends Logging {
       def accept(alias: String, cmd: String): Unit = {
         if (!(alias.equals(Constant.CLUSTER_ID) ||
             alias.startsWith(Constant.MEMBER_ID_PREFIX))) {
-          logInfo("#RecoveryService " + alias + cmd)
           val cmdFields = cmd.split("\\|", -1)
           if (cmdFields.length > 1) {
             val repos = cmdFields(1)
             val path = cmdFields(2)
             if (!repos.isEmpty && !path.isEmpty) {
-              ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}' repos '$repos' path '$path'")
+              ddlBuffer
+                  .append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}' repos '$repos' path '$path'")
             }
             else if (!repos.isEmpty && path.isEmpty) {
               ddlBuffer.append(s"DEPLOY PACKAGE $alias '${cmdFields(0)}' repos '$repos'")
@@ -282,10 +288,11 @@ object RecoveryService extends Logging {
   def getExecutorHost(fqtn: String, bucketId: Int = -1): Seq[String] = {
     val rowRegionPath = getRowRegionPath(fqtn, bucketId)
     // for null region maps select random host
-    val rowRegionPathKey = combinedViewsMapSortedSet.keySet.filter(_.contains(rowRegionPath + "#$"))
+    val rowRegionPathKey = combinedViewsMapSortedSet.keySet.filter(_.contains(rowRegionPath+"#$"))
 
     if (rowRegionPathKey.size != 0) {
-      assert(rowRegionPathKey.size == 1, s"combinedViewsMapSortedSet should not contain multiple entries for the key $rowRegionPath")
+      assert(rowRegionPathKey.size == 1,
+        s"combinedViewsMapSortedSet should not contain multiple entries for the key $rowRegionPath")
       val viewPair = combinedViewsMapSortedSet(rowRegionPathKey.head).lastKey
       val hostCanonical = viewPair.getRowView.getExecutorHost
       val host = hostCanonical.split('(').head
@@ -300,8 +307,8 @@ object RecoveryService extends Logging {
   }
 
   def getRandomExecutorHost: Seq[String] = {
-    val e = Random.shuffle(regionViewMapSortedSet.toList).head._2.firstKey
-    val hostCanonical = e.getExecutorHost
+    val randomPersistentView = Random.shuffle(regionViewMapSortedSet.toList).head._2.firstKey
+    val hostCanonical = randomPersistentView.getExecutorHost
     val host = hostCanonical.split('(').head
     Seq(s"executor_${host}_$hostCanonical")
   }
@@ -375,7 +382,7 @@ object RecoveryService extends Logging {
       versionMap.put(fqtnKey, versionCnt)
       versionCnt += 1
 
-      // Alter statements contains original sql with timestamp in keys to find sequence. for example
+      // Alter statements contains original sql with timestamp in keys to find sequence.for example
       // Properties: [k1=v1, altTxt_1568129777251=<alter command>, k3=v3]
       val altStmtKeysSorted = table.properties.keys
           .filter(_.contains(s"altTxt_")).toSeq
@@ -458,7 +465,8 @@ object RecoveryService extends Logging {
     val msg = new RecoveredMetadataRequestMessage(collector)
     msg.executeFunction()
     val persistentData = collector.getResult
-    logDebug(s" Total Number of PersistentStateInRecoveryMode objects received ${persistentData.size()}")
+    logDebug(s"Total Number of PersistentStateInRecoveryMode objects received" +
+        s" ${persistentData.size()}")
     val itr = persistentData.iterator()
     while (itr.hasNext) {
       val persistentStateObj = itr.next().asInstanceOf[PersistentStateInRecoveryMode]
@@ -490,8 +498,6 @@ object RecoveryService extends Logging {
     }
     assert(locatorMember != null)
     mostRecentMemberObject = persistentObjectMemberMap(locatorMember)
-
-
     logDebug(s"The selected PersistentStateInRecoveryMode used for populating" +
         s" the new catalog:\n$mostRecentMemberObject")
 
@@ -550,7 +556,6 @@ object RecoveryService extends Logging {
       val numBuckets = getNumBuckets(schemaName.toUpperCase(), tableName.toUpperCase())._1
       var rowRegionPath: String = ""
       var colRegionPath: String = ""
-      // TODO: check for tables with tables with _ in their name.
       for (buckNum <- Range(0, numBuckets)) {
 
         rowRegionPath = getRowRegionPath(fqtn, buckNum)

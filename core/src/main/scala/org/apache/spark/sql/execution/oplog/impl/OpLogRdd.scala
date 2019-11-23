@@ -44,8 +44,10 @@ import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.util.{DateTimeUtils, SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.execution.RDDKryo
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnDeltaDecoder, ColumnEncoding, ColumnStatsSchema, UpdatedColumnDecoder}
-import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder,
+  ColumnDeltaDecoder, ColumnEncoding, ColumnStatsSchema, UpdatedColumnDecoder}
+import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry,
+  ColumnFormatKey, ColumnFormatValue}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SnappySession}
 import org.apache.spark.unsafe.Platform
@@ -87,8 +89,8 @@ class OpLogRdd(
 
     val dataTypeDescriptor = dataType match {
       case LongType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BIGINT, isNullable)
-      case IntegerType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.INTEGER, isNullable)
-      case BooleanType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BOOLEAN, isNullable)
+      case IntegerType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.INTEGER,isNullable)
+      case BooleanType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BOOLEAN,isNullable)
       case ByteType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.SMALLINT, isNullable)
       case FloatType => DataTypeDescriptor.getSQLDataTypeDescriptor("float", isNullable)
       case BinaryType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BLOB, isNullable)
@@ -129,7 +131,7 @@ class OpLogRdd(
     val fqtnLowerKey = tableName.replace(".", "_")
     val maxVersion = versionMap.getOrElse(fqtnLowerKey,
       throw new IllegalStateException(s"num of schema versions not found for $fqtnLowerKey"))
-    assert(maxVersion != null)
+    assert(maxVersion != 0)
     var index = -1
     val fieldsArr = tableSchemas.getOrElse(s"$maxVersion#$fqtnLowerKey",
       throw new IllegalStateException(s"table schema not found for $maxVersion#$fqtnLowerKey"))
@@ -247,8 +249,10 @@ class OpLogRdd(
           data
         } else null
       case BinaryType =>
+        if (!dvd.isNull){
         val blobValue = dvd.getObject.asInstanceOf[HarmonySerialBlob]
         Source.fromInputStream(blobValue.getBinaryStream).map(e => e.toByte).toArray
+        } else null
       case _ => dvd.getObject
     }
   }
