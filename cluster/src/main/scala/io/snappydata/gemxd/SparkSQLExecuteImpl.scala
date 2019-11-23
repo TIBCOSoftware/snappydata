@@ -21,7 +21,6 @@ import java.sql.SQLWarning
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, Version}
@@ -38,8 +37,8 @@ import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLChar}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
+import io.snappydata.remote.interpreter.SnappyInterpreterExecute
 import io.snappydata.{Constant, Property, QueryHint}
-
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
@@ -498,6 +497,7 @@ object SnappySessionPerConnection {
   def removeSnappySession(connectionID: java.lang.Long): Unit = {
     val session = connectionIdMap.remove(connectionID)
     if (session ne null) session.clear()
+    SnappyInterpreterExecute.closeRemoteInterpreter(connectionID)
   }
 }
 

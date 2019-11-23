@@ -224,10 +224,13 @@ object RecoveryService extends Logging {
     // view ddls should be at the end so that the extracted ddls won't fail when replayed as is.
     ddlBuffer.appendAll(tempViewBuffer)
 
-    val biConsumer = new BiConsumer[String, String] {
-      def accept(alias: String, cmd: String): Unit = {
+    val biConsumer = new BiConsumer[String, Object] {
+      def accept(alias: String, cmdObj: Object): Unit = {
         if (!(alias.equals(Constant.CLUSTER_ID) ||
-            alias.startsWith(Constant.MEMBER_ID_PREFIX))) {
+            alias.startsWith(Constant.MEMBER_ID_PREFIX) ||
+            !cmdObj.isInstanceOf[String])) {
+          val cmd = cmdObj.asInstanceOf[String]
+          logInfo("#RecoveryService " + alias + cmd)
           val cmdFields = cmd.split("\\|", -1)
           if (cmdFields.length > 1) {
             val repos = cmdFields(1)
