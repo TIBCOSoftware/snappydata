@@ -127,11 +127,13 @@ class OpLogRdd(
 
   def getProjectColumnId(tableName: String, columnName: String): Int = {
     val fqtnLowerKey = tableName.replace(".", "_")
-    assert(versionMap.contains(fqtnLowerKey))
-    val maxVersion = versionMap.getOrElse(fqtnLowerKey, null)
+    val maxVersion = versionMap.getOrElse(fqtnLowerKey,
+      throw new IllegalStateException(s"num of schema versions not found for $fqtnLowerKey"))
     assert(maxVersion != null)
     var index = -1
-    val fieldsArr = tableSchemas.getOrElse(s"$maxVersion#$fqtnLowerKey", null).fields
+    val fieldsArr = tableSchemas.getOrElse(s"$maxVersion#$fqtnLowerKey",
+      throw new IllegalStateException(s"table schema not found for $maxVersion#$fqtnLowerKey"))
+        .fields
     breakable {
       for (i <- fieldsArr.indices) {
         if (fieldsArr(i).name == columnName) {
@@ -142,11 +144,9 @@ class OpLogRdd(
         }
       }
     }
-    if (!tableColIdsMap.contains(s"$maxVersion#$fqtnLowerKey")) {
-      throw new IllegalStateException(s"tableColIdsMap might not be built properly." +
-          s" Missing key: $maxVersion#$fqtnLowerKey")
-    }
-    tableColIdsMap(s"$maxVersion#$fqtnLowerKey")(index)
+    assert(index != -1, s"column id not found for $fqtn.$columnName")
+    tableColIdsMap.getOrElse(s"$maxVersion#$fqtnLowerKey",
+      throw new IllegalStateException(s"column ids not found: $maxVersion#$fqtnLowerKey"))(index)
   }
 
   def getSchemaColumnId(tableName: String, colName: String, version: Int): Int = {
@@ -163,8 +163,9 @@ class OpLogRdd(
         }
       }
     }
-    if (index != -1) tableColIdsMap.getOrElse(s"$version#$fqtnLowerKey", null)(index)
-    else -1
+    assert(index != -1, s"column id not found for $fqtn.$colName")
+    tableColIdsMap.getOrElse(s"$version#$fqtnLowerKey",
+      throw new IllegalStateException(s"column ids not found: $version#$fqtnLowerKey"))(index)
   }
 
   /**
