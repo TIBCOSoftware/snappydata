@@ -44,8 +44,10 @@ import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.util.{DateTimeUtils, SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.execution.RDDKryo
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnDeltaDecoder, ColumnEncoding, ColumnStatsSchema, UpdatedColumnDecoder}
-import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder,
+  ColumnDeltaDecoder, ColumnEncoding, ColumnStatsSchema, UpdatedColumnDecoder}
+import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry,
+  ColumnFormatKey, ColumnFormatValue}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SnappySession}
 import org.apache.spark.unsafe.Platform
@@ -87,8 +89,8 @@ class OpLogRdd(
 
     val dataTypeDescriptor = dataType match {
       case LongType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BIGINT, isNullable)
-      case IntegerType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.INTEGER, isNullable)
-      case BooleanType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BOOLEAN, isNullable)
+      case IntegerType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.INTEGER,isNullable)
+      case BooleanType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BOOLEAN,isNullable)
       case ByteType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.SMALLINT, isNullable)
       case FloatType => DataTypeDescriptor.getSQLDataTypeDescriptor("float", isNullable)
       case BinaryType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BLOB, isNullable)
@@ -127,11 +129,13 @@ class OpLogRdd(
 
   def getProjectColumnId(tableName: String, columnName: String): Int = {
     val fqtnLowerKey = tableName.replace(".", "_")
-    assert(versionMap.contains(fqtnLowerKey))
-    val maxVersion = versionMap.getOrElse(fqtnLowerKey, null)
-    assert(maxVersion != null)
+    val maxVersion = versionMap.getOrElse(fqtnLowerKey,
+      throw new IllegalStateException(s"num of schema versions not found for $fqtnLowerKey"))
+    assert(maxVersion != 0)
     var index = -1
-    val fieldsArr = tableSchemas.getOrElse(s"$maxVersion#$fqtnLowerKey", null).fields
+    val fieldsArr = tableSchemas.getOrElse(s"$maxVersion#$fqtnLowerKey",
+      throw new IllegalStateException(s"table schema not found for $maxVersion#$fqtnLowerKey"))
+        .fields
     breakable {
       for (i <- fieldsArr.indices) {
         if (fieldsArr(i).name == columnName) {
@@ -142,11 +146,9 @@ class OpLogRdd(
         }
       }
     }
-    if (!tableColIdsMap.contains(s"$maxVersion#$fqtnLowerKey")) {
-      throw new IllegalStateException(s"tableColIdsMap might not be built properly." +
-          s" Missing key: $maxVersion#$fqtnLowerKey")
-    }
-    tableColIdsMap(s"$maxVersion#$fqtnLowerKey")(index)
+    assert(index != -1, s"column id not found for $fqtn.$columnName")
+    tableColIdsMap.getOrElse(s"$maxVersion#$fqtnLowerKey",
+      throw new IllegalStateException(s"column ids not found: $maxVersion#$fqtnLowerKey"))(index)
   }
 
   def getSchemaColumnId(tableName: String, colName: String, version: Int): Int = {
@@ -163,8 +165,9 @@ class OpLogRdd(
         }
       }
     }
-    if (index != -1) tableColIdsMap.getOrElse(s"$version#$fqtnLowerKey", null)(index)
-    else -1
+    assert(index != -1, s"column id not found for $fqtn.$colName")
+    tableColIdsMap.getOrElse(s"$version#$fqtnLowerKey",
+      throw new IllegalStateException(s"column ids not found: $version#$fqtnLowerKey"))(index)
   }
 
   /**
@@ -246,8 +249,10 @@ class OpLogRdd(
           data
         } else null
       case BinaryType =>
+        if (!dvd.isNull){
         val blobValue = dvd.getObject.asInstanceOf[HarmonySerialBlob]
         Source.fromInputStream(blobValue.getBinaryStream).map(e => e.toByte).toArray
+        } else null
       case _ => dvd.getObject
     }
   }
@@ -388,6 +393,7 @@ class OpLogRdd(
    * @param phdrCol PlaceHolderDiskRegion of column batch
    */
   def iterateColData(phdrCol: PlaceHolderDiskRegion): Iterator[Row] = {
+    val directBuffers = mutable.ListBuffer.empty[ByteBuffer]
     if (phdrCol.getRegionMap == null || phdrCol.getRegionMap.isEmpty) return Iterator.empty
     val regMap = phdrCol.getRegionMap
     // assert(regMap != null, "region map for column batch is null")
@@ -423,7 +429,8 @@ class OpLogRdd(
             val valueBuffer = value.getValueRetain(FetchRequest.DECOMPRESS).getBuffer
             val decoder = ColumnEncoding.getColumnDecoder(valueBuffer, field)
             val valueArray = if (valueBuffer == null || valueBuffer.isDirect) {
-              valueBuffer
+              directBuffers += valueBuffer
+              null
             } else {
               valueBuffer.array()
             }
@@ -489,13 +496,7 @@ class OpLogRdd(
             Row.fromSeq(schema.indices.map { colIndx =>
               val decoderAndValue = decodersAndValues(colIndx)
               val colDecoder = decoderAndValue._1
-              var directBuffer: ByteBuffer = null
-              val colArray = decoderAndValue._2 match {
-                case b: ByteBuffer =>
-                  directBuffer = b // need reference to directBuffer till we are done reading
-                  null
-                case arr: Array[Byte] => arr
-              }
+              val colArray = decoderAndValue._2
               val colNextNullPosition = colDecoder.getNextNullPosition
               val fieldIsNull = rowNum + currentDeleted == colNextNullPosition
               if (fieldIsNull) {
