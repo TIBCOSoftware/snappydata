@@ -360,7 +360,8 @@ object RecoveryService extends Logging {
         case None => throw new Exception(
           s"Schema name not found for the table ${table.identifier.table}")
       }
-      var schema: StructType = DataType.fromJson(schemaJsonStr).asInstanceOf[StructType]
+      var schema: StructType = StructType(DataType.fromJson(schemaJsonStr).asInstanceOf[StructType]
+              .map(f => f.copy(name = f.name.toLowerCase)))
 
       assert(schema != null, s"schemaJson read from catalog table is null " +
           s"for ${table.identifier.table}")
