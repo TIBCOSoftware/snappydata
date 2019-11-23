@@ -16,8 +16,6 @@
  */
 package org.apache.spark.sql.execution.oplog.impl
 
-import java.util
-
 import io.snappydata.Constant
 import io.snappydata.recovery.RecoveryService
 
@@ -46,8 +44,6 @@ class OpLogFormatRelation(
   def scnTbl(externalColumnTableName: String, requiredColumns: Array[String],
       filters: Array[Expression], prunePartitions: () => Int): (RDD[Any], Array[Int]) = {
 
-    val fieldNames = new util.HashMap[String, Integer](schema.length)
-    (0 until schema.length).foreach(i => fieldNames.put(schema(i).name.toLowerCase, i + 1))
     val projection = null
     val provider = RecoveryService.getProvider(fqtn)
     val snappySession = SparkSession.builder().getOrCreate().asInstanceOf[SnappySession]
@@ -58,8 +54,9 @@ class OpLogFormatRelation(
     val catalogTable = snappySession.externalCatalog.getTable(schemaName, tableName)
     val primaryKeys = catalogTable.properties.getOrElse("primary_keys", "")
     val keyColumns = options.getOrElse("key_columns", "")
+    var schemaLowerCase = StructType(schema.map(f => f.copy(name = f.name.toLowerCase)))
 
-    (new OpLogRdd(snappySession, fqtn, externalColumnTableName, schema,
+    (new OpLogRdd(snappySession, fqtn, externalColumnTableName, schemaLowerCase,
       partitioningColumns, provider, projection, filters, (filters eq null) || filters.length == 0,
       prunePartitions, tableSchemas, versionMap, tableColIdsMap, primaryKeys, keyColumns), projection)
   }
