@@ -261,7 +261,4 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def getInterpreterExecution(sql: String, v: Version,
     connId: lang.Long): InterpreterExecute = new SnappyInterpreterExecute(sql, connId)
-
-  override def dumpData(connId: lang.Long, exportUri: String,
-    formatType: String, tableNames: String, ignoreError: lang.Boolean): Unit = {}
 }
