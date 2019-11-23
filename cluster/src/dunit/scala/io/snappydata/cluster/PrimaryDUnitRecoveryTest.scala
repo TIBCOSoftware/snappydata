@@ -517,7 +517,6 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
         i = 0
       }
 
-      // todo : Refactor the code. Reuse variables where possible
       var rs = stmtRec.executeQuery("SELECT * FROM gemfire10.test1coltab1 ORDER BY col1")
       logDebug("=== SELECT * FROM test1coltab1 ===\n")
       str.clear()
@@ -748,12 +747,12 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
            | confdirpath: $confDirPath
            | ldapConf: $ldapConf""".stripMargin)
 
-      writeToFile(s"localhost  -peer-discovery-port=$locatorPort -dir=$workDirPath/locator-1" +
+      writeToFile(s"localhost  -peer-discovery-port=$locatorPort -recovery-state-chunk-size=20 -dir=$workDirPath/locator-1" +
           s" -client-port=$locNetPort $ldapConf", s"$confDirPath/locators")
       writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
           s" $waitForInit $ldapConf", s"$confDirPath/leads")
       writeToFile(
-        s"""localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf
+        s"""localhost  -locators=localhost[$locatorPort] -recovery-state-chunk-size=50 -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf
            |localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-2 -client-port=$netPort3 $ldapConf
            |""".stripMargin, s"$confDirPath/servers")
 
@@ -861,10 +860,10 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       stmt.execute("INSERT INTO gemfire10.test3tab3 select cast('asdf' as binary), cast('bnm' as clob), cast('1111111' as blob), 'adsfghi', 123456")
 
       // with option - key_columns
-      stmt.execute("CREATE TABLE test3coltab4 (col1 int, col2 string, col3 float) USING COLUMN" +
+      stmt.execute("CREATE TABLE test3_coltab4 (col1 int, col2 string, col3 float) USING COLUMN" +
           " OPTIONS (key_columns 'col1')")
-      stmt.execute("INSERT INTO test3coltab4 VALUES(1,'aaa',123.122)")
-      stmt.execute("INSERT INTO test3coltab4 VALUES(2,'bbb',4444.55)")
+      stmt.execute("INSERT INTO test3_coltab4 VALUES(1,'aaa',123.122)")
+      stmt.execute("INSERT INTO test3_coltab4 VALUES(2,'bbb',4444.55)")
 
       stmt.execute("CREATE TABLE test3rowtab5 (col1 FloaT NOT NULL, col2 TIMEstamp NOT NULL, col3 BOOLEAN NOT NULL," +
           " col4 varchar(1) NOT NULL, col5 integer NOT NULL) using row")
@@ -878,15 +877,15 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       stmt.execute("INSERT INTO test3coltab6 VALUES(200000000000001, 4, true)")
       stmt.execute("INSERT INTO test3coltab6 VALUES(300000000000001, 3, false)")
 
-      // column table - not null columns todo: add not null here
-      stmt.execute("CREATE TABLE test3coltab7 (col1 decimal(15,9), col2 float , col3 BIGint," +
-          " col4 date, col5 string ) using column options(BUCKETS '512')")
+      stmt.execute("CREATE TABLE test3coltab7 (col1 decimal(15,9) NOT NULL, col2 float NOT NULL, col3 BIGint NOT NULL," +
+          " col4 date NOT NULL, col5 string NOT NULL) using column options(BUCKETS '512')")
       stmt.execute("INSERT INTO test3coltab7 VALUES(891012.312321314, 1434124.123434134," +
           " 193471498234123, '2019-02-18', 'ZXcabcdefg')")
       stmt.execute("INSERT INTO test3coltab7 VALUES(91012.312321314, 34124.12343413," +
           " 243471498234123, '2019-04-18', 'qewrabcdefg')")
       stmt.execute("INSERT INTO test3coltab7 VALUES(1012.312321314, 4124.1234341," +
           " 333471498234123, '2019-03-18', 'adfcdefg')")
+
 
       // todo: Paresh: the peculiar case
       stmt.execute("CREATE TABLE test3rowtab8 (col1 string, col2 int, col3 varchar(33)," +
@@ -936,7 +935,6 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
 
       // todo: alter table -add/drop column-
 
-
       stmt.close()
       conn.close()
 
@@ -983,7 +981,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       }
 
       rs = stmtRec.executeQuery("select col1, col2, col3 from" +
-          " gemfire10.test3coltab4 ORDER BY col1")
+          " gemfire10.test3_coltab4 ORDER BY col1")
       resetBuffer
       arrBuf ++= ArrayBuffer("1,aaa,123.122", "2,bbb,4444.55")
       while (rs.next()) {
@@ -1101,7 +1099,6 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       conn.close()
       afterEach()
       test_status = true
-
     } catch {
       case e: Throwable =>
         afterEach()
@@ -1163,7 +1160,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
           s" $waitForInit $ldapConf", s"$confDirPath/leads")
       writeToFile(
-        s"""localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf
+        s"""localhost  -locators=localhost[$locatorPort] -recovery-state-chunk-size=20 -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf
            |""".stripMargin, s"$confDirPath/servers")
 
       startSnappyCluster()
@@ -1219,15 +1216,14 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
 
       // row table - how nulls reflect in the recovered data files.
       // todo: fix this:default fails in createSchemasMap method of PrimaryDUnitRecoveryTest
-      stmt.execute("CREATE TABLE test5rowtab6 (col1 int, col2 string default 'DEF_VAL'," +
+      stmt.execute("CREATE TABLE test5_rowtab6 (col1 int, col2 string default 'DEF_VAL'," +
           " col3  long default -99999, col4 float default 0.0)")
-      //    stmt.execute("CREATE TABLE test5rowtab6 (col1 int, col2 string, col3  long, col4 float)")
-      stmt.execute("INSERT INTO test5rowtab6 values(null, 'afadsf', 134098245, 123.123)")
-      stmt.execute("INSERT INTO test5rowtab6 values(null, 'afadsf', 134098245, 123.123)")
-      stmt.execute("INSERT INTO test5rowtab6 values(null, null, null, null)")
-      stmt.execute("INSERT INTO test5rowtab6 (col1,col3) values(null, 134098245 )")
-      stmt.execute("INSERT INTO test5rowtab6 values(null, 'afadsf', 134098245 )")
-      stmt.execute("INSERT INTO test5rowtab6 (col1, col4) values(null, 345345.534)")
+      stmt.execute("INSERT INTO test5_rowtab6 values(null, 'afadsf', 134098245, 123.123)")
+      stmt.execute("INSERT INTO test5_rowtab6 values(null, 'afadsf', 134098245, 123.123)")
+      stmt.execute("INSERT INTO test5_rowtab6 values(null, null, null, null)")
+      stmt.execute("INSERT INTO test5_rowtab6 (col1,col3) values(null, 134098245 )")
+      stmt.execute("INSERT INTO test5_rowtab6 values(null, 'afadsf', 134098245 )")
+      stmt.execute("INSERT INTO test5_rowtab6 (col1, col4) values(null, 345345.534)")
 
       stmt.execute("CREATE TABLE test5coltab7 (c3 Array<Varchar(400)>, c4 Map < Int, Double > NOT NULL) using column")
 
@@ -1336,7 +1332,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
           s" $waitForInit $ldapConf", s"$confDirPath/leads")
       writeToFile(
-        s"localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-1 " +
+        s"localhost  -locators=localhost[$locatorPort] -recovery-state-chunk-size=40 -dir=$workDirPath/server-1 " +
             s"-client-port=$netPort2 $ldapConf".stripMargin, s"$confDirPath/servers")
 
       startSnappyCluster()
