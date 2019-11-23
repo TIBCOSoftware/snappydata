@@ -388,6 +388,7 @@ class OpLogRdd(
    * @param phdrCol PlaceHolderDiskRegion of column batch
    */
   def iterateColData(phdrCol: PlaceHolderDiskRegion): Iterator[Row] = {
+    val directBuffers = mutable.ListBuffer.empty[ByteBuffer]
     if (phdrCol.getRegionMap == null || phdrCol.getRegionMap.isEmpty) return Iterator.empty
     val regMap = phdrCol.getRegionMap
     // assert(regMap != null, "region map for column batch is null")
@@ -423,7 +424,8 @@ class OpLogRdd(
             val valueBuffer = value.getValueRetain(FetchRequest.DECOMPRESS).getBuffer
             val decoder = ColumnEncoding.getColumnDecoder(valueBuffer, field)
             val valueArray = if (valueBuffer == null || valueBuffer.isDirect) {
-              valueBuffer
+              directBuffers += valueBuffer
+              null
             } else {
               valueBuffer.array()
             }
@@ -489,13 +491,7 @@ class OpLogRdd(
             Row.fromSeq(schema.indices.map { colIndx =>
               val decoderAndValue = decodersAndValues(colIndx)
               val colDecoder = decoderAndValue._1
-              var directBuffer: ByteBuffer = null
-              val colArray = decoderAndValue._2 match {
-                case b: ByteBuffer =>
-                  directBuffer = b // need reference to directBuffer till we are done reading
-                  null
-                case arr: Array[Byte] => arr
-              }
+              val colArray = decoderAndValue._2
               val colNextNullPosition = colDecoder.getNextNullPosition
               val fieldIsNull = rowNum + currentDeleted == colNextNullPosition
               if (fieldIsNull) {
