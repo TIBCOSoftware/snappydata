@@ -1,7 +1,5 @@
 /*
- * Changes for SnappyData data platform.
- *
- * Portions Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,6 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+
 
 package io.snappydata.remote.interpreter
 
@@ -80,7 +79,6 @@ object SnappyInterpreterExecute {
           "grant/revoke of scala code execution", "ComputeDB", "Cluster")
       }
       val commaSepVals = users.split(",")
-      // println(s"KN: hnp grantor = $grantor users = $users isGrant = $isGrant")
       commaSepVals.foreach(u => {
         if (isGrant) {
           // println(s"KN: hnp grantor inside u = $u")
@@ -179,11 +177,8 @@ object SnappyInterpreterExecute {
     private val allowedUsers: mutable.ListBuffer[String] = new mutable.ListBuffer[String]
 
     def isAllowed(user: String): (Boolean, String) = {
-      // println(s"KN: isAllowed called for user = $user with allowed users = $allowedUsers")
       if (allowedUsers.contains(user)) return (true, "")
-      // println(s"KN: isAllowed called for user = $user 2 and groupToUserMap = $groupToUsersMap")
       for ((group, list) <- groupToUsersMap) {
-        // println(s"KN: isAllowed called for user = $user 3 group = $group and list = $list")
         if (list.contains(user)) return (true, group)
       }
       (false, "")
@@ -200,7 +195,6 @@ object SnappyInterpreterExecute {
     def addLdapGroup(group: String): Unit = {
       val grantees = ExternalStoreUtils.getExpandedGranteesIterator(Seq(group)).filterNot(
         _.startsWith(Constants.LDAP_GROUP_PREFIX)).map(_.toLowerCase).toList
-      // println(s"KN: for group $group grantees = $grantees")
       groupToUsersMap += (group -> grantees)
     }
 

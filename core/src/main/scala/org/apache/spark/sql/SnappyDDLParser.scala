@@ -118,7 +118,6 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
   final def CLUSTERED: Rule0 = rule { keyword(Consts.CLUSTERED) }
-  final def CODE: Rule0 = rule { keyword(Consts.CODE) }
   final def CODEGEN: Rule0 = rule { keyword(Consts.CODEGEN) }
   final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
   final def COLUMNS: Rule0 = rule { keyword(Consts.COLUMNS) }

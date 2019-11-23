@@ -525,7 +525,6 @@ object SnappyParserConsts {
   final val AUTHORIZATION: Keyword = nonReservedKeyword("authorization")
   final val CALL: Keyword = nonReservedKeyword("call")
   final val CLEAR: Keyword = nonReservedKeyword("clear")
-  final val CODE: Keyword = nonReservedKeyword("code")
   final val COLUMN: Keyword = nonReservedKeyword("column")
   final val COMMENT: Keyword = nonReservedKeyword("comment")
   final val CROSS: Keyword = nonReservedKeyword("cross")
