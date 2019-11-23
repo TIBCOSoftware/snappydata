@@ -131,7 +131,7 @@ class OpLogRdd(
     val fqtnLowerKey = tableName.replace(".", "_")
     val maxVersion = versionMap.getOrElse(fqtnLowerKey,
       throw new IllegalStateException(s"num of schema versions not found for $fqtnLowerKey"))
-    assert(maxVersion != null)
+    assert(maxVersion != 0)
     var index = -1
     val fieldsArr = tableSchemas.getOrElse(s"$maxVersion#$fqtnLowerKey",
       throw new IllegalStateException(s"table schema not found for $maxVersion#$fqtnLowerKey"))
