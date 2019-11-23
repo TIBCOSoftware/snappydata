@@ -469,6 +469,7 @@ class OpLogRdd(
             } else null
             updateDecoder
           }
+
           (0 until (numOfRows - deletedCount)).map { rowNum =>
             while ((deleteDecoder ne null) && deleteDecoder.deleted(rowNum + currentDeleted)) {
               // null counts should be added as we go even for deleted records
