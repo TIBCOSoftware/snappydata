@@ -22,7 +22,7 @@ import java.util
 
 import com.gemstone.gemfire.internal.GemFireUtilLauncher.{CommandEntry, SCRIPT_NAME}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
-import com.gemstone.gemfire.internal.{GemFireTerminateError, GemFireUtilLauncher}
+import com.gemstone.gemfire.internal.{GemFireTerminateError, GemFireUtilLauncher, GemFireVersion}
 import com.pivotal.gemfirexd.internal.iapi.tools.i18n.{LocalizedOutput, LocalizedResource}
 import com.pivotal.gemfirexd.internal.impl.tools.ij.utilMain
 import com.pivotal.gemfirexd.internal.tools.ij
@@ -258,6 +258,7 @@ object SnappyUtilLauncher extends StoreCallback {
   }
 
   def printWelcomeEnterprise() {
+    val version = GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage
     import org.apache.spark.SPARK_VERSION
     // scalastyle:off println
     println()
@@ -267,7 +268,7 @@ object SnappyUtilLauncher extends StoreCallback {
   / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ / / / __  |
  / /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /_/ / /_/ /  version %s on Spark version %s
  \____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_____/_____/
-                     /_/""".format("1.2", SPARK_VERSION))
+                     /_/""".format(version, SPARK_VERSION))
     val welcomeMsg = "\nUsing Scala %s (%s, Java %s)".format(
       versionString, javaVmName, javaVersion)
     println(welcomeMsg)

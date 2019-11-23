@@ -119,10 +119,27 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
     val result = commandMethod.invoke(this.intp, command)
     if (resultBuffer.isEmpty) {
       val output = pw.toString
-      output.split("\n")
+      val returnArray = output.split("\n")
+      // For help we need a little change in the default display.
+      if (!command.isEmpty && "help".contains(command)) {
+        returnArray.map {
+          case x if x.contains("All commands can be abbreviated") => modifiedHelpHeaderLine(x)
+          case x => x
+        }
+      } else {
+        returnArray
+      }
     } else {
+      // For help we need a little change in the default display.
       resultBuffer.toArray
     }
+  }
+
+  private lazy val modifiedHelpHeaderLine = (s: String) => {
+    val modifiedOrigLine = s.replace("All commands", "Most of the commands")
+    val nonModifiableStmnt = s"\nSome Commands that cannot be abbreviated are: 'run', 'elapsedtime on',\n  " +
+      s"'maximumdisplaywidth' and 'maximumlinewidth'\n"
+    modifiedOrigLine + nonModifiableStmnt
   }
 
   def createSparkILoop: SparkILoop = {
@@ -201,6 +218,29 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
     allInterpretedLinesForReplay.foreach(println(_))
   }
 
+  // The below commands are executed locally in ij
+  // Kept here just so that :help prints them too. But that is why
+  // it will throw exception as these should never come here
+  def maxdisplaywidth(arg: String): Unit = {
+    throw new IllegalArgumentException("maxdisplaywidth not expected to run on lead");
+  }
+
+  def maxlinewidth(arg: String): Unit = {
+    throw new IllegalArgumentException("maxlinewidth not expected to run on lead");
+  }
+
+  def run(arg: String): Unit = {
+    throw new IllegalArgumentException("run not expected to run on lead");
+  }
+
+  def elapsedtime(): Unit = {
+    throw new IllegalArgumentException("elapsedtime not expected to run on lead");
+  }
+
+  def quit(): Unit = {
+    throw new IllegalArgumentException("quit not expected to run on lead");
+  }
+
   class StringOutputStrem(val spw: StringPrintWriter) extends OutputStream {
     override def write(b: Int): Unit = {
       spw.write(b)
@@ -227,7 +267,21 @@ class RemoteILoop(spw: StringPrintWriter, intpHelper: RemoteInterpreterStateHold
       case x => throw new IllegalArgumentException(s"did not expect command $x")
     }
 
-    inheritedCommands ++ implementedCommands
+    // The below commands are executed locally in ij
+    // Kept here just so that :help prints them too.
+    val localIJCommands = List(
+      LoopCommand.cmd("run", "<path|comma separated paths>",
+        "runs the scala file in order", intpHelper.run),
+      LoopCommand.nullary(
+        "elapsedtime on", "shows time taken to interpret the code", intpHelper.elapsedtime),
+      LoopCommand.nullary(
+        "quit", "cleanup and close interpreter", intpHelper.quit),
+      LoopCommand.cmd("maximumdisplaywidth", "<number>",
+      "a number specifying width of display", intpHelper.maxdisplaywidth),
+      LoopCommand.cmd("maximumlinewidth", "<number>",
+          "a number specifying width of line", intpHelper.maxlinewidth)
+    )
+    inheritedCommands ++ implementedCommands ++ localIJCommands
   }
 }
 
