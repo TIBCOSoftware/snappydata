@@ -21,7 +21,6 @@ import java.lang.reflect.InvocationTargetException
 import java.net.{URI, URLClassLoader}
 
 import scala.collection.JavaConverters._
-
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -29,7 +28,7 @@ import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.{ExtendibleURLClassLoader, LeadImpl}
-
+import io.snappydata.remote.interpreter.SnappyInterpreterExecute
 import org.apache.spark.executor.SnappyExecutor
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -40,6 +39,8 @@ import org.apache.spark.sql.internal.ContextJarUtils
 import org.apache.spark.ui.{JettyUtils, SnappyDashboardTab}
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkCallbacks, SparkContext, SparkFiles}
+
+import scala.collection.immutable.HashSet
 
 object ToolsCallbackImpl extends ToolsCallback with Logging {
 
@@ -140,7 +141,8 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       if (!args(0).isEmpty) { // args(0) = appname-filename
         val appName = args(0).split('-')(0)
         // This url points to the jar on the file server
-        val url = Misc.getMemStore.getMetadataCmdRgn.get(ContextJarUtils.functionKeyPrefix + appName)
+        val urlObj = Misc.getMemStore.getMetadataCmdRgn.get(ContextJarUtils.functionKeyPrefix + appName)
+        val url: String = if (urlObj != null) urlObj.toString else null
         if (url != null && !url.isEmpty) {
           val executor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
           val cachedFileName = s"${url.hashCode}-1_cache"
@@ -190,10 +192,11 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       !(p.startsWith(ContextJarUtils.functionKeyPrefix) ||
           p.equals(Constant.CLUSTER_ID) ||
           p.startsWith(Constant.MEMBER_ID_PREFIX)))
-    r.getAll(keys.asJava).values().toArray.map(_.asInstanceOf[String])
+    r.getAll(keys.asJava).values().toArray.filter(
+      _.isInstanceOf[String]).map(_.asInstanceOf[String])
   }
 
-  override def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]] = {
+  override def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, Object]] = {
     GemFireXDUtils.waitForNodeInitialization()
     Misc.getMemStore.getMetadataCmdRgn.entrySet()
   }
@@ -247,5 +250,9 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     lead.urlclassloader = new ExtendibleURLClassLoader(lead.urlclassloader.getParent)
     updatedURLs.foreach(url => lead.urlclassloader.addURL(url))
     Thread.currentThread().setContextClassLoader(lead.urlclassloader)
+  }
+
+  override def updateIntpGrantRevoke(grantor: String, isGrant: Boolean, users: String): Unit = {
+    SnappyInterpreterExecute.handleNewPermissions(grantor, isGrant, users)
   }
 }
