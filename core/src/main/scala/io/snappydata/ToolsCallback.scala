@@ -52,6 +52,8 @@ trait ToolsCallback {
   def addURIs(alias: String, jars: Array[String],
       deploySql: String, isPackage: Boolean = true): Unit
 
+  def updateIntpGrantRevoke(grantor: String, isGrant: Boolean, users: String): Unit
+
   def removeURIs(uris: Array[String], isPackage: Boolean = true): Unit
 
   def addURIsToExecutorClassLoader(jars: Array[String]): Unit
@@ -62,7 +64,7 @@ trait ToolsCallback {
 
   def getAllGlobalCmnds: Array[String]
 
-  def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]]
+  def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, Object]]
 
   def removePackage(alias: String): Unit
 
