@@ -40,15 +40,27 @@ object SnappyMetricsSystem {
 
     GemFireXDUtils.waitForNodeInitialization()
     // initialize metric system with cluster id as metrics namespace
-    val clusterUuid = Misc.getMemStore.getMetadataCmdRgn.get(Constant.CLUSTER_ID)
+    val clusterUuidObj = Misc.getMemStore.getMetadataCmdRgn.get(Constant.CLUSTER_ID)
+    val clusterUuid: String = if (clusterUuidObj != null) {
+      clusterUuidObj.asInstanceOf[String]
+    } else null
     UserMetricsSystem.initialize(sc, clusterUuid)
 
     // store every member diskStore ID to metadataCmdRgn
     putMembersDiskStoreIdInRegion()
 
-    val allMetaEntries = Misc.getMemStore.getMetadataCmdRgn.
+    val allMetaEntriesObj = Misc.getMemStore.getMetadataCmdRgn.
         getAll(Misc.getMemStore.getMetadataCmdRgn.keySet())
 
+    val allMetaEntries: util.Map[String, String] = new util.HashMap()
+    val itr = allMetaEntriesObj.entrySet().iterator()
+    while (itr.hasNext) {
+      val entry = itr.next()
+      if (entry.getValue.isInstanceOf[String]) {
+        val valStr = entry.getValue.asInstanceOf[String]
+        allMetaEntries.put(entry.getKey, valStr)
+      }
+    }
     val timeInterval = 5000
 
     // concurrently executing threads to get stats from StatsProviderServices
