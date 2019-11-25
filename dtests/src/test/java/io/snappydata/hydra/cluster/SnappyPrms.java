@@ -18,6 +18,8 @@ package io.snappydata.hydra.cluster;
 
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Vector;
 
 import hydra.BasePrms;
@@ -693,13 +695,88 @@ public class SnappyPrms extends BasePrms {
   public static Long numRowsList;
 
   /**
-   * (int)Number of stack dumps to be taken for each thread of locators, servers, leads
+   * Number of stack dump for each thread of locators, servers, leads
    */
   public static Long numOfStackDumpItr;
 
   public static int getNumOfStackDumpItrs(){
     Long key = numOfStackDumpItr;
     return tasktab().intAt(key, tab().intAt(key, 3));
+  }
+
+  /**
+   *
+   */
+
+  public static Long reRunWithDebugLogging;
+
+  public static boolean isReRunWithDebugEnabled() {
+    Long key = reRunWithDebugLogging;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+
+  }
+  /**
+   * Parameter to pass for which logger the loglevel settings should be changed
+   */
+  public static Long logger;
+
+  public static String getLogger(){
+    Long key = logger;
+    return tasktab().stringAt(key, tab().stringAt(key, ""));
+  }
+
+  /**
+   * Parameter to specificy the required loglevel setting.
+   */
+
+  public static Long newLogLevel;
+
+  public static String getNewLogLevel(){
+    Long key = newLogLevel;
+    return tasktab().stringAt(key, tab().stringAt(key, "CONFIG"));
+  }
+
+
+  /**
+   * Parameter used to get the List of expected exceptions in the test run.
+   * Array of values for expected exceptions
+   */
+  public static Long expectedExceptions;
+
+  public static List<String> getExpectedExceptionList() {
+    Long key = expectedExceptions;
+    Vector statements = tab().vecAt(key, new HydraVector());
+    List<String> strArr = Collections.list(statements.elements());
+    return strArr;
+  }
+
+  /**
+   * Parameter used to get the List of expected exceptions in the test run in case of HA.
+   * Array of values for expected exceptions
+   */
+  public static Long expectedExceptionsForHA;
+
+  public static List<String> getExpectedExceptionListForHA() {
+    Long key = expectedExceptionsForHA;
+    Vector statements = tab().vecAt(key, new HydraVector());
+    List<String> strArr = Collections.list(statements.elements());
+    return strArr;
+  }
+
+  /**
+   * Parameter used to get the List of expected exceptions in the test run in case of HA.
+   * Array of values for expected exceptions
+   */
+  public static Long knownExceptionsForHA;
+
+  public static String[] getKnownExceptionListForHA() {
+    Long key = knownExceptionsForHA;
+    Vector statements = tab().vecAt(key, new HydraVector());
+    String[] strArr = new String[statements.size()];
+    for (int i = 0; i < statements.size(); i++) {
+      strArr[i] = (String)statements.elementAt(i);
+    }
+    return strArr;
   }
 
   /**
@@ -712,11 +789,20 @@ public class SnappyPrms extends BasePrms {
     return tasktab().intAt(key, tab().intAt(key, 5));
   }
 
+  /**
+   * (boolean) Flag to notify on whether to keep the clusters running after hydra tasks are done.
+   */
+  public static Long keepClusterRunning;
+
+  public static boolean isKeepClusterRunning(){
+    Long key = keepClusterRunning;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
   public static String getCredentialFile() {
     Long key = credentialFile;
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
   }
-
 
   public static boolean isSecurityOn() {
     Long key = isSecurity;

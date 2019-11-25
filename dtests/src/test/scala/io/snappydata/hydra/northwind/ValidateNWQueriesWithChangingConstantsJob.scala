@@ -21,10 +21,11 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
-import io.snappydata.hydra.northwind
+import io.snappydata.hydra.{SnappyTestUtils, northwind}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
+import _root_.util.TestException
 
 class ValidateNWQueriesWithChangingConstantsJob extends SnappySQLJob {
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
@@ -37,6 +38,9 @@ class ValidateNWQueriesWithChangingConstantsJob extends SnappySQLJob {
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val sc = SparkContext.getOrCreate()
     val sqlContext = SQLContext.getOrCreate(sc)
+    SnappyTestUtils.validateFullResultSet = true
+    SnappyTestUtils.numRowsValidation = true
+    SnappyTestUtils.tableType = tableType
     Try {
       snc.sql("set spark.sql.shuffle.partitions=23")
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
@@ -44,23 +48,38 @@ class ValidateNWQueriesWithChangingConstantsJob extends SnappySQLJob {
       northwind.NWQueries.snc = snc
       NWQueries.dataFilesLocation = dataFilesLocation
       // scalastyle:off println
-      pw.println(s"createAndLoadSparkTables Test started at : " + System.currentTimeMillis)
+      var startTime = System.currentTimeMillis()
+      pw.println(s"${SnappyTestUtils.logTime} createAndLoadSparkTables started.")
       NWTestUtil.createAndLoadSparkTables(sqlContext)
-      println(s"createAndLoadSparkTables Test completed successfully at : " + System
-          .currentTimeMillis)
-      pw.println(s"createAndLoadSparkTables Test completed successfully at : " + System
-          .currentTimeMillis)
-      pw.println(s"ValidateQueriesFullResultSet for ${tableType} tables Queries Test started at" +
-          s" :  " + System.currentTimeMillis)
-      NWTestUtil.executeAndValidateQueriesByChangingConstants(snc, tableType, pw, sqlContext)
-      pw.println(s"validateQueries for ${tableType} tables Queries Test completed  " +
-          s"successfully at : " + System.currentTimeMillis)
+      var finishTime = System.currentTimeMillis()
+      var totalTime = (finishTime - startTime) / 1000
+      pw.println(s"${SnappyTestUtils.logTime} createAndLoadSparkTables completed successfully in " +
+          s"$totalTime secs.")
+      pw.flush()
+      pw.println(s"${SnappyTestUtils.logTime} Validation for ${tableType} tables queries started..")
+      startTime = System.currentTimeMillis()
+      val failedQueries: String = NWTestUtil.executeAndValidateQueriesByChangingConstants(snc,
+        tableType, pw, sqlContext)
+      finishTime = System.currentTimeMillis()
+      totalTime = (finishTime - startTime) / 1000
+      if (!failedQueries.isEmpty) {
+        println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. " +
+            s"See ${getCurrentDirectory}/${outputFile}")
+        pw.println(s"${SnappyTestUtils.logTime} Total execution took ${totalTime} seconds.")
+        pw.println(s"${SnappyTestUtils.logTime} Validation failed for ${tableType} tables for " +
+            s"queries ${failedQueries}. ")
+        pw.close()
+        throw new TestException(s"Validation failed for ${tableType}. " +
+            s"See ${getCurrentDirectory}/${outputFile}")
+      }
+      pw.println(s"${SnappyTestUtils.logTime} ValidateQueries for $tableType tables completed " +
+          s"successfully in $totalTime secs.")
       pw.close()
     } match {
       case Success(v) => pw.close()
         s"See ${getCurrentDirectory}/${outputFile}"
       case Failure(e) => pw.close();
-        throw e;
+        throw new TestException(s"Validation failed. See ${getCurrentDirectory}/${outputFile}");
     }
   }
 

@@ -1,25 +1,25 @@
 io/snappydata/hydra/installJar/dynamicJarLoadingUsingSnappyJob.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
 
 io/snappydata/hydra/installJar/dynamicJarLoadingUsingSnappyShell.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
 
 io/snappydata/hydra/installJar/dynamicJarLoadingUsingSparkApp.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
 
 io/snappydata/hydra/installJar/dynamicJarLoadingUsingSnappyJobsWithIdenticalNames.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
 
 io/snappydata/hydra/installJar/verifyCleanupAfterSnappyJobExecution.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1

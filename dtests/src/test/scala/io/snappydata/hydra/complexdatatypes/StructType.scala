@@ -52,11 +52,6 @@ class StructType extends SnappySQLJob{
     snc.sql("CREATE TABLE IF NOT EXISTS CricketRecord USING COLUMN " +
       "AS (SELECT * FROM TempCRRecord)")
 
-    snc.sql(ComplexTypeUtils.Struct_Q1)
-    snc.sql(ComplexTypeUtils.Struct_Q2)
-    snc.sql(ComplexTypeUtils.Struct_Q3)
-    snc.sql(ComplexTypeUtils.Struct_Q4)
-
     if(printContent) {
       println("Struct_Q1 : " + snc.sql(ComplexTypeUtils.Struct_Q1).show())
       println("Struct_Q2 : " + snc.sql(ComplexTypeUtils.Struct_Q2).show())
@@ -68,15 +63,12 @@ class StructType extends SnappySQLJob{
     val structType = spark.read.json(dataLocation)
     structType.createTempView("CricketRecord")
 
+    SnappyTestUtils.tableType = "column"
     /* --- Verification --- */
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Struct_Q1,
-      "Struct_Q1", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Struct_Q2,
-      "Struct_Q2", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Struct_Q3,
-      "Struct_Q3", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Struct_Q4,
-      "Struct_Q4", "column", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Struct_Q1, "Struct_Q1", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Struct_Q2, "Struct_Q2", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Struct_Q3, "Struct_Q3", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Struct_Q4, "Struct_Q4", pw, sqlContext)
 
     /* --- Clean up --- */
     snc.sql("DROP TABLE IF EXISTS CricketRecord")

@@ -42,6 +42,14 @@ public class TomcatConnectionPool {
     p.setPassword(SnappyConnectionPoolPrms.getPassword());
     p.setInitialSize(SnappyConnectionPoolPrms.getInitialSize());
     p.setMaxWait(SnappyConnectionPoolPrms.getMaxWait());
+    //user connection properties
+    String[] connProperties = SnappyConnectionPoolPrms.getConnProperties();
+    String connProp = "";
+    for(int i = 0; i < connProperties.length; i++)
+      connProp = connProp + connProperties[i] + ";";
+    int lastIndex = connProp.lastIndexOf(";");
+    if (lastIndex != -1) connProp = connProp.substring(0,lastIndex);
+    p.setConnectionProperties(connProp);
     datasource = new DataSource();
     datasource.setPoolProperties(p);
   }

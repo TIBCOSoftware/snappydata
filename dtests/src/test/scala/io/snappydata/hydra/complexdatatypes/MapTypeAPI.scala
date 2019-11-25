@@ -129,21 +129,16 @@ class MapTypeAPI extends SnappySQLJob {
         * 100.0/600.0).as("Percentage"))
         .orderBy(desc("Percentage"))
 
-     SnappyTestUtils.assertQueryFullResultSet(snc, sncSelectDF, sparkSelectDF,
-      "MapTypeQuery1", "column", pw, sqlContext )
+      SnappyTestUtils.tableType = "column"
+     SnappyTestUtils.assertQuery(snc, sncSelectDF, sparkSelectDF, "MapTypeQuery1", pw )
      println("Finish the Map Type Query1")
-     SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery2DF, sparkMapQuery2DF,
-      "MapTypeQuery2", "column", pw,sqlContext)
+     SnappyTestUtils.assertQuery(snc, sncMapQuery2DF, sparkMapQuery2DF, "MapTypeQuery2", pw)
      println("Finish the Map Type Query2")
-     SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery3DF, sparkMapQuery3DF,
-          "MapTypeQuery3", "column", pw,sqlContext)
+     SnappyTestUtils.assertQuery(snc, sncMapQuery3DF, sparkMapQuery3DF, "MapTypeQuery3", pw)
      println("Finish the Map Type Query3")
-
-      SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery4DF, sparkMapQuery4DF,
-        "MapTypeQuery4", "column", pw,sqlContext)
+     SnappyTestUtils.assertQuery(snc, sncMapQuery4DF, sparkMapQuery4DF, "MapTypeQuery4", pw)
      println("Finish the Map Type Query4")
-     SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery5DF, sparkMapQuery5DF,
-        "MapTypeQuery5", "column", pw,sqlContext)
+     SnappyTestUtils.assertQuery(snc, sncMapQuery5DF, sparkMapQuery5DF, "MapTypeQuery5", pw)
      println("Finish the Map Type Query5")
 
      println("Query MapType Via API, Job Completed....")

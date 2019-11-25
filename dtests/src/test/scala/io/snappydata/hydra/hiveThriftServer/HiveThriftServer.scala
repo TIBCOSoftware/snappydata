@@ -282,8 +282,8 @@ class HiveThriftServer extends SnappySQLJob {
                       command : String, pw : PrintWriter, sqlContext : SQLContext) : Unit = {
     hts.stmt = hts.connection.createStatement()
     hts.rs = hts.stmt.executeQuery(command)
-      SnappyTestUtils.assertQueryFullResultSet (snc, command, command,
-      "showtbls_sys", pw, sqlContext, true)
+    SnappyTestUtils.tableType = "showTables"
+    SnappyTestUtils.assertQuery (snc, command, command, pw, sqlContext)
   }
 
   def executeShowSchemas(hts : HiveThriftServer, command : String,
@@ -292,8 +292,8 @@ class HiveThriftServer extends SnappySQLJob {
     hts.stmt = hts.connection.createStatement()
     hts.rs = hts.stmt.executeQuery(command)
     hts.rsMetaData = hts.rs.getMetaData
-    SnappyTestUtils.assertQueryFullResultSet (snc, command, command,
-      "showtbls", pw, sqlContext, true)
+    SnappyTestUtils.tableType = "showtbls"
+    SnappyTestUtils.assertQuery (snc, command, command, pw, sqlContext)
   }
 
   def executeShowTablesInSys(hts : HiveThriftServer, command : String, snc : SnappyContext,
@@ -346,44 +346,47 @@ class HiveThriftServer extends SnappySQLJob {
 //  com.google.common.util.concurrent.UncheckedExecutionException:
 //  java.lang.ClassCastException:
 //  org.apache.spark.sql.SparkSession cannot be cast to org.apache.spark.sql.SnappySession
-    SnappyTestUtils.assertQueryFullResultSet (snc, insertChk1,
-      "insertCheck1" + System.currentTimeMillis(), tblType, pw, sqlContext, true)
-    SnappyTestUtils.assertQueryFullResultSet (snc, insertChk2,
-      "insertCheck2" + System.currentTimeMillis(), tblType, pw, sqlContext, true)
+    SnappyTestUtils.tableType = tblType
+    SnappyTestUtils.assertQuery (snc, insertChk1, "insertCheck1" + System.currentTimeMillis(),
+      pw, sqlContext)
+    SnappyTestUtils.assertQuery (snc, insertChk2, "insertCheck2" + System.currentTimeMillis(),
+      pw, sqlContext)
   }
 
-  def updateTableFromBeeline(hts : HiveThriftServer, command : String,
-                             snc : SnappyContext, spark : SparkSession, pw : PrintWriter,
-                             sqlContext : SQLContext, table : String,
-                             tblType: String) : Unit = {
-      pw.println("Update the table from beeline...")
-      var updateChk1 : String = null
-      var updateChk2 : String = null
-      hts.stmt = hts.connection.createStatement()
-      hts.stmt.executeQuery(command)
-      updateChk1 = "select count(*) as Total from " + table
-      updateChk2 = "select * from " + table + " where id < 500 order by id ASC"
-      SnappyTestUtils.assertQueryFullResultSet (snc, updateChk1,
-        "updateCheck1" + System.currentTimeMillis(), tblType, pw, sqlContext, true)
-      SnappyTestUtils.assertQueryFullResultSet (snc, updateChk2,
-        "updateCheck2" + System.currentTimeMillis(), tblType, pw, sqlContext, true)
- }
+  def updateTableFromBeeline(hts: HiveThriftServer, command: String,
+      snc: SnappyContext, spark: SparkSession, pw: PrintWriter,
+      sqlContext: SQLContext, table: String,
+      tblType: String): Unit = {
+    pw.println("Update the table from beeline...")
+    var updateChk1: String = null
+    var updateChk2: String = null
+    hts.stmt = hts.connection.createStatement()
+    hts.stmt.executeQuery(command)
+    updateChk1 = "select count(*) as Total from " + table
+    updateChk2 = "select * from " + table + " where id < 500 order by id ASC"
+    SnappyTestUtils.tableType = tblType
+    SnappyTestUtils.assertQuery(snc, updateChk1,
+      "updateCheck1" + System.currentTimeMillis(), pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, updateChk2,
+      "updateCheck2" + System.currentTimeMillis(), pw, sqlContext)
+  }
 
-  def deleteFromTableFromBeeline(hts : HiveThriftServer, command : String,
-                                 snc : SnappyContext, spark : SparkSession, pw : PrintWriter,
-                                 sqlContext : SQLContext, table : String,
-                                 tblType: String) : Unit = {
-      pw.println("Delete from table from beeline...")
-      var deleteChk1 : String = null
-      var deleteChk2 : String = null
-      hts.stmt = hts.connection.createStatement()
-      hts.stmt.executeQuery(command)
-      deleteChk1 = "select count(*) as Total from " + table
-      deleteChk2 = "select * from " + table
-      SnappyTestUtils.assertQueryFullResultSet (snc, deleteChk1,
-         "deleteCheck1" + System.currentTimeMillis(), tblType, pw, sqlContext, true)
-      SnappyTestUtils.assertQueryFullResultSet (snc, deleteChk2,
-        "deleteCheck2" + System.currentTimeMillis(), tblType, pw, sqlContext, true)
+  def deleteFromTableFromBeeline(hts: HiveThriftServer, command: String,
+      snc: SnappyContext, spark: SparkSession, pw: PrintWriter,
+      sqlContext: SQLContext, table: String,
+      tblType: String): Unit = {
+    pw.println("Delete from table from beeline...")
+    var deleteChk1: String = null
+    var deleteChk2: String = null
+    hts.stmt = hts.connection.createStatement()
+    hts.stmt.executeQuery(command)
+    deleteChk1 = "select count(*) as Total from " + table
+    deleteChk2 = "select * from " + table
+    SnappyTestUtils.tableType = tblType
+    SnappyTestUtils.assertQuery(snc, deleteChk1,
+      "deleteCheck1" + System.currentTimeMillis(), pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, deleteChk2,
+      "deleteCheck2" + System.currentTimeMillis(), pw, sqlContext)
   }
 
   def insertIntoTableFromSnappy(hts : HiveThriftServer, command : String,
@@ -399,10 +402,11 @@ class HiveThriftServer extends SnappySQLJob {
     insertChk2 = "select id, name from " + table +
 //      " where id > 3000000 order by id DESC"
       " where id > 300 order by id DESC"
-    SnappyTestUtils.assertQueryFullResultSet (snc, insertChk1,
-      "insertCheck1" + System.currentTimeMillis(), tblType, pw, sqlContext, true)
-    SnappyTestUtils.assertQueryFullResultSet (snc, insertChk2,
-      "insertCheck2" + System.currentTimeMillis(), tblType, pw, sqlContext, true)
+    SnappyTestUtils.tableType = tblType
+    SnappyTestUtils.assertQuery (snc, insertChk1,
+      "insertCheck1" + System.currentTimeMillis(), pw, sqlContext)
+    SnappyTestUtils.assertQuery (snc, insertChk2,
+      "insertCheck2" + System.currentTimeMillis(), pw, sqlContext)
   }
 
   def updateTableFromSnappy(hts : HiveThriftServer, command : String,
@@ -415,10 +419,11 @@ class HiveThriftServer extends SnappySQLJob {
     snc.sql(command)
     updateChk1 = "select count(*) as Total from " + table
     updateChk2 = "select id, name from " + table + " where id < 500 order by id ASC"
-    SnappyTestUtils.assertQueryFullResultSet (snc, updateChk1,
-      "updateCheck1" + System.currentTimeMillis(), tblType, pw, sqlContext, true)
-    SnappyTestUtils.assertQueryFullResultSet (snc, updateChk2,
-      "updateCheck2" + System.currentTimeMillis() , tblType, pw, sqlContext, true)
+    SnappyTestUtils.tableType = tblType
+    SnappyTestUtils.assertQuery (snc, updateChk1,
+      "updateCheck1" + System.currentTimeMillis(), pw, sqlContext)
+    SnappyTestUtils.assertQuery (snc, updateChk2,
+      "updateCheck2" + System.currentTimeMillis() , pw, sqlContext)
   }
 
   def deleteFromTableFromSnappy(hts : HiveThriftServer, command : String,
@@ -431,10 +436,11 @@ class HiveThriftServer extends SnappySQLJob {
     snc.sql(command)
     deleteChk1 = "select count(*) as Total from " + table
     deleteChk2 = "select * from " + table
-    SnappyTestUtils.assertQueryFullResultSet (snc, deleteChk1,
-      "deleteCheck1" + System.currentTimeMillis(), tblType, pw, sqlContext, true)
-    SnappyTestUtils.assertQueryFullResultSet (snc, deleteChk2,
-      "deleteCheck2" + System.currentTimeMillis(), tblType, pw, sqlContext, true)
+    SnappyTestUtils.tableType = tblType
+    SnappyTestUtils.assertQuery (snc, deleteChk1,
+      "deleteCheck1" + System.currentTimeMillis(), pw, sqlContext)
+    SnappyTestUtils.assertQuery (snc, deleteChk2,
+      "deleteCheck2" + System.currentTimeMillis(), pw, sqlContext)
   }
 
   def executeShowTables(hts : HiveThriftServer, command : String, pw : PrintWriter) : Unit = {

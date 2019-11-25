@@ -53,12 +53,6 @@ object SmartConnectorAllMixedType {
     snc.sql("CREATE TABLE IF NOT EXISTS TwentyTwenty USING COLUMN " +
       "AS (SELECT * FROM TempTwenty)")
 
-    snc.sql(ComplexTypeUtils.Mixed_Q1)
-    snc.sql(ComplexTypeUtils.Mixed_Q2)
-    snc.sql(ComplexTypeUtils.Mixed_Q3)
-    snc.sql(ComplexTypeUtils.Mixed_Q4)
-    snc.sql(ComplexTypeUtils.Mixed_Q5)
-
     if(printContent) {
       println("snc : Mixed_Q1 " + (snc.sql(ComplexTypeUtils.Mixed_Q1).show))
       println("snc : Mixed_Q2 " + (snc.sql(ComplexTypeUtils.Mixed_Q2).show))
@@ -73,17 +67,18 @@ object SmartConnectorAllMixedType {
 
     /* --- Verification --- */
 
+    SnappyTestUtils.tableType = "column"
     // TODO Due to SNAP-2782 Below line is commented, Hydra Framework required changes.
     // SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Mixed_Q1,
     // "Mixed_Q1", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Mixed_Q2,
-      "Mixed_Q2", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Mixed_Q3,
-      "Mixed_Q3", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Mixed_Q4,
-      "Mixed_Q4", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Mixed_Q5,
-      "Mixed_Q5", "column", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Mixed_Q2,
+      "Mixed_Q2", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Mixed_Q3,
+      "Mixed_Q3", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Mixed_Q4,
+      "Mixed_Q4", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Mixed_Q5,
+      "Mixed_Q5", pw, sqlContext)
 
     /* --- Clean up --- */
     snc.sql("DROP TABLE IF EXISTS TwentyTwenty")

@@ -28,11 +28,8 @@ object CreateAndLoadTablesSparkApp {
   def main(args: Array[String]) {
     // scalastyle:off println
     Thread.sleep(60000L)
-    val connectionURL = args(args.length - 1)
-    println("The connection url is " + connectionURL)
     val conf = new SparkConf().
-        setAppName("CreateAndLoadNWTablesSpark Application").
-        set("snappydata.connection", connectionURL)
+        setAppName("CreateAndLoadNWTablesSpark Application")
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
 

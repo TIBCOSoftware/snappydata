@@ -20,8 +20,6 @@ package io.snappydata.hydra.snapshotIsolation
 import java.io.{File, PrintWriter}
 import java.util
 
-import io.snappydata.hydra.TestUtil
-
 import org.apache.spark.sql.{Row, DataFrame, SnappyContext}
 
 class SnapshotIsolationTestUtils {
@@ -35,9 +33,10 @@ class SnapshotIsolationTestUtils {
     val rowList = snc.sql(sqlString).collect()
     try {
       verifyDuplicateRows(rowList, pw)
-      //TestUtil.compareFiles(snappyFile, newDFFile, pw, false)
+      // TestUtil.compareFiles(snappyFile, newDFFile, pw, false)
     } catch {
       case ex: Exception => {
+        // scalastyle:off println
         pw.println(s"Verification failed for ${queryNum} with following exception:\n")
         ex.printStackTrace(pw)
       }
@@ -48,8 +47,9 @@ class SnapshotIsolationTestUtils {
   def verifyDuplicateRows(rowList: Array[Row], pw: PrintWriter): Unit = {
     val numRows = rowList.length
     pw.println(s"Num rows in resultSet are ${numRows}.")
-    if (numRows == 0)
+    if (numRows == 0) {
       pw.println(s"There are no duplicate rows in resultSet. ")
+    }
     else {
       pw.println(s"Below duplicate rows found in resultSet: ")
       for (row <- rowList)

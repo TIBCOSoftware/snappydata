@@ -379,6 +379,10 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
             throw new TestException("Got Exception while executing streaming job. Please check " +
                 "the job status output.");
           }
+          try {
+            Thread.sleep(10 * 1000);
+          } catch (InterruptedException ie) {
+          }
         }
       }
     }
@@ -576,8 +580,8 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     leadHost = getLeadHost();
     String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
     try {
-      String dest = getCurrentDirPath() + File.separator + "jobStatus_" + RemoteTestModule
-          .getCurrentThread().getThreadId() + "_" + System.currentTimeMillis() + ".log";
+      String dest = getCurrentDirPath() + File.separator + "jobStatus_" + getMyTid() + "_" + jobID +
+          ".log";
       File commandOutput = new File(dest);
       String command = snappyJobScript + " status --lead " + leadHost + ":" + leadPort + " " +
           "--job-id " + jobID + " > " + commandOutput;
@@ -591,7 +595,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
             return false;
           break;
         }
-      } try { Thread.sleep(10*1000);} catch(InterruptedException ie) { }
+      }
     } catch (IOException ie){
       Log.getLogWriter().info("Got exception while accessing current dir");
     }

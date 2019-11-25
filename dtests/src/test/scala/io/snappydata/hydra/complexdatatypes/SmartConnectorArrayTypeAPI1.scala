@@ -114,21 +114,21 @@ object SmartConnectorArrayTypeAPI1 {
       println("sncArrQuery5DF count = " + sncArrQuery5DF.count())
       println("sncArrQuery5DF data = " + sncArrQuery5DF.show())
     }
-
-    SnappyTestUtils.assertQueryFullResultSet(snc, sncSelectDF, sparkSelectDF,
-      "Smart Connector ArrayTypeAPIQuery1", "column" , pw, sqlContext)
+    SnappyTestUtils.tableType = "column"
+    SnappyTestUtils.assertQuery(snc, sncSelectDF, sparkSelectDF,
+      "Smart Connector ArrayTypeAPIQuery1" , pw)
     println("Finished the Smart Connector ArrayType Query 1....")
-    SnappyTestUtils.assertQueryFullResultSet(snc, sncArrQuery2DF, sparkArrQuery2DF,
-      "Smart Connector ArrayTypeAPIQuery2", "column", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, sncArrQuery2DF, sparkArrQuery2DF,
+      "Smart Connector ArrayTypeAPIQuery2", pw)
     println("Finished the Smart Connector ArrayType Query 2....")
-    SnappyTestUtils.assertQueryFullResultSet(snc, sncArrQuery3DF, sparkArrQuery3DF,
-      "Smart Connector ArrayTypeAPIQuery3", "column", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, sncArrQuery3DF, sparkArrQuery3DF,
+      "Smart Connector ArrayTypeAPIQuery3", pw)
     println("Finished the Smart Connector ArrayType Query 3....")
-    SnappyTestUtils.assertQueryFullResultSet(snc, sncArrQuery4DF, sparkArrQuery4DF,
-      "Smart Connector ArrayTypeAPIQuery4", "column", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, sncArrQuery4DF, sparkArrQuery4DF,
+      "Smart Connector ArrayTypeAPIQuery4", pw)
     println("Finished the Smart Connector ArrayType Query 4....")
-    SnappyTestUtils.assertQueryFullResultSet(snc, sncArrQuery5DF, sparkArrQuery5DF,
-      "Smart Connector ArrayTypeAPIQuery5", "column", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, sncArrQuery5DF, sparkArrQuery5DF,
+      "Smart Connector ArrayTypeAPIQuery5", pw)
     println("Finished the Smart Connector ArrayType Query 5....")
 
     pw.close()

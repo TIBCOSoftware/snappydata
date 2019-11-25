@@ -54,13 +54,6 @@ object SmartConnectorMapType {
     snc.sql("CREATE TABLE IF NOT EXISTS StudentMarksRecord USING COLUMN " +
       "AS (SELECT * FROM TempStRecord)")
 
-    snc.sql(ComplexTypeUtils.Map_Q1)
-    snc.sql(ComplexTypeUtils.Map_Q2)
-    snc.sql(ComplexTypeUtils.Map_Q3)
-    snc.sql(ComplexTypeUtils.Map_Q4)
-    snc.sql(ComplexTypeUtils.Map_Q5)
-    snc.sql(ComplexTypeUtils.Map_Q6)
-
     if(printContent) {
       println("snc Map_Q1:" + snc.sql(ComplexTypeUtils.Map_Q1).show)
       println("snc Map_Q2:" + snc.sql(ComplexTypeUtils.Map_Q2).show)
@@ -75,19 +68,14 @@ object SmartConnectorMapType {
     mapType.createTempView("StudentMarksRecord")
 
     /* --- Verification --- */
-
+    SnappyTestUtils.tableType = "column"
     // TODO Due to SNAP-2782 Below line is commented, Hydra Framework required changes.
-    // SnappyTestUtils.assertQueryFullResultSet(snc, Map_Q1, "Map_Q1", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Map_Q2,
-      "Map_Q2", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Map_Q3,
-      "Map_Q3", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Map_Q4,
-      "Map_Q4", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Map_Q5,
-      "Map_Q5", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Map_Q6,
-      "Map_Q6", "column", pw, sqlContext)
+    // SnappyTestUtils.assertQueryFullResultSet(snc, Map_Q1, "Map_Q1", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Map_Q2, "Map_Q2", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Map_Q3, "Map_Q3", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Map_Q4, "Map_Q4", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Map_Q5, "Map_Q5", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Map_Q6, "Map_Q6", pw, sqlContext)
 
     /* --- Clean Up --- */
     snc.sql("DROP TABLE IF EXISTS TempStRecord")

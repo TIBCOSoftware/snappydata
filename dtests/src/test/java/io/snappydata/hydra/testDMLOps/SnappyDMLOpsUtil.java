@@ -967,9 +967,9 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       Log.getLogWriter().info("Updated " + numRows + " rows in snappy.");
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
-        Log.getLogWriter().info("Executing " + stmt + " on derby.");
         if (stmt.toUpperCase().contains("SELECT"))
-          getAndExecuteSelect(dConn, stmt, true);
+          getAndExecuteSelect(dConn,stmt,true);
+        Log.getLogWriter().info("Executing " + stmt + " on derby.");
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Updated " + derbyRows + " rows in derby.");
         if (numRows != derbyRows) {
@@ -1016,9 +1016,9 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       Log.getLogWriter().info("Deleted " + numRows + " rows in snappy.");
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
-        Log.getLogWriter().info("Executing " + stmt + " on derby.");
         if (stmt.toUpperCase().contains("SELECT"))
-          getAndExecuteSelect(dConn, stmt, true);
+          getAndExecuteSelect(dConn,stmt,true);
+        Log.getLogWriter().info("Executing " + stmt + " on derby.");
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Deleted " + derbyRows + " rows in derby.");
         if (numRows != derbyRows) {

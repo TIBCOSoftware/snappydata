@@ -105,20 +105,21 @@ class ArrayTypeAPI extends SnappySQLJob{
         println("sncArrQuery5DF data = " + sncArrQuery5DF.show())
       }
 
-      SnappyTestUtils.assertQueryFullResultSet(snc, sncSelectDF, sparkSelectDF,
-        "ArrayTypeAPIQuery1", "column" , pw, sqlContext)
+      SnappyTestUtils.tableType = "column"
+      SnappyTestUtils.assertQuery(snc, sncSelectDF, sparkSelectDF,
+        "ArrayTypeAPIQuery1" , pw)
       println("Finished the ArrayType Query 1....")
-      SnappyTestUtils.assertQueryFullResultSet(snc, sncArrQuery2DF, sparkArrQuery2DF,
-        "ArrayTypeAPIQuery2", "column", pw, sqlContext)
+      SnappyTestUtils.assertQuery(snc, sncArrQuery2DF, sparkArrQuery2DF,
+        "ArrayTypeAPIQuery2", pw)
       println("Finished the ArrayType Query 2....")
-      SnappyTestUtils.assertQueryFullResultSet(snc, sncArrQuery3DF, sparkArrQuery3DF,
-        "ArrayTypeAPIQuery3", "column", pw, sqlContext)
+      SnappyTestUtils.assertQuery(snc, sncArrQuery3DF, sparkArrQuery3DF,
+        "ArrayTypeAPIQuery3", pw)
       println("Finished the ArrayType Query 3....")
-      SnappyTestUtils.assertQueryFullResultSet(snc, sncArrQuery4DF, sparkArrQuery4DF,
-        "ArrayTypeAPIQuery4", "column", pw, sqlContext)
+      SnappyTestUtils.assertQuery(snc, sncArrQuery4DF, sparkArrQuery4DF,
+        "ArrayTypeAPIQuery4", pw)
       println("Finished the ArrayType Query 4....")
-      SnappyTestUtils.assertQueryFullResultSet(snc, sncArrQuery5DF, sparkArrQuery5DF,
-        "ArrayTypeAPIQuery5", "column", pw, sqlContext)
+      SnappyTestUtils.assertQuery(snc, sncArrQuery5DF, sparkArrQuery5DF,
+        "ArrayTypeAPIQuery5", pw)
       println("Finished the ArrayType Query 5....")
 
       pw.close()

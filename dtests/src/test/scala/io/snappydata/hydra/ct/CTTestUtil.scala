@@ -19,22 +19,16 @@ package io.snappydata.hydra.ct
 
 import java.io.PrintWriter
 
-import io.snappydata.hydra.TestUtil
+import io.snappydata.hydra.SnappyTestUtils
 
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 
 object CTTestUtil {
 
-  def getCurrentDirectory: String = new java.io.File(".").getCanonicalPath
+  var insertUniqueRecords: Boolean = false;
 
-  def assertQuery(snc: SnappyContext, sqlString: String, queryNum: String, pw: PrintWriter):
-  Any = {
-    // scalastyle:off println
-    pw.println(s"Query execution for $queryNum")
-    val df = snc.sql(sqlString)
-    pw.println("Number of Rows for  : " + sqlString + " is :" + df.count())
-  }
+  def getCurrentDirectory: String = new java.io.File(".").getCanonicalPath
 
   def createReplicatedRowTables(snc: SnappyContext): Unit = {
     snc.sql(CTQueries.orders_details_create_ddl)
@@ -230,11 +224,15 @@ object CTTestUtil {
   /*
    Create and load tables in Spark
    */
-  def createAndLoadSparkTables(sqlContext: SQLContext, insertUniqueRecords: Boolean): Unit = {
+
+  def createAndLoadSparkTables(sqlContext: SQLContext): Unit = {
+    // scalastyle:off println
     if (insertUniqueRecords) {
-      CTQueries.orders_details_df(sqlContext).dropDuplicates("SINGLE_ORDER_DID").createOrReplaceTempView("orders_details")
+      CTQueries.orders_details_df(sqlContext).
+          dropDuplicates("SINGLE_ORDER_DID").createOrReplaceTempView("orders_details")
       println(s"orders_details Table created successfully in spark")
-      CTQueries.exec_details_df(sqlContext).dropDuplicates("EXEC_DID").createOrReplaceTempView("exec_details")
+      CTQueries.exec_details_df(sqlContext).
+          dropDuplicates("EXEC_DID").createOrReplaceTempView("exec_details")
       println(s"exec_details Table created successfully in spark")
     }
     else {
@@ -246,73 +244,87 @@ object CTTestUtil {
   }
 
   /*
-  Performs validation for tables with the queries. Returns failed queries in a string.
+  Method for validating queires results for ct schema for 1.5GB data.
+  For any other data size, this method can be used for comparing full resultsets by setting
+  numRowsValidation to false.
+  Returns failed queries in a string.
    */
-  def executeQueries(snc: SnappyContext, tblType: String, pw: PrintWriter,
-                     fullResultSetValidation: Boolean, sqlContext: SQLContext,
-                     insertUniqueRecords: Boolean, skipNumRowsValidation: Boolean): String = {
-    TestUtil.validateFullResultSet = fullResultSetValidation
-    TestUtil.tableType = tblType
+  def executeQueries(snc: SnappyContext, tblType: String, pw: PrintWriter, sqlContext:
+  SQLContext): String = {
+    SnappyTestUtils.tableType = tblType
     var failedQueries = ""
-    if (TestUtil.validateFullResultSet) {
-      CTTestUtil.createAndLoadSparkTables(sqlContext, insertUniqueRecords)
-    }
+    if (SnappyTestUtils.validateFullResultSet) {
+      // scalastyle:off println
+      pw.println(s"createAndLoadSparkTables started ...")
 
+      val startTime = System.currentTimeMillis
+      CTTestUtil.createAndLoadSparkTables(sqlContext)
+      val finishTime = System.currentTimeMillis()
+      pw.println(s"createAndLoadSparkTables completed successfully in : " + ((finishTime -
+          startTime)/1000) + " seconds")
+    }
     for (q <- CTQueries.queries) {
+      var queryExecuted = true;
       var hasValidationFailed = false;
       q._1 match {
-        case "Q1" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query1, 1, "Q1",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q2" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query2, 1, "Q2",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q3" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query3, 1, "Q3",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q4" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query4, 1, "Q4",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q5" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query5, 1, "Q5",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q6" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query6, 5, "Q6",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q7" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query7, 5, "Q7",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q8" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query8, 5, "Q8",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q9" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query9, 1, "Q9",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q10" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query10, 1, "Q10",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q11" => hasValidationFailed = TestUtil.assertJoin(snc, CTQueries.query11, 2706, "Q11",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q12" => hasValidationFailed = TestUtil.assertJoin(snc, CTQueries.query12, 150, "Q12",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q13" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query13, 149, "Q13",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q14" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query14, 149, "Q14",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q15" => hasValidationFailed = TestUtil.assertJoin(snc, CTQueries.query15, 2620, "Q15",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q16" => hasValidationFailed = TestUtil.assertJoin(snc, CTQueries.query16, 150, "Q16",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q17" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query17, 2, "Q17",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q18" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query18, 0, "Q18",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q19" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query19, 47, "Q19",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q20" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query20, 100, "Q20",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q21" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query21, 2, "Q21",
-          pw, sqlContext, skipNumRowsValidation)
-        case "Q22" => hasValidationFailed = TestUtil.assertJoin(snc, CTQueries.query22, 1, "Q22",
-          pw, sqlContext, skipNumRowsValidation)
-        // case "Q23" => hasValidationFailed = TestUtil.assertJoin(snc, CTQueries.query23,0,"Q23",
-        //   pw,sqlContext)
-        case "Q24" => hasValidationFailed = TestUtil.assertQuery(snc, CTQueries.query24, 999, "Q24",
-          pw, sqlContext, skipNumRowsValidation)
-        case _ => pw.println(s"Query not be executed ${q._1}")
+        case "Q1" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query1, 1,
+          "Q1", pw, sqlContext)
+        case "Q2" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query2, 1,
+          "Q2", pw, sqlContext)
+        case "Q3" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query3, 1,
+          "Q3", pw, sqlContext)
+        case "Q4" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query4, 1,
+          "Q4", pw, sqlContext)
+        case "Q5" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query5, 1,
+          "Q5", pw, sqlContext)
+        case "Q6" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query6, 5,
+          "Q6", pw, sqlContext)
+        case "Q7" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query7, 5,
+          "Q7", pw, sqlContext)
+        case "Q8" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query8, 5,
+          "Q8", pw, sqlContext)
+        case "Q9" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query9, 1,
+          "Q9", pw, sqlContext)
+        case "Q10" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query10, 1,
+          "Q10", pw, sqlContext)
+        case "Q11" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, CTQueries.query11, 2706,
+          "Q11", pw, sqlContext)
+        case "Q12" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, CTQueries.query12, 150,
+          "Q12", pw, sqlContext)
+        case "Q13" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query13, 149,
+          "Q13", pw, sqlContext)
+        case "Q14" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query14, 149,
+          "Q14", pw, sqlContext)
+        case "Q15" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, CTQueries.query15, 2620,
+          "Q15", pw, sqlContext)
+        case "Q16" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, CTQueries.query16, 150,
+          "Q16", pw, sqlContext)
+        case "Q17" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query17, 2,
+          "Q17", pw, sqlContext)
+        case "Q18" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query18, 0,
+          "Q18", pw, sqlContext)
+        case "Q19" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query19, 47,
+          "Q19", pw, sqlContext)
+        case "Q20" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query20, 100,
+          "Q20", pw, sqlContext)
+        case "Q21" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query21, 2,
+          "Q21", pw, sqlContext)
+        case "Q22" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, CTQueries.query22, 1,
+          "Q22", pw, sqlContext)
+        // case "Q23" => hasValidationFailed = SnappyTestUtils.assertJoin(snc, CTQueries.query23,0,
+        // "Q23", pw,sqlContext)
+        case "Q24" => hasValidationFailed = SnappyTestUtils.assertQuery(snc, CTQueries.query24, 999,
+          "Q24", pw, sqlContext)
+        case _ =>
+          // scalastyle:off println
+          pw.println(s"Query ${q._1} will not  be executed.")
+          queryExecuted = false
+      }
+      if (queryExecuted) {
+        pw.println(s"Execution completed for query ${q._1}")
       }
       if (hasValidationFailed) {
-        failedQueries = TestUtil.addToFailedQueryList(failedQueries, q._1)
+        failedQueries = SnappyTestUtils.addToFailedQueryList(failedQueries, q._1)
       }
     }
     return failedQueries;
@@ -322,6 +334,6 @@ object CTTestUtil {
     snc.sql("drop table if exists exec_details")
     snc.sql("drop table if exists orders_details")
   }
-
 }
+
 

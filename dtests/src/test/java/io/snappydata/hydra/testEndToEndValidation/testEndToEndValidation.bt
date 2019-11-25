@@ -1,0 +1,23 @@
+io/snappydata/hydra/testEndToEndValidation/testSnappyJobFailure.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+
+io/snappydata/hydra/testEndToEndValidation/testSnappyJobHang.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+
+io/snappydata/hydra/testEndToEndValidation/testSparkAppFailure.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+
+io/snappydata/hydra/testEndToEndValidation/testSparkAppHang.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1

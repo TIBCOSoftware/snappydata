@@ -2,32 +2,48 @@ io/snappydata/hydra/distJoin/distJoinWithLeadHA.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  dataLocation="$GEMFIRE/../../../tests/common/src/main/resources/TPCH"
+  buckets_Order_Lineitem=128
+  buckets_Cust_Part_PartSupp=128
+  isSupplierColumnTable=true
+  buckets_Supplier=128
   redundantCopies=1
-  buckets_Order_Lineitem=29
-  buckets_Cust_Part_PartSupp=7
+  persistence=true
+  persistence_type="SYNCHRONOUS"
+  numberOfLoadStages=1
+  isParquet=false
+  createParquet=false
+  traceEvents=false
   queries="1-3-4-5-6-7-8-10-11-12-13-14-15-16-17-18-19-20-22"
   queryPlan=false
-  shufflePartitions=4
-  inMemoryColumnarStorageCompressed=false
-  dataLocation="$GEMFIRE/../../../tests/common/src/main/resources/TPCH"
-  useIndex=true
   resultCollection=true
-  warmUpIterations=5
+  warmUps=5
   actualRuns=5
+  isDynamic=true
+  resultCollection=false
+  randomSeed=42
 
 io/snappydata/hydra/distJoin/distJoinWithServerHA.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  dataLocation="$GEMFIRE/../../../tests/common/src/main/resources/TPCH"
+  buckets_Order_Lineitem=128
+  buckets_Cust_Part_PartSupp=128
+  isSupplierColumnTable=true
+  buckets_Supplier=128
   redundantCopies=1
-  buckets_Order_Lineitem=29
-  buckets_Cust_Part_PartSupp=7
+  persistence=true
+  persistence_type="SYNCHRONOUS"
+  numberOfLoadStages=1
+  isParquet=false
+  createParquet=false
+  traceEvents=false
   queries="1-3-4-5-6-7-8-10-11-12-13-14-15-16-17-18-19-20-22"
   queryPlan=false
-  shufflePartitions=4
-  inMemoryColumnarStorageCompressed=false
-  dataLocation="$GEMFIRE/../../../tests/common/src/main/resources/TPCH"
-  useIndex=true
   resultCollection=true
   warmUpIterations=5
   actualRuns=5
+  isDynamic=true
+  resultCollection=false
+  randomSeed=42

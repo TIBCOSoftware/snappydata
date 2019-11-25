@@ -18,21 +18,24 @@
 package io.snappydata.hydra.ct
 
 import java.io.{File, FileOutputStream, PrintWriter}
+
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
+import io.snappydata.hydra.SnappyTestUtils
 import util.TestException
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{SnappySession, SQLContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
+import org.apache.spark.sql.{SQLContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
 class ValidateCTQueriesJob extends SnappySQLJob {
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val threadID = Thread.currentThread().getId
-    val outputFile = "ValidateCTQueriesJob_thread_" + threadID + "_" + System.currentTimeMillis + ".out"
-    val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true))
+    val outputFile =
+      "ValidateCTQueriesJob_thread_" + threadID + "_" + System.currentTimeMillis + ".out"
+    val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     val tableType = jobConfig.getString("tableType")
 
     Try {
@@ -41,34 +44,40 @@ class ValidateCTQueriesJob extends SnappySQLJob {
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
       snc.setConf("dataFilesLocation", dataFilesLocation)
       CTQueries.snc = snc
-      pw.println(s"Validation for $tableType tables started in snappy Job")
+      // scalastyle:off println
+      pw.println(s"${SnappyTestUtils.logTime} Validation for $tableType tables " +
+          s"started in snappy Job")
+      val numRowsValidation: Boolean = jobConfig.getBoolean("numRowsValidation")
       val fullResultSetValidation: Boolean = jobConfig.getBoolean("fullResultSetValidation")
+      SnappyTestUtils.validateFullResultSet = fullResultSetValidation
+      SnappyTestUtils.numRowsValidation = numRowsValidation
       val sc = SparkContext.getOrCreate()
       val sqlContext = SQLContext.getOrCreate(sc)
-      if (fullResultSetValidation)
-        pw.println(s"Test will perform fullResultSetValidation")
-      else
-        pw.println(s"Test will not perform fullResultSetValidation")
       val startTime = System.currentTimeMillis
-      val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, fullResultSetValidation,
-        sqlContext, false, false)
+      val failedQueries = CTTestUtil.executeQueries(snc, tableType, pw, sqlContext)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
-      pw.println(s"Total time for execution is :: ${totalTime} seconds.")
+      pw.println(s"${SnappyTestUtils.logTime} Total execution took ${totalTime} " +
+          s"seconds.")
       if(!failedQueries.isEmpty) {
-        println(s"Validation failed for ${tableType} for queries ${failedQueries}. See ${getCurrentDirectory}/${outputFile}")
-        pw.println(s"Validation failed for ${tableType} for queries ${failedQueries}. ")
+        println(s"Validation failed for ${tableType} tables for queries ${failedQueries}. " +
+            s"See ${getCurrentDirectory}/${outputFile}")
+        pw.println(s"${SnappyTestUtils.logTime} Validation failed for ${tableType} " +
+            s"tables for queries ${failedQueries}. ")
         pw.close()
-        throw new TestException(s"Validation task failed for ${tableType}. See ${getCurrentDirectory}/${outputFile}")
+        throw new TestException(s"Validation task failed for ${tableType}. " +
+            s"See ${getCurrentDirectory}/${outputFile}")
       }
-      println(s"Validation for $tableType tables completed. See ${getCurrentDirectory}/${outputFile}")
-      pw.println(s"Validation for $tableType tables completed.")
+      println(s"Validation for $tableType tables completed sucessfully. " +
+          s"See ${getCurrentDirectory}/${outputFile}")
+      pw.println(s"${SnappyTestUtils.logTime} ValidateQueries for ${tableType} tables" +
+          s" completed successfully.")
       pw.close()
     } match {
       case Success(v) => pw.close()
-        s"See ${getCurrentDirectory}/${outputFile}"
+        s"Validation passed. See ${getCurrentDirectory}/${outputFile}"
       case Failure(e) => pw.close();
-        throw e;
+        throw new TestException(s"Validation failed. See ${getCurrentDirectory}/${outputFile}");
     }
   }
 

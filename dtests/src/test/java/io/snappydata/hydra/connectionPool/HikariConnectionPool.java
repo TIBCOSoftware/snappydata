@@ -18,12 +18,12 @@
 package io.snappydata.hydra.connectionPool;
 
 import java.sql.Connection;
+import java.util.Properties;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyTest;
-import org.apache.tomcat.jdbc.pool.PoolProperties;
 import util.TestException;
 
 public class HikariConnectionPool {
@@ -35,9 +35,14 @@ public class HikariConnectionPool {
     Log.getLogWriter().info(" Creating instance of HikariConnectionPool");
     String url = SnappyConnectionPoolPrms.getUrl() + SnappyTest.validateLocatorEndpointData().get
         (0);
-    PoolProperties p = new PoolProperties();
-
-    HikariConfig jdbcConfig = new HikariConfig();
+    Properties connProperties = new Properties();
+    //user connection properties
+    String[] strArr = SnappyConnectionPoolPrms.getConnProperties();
+    for(int i = 0; i < strArr.length; i++) {
+      String prop[] = strArr[i].split("=");
+      connProperties.setProperty(prop[0],prop[1]);
+    }
+    HikariConfig jdbcConfig = new HikariConfig(connProperties);
     jdbcConfig.setPoolName(SnappyConnectionPoolPrms.getPoolName());
     jdbcConfig.setMaximumPoolSize(SnappyConnectionPoolPrms.getInitialSize());
     jdbcConfig.setJdbcUrl(url);

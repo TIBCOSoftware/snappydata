@@ -19,13 +19,15 @@ package io.snappydata.hydra.northwind
 import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
-import org.apache.spark.sql._
 
+import org.apache.spark.sql._
 import scala.util.{Failure, Success, Try}
 
+import io.snappydata.hydra.SnappyTestUtils
+
+import org.apache.spark.SparkContext
+
 object NWTestJob extends SnappySQLJob {
-  var regions, categories, shippers, employees, customers, orders, order_details, products,
-  suppliers, territories, employee_territories: DataFrame = null
 
   def getCurrentDirectory: String = new java.io.File(".").getCanonicalPath
 
@@ -33,63 +35,35 @@ object NWTestJob extends SnappySQLJob {
     val pw = new PrintWriter(new FileOutputStream(new File("NWTestSnappyJob.out"), true));
     Try {
       val snc = snappySession.sqlContext
+      val sc = SparkContext.getOrCreate()
+      val sqlContext = SQLContext.getOrCreate(sc)
       snc.sql("set spark.sql.shuffle.partitions=6")
       val dataLocation = jobConfig.getString("dataFilesLocation")
       snc.setConf("dataFilesLocation", dataLocation)
       NWQueries.snc = snc
       NWQueries.dataFilesLocation = dataLocation
-      regions = snc.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .load(s"$dataLocation/regions.csv")
-      categories = snc.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .load(s"$dataLocation/categories.csv")
-      shippers = snc.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .load(s"$dataLocation/shippers.csv")
-      employees = snc.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .load(s"$dataLocation/employees.csv")
-      customers = snc.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .load(s"$dataLocation/customers.csv")
-      orders = snc.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .load(s"$dataLocation/orders.csv")
-      order_details = snc.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .load(s"$dataLocation/order-details.csv")
-      products = snc.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .load(s"$dataLocation/products.csv")
-      suppliers = snc.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .load(s"$dataLocation/suppliers.csv")
-      territories = snc.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .load(s"$dataLocation/territories.csv")
-      employee_territories = snc.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .load(s"$dataLocation/employee-territories.csv")
+      SnappyTestUtils.numRowsValidation = true
+      SnappyTestUtils.validateFullResultSet = true
       NWTestUtil.dropTables(snc)
       // scalastyle:off println
       println("Test replicated row tables queries started")
       NWTestUtil.createAndLoadReplicatedTables(snc)
-      NWTestUtil.validateQueries(snc, "Replicated Row Table", pw)
+      NWTestUtil.validateQueries(snc, "Replicated Row Table", pw, sqlContext)
       println("Test replicated row tables queries completed successfully")
       NWTestUtil.dropTables(snc)
       println("Test partitioned row tables queries started")
       NWTestUtil.createAndLoadPartitionedTables(snc)
-      NWTestUtil.validateQueries(snc, "Partitioned Row Table", pw)
+
+      NWTestUtil.validateQueries(snc, "Partitioned Row Table", pw, sqlContext)
       println("Test partitioned row tables queries completed successfully")
       NWTestUtil.dropTables(snc)
       println("Test column tables queries started")
       NWTestUtil.createAndLoadColumnTables(snc)
-      NWTestUtil.validateQueries(snc, "Column Table", pw)
+      NWTestUtil.validateQueries(snc, "Column Table", pw, sqlContext)
       println("Test column tables queries completed successfully")
       NWTestUtil.dropTables(snc)
       NWTestUtil.createAndLoadColocatedTables(snc)
-      NWTestUtil.validateQueries(snc, "Colocated Table", pw)
+      NWTestUtil.validateQueries(snc, "Colocated Table", pw, sqlContext)
       pw.close()
     } match {
       case Success(v) => pw.close()

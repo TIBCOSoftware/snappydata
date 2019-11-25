@@ -54,12 +54,6 @@ object SmartConnectorArraysOfStructType {
     snc.sql("CREATE TABLE IF NOT EXISTS TwoWheeler USING COLUMN " +
       "AS (SELECT * FROM TempBike)")
 
-    snc.sql(ComplexTypeUtils.ArraysOfStruct_Q1)
-    snc.sql(ComplexTypeUtils.ArraysOfStruct_Q2)
-    snc.sql(ComplexTypeUtils.ArraysOfStruct_Q3)
-    snc.sql(ComplexTypeUtils.ArraysOfStruct_Q4)
-    snc.sql(ComplexTypeUtils.ArraysOfStruct_Q5)
-
     if(printContent) {
       println("snc : ArraysOfStruct_Q1  " + (snc.sql(ComplexTypeUtils.ArraysOfStruct_Q1).show()))
       println("snc : ArraysOfStruct_Q2  " + (snc.sql(ComplexTypeUtils.ArraysOfStruct_Q2).show()))
@@ -73,18 +67,18 @@ object SmartConnectorArraysOfStructType {
     arrOfStruct.createOrReplaceTempView("TwoWheeler")
 
     /* --- Verification --- */
-
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q1,
-      "ArraysOfStruct_Q1", "column", pw, sqlContext)
+    SnappyTestUtils.tableType = "column"
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.ArraysOfStruct_Q1,
+      "ArraysOfStruct_Q1", pw, sqlContext)
     // TODO Due to SNAP-2782 Below line is commented, Hydra Framework required changes.
-    //    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q2,
-    //      "ArraysOfStruct_Q2", "column", pw, sqlContext)
-    //    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q3,
-    //      "ArraysOfStruct_Q3","column", pw, sqlContext)
-    //    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q4,
-    //      "ArraysOfStruct_Q4","column", pw, sqlContext)
-    //    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q5,
-    //      "ArraysOfStruct_Q5","column", pw, sqlContext)
+    //    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.ArraysOfStruct_Q2,
+    //      "ArraysOfStruct_Q2", pw, sqlContext)
+    //    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.ArraysOfStruct_Q3,
+    //      "ArraysOfStruct_Q3", pw, sqlContext)
+    //    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.ArraysOfStruct_Q4,
+    //      "ArraysOfStruct_Q4", pw, sqlContext)
+    //    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.ArraysOfStruct_Q5,
+    //      "ArraysOfStruct_Q5", pw, sqlContext)
 
     /* --- Clean up --- */
     snc.sql("DROP TABLE IF EXISTS TwoWheeler")

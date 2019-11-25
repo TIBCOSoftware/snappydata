@@ -19,16 +19,16 @@ package io.snappydata.hydra.ct
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
+import io.snappydata.hydra.SnappyTestUtils
+
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.{SparkConf, SparkContext}
 
 object CreateAndLoadCTTablesApp {
 
   def main(args: Array[String]) {
-    val connectionURL = args(args.length - 1)
     val conf = new SparkConf().
-        setAppName("CreateAndLoadCTTables Application").
-        set("snappydata.connection", connectionURL)
+        setAppName("CreateAndLoadCTTables Application")
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
     val dataFilesLocation = args(0)
@@ -39,9 +39,10 @@ object CreateAndLoadCTTablesApp {
     val persistenceMode = args(3)
     val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadCTTablesApp.out"), true))
     // scalastyle:off println
-    pw.println(s"dataFilesLocation : ${dataFilesLocation}")
+    pw.println(s"${SnappyTestUtils.logTime} dataFilesLocation : ${dataFilesLocation}")
     CTTestUtil.dropTables(snc)
-    pw.println(s"Create and load for ${tableType} tables has started")
+    pw.println(s"${SnappyTestUtils.logTime} Create and load for ${tableType} tables " +
+        s"has started")
     pw.flush()
     tableType match {
       // replicated row tables
@@ -73,12 +74,13 @@ object CreateAndLoadCTTablesApp {
         throw new Exception(s"Did not find any match for ${tableType} to create tables." +
             s" See ${CTTestUtil.getCurrentDirectory}/CreateAndLoadCTTablesApp.out")
     }
-    pw.println("Tables are created. Now loading data.")
+    pw.println(s"${SnappyTestUtils.logTime} Tables are created. Now loading data.")
     pw.flush()
     CTTestUtil.loadTables(snc)
     println(s"Create and load for ${tableType} tables has completed successfully. " +
         s"See ${CTTestUtil.getCurrentDirectory}/CreateAndLoadCTTablesApp.out")
-    pw.println(s"Create and load for ${tableType} tables has completed successfully")
+    pw.println(s"${SnappyTestUtils.logTime} Create and load for ${tableType} tables " +
+        s"has completed successfully")
     pw.close()
   }
 }

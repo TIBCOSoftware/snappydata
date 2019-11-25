@@ -25,16 +25,15 @@ import org.apache.spark.{SparkConf, SparkContext}
 import scala.util.{Failure, Success, Try}
 
 object InstallJarTestSparkApp {
+
   val conf = new SparkConf().
       setAppName("InstallJarTest Application_" + System.currentTimeMillis())
   val sc = new SparkContext(conf)
   val snc = SnappyContext(sc)
 
   def main(args: Array[String]): Unit = {
-    val connectionURL = args(args.length - 1)
     val conf = new SparkConf().
-        setAppName("InstallJarTest Application").
-        set("snappydata.connection", connectionURL)
+        setAppName("InstallJarTest Application")
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
     val threadID = Thread.currentThread().getId

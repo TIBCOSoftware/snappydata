@@ -54,12 +54,7 @@ object SmartConnectorArrayType {
       "OPTIONS(path  '" + dataLocation + "')")
     snc.sql("CREATE TABLE Student USING COLUMN AS (SELECT * FROM TempArray)")
 
-    snc.sql(ComplexTypeUtils.Array_Q1)
-    snc.sql(ComplexTypeUtils.Array_Q2)
-    snc.sql(ComplexTypeUtils.Array_Q3)
     snc.sql(ComplexTypeUtils.Array_View)
-    snc.sql(ComplexTypeUtils.Array_Q4)
-    snc.sql(ComplexTypeUtils.Array_Q5)
 
     if(printContent) {
       println(snc.sql(ComplexTypeUtils.Array_Q1).show())
@@ -76,17 +71,12 @@ object SmartConnectorArrayType {
       "AS  SELECT id,name,explode(marks) AS Marks FROM Student")
 
     /* --- Verification --- */
-
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Array_Q1,
-      "Array_Q1", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Array_Q2,
-      "Array_Q2", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Array_Q3,
-      "Array_Q3", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Array_Q4,
-      "Array_Q4", "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Array_Q5,
-      "Array_Q5", "column", pw, sqlContext)
+    SnappyTestUtils.tableType = "column"
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Array_Q1, "Array_Q1", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Array_Q2, "Array_Q2", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Array_Q3, "Array_Q3", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Array_Q4, "Array_Q4", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Array_Q5, "Array_Q5", pw, sqlContext)
 
     /* --- Clean up --- */
     spark.sql("DROP VIEW IF EXISTS Student")

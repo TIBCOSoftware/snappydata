@@ -57,9 +57,6 @@ class ArraysOfStringInMapAsValue extends SnappySQLJob{
       "USING COLUMN AS (SELECT * FROM TempFamousPeople)")
 
     snc.sql(ComplexTypeUtils.Array_Map_TempView)
-    snc.sql(ComplexTypeUtils.Array_Map_Q1)
-    snc.sql(ComplexTypeUtils.Array_Map_Q2)
-    snc.sql(ComplexTypeUtils.Array_Map_Q3)
 
     if(printContent) {
       println("snc : Array_Map_Q1 " + snc.sql(ComplexTypeUtils.Array_Map_Q1).show)
@@ -74,13 +71,10 @@ class ArraysOfStringInMapAsValue extends SnappySQLJob{
       "AS SELECT country, explode(celebrities) FROM FamousPeople")
 
     /* --- Verification --- */
-
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Array_Map_Q1, "Array_Map_Q1",
-      "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Array_Map_Q2, "Array_Map_Q2",
-      "column", pw, sqlContext)
-    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.Array_Map_Q3, "Array_Map_Q3",
-      "column", pw, sqlContext)
+    SnappyTestUtils.tableType = "column"
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Array_Map_Q1, "Array_Map_Q1", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Array_Map_Q2, "Array_Map_Q2", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, ComplexTypeUtils.Array_Map_Q3, "Array_Map_Q3", pw, sqlContext)
 
     /* --- Clean up --- */
     snc.sql("DROP TABLE IF EXISTS TempFamousPeople")

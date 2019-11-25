@@ -86,19 +86,19 @@ class StructTypeAPI extends SnappySQLJob {
     println("snc count : " + sncStructQuery4DF.count())
     println("spark count : " + sparkStructQuery4DF.count())
 
-
-    SnappyTestUtils.assertQueryFullResultSet(snc, sncStructQuery1DF, sparkStructQuery1DF,
-    "StructTypeQuery1", "column", pw, sqlContext)
+    SnappyTestUtils.tableType = "column"
+    SnappyTestUtils.assertQuery(snc, sncStructQuery1DF, sparkStructQuery1DF,
+    "StructTypeQuery1", pw)
     println("Finished the StructType Query-1")
-    SnappyTestUtils.assertQueryFullResultSet(snc, sncStructQuery2DF, sparkStructQuery2DF,
-      "StructTypeQuery2", "column", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, sncStructQuery2DF, sparkStructQuery2DF,
+      "StructTypeQuery2", pw)
     println("Finished the StructType Query-2")
-    SnappyTestUtils.assertQueryFullResultSet(snc, sncStructQuery3DF, sparkStructQuery3DF,
-      "StructTypeQuery3", "column", pw, sqlContext)
+    SnappyTestUtils.assertQuery(snc, sncStructQuery3DF, sparkStructQuery3DF,
+      "StructTypeQuery3", pw)
     println("Finished the StructType Query-3")
-    SnappyTestUtils.assertQueryFullResultSet(snc, sncStructQuery4DF, sparkStructQuery4DF,
-            "StructTypeQuery4", "column", pw, sqlContext)
-          println("Finished the StructType Query-4")
+    SnappyTestUtils.assertQuery(snc, sncStructQuery4DF, sparkStructQuery4DF,
+      "StructTypeQuery4", pw)
+    println("Finished the StructType Query-4")
 
     println("Query StructType Via API, Job completed....")
   }
