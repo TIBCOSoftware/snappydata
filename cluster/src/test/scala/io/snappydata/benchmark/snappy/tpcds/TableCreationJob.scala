@@ -82,7 +82,7 @@ object TableCreationJob extends SnappySQLJob{
     props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable),
       ("COLOCATE_WITH" -> "CATALOG_RETURNS"))
     tableName = "catalog_sales"
-    createColumnPartitionedTable(snSession, props, tableName)
+    createColumnPartitionedTable(snSession, props, tableName, loadPerfPrintStream)
 
     // partitionBy = "wr_order_number"
     partitionBy = "wr_returned_date_sk"
