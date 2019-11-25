@@ -226,7 +226,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
 
   override def toString: String = {
     val params = parameters + ("sinkCallback" -> sinkCallback.getClass.getName)
-    s"SnappyStoreSink[${params.mkString(",")}]"
+    s"SnappyStoreSink[${params.mkString(", ")}]"
   }
 }
 
