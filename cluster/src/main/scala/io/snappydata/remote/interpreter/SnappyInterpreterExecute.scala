@@ -49,7 +49,9 @@ class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExe
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     val lp = session.sessionState.sqlParser.parsePlan(sql).asInstanceOf[InterpretCodeCommand]
     val interpreterHelper = SnappyInterpreterExecute.getOrCreateStateHolder(connId, user, authToken, group)
-    interpreterHelper.interpret(lp.code.split("\n"))
+    val outputLines = interpreterHelper.interpret(lp.code.split("\n"))
+    if (outputLines != null && outputLines.nonEmpty) outputLines.flatMap(_.split("\n"))
+    else outputLines
   }
 }
 
