@@ -1110,32 +1110,35 @@ object SnappyContext extends Logging {
                 if (deployCmds.length > 0) {
                   logInfo(s"Deployed commands size = ${deployCmds.length}")
                   val commandSet = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
-                  commandSet.forEach(new Consumer[Entry[String, String]] {
-                    override def accept(t: Entry[String, String]): Unit = {
-                      if (!(t.getKey.equals(Constant.CLUSTER_ID) ||
+                  commandSet.forEach(new Consumer[Entry[String, Object]] {
+                    override def accept(t: Entry[String, Object]): Unit = {
+                      if (t.getValue.isInstanceOf[String]) {
+                        if (!(t.getKey.equals(Constant.CLUSTER_ID) ||
                           t.getKey.startsWith(Constant.MEMBER_ID_PREFIX) ||
+                          t.getKey.equals(Constant.GRANT_REVOKE_KEY) ||
                           t.getKey.startsWith(ContextJarUtils.functionKeyPrefix))) {
-                        val d = t.getValue
-                        val cmdFields = d.split('|') // split() removes empty elements
-                        if (d.contains('|')) {
-                          val coordinate = cmdFields(0)
-                          val repos = if (cmdFields.length > 1 && !cmdFields(1).isEmpty) {
-                            Some(cmdFields(1))
-                          } else None
-                          val cache = if (cmdFields.length > 2 && !cmdFields(2).isEmpty) {
-                            Some(cmdFields(2))
-                          } else None
-                          try {
-                            DeployCommand(coordinate, null, repos, cache, restart = true)
+                          val d = t.getValue.toString
+                          val cmdFields = d.split('|') // split() removes empty elements
+                          if (d.contains('|')) {
+                            val coordinate = cmdFields(0)
+                            val repos = if (cmdFields.length > 1 && !cmdFields(1).isEmpty) {
+                              Some(cmdFields(1))
+                            } else None
+                            val cache = if (cmdFields.length > 2 && !cmdFields(2).isEmpty) {
+                              Some(cmdFields(2))
+                            } else None
+                            try {
+                              DeployCommand(coordinate, null, repos, cache, restart = true)
                                 .run(session)
-                          } catch {
-                            case e: Throwable => failOnJarUnavailability(t.getKey, Array.empty, e)
-                          }
-                        } else { // Jars we have
-                          try {
-                            DeployJarCommand(null, cmdFields(0), restart = true).run(session)
-                          } catch {
-                            case e: Throwable => failOnJarUnavailability(t.getKey, cmdFields, e)
+                            } catch {
+                              case e: Throwable => failOnJarUnavailability(t.getKey, Array.empty, e)
+                            }
+                          } else { // Jars we have
+                            try {
+                              DeployJarCommand(null, cmdFields(0), restart = true).run(session)
+                            } catch {
+                              case e: Throwable => failOnJarUnavailability(t.getKey, cmdFields, e)
+                            }
                           }
                         }
                       }
