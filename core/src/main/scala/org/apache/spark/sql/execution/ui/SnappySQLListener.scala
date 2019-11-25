@@ -44,27 +44,65 @@ case class SparkListenerSQLPlanExecutionEnd(executionId: Long) extends SparkList
  */
 class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
 
+  var sourceListener: SQLListener = _
+  // constructor that copies contents of source listener into this listener
+  // used in smart connector
+  def this(conf: SparkConf, source: SQLListener) {
+    this(conf)
+    if (source != null) {
+      sourceListener = source
+      copyDataFromSourceListener()
+    }
+  }
+
   // base class variables that are private
   private[this] val baseStageIdToStageMetrics = {
     getInternalField("org$apache$spark$sql$execution$ui$SQLListener$$_stageIdToStageMetrics").
         asInstanceOf[mutable.HashMap[Long, SQLStageMetrics]]
   }
+
   private[this] val baseJobIdToExecutionId = {
     getInternalField("org$apache$spark$sql$execution$ui$SQLListener$$_jobIdToExecutionId").
         asInstanceOf[mutable.HashMap[Long, Long]]
   }
+
   private[this] val baseActiveExecutions = {
     getInternalField("activeExecutions").asInstanceOf[mutable.HashMap[Long, SQLExecutionUIData]]
   }
+
   private[this] val baseExecutionIdToData = {
     getInternalField("org$apache$spark$sql$execution$ui$SQLListener$$_executionIdToData").
         asInstanceOf[mutable.HashMap[Long, SQLExecutionUIData]]
   }
 
-  def getInternalField(fieldName: String): Any = {
+  private[this] val baseFailedExecutions = {
+    getInternalField("org$apache$spark$sql$execution$ui$SQLListener$$failedExecutions").
+        asInstanceOf[mutable.ListBuffer[SQLExecutionUIData]]
+  }
+
+  private[this] val baseCompletedExecutions = {
+    getInternalField("org$apache$spark$sql$execution$ui$SQLListener$$completedExecutions").
+        asInstanceOf[mutable.ListBuffer[SQLExecutionUIData]]
+  }
+
+  def getInternalField(fieldName: String, listenerObject: SQLListener = this): Any = {
     val resultField = classOf[SQLListener].getDeclaredField(fieldName)
     resultField.setAccessible(true)
-    resultField.get(this)
+    resultField.get(listenerObject)
+  }
+
+  // copy the contents from source listener to this listener
+  def copyDataFromSourceListener() {
+    baseStageIdToStageMetrics ++= sourceListener.stageIdToStageMetrics
+    baseJobIdToExecutionId ++= sourceListener.jobIdToExecutionId
+    baseExecutionIdToData ++= sourceListener.executionIdToData
+    baseFailedExecutions ++= sourceListener.getFailedExecutions
+    baseCompletedExecutions ++= sourceListener.getCompletedExecutions
+
+    // get by reflection since no getter is available
+    var sourceActiveExecutions = getInternalField("activeExecutions", sourceListener).
+        asInstanceOf[mutable.HashMap[Long, SQLExecutionUIData]]
+    baseActiveExecutions ++= sourceActiveExecutions
   }
 
   override def onJobStart(jobStart: SparkListenerJobStart): Unit = {
