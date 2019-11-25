@@ -162,7 +162,8 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
     intp.close()
     strOpStream.close()
     pw.close()
-    snappy.clear()
+    // let the session close handle snappy clear.
+    // snappy.clear()
     incomplete.setLength(0)
     allInterpretedLinesForReplay.clear()
   }
