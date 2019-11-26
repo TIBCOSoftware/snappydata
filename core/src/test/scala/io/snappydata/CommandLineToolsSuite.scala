@@ -314,6 +314,8 @@ class CommandLineToolsSuite extends SnappyTestRunner {
   }
 
   test ("SNAP-3223 Routing query using driver class com.snappydata.jdbc.ClientDriver"){
+    // Adding test case here to reuse the infrastructure of already running cluster
+    // created by this suite.
     def getJdbcConnectionWithComSnappyData(netPort: Int): Connection = {
       val driver = "com.snappydata.jdbc.ClientDriver"
       Utils.classForName(driver).newInstance
@@ -321,7 +323,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       DriverManager.getConnection(url)
     }
 
-    val jdbcConn = getJdbcConnection(1527)
+    val jdbcConn = getJdbcConnectionWithComSnappyData(1527)
     val stmt = jdbcConn.createStatement()
     assert(stmt.execute("show schemas"))
     val result = stmt.getResultSet
