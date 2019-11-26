@@ -1200,7 +1200,6 @@ ospackage {
 }
 
 buildRpm {
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
@@ -1216,7 +1215,6 @@ buildRpm {
 }
 
 buildDeb {
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
@@ -1241,7 +1239,6 @@ distTar {
   }
   dependsOn product
   // also package VSD
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
@@ -1261,7 +1258,6 @@ distZip {
   }
   dependsOn product
   // also package VSD
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
@@ -1489,37 +1485,11 @@ task packagePulse { doLast {
   }
 } }
 
-task packageVSD { doLast {
-  String thirdparty = System.env.THIRDPARTYDIR
-  String vsdDir = ''
-
-  if (thirdparty == null || thirdparty.length() == 0) {
-    vsdDir = "${projectDir}/../thirdparty/vsd"
-  } else {
-    vsdDir = "${thirdparty}/vsd"
-  }
-
-  String vsdDistDir = "${vsdDir}/70/vsd"
-  if (file(vsdDistDir).canWrite()) {
-    println ''
-    println "Copying VSD from ${vsdDistDir} to ${snappyProductDir}/vsd"
-    println ''
-    delete "${snappyProductDir}/vsd"
-    copy {
-      from vsdDistDir
-      into "${snappyProductDir}/vsd"
-    }
-  } else {
-    println "Skipping VSD due to unwritable ${vsdDistDir}"
-  }
-} }
-
 task sparkPackage {
   dependsOn ":snappy-core_${scalaBinaryVersion}:sparkPackage"
 }
 
 packagePulse.mustRunAfter product
-packageVSD.mustRunAfter product
 packageZeppelinInterpreter.mustRunAfter product
 
 distTar.mustRunAfter clean, cleanAll, product
