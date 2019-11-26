@@ -25,9 +25,7 @@ $ docker run hello-world
 <a id="build-your-docker"></a>
 ## Building Docker Image of SnappyData</br>
 
-A sample Dockerfile is provided which can be used to create your own Docker image of SnappyData.
-
-Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) script and place it into a directory. The Dockerfile contains a link to the latest SnappyData OSS version to build the image. 
+A Dockerfile is provided which can be used to create your own Docker image of SnappyData. Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) script and place it into a directory. The Dockerfile contains a link to the latest SnappyData OSS version to build the image. 
 
 Move into the directory containing the downloaded Dockerfile and then run the Docker build command with the required details to build the Docker image. You can create an image using any one of the following options:
 
@@ -39,12 +37,14 @@ Move into the directory containing the downloaded Dockerfile and then run the Do
 <a id="builddockerimagesnappy"></a>
 ### Building Image from the Latest Version of SnappyData OSS
 
+By default, the Dockerfile creates Docker image from the latest version of SnappyData OSS.
+
 ```
 $ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] .
 ```
 
 !!!Note
-	If you do not provide an argument is provided in the Dockerfile, the latest version of the SnappyData OSS release is downloaded and a Docker image for the same is built
+	If you do not provide any argument to the Dockerfile, the latest version of the SnappyData OSS release is downloaded and a Docker image for the same is built.
 
 For example :
 
@@ -74,13 +74,13 @@ $ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=<public-url>
 For example:
 
 ```
-$ docker build -t myrepo/snappydata . --build-arg URL=https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.1/snappydata-<version>-bin.tar.gz
+$ docker build -t myrepo/snappydata . --build-arg URL=https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.1/snappydata-1.1.1-bin.tar.gz
 ```
 
 <a id="builddockerimageslocal"></a>
 ### Building Image from Local Copy of SnappyData Product TAR file 
 
-If you have already downloaded the SnappyData tarfile locally onto your machine, use the following steps to build an image from the downloaded binaries. To download SnappyData, refer to the [Provisioning SnappData](https://snappydatainc.github.io/snappydata/install/) section in the product documentation.
+If you have already downloaded the SnappyData tarfile locally onto your machine, use the following steps to build an image from the downloaded binaries. To download SnappyData, refer to the [Provisioning SnappyData](https://snappydatainc.github.io/snappydata/install/) section in the product documentation.
 
 Copy the downloaded **tar.gz** file to the Docker folder where you have placed the Dockerfile and run the following command:
 
@@ -92,7 +92,7 @@ $ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=<tarfile name>
 For example:
 
 ```
-$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=snappydata-<version>-bin.tar.gz
+$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=snappydata-1.1.1-bin.tar.gz
 ```
 
 
@@ -109,7 +109,7 @@ $ docker images
 
 ## Publishing Docker Image
 
-If you want to publish the Docker image onto the Docker hub, login to the Docker account using Docker login command and provide your credentials, followed by the docker push command. For more information on Docker login, visit [here](https://docs.docker.com/engine/reference/commandline/login).
+If you want to publish the Docker image onto the Docker hub, login to the Docker account using `docker login` command and provide your credentials. For more information on Docker login, visit [here](https://docs.docker.com/engine/reference/commandline/login). After successful login, you can publish the Docker image using the `docker push` command.
 
 ```
 $ docker push <your-docker-repo-name>/<image_name>[:<image-tag>]
@@ -130,10 +130,10 @@ In the command prompt, execute the following commands to launch the SnappyData c
 ```
 $ docker run -itd --net=host --name <container-name> <your-docker-repo-name>/<image_name>[:<image-tag>] start all
 
-# -i: keep the STDIN open even in not attached
-# -t : allocate psuedo-TTY 
-# -d : detach and run container in background and print container ID
-# --net=host : Use the Docker host network stack
+# -i: keep the STDIN open even if not attached.
+# -t: Allocate psuedo-TTY.
+# -d: Detach and run container in background and print container ID.
+# --net=host: Use the Docker host network stack.
 ```
 
 If the image is not available locally, this fetches the Docker image from the Docker registry, launches a default cluster consisting of one data node, one lead, and one locator in a container.
