@@ -14,7 +14,7 @@ Before building the Docker image, ensure the following:
 !!!Note
 	To allow non-root users to run Docker commands, follow the instructions [here](https://docs.docker.com/install/linux/linux-postinstall)
 
-## Verifying Docker Installation</br> 
+## Verifying Docker Installation</br>
 In the command prompt, run the command:
 
 ```pre
@@ -25,7 +25,7 @@ $ docker run hello-world
 <a id="build-your-docker"></a>
 ## Building Docker Image of SnappyData</br>
 
-A Dockerfile is provided that can be used to create your own Docker image of SnappyData. Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) script and place it into a directory. The Dockerfile contains a link to the latest SnappyData OSS version to build the image. 
+You can use the Dockerfile that is provided and create your own Docker image of SnappyData. Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) script and place it into a directory. The Dockerfile contains a link to the latest SnappyData OSS version to build the image.
 
 Move into the directory containing the downloaded Dockerfile and then run the Docker build command with the required details to build the Docker image. You can create an image using any one of the following options:
 
@@ -37,7 +37,7 @@ Move into the directory containing the downloaded Dockerfile and then run the Do
 <a id="builddockerimagesnappy"></a>
 ### Building Image from the Latest Version of SnappyData OSS
 
-By default, the Dockerfile creates Docker image from the latest version of SnappyData OSS.
+By default, the Dockerfile creates a Docker image from the latest version of SnappyData OSS.
 
 ```
 $ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] .
@@ -49,13 +49,13 @@ $ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] .
 For example :
 
 ```
-$ docker build -t myrepo/snappydata . 
+$ docker build -t myrepo/snappydata .
 ```
 
 This builds an image with `latest` tag.
 
 ```
-$ docker build -t myrepo/snappydata:1.1.1 . 
+$ docker build -t myrepo/snappydata:1.1.1 .
 ```
 
 This image will have a tag `1.1.1 ` .
@@ -78,7 +78,7 @@ $ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=https://github.com
 ```
 
 <a id="builddockerimageslocal"></a>
-### Building Image from Local Copy of SnappyData Product TAR file 
+### Building Image from Local Copy of SnappyData Product TAR file
 
 If you have already downloaded the SnappyData tarfile locally onto your machine, use the following steps to build an image from the downloaded binaries. To download SnappyData, refer to the [Provisioning SnappyData](https://snappydatainc.github.io/snappydata/install/) section in the product documentation.
 
@@ -109,7 +109,7 @@ $ docker images
 
 ## Publishing Docker Image
 
-If you want to publish the Docker image onto the Docker hub, login to the Docker account using `docker login` command and provide your credentials. For more information on Docker login, visit [here](https://docs.docker.com/engine/reference/commandline/login). After successful login, you can publish the Docker image using the `docker push` command.
+If you want to publish the Docker image onto the Docker hub, login to the Docker account using `docker login` command, and provide your credentials. For more information on Docker login, visit [here](https://docs.docker.com/engine/reference/commandline/login). After a successful login, you can publish the Docker image using the `docker push` command.
 
 ```
 $ docker push <your-docker-repo-name>/<image_name>[:<image-tag>]
@@ -132,8 +132,8 @@ In the command prompt, execute the following commands to launch the SnappyData c
 $ docker run -itd --net=host --name <container-name> <your-docker-repo-name>/<image_name>[:<image-tag>] start all
 
 # -i: keep the STDIN open even if not attached.
-# -t: Allocate psuedo-TTY.
-# -d: Detach and run container in background and print container ID.
+# -t: Allocate pseudo-TTY.
+# -d: Detach and run the container in background and print container ID.
 # --net=host: Use the Docker host network stack.
 ```
 
@@ -149,7 +149,7 @@ $ docker run -itd --net=host --name snappydata myrepo/snappydata start all
 ### For Mac OS
 
 !!!Note
-	If you are using MAC OS, you must redirect the ports manually. If you use `--net=host`, it may not work correctly on the Mac OS. The following modified command should be used for Mac OS:
+	If you are using MAC OS, you must redirect the ports manually. If you use `--net=host`, it may not work correctly on the Mac OS. You can use the following modified command for Mac OS:
 
 ```
 $ docker run -d --name=snappydata -p 5050:5050 -p 1527:1527 -p 1528:1528 myrepo/snappydata start all -hostname-for-clients=<Machine_IP/Public_IP>
@@ -169,8 +169,3 @@ The `-hostname-for-clients` parameter sets the IP Address or Hostname that the s
 |      To stop the Cluster.  |     `$ docker exec -it <container-name> ./sbin/snappy-stop-all.sh `  |
 |      To stop the Container.  |     `$ docker stop <container-name> ` |
 |      To run commands inside the container. |     `$ docker exec -it <container-name> /bin/bash`  |
-
-
-
-
-
