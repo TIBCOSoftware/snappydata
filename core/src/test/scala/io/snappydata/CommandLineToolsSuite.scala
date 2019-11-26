@@ -313,7 +313,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
     }
   }
 
-  test ("SNAP-3223 Routing query using driver class com.snappydata.jdbc.ClientDriver"){
+  test ("SNAP-3223 Executing query using driver class com.snappydata.jdbc.ClientDriver"){
     // Adding test case here to reuse the infrastructure of already running cluster
     // created by this suite.
     def getJdbcConnectionWithComSnappyData(netPort: Int): Connection = {
