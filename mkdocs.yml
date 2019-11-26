@@ -14,8 +14,8 @@ pages:
 - 'Provisioning SnappyData':
     - 'System Requirements': 'install/system_requirements.md'
     - 'Installing SnappyData On-Premise': 'install/install_on_premise.md'
-    - 'Setup SnappyData Cluster on AWS': 'install/setting_up_cluster_on_amazon_web_services.md'
-    - 'Setup SnappyData Cluster on Kubernetes': 'kubernetes.md'
+    - 'Setting-up SnappyData Cluster on AWS': 'install/setting_up_cluster_on_amazon_web_services.md'
+    - 'Setting-up SnappyData Cluster on Kubernetes': 'kubernetes.md'
     - 'Building a Docker Image with SnappyData Binaries': 'quickstart/getting_started_with_docker_image.md'
     - 'Building SnappyData from Source files': 'install/building_from_source.md'
     - 'Upgrading SnappyData': 'install/upgrade.md'
@@ -23,7 +23,7 @@ pages:
 - 'Getting Started': 
     - 'On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
     - 'Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
-    - 'Docker Image': 'quickstart/getting_started_with_docker_image.md'
+#    - 'Docker Image': 'quickstart/getting_started_with_docker_image.md'
     - 'Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
     - 'SnappyData Quickstart Guide': 'quickstart/snappydataquick_start.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
