@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql
 
+import java.lang
 import java.sql.{Connection, SQLException, SQLWarning}
 import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
@@ -28,12 +29,12 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{Cache, CacheBuilder}
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.TypeId
@@ -42,7 +43,6 @@ import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatId
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
@@ -54,7 +54,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{Command, Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
-import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -2192,6 +2192,9 @@ object SnappySession extends Logging {
   private val unresolvedColRegex =
     """(cannot resolve '`)(\w+).(\w+).(\w+)(.*given input columns.*)""".r
 
+  lazy val checkExternalTableAuth = lang.Boolean.parseBoolean(
+    System.getProperty("CHECK_EXTERNAL_TABLE_AUTHZ"))
+
   lazy val isEnterpriseEdition: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
@@ -2416,6 +2419,16 @@ object SnappySession extends Logging {
       hints
     }
 
+    if (SnappySession.checkExternalTableAuth && ToolsCallbackInit.toolsCallback != null) {
+      // check for external tables in the plan.
+      // TODO: For Smart Connector we can send a procedure to check the credentials
+      val scanNodes = executedPlan.collect {
+        case dsc: DataSourceScanExec if !dsc.relation.isInstanceOf[PartitionedDataSourceScan] => dsc
+      }
+      if (scanNodes != null && scanNodes.nonEmpty) {
+        checkCurrentUserAllowed(session, scanNodes)
+      }
+    }
     val (rdd, shuffleDependencies, shuffleCleanups) = if (planCaching) {
       val shuffleDeps = findShuffleDependencies(cachedRDD).toArray
       val cleanups = new Array[Future[Unit]](shuffleDeps.length)
@@ -2425,6 +2438,19 @@ object SnappySession extends Logging {
       executionString, planInfo, rdd, shuffleDependencies, RowEncoder(qe.analyzed.schema),
       shuffleCleanups, rddId, noSideEffects, queryHints,
       executionId, planStartTime, planEndTime, session.hasLinkPartitionsToBuckets)
+  }
+
+  private def checkCurrentUserAllowed(session: SnappySession, scanNodes: Seq[SparkPlan]): Boolean = {
+    scanNodes.foreach(n => {
+      val dse = n.asInstanceOf[DataSourceScanExec]
+      val currentUser = session.conf.get(Attribute.USERNAME_ATTR)
+      if (!ToolsCallbackInit.toolsCallback.isUserAuthorizedForExtTable(session.getConnection,
+        currentUser, dse.metastoreTableIdentifier)) {
+        throw new AnalysisException(s"user ${currentUser} not authorized" +
+          s" for table: ${dse.metastoreTableIdentifier}")
+      }
+    })
+    true
   }
 
   private[this] lazy val planCache = {

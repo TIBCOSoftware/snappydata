@@ -33,6 +33,7 @@ import org.apache.spark.sql.execution.InterpretCodeCommand
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExecute with Logging {
 
@@ -61,11 +62,11 @@ object SnappyInterpreterExecute {
   private val connToIntpHelperMap = new mutable.HashMap[
     Long, (String, String, RemoteInterpreterStateHolder)]
 
-  private var permissions = new ScalaCodePermissionChecker
+  private var permissions = new PermissionChecker
 
   private var INITIALIZED = false
 
-  private lazy val dbOwner = {
+  lazy val dbOwner = {
     Misc.getMemStore.getDatabase.getDataDictionary.getAuthorizationDatabaseOwner.toLowerCase()
   }
 
@@ -167,14 +168,14 @@ object SnappyInterpreterExecute {
     val key = Constant.GRANT_REVOKE_KEY
     val permissionsObj = Misc.getMemStore.getMetadataCmdRgn.get(key)
     if (permissionsObj != null) {
-      permissions = permissionsObj.asInstanceOf[ScalaCodePermissionChecker]
+      permissions = permissionsObj.asInstanceOf[PermissionChecker]
     } else {
-      permissions = new ScalaCodePermissionChecker
+      permissions = new PermissionChecker
     }
     INITIALIZED = true
   }
 
-  private class ScalaCodePermissionChecker extends Serializable {
+  private class PermissionChecker extends Serializable {
     private val groupToUsersMap: mutable.Map[String, List[String]] = new mutable.HashMap
     private val allowedUsers: mutable.ListBuffer[String] = new mutable.ListBuffer[String]
 
@@ -207,6 +208,41 @@ object SnappyInterpreterExecute {
     def refreshOnLdapGroupRefresh(group: String): Unit = {
       val grantees = ExternalStoreUtils.getExpandedGranteesIterator(Seq(group)).toList
       groupToUsersMap.put(group, grantees)
+    }
+  }
+
+  object PermissionChecker {
+
+    def isAllowed(key: String, currentUser: String, tableSchema: String): Boolean = {
+      if (currentUser.equalsIgnoreCase(tableSchema) ||
+        currentUser.equalsIgnoreCase(dbOwner)) return true
+
+      val permissionsObj = Misc.getMemStore.getMetadataCmdRgn.get(key)
+      if (permissionsObj == null) return false
+
+      permissionsObj.asInstanceOf[PermissionChecker].isAllowed(currentUser)._1
+    }
+
+    def addRemoveUserForKey(key: String, isGrant: Boolean, users: String): Unit = {
+      PermissionChecker.synchronized {
+        val permissionsObj = Misc.getMemStore.getMetadataCmdRgn.get(key)
+        val permissions = if (permissionsObj != null) permissionsObj.asInstanceOf[PermissionChecker]
+        else new PermissionChecker
+        // expand the users list. Can be a mix of normal user and ldap group
+        val commaSepVals = users.split(",")
+        commaSepVals.foreach(u => {
+          if (isGrant) {
+            if (u.startsWith(Constants.LDAP_GROUP_PREFIX))
+              permissions.addLdapGroup(u)
+            else permissions.addUser(u)
+          } else {
+            if (u.startsWith(Constants.LDAP_GROUP_PREFIX))
+              permissions.removeLdapGroup(u)
+            else permissions.removeUser(u)
+          }
+        })
+        Misc.getMemStore.getMetadataCmdRgn.put(key, permissions)
+      }
     }
   }
 }
