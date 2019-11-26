@@ -39,7 +39,10 @@ object SnappyMetricsSystem {
 
     GemFireXDUtils.waitForNodeInitialization()
     // initialize metric system with cluster id as metrics namespace
-    val clusterUuid = Misc.getMemStore.getMetadataCmdRgn.get(Constant.CLUSTER_ID)
+    val clusterUuidObj = Misc.getMemStore.getMetadataCmdRgn.get(Constant.CLUSTER_ID)
+    val clusterUuid: String = if (clusterUuidObj != null) {
+      clusterUuidObj.asInstanceOf[String]
+    } else null
     UserMetricsSystem.initialize(sc, clusterUuid)
 
     val timeInterval = 5000
