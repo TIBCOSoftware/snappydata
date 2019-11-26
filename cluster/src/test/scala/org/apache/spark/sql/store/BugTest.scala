@@ -407,7 +407,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     var foundValidColumnName = false
     while(rs.next() && !foundValidColumnName) {
       val colName = rs.getString("COLUMN_NAME")
-      if  (colName == "yeari") {
+      if  (colName.equalsIgnoreCase("yeari")) {
         foundValidColumnName = true
       }
     }
