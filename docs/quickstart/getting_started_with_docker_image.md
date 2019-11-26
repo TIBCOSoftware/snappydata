@@ -25,13 +25,13 @@ $ docker run hello-world
 <a id="build-your-docker"></a>
 ## Building Docker Image of SnappyData</br>
 
-A Dockerfile is provided which can be used to create your own Docker image of SnappyData. Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) script and place it into a directory. The Dockerfile contains a link to the latest SnappyData OSS version to build the image. 
+A Dockerfile is provided that can be used to create your own Docker image of SnappyData. Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) script and place it into a directory. The Dockerfile contains a link to the latest SnappyData OSS version to build the image. 
 
 Move into the directory containing the downloaded Dockerfile and then run the Docker build command with the required details to build the Docker image. You can create an image using any one of the following options:
 
 *	[Building Image from the Latest Version of SnappyData OSS](#builddockerimagesnappy)
-*	[Building Image from URL of a Public Site Containing the Product Tarball](#builddockerurl)
-*	[Building Image from Local Copy of Product Tarball](#builddockerimageslocal)
+*	[Building Image from a URL Directing to SnappyData Binaries](#builddockerurl)
+*	[Building Image from Local Copy of SnappyData Product TAR file](#builddockerimageslocal)
 
 
 <a id="builddockerimagesnappy"></a>
@@ -67,14 +67,14 @@ If you want to create a Docker image from any of the previous versions of Snappy
 
 
 ```
-$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=<public-url>
+$ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] . --build-arg TARFILE_LOC=<public-url>
 
 ```
 
 For example:
 
 ```
-$ docker build -t myrepo/snappydata . --build-arg URL=https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.1/snappydata-1.1.1-bin.tar.gz
+$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.1/snappydata-1.1.1-bin.tar.gz
 ```
 
 <a id="builddockerimageslocal"></a>
@@ -85,7 +85,7 @@ If you have already downloaded the SnappyData tarfile locally onto your machine,
 Copy the downloaded **tar.gz** file to the Docker folder where you have placed the Dockerfile and run the following command:
 
 ```
-$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=<tarfile name>
+$ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] . --build-arg TARFILE_LOC=<tarfile name>
 
 ```
 
@@ -96,7 +96,7 @@ $ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=snappydata-1.1.1-b
 ```
 
 
-## Getting Details of Docker Images
+## Verifying Details of Docker Images
 
 After the Docker build is successful, you can check the details for Docker images using the `docker images` command.
 
@@ -121,7 +121,8 @@ For example:
 ```
 $ docker push myrepo/snappydata
 ```
-This example only showcases how to push an image onto Docker Hub. You can also publish the image to other container registries such as [gcr.io](http://gcr.io). For gcr.io, you can refer [this document](https://cloud.google.com/container-registry/docs/pushing-and-pulling).
+!!!Note
+	This example only showcases how to push an image onto Docker Hub. You can also publish the image to other container registries such as [gcr.io](http://gcr.io). For publishing on gcr.io, you can refer [this document](https://cloud.google.com/container-registry/docs/pushing-and-pulling).
 
 ## Launching SnappyData Inside Docker
 
@@ -164,7 +165,7 @@ The `-hostname-for-clients` parameter sets the IP Address or Hostname that the s
 |      To check details of all the Docker containers  |     `$ docker ps -a `  |
 |      To check the Docker Logs  |     `$ docker logs <container-name>`   |
 |      To connect SnappyData with the Command Line Client. <br>Use Ctrl+D or type ‘exit;’ to exit the shell.  |     `$ docker exec -it <container-name> ./bin/snappy`   |
-|     To launching a Spark shell. <br>Use type ‘:q’ to exit the shell. |     `$ docker exec -it <container-name> bin/spark-shell `  |
+|     To launch a Spark shell. <br>Use type ‘:q’ to exit the shell. |     `$ docker exec -it <container-name> bin/spark-shell `  |
 |      To stop the Cluster.  |     `$ docker exec -it <container-name> ./sbin/snappy-stop-all.sh `  |
 |      To stop the Container.  |     `$ docker stop <container-name> ` |
 |      To run commands inside the container. |     `$ docker exec -it <container-name> /bin/bash`  |
