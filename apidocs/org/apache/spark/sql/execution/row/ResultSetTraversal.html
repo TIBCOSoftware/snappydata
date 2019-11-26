@@ -54,7 +54,7 @@ expected to explicitly invoke ResultSet.next()/get*.
 This is primarily intended to be used for cleanup.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.sql.execution.columnar.ResultSetIterator">ResultSetIterator</span>[<span class="extype" name="java.lang.Void">Void</span>], <a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <span class="extype" name="scala.collection.Iterator">Iterator</span>[<span class="extype" name="java.lang.Void">Void</span>], <span class="extype" name="scala.collection.TraversableOnce">TraversableOnce</span>[<span class="extype" name="java.lang.Void">Void</span>], <span class="extype" name="scala.collection.GenTraversableOnce">GenTraversableOnce</span>[<span class="extype" name="java.lang.Void">Void</span>], <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.sql.execution.columnar.ResultSetIterator">ResultSetIterator</span>[<span class="extype" name="java.lang.Void">Void</span>], <span class="extype" name="org.apache.spark.sql.execution.BucketsBasedIterator">BucketsBasedIterator</span>, <a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <span class="extype" name="scala.collection.Iterator">Iterator</span>[<span class="extype" name="java.lang.Void">Void</span>], <span class="extype" name="scala.collection.TraversableOnce">TraversableOnce</span>[<span class="extype" name="java.lang.Void">Void</span>], <span class="extype" name="scala.collection.GenTraversableOnce">GenTraversableOnce</span>[<span class="extype" name="java.lang.Void">Void</span>], <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -72,7 +72,7 @@ This is primarily intended to be used for cleanup.
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.execution.row.ResultSetTraversal"><span>ResultSetTraversal</span></li><li class="in" name="org.apache.spark.sql.execution.columnar.ResultSetIterator"><span>ResultSetIterator</span></li><li class="in" name="org.apache.spark.Logging"><span>Logging</span></li><li class="in" name="scala.collection.Iterator"><span>Iterator</span></li><li class="in" name="scala.collection.TraversableOnce"><span>TraversableOnce</span></li><li class="in" name="scala.collection.GenTraversableOnce"><span>GenTraversableOnce</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.execution.row.ResultSetTraversal"><span>ResultSetTraversal</span></li><li class="in" name="org.apache.spark.sql.execution.columnar.ResultSetIterator"><span>ResultSetIterator</span></li><li class="in" name="org.apache.spark.sql.execution.BucketsBasedIterator"><span>BucketsBasedIterator</span></li><li class="in" name="org.apache.spark.Logging"><span>Logging</span></li><li class="in" name="scala.collection.Iterator"><span>Iterator</span></li><li class="in" name="scala.collection.TraversableOnce"><span>TraversableOnce</span></li><li class="in" name="scala.collection.GenTraversableOnce"><span>GenTraversableOnce</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -92,7 +92,7 @@ This is primarily intended to be used for cleanup.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.row.ResultSetTraversal#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(conn:java.sql.Connection,stmt:java.sql.Statement,rs:java.sql.ResultSet,context:org.apache.spark.TaskContext):org.apache.spark.sql.execution.row.ResultSetTraversal"></a>
+      <a id="&lt;init&gt;(conn:java.sql.Connection,stmt:java.sql.Statement,rs:java.sql.ResultSet,context:org.apache.spark.TaskContext,bucketSet:java.util.Set[Integer]):org.apache.spark.sql.execution.row.ResultSetTraversal"></a>
       <a id="&lt;init&gt;:ResultSetTraversal"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -100,10 +100,10 @@ This is primarily intended to be used for cleanup.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ResultSetTraversal</span><span class="params">(<span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="stmt">stmt: <span class="extype" name="java.sql.Statement">Statement</span></span>, <span name="rs">rs: <span class="extype" name="java.sql.ResultSet">ResultSet</span></span>, <span name="context">context: <a href="../../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a></span>)</span>
+        <span class="name">ResultSetTraversal</span><span class="params">(<span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="stmt">stmt: <span class="extype" name="java.sql.Statement">Statement</span></span>, <span name="rs">rs: <span class="extype" name="java.sql.ResultSet">ResultSet</span></span>, <span name="context">context: <a href="../../../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a></span>, <span name="bucketSet">bucketSet: <span class="extype" name="java.util.Set">Set</span>[<span class="extype" name="java.lang.Integer">Integer</span>]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.ResultSetTraversal@&lt;init&gt;(conn:java.sql.Connection,stmt:java.sql.Statement,rs:java.sql.ResultSet,context:org.apache.spark.TaskContext):org.apache.spark.sql.execution.row.ResultSetTraversal" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.ResultSetTraversal@&lt;init&gt;(conn:java.sql.Connection,stmt:java.sql.Statement,rs:java.sql.ResultSet,context:org.apache.spark.TaskContext,bucketSet:java.util.Set[Integer]):org.apache.spark.sql.execution.row.ResultSetTraversal" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -849,6 +849,23 @@ This is primarily intended to be used for cleanup.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Iterator → TraversableOnce → GenTraversableOnce</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.row.ResultSetTraversal#getBucketSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getBucketSet():java.util.Set[Integer]"></a>
+      <a id="getBucketSet():Set[Integer]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getBucketSet</span><span class="params">()</span><span class="result">: <span class="extype" name="java.util.Set">Set</span>[<span class="extype" name="java.lang.Integer">Integer</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.ResultSetTraversal@getBucketSet():java.util.Set[Integer]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetTraversal">ResultSetTraversal</a> → BucketsBasedIterator</dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -2442,6 +2459,8 @@ This is primarily intended to be used for cleanup.
         <div id="inheritedMembers">
         <div class="parent" name="org.apache.spark.sql.execution.columnar.ResultSetIterator">
               <h3>Inherited from <span class="extype" name="org.apache.spark.sql.execution.columnar.ResultSetIterator">ResultSetIterator</span>[<span class="extype" name="java.lang.Void">Void</span>]</h3>
+            </div><div class="parent" name="org.apache.spark.sql.execution.BucketsBasedIterator">
+              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.execution.BucketsBasedIterator">BucketsBasedIterator</span></h3>
             </div><div class="parent" name="org.apache.spark.Logging">
               <h3>Inherited from <a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></h3>
             </div><div class="parent" name="scala.collection.Iterator">

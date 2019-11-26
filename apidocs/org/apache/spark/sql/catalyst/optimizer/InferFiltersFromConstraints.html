@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>EliminateOuterJoin - snappydata_2.11 1.1.1 API - org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin</title>
-          <meta name="description" content="EliminateOuterJoin - snappydata 2.11 1.1.1 API - org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin" />
-          <meta name="keywords" content="EliminateOuterJoin snappydata 2.11 1.1.1 API org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin" />
+          <title>InferFiltersFromConstraints - snappydata_2.11 1.1.1 API - org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints</title>
+          <meta name="description" content="InferFiltersFromConstraints - snappydata 2.11 1.1.1 API - org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints" />
+          <meta name="keywords" content="InferFiltersFromConstraints snappydata 2.11 1.1.1 API org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -16,7 +16,7 @@
       <script type="text/javascript">
          if(top === self) {
             var url = '../../../../../../index.html';
-            var hash = 'org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$';
+            var hash = 'org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -26,14 +26,14 @@
    	  </script>
     
         </head>
-        <body class="value">
+        <body class="type">
       <div id="definition">
-        <img alt="Object" src="../../../../../../lib/object_big.png" />
+        <img alt="Class" src="../../../../../../lib/class_big.png" />
         <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.catalyst">catalyst</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.catalyst.optimizer">optimizer</a></p>
-        <h1>EliminateOuterJoin</h1><h3><span class="morelinks"><div>Related Doc:
+        <h1>InferFiltersFromConstraints</h1><h3><span class="morelinks"><div>Related Doc:
             <a href="package.html" class="extype" name="org.apache.spark.sql.catalyst.optimizer">package optimizer</a>
           </div></span></h3><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -42,22 +42,21 @@
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">object</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">EliminateOuterJoin</span><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></span>
+        <span class="name">InferFiltersFromConstraints</span><span class="params">(<span name="conf">conf: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Elimination of outer joins, if the predicates can restrict the result sets so that
-all null-supplying rows are eliminated</p><p>- full outer -&gt; inner if both sides have such predicates
-- left outer -&gt; inner if the right side has such predicates
-- right outer -&gt; inner if the left side has such predicates
-- full outer -&gt; left outer if only the left side has such predicates
-- full outer -&gt; right outer if only the right side has such predicates</p><p>This rule should be executed before pushing down the Filter
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Generate a list of additional filters from an operator's existing constraint but remove those
+that are either already part of the operator's condition or are part of the operator's child
+constraints. These filters are currently inserted to the existing conditions in the Filter
+operators and on either side of Join operators.</p><p>Note: While this optimization is applicable to all types of join, it primarily benefits Inner and
+LeftSemi joins.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a>, <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a>, <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>], <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -75,7 +74,7 @@ all null-supplying rows are eliminated</p><p>- full outer -&gt; inner if both si
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin"><span>EliminateOuterJoin</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper"><span>PredicateHelper</span></li><li class="in" name="org.apache.spark.sql.catalyst.rules.Rule"><span>Rule</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints"><span>InferFiltersFromConstraints</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper"><span>PredicateHelper</span></li><li class="in" name="org.apache.spark.sql.catalyst.rules.Rule"><span>Rule</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -92,7 +91,27 @@ all null-supplying rows are eliminated</p><p>- full outer -&gt; inner if both si
 
       <div id="template">
         <div id="allMembers">
-        
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(conf:org.apache.spark.sql.catalyst.CatalystConf):org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints"></a>
+      <a id="&lt;init&gt;:InferFiltersFromConstraints"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">InferFiltersFromConstraints</span><span class="params">(<span name="conf">conf: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@&lt;init&gt;(conf:org.apache.spark.sql.catalyst.CatalystConf):org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
 
         
 
@@ -112,7 +131,7 @@ all null-supplying rows are eliminated</p><p>- full outer -&gt; inner if both si
         <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@!=(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -129,7 +148,7 @@ all null-supplying rows are eliminated</p><p>- full outer -&gt; inner if both si
         <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@##():Int" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@##():Int" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -146,12 +165,12 @@ all null-supplying rows are eliminated</p><p>- full outer -&gt; inner if both si
         <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@==(x$1:Any):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@==(x$1:Any):Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="apply(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
       <a id="apply(LogicalPlan):LogicalPlan"></a>
       <h4 class="signature">
@@ -163,11 +182,11 @@ all null-supplying rows are eliminated</p><p>- full outer -&gt; inner if both si
         <span class="name">apply</span><span class="params">(<span name="plan">plan: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@apply(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@apply(plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin">EliminateOuterJoin</a> → <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints">InferFiltersFromConstraints</a> → <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -180,7 +199,7 @@ all null-supplying rows are eliminated</p><p>- full outer -&gt; inner if both si
         <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@asInstanceOf[T0]:T0" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -197,7 +216,7 @@ all null-supplying rows are eliminated</p><p>- full outer -&gt; inner if both si
         <span class="name">canEvaluate</span><span class="params">(<span name="expr">expr: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="plan">plan: <a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@canEvaluate(expr:org.apache.spark.sql.catalyst.expressions.Expression,plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@canEvaluate(expr:org.apache.spark.sql.catalyst.expressions.Expression,plan:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -219,7 +238,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">canEvaluateWithinJoin</span><span class="params">(<span name="expr">expr: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@canEvaluateWithinJoin(expr:org.apache.spark.sql.catalyst.expressions.Expression):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@canEvaluateWithinJoin(expr:org.apache.spark.sql.catalyst.expressions.Expression):Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -237,7 +256,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@clone():Object" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@clone():Object" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -248,6 +267,23 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints#conf" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="conf:org.apache.spark.sql.catalyst.CatalystConf"></a>
+      <a id="conf:CatalystConf"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">conf</span><span class="result">: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@conf:org.apache.spark.sql.catalyst.CatalystConf" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -260,28 +296,11 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="equals(x$1:Any):Boolean"></a>
-      <a id="equals(Any):Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@equals(x$1:Any):Boolean" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -294,7 +313,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@finalize():Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@finalize():Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -317,24 +336,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@getClass():Class[_]" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="hashCode():Int"></a>
-      <a id="hashCode():Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@hashCode():Int" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@getClass():Class[_]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -351,7 +353,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">initializeLogIfNecessary</span><span class="params">(<span name="isInterpreter">isInterpreter: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -368,7 +370,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -385,7 +387,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@isTraceEnabled():Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@isTraceEnabled():Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -402,7 +404,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">log</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@log:org.slf4j.Logger" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@log:org.slf4j.Logger" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -419,7 +421,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -436,7 +438,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@logDebug(msg:=&gt;String):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@logDebug(msg:=&gt;String):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -453,7 +455,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@logError(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@logError(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -470,7 +472,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@logError(msg:=&gt;String):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@logError(msg:=&gt;String):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -487,7 +489,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -504,7 +506,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@logInfo(msg:=&gt;String):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@logInfo(msg:=&gt;String):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -521,7 +523,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">logName</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@logName:String" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@logName:String" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -538,7 +540,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@logTrace(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@logTrace(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -555,7 +557,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@logTrace(msg:=&gt;String):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@logTrace(msg:=&gt;String):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -572,7 +574,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@logWarning(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@logWarning(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -589,7 +591,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@logWarning(msg:=&gt;String):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@logWarning(msg:=&gt;String):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -606,7 +608,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -623,7 +625,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@notify():Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@notify():Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -640,7 +642,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@notifyAll():Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@notifyAll():Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -657,7 +659,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">replaceAlias</span><span class="params">(<span name="condition">condition: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="aliases">aliases: <a href="../expressions/AttributeMap.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeMap">AttributeMap</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result">: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@replaceAlias(condition:org.apache.spark.sql.catalyst.expressions.Expression,aliases:org.apache.spark.sql.catalyst.expressions.AttributeMap[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@replaceAlias(condition:org.apache.spark.sql.catalyst.expressions.Expression,aliases:org.apache.spark.sql.catalyst.expressions.AttributeMap[org.apache.spark.sql.catalyst.expressions.Expression]):org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -674,7 +676,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">ruleName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@ruleName:String" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@ruleName:String" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -691,7 +693,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">splitConjunctivePredicates</span><span class="params">(<span name="condition">condition: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@splitConjunctivePredicates(condition:org.apache.spark.sql.catalyst.expressions.Expression):Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@splitConjunctivePredicates(condition:org.apache.spark.sql.catalyst.expressions.Expression):Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -708,7 +710,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">splitDisjunctivePredicates</span><span class="params">(<span name="condition">condition: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@splitDisjunctivePredicates(condition:org.apache.spark.sql.catalyst.expressions.Expression):Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@splitDisjunctivePredicates(condition:org.apache.spark.sql.catalyst.expressions.Expression):Seq[org.apache.spark.sql.catalyst.expressions.Expression]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -725,28 +727,11 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="toString():String"></a>
-      <a id="toString():String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@toString():String" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -759,7 +744,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@wait():Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@wait():Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -782,7 +767,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -805,7 +790,7 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin$@wait(x$1:Long):Unit" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints@wait(x$1:Long):Unit" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -825,7 +810,15 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">
+        <div class="parent" name="scala.Serializable">
+              <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="scala.Product">
+              <h3>Inherited from <span class="extype" name="scala.Product">Product</span></h3>
+            </div><div class="parent" name="scala.Equals">
+              <h3>Inherited from <span class="extype" name="scala.Equals">Equals</span></h3>
+            </div><div class="parent" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">
               <h3>Inherited from <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.catalyst.rules.Rule">
               <h3>Inherited from <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</h3>

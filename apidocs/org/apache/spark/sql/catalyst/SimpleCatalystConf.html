@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">SimpleCatalystConf</span><span class="params">(<span name="caseSensitiveAnalysis">caseSensitiveAnalysis: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="orderByOrdinal">orderByOrdinal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="groupByOrdinal">groupByOrdinal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="optimizerMaxIterations">optimizerMaxIterations: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">100</span></span>, <span name="optimizerInSetConversionThreshold">optimizerInSetConversionThreshold: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">10</span></span>, <span name="maxCaseBranchesForCodegen">maxCaseBranchesForCodegen: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">20</span></span>, <span name="runSQLonFile">runSQLonFile: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="crossJoinEnabled">crossJoinEnabled: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="warehousePath">warehousePath: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;/user/hive/warehouse&quot;</span></span>)</span><span class="result"> extends <a href="../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">SimpleCatalystConf</span><span class="params">(<span name="caseSensitiveAnalysis">caseSensitiveAnalysis: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="orderByOrdinal">orderByOrdinal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="groupByOrdinal">groupByOrdinal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="optimizerMaxIterations">optimizerMaxIterations: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">100</span></span>, <span name="optimizerInSetConversionThreshold">optimizerInSetConversionThreshold: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">10</span></span>, <span name="maxCaseBranchesForCodegen">maxCaseBranchesForCodegen: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">20</span></span>, <span name="runSQLonFile">runSQLonFile: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="crossJoinEnabled">crossJoinEnabled: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="warehousePath">warehousePath: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;/user/hive/warehouse&quot;</span></span>, <span name="constraintPropagationEnabled">constraintPropagationEnabled: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result"> extends <a href="../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -92,7 +92,7 @@ eventually be removed (test cases should just create SQLConf and set values appr
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.catalyst.SimpleCatalystConf#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(caseSensitiveAnalysis:Boolean,orderByOrdinal:Boolean,groupByOrdinal:Boolean,optimizerMaxIterations:Int,optimizerInSetConversionThreshold:Int,maxCaseBranchesForCodegen:Int,runSQLonFile:Boolean,crossJoinEnabled:Boolean,warehousePath:String):org.apache.spark.sql.catalyst.SimpleCatalystConf"></a>
+      <a id="&lt;init&gt;(caseSensitiveAnalysis:Boolean,orderByOrdinal:Boolean,groupByOrdinal:Boolean,optimizerMaxIterations:Int,optimizerInSetConversionThreshold:Int,maxCaseBranchesForCodegen:Int,runSQLonFile:Boolean,crossJoinEnabled:Boolean,warehousePath:String,constraintPropagationEnabled:Boolean):org.apache.spark.sql.catalyst.SimpleCatalystConf"></a>
       <a id="&lt;init&gt;:SimpleCatalystConf"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -100,10 +100,10 @@ eventually be removed (test cases should just create SQLConf and set values appr
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SimpleCatalystConf</span><span class="params">(<span name="caseSensitiveAnalysis">caseSensitiveAnalysis: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="orderByOrdinal">orderByOrdinal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="groupByOrdinal">groupByOrdinal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="optimizerMaxIterations">optimizerMaxIterations: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">100</span></span>, <span name="optimizerInSetConversionThreshold">optimizerInSetConversionThreshold: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">10</span></span>, <span name="maxCaseBranchesForCodegen">maxCaseBranchesForCodegen: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">20</span></span>, <span name="runSQLonFile">runSQLonFile: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="crossJoinEnabled">crossJoinEnabled: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="warehousePath">warehousePath: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;/user/hive/warehouse&quot;</span></span>)</span>
+        <span class="name">SimpleCatalystConf</span><span class="params">(<span name="caseSensitiveAnalysis">caseSensitiveAnalysis: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="orderByOrdinal">orderByOrdinal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="groupByOrdinal">groupByOrdinal: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="optimizerMaxIterations">optimizerMaxIterations: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">100</span></span>, <span name="optimizerInSetConversionThreshold">optimizerInSetConversionThreshold: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">10</span></span>, <span name="maxCaseBranchesForCodegen">maxCaseBranchesForCodegen: <span class="extype" name="scala.Int">Int</span> = <span class="symbol">20</span></span>, <span name="runSQLonFile">runSQLonFile: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>, <span name="crossJoinEnabled">crossJoinEnabled: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>, <span name="warehousePath">warehousePath: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;/user/hive/warehouse&quot;</span></span>, <span name="constraintPropagationEnabled">constraintPropagationEnabled: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.SimpleCatalystConf@&lt;init&gt;(caseSensitiveAnalysis:Boolean,orderByOrdinal:Boolean,groupByOrdinal:Boolean,optimizerMaxIterations:Int,optimizerInSetConversionThreshold:Int,maxCaseBranchesForCodegen:Int,runSQLonFile:Boolean,crossJoinEnabled:Boolean,warehousePath:String):org.apache.spark.sql.catalyst.SimpleCatalystConf" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.SimpleCatalystConf@&lt;init&gt;(caseSensitiveAnalysis:Boolean,orderByOrdinal:Boolean,groupByOrdinal:Boolean,optimizerMaxIterations:Int,optimizerInSetConversionThreshold:Int,maxCaseBranchesForCodegen:Int,runSQLonFile:Boolean,crossJoinEnabled:Boolean,warehousePath:String,constraintPropagationEnabled:Boolean):org.apache.spark.sql.catalyst.SimpleCatalystConf" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -378,6 +378,23 @@ eventually be removed (test cases should just create SQLConf and set values appr
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.SimpleCatalystConf#constraintPropagationEnabled" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="constraintPropagationEnabled:Boolean"></a>
+      <a id="constraintPropagationEnabled:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">constraintPropagationEnabled</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.SimpleCatalystConf@constraintPropagationEnabled:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.SimpleCatalystConf">SimpleCatalystConf</a> → <a href="../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SQLConf#contains" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="contains(key:String):Boolean"></a>
       <a id="contains(String):Boolean"></a>
@@ -1386,6 +1403,23 @@ not set yet, return <code>defaultValue</code>.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.catalyst.SimpleCatalystConf@manageFilesourcePartitions:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SQLConf#maxBatchesToRetainInMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="maxBatchesToRetainInMemory:Int"></a>
+      <a id="maxBatchesToRetainInMemory:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">maxBatchesToRetainInMemory</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.SimpleCatalystConf@maxBatchesToRetainInMemory:Int" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

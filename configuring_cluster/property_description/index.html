@@ -98,14 +98,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setup SnappyData Cluster on AWS</a>
+        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting-up SnappyData Cluster on AWS</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../kubernetes/">Setup SnappyData Cluster on Kubernetes</a>
+        <a class="" href="../../kubernetes/">Setting-up SnappyData Cluster on Kubernetes</a>
         
     </li>
 
@@ -156,13 +156,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../quickstart/getting_started_on_kubernetes/">Kubernetes</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_with_docker_image/">Docker Image</a>
         
     </li>
 
@@ -2562,6 +2555,11 @@
 <td>-spark.sql.autoBroadcastJoinThreshold</td>
 <td>Configures the maximum size in bytes for a table that is broadcast to all server nodes when performing a join.  By setting this value to <strong>-1</strong> broadcasting can be disabled.</td>
 <td></td>
+</tr>
+<tr>
+<td>-spark.sql.codegen.wholeStage<a id="wholeStageCodeGen"></a></td>
+<td>Turn ON/OFF whole stage code generation in Spark/Snappy SQL. The default is True.</td>
+<td>Lead</td>
 </tr>
 <tr>
 <td>-spark.sql.codegen.cacheSize<a id="codegencache"></a></td>

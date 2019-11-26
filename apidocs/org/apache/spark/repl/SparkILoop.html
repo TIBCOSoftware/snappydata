@@ -55,7 +55,10 @@
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.tools.nsc.interpreter.ILoop">ILoop</span>, <span class="extype" name="scala.tools.nsc.interpreter.LoopCommands">LoopCommands</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
-        </div></div>
+        </div><div class="toggleContainer block">
+            <span class="toggle">Known Subclasses</span>
+            <div class="subClasses hiddenContent"><a href="../../../../io/snappydata/remote/interpreter/RemoteILoop.html" class="extype" name="io.snappydata.remote.interpreter.RemoteILoop">RemoteILoop</a></div>
+          </div></div>
         
 
       <div id="mbrsel">
@@ -307,8 +310,42 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.tools.nsc.interpreter.LoopCommands.LoopCommand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="LoopCommand"></a>
+      <a id="LoopCommand:LoopCommand"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <span class="name">LoopCommand</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.repl.SparkILoop@LoopCommand" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>LoopCommands</dd></dl></div>
+    </li><li name="scala.tools.nsc.interpreter.LoopCommands.Result" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Result"></a>
+      <a id="Result:Result"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Result</span><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.repl.SparkILoop@Result" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>LoopCommands</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#addReplay" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="addReplay(cmd:&lt;?&gt;):Unit"></a>
+      <a id="addReplay(cmd:String):Unit"></a>
       <a id="addReplay(String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -342,7 +379,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#asyncEcho" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="asyncEcho(async:&lt;?&gt;,msg:&lt;?&gt;):Unit"></a>
+      <a id="asyncEcho(async:Boolean,msg:=&gt;String):Unit"></a>
       <a id="asyncEcho(Boolean,⇒String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -359,7 +396,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#asyncMessage" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="asyncMessage(msg:&lt;?&gt;):Unit"></a>
+      <a id="asyncMessage(msg:String):Unit"></a>
       <a id="asyncMessage(String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -376,7 +413,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#chooseReader" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="chooseReader(settings:&lt;?&gt;):scala.tools.nsc.interpreter.InteractiveReader"></a>
+      <a id="chooseReader(settings:scala.tools.nsc.Settings):scala.tools.nsc.interpreter.InteractiveReader"></a>
       <a id="chooseReader(Settings):InteractiveReader"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -433,7 +470,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#command" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="command(line:&lt;?&gt;):ILoop.this.Result"></a>
+      <a id="command(line:String):ILoop.this.Result"></a>
       <a id="command(String):Result"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -501,7 +538,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#echoAndRefresh" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="echoAndRefresh(msg:&lt;?&gt;):Unit"></a>
+      <a id="echoAndRefresh(msg:String):Unit"></a>
       <a id="echoAndRefresh(String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -535,7 +572,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ILoop → LoopCommands</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#editCommand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="editCommand(what:&lt;?&gt;,editor:&lt;?&gt;):ILoop.this.Result"></a>
+      <a id="editCommand(what:String,editor:Option[String]):ILoop.this.Result"></a>
       <a id="editCommand(String,Option[String]):Result"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -552,7 +589,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#editCommand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="editCommand(what:&lt;?&gt;):ILoop.this.Result"></a>
+      <a id="editCommand(what:String):ILoop.this.Result"></a>
       <a id="editCommand(String):Result"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -569,7 +606,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#enablePowerMode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="enablePowerMode(isDuringInit:&lt;?&gt;):Unit"></a>
+      <a id="enablePowerMode(isDuringInit:Boolean):Unit"></a>
       <a id="enablePowerMode(Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -677,7 +714,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#helpCommand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="helpCommand(line:&lt;?&gt;):ILoop.this.Result"></a>
+      <a id="helpCommand(line:String):ILoop.this.Result"></a>
       <a id="helpCommand(String):Result"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -762,7 +799,7 @@
     </span>
       
     </li><li name="scala.tools.nsc.interpreter.ILoop#interpretAllFrom" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="interpretAllFrom(file:&lt;?&gt;,verbose:&lt;?&gt;):Unit"></a>
+      <a id="interpretAllFrom(file:scala.reflect.io.File,verbose:Boolean):Unit"></a>
       <a id="interpretAllFrom(File,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -779,7 +816,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#interpretStartingWith" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="interpretStartingWith(code:&lt;?&gt;):Option[String]"></a>
+      <a id="interpretStartingWith(code:String):Option[String]"></a>
       <a id="interpretStartingWith(String):Option[String]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -830,7 +867,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#lineCommand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="lineCommand(what:&lt;?&gt;):ILoop.this.Result"></a>
+      <a id="lineCommand(what:String):ILoop.this.Result"></a>
       <a id="lineCommand(String):Result"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -847,7 +884,7 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#loadCommand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="loadCommand(arg:&lt;?&gt;):ILoop.this.Result"></a>
+      <a id="loadCommand(arg:String):ILoop.this.Result"></a>
       <a id="loadCommand(String):Result"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -990,7 +1027,7 @@ hack, but there isn't another hook available to us at this point.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>ILoop → LoopCommands</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#pasteCommand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="pasteCommand(arg:&lt;?&gt;):ILoop.this.Result"></a>
+      <a id="pasteCommand(arg:String):ILoop.this.Result"></a>
       <a id="pasteCommand(String):Result"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1143,7 +1180,7 @@ hack, but there isn't another hook available to us at this point.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#replayCommand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="replayCommand(line:&lt;?&gt;):Unit"></a>
+      <a id="replayCommand(line:String):Unit"></a>
       <a id="replayCommand(String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1211,7 +1248,7 @@ hack, but there isn't another hook available to us at this point.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#require" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="require(arg:&lt;?&gt;):Unit"></a>
+      <a id="require(arg:String):Unit"></a>
       <a id="require(String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1262,7 +1299,7 @@ hack, but there isn't another hook available to us at this point.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.repl.SparkILoop">SparkILoop</a> → ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#saveCommand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="saveCommand(filename:&lt;?&gt;):ILoop.this.Result"></a>
+      <a id="saveCommand(filename:String):ILoop.this.Result"></a>
       <a id="saveCommand(String):Result"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1279,7 +1316,7 @@ hack, but there isn't another hook available to us at this point.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#savingReader" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="savingReader[T&lt;:&lt;?&gt;](body:&lt;?&gt;):T"></a>
+      <a id="savingReader[T](body:=&gt;T):T"></a>
       <a id="savingReader[T](⇒T):T"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1296,7 +1333,7 @@ hack, but there isn't another hook available to us at this point.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#savingReplayStack" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="savingReplayStack[T&lt;:&lt;?&gt;](body:&lt;?&gt;):T"></a>
+      <a id="savingReplayStack[T](body:=&gt;T):T"></a>
       <a id="savingReplayStack[T](⇒T):T"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1313,7 +1350,7 @@ hack, but there isn't another hook available to us at this point.
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ILoop</dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#searchHistory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="searchHistory(_cmdline:&lt;?&gt;):Unit"></a>
+      <a id="searchHistory(_cmdline:String):Unit"></a>
       <a id="searchHistory(String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1518,7 +1555,7 @@ hack, but there isn't another hook available to us at this point.
               
         </dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#withFile" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="withFile[A&lt;:&lt;?&gt;](filename:&lt;?&gt;)(action:&lt;?&gt;):Option[A]"></a>
+      <a id="withFile[A](filename:String)(action:scala.reflect.io.File=&gt;A):Option[A]"></a>
       <a id="withFile[A](String)((File)⇒A):Option[A]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1542,7 +1579,7 @@ hack, but there isn't another hook available to us at this point.
         <div id="values" class="values members">
               <h3>Deprecated Value Members</h3>
               <ol><li name="scala.tools.nsc.interpreter.ILoop#addClasspath" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="addClasspath(arg:&lt;?&gt;):Unit"></a>
+      <a id="addClasspath(arg:String):Unit"></a>
       <a id="addClasspath(String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1602,7 +1639,7 @@ hack, but there isn't another hook available to us at this point.
               
         </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.9.0)</i> Use <code>intp</code> instead.</p></dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#interpreter_=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="interpreter_=(i:&lt;?&gt;):Unit"></a>
+      <a id="interpreter_=(i:scala.tools.nsc.Interpreter):Unit"></a>
       <a id="interpreter_=(Interpreter):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -1622,7 +1659,7 @@ hack, but there isn't another hook available to us at this point.
               
         </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.9.0)</i> Use <code>intp</code> instead.</p></dd></dl></div>
     </li><li name="scala.tools.nsc.interpreter.ILoop#main" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="main(settings:&lt;?&gt;):Unit"></a>
+      <a id="main(settings:scala.tools.nsc.Settings):Unit"></a>
       <a id="main(Settings):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">

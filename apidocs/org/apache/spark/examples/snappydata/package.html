@@ -388,7 +388,7 @@ connect client 'localhost:1527';</p><p>5. Create a column table and insert some 
 insert into SNAPPY_COL_TABLE VALUES(2,2);</p><p>6. Run this example to see how this program interacts with the Snappy Cluster
 table (SNAPPY_COL_TABLE) that we created. This program also creates a table in SnappyStore.
 After running this example you can also query the table from Snappy shell
-e.g. select count(*) from TestColumnTable.</p><p>bin/run-example snappydata.SmartConnectorExample</p></div></div>
+e.g. select count(*) from TestColumnTable.</p><p>bin/run-example snappydata.SmartConnectorExample spark.snappydata.connection=localhost:1527</p></div></div>
     </li><li name="org.apache.spark.examples.snappydata.StreamingExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="StreamingExample"></a>
       <a id="StreamingExample:StreamingExample"></a>

@@ -1069,6 +1069,23 @@ their output.</p></div><dl class="paramcmts block"><dt class="param">generator</
       </a>
     </span>
       <p class="shortcomment cmt">Take the first <code>limit</code> elements of the child's single output partition.</p>
+    </li><li name="org.apache.spark.sql.execution.GrantRevokeIntpCommand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GrantRevokeIntpCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
+      <a id="GrantRevokeIntpCommand:GrantRevokeIntpCommand"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="GrantRevokeIntpCommand.html"><span class="name">GrantRevokeIntpCommand</span></a><span class="params">(<span name="isGrant">isGrant: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="users">users: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@GrantRevokeIntpCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.GroupedIterator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="GroupedIteratorextendsIterator[(org.apache.spark.sql.catalyst.InternalRow,Iterator[org.apache.spark.sql.catalyst.InternalRow])]"></a>
       <a id="GroupedIterator:GroupedIterator"></a>
@@ -1170,6 +1187,29 @@ The purpose for that is:
     </span>
       <p class="shortcomment cmt">InputAdapter is used to hide a SparkPlan from a subtree that support codegen.</p><div class="fullcomment"><div class="comment cmt"><p>InputAdapter is used to hide a SparkPlan from a subtree that support codegen.</p><p>This is the leaf node of a tree with WholeStageCodegen that is used to generate code
 that consumes an RDD iterator of InternalRow.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.InterpretCodeCommand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="InterpretCodeCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
+      <a id="InterpretCodeCommand:InterpretCodeCommand"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="InterpretCodeCommand.html"><span class="name">InterpretCodeCommand</span></a><span class="params">(<span name="code">code: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@InterpretCodeCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Allow execution of adhoc scala code on the Lead node.</p><div class="fullcomment"><div class="comment cmt"><p>Allow execution of adhoc scala code on the Lead node.
+Creates a new Scala interpreter for a Snappy Session. But, cached for the life of the
+session. Subsequent invocations of the 'interpret' command will resuse the cached
+interpreter. Allowing any variables (e.g. dataframe) to be preserved across invocations.
+State will not be preserved during Lead node failover.</p><p> Application is injected (1) The SnappySession in variable called 'session' and
+(2) The Options in a variable called 'intp_options'.</p><p> To return values set a variable called 'intp_return' - a Seq[Row].
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.IntervalTracker" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="IntervalTrackerextendsAnyRef"></a>
@@ -1761,7 +1801,7 @@ iterator to consume the next row, whereas RowIterator combines these calls into 
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="SHAMapAccessor.html"><span class="name">SHAMapAccessor</span></a><span class="params">(<span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="ctx">ctx: <a href="../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="keyExprs">keyExprs: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="valueExprs">valueExprs: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="classPrefix">classPrefix: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="hashMapTerm">hashMapTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="overflowHashMapsTerm">overflowHashMapsTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyValSize">keyValSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="valueOffsetTerm">valueOffsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numKeyBytesTerm">numKeyBytesTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numValueBytes">numValueBytes: <span class="extype" name="scala.Int">Int</span></span>, <span name="currentOffSetForMapLookupUpdt">currentOffSetForMapLookupUpdt: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueDataTerm">valueDataTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="vdBaseObjectTerm">vdBaseObjectTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="vdBaseOffsetTerm">vdBaseOffsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="nullKeysBitsetTerm">nullKeysBitsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numBytesForNullKeyBits">numBytesForNullKeyBits: <span class="extype" name="scala.Int">Int</span></span>, <span name="allocatorTerm">allocatorTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numBytesForNullAggBits">numBytesForNullAggBits: <span class="extype" name="scala.Int">Int</span></span>, <span name="nullAggsBitsetTerm">nullAggsBitsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="sizeAndNumNotNullFuncForStringArr">sizeAndNumNotNullFuncForStringArr: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyBytesHolderVarTerm">keyBytesHolderVarTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseKeyObject">baseKeyObject: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseKeyHolderOffset">baseKeyHolderOffset: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyExistedTerm">keyExistedTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="skipLenForAttribIndex">skipLenForAttribIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="codeForLenOfSkippedTerm">codeForLenOfSkippedTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueDataCapacityTerm">valueDataCapacityTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="storedAggNullBitsTerm">storedAggNullBitsTerm: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="storedKeyNullBitsTerm">storedKeyNullBitsTerm: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="aggregateBufferVars">aggregateBufferVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="keyHolderCapacityTerm">keyHolderCapacityTerm: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="SHAMapAccessor.html"><span class="name">SHAMapAccessor</span></a><span class="params">(<span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="ctx">ctx: <a href="../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="keyExprs">keyExprs: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="valueExprs">valueExprs: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="classPrefix">classPrefix: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="hashMapTerm">hashMapTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="overflowHashMapsTerm">overflowHashMapsTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyValSize">keyValSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="valueOffsetTerm">valueOffsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numKeyBytesTerm">numKeyBytesTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numValueBytes">numValueBytes: <span class="extype" name="scala.Int">Int</span></span>, <span name="currentOffSetForMapLookupUpdt">currentOffSetForMapLookupUpdt: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueDataTerm">valueDataTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="vdBaseObjectTerm">vdBaseObjectTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="vdBaseOffsetTerm">vdBaseOffsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="nullKeysBitsetTerm">nullKeysBitsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numBytesForNullKeyBits">numBytesForNullKeyBits: <span class="extype" name="scala.Int">Int</span></span>, <span name="allocatorTerm">allocatorTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="numBytesForNullAggBits">numBytesForNullAggBits: <span class="extype" name="scala.Int">Int</span></span>, <span name="nullAggsBitsetTerm">nullAggsBitsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="sizeAndNumNotNullFuncForStringArr">sizeAndNumNotNullFuncForStringArr: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyBytesHolderVarTerm">keyBytesHolderVarTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseKeyObject">baseKeyObject: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="baseKeyHolderOffset">baseKeyHolderOffset: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyExistedTerm">keyExistedTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="skipLenForAttribIndex">skipLenForAttribIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="codeForLenOfSkippedTerm">codeForLenOfSkippedTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="valueDataCapacityTerm">valueDataCapacityTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="storedAggNullBitsTerm">storedAggNullBitsTerm: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="storedKeyNullBitsTerm">storedKeyNullBitsTerm: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="aggregateBufferVars">aggregateBufferVars: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="keyHolderCapacityTerm">keyHolderCapacityTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="shaMapClassName">shaMapClassName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="useCustomHashMap">useCustomHashMap: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="previousSingleKey_Position_LenTerm">previousSingleKey_Position_LenTerm: <span class="extype" name="scala.Option">Option</span>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="codeSplitFuncParamsSize">codeSplitFuncParamsSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="splitAggCode">splitAggCode: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="splitGroupByKeyCode">splitGroupByKeyCode: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="CodegenSupport.html" class="extype" name="org.apache.spark.sql.execution.CodegenSupport">CodegenSupport</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@SHAMapAccessorextendsSparkPlanwithCodegenSupportwithProductwithSerializable" title="Permalink" target="_top">
@@ -3276,6 +3316,23 @@ cases), hence this optimization is currently only for string type.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.aqp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="aqp"></a>
+      <a id="aqp:aqp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="aqp/package.html"><span class="name">aqp</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@aqp" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.bootstrap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="bootstrap"></a>
       <a id="bootstrap:bootstrap"></a>
@@ -3442,6 +3499,23 @@ cases), hence this optimization is currently only for string type.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@metric" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.oplog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="oplog"></a>
+      <a id="oplog:oplog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="oplog/package.html"><span class="name">oplog</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@oplog" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

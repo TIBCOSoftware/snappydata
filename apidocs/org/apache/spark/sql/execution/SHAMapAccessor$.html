@@ -239,7 +239,24 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.SHAMapAccessor#evaluateNullBitsAndEmbedWrite" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="evaluateNullBitsAndEmbedWrite(numBytesForNullBits:Int,expr:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,i:Int,nullBitsTerm:String,offsetTerm:String,dt:org.apache.spark.sql.types.DataType,isKey:Boolean,writingCodeToEmbed:String):String"></a>
+      <a id="evaluateNullBitsAndEmbedWrite(numBytesForNullBits:Int,expr:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,attribIndex:String,nullBitsTerm:String,offsetTerm:String,dt:org.apache.spark.sql.types.DataType,isKey:Boolean,writingCodeToEmbed:String,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String"></a>
+      <a id="evaluateNullBitsAndEmbedWrite(Int,ExprCode,String,String,String,DataType,Boolean,String,CodegenContext):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">evaluateNullBitsAndEmbedWrite</span><span class="params">(<span name="numBytesForNullBits">numBytesForNullBits: <span class="extype" name="scala.Int">Int</span></span>, <span name="expr">expr: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>, <span name="attribIndex">attribIndex: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="nullBitsTerm">nullBitsTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="offsetTerm">offsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dt">dt: <a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="isKey">isKey: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="writingCodeToEmbed">writingCodeToEmbed: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ctx">ctx: <a href="../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SHAMapAccessor$@evaluateNullBitsAndEmbedWrite(numBytesForNullBits:Int,expr:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,attribIndex:String,nullBitsTerm:String,offsetTerm:String,dt:org.apache.spark.sql.types.DataType,isKey:Boolean,writingCodeToEmbed:String,ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.SHAMapAccessor#evaluateNullBitsAndEmbedWrite" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="evaluateNullBitsAndEmbedWrite(numBytesForNullBits:Int,expr:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,attribIndex:Int,nullBitsTerm:String,offsetTerm:String,dt:org.apache.spark.sql.types.DataType,isKey:Boolean,writingCodeToEmbed:String):String"></a>
       <a id="evaluateNullBitsAndEmbedWrite(Int,ExprCode,Int,String,String,DataType,Boolean,String):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -247,10 +264,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">evaluateNullBitsAndEmbedWrite</span><span class="params">(<span name="numBytesForNullBits">numBytesForNullBits: <span class="extype" name="scala.Int">Int</span></span>, <span name="expr">expr: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>, <span name="i">i: <span class="extype" name="scala.Int">Int</span></span>, <span name="nullBitsTerm">nullBitsTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="offsetTerm">offsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dt">dt: <a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="isKey">isKey: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="writingCodeToEmbed">writingCodeToEmbed: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">evaluateNullBitsAndEmbedWrite</span><span class="params">(<span name="numBytesForNullBits">numBytesForNullBits: <span class="extype" name="scala.Int">Int</span></span>, <span name="expr">expr: <a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a></span>, <span name="attribIndex">attribIndex: <span class="extype" name="scala.Int">Int</span></span>, <span name="nullBitsTerm">nullBitsTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="offsetTerm">offsetTerm: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dt">dt: <a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="isKey">isKey: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="writingCodeToEmbed">writingCodeToEmbed: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.SHAMapAccessor$@evaluateNullBitsAndEmbedWrite(numBytesForNullBits:Int,expr:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,i:Int,nullBitsTerm:String,offsetTerm:String,dt:org.apache.spark.sql.types.DataType,isKey:Boolean,writingCodeToEmbed:String):String" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SHAMapAccessor$@evaluateNullBitsAndEmbedWrite(numBytesForNullBits:Int,expr:org.apache.spark.sql.catalyst.expressions.codegen.ExprCode,attribIndex:Int,nullBitsTerm:String,offsetTerm:String,dt:org.apache.spark.sql.types.DataType,isKey:Boolean,writingCodeToEmbed:String):String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -380,6 +397,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.SHAMapAccessor#getObjectTypeForPrimitiveType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getObjectTypeForPrimitiveType(primType:String):String"></a>
+      <a id="getObjectTypeForPrimitiveType(String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getObjectTypeForPrimitiveType</span><span class="params">(<span name="primType">primType: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SHAMapAccessor$@getObjectTypeForPrimitiveType(primType:String):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.SHAMapAccessor#getOffsetIncrementCodeForNullAgg" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="getOffsetIncrementCodeForNullAgg(offsetTerm:String,dt:org.apache.spark.sql.types.DataType):String"></a>
       <a id="getOffsetIncrementCodeForNullAgg(String,DataType):String"></a>
@@ -431,6 +465,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.SHAMapAccessor#initDictionaryCodeForSingleKeyCase" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="initDictionaryCodeForSingleKeyCase(input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],keyExpressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,session:org.apache.spark.sql.SnappySession):Option[org.apache.spark.sql.execution.DictionaryCode]"></a>
+      <a id="initDictionaryCodeForSingleKeyCase(Seq[ExprCode],Seq[Expression],Seq[Attribute],CodegenContext,SnappySession):Option[DictionaryCode]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initDictionaryCodeForSingleKeyCase</span><span class="params">(<span name="input">input: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/codegen/ExprCode.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode">ExprCode</a>]</span>, <span name="keyExpressions">keyExpressions: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="ctx">ctx: <a href="../catalyst/expressions/codegen/CodegenContext.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext">CodegenContext</a></span>, <span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="DictionaryCode.html" class="extype" name="org.apache.spark.sql.execution.DictionaryCode">DictionaryCode</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SHAMapAccessor$@initDictionaryCodeForSingleKeyCase(input:Seq[org.apache.spark.sql.catalyst.expressions.codegen.ExprCode],keyExpressions:Seq[org.apache.spark.sql.catalyst.expressions.Expression],output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute],ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,session:org.apache.spark.sql.SnappySession):Option[org.apache.spark.sql.execution.DictionaryCode]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.SHAMapAccessor#initNullBitsetCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="initNullBitsetCode(nullBitsetTerm:String,numBytesForNullBits:Int):String"></a>
       <a id="initNullBitsetCode(String,Int):String"></a>
@@ -482,6 +533,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.SHAMapAccessor#isPrimitive" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="isPrimitive(dataType:org.apache.spark.sql.types.DataType):Boolean"></a>
+      <a id="isPrimitive(DataType):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isPrimitive</span><span class="params">(<span name="dataType">dataType: <a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.SHAMapAccessor$@isPrimitive(dataType:org.apache.spark.sql.types.DataType):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>

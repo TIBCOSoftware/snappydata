@@ -89,7 +89,24 @@
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="org.apache.spark.sql.execution.ui.SnappySQLListener#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.ui.SnappySQLListener#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(conf:org.apache.spark.SparkConf,source:org.apache.spark.sql.execution.ui.SQLListener):org.apache.spark.sql.execution.ui.SnappySQLListener"></a>
+      <a id="&lt;init&gt;:SnappySQLListener"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SnappySQLListener</span><span class="params">(<span name="conf">conf: <a href="../../../SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>, <span name="source">source: <a href="SQLListener.html" class="extype" name="org.apache.spark.sql.execution.ui.SQLListener">SQLListener</a></span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.ui.SnappySQLListener@&lt;init&gt;(conf:org.apache.spark.SparkConf,source:org.apache.spark.sql.execution.ui.SQLListener):org.apache.spark.sql.execution.ui.SnappySQLListener" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.ui.SnappySQLListener#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="&lt;init&gt;(conf:org.apache.spark.SparkConf):org.apache.spark.sql.execution.ui.SnappySQLListener"></a>
       <a id="&lt;init&gt;:SnappySQLListener"></a>
       <h4 class="signature">
@@ -206,6 +223,23 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ui.SnappySQLListener#copyDataFromSourceListener" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="copyDataFromSourceListener():Unit"></a>
+      <a id="copyDataFromSourceListener():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">copyDataFromSourceListener</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.ui.SnappySQLListener@copyDataFromSourceListener():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -367,18 +401,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SQLListener.html" class="extype" name="org.apache.spark.sql.execution.ui.SQLListener">SQLListener</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.ui.SnappySQLListener#getInternalField" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getInternalField(fieldName:String):Any"></a>
-      <a id="getInternalField(String):Any"></a>
+      <a id="getInternalField(fieldName:String,listenerObject:org.apache.spark.sql.execution.ui.SQLListener):Any"></a>
+      <a id="getInternalField(String,SQLListener):Any"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getInternalField</span><span class="params">(<span name="fieldName">fieldName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
+        <span class="name">getInternalField</span><span class="params">(<span name="fieldName">fieldName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="listenerObject">listenerObject: <a href="SQLListener.html" class="extype" name="org.apache.spark.sql.execution.ui.SQLListener">SQLListener</a> = <span class="symbol">this</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.ui.SnappySQLListener@getInternalField(fieldName:String):Any" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.ui.SnappySQLListener@getInternalField(fieldName:String,listenerObject:org.apache.spark.sql.execution.ui.SQLListener):Any" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1088,6 +1122,23 @@ not need to fetch the result remotely).
       <p class="shortcomment cmt">Called when an RDD is manually unpersisted by the application
 </p><div class="fullcomment"><div class="comment cmt"><p>Called when an RDD is manually unpersisted by the application
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../scheduler/SparkListener.html" class="extype" name="org.apache.spark.scheduler.SparkListener">SparkListener</a> → SparkListenerInterface</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ui.SnappySQLListener#sourceListener" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sourceListener:org.apache.spark.sql.execution.ui.SQLListener"></a>
+      <a id="sourceListener:SQLListener"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sourceListener</span><span class="result">: <a href="SQLListener.html" class="extype" name="org.apache.spark.sql.execution.ui.SQLListener">SQLListener</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.ui.SnappySQLListener@sourceListener:org.apache.spark.sql.execution.ui.SQLListener" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.ui.SQLListener#stageIdToStageMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="stageIdToStageMetrics:Map[Long,org.apache.spark.sql.execution.ui.SQLStageMetrics]"></a>
       <a id="stageIdToStageMetrics:Map[Long,SQLStageMetrics]"></a>

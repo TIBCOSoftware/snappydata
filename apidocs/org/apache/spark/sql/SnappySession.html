@@ -1426,6 +1426,23 @@ the query planner for advanced functionality.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.SnappySession#getDDLSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getDDLSchema(schema:org.apache.spark.sql.types.StructType):String"></a>
+      <a id="getDDLSchema(StructType):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDDLSchema</span><span class="params">(<span name="schema">schema: <a href="types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@getDDLSchema(schema:org.apache.spark.sql.types.StructType):String" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.SnappySession#getDictionaryCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="getDictionaryCode(ctx:org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext,keyVar:String):Option[org.apache.spark.sql.execution.DictionaryCode]"></a>
       <a id="getDictionaryCode(CodegenContext,String):Option[DictionaryCode]"></a>
@@ -1457,6 +1474,42 @@ using <span class="extype" name="addDictionaryCode">addDictionaryCode</span>.</p
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.SnappySession@getPreviousQueryHints:java.util.Map[String,String]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.SnappySession#getPrimaryKeys" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getPrimaryKeys(schema:String,table:String):Array[String]"></a>
+      <a id="getPrimaryKeys(String,String):Array[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getPrimaryKeys</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@getPrimaryKeys(schema:String,table:String):Array[String]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Queries sys.indexes table and returns csv string of primary column names of given table
+</p><div class="fullcomment"><div class="comment cmt"><p>Queries sys.indexes table and returns csv string of primary column names of given table
+</p></div><dl class="paramcmts block"><dt class="param">schema</dt><dd class="cmt"><p>schema  that the table belongs to</p></dd><dt class="param">table</dt><dd class="cmt"><p>table for which primary keys are to be found</p></dd><dt>returns</dt><dd class="cmt"><p>primary keys of given table as csv string</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.SnappySession#getSQLType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getSQLType(dataType:org.apache.spark.sql.types.DataType):String"></a>
+      <a id="getSQLType(DataType):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getSQLType</span><span class="params">(<span name="dataType">dataType: <a href="types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappySession@getSQLType(dataType:org.apache.spark.sql.types.DataType):String" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

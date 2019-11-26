@@ -1195,6 +1195,40 @@ If no database is specified, this will return the function in the current databa
       <p class="shortcomment cmt">Retrieve the metadata of a table partition, assuming it exists.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieve the metadata of a table partition, assuming it exists.
 If no database is specified, assume the table is in the current database.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#getSampleRelations" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getSampleRelations(baseTable:org.apache.spark.sql.catalyst.TableIdentifier):Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,String)]"></a>
+      <a id="getSampleRelations(TableIdentifier):Seq[(LogicalPlan,String)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getSampleRelations</span><span class="params">(<span name="baseTable">baseTable: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@getSampleRelations(baseTable:org.apache.spark.sql.catalyst.TableIdentifier):Seq[(org.apache.spark.sql.catalyst.plans.logical.LogicalPlan,String)]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#getSamples" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getSamples(base:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
+      <a id="getSamples(LogicalPlan):Seq[LogicalPlan]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getSamples</span><span class="params">(<span name="base">base: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@getSamples(base:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Seq[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#getSchemaName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="getSchemaName(identifier:org.apache.spark.sql.catalyst.IdentifierWithDatabase):String"></a>
       <a id="getSchemaName(IdentifierWithDatabase):String"></a>

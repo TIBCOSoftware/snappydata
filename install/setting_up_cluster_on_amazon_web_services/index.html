@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Setup SnappyData Cluster on AWS - SnappyData™ 1.1.1</title>
+  <title>Setting-up SnappyData Cluster on AWS - SnappyData™ 1.1.1</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -30,7 +30,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Setup SnappyData Cluster on AWS";
+    var mkdocs_page_name = "Setting-up SnappyData Cluster on AWS";
     var mkdocs_page_input_path = "install/setting_up_cluster_on_amazon_web_services.md";
     var mkdocs_page_url = "/install/setting_up_cluster_on_amazon_web_services/";
   </script>
@@ -98,7 +98,7 @@
         
             
     <li class="toctree-l1 current">
-        <a class="current" href="./">Setup SnappyData Cluster on AWS</a>
+        <a class="current" href="./">Setting-up SnappyData Cluster on AWS</a>
         
             <ul>
             
@@ -116,7 +116,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../kubernetes/">Setup SnappyData Cluster on Kubernetes</a>
+        <a class="" href="../../kubernetes/">Setting-up SnappyData Cluster on Kubernetes</a>
         
     </li>
 
@@ -167,13 +167,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../quickstart/getting_started_on_kubernetes/">Kubernetes</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_with_docker_image/">Docker Image</a>
         
     </li>
 
@@ -2321,7 +2314,7 @@ For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section o
 
 <p><a id="EC2"></a></p>
 <h2 id="snappydata-ec2-scripts">SnappyData EC2 Scripts</h2>
-<p>The SnappyData EC2 scripts enable you to quickly launch and manage SnappyData clusters on Amazon EC2 instances. They also allow you to provide custom configuration for the cluster via SnappyData configuration files, before launching the cluster.</p>
+<p>The SnappyData EC2 scripts enable you to launch and manage SnappyData clusters quickly on Amazon EC2 instances. They also allow you to provide custom configuration for the cluster via SnappyData configuration files, before launching the cluster.</p>
 <p>The <code>snappy-ec2</code> script is the entry point for these EC2 scripts and is derived from the <code>spark-ec2</code> script available in <a href="https://github.com/apache/spark/tree/branch-1.6/ec2">Apache Spark 1.6</a>.</p>
 <p>The scripts are available on GitHub in the <a href="https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2">snappy-cloud-tools repository</a> and also as a <strong>.tar.gz</strong> file on <a href="https://github.com/SnappyDataInc/snappy-cloud-tools/releases">the release page</a> file.</p>
 <div class="admonition note">
@@ -2367,10 +2360,10 @@ aws/ec2 directory where the <a href="https://github.com/SnappyDataInc/snappy-clo
 <p>Here:</p>
 <ul>
 <li>
-<p><code>&lt;your-key-name&gt;</code> refers to the EC2 key pair.</p>
+<p><code>&lt;your-key-name&gt;</code> refers to the name of your EC2 key pair.</p>
 </li>
 <li>
-<p><code>&lt;your-keyfile-path&gt;</code> refers to the path to the key file.</p>
+<p><code>&lt;your-keyfile-path&gt;</code> refers to the path to the key (typically .pem) file.</p>
 </li>
 <li>
 <p><code>&lt;action&gt;</code> refers to the action to be performed. Some of the available actions are <code>launch</code>, <code>destroy</code>, <code>stop</code>, <code>start</code> and <code>reboot-cluster</code>.
@@ -2407,7 +2400,7 @@ The locator is associated with security group named <strong>my-cluster-locator</
 </li>
 </ul>
 <p><strong>Example</strong></p>
-<pre><code>-./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; stop snap_ec2_cluster --with-zeppelin --authorized-address=&lt;Authorized IP Address&gt; --assume-role-arn=&lt;role-arn&gt; --assume-role-timeout=&lt;timeout&gt; --assume-role-session-name=&lt;name-for-session&gt;
+<pre><code>./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; stop snap_ec2_cluster --with-zeppelin --authorized-address=&lt;Authorized IP Address&gt; --assume-role-arn=&lt;role-arn&gt; --assume-role-timeout=&lt;timeout&gt; --assume-role-session-name=&lt;name-for-session&gt;
 </code></pre>
 
 <div class="admonition note">
@@ -2433,7 +2426,7 @@ The locator is associated with security group named <strong>my-cluster-locator</
 <h4 id="using-custom-build">Using Custom build</h4>
 <p>This script by default uses the SnappyData OSS build available on the GitHub releases page to launch the cluster.
 To select a version of the OSS build available on GitHub, use option <code>--snappydata-version</code>.</p>
-<p>You can also provide your own SnappyData build to the script to launch the cluster, by using
+<p>You can also provide your SnappyData build to the script to launch the cluster, by using
 option <code>--snappydata-tarball</code> to the <code>launch</code> command.
 The build can be present either on a local filesystem or as a resource on the web.</p>
 <p>For example, to use <strong>SnappyData Enterprise</strong> build to launch the cluster, download the build tarball from
@@ -2448,8 +2441,8 @@ www.snappydata.io/download on your local machine and give its path as value to a
 <p>The build file should be in <strong>.tar.gz</strong> format.</p>
 <p><a id="ecsspecifyprop"></a></p>
 <h4 id="specifying-properties">Specifying Properties</h4>
-<p>You can specify the configuration for the cluster via command line options. Use <code>--locator-conf</code> to specify the
-configuration properties for all the locators in the cluster. Similarly, <code>--server-conf</code> and <code>--lead-conf</code> allow you
+<p>You can specify the configuration for the cluster via command-line options. Use <code>--locator-conf</code> to specify the
+configuration properties for all the locators in the cluster. Similarly, <code>--server-conf</code> and <code>--lead-conf</code> allows you
 to specify the configuration properties for servers and leads in the cluster, respectively.</p>
 <p>Following is a sample configuration for all the three processes in a SnappyData cluster:</p>
 <pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 launch my-cluster \
@@ -2463,14 +2456,12 @@ to specify the configuration properties for servers and leads in the cluster, re
 <p class="admonition-title">Note</p>
 </div>
 <ul>
-<li>The earlier method of specifying the configuration properties by placing the actual
-  configuration files in the directory, where helper scripts are available, is discontinued.</li>
-<li>Ensure that the configuration properties specified are correct. Otherwise, launching the
-  SnappyData cluster may fail but the EC2 instances would still be running.</li>
+<li>The earlier method of specifying the configuration properties by placing the actual configuration files in the directory, where helper scripts are available, is discontinued.</li>
+<li>Ensure that the configuration properties specified are correct. Otherwise, launching the SnappyData cluster may fail, but the EC2 instances would still be running.</li>
 </ul>
 <p><a id="ec2stopcluster"></a></p>
 <h4 id="stopping-the-cluster">Stopping the Cluster</h4>
-<p>When you stop a cluster, it shuts down the EC2 instances and any data saved on the local instance stores is lost.
+<p>When you stop a cluster, it shuts down the EC2 instances, and any data saved on the local instance stores is lost.
 However, the data saved on EBS volumes is retained, unless the spot-instances are used.</p>
 <pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem stop cluster-name
 </code></pre>
@@ -2514,7 +2505,7 @@ The SnappyData product directory is located at <strong>/opt/snappydata/</strong>
 <p>This also deletes the security groups created for this cluster.</p>
 <p><a id="ec2startclustrezeppelin"></a></p>
 <h4 id="starting-cluster-with-apache-zeppelin">Starting Cluster with Apache Zeppelin</h4>
-<p>Optionally, you can start an instance of Apache Zeppelin server with the cluster.
+<p>Optionally, you can start an instance of the Apache Zeppelin server with the cluster.
 <a href="https://zeppelin.apache.org/">Apache Zeppelin</a> provides a web-based interactive notebook that is pre-configured to
 communicate with the SnappyData cluster. The Zeppelin server is launched on the same EC2 instance where the lead node is running.</p>
 <pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --with-zeppelin launch cluster-name
@@ -2522,7 +2513,7 @@ communicate with the SnappyData cluster. The Zeppelin server is launched on the 
 
 <p><a id="ec2moreoption"></a></p>
 <h4 id="more-options">More Options</h4>
-<p>For a complete list of options provided by the script, simply run <code>./snappy-ec2</code>. The options are also provided below
+<p>For a complete list of options provided by the script, run <code>./snappy-ec2</code>. The options are also provided below
 for quick reference.</p>
 <pre><code class="pre">Usage: snappy-ec2 [options] &lt;action&gt; &lt;cluster_name&gt;
 
@@ -2662,23 +2653,27 @@ Options:
 </ul>
 <p><a id="usingawsmgmtconsole"></a></p>
 <h2 id="aws-management-console">AWS Management Console</h2>
-<div class="admonition attention">
-<p class="admonition-title">Attention</p>
-<p>The AMIs of SnappyData release 1.1.0 onwards are not available on AWS.</p>
-</div>
-<p>You can launch a SnappyData cluster on Amazon EC2 instance(s) using the AMI provided by SnappyData. For more information
+<p>You can launch a SnappyData cluster on Amazon EC2 instance(s) using Linux-based AMIs available on AWS. For more information
 on launching an EC2 instance, refer to the <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html">AWS documentation</a>.
 This section covers the following:</p>
 <ul>
 <li><a href="#prereqaws">Prerequisites</a></li>
-<li><a href="#launchawsinstance">Launching the Instance</a></li>
+<li><a href="#launchawsinstance">Launching the Instance and Cluster</a></li>
+<li><a href="#accesssnappydatacluster">Accessing the Cluster</a></li>
 </ul>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>The AMIs of SnappyData are currently unavailable on AWS.</p>
+</div>
 <p><a id="prereqaws"></a></p>
 <h3 id="prerequisites_1">Prerequisites</h3>
-<p>Ensure that you have an existing AWS account with required permissions to launch the EC2 resources.</p>
+<ul>
+<li>Ensure that you have an existing AWS account with required permissions to launch the EC2 resources.</li>
+<li>Create an EC2 Key Pair in the region where you want to launch the SnappyData cluster.</li>
+</ul>
 <p><a id="launchawsinstance"></a></p>
 <h3 id="deploying-snappydata-cluster-with-aws-management-console">Deploying SnappyData Cluster with AWS Management Console</h3>
-<p>To launch the instance and start the SnappyData cluster:</p>
+<p>To launch the instance and start the SnappyData cluster on a single EC2 instance:</p>
 <ol>
 <li>
 <p>Open the <a href="https://console.aws.amazon.com/ec2/">Amazon EC2 console</a> and sign in using your AWS login credentials.</p>
@@ -2690,13 +2685,10 @@ This section covers the following:</p>
 <p>Click <strong>Launch Instance</strong> from the Amazon EC2 console dashboard.</p>
 </li>
 <li>
-<p>On the <strong>Choose an Amazon Machine Image (AMI)</strong> page, select <strong>Community AMIs</strong> from the left pane.</p>
-</li>
-<li>
-<p>Enter <strong>SnappyData</strong> in the search box, and press <strong>Enter</strong> on your keyboard.</p>
-</li>
-<li>
-<p>The search result is displayed. From the search results, click <strong>Select</strong> to choose the AMI with the latest release version.</p>
+<p>On the <strong>Choose an Amazon Machine Image (AMI)</strong> page, select your preferred Linux-based AMI. For example, you can select <strong>Amazon Linux 2 AMI</strong> or <strong>Ubuntu Server 16.04 LTS</strong>. See <a href="../system_requirements/#operating-systems-supported">this page</a> for recommended Operating Systems.</p>
+<ul>
+<li>The AMIs with pre-installed SnappyData distribution are currently unavailable under <strong>AWS Marketplace</strong> or <strong>Community AMIs</strong>.</li>
+</ul>
 </li>
 <li>
 <p>On the <strong>Choose an Instance Type</strong> page, select the instance type as per the requirement of your use case and then click <strong>Review and Launch</strong> to launch the instance with default configurations. <br/></p>
@@ -2707,7 +2699,10 @@ This section covers the following:</p>
 <p>You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.</p>
 </li>
 <li>
-<p>When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to Snappy UI).</p>
+<p>On <strong>Configure Security Group</strong> page, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (to access SnappyData Monitoring Console) for public IP address of your laptop or client terminal.</p>
+</li>
+<li>
+<p>If you need to connect to the SnappyData cluster via a JDBC client application or tool, open ports 1527 and 1528 for the public IP of the host where your application/tool is running, in the security group.</p>
 </li>
 </ul>
 </div>
@@ -2716,47 +2711,114 @@ This section covers the following:</p>
 <p>You are directed to the last step <strong>Review Instance Launch</strong>. Check the details of your instance, and click <strong>Launch</strong>.</p>
 </li>
 <li>
-<p>In the <strong>Select an existing key pair or create a new key pair</strong> dialog box, select a key pair.</p>
+<p>In the <strong>Select an existing key pair or create a new key pair</strong> dialog box, select your key pair.</p>
 </li>
 <li>
 <p>Click <strong>Launch</strong>. The Launch Status page is displayed.</p>
 </li>
 <li>
-<p>Click <strong>View Instances</strong>. The dashboard which lists the instances is displayed.</p>
+<p>Click <strong>View Instances</strong>. The dashboard which lists the EC2 instances is displayed.</p>
 </li>
 <li>
-<p>Click <strong>Refresh</strong> to view the updated list and the status of the instance creation.</p>
+<p>Click <strong>Refresh</strong> to view the updated list and the status of the instance you just created.</p>
 </li>
 <li>
-<p>Once the status of the instance changes to <strong>running</strong>, you have successfully created and launched the instance with the SnappyData AMI.</p>
-</li>
-<li>
-<p>Use SSH to connect to the instance using the <strong>Ubuntu</strong> username. You require:</p>
+<p>Once the status of the instance changes to <strong>running</strong>, connect to the instance via SSH. You require:</p>
 <ul>
 <li>
-<p>The private key file of the key pair with which the instance was launched, and</p>
+<p>The private key (.pem) file of the key pair with which the instance was launched,</p>
 </li>
 <li>
-<p>Details of the public hostname or IP address of the instance.
-Refer to the following documentation, for more information on <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html">accessing an EC2 instance</a>.</p>
+<p>The public DNS or IP address of the instance, and</p>
+</li>
+<li>
+<p>The username to connect with. It depends on the AMI you selected above. For example, it could be <strong>ec2-user</strong> for Amazon Linux AMIs or <strong>ubuntu</strong> for Ubuntu-based AMIs.</p>
 </li>
 </ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+</li>
+</ol>
+<p>Refer to the following documentation, for more information on <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AccessingInstancesLinux.html">accessing an EC2 instance</a>.</p>
+<pre><code>!!! Note
+
+    * The public DNS/IP of the instance is available on the EC2 dashboard &gt; **Instances** page. Select your EC2 instance and look for it in the lower half of the page.
+</code></pre>
+<ol>
+<li>
+<p>Download the required SnappyData distribution (.tar.gz) into this EC2 instance. You can find the latest SnappyData Community Edition (OSS) release <a href="https://github.com/snappydatainc/snappydata/releases/latest">here</a>.</p>
 <ul>
-<li>
-<p>The public hostname/IP address information is available on the EC2 dashboard &gt; <strong>Description</strong> tab. </p>
-</li>
-<li>
-<p>The SnappyData product distribution is already downloaded and extracted in the <strong>/opt/snappydata</strong> directory and Java 8 is installed. </p>
-</li>
+<li>When we make the SnappyData AMI available on AWS in future, it will have the distribution pre-installed. In that case, you can jump to <a href="#15step">step 15</a>.</li>
 </ul>
-</div>
+</li>
+<li>
+<p>Extract the tarball to /opt/snappydata/.</p>
+<pre><code>tar -xvf snappydata-&lt;version&gt;-bin.tar.gz
+sudo mv snappydata-&lt;version&gt;-bin /opt/snappydata
+chown -R ec2-user:ec2-user /opt/snappydata
+</code></pre>
+</li>
+<li>
+<p>Make Sure Java 8 is installed and set as default. For Amazon Linux 2018.03, you may need to uninstall Java 7 first. Below commands update OpenJDK to 8.</p>
+<pre><code>sudo yum -y -q remove  jre-1.7.0-openjdk
+sudo yum -y -q install java-1.8.0-openjdk-devel
+java -version  # Ensure it prints correct Java version
+</code></pre>
+</li>
+<li>
+<p><a id="15step"></a>Setup <a href="../../reference/misc/passwordless_ssh/">passwordless ssh</a> on this instance. This requirement may be removed in future, for single-instance installation on AWS.</p>
+</li>
+<li>
+<p>Run below commands to update the cluster configuration.</p>
+<pre><code>curl http://169.254.169.254/latest/meta-data/local-ipv4 &gt; /opt/snappydata/conf/locators
+curl http://169.254.169.254/latest/meta-data/local-ipv4 &gt; /opt/snappydata/conf/servers
+curl http://169.254.169.254/latest/meta-data/local-ipv4 &gt; /opt/snappydata/conf/leads
+</code></pre>
 </li>
 <li>
 <p>Go to the <strong>/opt/snappydata</strong> directory. Run the following command to start a basic cluster with one data node, one lead, and one locator.</p>
 <pre><code>./sbin/snappy-start-all.sh
 </code></pre>
+</li>
+</ol>
+<p><a id="accesssnappydatacluster"></a></p>
+<h3 id="accessing-snappydata-cluster">Accessing SnappyData Cluster</h3>
+<p>The quickest way to connect to your SnappyData cluster is probably using the snappy shell utility packaged with the distribution.</p>
+<p>You can launch the snappy shell either from the same EC2 instance or from your laptop where you have SnappyData installed.</p>
+<ol>
+<li>
+<p>Connecting to the cluster from the same EC2 instance:</p>
+<ul>
+<li>
+<p>Launch the snappy shell.</p>
+<pre><code>./bin/snappy
+</code></pre>
+</li>
+<li>
+<p><strong>Important</strong> Before connecting to the cluster, make sure the security group attached to this EC2 instance has ports 1527-1528 open for the public IP of the same ec2 instance.</p>
+</li>
+<li>
+<p>Now, connect to the cluster using its private IP (you can also use the public DNS/IP instead):</p>
+<pre><code>snappy&gt; connect client '(private-ip-of-EC2-instance):1527';
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>Connecting to the cluster from your laptop (or any host outside AWS VPC):</p>
+<ul>
+<li>
+<p>Launch the snappy shell:</p>
+<pre><code>${SNAPPY_HOME}/bin/snappy
+</code></pre>
+</li>
+<li>
+<p><strong>Important</strong> Before connecting to the cluster, make sure the security group attached to this EC2 instance has ports 1527-1528 open for the public IP of your laptop (i.e. the host with SnappyData installed).</p>
+</li>
+<li>
+<p>Now, connect to the cluster using the public DNS/IP of its EC2 instance:</p>
+<pre><code>snappy&gt; connect client '&lt;public-ip-of-EC2-instance&gt;:1527';
+</code></pre>
+</li>
+</ul>
 </li>
 </ol>
               

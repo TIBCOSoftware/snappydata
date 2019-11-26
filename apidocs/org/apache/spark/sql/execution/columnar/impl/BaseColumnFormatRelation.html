@@ -125,10 +125,30 @@ Bulk insert example is shown above.
 
         
 
-        
+        <div id="values" class="values members">
+              <h3>Abstract Value Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.PartitionedDataSourceScan#getColocatedTable" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="getColocatedTable:Option[String]"></a>
+      <a id="getColocatedTable:Option[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getColocatedTable</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation@getColocatedTable:Option[String]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a></dd></dl></div>
+    </li></ol>
+            </div>
 
         <div id="values" class="values members">
-              <h3>Value Members</h3>
+              <h3>Concrete Value Members</h3>
               <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a>
       <a id="!=(Any):Boolean"></a>
@@ -658,6 +678,23 @@ dropping the external table that this relation represents.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> → <a href="../JDBCAppendableRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation#getBasicInsertPlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getBasicInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan"></a>
+      <a id="getBasicInsertPlan(LogicalRelation,SparkPlan):SparkPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getBasicInsertPlan</span><span class="params">(<span name="relation">relation: <a href="../../datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="child">child: <a href="../../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="../../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation@getBasicInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> → <a href="../../../sources/PlanInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.PlanInsertableRelation">PlanInsertableRelation</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -745,7 +782,7 @@ dropping the external table that this relation represents.
       <p class="shortcomment cmt">Get a spark plan to delete rows the relation.</p><div class="fullcomment"><div class="comment cmt"><p>Get a spark plan to delete rows the relation. The result of SparkPlan
 execution should be a count of number of updated rows.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> → <a href="../../../sources/MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation#getInsertPlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.sources.PlanInsertableRelation#getInsertPlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan"></a>
       <a id="getInsertPlan(LogicalRelation,SparkPlan):SparkPlan"></a>
       <h4 class="signature">
@@ -763,7 +800,7 @@ execution should be a count of number of updated rows.
     </span>
       <p class="shortcomment cmt">Get a spark plan for insert.</p><div class="fullcomment"><div class="comment cmt"><p>Get a spark plan for insert. The result of SparkPlan execution should
 be a count of number of inserted rows.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation">BaseColumnFormatRelation</a> → <a href="../../../sources/PlanInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.PlanInsertableRelation">PlanInsertableRelation</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../../sources/PlanInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.PlanInsertableRelation">PlanInsertableRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation#getKeyColumns" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getKeyColumns:Seq[String]"></a>
       <a id="getKeyColumns:Seq[String]"></a>
@@ -1523,7 +1560,7 @@ of Spark SQL should leave this as true.</p></span></dd></dl></div>
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../JDBCAppendableRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a> → <a href="../../../sources/RowLevelSecurityRelation.html" class="extype" name="org.apache.spark.sql.sources.RowLevelSecurityRelation">RowLevelSecurityRelation</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../JDBCAppendableRelation.html" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a> → <a href="../../../sources/RowLevelSecurityRelation.html" class="extype" name="org.apache.spark.sql.sources.RowLevelSecurityRelation">RowLevelSecurityRelation</a> → <a href="../../../sources/PlanInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.PlanInsertableRelation">PlanInsertableRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation#rowInsertStr" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="rowInsertStr:String"></a>
       <a id="rowInsertStr:String"></a>

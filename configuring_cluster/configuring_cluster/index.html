@@ -98,14 +98,14 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setup SnappyData Cluster on AWS</a>
+        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting-up SnappyData Cluster on AWS</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../kubernetes/">Setup SnappyData Cluster on Kubernetes</a>
+        <a class="" href="../../kubernetes/">Setting-up SnappyData Cluster on Kubernetes</a>
         
     </li>
 
@@ -156,13 +156,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../quickstart/getting_started_on_kubernetes/">Kubernetes</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../quickstart/getting_started_with_docker_image/">Docker Image</a>
         
     </li>
 
@@ -2414,12 +2407,18 @@ LEAD_STARTUP_OPTIONS=”$SECURITY_ARGS”
 <p><a id="environment"></a></p>
 <h2 id="environment-settings">Environment Settings</h2>
 <p>Any Spark or SnappyData specific environment settings can be done by creating a <strong>snappy-env.sh</strong> or <strong>spark-env.sh</strong> in <strong>SNAPPY_HOME/conf</strong>.</p>
-<p><a id="hadoop-setting"></a></p>
-<h3 id="hadoop-provided-settings">Hadoop Provided Settings</h3>
-<p>If you want to run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without Hadoop from the download link. This allows you to provide Hadoop at runtime.</p>
-<p>To do this, you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:</p>
-<pre><code class="pre">export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
-</code></pre>
+<!--
+<a id="hadoop-setting"></a>
+### Hadoop Provided Settings
+
+If you want to run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without Hadoop from the download link. This allows you to provide Hadoop at runtime.
+
+To do this, you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:
+
+
+wzxhzdk:6
+
+-->
 
 <p><a id="logging"></a></p>
 <h2 id="logging">Logging</h2>

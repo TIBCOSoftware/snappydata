@@ -114,25 +114,23 @@
       <p class="shortcomment cmt">Destroy and cleanup this relation.</p><div class="fullcomment"><div class="comment cmt"><p>Destroy and cleanup this relation. It may include, but not limited to,
 dropping the external table that this relation represents.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.sources.PlanInsertableRelation#getInsertPlan" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="getInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan"></a>
-      <a id="getInsertPlan(LogicalRelation,SparkPlan):SparkPlan"></a>
+    </li><li name="org.apache.spark.sql.sources.PlanInsertableRelation#getBasicInsertPlan" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="getBasicInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan"></a>
+      <a id="getBasicInsertPlan(LogicalRelation,SparkPlan):SparkPlan"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getInsertPlan</span><span class="params">(<span name="relation">relation: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="child">child: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
+        <span class="name">getBasicInsertPlan</span><span class="params">(<span name="relation">relation: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="child">child: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.PlanInsertableRelation@getInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.PlanInsertableRelation@getBasicInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Get a spark plan for insert.</p><div class="fullcomment"><div class="comment cmt"><p>Get a spark plan for insert. The result of SparkPlan execution should
-be a count of number of inserted rows.
-</p></div></div>
+      
     </li><li name="org.apache.spark.sql.sources.InsertableRelation#insert" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="insert(data:org.apache.spark.sql.DataFrame,overwrite:Boolean):Unit"></a>
       <a id="insert(DataFrame,Boolean):Unit"></a>
@@ -150,6 +148,23 @@ be a count of number of inserted rows.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="InsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.InsertableRelation">InsertableRelation</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.PlanInsertableRelation#resolvedName" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="resolvedName:String"></a>
+      <a id="resolvedName:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resolvedName</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.PlanInsertableRelation@resolvedName:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.sources.BaseRelation#schema" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="schema:org.apache.spark.sql.types.StructType"></a>
       <a id="schema:StructType"></a>
@@ -372,6 +387,25 @@ be a count of number of inserted rows.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.PlanInsertableRelation#getInsertPlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan"></a>
+      <a id="getInsertPlan(LogicalRelation,SparkPlan):SparkPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getInsertPlan</span><span class="params">(<span name="relation">relation: <a href="../execution/datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="child">child: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.PlanInsertableRelation@getInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get a spark plan for insert.</p><div class="fullcomment"><div class="comment cmt"><p>Get a spark plan for insert. The result of SparkPlan execution should
+be a count of number of inserted rows.
+</p></div></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>

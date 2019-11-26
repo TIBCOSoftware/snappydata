@@ -170,25 +170,23 @@ are retrieved using a JDBC URL or DataSource.
       <p class="shortcomment cmt">Destroy and cleanup this relation.</p><div class="fullcomment"><div class="comment cmt"><p>Destroy and cleanup this relation. It may include, but not limited to,
 dropping the external table that this relation represents.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.sources.PlanInsertableRelation#getInsertPlan" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
-      <a id="getInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan"></a>
-      <a id="getInsertPlan(LogicalRelation,SparkPlan):SparkPlan"></a>
+    </li><li name="org.apache.spark.sql.sources.PlanInsertableRelation#getBasicInsertPlan" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="getBasicInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan"></a>
+      <a id="getBasicInsertPlan(LogicalRelation,SparkPlan):SparkPlan"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getInsertPlan</span><span class="params">(<span name="relation">relation: <a href="../datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
+        <span class="name">getBasicInsertPlan</span><span class="params">(<span name="relation">relation: <a href="../datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@getInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@getBasicInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Get a spark plan for insert.</p><div class="fullcomment"><div class="comment cmt"><p>Get a spark plan for insert. The result of SparkPlan execution should
-be a count of number of inserted rows.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../sources/PlanInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.PlanInsertableRelation">PlanInsertableRelation</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../sources/PlanInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.PlanInsertableRelation">PlanInsertableRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.sources.RowLevelSecurityRelation#schemaName" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="schemaName:String"></a>
       <a id="schemaName:String"></a>
@@ -724,6 +722,25 @@ double evaluate an <span class="extype" name="Expression">Expression</span>.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.sources.PlanInsertableRelation#getInsertPlan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan"></a>
+      <a id="getInsertPlan(LogicalRelation,SparkPlan):SparkPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getInsertPlan</span><span class="params">(<span name="relation">relation: <a href="../datasources/LogicalRelation.html" class="extype" name="org.apache.spark.sql.execution.datasources.LogicalRelation">LogicalRelation</a></span>, <span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result">: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.columnar.JDBCAppendableRelation@getInsertPlan(relation:org.apache.spark.sql.execution.datasources.LogicalRelation,child:org.apache.spark.sql.execution.SparkPlan):org.apache.spark.sql.execution.SparkPlan" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Get a spark plan for insert.</p><div class="fullcomment"><div class="comment cmt"><p>Get a spark plan for insert. The result of SparkPlan execution should
+be a count of number of inserted rows.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../sources/PlanInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.PlanInsertableRelation">PlanInsertableRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -1341,7 +1358,7 @@ of Spark SQL should leave this as true.</p></span></dd></dl></div>
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a> → <a href="../../sources/RowLevelSecurityRelation.html" class="extype" name="org.apache.spark.sql.sources.RowLevelSecurityRelation">RowLevelSecurityRelation</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a> → <a href="../../sources/RowLevelSecurityRelation.html" class="extype" name="org.apache.spark.sql.sources.RowLevelSecurityRelation">RowLevelSecurityRelation</a> → <a href="../../sources/PlanInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.PlanInsertableRelation">PlanInsertableRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.JDBCAppendableRelation#scanTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="scanTable(tableName:String,requiredColumns:Array[String],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression],prunePartitions:()=&gt;Int):(org.apache.spark.rdd.RDD[Any],Array[Int])"></a>
       <a id="scanTable(String,Array[String],Array[Expression],()⇒Int):(RDD[Any],Array[Int])"></a>

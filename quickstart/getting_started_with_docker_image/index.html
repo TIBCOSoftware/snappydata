@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Docker Image - SnappyData™ 1.1.1</title>
+  <title>Building a Docker Image with SnappyData Binaries - SnappyData™ 1.1.1</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -30,7 +30,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Docker Image";
+    var mkdocs_page_name = "Building a Docker Image with SnappyData Binaries";
     var mkdocs_page_input_path = "quickstart/getting_started_with_docker_image.md";
     var mkdocs_page_url = "/quickstart/getting_started_with_docker_image/";
   </script>
@@ -98,21 +98,40 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setup SnappyData Cluster on AWS</a>
+        <a class="" href="../../install/setting_up_cluster_on_amazon_web_services/">Setting-up SnappyData Cluster on AWS</a>
         
     </li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../kubernetes/">Setup SnappyData Cluster on Kubernetes</a>
+        <a class="" href="../../kubernetes/">Setting-up SnappyData Cluster on Kubernetes</a>
         
     </li>
 
         
             
-    <li class="toctree-l1 ">
-        <a class="" href="./">Building a Docker Image with SnappyData Binaries</a>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Building a Docker Image with SnappyData Binaries</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#getting-started-with-docker-image">Getting Started with Docker Image</a></li>
+                
+                    <li><a class="toctree-l4" href="#verifying-docker-installation">Verifying Docker Installation</a></li>
+                
+                    <li><a class="toctree-l4" href="#building-docker-image-of-snappydata">Building Docker Image of SnappyData</a></li>
+                
+                    <li><a class="toctree-l4" href="#verifying-details-of-docker-images">Verifying Details of Docker Images</a></li>
+                
+                    <li><a class="toctree-l4" href="#publishing-docker-image">Publishing Docker Image</a></li>
+                
+                    <li><a class="toctree-l4" href="#launching-snappydata-container">Launching SnappyData Container</a></li>
+                
+                    <li><a class="toctree-l4" href="#commonly-used-docker-commands">Commonly used Docker Commands</a></li>
+                
+            
+            </ul>
         
     </li>
 
@@ -156,26 +175,6 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../getting_started_on_kubernetes/">Kubernetes</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Docker Image</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#getting-started-with-docker-image">Getting Started with Docker Image</a></li>
-                
-                    <li><a class="toctree-l4" href="#verify-that-docker-is-installed">Verify that Docker is Installed</a></li>
-                
-                    <li><a class="toctree-l4" href="#build-your-own-docker-image-of-snappydata">Build your own Docker image of SnappyData</a></li>
-                
-                    <li><a class="toctree-l4" href="#launch-snappydata">Launch SnappyData</a></li>
-                
-            
-            </ul>
         
     </li>
 
@@ -2170,42 +2169,160 @@
               
                 <p><a id="getting-started-with-docker-image"></a></p>
 <h1 id="getting-started-with-docker-image">Getting Started with Docker Image</h1>
-<p>The following instructions outline how to build a Docker image if you have the binaries of SnappyData.</br>
-SnappyData does not provide a Docker image.</p>
-<p>Before building the Docker image, ensure that you have already installed and configured the Docker properly. Refer to <a href="http://docs.docker.com/installation/">Docker documentation</a> for more details.</p>
-<h2 id="verify-that-docker-is-installed">Verify that Docker is Installed</br></h2>
-<p>In the command prompt run the command:</p>
+<p>The following instructions outline how to build a Docker image if you have the binaries of SnappyData.</br></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>SnappyData does not provide a Docker image. You must build it explicitly.</p>
+</div>
+<p>Before building the Docker image, ensure the following:</p>
+<ul>
+<li>You have Docker installed, configured, and it runs successfully on your machine. Refer to the <a href="http://docs.docker.com/installation">Docker documentation</a> for more information on installing Docker.</li>
+<li>The Docker containers have access to at least 4GB of RAM on your machine.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To allow non-root users to run Docker commands, follow the instructions <a href="https://docs.docker.com/install/linux/linux-postinstall">here</a></p>
+</div>
+<h2 id="verifying-docker-installation">Verifying Docker Installation</br></h2>
+<p>In the command prompt, run the command:</p>
 <pre><code class="pre">$ docker run hello-world
 
 </code></pre>
 
 <p><a id="build-your-docker"></a></p>
-<h2 id="build-your-own-docker-image-of-snappydata">Build your own Docker image of SnappyData</br></h2>
-<p>A sample Dockerfile is provided which you can use to create your own Docker image of SnappyData.</p>
-<p>Download the <a href="https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile">Dockerfile</a> and
-<a href="https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/start">start</a> script and place them into a single directory. This Dockerfile uses the SnappyData 1.1.1 build.</p>
-<p>Move to that directory and run the following commands with appropriate details:</p>
-<pre><code>$ docker build -t &lt;your-docker-repo-name&gt;/snappydata:&lt;image-tag&gt; -f Dockerfile .
-$ docker push &lt;your-docker-repo-name&gt;/snappydata:&lt;image-tag&gt;
-
-For example:
-
-$ docker build -t snappydatainc/snappydata:1.1.1 -f Dockerfile .
-$ docker push snappydatainc/snappydata:1.1.1
+<h2 id="building-docker-image-of-snappydata">Building Docker Image of SnappyData</br></h2>
+<p>You can use the Dockerfile that is provided and create your own Docker image of SnappyData. Download the <a href="https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile">Dockerfile</a> script and place it into a directory. The Dockerfile contains a link to the latest SnappyData OSS version to build the image.</p>
+<p>Move into the directory containing the downloaded Dockerfile and then run the Docker build command with the required details to build the Docker image. You can create an image using any one of the following options:</p>
+<ul>
+<li><a href="#builddockerimagesnappy">Building Image from the Latest Version of SnappyData OSS</a></li>
+<li><a href="#builddockerurl">Building Image from a URL Directing to SnappyData Binaries</a></li>
+<li><a href="#builddockerimageslocal">Building Image from Local Copy of SnappyData Product TAR file</a></li>
+</ul>
+<p><a id="builddockerimagesnappy"></a></p>
+<h3 id="building-image-from-the-latest-version-of-snappydata-oss">Building Image from the Latest Version of SnappyData OSS</h3>
+<p>By default, the Dockerfile creates a Docker image from the latest version of SnappyData OSS.</p>
+<pre><code>$ docker build -t &lt;your-docker-repo-name&gt;/&lt;image_name&gt;[:&lt;image-tag&gt;] .
 </code></pre>
-<h2 id="launch-snappydata">Launch SnappyData</br></h2>
-<p>In the command prompt, type the following command to launch the SnappyData cluster in single container.
-This fetches the Docker image from your Docker registry, if the image is not available locally, launches the cluster in a container and leads to the Spark shell.</p>
+
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Ensure that the Docker containers have access to at least 4 GB of RAM on your machine.</p>
+<p>If you do not provide any argument to the Dockerfile, the latest version of the SnappyData OSS release is downloaded and a Docker image for the same is built.</p>
 </div>
-<pre><code class="pre">$  docker run -it -p 5050:5050 &lt;your-docker-registry&gt;/snappydata bin/spark-shell
+<p>For example:</p>
+<p>The following command builds an image with tag <code>latest</code>:</p>
+<pre><code>$ docker build -t myrepo/snappydata .
 </code></pre>
 
-<p>The latest Docker image file starts downloading to your local machine. Depending on your network connection, this may take some time. </br></p>
-<p>After you have launched the Spark shell, in the <code>$ scala&gt;</code> prompt, follow the steps explained <a href="../using_spark_scala_apis/">here</a>.</br></p>
-<p>For more details about how you can work with the Docker image see <a href="https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker">Snappy Cloud Tools</a>.</p>
+<p>The following command builds an image with tag <code>1.1.1</code>:</p>
+<pre><code>$ docker build -t myrepo/snappydata:1.1.1 .
+</code></pre>
+
+<p><a id="builddockerurl"></a></p>
+<h3 id="building-image-from-a-url-directing-to-snappydata-binaries">Building Image from a URL Directing to SnappyData Binaries</h3>
+<p>If you want to create a Docker image from any of the previous versions of SnappyData, you can specify the URL of the tarfile in the build command.</p>
+<pre><code>$ docker build -t &lt;your-docker-repo-name&gt;/&lt;image_name&gt;[:&lt;image-tag&gt;] . --build-arg TARFILE_LOC=&lt;public-url&gt;
+
+</code></pre>
+
+<p>For example:</p>
+<pre><code>$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.1/snappydata-1.1.1-bin.tar.gz
+</code></pre>
+
+<p><a id="builddockerimageslocal"></a></p>
+<h3 id="building-image-from-local-copy-of-snappydata-product-tar-file">Building Image from Local Copy of SnappyData Product TAR file</h3>
+<p>If you have already downloaded the SnappyData tarfile locally onto your machine, use the following steps to build an image from the downloaded binaries. To download SnappyData, refer to the <a href="https://snappydatainc.github.io/snappydata/install/">Provisioning SnappyData</a> section in the product documentation.</p>
+<p>Copy the downloaded <strong>tar.gz</strong> file to the Docker folder where you have placed the Dockerfile and run the following command:</p>
+<pre><code>$ docker build -t &lt;your-docker-repo-name&gt;/&lt;image_name&gt;[:&lt;image-tag&gt;] . --build-arg TARFILE_LOC=&lt;tarfile name&gt;
+
+</code></pre>
+
+<p>For example:</p>
+<pre><code>$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=snappydata-1.1.1-bin.tar.gz
+</code></pre>
+
+<h2 id="verifying-details-of-docker-images">Verifying Details of Docker Images</h2>
+<p>After the Docker build is successful, you can check the details for Docker images using the <code>docker images</code> command.</p>
+<p>For example:</p>
+<pre><code>$ docker images
+
+</code></pre>
+
+<h2 id="publishing-docker-image">Publishing Docker Image</h2>
+<p>If you want to publish the Docker image onto the Docker Hub, login to the Docker account using <code>docker login</code> command, and provide your credentials. For more information on Docker login, visit <a href="https://docs.docker.com/engine/reference/commandline/login">here</a>. After a successful login, you can publish the Docker image using the <code>docker push</code> command.</p>
+<pre><code>$ docker push &lt;your-docker-repo-name&gt;/&lt;image_name&gt;[:&lt;image-tag&gt;]
+</code></pre>
+
+<p>Ensure to use the same name in the <code>docker push</code> that is used in <code>docker build</code>.</p>
+<p>For example:</p>
+<pre><code>$ docker push myrepo/snappydata
+</code></pre>
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This example only showcases how to push an image onto Docker Hub. You can also publish the image to other container registries such as <a href="http://gcr.io">gcr.io</a>. For publishing on gcr.io, you can refer <a href="https://cloud.google.com/container-registry/docs/pushing-and-pulling">this document</a>.</p>
+</div>
+<h2 id="launching-snappydata-container">Launching SnappyData Container</h2>
+<p>The command to launch SnappyData container is different for Linux and macOS. </p>
+<h3 id="launching-snappydata-container-on-linux">Launching SnappyData Container on Linux</h3>
+<p>In the command prompt, execute the following commands to launch the SnappyData cluster in a single container.</p>
+<pre><code>$ docker run -itd --net=host --name &lt;container-name&gt; &lt;your-docker-repo-name&gt;/&lt;image_name&gt;[:&lt;image-tag&gt;] start all
+
+# -i: keep the STDIN open even if not attached.
+# -t: Allocate pseudo-TTY.
+# -d: Detach and run the container in background and print container ID.
+# --net=host: Use the Docker host network stack.
+</code></pre>
+
+<p>If the image is not available locally, this fetches the Docker image from the Docker registry, launches a default cluster consisting of one data node, one lead, and one locator in a container.</p>
+<pre><code>$ docker run -itd --net=host --name snappydata myrepo/snappydata start all
+
+</code></pre>
+
+<h3 id="launching-snappydata-container-on-macos">Launching SnappyData Container on macOS</h3>
+<p>If you are using macOS, you must redirect the ports manually using <code>-p</code> parameter. If you use <code>--net=host</code>, it may not work correctly on the macOS. You can use the following modified command for macOS:</p>
+<pre><code>$ docker run -d --name=snappydata -p 5050:5050 -p 1527:1527 -p 1528:1528 myrepo/snappydata start all -hostname-for-clients=&lt;Machine_IP/Public_IP&gt;
+</code></pre>
+
+<p>The <code>-hostname-for-clients</code> parameter sets the IP Address or Hostname that the server listens for client connections. The command may take few seconds to execute.</p>
+<h2 id="commonly-used-docker-commands">Commonly used Docker Commands</h2>
+<table>
+<thead>
+<tr>
+<th>Description</th>
+<th>Docker Commands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>To check details of all the Docker containers.</td>
+<td><code>$ docker ps -a</code></td>
+</tr>
+<tr>
+<td>To check the container logs.</td>
+<td><code>$ docker logs &lt;container-name&gt;</code></td>
+</tr>
+<tr>
+<td>To launch Snappy Shell.</td>
+<td><code>$ docker exec -it &lt;container-name&gt; ./bin/snappy</code></td>
+</tr>
+<tr>
+<td>To launch Spark Shell.</td>
+<td><code>$ docker exec -it &lt;container-name&gt; ./bin/spark-shell</code></td>
+</tr>
+<tr>
+<td>To stop the cluster.</td>
+<td><code>$ docker exec -it &lt;container-name&gt; ./sbin/snappy-stop-all.sh</code></td>
+</tr>
+<tr>
+<td>To stop the container.</td>
+<td><code>$ docker stop &lt;container-name&gt;</code></td>
+</tr>
+<tr>
+<td>To open bash shell inside the container.</td>
+<td><code>$ docker exec -it &lt;container-name&gt; /bin/bash</code></td>
+</tr>
+</tbody>
+</table>
               
             </div>
           </div>
@@ -2240,10 +2357,10 @@ This fetches the Docker image from your Docker registry, if the image is not ava
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../getting_started_on_kubernetes/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../../kubernetes/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../getting_started_with_your_spark_distribution/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../../install/building_from_source/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

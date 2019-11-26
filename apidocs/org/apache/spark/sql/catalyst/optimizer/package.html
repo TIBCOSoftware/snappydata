@@ -90,6 +90,30 @@ SELECT * from R, S where R.r = S.s,
 the join between R and S is not a cartesian product and therefore should be allowed.
 The predicate R.r = S.s is not recognized as a join condition until the ReorderJoin rule.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="EliminateOuterJoinextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withPredicateHelperwithProductwithSerializable"></a>
+      <a id="EliminateOuterJoin:EliminateOuterJoin"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="EliminateOuterJoin.html"><span class="name">EliminateOuterJoin</span></a><span class="params">(<span name="conf">conf: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@EliminateOuterJoinextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withPredicateHelperwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Elimination of outer joins, if the predicates can restrict the result sets so that
+all null-supplying rows are eliminated</p><div class="fullcomment"><div class="comment cmt"><p>Elimination of outer joins, if the predicates can restrict the result sets so that
+all null-supplying rows are eliminated</p><p>- full outer -&gt; inner if both sides have such predicates
+- left outer -&gt; inner if the right side has such predicates
+- right outer -&gt; inner if the left side has such predicates
+- full outer -&gt; left outer if only the left side has such predicates
+- full outer -&gt; right outer if only the right side has such predicates</p><p>This rule should be executed before pushing down the Filter
+</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.GetCurrentDatabase" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="GetCurrentDatabaseextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable"></a>
       <a id="GetCurrentDatabase:GetCurrentDatabase"></a>
@@ -107,6 +131,30 @@ The predicate R.r = S.s is not recognized as a join condition until the ReorderJ
       </a>
     </span>
       <p class="shortcomment cmt">Replaces the expression of CurrentDatabase with the current database name.</p>
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="InferFiltersFromConstraintsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withPredicateHelperwithProductwithSerializable"></a>
+      <a id="InferFiltersFromConstraints:InferFiltersFromConstraints"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="InferFiltersFromConstraints.html"><span class="name">InferFiltersFromConstraints</span></a><span class="params">(<span name="conf">conf: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@InferFiltersFromConstraintsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withPredicateHelperwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generate a list of additional filters from an operator's existing constraint but remove those
+that are either already part of the operator's condition or are part of the operator's child
+constraints.</p><div class="fullcomment"><div class="comment cmt"><p>Generate a list of additional filters from an operator's existing constraint but remove those
+that are either already part of the operator's condition or are part of the operator's child
+constraints. These filters are currently inserted to the existing conditions in the Filter
+operators and on either side of Join operators.</p><p>Note: While this optimization is applicable to all types of join, it primarily benefits Inner and
+LeftSemi joins.
+</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.OptimizeCodegen" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="OptimizeCodegenextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable"></a>
       <a id="OptimizeCodegen:OptimizeCodegen"></a>
@@ -164,6 +212,27 @@ The predicate R.r = S.s is not recognized as a join condition until the ReorderJ
     </span>
       <p class="shortcomment cmt">Abstract class all optimizers should inherit of, contains the standard batches (extending
 Optimizers can override this.</p>
+    </li><li name="org.apache.spark.sql.catalyst.optimizer.PruneFilters" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PruneFiltersextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withPredicateHelperwithProductwithSerializable"></a>
+      <a id="PruneFilters:PruneFilters"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="PruneFilters.html"><span class="name">PruneFilters</span></a><span class="params">(<span name="conf">conf: <a href="../package.html#CatalystConf=org.apache.spark.sql.internal.SQLConf" class="extmbr" name="org.apache.spark.sql.catalyst.CatalystConf">CatalystConf</a></span>)</span><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@PruneFiltersextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withPredicateHelperwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Removes filters that can be evaluated trivially.</p><div class="fullcomment"><div class="comment cmt"><p>Removes filters that can be evaluated trivially.  This can be done through the following ways:
+1) by eliding the filter for cases where it will always evaluate to <code>true</code>.
+2) by substituting a dummy empty relation when the filter will always evaluate to <code>false</code>.
+3) by eliminating the always-true conditions given the constraints on the child's output.
+</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.SimpleTestOptimizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SimpleTestOptimizerextendsOptimizer"></a>
       <a id="SimpleTestOptimizer:SimpleTestOptimizer"></a>
@@ -436,30 +505,6 @@ another LocalRelation.</p><p>This is relatively simple as it currently handles o
       <p class="shortcomment cmt">Speeds up aggregates on fixed-precision decimals by executing them on unscaled Long values.</p><div class="fullcomment"><div class="comment cmt"><p>Speeds up aggregates on fixed-precision decimals by executing them on unscaled Long values.</p><p>This uses the same rules for increasing the precision and scale of the output as
 <a href="../analysis/DecimalPrecision$.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.DecimalPrecision">org.apache.spark.sql.catalyst.analysis.DecimalPrecision</a>.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.catalyst.optimizer.EliminateOuterJoin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="EliminateOuterJoin"></a>
-      <a id="EliminateOuterJoin:EliminateOuterJoin"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="EliminateOuterJoin$.html"><span class="name">EliminateOuterJoin</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@EliminateOuterJoin" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Elimination of outer joins, if the predicates can restrict the result sets so that
-all null-supplying rows are eliminated</p><div class="fullcomment"><div class="comment cmt"><p>Elimination of outer joins, if the predicates can restrict the result sets so that
-all null-supplying rows are eliminated</p><p>- full outer -&gt; inner if both sides have such predicates
-- left outer -&gt; inner if the right side has such predicates
-- right outer -&gt; inner if the left side has such predicates
-- full outer -&gt; left outer if only the left side has such predicates
-- full outer -&gt; right outer if only the right side has such predicates</p><p>This rule should be executed before pushing down the Filter
-</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.EliminateSerialization" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="EliminateSerialization"></a>
       <a id="EliminateSerialization:EliminateSerialization"></a>
@@ -519,30 +564,6 @@ Replace attributes with aliases of the original foldable expressions if possible
 Replace attributes with aliases of the original foldable expressions if possible.
 Other optimizations will take advantage of the propagated foldable expressions.</p><pre>SELECT <span class="num">1.0</span> x, <span class="lit">'abc'</span> y, Now() z ORDER BY x, y, <span class="num">3</span>
 =<span class="kw">=&gt;</span>  SELECT <span class="num">1.0</span> x, <span class="lit">'abc'</span> y, Now() z ORDER BY <span class="num">1.0</span>, <span class="lit">'abc'</span>, Now()</pre></div></div>
-    </li><li name="org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="InferFiltersFromConstraints"></a>
-      <a id="InferFiltersFromConstraints:InferFiltersFromConstraints"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="InferFiltersFromConstraints$.html"><span class="name">InferFiltersFromConstraints</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@InferFiltersFromConstraints" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Generate a list of additional filters from an operator's existing constraint but remove those
-that are either already part of the operator's condition or are part of the operator's child
-constraints.</p><div class="fullcomment"><div class="comment cmt"><p>Generate a list of additional filters from an operator's existing constraint but remove those
-that are either already part of the operator's condition or are part of the operator's child
-constraints. These filters are currently inserted to the existing conditions in the Filter
-operators and on either side of Join operators.</p><p>Note: While this optimization is applicable to all types of join, it primarily benefits Inner and
-LeftSemi joins.
-</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.LikeSimplification" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="LikeSimplification"></a>
       <a id="LikeSimplification:LikeSimplification"></a>
@@ -617,31 +638,10 @@ Null value propagation from bottom to top of the expression tree.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Collapse plans consisting empty local relations generated by <a href="PruneFilters$.html" class="extype" name="org.apache.spark.sql.catalyst.optimizer.PruneFilters">PruneFilters</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Collapse plans consisting empty local relations generated by <a href="PruneFilters$.html" class="extype" name="org.apache.spark.sql.catalyst.optimizer.PruneFilters">PruneFilters</a>.
+      <p class="shortcomment cmt">Collapse plans consisting empty local relations generated by <a href="PruneFilters.html" class="extype" name="org.apache.spark.sql.catalyst.optimizer.PruneFilters">PruneFilters</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Collapse plans consisting empty local relations generated by <a href="PruneFilters.html" class="extype" name="org.apache.spark.sql.catalyst.optimizer.PruneFilters">PruneFilters</a>.
 1. Binary(or Higher)-node Logical Plans</p><ul><li>Union with all empty children.</li><li>Join with one or two empty children (including Intersect/Except).
 2. Unary-node Logical Plans</li><li>Project/Filter/Sample/Join/Limit/Repartition with all empty children.</li><li>Aggregate with all empty children and without AggregateFunction expressions like COUNT.</li><li>Generate(Explode) with all empty children. Others like Hive UDTF may return results.
 </li></ul></div></div>
-    </li><li name="org.apache.spark.sql.catalyst.optimizer.PruneFilters" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="PruneFilters"></a>
-      <a id="PruneFilters:PruneFilters"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="PruneFilters$.html"><span class="name">PruneFilters</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.optimizer.package@PruneFilters" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Removes filters that can be evaluated trivially.</p><div class="fullcomment"><div class="comment cmt"><p>Removes filters that can be evaluated trivially.  This can be done through the following ways:
-1) by eliding the filter for cases where it will always evaluate to <code>true</code>.
-2) by substituting a dummy empty relation when the filter will always evaluate to <code>false</code>.
-3) by eliminating the always-true conditions given the constraints on the child's output.
-</p></div></div>
     </li><li name="org.apache.spark.sql.catalyst.optimizer.PushDownPredicate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="PushDownPredicate"></a>
       <a id="PushDownPredicate:PushDownPredicate"></a>
