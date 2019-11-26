@@ -46,19 +46,19 @@ $ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] .
 !!!Note
 	If you do not provide any argument to the Dockerfile, the latest version of the SnappyData OSS release is downloaded and a Docker image for the same is built.
 
-For example :
+For example:
+
+The following command builds an image with tag `latest`:
 
 ```
 $ docker build -t myrepo/snappydata .
 ```
 
-This builds an image with `latest` tag.
+The following command builds an image with tag `1.1.1 `:
 
 ```
 $ docker build -t myrepo/snappydata:1.1.1 .
 ```
-
-This image will have a tag `1.1.1 ` .
 
 <a id="builddockerurl"></a>
 ### Building Image from a URL Directing to SnappyData Binaries
@@ -109,7 +109,7 @@ $ docker images
 
 ## Publishing Docker Image
 
-If you want to publish the Docker image onto the Docker hub, login to the Docker account using `docker login` command, and provide your credentials. For more information on Docker login, visit [here](https://docs.docker.com/engine/reference/commandline/login). After a successful login, you can publish the Docker image using the `docker push` command.
+If you want to publish the Docker image onto the Docker Hub, login to the Docker account using `docker login` command, and provide your credentials. For more information on Docker login, visit [here](https://docs.docker.com/engine/reference/commandline/login). After a successful login, you can publish the Docker image using the `docker push` command.
 
 ```
 $ docker push <your-docker-repo-name>/<image_name>[:<image-tag>]
@@ -124,7 +124,11 @@ $ docker push myrepo/snappydata
 !!!Note
 	This example only showcases how to push an image onto Docker Hub. You can also publish the image to other container registries such as [gcr.io](http://gcr.io). For publishing on gcr.io, you can refer [this document](https://cloud.google.com/container-registry/docs/pushing-and-pulling).
 
-## Launching SnappyData Inside Docker
+## Launching SnappyData Container
+
+The command to launch SnappyData container is different for Linux and macOS. 
+
+### Launching SnappyData Container on Linux
 
 In the command prompt, execute the following commands to launch the SnappyData cluster in a single container.
 
@@ -139,33 +143,32 @@ $ docker run -itd --net=host --name <container-name> <your-docker-repo-name>/<im
 
 If the image is not available locally, this fetches the Docker image from the Docker registry, launches a default cluster consisting of one data node, one lead, and one locator in a container.
 
-### For Linux,
+
 
 ```
 $ docker run -itd --net=host --name snappydata myrepo/snappydata start all
 
 ```
 
-### For Mac OS
+### Launching SnappyData Container on macOS
 
-!!!Note
-	If you are using MAC OS, you must redirect the ports manually. If you use `--net=host`, it may not work correctly on the Mac OS. You can use the following modified command for Mac OS:
+If you are using macOS, you must redirect the ports manually using `-p` parameter. If you use `--net=host`, it may not work correctly on the macOS. You can use the following modified command for macOS:
 
 ```
 $ docker run -d --name=snappydata -p 5050:5050 -p 1527:1527 -p 1528:1528 myrepo/snappydata start all -hostname-for-clients=<Machine_IP/Public_IP>
 ```
 
-The `-hostname-for-clients` parameter sets the IP Address or Hostname that the server listens for client connections. The command may take some time to execute.
+The `-hostname-for-clients` parameter sets the IP Address or Hostname that the server listens for client connections. The command may take few seconds to execute.
 
 
 ## Commonly used Docker Commands
 
 | Description| Docker Commands |
 |--------|--------|
-|      To check details of all the Docker containers  |     `$ docker ps -a `  |
-|      To check the Docker Logs  |     `$ docker logs <container-name>`   |
-|      To connect SnappyData with the Command Line Client. <br>Use Ctrl+D or type ‘exit;’ to exit the shell.  |     `$ docker exec -it <container-name> ./bin/snappy`   |
-|     To launch a Spark shell. <br>Use type ‘:q’ to exit the shell. |     `$ docker exec -it <container-name> bin/spark-shell `  |
-|      To stop the Cluster.  |     `$ docker exec -it <container-name> ./sbin/snappy-stop-all.sh `  |
-|      To stop the Container.  |     `$ docker stop <container-name> ` |
-|      To run commands inside the container. |     `$ docker exec -it <container-name> /bin/bash`  |
+|      To check details of all the Docker containers.  |     `$ docker ps -a `  |
+|      To check the container logs.  |     `$ docker logs <container-name>`   |
+|      To launch Snappy Shell. |     `$ docker exec -it <container-name> ./bin/snappy`   |
+|     To launch Spark Shell.  |     `$ docker exec -it <container-name> ./bin/spark-shell `  |
+|      To stop the cluster.  |     `$ docker exec -it <container-name> ./sbin/snappy-stop-all.sh `  |
+|      To stop the container.  |     `$ docker stop <container-name> ` |
+|      To open bash shell inside the container. |     `$ docker exec -it <container-name> /bin/bash`  |
