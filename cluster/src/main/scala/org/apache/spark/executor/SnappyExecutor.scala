@@ -114,7 +114,7 @@ class SnappyExecutor(
                 env.securityManager, hadoopConf, -1L, useCache = !isLocal)
               val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
               if (includeInGlobalCmdRegion) {
-                Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + appName,
+                Misc.getMemStore.getMetadataCmdRgn.put(ContextJarUtils.functionKeyPrefix + appName,
                   name)
               }
               url // points to the jar in executor's work directory

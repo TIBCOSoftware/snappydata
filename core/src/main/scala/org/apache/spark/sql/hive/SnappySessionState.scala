@@ -48,7 +48,7 @@ import org.apache.spark.sql.internal._
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager, WindowLogicalPlan}
+import org.apache.spark.sql.streaming.{LogicalDStreamPlan, SnappyStreamingQueryManager, StreamingQueryManager, WindowLogicalPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Strategy, _}
 import org.apache.spark.streaming.Duration
@@ -76,7 +76,7 @@ class SnappySessionState(val snappySession: SnappySession)
     // this session including non-streaming queries.
 
     HashAggregateSize.set(conf, "-1")
-    new StreamingQueryManager(snappySession)
+    new SnappyStreamingQueryManager(snappySession)
   }
 
   private[sql] lazy val hiveSession: SparkSession = {

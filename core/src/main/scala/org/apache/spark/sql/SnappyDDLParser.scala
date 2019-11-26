@@ -19,14 +19,10 @@ package org.apache.spark.sql
 
 import java.io.File
 
-import scala.util.Try
-
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, QueryHint}
-import org.parboiled2._
-import shapeless.{::, HNil}
-
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
@@ -44,6 +40,10 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
+import org.parboiled2._
+import shapeless.{::, HNil}
+
+import scala.util.Try
 
 abstract class SnappyDDLParser(session: SnappySession)
     extends SnappyBaseParser(session) {
@@ -135,6 +135,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def DISKSTORE: Rule0 = rule { keyword(Consts.DISKSTORE) }
   final def ENABLE: Rule0 = rule { keyword(Consts.ENABLE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
+  final def EXEC: Rule0 = rule { keyword(Consts.EXEC) }
   final def EXECUTE: Rule0 = rule { keyword(Consts.EXECUTE) }
   final def EXPLAIN: Rule0 = rule { keyword(Consts.EXPLAIN) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
@@ -183,6 +184,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def PERCENT: Rule0 = rule { keyword(Consts.PERCENT) }
   final def POLICY: Rule0 = rule { keyword(Consts.POLICY) }
   final def PRIMARY: Rule0 = rule { keyword(Consts.PRIMARY) }
+  final def PRIVILEGE: Rule0 = rule { keyword(Consts.PRIVILEGE) }
   final def PURGE: Rule0 = rule { keyword(Consts.PURGE) }
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
@@ -194,6 +196,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def RESTRICT: Rule0 = rule { keyword(Consts.RESTRICT) }
   final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
   final def RLIKE: Rule0 = rule { keyword(Consts.RLIKE) }
+  final def SCALA: Rule0 = rule { keyword(Consts.SCALA) }
   final def SCHEMAS: Rule0 = rule { keyword(Consts.SCHEMAS) }
   final def SECURITY: Rule0 = rule { keyword(Consts.SECURITY) }
   final def SEMI: Rule0 = rule { keyword(Consts.SEMI) }
@@ -467,6 +470,38 @@ abstract class SnappyDDLParser(session: SnappySession)
     (capture(beforeDDLEnd.*) ~> ((s: String) =>
       new StringBuilder().append(s))) ~ tableEnd1
   }
+
+  /**
+   *  INTP options (...) code {  ...... }
+   * @return LogicalPlan
+   */
+  protected def interpretCode: Rule1[LogicalPlan] = rule {
+    EXEC ~ ws ~ SCALA ~ ws ~ (OPTIONS ~ options ~ ws).? ~ codeChunk ~> {
+      ( opts: Any, code: String) =>
+        val parameters = opts.asInstanceOf[Option[Map[String, String]]]
+          .getOrElse(Map.empty[String, String])
+
+        InterpretCodeCommand(code, parameters)
+    }
+  }
+
+  protected def grantRevokeIntp: Rule1[LogicalPlan] = rule {
+    GRANT ~ ws ~ PRIVILEGE ~ ws ~ EXEC ~ ws ~ SCALA ~ ws ~ TO ~
+      ws ~ capture(ANY.*) ~> {
+      (users: String) => GrantRevokeIntpCommand(true, users) } |
+    REVOKE ~ ws ~ PRIVILEGE ~ ws ~ EXEC ~ ws ~ SCALA ~ ws ~ FROM ~
+      ws ~ capture(ANY.*) ~> {
+        (users: String) => GrantRevokeIntpCommand(false, users)
+    }
+  }
+
+  protected def codeChunk: Rule1[String] = rule {
+    capture(ANY.*) ~ EOI ~> ((code : String) => code )
+    /***
+    '{' ~ capture(ANY) ~ '}' ~> ((code : String) => code )
+     ***/
+  }
+
 
   protected def createIndex: Rule1[LogicalPlan] = rule {
     (CREATE ~ (GLOBAL ~ HASH ~ push(false) | UNIQUE ~ push(true)).? ~ INDEX) ~
@@ -975,12 +1010,18 @@ abstract class SnappyDDLParser(session: SnappySession)
         ((pairs: Any) => pairs.asInstanceOf[Seq[(String, String)]].toMap)
   }
 
+  protected final def allowDDL: Rule0 = rule {
+    MATCH ~> (() => test({
+      SnappyContext.getClusterMode(session.sparkContext).isInstanceOf[ThinClientConnectorMode] || !Misc.getGemFireCache.isSnappyRecoveryMode
+    }))
+  }
+
   protected def ddl: Rule1[LogicalPlan] = rule {
-    createTableLike | createHiveTable | createTable | describe | refreshTable | dropTable |
-    truncateTable | createView | createTempViewUsing | dropView | alterView | createSchema |
+    describe | allowDDL ~ (createTableLike | createHiveTable | createTable | refreshTable |
+    dropTable | truncateTable | createView | createTempViewUsing | dropView | alterView | createSchema |
     dropSchema | alterTableToggleRowLevelSecurity | createPolicy | dropPolicy |
     alterTableProps | alterTableOrView | alterTable | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | passThrough
+    createIndex | dropIndex | createFunction | dropFunction | grantRevokeIntp | passThrough | interpretCode )
   }
 
   protected def partitionSpec: Rule1[Map[String, Option[String]]]

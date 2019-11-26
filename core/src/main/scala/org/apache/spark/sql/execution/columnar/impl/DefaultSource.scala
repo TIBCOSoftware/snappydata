@@ -16,9 +16,9 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog
-
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
@@ -175,16 +175,16 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
         session.sqlContext,
         baseTable)
       case None => new ColumnFormatRelation(
-        fullTableName,
-        getClass.getCanonicalName,
-        mode,
-        schema,
-        schemaExtension,
-        ddlExtensionForShadowTable,
-        tableOptions,
-        externalStore,
-        partitioningColumns,
-        session.sqlContext)
+          fullTableName,
+          getClass.getCanonicalName,
+          mode,
+          schema,
+          schemaExtension,
+          ddlExtensionForShadowTable,
+          tableOptions,
+          externalStore,
+          partitioningColumns,
+          session.sqlContext)
     }
     try {
       logDebug(s"Trying to create table $fullTableName")

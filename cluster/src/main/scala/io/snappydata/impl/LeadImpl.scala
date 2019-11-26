@@ -20,13 +20,12 @@ import java.lang.reflect.{Constructor, Method}
 import java.net.{URL, URLClassLoader}
 import java.security.Permission
 import java.sql.SQLException
-import java.util.Properties
+import java.util.{Properties, UUID}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
@@ -43,13 +42,14 @@ import com.pivotal.gemfirexd.{Attribute, Constants, FabricService, NetworkInterf
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
 import io.snappydata.cluster.ExecutorInitiator
+import io.snappydata.metrics.SnappyMetricsSystem
+import io.snappydata.recovery.RecoveryService
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
-
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.SecurityUtils
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
@@ -305,7 +305,7 @@ class LeadImpl extends ServerImpl with Lead
       // start the service to gather table statistics
       SnappyTableStatsProviderService.start(sc, url = null)
 
-      if (startHiveServer) {
+      if (startHiveServer && !Misc.getGemFireCache.isSnappyRecoveryMode) {
         val hiveService = SnappyHiveThriftServer2.start(useHiveSession)
         if (jobServerWait) SnappyHiveThriftServer2.getHostPort(hiveService) match {
           case None => addStartupMessage(s"Started hive thrift server ($hiveSessionKind)")
@@ -317,12 +317,20 @@ class LeadImpl extends ServerImpl with Lead
       // update the Spark UI to add the dashboard and other SnappyData pages
       ToolsCallbackInit.toolsCallback.updateUI(sc)
 
+      // start snappy metric system
+      SnappyMetricsSystem.init(sc)
+
       // start other add-on services (job server)
       startAddOnServices(conf, confFile, jobServerConfig)
 
       // finally start embedded zeppelin interpreter if configured and security is not enabled.
       if (!authSpecified) {
         checkAndStartZeppelinInterpreter(zeppelinEnabled, bootProperties)
+      }
+
+      // If recovery mode then initialize the recovery service
+      if(Misc.getGemFireCache.isSnappyRecoveryMode) {
+        RecoveryService.collectViewsAndPrepareCatalog()
       }
 
       if (jobServerWait) {
@@ -373,12 +381,18 @@ class LeadImpl extends ServerImpl with Lead
         val primaryLeaderLock = new DistributedMemberLock(dls,
           LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
           DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
-
         val startStatus = primaryLeaderLock.tryLock()
         // noinspection SimplifyBooleanMatch
         startStatus match {
           case true =>
             logInfo("Primary lead lock acquired.")
+
+            // store unique cluster id to metadataCmdRgn
+            var clusterUuid = Misc.getMemStore.getMetadataCmdRgn.get(Constant.CLUSTER_ID)
+            if (clusterUuid == null) {
+              val region = Misc.getMemStore.getMetadataCmdRgn
+              region.put(Constant.CLUSTER_ID, UUID.randomUUID().toString)
+            }
 
             LocalDirectoryCleanupUtil.save()
           // let go.

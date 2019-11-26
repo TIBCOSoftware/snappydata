@@ -125,6 +125,9 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   final def formatName(name: String): String =
     if (sqlConf.caseSensitiveAnalysis) name else JdbcExtendedUtils.toLowerCase(name)
 
+  def getSampleRelations(baseTable: TableIdentifier): Seq[(LogicalPlan, String)] = Seq.empty
+  def getSamples(base: LogicalPlan): Seq[LogicalPlan] = Seq.empty
+
   /** API to get primary key or Key Columns of a SnappyData table */
   def getKeyColumns(table: String): Seq[Column] = getKeyColumnsAndPositions(table).map(_._1)
 
@@ -332,8 +335,12 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     if (externalCatalog.databaseExists(schemaName)) {
       if (!ignoreIfExists) throw new AnalysisException(s"Schema '$schemaName' already exists")
     } else {
+      val orgSqlText = snappySession.getContextObject[String]("orgSqlText") match {
+        case Some(s) => s
+        case None => ""
+      }
       super.createDatabase(CatalogDatabase(schemaName, schemaDescription(schemaName),
-        getDefaultDBPath(schemaName), Map.empty), ignoreIfExists)
+        getDefaultDBPath(schemaName), Map("orgSqlText" -> orgSqlText)), ignoreIfExists)
     }
 
     // then in store if catalog was successful
