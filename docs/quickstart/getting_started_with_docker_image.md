@@ -25,11 +25,11 @@ $ docker run hello-world
 <a id="build-your-docker"></a>
 ## Building Docker Image of SnappyData</br>
 
-A sample Dockerfile is provide which can be used to create your own Docker image of SnappyData.
+A sample Dockerfile is provided which can be used to create your own Docker image of SnappyData.
 
 Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) script and place it into a directory. The Dockerfile contains a link to the latest SnappyData OSS version to build the image. 
 
-Move into the directory containing the downloaded Dockerfile and then run the docker build command with the required details to build the docker image. You can create an image using any one of the following options:
+Move into the directory containing the downloaded Dockerfile and then run the Docker build command with the required details to build the Docker image. You can create an image using any one of the following options:
 
 *	[Building Image from the Latest Version of SnappyData OSS](#builddockerimagesnappy)
 *	[Building Image from URL of a Public Site Containing the Product Tarball](#builddockerurl)
@@ -44,7 +44,7 @@ $ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] .
 ```
 
 !!!Note
-	If the `--build-arg` is not provided, it will download the latest version of SnappyData OSS release and build a Docker image for the same.
+	If you do not provide an argument is provided in the Dockerfile, the latest version of the SnappyData OSS release is downloaded and a Docker image for the same is built
 
 For example :
 
@@ -61,28 +61,40 @@ $ docker build -t myrepo/snappydata:1.1.1 .
 This image will have a tag `1.1.1 ` .
 
 <a id="builddockerurl"></a>
-### Building Image from URL of a Public Site Containing the Product Tarball
+### Building Image from a URL Directing to SnappyData Binaries
 
-If you want to create an image from a different version of the SnappyData product, you can specify the URL in the command.
+If you want to create a Docker image from any of the previous versions of SnappyData, you can specify the URL of the tarfile in the build command.
+
 
 ```
-$ docker build -t myrepo/snappydata . --build-arg URL=<public-url>
+$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=<public-url>
+
 ```
 
 For example:
 
 ```
-$ docker build -t myrepo/snappydata . --build-arg URL=https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.1/snappydata-1.1.1-bin.tar.gz
+$ docker build -t myrepo/snappydata . --build-arg URL=https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.1/snappydata-<version>-bin.tar.gz
 ```
 
 <a id="builddockerimageslocal"></a>
-### Building Image from Local Copy of Product Tarball
+### Building Image from Local Copy of SnappyData Product TAR file 
 
-Download SnappyData tarball locally on your machine from [here](https://snappydatainc.github.io/snappydata/install/). Copy the downloaded **tar.gz** file to the docker folder where the Dockerfile is placed. Run the Dockerfile using the following command:
+If you have already downloaded the SnappyData tarfile locally onto your machine, use the following steps to build an image from the downloaded binaries. To download SnappyData, refer to the [Provisioning SnappData](https://snappydatainc.github.io/snappydata/install/) section in the product documentation.
+
+Copy the downloaded **tar.gz** file to the Docker folder where you have placed the Dockerfile and run the following command:
 
 ```
-$ docker build -t myrepo/snappydata -f Dockerfile . --build-arg URL=<tar-ball name>
+$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=<tarfile name>
+
 ```
+
+For example:
+
+```
+$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=snappydata-<version>-bin.tar.gz
+```
+
 
 ## Getting Details of Docker Images
 
@@ -95,9 +107,9 @@ $ docker images
 
 ```
 
-## Publishing the Docker Image
+## Publishing Docker Image
 
-If you want to push the image onto Docker hub, login to the Docker account using `docker login` command and provide your Docker login credentials, followed by the `docker push` command. For more information, visit [here](https://docs.docker.com/engine/reference/commandline/login).
+If you want to publish the Docker image onto the Docker hub, login to the Docker account using Docker login command and provide your credentials, followed by the docker push command. For more information on Docker login, visit [here](https://docs.docker.com/engine/reference/commandline/login).
 
 ```
 $ docker push <your-docker-repo-name>/<image_name>[:<image-tag>]
@@ -117,14 +129,20 @@ In the command prompt, execute the following commands to launch the SnappyData c
 
 ```
 $ docker run -itd --net=host --name <container-name> <your-docker-repo-name>/<image_name>[:<image-tag>] start all
+
+# -i: keep the STDIN open even in not attached
+# -t : allocate psuedo-TTY 
+# -d : detach and run container in background and print container ID
+# --net=host : Use the Docker host network stack
 ```
 
-If the image is not available locally, this fetches the Docker image from the Docker registry, launches a basic cluster consisting of one data node, one lead, and one locator in a container.
+If the image is not available locally, this fetches the Docker image from the Docker registry, launches a default cluster consisting of one data node, one lead, and one locator in a container.
 
 ### For Linux,
 
 ```
 $ docker run -itd --net=host --name snappydata myrepo/snappydata start all
+
 ```
 
 ### For Mac OS
@@ -149,7 +167,7 @@ The `-hostname-for-clients` parameter sets the IP Address or Hostname that the s
 |     To launching a Spark shell. <br>Use type ‘:q’ to exit the shell. |     `$ docker exec -it <container-name> bin/spark-shell `  |
 |      To stop the Cluster.  |     `$ docker exec -it <container-name> ./sbin/snappy-stop-all.sh `  |
 |      To stop the Container.  |     `$ docker stop <container-name> ` |
-|      To run commands inside the container. |     `$ docker exec -it snappydata /bin/bash`  |
+|      To run commands inside the container. |     `$ docker exec -it <container-name> /bin/bash`  |
 
 
 
