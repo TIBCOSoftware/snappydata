@@ -168,6 +168,7 @@ allprojects {
     sparkJobServerVersion = '0.6.2.10'
     eclipseCollectionsVersion = '9.2.0'
     fastutilVersion = '8.2.2'
+    sparkMetricsLibVersion = '2.0.0'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
@@ -279,6 +280,11 @@ task cleanScalaTest { doLast {
 } }
 task cleanJUnit { doLast {
   String workingDir = "${testResultsBase}/junit"
+  delete workingDir
+  file(workingDir).mkdirs()
+} }
+task cleanRecoveryTest { doLast {
+  String workingDir = "${testResultsBase}/recoveryTest"
   delete workingDir
   file(workingDir).mkdirs()
 } }
@@ -450,6 +456,62 @@ subprojects {
       def progress = new File(workingDir, 'progress.txt')
       numTestClasses = getCandidateClassFiles().getFiles().size()
       progress << "${eol}${now} ========== STARTING DUNIT TEST SUITE FOR ${project.name} ==========${eol}${eol}"
+    }
+    beforeSuite { desc ->
+      if (desc.className != null) {
+        def count = testCount.incrementAndGet()
+        println "${now()} Start ${desc.className} ($count/$numTestClasses)"
+      }
+    }
+    afterSuite { desc, result ->
+      if (desc.className != null) {
+        println "${now()} END ${desc.className}"
+      }
+    }
+  }
+
+  task recoveryTest(type: Test) {
+    dependsOn ':cleanRecoveryTest'
+    dependsOn ':product'
+    dependsOn ':copyShadowJars'
+
+    maxParallelForks = 1
+    minHeapSize '4g'
+    maxHeapSize '4g'
+
+    // limit netty buffer arenas to avoid occasional OOMEs with 1.5g heap
+    int numArenas = Math.min(8, Runtime.getRuntime().availableProcessors())
+    jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError',
+               '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
+               '-XX:CMSInitiatingOccupancyFraction=50',
+               '-XX:+CMSClassUnloadingEnabled', '-ea',
+               '-Dspark.sql.codegen.cacheSize=1000',
+               '-Dspark.ui.retainedStages=500',
+               '-Dspark.ui.retainedJobs=500',
+               '-Dspark.sql.ui.retainedExecutions=500',
+               '-Dio.netty.allocator.pageSize=8192',
+               '-Dio.netty.allocator.maxOrder=10',
+               "-Dio.netty.allocator.numHeapArenas=${numArenas}",
+               "-Dio.netty.allocator.numDirectArenas=${numArenas}"]
+
+    workingDir = "${testResultsBase}/recoveryTest"
+    systemProperties 'java.net.preferIPv4Stack': 'true',
+        'SNAPPY_HOME': snappyProductDir,
+        'RECOVERY_TEST_DIR': workingDir
+
+    binResultsDir = file("${workingDir}/binary/${project.name}")
+    reports.html.destination = file("${workingDir}/html/${project.name}")
+    reports.junitXml.destination = file(workingDir)
+
+    int numTestClasses = 0
+    def testCount = new java.util.concurrent.atomic.AtomicInteger(0)
+
+    doFirst {
+      String eol = System.getProperty('line.separator')
+      String now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
+      def progress = new File(workingDir, 'progress.txt')
+      numTestClasses = getCandidateClassFiles().getFiles().size()
+      progress << "${eol}${now} ========== STARTING RECOVERY TEST SUITE FOR ${project.name} ==========${eol}${eol}"
     }
     beforeSuite { desc ->
       if (desc.className != null) {
@@ -662,7 +724,11 @@ gradle.taskGraph.whenReady { graph ->
     dunitSecSingle = rootProject.hasProperty('dunitSecurity.single') ?
         rootProject.property('dunitSecurity.single') : null
   }
-
+  String recoverySingle = System.getProperty('recovery.single')
+  if (recoverySingle == null || recoverySingle.length() == 0) {
+    recoverySingle = rootProject.hasProperty('recovery.single') ?
+        rootProject.property('recovery.single') : null
+  }
   def allTasks = subprojects.collect { it.tasks }.flatten()
   allTasks.each { task ->
     if (task instanceof Tar) {
@@ -686,7 +752,8 @@ gradle.taskGraph.whenReady { graph ->
               includes = [ '**/*DUnitTest.class', '**/*DUnit.class' ]
               excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/*HDFS*DUnit*.class',
                   '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
-                  '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class' ]
+                  '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class',
+                           '**/pivotal/gemfirexd/wan/**/*DUnit.class', '**/*DUnitRecoveryTest.class' ]
             }
             FileTree includeTestFiles = dunitTests
             int dunitFrom = rootProject.hasProperty('dunit.from') ?
@@ -713,7 +780,7 @@ gradle.taskGraph.whenReady { graph ->
           } else if (dunitSecSingle == null || dunitSecSingle.length() == 0) {
             def dunitSecurityTests = testClassesDirs.asFileTree.matching {
               includes = [ '**/*DUnitSecurityTest.class' ]
-              excludes = [ '**/*Suite.class', '**/*DUnitTest.class', '**/*DUnit.class' ]
+              excludes = [ '**/*Suite.class', '**/*DUnitTest.class', '**/*DUnit.class', '**/*DUnitRecoveryTest.class' ]
             }
             FileTree includeTestFiles = dunitSecurityTests
             int dunitFrom = rootProject.hasProperty('dunitSecurity.from') ?
@@ -731,6 +798,23 @@ gradle.taskGraph.whenReady { graph ->
             include filteredSet
           } else {
             include dunitSecSingle
+          }
+        } else if (test.name == 'recoveryTest') {
+          includes.clear()
+          excludes.clear()
+          if (!rootProject.hasProperty('snappydata.enterprise')) {
+            excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/*DUnitTest.class', '**/*DUnit.class' ]
+          } else if (recoverySingle == null || recoverySingle.length() == 0) {
+            def recoveryTests = testClassesDirs.asFileTree.matching {
+              includes = [ '**/*DUnitRecoveryTest.class' ]
+              excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/*HDFS*DUnit*.class',
+                           '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
+                           '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class', '**/*Suite.class', '**/*DUnitTest.class', '**/*DUnit.class' ]
+            }
+            FileTree includeTestFiles = recoveryTests
+            include includeTestFiles.collect {f -> "**/" + f.name}
+          } else {
+            include recoverySingle
           }
         }
 
