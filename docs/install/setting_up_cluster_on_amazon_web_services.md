@@ -202,9 +202,9 @@ aws/ec2 directory where the [SnappyData cloud tools repository](https://github.c
 
 Here:
 
-* `<your-key-name>` refers to the EC2 key pair.
+* `<your-key-name>` refers to the name of your EC2 key pair.
 
-* `<your-keyfile-path>` refers to the path to the key file.
+* `<your-keyfile-path>` refers to the path to the key (typically .pem) file.
 
 * `<action>` refers to the action to be performed. Some of the available actions are `launch`, `destroy`, `stop`, `start` and `reboot-cluster`.
 Use `launch` action to create a new cluster while `stop` and `start` actions work on existing clusters.
@@ -245,7 +245,7 @@ An IAM user in AWS can gain additional (or different) permissions, or get permis
 **Example**
 
 ```
--./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> stop snap_ec2_cluster --with-zeppelin --authorized-address=<Authorized IP Address> --assume-role-arn=<role-arn> --assume-role-timeout=<timeout> --assume-role-session-name=<name-for-session>
+./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> stop snap_ec2_cluster --with-zeppelin --authorized-address=<Authorized IP Address> --assume-role-arn=<role-arn> --assume-role-timeout=<timeout> --assume-role-session-name=<name-for-session>
 ```
 
 !!! Note
@@ -526,8 +526,8 @@ on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.a
 This section covers the following:
 
 *	[Prerequisites](#prereqaws)
-*	[Launching the Instance](#launchawsinstance)
-
+*	[Launching the Instance and Cluster](#launchawsinstance)
+*	[Accessing the Cluster](#accesssnappydatacluster)
 
 !!! Attention
 	The AMIs of SnappyData are currently unavailable on AWS.
@@ -589,7 +589,7 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
 12. Download the required SnappyData distribution (.tar.gz) into this EC2 instance. You can find the latest SnappyData Community Edition (OSS) release [here](https://github.com/snappydatainc/snappydata/releases/latest).
 
-    * When we make the SnappyData AMI available on AWS in future, it'll have the distribution pre-installed. In that case, you can jump to step 15.
+    * When we make the SnappyData AMI available on AWS in future, it will have the distribution pre-installed. In that case, you can jump to [step 15](#15step).
 
 13. Extract the tarball to /opt/snappydata/.
 
@@ -603,7 +603,7 @@ Refer to the following documentation, for more information on [accessing an EC2 
 		sudo yum -y -q install java-1.8.0-openjdk-devel
 		java -version  # Ensure it prints correct Java version
 
-15. Setup [passwordless ssh](../reference/misc/passwordless_ssh.md) on this instance. This requirement may be removed in future, for single-instance installation on AWS.
+15. <a id="15step"></a>Setup [passwordless ssh](../reference/misc/passwordless_ssh.md) on this instance. This requirement may be removed in future, for single-instance installation on AWS.
 
 16. Run below commands to update the cluster configuration.
 
