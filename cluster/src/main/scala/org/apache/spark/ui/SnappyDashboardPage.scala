@@ -19,7 +19,6 @@
 
 package org.apache.spark.ui
 
-import java.util.Calendar
 import javax.servlet.http.HttpServletRequest
 
 import scala.xml.Node
@@ -29,14 +28,11 @@ import org.apache.spark.internal.Logging
 private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     extends WebUIPage("") with Logging {
 
-  private val startDate = Calendar.getInstance().getTime()
-
   override def render(request: HttpServletRequest): Seq[Node] = {
 
     val pageHeaderText: String = SnappyDashboardPage.pageHeaderText
 
     // Generate Pages HTML
-    val dataNode = createHiddenDataNode
     val pageTitleNode = createPageTitleNode(pageHeaderText)
 
     val clusterStatsDetails = {
@@ -83,7 +79,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                               UIUtils.prependBaseUri("/static/snappydata/snappy-dashboard.js")
                             }></script>
 
-    val pageContent = jsScripts ++ dataNode ++ pageTitleNode ++ clusterStatsDetails ++
+    val pageContent = jsScripts ++ pageTitleNode ++ clusterStatsDetails ++
                       membersStatsDetails ++ tablesStatsDetails ++ extTablesStatsDetails
 
     UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500),
@@ -151,11 +147,6 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         </h4>
       </div>
     </div>
-  }
-
-  private def createHiddenDataNode: Seq[Node] = {
-    <div id="hiddenData" style="display: none;"
-         data-clusterstarttime={startDate.getTime.toString}></div>
   }
 
   private def clusterStats(): Seq[Node] = {
