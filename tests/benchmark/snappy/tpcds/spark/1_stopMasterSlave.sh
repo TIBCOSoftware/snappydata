@@ -2,9 +2,9 @@
 source PerfRun.conf
 
 #top master and slaves from master machines
-ssh $master bash $SnappyData/sbin/stop-all.sh
+ssh $master bash $sparkHome/sbin/stop-all.sh
 
-rm -rf $SnappyData/conf/slaves
+rm -rf $sparkHome/conf/slaves
 
 #echo "*****************kill java on lead**********************"
 #ssh $client killall -9 java
