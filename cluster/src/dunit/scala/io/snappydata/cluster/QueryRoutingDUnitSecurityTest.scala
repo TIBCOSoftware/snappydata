@@ -148,11 +148,16 @@ class QueryRoutingDUnitSecurityTest(val s: String)
       val rs = st.getResultSet
       assert(rs.next())
       assert(rs.getString(1).equals("x: Int = 5"))
+      if (expectException) assert(false, "expected exception")
     } catch {
       case sqle: SQLException => {
         if (expectException) {
           // SQLState should be
           assert("42504".equals(sqle.getSQLState))
+        } else {
+          sqle.printStackTrace()
+          println(s"sqle state: ${sqle.getSQLState}")
+          assert(false, "did not expect exception")
         }
       }
     }
@@ -177,6 +182,7 @@ class QueryRoutingDUnitSecurityTest(val s: String)
     doExecScalaSimpleStuff(st2, true)
     try {
       st2.execute(s"grant privilege exec scala to $nonAdminUser")
+      assert(false, "expected exception in granting as not super user")
     } catch {
       case sqle: SQLException => if (!"4250A".equals(sqle.getSQLState)) {
         throw sqle
@@ -185,12 +191,12 @@ class QueryRoutingDUnitSecurityTest(val s: String)
     // allow gemGroup3 -- allowed users then will be gemfire6, 7 and 8
     // Before grant expect exception
     val connNoAdminGrp1 = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, "gemfire7", "gemfire7")
-    val st7 = connNoAdmin.createStatement()
+    val st7 = connNoAdminGrp1.createStatement()
     doExecScalaSimpleStuff(st7, true)
     st.execute(s"grant privilege exec scala to LDAPGROUP:gemGroup3")
     doExecScalaSimpleStuff(st7)
     val connNoAdminGrp2 = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, "gemfire8", "gemfire8")
-    val st8 = connNoAdmin.createStatement()
+    val st8 = connNoAdminGrp2.createStatement()
     doExecScalaSimpleStuff(st7)
     // now revoke all and expect exception
     st.execute(s"revoke privilege exec scala from $nonAdminUser,LDAPGROUP:gemGroup3")
