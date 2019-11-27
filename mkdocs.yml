@@ -23,7 +23,7 @@ pages:
 - 'Getting Started': 
     - 'On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
     - 'Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
-    - 'Docker Image': 'quickstart/getting_started_with_docker_image.md'
+#    - 'Docker Image': 'quickstart/getting_started_with_docker_image.md'
     - 'Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
     - 'TIBCO ComputeDB Quickstart Guide': 'quickstart/snappydataquick_start.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
