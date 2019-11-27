@@ -4,9 +4,6 @@ io.snappydata.hydra.cluster.SnappyPrms-cycleVms = true;
 util.StopStartPrms-stopModes = NICE_KILL;
 util.StopStartPrms-numVMsToStop = 1;
 
-INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = backUpLeadConfigData
-            threadGroups = snappyThreads;
-
 TASK       taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest taskMethod  = HydraTask_restartLeadVMWithStreaming
            io.snappydata.hydra.cluster.SnappyPrms-streamingJobClassNames = io.snappydata.hydra.streaming_sink.SnappyStreamingSinkJob
            io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "kafkaTopic=streamingSinkTopic,tableName=persoon,streaming.batch_interval=100,isConflation=false"

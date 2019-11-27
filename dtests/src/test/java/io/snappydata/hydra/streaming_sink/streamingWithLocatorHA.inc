@@ -4,9 +4,6 @@ io.snappydata.hydra.cluster.SnappyPrms-cycleVms = true;
 util.StopStartPrms-stopModes = NICE_KILL;
 util.StopStartPrms-numVMsToStop = 1;
 
-INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  =  backUpLocatorConfigData
-            threadGroups = snappyThreads;
-
 TASK       taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleLocatorVms
            startInterval = 60
            threadGroups = snappyThreads
