@@ -1371,8 +1371,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     // check for permissions in the schema which should be done before the session catalog
     // createTable call since store table will be created by that time
-    val resolvedName = sessionCatalog.resolveTableIdentifier(tableIdent)
-    sessionCatalog.checkSchemaPermission(resolvedName.database.get, resolvedName.table,
+    val resolvedIdentifier = sessionCatalog.resolveTableIdentifier(tableIdent)
+    sessionCatalog.checkSchemaPermission(resolvedIdentifier.database.get, resolvedIdentifier.table,
       defaultUser = null, ignoreIfNotExists = true)
 
     val schema = userSpecifiedSchema match {
@@ -1411,7 +1411,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case None => {
         // case when create api was used - sql text cannot be captured in this case.
         userSpecifiedSchema match {
-          case Some(schema) => s"create table ${resolvedName.table} (${getDDLSchema(schema)})"
+          case Some(schema) => s"create table ${resolvedIdentifier.table} (${getDDLSchema(schema)})"
           case None => ""
         }
       }
@@ -1430,7 +1430,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
 
     val tableDesc = CatalogTable(
-      identifier = resolvedName,
+      identifier = resolvedIdentifier,
       tableType = tableType,
       storage = storage,
       schema = schema,
@@ -1439,19 +1439,27 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       partitionColumnNames = partitionColumns,
       bucketSpec = bucketSpec)
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
+    val tableAlreadyExisted = sessionState.catalog.tableExists(resolvedIdentifier)
     sessionState.executePlan(plan).toRdd
-    val df = table(resolvedName)
+    val df = table(resolvedIdentifier)
     val relation = df.queryExecution.analyzed.collectFirst {
       case l: LogicalRelation => l.relation
     }
     snappyContextFunctions.postRelationCreation(relation, this)
-    var catalogTable = externalCatalog.getTable(resolvedName.database.get, resolvedName.table)
-    val primaryKeys = getPrimaryKeys(resolvedName.database.get, resolvedName.table)
+    if (!tableAlreadyExisted) {
+      updatePrimaryKeyDetails(resolvedIdentifier)
+    }
+    df
+  }
+
+  private def updatePrimaryKeyDetails(resolvedIdentifier: TableIdentifier): Unit = {
+    val catalogTable = externalCatalog.getTable(resolvedIdentifier.database.get,
+      resolvedIdentifier.table)
+    val primaryKeys = getPrimaryKeys(resolvedIdentifier.database.get, resolvedIdentifier.table)
     if (primaryKeys.nonEmpty) {
       sessionCatalog.alterTable(catalogTable.copy(properties =
           catalogTable.properties + (s"primary_keys" -> primaryKeys.mkString(","))))
     }
-    df
   }
 
   /**
