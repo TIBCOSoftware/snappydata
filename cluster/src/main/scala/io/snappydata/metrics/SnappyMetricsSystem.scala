@@ -18,79 +18,145 @@
  */
 package io.snappydata.metrics
 
+import com.gemstone.gemfire.CancelException
+import com.gemstone.gemfire.i18n.LogWriterI18n
+import com.gemstone.gemfire.internal.SystemTimer
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui._
-import io.snappydata.{Constant, SnappyTableStatsProviderService}
-
+import io.snappydata.SnappyTableStatsProviderService
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.groupon.metrics.UserMetricsSystem
 import org.apache.spark.groupon.metrics._
+import io.snappydata.Constant._
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 object SnappyMetricsSystem {
 
   val oldSizeMap = collection.mutable.Map.empty[String, Int]
-  
   val MAX_SIZE = 180
 
-  def init(sc: SparkContext): Unit = {
+  var doRun: Boolean = false
+  var running: Boolean = false
 
+  var tables = ArrayBuffer.empty[String]
+  var externaltables = ArrayBuffer.empty[String]
+
+  private val logger: LogWriterI18n = Misc.getGemFireCache.getLoggerI18n
+
+  def init(sc: SparkContext): Unit = {
     GemFireXDUtils.waitForNodeInitialization()
     // initialize metric system with cluster id as metrics namespace
-    val clusterUuidObj = Misc.getMemStore.getMetadataCmdRgn.get(Constant.CLUSTER_ID)
+    val clusterUuidObj = Misc.getMemStore.getMetadataCmdRgn.get(CLUSTER_ID)
     val clusterUuid: String = if (clusterUuidObj != null) {
       clusterUuidObj.asInstanceOf[String]
     } else null
     UserMetricsSystem.initialize(sc, clusterUuid)
 
-    val timeInterval = 5000
+    if (!doRun) {
+      val delay = sc.getConf.getLong(PROPERTY_PREFIX +
+          "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
+      doRun = true
+      Misc.getGemFireCache.getCCPTimer.schedule(
+        new SystemTimer.SystemTimerTask {
 
-    // concurrently executing threads to get stats from StatsProviderServices
-    val runnable = new Runnable {
-      override def run(): Unit = {
-        while (true) {
-          try {
-            Thread.sleep(timeInterval)
-
-            // store every member diskStore ID to metadataCmdRgn
-            putMembersDiskStoreIdInRegion()
-
-            // get cluster stats and publish into metrics system
-            setMetricsForClusterStatDetails()
-
-            // get table stats and publish into metrics system
-            val tableBuff = SnappyTableStatsProviderService.getService.getAllTableStatsFromService
-            setMetricsForTableStatDetails(tableBuff)
-
-            // get external table stats and publish into metrics system
-            val externalTableBuff =
-              SnappyTableStatsProviderService.getService.getAllExternalTableStatsFromService
-            setMetricsForExternalTableStatDetails(externalTableBuff)
-
-            // get member stats and publish into metrics system
-            val memberBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
-            setMetricsForMemberStatDetails(memberBuff)
+          override def run2(): Unit = {
+            try {
+              if (doRun) {
+                convertStatsToMetrics()
+              }
+            } catch {
+              case _: CancelException => // ignore
+              case e: Exception => if (e.getMessage != null && !e.getMessage.contains(
+                "com.gemstone.gemfire.cache.CacheClosedException")) {
+                logger.warning(e)
+              } else {
+                logger.error(e)
+              }
+            }
           }
-          catch {
-            case e: InterruptedException => e.printStackTrace()
+
+          override def getLoggerI18n: LogWriterI18n = {
+            logger
           }
+        },
+        delay, delay)
+    }
+  }
+
+  def stop(): Unit = {
+    doRun = false
+    // wait for it to end for sometime
+    if (running) wait(10000)
+  }
+
+  def convertStatsToMetrics(): Unit = {
+    try {
+      val cache = Misc.getGemFireCacheNoThrow
+      if (doRun && cache != null) {
+        running = true
+        try {
+          // store every member diskStore ID to metadataCmdRgn
+          putMembersDiskStoreIdInRegion()
+
+          // get cluster stats and publish into metrics system
+          setMetricsForClusterStatDetails()
+
+          // get table stats and publish into metrics system
+          val tableBuff = SnappyTableStatsProviderService.getService.getAllTableStatsFromService
+          setMetricsForTableStatDetails(tableBuff)
+
+          // get external table stats and publish into metrics system
+          val externalTableBuff =
+            SnappyTableStatsProviderService.getService.getAllExternalTableStatsFromService
+          setMetricsForExternalTableStatDetails(externalTableBuff)
+
+          // get member stats and publish into metrics system
+          val memberBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
+          setMetricsForMemberStatDetails(memberBuff)
+        } finally {
+          running = false
         }
       }
+    } catch {
+      case _: CancelException => // ignore
+      case e: Exception =>
+        val msg = if (e.getMessage ne null) e.getMessage else e.toString
+        if (!msg.contains("com.gemstone.gemfire.cache.CacheClosedException")) {
+          logger.warning(e)
+        } else {
+          logger.error(e)
+        }
     }
-    val thread: Thread = new Thread(runnable)
-    thread.start()
   }
 
   def putMembersDiskStoreIdInRegion(): Unit = {
-    val membersBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
-    val sep = System.getProperty("file.separator")
-    val region = Misc.getMemStore.getMetadataCmdRgn
-    for ((k, v) <- membersBuff) {
-      val shortDirName = v.getUserDir.substring(
-        v.getUserDir.lastIndexOf(sep) + 1)
-      region.put(Constant.MEMBER_ID_PREFIX + shortDirName + k + "__", v.getDiskStoreUUID.toString)
+    try {
+      val cache = Misc.getGemFireCacheNoThrow
+      if (cache != null) {
+        val membersBuff = SnappyTableStatsProviderService.getService.getMembersStatsFromService
+        val sep = System.getProperty("file.separator")
+        val region = Misc.getMemStore.getMetadataCmdRgn
+        for ((k, v) <- membersBuff) {
+          val shortDirName = v.getUserDir.substring(
+            v.getUserDir.lastIndexOf(sep) + 1)
+          val key = MEMBER_ID_PREFIX + shortDirName + k + "__"
+          if (!region.containsKey(key)) {
+            region.put(key, v.getDiskStoreUUID.toString)
+          }
+        }
+      }
+    } catch {
+      case _: CancelException => // ignore
+      case e: Exception =>
+        val msg = if (e.getMessage ne null) e.getMessage else e.toString
+        if (!msg.contains("com.gemstone.gemfire.cache.CacheClosedException")) {
+          logger.warning(e)
+        } else {
+          logger.error(e)
+        }
     }
   }
 
@@ -102,6 +168,10 @@ object SnappyMetricsSystem {
   def createHistogram(metricName: String, metricValue: Long): Unit = {
     lazy val tempHistogram: SparkHistogram = UserMetricsSystem.histogram(metricName)
     tempHistogram.update(metricValue)
+  }
+
+  def remove(metricName: String): Unit = {
+    UserMetricsSystem.gauge(metricName).remove()
   }
 
   def setMetricsForClusterStatDetails(): Unit = {
@@ -147,7 +217,8 @@ object SnappyMetricsSystem {
     } else {
       if (oldSizeMap(metricName) == MAX_SIZE - 1) {
         if (!metricName.contains("cpuUsage")) {
-          val convertedMBVal = (newList(MAX_SIZE - 1).asInstanceOf[Double] * 1024).asInstanceOf[Long]
+          val convertedMBVal = (newList(MAX_SIZE - 1).
+              asInstanceOf[Double] * 1024).asInstanceOf[Long]
           createHistogram(metricName, convertedMBVal)
           createGauge(metricName.replace("Trend", ""), newList(MAX_SIZE - 1).asInstanceOf[AnyVal])
         } else {
@@ -157,6 +228,15 @@ object SnappyMetricsSystem {
       }
     }
     oldSizeMap.update(metricName, newList.size)
+  }
+
+  def removeTableMetricsIfTableDeleted(stringToStats: Map[String, SnappyRegionStats]): Unit = {
+    for (t <- tables) {
+      if (!stringToStats.exists(x => x._1 == t)) {
+        SnappyTableMetrics.removeTableMetrics(t)
+        tables -= t
+      }
+    }
   }
 
   def setMetricsForTableStatDetails(tableBuff: Map[String, SnappyRegionStats]): Unit = {
@@ -173,14 +253,29 @@ object SnappyMetricsSystem {
 
     createGauge(s"TableMetrics.columnTablesCount", columnTablesCount)
     createGauge(s"TableMetrics.rowTablesCount", rowTablesCount)
+    if (tableBuff.nonEmpty) {
+      for ((k, v) <- tableBuff) {
+        SnappyTableMetrics.convertStatsToMetrics(k, v)
+        if(!tables.contains(k)) {
+          tables += k
+        }
+      }
+    }
+    removeTableMetricsIfTableDeleted(tableBuff)
+  }
 
-    for ((k, v) <- tableBuff) {
-      SnappyTableMetrics.convertStatsToMetrics(k, v)
+  def removeExternalTableMetricsIfTableDeleted(stringToStats:
+    Map[String, SnappyExternalTableStats]): Unit = {
+    for (t <- externaltables) {
+      if (!stringToStats.exists(x => x._1 == t)) {
+        SnappyTableMetrics.removeExternalTableMetrics(t)
+        externaltables -= t
+      }
     }
   }
 
   def setMetricsForExternalTableStatDetails(externalTableBuff:
-       Map[String, SnappyExternalTableStats]): Unit = {
+                                            Map[String, SnappyExternalTableStats]): Unit = {
     var externalTablesCount = 0
     externalTableBuff.values.foreach(v => {
       if (v.getTableType == "EXTERNAL") {
@@ -188,10 +283,13 @@ object SnappyMetricsSystem {
       }
     })
     createGauge(s"TableMetrics.externalTablesCount", externalTablesCount)
-
     for ((k, v) <- externalTableBuff) {
       SnappyTableMetrics.convertExternalTableStatstoMetrics(k, v)
+      if(!externaltables.contains(k)) {
+        externaltables += k
+      }
     }
+    removeExternalTableMetricsIfTableDeleted(externalTableBuff)
   }
 
   def setMetricsForMemberStatDetails(membersBuff: mutable.Map[String, MemberStatistics]) {
