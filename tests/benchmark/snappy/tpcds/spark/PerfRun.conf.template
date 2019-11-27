@@ -11,11 +11,11 @@ sparkProperties="--driver-memory 2g --conf spark.executor.memory=3g"
 #Spark Sql properties are specified while executing query
 #spark.sql.shuffle.partitions=${shufflePartitions},spark.sql.inMemoryColumnarStorage.compressed=${inMemoryColumnarStorageCompressed}
 #spark.sql.inMemoryColumnarStorage.compressed=false
-sparkSqlProperties="\"\""
+sparkSqlProperties=""
 
 #location of checkout
 #SnappyData=$HOME/SNAPPY/CHECKOUT/snappydata/build-artifacts/scala-2.11/snappy
-SnappyData=$HOME/SNAPPY/CHECKOUT/spark-2.1.1-bin-hadoop2.7
+sparkHome=$APACHE_SPARK_HOME/spark-2.1.1-bin-hadoop2.7
 #SnappyData=$HOME/SNAPPY/CHECKOUT/snappydata-1.1.2-bin
 
 #Whether to repartition dataframe
