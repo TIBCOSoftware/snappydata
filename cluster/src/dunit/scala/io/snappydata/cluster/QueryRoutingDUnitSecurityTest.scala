@@ -197,7 +197,7 @@ class QueryRoutingDUnitSecurityTest(val s: String)
     doExecScalaSimpleStuff(st7)
     val connNoAdminGrp2 = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, "gemfire8", "gemfire8")
     val st8 = connNoAdminGrp2.createStatement()
-    doExecScalaSimpleStuff(st7)
+    doExecScalaSimpleStuff(st8)
     // now revoke all and expect exception
     st.execute(s"revoke privilege exec scala from $nonAdminUser,LDAPGROUP:gemGroup3")
     doExecScalaSimpleStuff(st2, true)

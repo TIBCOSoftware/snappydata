@@ -66,13 +66,13 @@ class CommandLineToolsSuite extends SnappyTestRunner {
                                             "val df2 = snappy.table(\"test_exec\")\n" +
                                             "val df3 = df1.union(df2)\n" +
                                             "df3.show"))
-      stmnt.execute("exec scala options(df 'true') snappy.table(\"test_exec\")")
+      stmnt.execute("exec scala options(returnDF 'true') snappy.table(\"test_exec\")")
       rs = stmnt.getResultSet
       assert(rs.next())
       // expected count is 1 because .table api returns DataSet and exec scala needs cached dataframe
       // to return result
       assert(rs.getMetaData.getColumnCount == 1)
-      assert(stmnt.execute("exec scala options(df 'true') snappy.sql(\"select * from test_exec\")"))
+      assert(stmnt.execute("exec scala options(returnDF 'true') snappy.sql(\"select * from test_exec\")"))
       rs = stmnt.getResultSet
       assert(rs.next())
       assert(rs.getMetaData.getColumnCount == 2)
