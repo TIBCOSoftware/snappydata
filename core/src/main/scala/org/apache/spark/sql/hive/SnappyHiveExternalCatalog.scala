@@ -405,14 +405,15 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
             catalogTable.properties ++ schemaJsonMap)
       }
       withHiveExceptionHandling(super.createTable(catalogTable_, ifExists))
-      // refresh cache for required tables
-      registerCatalogSchemaChange(refreshRelations)
     } catch {
       case e: TableAlreadyExistsException =>
         val objectType = CatalogObjectType.getTableType(tableDefinition)
         if (CatalogObjectType.isTableOrView(objectType)) throw e
         else throw objectExistsException(tableDefinition.identifier, objectType)
     }
+
+    // refresh cache for required tables
+    registerCatalogSchemaChange(refreshRelations)
   }
 
   def dropTableUnsafe(schema: String, table: String, forceDrop: Boolean): Unit = {
