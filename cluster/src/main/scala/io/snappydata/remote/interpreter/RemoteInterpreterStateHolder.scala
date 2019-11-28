@@ -111,7 +111,7 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
       resultBuffer +=  "___INCOMPLETE___"
     }
     if (options != null && options.nonEmpty &&
-       options.get(RemoteInterpreterStateHolder.optionDF).getOrElse("false").toBoolean) {
+      options.isDefinedAt(RemoteInterpreterStateHolder.optionDF)) {
       var allRequests = intp.prevRequestList.reverse
       while (allRequests.nonEmpty) {
         var request = allRequests.head
@@ -261,7 +261,7 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
 }
 
 object RemoteInterpreterStateHolder {
-  private val optionDF = "df"
+  private val optionDF = "returnDF"
 }
 
 class RemoteILoop(spw: StringPrintWriter, intpHelper: RemoteInterpreterStateHolder)
