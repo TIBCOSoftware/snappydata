@@ -1,5 +1,5 @@
 <a id="getting-started-with-docker-image"></a>
-# Building a docker image with TIBCO ComputeDB Binaries
+# Building a Docker Image with TIBCO ComputeDB Binaries
 
 The following instructions outline how to build a Docker image if you have the binaries of TIBCO ComputeDB.</br>
 
