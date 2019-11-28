@@ -1480,9 +1480,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       val rs = ps.executeQuery()
       if (rs.next()) {
         val keys = rs.getString(1)
-        if (keys != null && !keys.eq(""))
+        if (keys != null && !keys.eq("")) {
           // keys for table with c1, c2 as primary key looks like '+c1+c2'
           primaryKeys = keys.split("\\+").filter(!_.equals(""))
+        }
       }
     } catch {
       case sqle: SQLException =>
