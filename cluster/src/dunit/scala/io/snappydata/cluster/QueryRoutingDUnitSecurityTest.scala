@@ -17,11 +17,10 @@
 
 package io.snappydata.cluster
 
-import java.sql.{BatchUpdateException, Connection, DriverManager, ResultSet, SQLException}
+import java.sql._
 
 import io.snappydata.cluster.ClusterManagerLDAPTestBase.thriftPort
 import io.snappydata.test.dunit.AvailablePortHelper
-
 import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 
@@ -141,6 +140,71 @@ class QueryRoutingDUnitSecurityTest(val s: String)
         s" network server started at $serverHostPort")
     // scalastyle:on println
     QueryRoutingDUnitSecurityTest.checkMetastoreAccess(adminUser, jdbcUser4, serverHostPort)
+  }
+
+  private def doExecScalaSimpleStuff(st: Statement, expectException: Boolean = false): Unit = {
+    try {
+      st.execute("exec scala val x = 5")
+      val rs = st.getResultSet
+      assert(rs.next())
+      assert(rs.getString(1).equals("x: Int = 5"))
+      if (expectException) assert(false, "expected exception")
+    } catch {
+      case sqle: SQLException => {
+        if (expectException) {
+          // SQLState should be
+          assert("42504".equals(sqle.getSQLState))
+        } else {
+          sqle.printStackTrace()
+          println(s"sqle state: ${sqle.getSQLState}")
+          assert(false, "did not expect exception")
+        }
+      }
+    }
+  }
+
+  def testExecScalaGrantRevoke(): Unit = {
+    val adminUser = ClusterManagerLDAPTestBase.admin
+    val nonAdminUser = "gemfire3"
+
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    val connAdmin = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, adminUser, adminUser)
+    val st = connAdmin.createStatement()
+    doExecScalaSimpleStuff(st)
+    val connNoAdmin = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, nonAdminUser, nonAdminUser)
+    val st2 = connNoAdmin.createStatement()
+    doExecScalaSimpleStuff(st2, true)
+    st.execute(s"grant privilege exec scala to $nonAdminUser")
+    doExecScalaSimpleStuff(st2)
+    st.execute(s"revoke privilege exec scala from $nonAdminUser")
+    doExecScalaSimpleStuff(st2, true)
+    try {
+      st2.execute(s"grant privilege exec scala to $nonAdminUser")
+      assert(false, "expected exception in granting as not super user")
+    } catch {
+      case sqle: SQLException => if (!"4250A".equals(sqle.getSQLState)) {
+        throw sqle
+      }
+    }
+    // allow gemGroup3 -- allowed users then will be gemfire6, 7 and 8
+    // Before grant expect exception
+    val connNoAdminGrp1 = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, "gemfire7", "gemfire7")
+    val st7 = connNoAdminGrp1.createStatement()
+    doExecScalaSimpleStuff(st7, true)
+    st.execute(s"grant privilege exec scala to LDAPGROUP:gemGroup3")
+    doExecScalaSimpleStuff(st7)
+    val connNoAdminGrp2 = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, "gemfire8", "gemfire8")
+    val st8 = connNoAdminGrp2.createStatement()
+    doExecScalaSimpleStuff(st8)
+    // now revoke all and expect exception
+    st.execute(s"revoke privilege exec scala from $nonAdminUser,LDAPGROUP:gemGroup3")
+    doExecScalaSimpleStuff(st2, true)
+    doExecScalaSimpleStuff(st7, true)
+    doExecScalaSimpleStuff(st8, true)
+    // Only admin should be able to run
+    doExecScalaSimpleStuff(st)
   }
 }
 

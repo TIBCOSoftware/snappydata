@@ -40,7 +40,7 @@ class ExampleTestSuite extends SnappyTestRunner {
       s"run '$snappyHome/quickstart/scripts/oltp_queries.sql';",
       s"run '$snappyHome/quickstart/scripts/olap_queries.sql';",
       s"run '$snappyHome/quickstart/scripts/olap_approx_queries.sql';",
-      "exit;"))
+      "exit;"), commandOutput)
 
 
     Job("io.snappydata.examples.AirlineDataJob", localLead, quickStartJar)
@@ -126,7 +126,7 @@ class ExampleTestSuite extends SnappyTestRunner {
       s"CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;",
       s"insert into SNAPPY_COL_TABLE VALUES(1,1);",
       s"insert into SNAPPY_COL_TABLE VALUES(2,2);",
-      "exit;"))
+      "exit;"), commandOutput)
 
     RunExample("SmartConnectorExample",
       "snappydata.SmartConnectorExample",
