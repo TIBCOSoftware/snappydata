@@ -171,10 +171,11 @@ object ContextJarUtils extends Logging {
     do {
       val oldObj = r.get(k)
       if (oldObj != null) {
-        val newValue = oldObj.asInstanceOf[String].replace(item, "")
+        old1 = oldObj.asInstanceOf[String]
+        val newValue = old1.replace(item, "")
         old2 = r.put(k, newValue)
       }
-    } while (old1 != old2)
+    } while (old1 != old2.asInstanceOf[String])
   }
 
   def checkItemExists(k: String, item: String): Boolean = {
