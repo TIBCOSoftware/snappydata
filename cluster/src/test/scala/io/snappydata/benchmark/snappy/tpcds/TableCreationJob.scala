@@ -45,7 +45,8 @@ object TableCreationJob extends SnappySQLJob{
 
     val tables = Seq("call_center", "catalog_page", "date_dim", "household_demographics",
       "income_band", "promotion", "reason", "ship_mode", "store", "time_dim",
-      "warehouse", "web_page" , "web_site", "item", "customer_demographics")
+      "warehouse", "web_page" , "web_site")
+    // item (~100k rows, 8 buckets) & customer_demographics (2 Million rows) are now column tables
 
     tables.map { tableName =>
       println(s"Table Creation Started...$tableName")
@@ -123,6 +124,16 @@ object TableCreationJob extends SnappySQLJob{
     partitionBy = "ca_address_sk"
     props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable))
     tableName = "customer_address"
+    createColumnPartitionedTable(snSession, props, tableName, loadPerfPrintStream)
+
+    partitionBy = "cd_demo_sk"
+    props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> buckets_ColumnTable))
+    tableName = "customer_demographics"
+    createColumnPartitionedTable(snSession, props, tableName, loadPerfPrintStream)
+
+    partitionBy = "i_item_sk"
+    props = Map(("PARTITION_BY" -> partitionBy), ("BUCKETS" -> "8"))
+    tableName = "item"
     createColumnPartitionedTable(snSession, props, tableName, loadPerfPrintStream)
 
     // cleanup
