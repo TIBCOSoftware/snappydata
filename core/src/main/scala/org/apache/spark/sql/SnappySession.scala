@@ -16,8 +16,8 @@
  */
 package org.apache.spark.sql
 
+import java.lang.reflect.Method
 import java.sql.{Connection, SQLException, SQLWarning}
-import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Calendar, Properties}
@@ -2169,6 +2169,25 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     (scalaTypeVal, SnappySession.getDataType(storeType, storePrecision, storeScale))
   }
+
+  /*
+     Method to add/update Structured Streaming UI Tab if cluster is running in embedded mode or
+     smart connector mode using SnappyData's Spark distribution
+  */
+  def updateStructuredStreamingUITab(): Unit = {
+    try {
+      val updateUIMethod: Method = super.getClass.getMethod("updateUIWithStructuredStreamingTab")
+      updateUIMethod.invoke(this)
+    } catch {
+      case e: NoSuchMethodException =>
+        logWarning("Unable to add Structured Streaming UI Tab because " +
+            "updateUIWithStructuredStreamingTab method is not present in SparkSession class. " +
+            "It seems spark distribution used is not snappy-spark distribution.")
+    }
+  }
+  // Call to update Structured Streaming UI Tab
+  updateStructuredStreamingUITab()
+
 }
 
 private class FinalizeSession(session: SnappySession)
