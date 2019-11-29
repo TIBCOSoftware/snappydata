@@ -1439,6 +1439,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       partitionColumnNames = partitionColumns,
       bucketSpec = bucketSpec)
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
+
+    // Checking whether table already exist before executing create table plan. This flag is later
+    // used to decide whether to populate primary keys or not. i.e. if the table was already
+    // existing then we skip the step to alter table in catalog to populate primary key
+    // information to avoid unnecessary catalog version increment.
     val tableAlreadyExisted = sessionState.catalog.tableExists(resolvedIdentifier)
     sessionState.executePlan(plan).toRdd
     val df = table(resolvedIdentifier)
@@ -1664,7 +1669,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         // and update it into the metastore.
 
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
-        val primaryKeys = getPrimaryKeys(metadata.identifier.database.get, metadata.identifier.table)
+        val primaryKeys = getPrimaryKeys(metadata.identifier.database.get,
+          metadata.identifier.table)
         sessionCatalog.alterTable(metadata.copy(
           properties = metadata.properties +
               (s"altTxt_${System.currentTimeMillis()}" -> sql) +
