@@ -112,6 +112,9 @@ class OpLogRdd(
             case "VARCHAR" =>
               DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.VARCHAR, isNullable,
                 metadata.getLong("size").toInt)
+            case "CHAR" =>
+              DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.CHAR, isNullable,
+                metadata.getLong("size").toInt)
           }
         }
         else {
