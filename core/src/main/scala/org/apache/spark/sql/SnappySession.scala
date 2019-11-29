@@ -2159,18 +2159,19 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
      Method to add/update Structured Streaming UI Tab if cluster is running in embedded mode or
      smart connector mode using SnappyData's Spark distribution
   */
-  def updateStructuredStreamingUITab: Unit = {
+  def updateStructuredStreamingUITab(): Unit = {
     try {
       val updateUIMethod: Method = super.getClass.getMethod("updateUIWithStructuredStreamingTab")
       updateUIMethod.invoke(this)
     } catch {
       case e: NoSuchMethodException =>
-        logWarning("Unable to add Structured Streaming UI Tab because" +
-            " updateUIWithStructuredStreamingTab method is not found in SparkSession class.")
+        logWarning("Unable to add Structured Streaming UI Tab because " +
+            "updateUIWithStructuredStreamingTab method is not present in SparkSession class. " +
+            "It seems spark distribution used is not snappy-spark distribution.")
     }
   }
   // Call to update Structured Streaming UI Tab
-  updateStructuredStreamingUITab;
+  updateStructuredStreamingUITab()
 
 }
 
