@@ -139,7 +139,7 @@ object TableCreationJob extends SnappySQLJob{
     // cleanup
     loadPerfPrintStream.flush()
     loadPerfFileStream.flush()
-    loadPerfFileStream.close()
+    loadPerfPrintStream.close()
     loadPerfFileStream.close()
 
   }
