@@ -144,6 +144,7 @@ object SnappyMetricsSystem {
             v.getUserDir.lastIndexOf(sep) + 1)
           val key = MEMBER_ID_PREFIX + shortDirName + k + "__"
           if (!region.containsKey(key)) {
+            // in future, DiskStoreUUID may get replaced by user provided name.
             region.put(key, v.getDiskStoreUUID.toString)
           }
         }
