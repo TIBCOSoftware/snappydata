@@ -24,9 +24,6 @@ import io.snappydata.benchmark.TPCH_Queries
 
 import org.apache.spark.sql.{DataFrame, Row, SQLContext}
 
-/**
-  * Created by kishor on 27/10/15.
-  */
 object QueryExecutor {
 
   var planFileStream: FileOutputStream = _
@@ -37,7 +34,7 @@ object QueryExecutor {
     planFileStream.close()
   }
 
-  def setRandomSeed(randomSeed : Integer): Unit ={
+  def setRandomSeed(randomSeed : Integer): Unit = {
     TPCH_Queries.setRandomSeed(randomSeed)
   }
 
@@ -50,7 +47,7 @@ object QueryExecutor {
     var rs: ResultSet = null
     try {
       // scalastyle:off println
-      println(s"Started executing $queryNumber")
+      println(s"Started executing query $queryNumber")
       if (isResultCollection) {
         rs = queryExecution(queryNumber, stmt)
         // queryPrintStream.println(s"$resultFormat")
@@ -65,8 +62,8 @@ object QueryExecutor {
           }
           queryPrintStream.println()
         }
-        println(s"Number of results : $count")
-        println(s"$queryNumber Result collected in file $queryNumber.out")
+        println(s"Number of rows in query $queryNumber result : $count")
+        println(s"Query $queryNumber Result collected in file $queryNumber.out")
         if (queryNumber.equals("13")) {
           stmt.execute("drop view ViewQ13")
         }
@@ -125,7 +122,8 @@ object QueryExecutor {
             else s"${threadNumber}_QueryPlans_Spark.out"
     val queryResultsFileName = if (isSnappy) s"${threadNumber}_Snappy_Q${queryNumber}_Results.out"
             else s"${threadNumber}_Spark_Q${queryNumber}_Results.out"
-    val queryStatisticsFileName = if (isSnappy) s"${threadNumber}_Snappy_Q${queryNumber}_Timings.csv"
+    val queryStatisticsFileName =
+      if (isSnappy) s"${threadNumber}_Snappy_Q${queryNumber}_Timings.csv"
             else s"${threadNumber}_Spark_Q${queryNumber}_Timings.csv"
 
     if (planFileStream == null && planPrintStream == null) {
@@ -133,7 +131,8 @@ object QueryExecutor {
       planPrintStream = new PrintStream(planFileStream)
     }
 
-    val queryStatisticsFileStream: FileOutputStream = new FileOutputStream(new File(queryStatisticsFileName))
+    val queryStatisticsFileStream: FileOutputStream =
+      new FileOutputStream(new File(queryStatisticsFileName))
     val queryStatisticsPrintStream: PrintStream = new PrintStream(queryStatisticsFileStream)
     queryStatisticsPrintStream.println(s"Iteration,ResponseTime")
     // scalastyle:off println
@@ -141,12 +140,14 @@ object QueryExecutor {
       println(s"Started executing $queryNumber")
 
       if (isResultCollection) {
-        val queryResultsFileStream: FileOutputStream = new FileOutputStream(new File(queryResultsFileName))
+        val queryResultsFileStream: FileOutputStream =
+          new FileOutputStream(new File(queryResultsFileName))
         val queryResultsPrintStream: PrintStream = new PrintStream(queryResultsFileStream)
 
         try {
           var queryToBeExecuted = TPCH_Queries.getQuery(queryNumber, isDynamic, isSnappy = true)
-          val (resultSet, _) = queryExecution(queryNumber, queryToBeExecuted, sqlContext, genPlan = true)
+          val (resultSet, _) =
+            queryExecution(queryNumber, queryToBeExecuted, sqlContext, genPlan = true)
           println(s"$queryNumber : ${resultSet.length}")
 
           for (row <- resultSet) {
