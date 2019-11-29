@@ -14,7 +14,7 @@ echo "******************start Executing Query******************"
 --class io.snappydata.benchmark.snappy.tpcds.QueryExecutionJob \
 --app-jar $appJar \
 --conf queries=$queries \
---conf sparkSqlProps=sparkSqlProps \
+--conf sparkSqlProps=$sparkSqlProps \
 --conf resultCollection=$ResultCollection \
 --conf warmUpIterations=$WarmupRuns \
 --conf actualRuns=$AverageRuns \
