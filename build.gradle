@@ -72,7 +72,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.1.1'
+  version = '1.2-SNAPSHOT'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -153,7 +153,7 @@ allprojects {
     antlr2Version = '2.7.7'
 
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.4'
+    snappyStoreVersion = '1.6.5-SNAPSHOT'
     snappydataVersion = version
     pulseVersion = '1.5.1'
     zeppelinInterpreterVersion = '0.7.3.6'
@@ -1202,7 +1202,6 @@ ospackage {
 }
 
 buildRpm {
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
@@ -1218,7 +1217,6 @@ buildRpm {
 }
 
 buildDeb {
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
@@ -1243,7 +1241,6 @@ distTar {
   }
   dependsOn product
   // also package VSD
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
@@ -1263,7 +1260,6 @@ distZip {
   }
   dependsOn product
   // also package VSD
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
@@ -1491,37 +1487,11 @@ task packagePulse { doLast {
   }
 } }
 
-task packageVSD { doLast {
-  String thirdparty = System.env.THIRDPARTYDIR
-  String vsdDir = ''
-
-  if (thirdparty == null || thirdparty.length() == 0) {
-    vsdDir = "${projectDir}/../thirdparty/vsd"
-  } else {
-    vsdDir = "${thirdparty}/vsd"
-  }
-
-  String vsdDistDir = "${vsdDir}/70/vsd"
-  if (file(vsdDistDir).canWrite()) {
-    println ''
-    println "Copying VSD from ${vsdDistDir} to ${snappyProductDir}/vsd"
-    println ''
-    delete "${snappyProductDir}/vsd"
-    copy {
-      from vsdDistDir
-      into "${snappyProductDir}/vsd"
-    }
-  } else {
-    println "Skipping VSD due to unwritable ${vsdDistDir}"
-  }
-} }
-
 task sparkPackage {
   dependsOn ":snappy-core_${scalaBinaryVersion}:sparkPackage"
 }
 
 packagePulse.mustRunAfter product
-packageVSD.mustRunAfter product
 packageZeppelinInterpreter.mustRunAfter product
 
 distTar.mustRunAfter clean, cleanAll, product

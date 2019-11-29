@@ -38,6 +38,7 @@ import org.apache.spark.sql.hive.HiveClientUtil$;
 import org.apache.spark.sql.hive.SnappyHiveExternalCatalog;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.ui.SparkUI;
+import org.apache.spark.ui.WebUITab;
 
 /**
  * Overrides Spark's SharedState to enable setting up own ExternalCatalog.
@@ -118,6 +119,30 @@ public final class SnappySharedState extends SharedState {
             !(SnappyContext.getClusterMode(sc) instanceof SnappyEmbeddedMode)) {
           new SQLTab(listener, ui.get());
         }
+      }
+    } else if (!(initListener instanceof SnappySQLListener) &&
+        !(SnappyContext.getClusterMode(sc) instanceof SnappyEmbeddedMode)) {
+      // In smart connector mode, initListener could be an instance SQLListener instead of
+      // SnappySQLListener if initialized by Spark in SharedState.createListenerAndUI. We replace
+      // it with instance of SnappySQLListener and copy the contents from the initListener to
+      // SnappySQLListener so that the information recorded in initListener is not lost
+      replaceSQLListener(sc, initListener);
+    }
+  }
+
+  private static void replaceSQLListener(SparkContext sc, SQLListener originalListener) {
+    SnappySQLListener listener = new SnappySQLListener(sc.conf(), originalListener);
+    if (ExternalStoreUtils.getSQLListener().compareAndSet(originalListener, listener)) {
+      sc.addSparkListener(listener);
+      sc.listenerBus().removeListener(originalListener);
+      scala.Option<SparkUI> ui = sc.ui();
+      if (ui.isDefined()) {
+        scala.collection.Iterator iter = ui.get().getTabs().iterator();
+        while (iter.hasNext()) {
+          WebUITab tab = (WebUITab)iter.next();
+          if (tab instanceof SQLTab) ui.get().detachTab(tab);
+        }
+        new SQLTab(listener, ui.get());
       }
     }
   }
