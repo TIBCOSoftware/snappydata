@@ -34,6 +34,154 @@ class CommandLineToolsSuite extends SnappyTestRunner {
   private val snappyProductDir = System.getenv("SNAPPY_HOME")
   private val snappyNativeTestDir = s"$snappyProductDir/../../../store/native/tests"
 
+  test("exec scala") {
+    val conn = getJdbcConnection(1527)
+    val stmnt = conn.createStatement()
+    val cmdOutput = "exec-scala-output.txt"
+    try {
+      SnappyShell("quickStartScripts", Seq("connect client 'localhost:1527';",
+        s"create table test_app (col1 int not null, col2 int not null) using column options();;",
+        s"insert into test_app values (1, 1), (2, 2);",
+        s"insert into test_app values (5, 3), (6, 4);",
+        "exit;"), cmdOutput)
+      val conn = getJdbcConnection(1527)
+      val stmnt = conn.createStatement()
+      assert(stmnt.execute("select * from test_app"))
+      val rs1 = stmnt.getResultSet
+      var cnt = 0
+      while (rs1.next()) {
+        cnt = cnt + 1
+        val v1 = rs1.getInt(1)
+        rs1.getInt(2)
+        assert(v1 === 1 || v1 === 2 || v1 === 5 || v1 === 6)
+      }
+      assert(cnt === 4)
+      // Now execute some exec scala and verify from connection itself
+      assert(stmnt.execute("exec scala snappy.sql(\"insert into test_app values(10, 10), (20, 20)\")"))
+      var rs = stmnt.getResultSet
+      assert(rs.next())
+      assert(stmnt.execute("exec scala snappy.sql(\"create table test_exec(col1 int not null, col2 int not null)\")"))
+      rs = stmnt.getResultSet
+      // insert few rows from jdbc connection itself
+      stmnt.execute("insert into test_exec values(1000, 1000), (2000, 2000)")
+      assert(stmnt.execute("exec scala val df1 = snappy.table(\"test_app\")\n" +
+                                            "// Let's union two dfs and save the union as another table\n" +
+                                            "val df2 = snappy.table(\"test_exec\")\n" +
+                                            "val df3 = df1.union(df2)\n" +
+                                            "df3.show"))
+      stmnt.execute("exec scala options(returnDF 'true') snappy.table(\"test_exec\")")
+      rs = stmnt.getResultSet
+      assert(rs.next())
+      // expected count is 1 because .table api returns DataSet and exec scala needs cached dataframe
+      // to return result
+      assert(rs.getMetaData.getColumnCount == 1)
+      assert(stmnt.execute("exec scala options(returnDF 'true') snappy.sql(\"select * from test_exec\")"))
+      rs = stmnt.getResultSet
+      assert(rs.next())
+      assert(rs.getMetaData.getColumnCount == 2)
+      assert(stmnt.execute("exec scala snappy.sql(\"delete from test_exec\")"))
+      assert(stmnt.execute("select * from test_exec"))
+      rs = stmnt.getResultSet
+      assert(!rs.next())
+    } finally {
+      // do cleanup
+      stmnt.execute("drop table if exists test_app")
+      stmnt.execute("drop table if exists test_exec")
+    }
+  }
+
+  test("snappy scala") {
+//    val scala_code1 = Seq(
+//      "case class TestData(c1: Int, c2: String)",
+//      "  var rdd = sc.parallelize(",
+//      "  (1 to 10).map(i => TestData(i, i.toString)))",
+//      "  val dataDF = snappy.createDataFrame(rdd)",
+//      "  val tablename = \"testtable\"",
+//      "  dataDF.write.insertInto(tableName)",
+//      ":qu"
+//    )
+    val scala_code1 = Seq(
+      "case class TestData(c1: Int, c2: String)",
+      "val x = TestData(1, \"1\")",
+      "snappy.sql(\"create table tmptable(c1 int not null, c2 string)\")",
+      "snappy.sql(\"insert into tmptable values(1, \'1\')\")",
+      ":qu"
+    )
+    val conn = getJdbcConnection(1527)
+    val stmnt = conn.createStatement()
+    val cmdOutput = "snappyscala-output.txt"
+    try {
+      SnappyScalaShell("scala_code", scala_code1, cmdOutput)
+      stmnt.execute("create table testtable as select * from tmptable")
+      assert(stmnt.execute("select count(*) from testtable"))
+      var rs = stmnt.getResultSet
+      assert(rs.next())
+      assert(rs.getInt(1) == 1)
+    } finally {
+      stmnt.execute("drop table if exists testtable")
+      stmnt.execute("drop table if exists tmptable")
+    }
+  }
+
+  test("snappy scala run") {
+    val scala_code1 = Seq(
+      "snappy.sql(\"create table tmptable(c1 int not null, c2 string)\")",
+      "snappy.sql(\"insert into tmptable values(1, \'1\')\")",
+      ":qu"
+    )
+    val scala_code2 = Seq(
+      "snappy.sql(\"create table tmptable2(c1 int not null, c2 string)\")",
+      "snappy.sql(\"insert into tmptable2 values(1, \'1\')\")",
+      ":qu"
+    )
+    val scala_code3 = Seq(
+      "snappy.sql(\"create table tmptable3(c1 int not null, c2 string)\")",
+      "snappy.sql(\"insert into tmptable3 values(1, \'1\')\")",
+      ":qu"
+    )
+    val conn = getJdbcConnection(1527)
+    val stmnt = conn.createStatement()
+    val cmdOutput = "snappyscala-output.txt"
+    val scalaFileToRun1 = "snappyrun1.scala"
+    val scalaFileToRun2 = "snappyrun2.scala"
+    val scalaFileToRun3 = "snappyrun3.scala"
+    try {
+      Seq(scalaFileToRun1, scalaFileToRun2, scalaFileToRun3).zip(
+        Seq(scala_code1, scala_code2, scala_code3)).foreach(x => {
+        val file = new File(x._1)
+        val printWriter = new PrintWriter(file)
+        x._2.foreach(s => {
+          printWriter.write(s)
+          printWriter.write("\n")
+        })
+        printWriter.close()
+      })
+
+      SnappyScalaShell("scala_code", scala_code1, cmdOutput,
+        s"$snappyscalaShell -r $scalaFileToRun1")
+      stmnt.execute("create table testtable as select * from tmptable")
+      assert(stmnt.execute("select count(*) from testtable"))
+      var rs = stmnt.getResultSet
+      assert(rs.next())
+      assert(rs.getInt(1) == 1)
+
+      // Two files
+      SnappyScalaShell("scala_code", scala_code1, cmdOutput,
+        s"$snappyscalaShell -r $scalaFileToRun2,$scalaFileToRun3")
+      assert(stmnt.execute("select count(*) from tmptable2"))
+      rs = stmnt.getResultSet
+      assert(rs.next())
+      assert(rs.getInt(1) == 1)
+      assert(stmnt.execute("select count(*) from tmptable3"))
+      rs = stmnt.getResultSet
+      assert(rs.next())
+      assert(rs.getInt(1) == 1)
+    } finally {
+      stmnt.execute("drop table if exists testtable")
+      stmnt.execute("drop table if exists tmptable")
+    }
+  }
+      
   // scalastyle:off println
   test("backup restore") {
     val debugWriter = new PrintWriter(s"$snappyHome/CommandLineToolsSuite.debug")
@@ -47,7 +195,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
             s" using row options(DISKSTORE 'GFXD-DD-DISKSTORE');",
         s"insert into testDD values (1, 1), (2, 2);",
         s"insert into testDD values (5, 3), (6, 4);",
-        "exit;"))
+        "exit;"), commandOutput)
 
       if (backupDir.exists) {
         assert(backupDir.delete(), s"could not delete $backupDir")
