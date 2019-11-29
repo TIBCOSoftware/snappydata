@@ -25,7 +25,6 @@ import scala.util.Try
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
-
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.Version
@@ -35,12 +34,12 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
-import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
+import com.pivotal.gemfirexd.internal.snappy._
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 import io.snappydata.recovery.RecoveryService
+import io.snappydata.remote.interpreter.SnappyInterpreterExecute
 import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
-
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
@@ -92,13 +91,13 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     ExecutorInitiator.stop()
   }
 
-  override def getSQLExecute(sql: String, schema: String, ctx: LeadNodeExecutionContext,
+  override def getSQLExecute(df: AnyRef, sql: String, schema: String, ctx: LeadNodeExecutionContext,
       v: Version, isPreparedStatement: Boolean, isPreparedPhase: Boolean,
       pvs: ParameterValueSet): SparkSQLExecute = {
     if (isPreparedStatement && isPreparedPhase) {
       new SparkSQLPrepareImpl(sql, schema, ctx, v)
     } else {
-      new SparkSQLExecuteImpl(sql, schema, ctx, v, Option(pvs))
+      new SparkSQLExecuteImpl(df, sql, schema, ctx, v, Option(pvs))
     }
   }
 
@@ -259,4 +258,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
       case _ =>
     }
   }
+
+  override def getInterpreterExecution(sql: String, v: Version,
+    connId: lang.Long): InterpreterExecute = new SnappyInterpreterExecute(sql, connId)
 }

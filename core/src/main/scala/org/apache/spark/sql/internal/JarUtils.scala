@@ -155,9 +155,10 @@ object ContextJarUtils extends Logging {
   def addToTheListInCmdRegion(k: String, item: String, head: String): Unit = {
     val r = Misc.getMemStore.getMetadataCmdRgn
     var old1: String = null
-    var old2: String = null
+    var old2: AnyRef = null
     do {
-      old1 = r.get(k)
+      val oldObj = r.get(k)
+      old1 = if ( oldObj != null ) oldObj.asInstanceOf[String] else null
       val newValue = if (old1 != null) old1 + item else head + item
       old2 = r.put(k, newValue)
     } while (old1 != old2)
@@ -166,19 +167,24 @@ object ContextJarUtils extends Logging {
   def removeFromTheListInCmdRegion(k: String, item: String): Unit = {
     val r = Misc.getMemStore.getMetadataCmdRgn
     var old1: String = null
-    var old2: String = null
+    var old2: AnyRef = null
     do {
-      old1 = r.get(k)
-      if (old1 != null) {
+      val oldObj = r.get(k)
+      if (oldObj != null) {
+        old1 = oldObj.asInstanceOf[String]
         val newValue = old1.replace(item, "")
         old2 = r.put(k, newValue)
       }
-    } while (old1 != old2)
+    } while (old1 != old2.asInstanceOf[String])
   }
 
   def checkItemExists(k: String, item: String): Boolean = {
-    val value = Misc.getMemStore.getMetadataCmdRgn.get(k)
-    value != null && value.contains(item)
+    var value = Misc.getMemStore.getMetadataCmdRgn.get(k)
+    if (value != null) {
+      val valueStr = value.asInstanceOf[String]
+      return valueStr.contains(item)
+    }
+    false
   }
 }
 

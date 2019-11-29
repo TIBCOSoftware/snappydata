@@ -21,7 +21,6 @@ import java.sql.SQLWarning
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, Version}
@@ -38,14 +37,14 @@ import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLChar}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
+import io.snappydata.remote.interpreter.SnappyInterpreterExecute
 import io.snappydata.{Constant, Property, QueryHint}
-
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{CachedDataFrame, SnappyContext, SnappySession}
+import org.apache.spark.sql.{CachedDataFrame, Dataset, SnappyContext, SnappySession}
 import org.apache.spark.storage.RDDBlockId
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkEnv}
@@ -53,7 +52,9 @@ import org.apache.spark.{Logging, SparkEnv}
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
  */
-class SparkSQLExecuteImpl(val sql: String,
+class SparkSQLExecuteImpl(
+    val dfObject: AnyRef,
+    val sql: String,
     val schema: String,
     val ctx: LeadNodeExecutionContext,
     senderVersion: Version,
@@ -80,7 +81,8 @@ class SparkSQLExecuteImpl(val sql: String,
 
   session.setPreparedQuery(preparePhase = false, pvs)
 
-  private[this] val df = Utils.sqlInternal(session, sql)
+  private[this] val df = if (dfObject != null) dfObject.asInstanceOf[CachedDataFrame]
+  else Utils.sqlInternal(session, sql)
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
@@ -498,6 +500,7 @@ object SnappySessionPerConnection {
   def removeSnappySession(connectionID: java.lang.Long): Unit = {
     val session = connectionIdMap.remove(connectionID)
     if (session ne null) session.clear()
+    SnappyInterpreterExecute.closeRemoteInterpreter(connectionID)
   }
 }
 
