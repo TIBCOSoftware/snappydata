@@ -51,7 +51,7 @@ import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEn
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SnappySession}
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
 class OpLogRdd(
     @transient private val session: SnappySession,
@@ -67,6 +67,7 @@ class OpLogRdd(
     var tableSchemas: mutable.Map[String, StructType],
     var versionMap: mutable.Map[String, Int],
     var tableColIdsMap: mutable.Map[String, Array[Int]],
+    var bucketHostMap: mutable.Map[Int, String],
     private var primaryKeysString: String,
     private var keyColumnsString: String)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
@@ -528,6 +529,16 @@ class OpLogRdd(
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
     logDebug(s"starting compute for partition ${split.index} of table $fqtnUpper")
     try {
+      val currentHost = SparkEnv.get.executorId
+      val removePattern = "(executor_).*(_)".r
+      var expectedHost  = bucketHostMap.getOrElse(split.index,"")
+      require(expectedHost.nonEmpty, s"No preferred host found.")
+
+      expectedHost = removePattern.replaceAllIn(expectedHost, "")
+      if(expectedHost != currentHost) {
+        throw new IllegalStateException(s"Expected compute to launch at $expectedHost, but was launched at $currentHost")
+      }
+
       val diskStores = Misc.getGemFireCache.listDiskStores()
       var diskStrCol: DiskStoreImpl = null
       var diskStrRow: DiskStoreImpl = null
@@ -711,6 +722,11 @@ class OpLogRdd(
       output.writeInt(ele._2.length)
       output.writeInts(ele._2)
     })
+    output.writeInt(bucketHostMap.size)
+    bucketHostMap.foreach(ele => {
+      output.writeInt(ele._1)
+      output.writeString(ele._2)
+    })
     StructTypeSerializer.write(kryo, output, schema)
   }
 
@@ -745,6 +761,13 @@ class OpLogRdd(
       val v = input.readInts(vlength)
       tableColIdsMap.put(k, v)
     }
+    val bucketHostMapSize = input.readInt()
+    bucketHostMap = collection.mutable.Map.empty
+    (0 until bucketHostMapSize).foreach(_ => {
+      val k = input.readInt()
+      val v = input.readString()
+      bucketHostMap.put(k, v)
+    })
     schema = StructTypeSerializer.read(kryo, input, c = null)
   }
 }
