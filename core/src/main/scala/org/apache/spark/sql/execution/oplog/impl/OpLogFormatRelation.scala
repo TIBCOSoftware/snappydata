@@ -58,9 +58,11 @@ class OpLogFormatRelation(
     val primaryKeys = catalogTable.properties.getOrElse("primary_keys", "")
     val keyColumns = options.getOrElse("key_columns", "")
     val schemaLowerCase = StructType(schema.map(f => f.copy(name = f.name.toLowerCase)))
+    val removePattern = "(executor_).*(_)".r
 
     (0 until RecoveryService.getNumBuckets(schemaName.toUpperCase, tableName.toUpperCase)._1).foreach(i => {
-      bucketHostMap.put(i, RecoveryService.getExecutorHost(fqtn.toUpperCase(), i).head)
+      bucketHostMap.put(i,
+        removePattern.replaceAllIn(RecoveryService.getExecutorHost(fqtn.toUpperCase(), i).head, ""))
     })
 
     (new OpLogRdd(snappySession, fqtn, externalColumnTableName, schemaLowerCase,

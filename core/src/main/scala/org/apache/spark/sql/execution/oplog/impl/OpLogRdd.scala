@@ -530,13 +530,16 @@ class OpLogRdd(
     logDebug(s"starting compute for partition ${split.index} of table $fqtnUpper")
     try {
       val currentHost = SparkEnv.get.executorId
-      val removePattern = "(executor_).*(_)".r
-      var expectedHost  = bucketHostMap.getOrElse(split.index,"")
-      require(expectedHost.nonEmpty, s"No preferred host found.")
+      val expectedHost  = bucketHostMap.getOrElse(split.index,"")
+      require(expectedHost.nonEmpty, s"No preferred host found." +
+          s" Error while getting executor host," +
+          s" please check RecoveryService logs for more information.")
 
-      expectedHost = removePattern.replaceAllIn(expectedHost, "")
       if(expectedHost != currentHost) {
-        throw new IllegalStateException(s"Expected compute to launch at $expectedHost, but was launched at $currentHost")
+        throw new IllegalStateException(s"Expected compute to launch at $expectedHost," +
+            s" but was launched at $currentHost. Try increasing value of " +
+            s"spark.locality.wait.process higher than current value in recovery mode." +
+            s"Refer troubleshooting section under Data Extractor Tool for more explanation.")
       }
 
       val diskStores = Misc.getGemFireCache.listDiskStores()
