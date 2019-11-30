@@ -44,7 +44,7 @@ import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{CachedDataFrame, SnappyContext, SnappySession}
+import org.apache.spark.sql.{CachedDataFrame, Dataset, SnappyContext, SnappySession}
 import org.apache.spark.storage.RDDBlockId
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkEnv}
@@ -52,7 +52,9 @@ import org.apache.spark.{Logging, SparkEnv}
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
  */
-class SparkSQLExecuteImpl(val sql: String,
+class SparkSQLExecuteImpl(
+    val dfObject: AnyRef,
+    val sql: String,
     val schema: String,
     val ctx: LeadNodeExecutionContext,
     senderVersion: Version,
@@ -79,7 +81,8 @@ class SparkSQLExecuteImpl(val sql: String,
 
   session.setPreparedQuery(preparePhase = false, pvs)
 
-  private[this] val df = Utils.sqlInternal(session, sql)
+  private[this] val df = if (dfObject != null) dfObject.asInstanceOf[CachedDataFrame]
+  else Utils.sqlInternal(session, sql)
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 

@@ -201,8 +201,8 @@ function execute() {
 
     # set the default client-bind-address and locator's peer-discovery-address
     if [ -z "${clientBindAddress}" -a "${componentType}" != "lead" ]; then
-      args="${args} -client-bind-address=${host}"
-      clientBindAddress="${host}"
+      preCommand="${preCommand}export IMPLICIT_CLIENT_BIND_ADDRESS=$host; "
+      export IMPLICIT_CLIENT_BIND_ADDRESS="${host}"
     fi
     if [ -z "$(echo $args $"${@// /\\ }" | grep 'peer-discovery-address=')" -a "${componentType}" = "locator" ]; then
       args="${args} -peer-discovery-address=${host}"
@@ -243,7 +243,7 @@ function execute() {
       -*) postArgs="$postArgs $arg"
     esac
   done
-  if [ "$host" != "localhost" ]; then
+  if [ "$host" != "localhost" -a -n "$(echo `hostname -I` | grep -q "$host")" ]; then
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
       (ssh $SPARK_SSH_OPTS "$host" \

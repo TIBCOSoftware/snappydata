@@ -91,13 +91,13 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     ExecutorInitiator.stop()
   }
 
-  override def getSQLExecute(sql: String, schema: String, ctx: LeadNodeExecutionContext,
+  override def getSQLExecute(df: AnyRef, sql: String, schema: String, ctx: LeadNodeExecutionContext,
       v: Version, isPreparedStatement: Boolean, isPreparedPhase: Boolean,
       pvs: ParameterValueSet): SparkSQLExecute = {
     if (isPreparedStatement && isPreparedPhase) {
       new SparkSQLPrepareImpl(sql, schema, ctx, v)
     } else {
-      new SparkSQLExecuteImpl(sql, schema, ctx, v, Option(pvs))
+      new SparkSQLExecuteImpl(df, sql, schema, ctx, v, Option(pvs))
     }
   }
 
