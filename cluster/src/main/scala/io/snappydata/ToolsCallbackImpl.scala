@@ -284,8 +284,8 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
 
 
   override def isUserAuthorizedForExtTable(conn: Connection, currentUser: String,
-    metastoreTableIdentifier: Option[TableIdentifier]): Boolean = {
-    if (!Misc.isSecurityEnabled) return true
+    metastoreTableIdentifier: Option[TableIdentifier]): Exception = {
+    if (!Misc.isSecurityEnabled) return null
     if (metastoreTableIdentifier.isDefined) {
       val dbOwner = SnappyInterpreterExecute.dbOwner
       val identifier = metastoreTableIdentifier.get.identifier
@@ -298,11 +298,14 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       } else {
         currentUser
       }
-      val fqtn = schema + "." + metastoreTableIdentifier.get.table
+      val table = metastoreTableIdentifier.get.table
+      val fqtn = schema + "." + table
       val key = GrantRevokeOnExternalTable.getMetaRegionKey(fqtn)
-      PermissionChecker.isAllowed(key, currentUser, schema)
-    } else {
-      false
+      if (!PermissionChecker.isAllowed(key, currentUser, schema)) {
+        return StandardException.newException(
+          SQLState.AUTH_NO_EXECUTE_PERMISSION, currentUser, "external table", "", schema, table)
+      }
     }
+    null
   }
 }
