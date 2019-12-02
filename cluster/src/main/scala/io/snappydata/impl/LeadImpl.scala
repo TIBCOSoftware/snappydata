@@ -786,6 +786,7 @@ object LeadImpl {
 
   def invokeLeadStop(): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    SnappyMetricsSystem.stop()
     lead.internalStop(lead.bootProperties)
   }
 }

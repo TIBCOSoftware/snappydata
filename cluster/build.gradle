@@ -132,6 +132,7 @@ dependencies {
     exclude(group: 'com.jcraft', module: 'jsch')
     exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
   }
+  compile "io.snappydata:spark-metrics:${snappySparkMetricsLibVersion}"
 
   // Support Azure URLs
   // Exclude some dependencies to avoid conflicts with other existing dependencies
