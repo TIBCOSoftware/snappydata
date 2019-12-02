@@ -243,7 +243,7 @@ function execute() {
       -*) postArgs="$postArgs $arg"
     esac
   done
-  if [ "$host" != "localhost" -a -n "$(echo `hostname -I` | grep -q "$host")" ]; then
+  if [ "$host" != "localhost" -a -z "$(echo `hostname -I` | grep "$host")" ]; then
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
       (ssh $SPARK_SSH_OPTS "$host" \
