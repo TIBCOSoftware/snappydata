@@ -170,7 +170,7 @@ allprojects {
     sparkJobServerVersion = '0.6.2.10'
     eclipseCollectionsVersion = '9.2.0'
     fastutilVersion = '8.2.2'
-    sparkMetricsLibVersion = '2.0.0'
+    snappySparkMetricsLibVersion = '2.0.0.1'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
