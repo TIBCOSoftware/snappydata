@@ -172,7 +172,7 @@ object SnappyMetricsSystem {
   }
 
   def remove(metricName: String): Unit = {
-    UserMetricsSystem.gauge(metricName).remove()
+    // UserMetricsSystem.gauge(metricName).remove()
   }
 
   def setMetricsForClusterStatDetails(): Unit = {
