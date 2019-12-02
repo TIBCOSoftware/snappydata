@@ -2444,11 +2444,9 @@ object SnappySession extends Logging {
     scanNodes.foreach(n => {
       val dse = n.asInstanceOf[DataSourceScanExec]
       val currentUser = session.conf.get(Attribute.USERNAME_ATTR)
-      if (!ToolsCallbackInit.toolsCallback.isUserAuthorizedForExtTable(session.getConnection,
-        currentUser, dse.metastoreTableIdentifier)) {
-        throw new AnalysisException(s"user ${currentUser} not authorized" +
-          s" for table: ${dse.metastoreTableIdentifier}")
-      }
+      val authzException = ToolsCallbackInit.toolsCallback.isUserAuthorizedForExtTable(session.getConnection,
+        currentUser, dse.metastoreTableIdentifier)
+      if (authzException != null) throw authzException
     })
     true
   }
