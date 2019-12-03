@@ -32,6 +32,8 @@ The special value NULL, denotes an unassigned or missing value of any of the typ
 |   [TINYINT](#timestamp)     |  &#10004;      |   &#10004;     |
 | [VARCHAR](#varchar)       |   &#10004;     |    &#10004;    |
 
+!!!Note
+	BINARY, BLOB, CLOB, and FLOAT data types functions only if you do not provide the size.
 
 <!--
 | Data Type | Description |
