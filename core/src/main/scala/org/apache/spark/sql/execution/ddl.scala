@@ -21,6 +21,7 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 import java.util.Map.Entry
 import java.util.function.Consumer
+import java.util.regex.Pattern
 
 import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.SystemFailure
@@ -68,7 +69,7 @@ import scala.tools.nsc.interpreter.IMain
  */
 case class InterpretCodeCommand(
      code: String,
-     options: Map[String, String]) extends RunnableCommand {
+     options: Map[String, String] = Map.empty) extends RunnableCommand {
 
   // This is handled directly by Remote Interpreter code
   override def run(sparkSession: SparkSession): Seq[Row] = Nil
