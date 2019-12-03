@@ -4,38 +4,40 @@ The SQL type system determines the compile-time and runtime type of an expressio
 
 The special value NULL, denotes an unassigned or missing value of any of the types (columns that have been assigned as non-nullable using NOT NULL clause or the primary key columns cannot have a NULL value). The supported types are given below.
 
-- [ARRAY](#array)
-- [BIGINT](#bigint)
-- [BINARY](#binary)
-- [BLOB](#blob)
-- [BOOLEAN](#boolean)
-- [BYTE](#byte)
-- [CLOB](#clob)
-- [CHAR](#char)
-- [DATE](#date)
-- [DECIMAL](#decimal)
-- [DOUBLE](#double)
-- [FLOAT](#float)
-- [INT](#int)
-- [INTEGER](#integer)
-- [LONG](#long)
-- [MAP](#map)
-- [NUMERIC](#numeric)
-- [REAL](#real)
-- [SHORT](#short)
-- [SMALLINT](#smallint)
-- [STRING](#string)
-- [STRUCT](#struct)
-- [TIMESTAMP](#timestamp)
-- [TINYINT](#tinyint)
-- [VARBINARY](#varbinary)
-- [VARCHAR](#varchar)
+| Data Type | Supported for Row Tables |Supported for Column Tables |
+|--------|--------|--------|
+|   [ARRAY](#array)     |   **X** 	    |   &#10004;  |
+|   [BIGINT](#bigint)     | &#10004;       |     &#10004;   |
+|     [BINARY](#binary)   |    &#10004;    |       &#10004; |
+| [BLOB](#blob)|    &#10004;    |       &#10004; |
+|    [BOOLEAN](#boolean)    |  &#10004;      |    &#10004;    |
+|   [BYTE](#byte)     |   &#10004;     |  &#10004;      |
+|   [CLOB](#clob)      |   &#10004;     |    &#10004;    |
+|   [CHAR](#char)     |   &#10004;     |   &#10004;     |
+|     [DATE](#date)   |      &#10004;  |     &#10004;   |
+|   [DECIMAL](#decimal)      | &#10004;       |   &#10004;     |
+|     [DOUBLE](#double)   |   &#10004;     |  &#10004;      |
+|     [FLOAT](#float)    |    &#10004;    |      &#10004;  |
+|  [INT](#int)       |      &#10004;  |     &#10004;   |
+|  [INTEGER](#integer)       |      &#10004;  |     &#10004;   |
+|   [LONG](#long)     |   &#10004;     |    &#10004;    |
+|    [MAP](#map)     |   **X**     |    &#10004;    |
+|   [NUMERIC](#numeric)     |    &#10004;    |   &#10004;     |
+|      [REAL](#real)   |    &#10004;    |    &#10004;    |
+|[SHORT](#short) |    &#10004;    |    &#10004;    |
+|    [SMALLINT](#smallint)    |  &#10004;      |   &#10004;     |
+|   [STRING](#string)     |      &#10004;  |       &#10004; |
+|   [STRUCT](#struct)     |    **X**    |     &#10004;   |
+|   [TIMESTAMP](#timestamp)     |  &#10004;      |   &#10004;     |
+|   [TINYINT](#timestamp)     |  &#10004;      |   &#10004;     |
+| [VARCHAR](#varchar)       |   &#10004;     |    &#10004;    |
+
 
 <!--
 | Data Type | Description |
 |--------|--------|
 | [BIGINT](#bigint)|Provides 8-byte integer for long integer values|
-| [BINARY](#binary)|Binary-encoded strings|
+| [BINARY (BLOB)](#binary)|Binary-encoded strings|
 | [BLOB](#blob)|Carying-length binary string that can be up to 2,147,483,647 characters long|
 | [BOOLEAN](#boolean)|Logical Boolean values (true/false)|
 | [BYTE](#byte)|Binary data ("byte array")|
@@ -51,11 +53,10 @@ The special value NULL, denotes an unassigned or missing value of any of the typ
 | [NUMERIC](#numeric)|Stores exact numeric of selectable precision|
 | [REAL](#real)|Stores single precision floating-point number (4 bytes)|
 | [SHORT](#short)|The size	 of the short type is 2 bytes (16 bits) |
-| [SMALLINT](#smallint)|Stores signed two-byte integer|
+| [SMALLINT (TINYINT)](#smallint)|Stores signed two-byte integer|
 | [STRING](#string)|Stores are sequences of characters|
 | [TIMESTAMP](#timestamp)|Stores date and time as a combined value|
 | [TINYINT](#tinyint)|Stores a very small integer. The signed range is -128 to 127.|
-| [VARBINARY](#varbinary)|Stores binary byte strings rather than non-binary character strings|
 | [VARCHAR](#varchar)|Stores character strings of varying length (up to 255 bytes); collation is in code-set order|
 -->
 
@@ -80,7 +81,7 @@ INSERT INTO Student SELECT 1,'John', Array(97.8,85.2,63.9,45.2,75.2,96.5);
 
 Provides 8 bytes storage for long integer values. An attempt to put a BIGINT value into another exact numeric type with smaller size/precision (e.g. INT) fails if the value overflows the maximum allowable by the smaller type.
 
-For behavior with other types in expressions, see Numeric type promotion in expressions, Storing values of one numeric data type in columns of another numeric data type.
+<!---For behavior with other types in expressions, see Numeric type promotion in expressions, Storing values of one numeric data type in columns of another numeric data type.--->
 
 |                      |                                                   |
 |----------------------|---------------------------------------------------|
@@ -88,8 +89,10 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 | Minimum value        | java.lang.Long.MIN\_VALUE (-9223372036854775808 ) |
 | Maximum value        | java.lang.Long.MAX\_VALUE (9223372036854775807 )  |
 
+
 <a id="binary"></a>
 ## BINARY
+This is a synonym of [BLOB](#blob).
 
 <a id="blob"></a>
 ## BLOB
@@ -111,6 +114,7 @@ The length of the BLOB is expressed in number of bytes by default. The suffixes 
 CREATE TABLE blob_data(id INT primary key, data BLOB(10M)); 
 –- search for a blob 
 select length(data) from blob_data where id = 100;
+
 ```
 
 <a id="boolean"></a>
@@ -216,7 +220,7 @@ Provides an exact decimal value having a specified precision and scale. The prec
 
 A numeric value (e.g. INT, BIGINT, SMALLINT) can be put into a DECIMAL as long as non-fractional precision is not lost else a range exception is thrown (SQLState: "22003"). When truncating trailing digits from a DECIMAL, the value is rounded down.
 
-For behavior with other types in expressions, see Numeric type promotion in expressions, Scale for decimal arithmetic and Storing values of one numeric data type in columns of another numeric data type.
+<!---For behavior with other types in expressions, see Numeric type promotion in expressions, Scale for decimal arithmetic and Storing values of one numeric data type in columns of another numeric data type. --->
 
 |                      |                                                          |
 |----------------------|----------------------------------------------------------|
@@ -249,7 +253,7 @@ Provides 8-byte storage for numbers using IEEE floating-point notation.
 
 Arithmetic operations do not round their resulting values to zero. If the values are too small, you will receive an exception. Numeric floating point constants are limited to a length of 30 characters.
 
-For behavior with other types in expressions, see Numeric type promotion in expressions, and Storing values of one numeric data type in columns of another numeric data type.
+<!---For behavior with other types in expressions, see Numeric type promotion in expressions, and Storing values of one numeric data type in columns of another numeric data type.--->
 
 |                         |                                                                                                                                                                  |
 |-------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -288,14 +292,15 @@ FLOAT [(precision)]
 <a id="int"></a>
 
 ## INT
+This is a synonym of [INTEGER](#integer).
 
 <a id="integer"></a>
 
-## INTEGER
+## INTEGER (INT)
 
 Provides 4 bytes storage for integer values. INT can be used as a synonym for INTEGER in CREATE TABLE.
 
-For behavior with other types in expressions, see Numeric type promotion in expressions, and Storing values of one numeric data type in columns of another numeric data type.
+<!---For behavior with other types in expressions, see Numeric type promotion in expressions, and Storing values of one numeric data type in columns of another numeric data type.--->
 
 |                      |                                            |
 |----------------------|--------------------------------------------|
@@ -315,11 +320,7 @@ The data type representing `Long` values. It's a 64-bit signed integer (equivale
 | Minimum value   | java.lang.Long.MIN_VALUE                          |
 |    Maximum value   | java.lang.Long.MAX_VALUE |
 
-!!! Note
-	Supported only for column tables
 
-
-<a id="numeric"></a>
 
 <a id="map"></a>
 ## MAP
@@ -352,15 +353,17 @@ A column of type Map can store **java.util.Map** or **scala.collection.Map**. Yo
 !!! Note
 	Supported only for column tables
 
+<a id="numeric"></a>
 ## NUMERIC
 
 Synonym for the DECIMAL data type.
 
-The meta-data differences from DECIMAL are listed below. Otherwise, NUMERIC behaves identically to DECIMAL.
+<!---The meta-data differences from DECIMAL are listed below. Otherwise, NUMERIC behaves identically to DECIMAL.
 
 |                    |                        |
 |--------------------|------------------------|
-|  |  |
+| JDBC metadata type | java.sql.Types.NUMERIC |
+--->
 
 ```pre
 NUMERIC [(precision [, scale ])]
@@ -369,17 +372,27 @@ NUMERIC [(precision [, scale ])]
 
 ## REAL
 
-<a id="short"></a>
+Provides a 4-byte storage for numbers using IEEE floating-point notation.
 
-## SHORT
+|                      |                                                |
+|----------------------|------------------------------------------------|
+| Equivalent Java type | java.lang.Float                                |
+| Minimum value        | -3.402E+38f           |
+| Maximum value        |+3.402E+38f          |
+|Smallest positive value  |+1.175E-37f        |
+|Largest negative value |-1.175E-37f      |
 
 <a id="smallint"></a>
 
-## SMALLINT
+<a id="short"></a>
+## SHORT
+This is a synonym for [SMALLINT](#smallint).
+
+## SMALLINT (TINYINT) (SHORT)
 
 Provides 2 bytes storage for short integer values.
 
-For behavior with other types in expressions, see Numeric type promotion in expressions, and Storing values of one numeric data type in columns of another numeric data type.
+<!---For behavior with other types in expressions, see Numeric type promotion in expressions, and Storing values of one numeric data type in columns of another numeric data type.--->
 
 |                      |                                                |
 |----------------------|------------------------------------------------|
@@ -447,10 +460,12 @@ The latter examples use the TIMESTAMP() function described in the section Built-
 
 <a id="tinyint"></a>
 ## TINYINT
+This is a synonym for [SMALLINT](#smallint).
 
-
+<!---
 <a id="varbinary"></a>
 ## VARBINARY
+--->
 
 <a id="varchar"></a>
 ## VARCHAR
