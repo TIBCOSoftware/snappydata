@@ -43,6 +43,7 @@ import org.apache.spark.streaming._
 import org.parboiled2._
 import shapeless.{::, HNil}
 
+import scala.collection.mutable
 import scala.util.Try
 
 abstract class SnappyDDLParser(session: SnappySession)
@@ -471,20 +472,34 @@ abstract class SnappyDDLParser(session: SnappySession)
       new StringBuilder().append(s))) ~ tableEnd1
   }
 
-  /**
-   *  INTP options (...) code {  ...... }
-   * @return LogicalPlan
-   */
   protected def interpretCode: Rule1[LogicalPlan] = rule {
-    EXEC ~ ws ~ SCALA ~ ws ~ (OPTIONS ~ options ~ ws).? ~ codeChunk ~> {
-      ( opts: Any, code: String) =>
-        val parameters = opts.asInstanceOf[Option[Map[String, String]]]
-          .getOrElse(Map.empty[String, String])
-
-        InterpretCodeCommand(code, parameters)
+    EXEC ~ ws ~ (capture("SCALA") | capture("scala")) ~ codeChunk ~> {
+      (scalaKeyWord: String, code: String) =>
+      val trimmedCodeLC = code.replace("\\s+", " ").trim.toLowerCase
+      if (trimmedCodeLC.startsWith("options")) {
+        val startOptionIndex = code.indexOf('(')
+        val endOptionIndex = code.indexOf(')')
+        val optionStr = code.substring(startOptionIndex+1, endOptionIndex)
+        val scalaCode = code.substring(endOptionIndex+1)
+        if (startOptionIndex <= 0 || endOptionIndex <= 0 || startOptionIndex > endOptionIndex) {
+          throw new RuntimeException("options not specified properly. Refer documentation")
+        }
+        val allOptions = optionStr.split(',')
+        val optionsMap = new mutable.HashMap[String, String]()
+        allOptions.foreach(s => {
+          val kv = s.trim.replace("\\s+", " ").split(' ')
+          if (kv.length != 2) throw new RuntimeException("options not specified properly")
+          val key = kv(0)
+          val value = kv(1).replace("'", "")
+          optionsMap += key -> value
+        })
+        println(optionsMap.toMap)
+        InterpretCodeCommand(scalaCode, optionsMap.toMap)
+      } else {
+        InterpretCodeCommand(code)
+      }
     }
   }
-
   protected def grantRevokeIntp: Rule1[LogicalPlan] = rule {
     GRANT ~ ws ~ PRIVILEGE ~ ws ~ EXEC ~ ws ~ SCALA ~ ws ~ TO ~
       ws ~ capture(ANY.*) ~> {
