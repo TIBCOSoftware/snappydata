@@ -61,6 +61,9 @@ To create a SnappySession:
  snappy = SnappySession(sc)
 ```
 
+!!!Note
+	Dataframe created from Snappy session and Spark session cannot be used across interchangeably.
+
 ## Create a SnappyStreamingContext
 [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is an entry point for TIBCO ComputeDB extensions to Spark Streaming and it extends Spark's
 [Streaming Context](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.streaming.StreamingContext).
