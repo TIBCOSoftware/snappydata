@@ -47,12 +47,16 @@ snc.table(basetable).groupBy("hack_license").count().withError(.6,.90,"do_nothin
 Create a sample table using function "hour(pickup_datetime) as QCS
 
 ```pre
-Sample Table:create sample table nyctaxi_hourly_sample on nyctaxi options (buckets '8', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
+
+# Sample Table
+
+create sample table nyctaxi_hourly_sample on nyctaxi options (buckets '8', qcs 'hourOfDay', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
+
 ```
 
 **SQL Query:**
 ```pre
-select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) from nyctaxi group by hour(pickup_datetime)
+select sum(trip_time_in_secs)/60 totalTimeDrivingInHour, hour(pickup_datetime) from nyctaxi group by hour(pickup_datetime) with error
 ```
 
 **DataFrame API Query:**
@@ -64,12 +68,15 @@ snc.table(basetable).groupBy(hour(col("pickup_datetime"))).agg(Map("trip_time_in
 If you want a higher assurance of accurate answers for your query, match the QCS to "group by columns" followed by any filter condition columns. Here is a sample using multiple columns.
 
 ```pre
-Sample Table:create sample table nyctaxi_hourly_sample on nyctaxi options (buckets '8', qcs 'hack_license, year(pickup_datetime), month(pickup_datetime)', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
+
+# Sample Table
+create sample table nyctaxi_hourly_sample on nyctaxi options (buckets '8', qcs 'hack_license, year(pickup_datetime), month(pickup_datetime)', fraction '0.01', strataReservoirSize '50') AS (select *, hour(pickupdatetime) as hourOfDay from nyctaxi);
+
 ```
 
 **SQL Query:**
 ```pre
-Select hack_license, sum(trip_distance) as daily_trips from nyctaxi  where year(pickup_datetime) = 2013 and month(pickup_datetime) = 9 group by hack_license  order by daily_trips desc
+Select hack_license, sum(trip_distance) as daily_trips from nyctaxi  where year(pickup_datetime) = 2013 and month(pickup_datetime) = 9 group by hack_license  order by daily_trips desc with error
 ```
 
 **DataFrame API Query:**
