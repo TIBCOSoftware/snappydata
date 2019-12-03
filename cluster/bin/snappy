@@ -106,7 +106,7 @@ elif [ -z "$SNAPPY_NO_QUICK_LAUNCH" -a $# -ge 2 \
         if [ -n "$IMPLICIT_CLIENT_BIND_ADDRESS" ]; then
           IMPLICIT_AWS_CLIENT_BIND_ADDRESS="-client-bind-address=0.0.0.0"
         fi
-      else
+      elif [ -n "$IMPLICIT_CLIENT_BIND_ADDRESS" ]; then
         IMPLICIT_AWS_CLIENT_BIND_ADDRESS="-client-bind-address=${IMPLICIT_CLIENT_BIND_ADDRESS}"
       fi
     fi
