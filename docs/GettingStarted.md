@@ -140,9 +140,9 @@ For instance, each time an aggregation is run on a large Cassandra table, it nec
 
 ### The TIBCO ComputeDB Approach
 
-##### Snappy Architecture
+##### TIBCO ComputeDB Architecture
 
-![TIBCO ComputeDB Architecture](./Images/SnappyArchitecture.png)
+![TIBCO ComputeDB Architecture](./Images/tcdbArchitecture.png)
 
 TIBCO ComputeDB takes a different approach. TIBCO ComputeDB fuses a low latency, highly available in-memory transactional database (Pivotal GemFire/Apache Geode) into Apache Spark with shared memory management and optimizations. Data can be managed in columnar form (similar to Apache Spark caching) or in a row oriented manner(commonly used in popular relational databases like postgres). But, many query engine operators are significantly more optimized through better vectorization, code generation and indexing. </br>
 The net effect is, an order of magnitude performance improvement when compared to native Apache Spark caching, and more than two orders of magnitude better performance when Apache Spark is used in conjunction with external data sources.
