@@ -134,6 +134,8 @@ dependencies {
   }
   compile "io.snappydata:spark-metrics:${snappySparkMetricsLibVersion}"
 
+  compile(group:'com.google.cloud.bigdataoss', name:'gcs-connector', version: gcsHadoop2ConnectorVersion) 
+  
   compile(group: 'org.apache.hadoop', name: 'hadoop-azure', version: hadoopVersion) {
     // exclude some dependencies like in hadoop-aws to avoid conflicts with other deps
     exclude(group: 'asm', module: 'asm')
@@ -155,8 +157,6 @@ dependencies {
     exclude(group: 'com.jcraft', module: 'jsch')
     exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
 }
-  //compile group: 'org.apache.hadoop', name: 'hadoop-azure', version: '3.2.1'
-  //compile group: 'org.apache.hadoop', name: 'hadoop-azure-datalake', version: '3.2.1'
 
   testCompile project(':dunit')
   testCompile "it.unimi.dsi:fastutil:${fastutilVersion}"
