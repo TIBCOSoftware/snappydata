@@ -27,7 +27,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.gemxd.SnappySessionPerConnection
 import org.apache.spark.SparkContext
 import org.apache.spark.repl.SparkILoop
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{CachedDataFrame, SnappySession}
 
 import scala.collection.mutable
 import scala.tools.nsc.Settings
@@ -69,11 +69,12 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
   var incomplete = new mutable.StringBuilder()
   val resultBuffer = new mutable.ArrayBuffer[String]()
 
-  def interpret(code: Array[String]): Array[String] = {
-    return interpret(code, false)
+  def interpret(code: Array[String], options: Map[String, String]): AnyRef = {
+    return interpret(code, false, options)
   }
 
-  def interpret(code: Array[String], replay: Boolean): Array[String] = {
+  def interpret(code: Array[String], replay: Boolean,
+      options: Map[String, String] = null): AnyRef = {
     this.resultBuffer.clear()
     pw.reset()
     if (code != null && !code.isEmpty && code(0).trim.startsWith(":")) {
@@ -109,7 +110,19 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
       incomplete.append(tmpsb.toString())
       resultBuffer +=  "___INCOMPLETE___"
     }
-    resultBuffer.toArray
+    if (options != null && options.nonEmpty &&
+      options.isDefinedAt(RemoteInterpreterStateHolder.optionDF)) {
+      var allRequests = intp.prevRequestList.reverse
+      while (allRequests.nonEmpty) {
+        var request = allRequests.head
+        val x = request.lineRep.evalEither.right.get
+        if (x != null && x.isInstanceOf[CachedDataFrame]) {
+          if (x.asInstanceOf[CachedDataFrame].schema.fields.nonEmpty) return x
+        }
+        allRequests = allRequests.tail
+      }
+    }
+    resultBuffer.toArray.flatMap(_.split("\n"))
   }
 
   def processCommand(command: String): Array[String] = {
@@ -245,6 +258,10 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
       spw.write(b)
     }
   }
+}
+
+object RemoteInterpreterStateHolder {
+  private val optionDF = "returnDF"
 }
 
 class RemoteILoop(spw: StringPrintWriter, intpHelper: RemoteInterpreterStateHolder)

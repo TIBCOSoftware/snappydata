@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.execution.oplog.impl
 
+import scala.collection.mutable
+
 import io.snappydata.Constant
 import io.snappydata.recovery.RecoveryService
 
@@ -51,14 +53,21 @@ class OpLogFormatRelation(
     val tableSchemas = RecoveryService.schemaStructMap
     val versionMap = RecoveryService.versionMap
     val tableColIdsMap = RecoveryService.tableColumnIds
+    val bucketHostMap: mutable.Map[Int, String] = mutable.Map.empty
     val catalogTable = snappySession.externalCatalog.getTable(schemaName, tableName)
     val primaryKeys = catalogTable.properties.getOrElse("primary_keys", "")
     val keyColumns = options.getOrElse("key_columns", "")
-    var schemaLowerCase = StructType(schema.map(f => f.copy(name = f.name.toLowerCase)))
+    val schemaLowerCase = StructType(schema.map(f => f.copy(name = f.name.toLowerCase)))
+    val removePattern = "(executor_).*(_)".r
+
+    (0 until RecoveryService.getNumBuckets(schemaName.toUpperCase, tableName.toUpperCase)._1).foreach(i => {
+      bucketHostMap.put(i,
+        removePattern.replaceAllIn(RecoveryService.getExecutorHost(fqtn.toUpperCase(), i).head, ""))
+    })
 
     (new OpLogRdd(snappySession, fqtn, externalColumnTableName, schemaLowerCase,
       partitioningColumns, provider, projection, filters, (filters eq null) || filters.length == 0,
-      prunePartitions, tableSchemas, versionMap, tableColIdsMap, primaryKeys, keyColumns), projection)
+      prunePartitions, tableSchemas, versionMap, tableColIdsMap, bucketHostMap, primaryKeys, keyColumns), projection)
   }
 
 
