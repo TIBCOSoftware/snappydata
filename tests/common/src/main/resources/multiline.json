@@ -1,0 +1,16 @@
+{
+ "name":"Yin",
+ "address": {
+   "city":"Columbus",
+   "state":"Ohio",
+   "district" :"Pune"
+ }
+}
+{
+  "name":"Michael",
+  "address":{
+    "city":null,
+    "state":"California",
+    "lane" :"15"
+  }
+}

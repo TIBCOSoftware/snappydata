@@ -251,6 +251,7 @@ $ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass
 
 Any Spark or SnappyData specific environment settings can be done by creating a **snappy-env.sh** or **spark-env.sh** in **SNAPPY_HOME/conf**.
 
+<!--
 <a id="hadoop-setting"></a>
 ### Hadoop Provided Settings
 
@@ -261,6 +262,7 @@ To do this, you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:
 ```pre
 export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 ```
+-->
 
 <a id="logging"></a>
 ## Logging 

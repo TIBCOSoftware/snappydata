@@ -73,8 +73,14 @@ object ServiceUtils {
     if (!forLocator) {
       // set default recovery delay to 2 minutes (SNAP-1541)
       storeProps.putIfAbsent(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
-      // try hard to maintain executor and node locality
-      storeProps.putIfAbsent("spark.locality.wait.process", "20s")
+      val isRecoveryMode = props.getProperty(GfxdConstants.SNAPPY_PREFIX + "recover")
+      if(isRecoveryMode != null) {
+        // It is crucial to enforce process locality in case of recovery mode
+        storeProps.putIfAbsent("spark.locality.wait.process", "1800s")
+      } else {
+        // try hard to maintain executor and node locality
+        storeProps.putIfAbsent("spark.locality.wait.process", "20s")
+      }
       storeProps.putIfAbsent("spark.locality.wait", "10s")
       // default value for spark.sql.files.maxPartitionBytes in snappy is 32mb
       storeProps.putIfAbsent("spark.sql.files.maxPartitionBytes", "33554432")

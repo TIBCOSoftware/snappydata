@@ -36,7 +36,7 @@ import scala.collection.mutable
 
 class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExecute with Logging {
 
-  override def execute(user: String, authToken: String): Array[String] = {
+  override def execute(user: String, authToken: String): AnyRef = {
     if (!SnappyInterpreterExecute.INITIALIZED) SnappyInterpreterExecute.init()
     val (allowed, group) = SnappyInterpreterExecute.permissions.isAllowed(user)
     if (Misc.isSecurityEnabled && !user.equalsIgnoreCase(SnappyInterpreterExecute.dbOwner)) {
@@ -49,7 +49,11 @@ class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExe
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     val lp = session.sessionState.sqlParser.parsePlan(sql).asInstanceOf[InterpretCodeCommand]
     val interpreterHelper = SnappyInterpreterExecute.getOrCreateStateHolder(connId, user, authToken, group)
-    interpreterHelper.interpret(lp.code.split("\n"))
+    try {
+      interpreterHelper.interpret(lp.code.split("\n"), lp.options)
+    } finally {
+      scala.Console.setOut(System.out)
+    }
   }
 }
 
