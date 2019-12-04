@@ -127,6 +127,8 @@ This is expected behaviour where the product does not retry, since partial resul
 <error> **Message:** </error> 
 <error-text>
 SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.
+OR
+Table schema changed due to DROP/CREATE/ALTER operation. Please retry the operation
 </error-text>
 
 <diagnosis> **Diagnosis:**</br>
@@ -135,7 +137,7 @@ For performance reasons, TIBCO ComputeDB Smart Connector caches the catalog in t
 </diagnosis>
 
 <action> **Solution:** </br>
-If the user application is performing DataFrame/DataSet operations, you must recreate the DataFrame/DataSet and retry the operation. In such cases, application needs to catch exceptions of type **org.apache.spark.sql.execution.CatalogStaleException** and **java.sql.SQLException** (with SQLState=X0Z39) and retry the operation. Check the following code snippet to get a better understanding of how this scenario should be handled:
+If a Select query encounters this error, that query is retried internally by the product up to ten times, and user intervention may not be necessary. However, after the ten retries, the query shows an exception, and the application needs to retry the query. Also, if the user application is performing DataFrame/DataSet operations, you must recreate the DataFrame/DataSet and retry the operation. In such cases, the application needs to catch exceptions of type **org.apache.spark.sql.execution.CatalogStaleException** and j**ava.sql.SQLException** (with SQLState=X0Z39) and retry the operation. Check the following code snippet to get a better understanding of how you can handle this scenario:
 
 ```pre
 int retryCount = 0;
