@@ -19,12 +19,11 @@
 package io.snappydata.metrics
 
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyRegionStats}
-import io.snappydata.metrics.SnappyMetricsSystem.createGauge
+import io.snappydata.metrics.SnappyMetricsSystem.{createGauge, remove}
 
 object SnappyTableMetrics {
 
   def convertStatsToMetrics(table: String, tableStats: SnappyRegionStats) {
-    
     val namespace = s"TableMetrics.$table"
     createGauge(s"$namespace.tableName", tableStats.getTableName.asInstanceOf[AnyVal])
     createGauge(s"$namespace.isColumnTable", tableStats.isColumnTable)
@@ -40,9 +39,23 @@ object SnappyTableMetrics {
 
   }
 
-  def convertExternalTableStatstoMetrics(table: String,
-                                        externalTableStats: SnappyExternalTableStats): Unit = {
+  def removeTableMetrics(table: String): Unit = {
+    val namespace = s"TableMetrics.$table"
+    remove(s"$namespace.tableName")
+    remove(s"$namespace.isColumnTable")
+    remove(s"$namespace.rowCount")
+    remove(s"$namespace.sizeInMemory")
+    remove(s"$namespace.sizeSpillToDisk")
+    remove(s"$namespace.totalSize")
+    remove(s"$namespace.isReplicatedTable")
+    remove(s"$namespace.bucketCount")
+    remove(s"$namespace.redundancy")
+    remove(s"$namespace.isRedundancyImpaired")
+    remove(s"$namespace.isAnyBucketLost")
+  }
 
+  def convertExternalTableStatstoMetrics(table: String,
+    externalTableStats: SnappyExternalTableStats): Unit = {
     val namespace = s"ExternalTableMetrics.$table"
     createGauge(s"$namespace.tableName",
       externalTableStats.getTableFullyQualifiedName.asInstanceOf[AnyVal])
@@ -50,5 +63,13 @@ object SnappyTableMetrics {
     createGauge(s"$namespace.dataSourcePath",
       externalTableStats.getDataSourcePath.asInstanceOf[AnyVal])
     createGauge(s"$namespace.tableType", externalTableStats.getTableType.asInstanceOf[AnyVal])
+  }
+
+  def removeExternalTableMetrics(table: String): Unit = {
+    val namespace = s"ExternalTableMetrics.$table"
+    remove(s"$namespace.tableName")
+    remove(s"$namespace.provider")
+    remove(s"$namespace.dataSourcePath")
+    remove(s"$namespace.tableType")
   }
 }

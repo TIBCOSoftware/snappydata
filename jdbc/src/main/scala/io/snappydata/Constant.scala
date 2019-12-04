@@ -168,4 +168,6 @@ object Constant {
   val CLUSTER_ID = "__cluster_id__"
 
   val MEMBER_ID_PREFIX = "__member_id__"
+
+  val GRANT_REVOKE_KEY = "##_INTP__GRANT__REVOKE_##"
 }

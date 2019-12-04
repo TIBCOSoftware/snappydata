@@ -19,16 +19,10 @@ package org.apache.spark.sql
 
 import java.io.File
 
-import scala.util.Try
-
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, QueryHint}
-import org.parboiled2._
-import shapeless.{::, HNil}
-
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
@@ -46,6 +40,11 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
+import org.parboiled2._
+import shapeless.{::, HNil}
+
+import scala.collection.mutable
+import scala.util.Try
 
 abstract class SnappyDDLParser(session: SnappySession)
     extends SnappyBaseParser(session) {
@@ -137,6 +136,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def DISKSTORE: Rule0 = rule { keyword(Consts.DISKSTORE) }
   final def ENABLE: Rule0 = rule { keyword(Consts.ENABLE) }
   final def END: Rule0 = rule { keyword(Consts.END) }
+  final def EXEC: Rule0 = rule { keyword(Consts.EXEC) }
   final def EXECUTE: Rule0 = rule { keyword(Consts.EXECUTE) }
   final def EXPLAIN: Rule0 = rule { keyword(Consts.EXPLAIN) }
   final def EXTENDED: Rule0 = rule { keyword(Consts.EXTENDED) }
@@ -185,6 +185,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def PERCENT: Rule0 = rule { keyword(Consts.PERCENT) }
   final def POLICY: Rule0 = rule { keyword(Consts.POLICY) }
   final def PRIMARY: Rule0 = rule { keyword(Consts.PRIMARY) }
+  final def PRIVILEGE: Rule0 = rule { keyword(Consts.PRIVILEGE) }
   final def PURGE: Rule0 = rule { keyword(Consts.PURGE) }
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
@@ -196,6 +197,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def RESTRICT: Rule0 = rule { keyword(Consts.RESTRICT) }
   final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
   final def RLIKE: Rule0 = rule { keyword(Consts.RLIKE) }
+  final def SCALA: Rule0 = rule { keyword(Consts.SCALA) }
   final def SCHEMAS: Rule0 = rule { keyword(Consts.SCHEMAS) }
   final def SECURITY: Rule0 = rule { keyword(Consts.SECURITY) }
   final def SEMI: Rule0 = rule { keyword(Consts.SEMI) }
@@ -469,6 +471,52 @@ abstract class SnappyDDLParser(session: SnappySession)
     (capture(beforeDDLEnd.*) ~> ((s: String) =>
       new StringBuilder().append(s))) ~ tableEnd1
   }
+
+  protected def interpretCode: Rule1[LogicalPlan] = rule {
+    EXEC ~ ws ~ (capture("SCALA") | capture("scala")) ~ codeChunk ~> {
+      (scalaKeyWord: String, code: String) =>
+      val trimmedCodeLC = code.replace("\\s+", " ").trim.toLowerCase
+      if (trimmedCodeLC.startsWith("options")) {
+        val startOptionIndex = code.indexOf('(')
+        val endOptionIndex = code.indexOf(')')
+        val optionStr = code.substring(startOptionIndex+1, endOptionIndex)
+        val scalaCode = code.substring(endOptionIndex+1)
+        if (startOptionIndex <= 0 || endOptionIndex <= 0 || startOptionIndex > endOptionIndex) {
+          throw new RuntimeException("options not specified properly. Refer documentation")
+        }
+        val allOptions = optionStr.split(',')
+        val optionsMap = new mutable.HashMap[String, String]()
+        allOptions.foreach(s => {
+          val kv = s.trim.replace("\\s+", " ").split(' ')
+          if (kv.length != 2) throw new RuntimeException("options not specified properly")
+          val key = kv(0)
+          val value = kv(1).replace("'", "")
+          optionsMap += key -> value
+        })
+        println(optionsMap.toMap)
+        InterpretCodeCommand(scalaCode, optionsMap.toMap)
+      } else {
+        InterpretCodeCommand(code)
+      }
+    }
+  }
+  protected def grantRevokeIntp: Rule1[LogicalPlan] = rule {
+    GRANT ~ ws ~ PRIVILEGE ~ ws ~ EXEC ~ ws ~ SCALA ~ ws ~ TO ~
+      ws ~ capture(ANY.*) ~> {
+      (users: String) => GrantRevokeIntpCommand(true, users) } |
+    REVOKE ~ ws ~ PRIVILEGE ~ ws ~ EXEC ~ ws ~ SCALA ~ ws ~ FROM ~
+      ws ~ capture(ANY.*) ~> {
+        (users: String) => GrantRevokeIntpCommand(false, users)
+    }
+  }
+
+  protected def codeChunk: Rule1[String] = rule {
+    capture(ANY.*) ~ EOI ~> ((code : String) => code )
+    /***
+    '{' ~ capture(ANY) ~ '}' ~> ((code : String) => code )
+     ***/
+  }
+
 
   protected def createIndex: Rule1[LogicalPlan] = rule {
     (CREATE ~ (GLOBAL ~ HASH ~ push(false) | UNIQUE ~ push(true)).? ~ INDEX) ~
@@ -988,7 +1036,7 @@ abstract class SnappyDDLParser(session: SnappySession)
     dropTable | truncateTable | createView | createTempViewUsing | dropView | alterView | createSchema |
     dropSchema | alterTableToggleRowLevelSecurity | createPolicy | dropPolicy |
     alterTableProps | alterTableOrView | alterTable | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | passThrough)
+    createIndex | dropIndex | createFunction | dropFunction | grantRevokeIntp | passThrough | interpretCode )
   }
 
   protected def partitionSpec: Rule1[Map[String, Option[String]]]
