@@ -22,7 +22,6 @@ import java.util.Properties
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
-
 class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   val driverName = "io.snappydata.jdbc.ClientPoolDriver"
