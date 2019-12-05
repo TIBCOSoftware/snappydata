@@ -183,9 +183,11 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     tablesArr.foreach(f = table => {
       Try {
         val tableData = session.sql(s"select * from $table;")
-        logInfo(s"EXPORT_DATA procedure is exporting table: $table.")
+        val savePath = filePath + File.separator + table.toUpperCase
         tableData.write.mode(SaveMode.Overwrite).option("header", "true").format(formatType)
-            .save(filePath + File.separator + table.toUpperCase)
+            .save(savePath)
+        logDebug(s"EXPORT_DATA procedure is exporting table $table in $formatType format" +
+            s"at path: $savePath ")
       } match {
         case scala.util.Success(_) =>
         case scala.util.Failure(exception) =>
