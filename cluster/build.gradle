@@ -134,7 +134,7 @@ dependencies {
   }
   compile "io.snappydata:spark-metrics:${snappySparkMetricsLibVersion}"
 
-  compile(group:'com.google.cloud.bigdataoss', name:'gcs-connector', version: gcsHadoop2ConnectorVersion) 
+  compile(group:'com.google.cloud.bigdataoss', name:'gcs-connector', version: gcsHadoop2ConnectorVersion, classifier: 'shaded') 
   
   compile(group: 'org.apache.hadoop', name: 'hadoop-azure', version: hadoopVersion) {
     // exclude some dependencies like in hadoop-aws to avoid conflicts with other deps
