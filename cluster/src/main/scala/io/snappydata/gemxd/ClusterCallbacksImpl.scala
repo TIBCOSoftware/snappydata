@@ -183,7 +183,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     tablesArr.foreach(f = table => {
       Try {
         val tableData = session.sql(s"select * from $table;")
-        logDebug(s"EXPORT_DATA procedure is writing table: $table.")
+        logInfo(s"EXPORT_DATA procedure is exporting table: $table.")
         tableData.write.mode(SaveMode.Overwrite).option("header", "true").format(formatType)
             .save(filePath + File.separator + table.toUpperCase)
       } match {

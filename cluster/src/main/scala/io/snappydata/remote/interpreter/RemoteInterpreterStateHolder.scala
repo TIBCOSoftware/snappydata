@@ -78,7 +78,7 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
     this.resultBuffer.clear()
     pw.reset()
     if (code != null && !code.isEmpty && code(0).trim.startsWith(":")) {
-      return processCommand(code(0).tail)
+      return processCommand(code(0).trim.tail)
     }
     scala.Console.setOut(strOpStream)
     val tmpsb = new StringBuilder
