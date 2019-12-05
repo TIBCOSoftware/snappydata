@@ -87,7 +87,7 @@ class RemoteInterpreterStateHolder(
       if (!replay) sc.setLocalProperty(Constant.REPL_OUTPUT_DIR, replOutputDirStr)
 
       if (code != null && !code.isEmpty && code(0).trim.startsWith(":")) {
-        return processCommand(code(0).tail)
+        return processCommand(code(0).trim.tail)
       }
       scala.Console.setOut(strOpStream)
       val tmpsb = new StringBuilder
