@@ -234,8 +234,10 @@ object SnappyMetricsSystem {
   def removeTableMetricsIfTableDeleted(stringToStats: Map[String, SnappyRegionStats]): Unit = {
     for (t <- tables) {
       if (!stringToStats.exists(x => x._1 == t)) {
-        SnappyTableMetrics.removeTableMetrics(t)
-        tables -= t
+        if (t != null) {
+          SnappyTableMetrics.removeTableMetrics(t)
+          tables -= t
+        }
       }
     }
   }
@@ -269,8 +271,10 @@ object SnappyMetricsSystem {
     Map[String, SnappyExternalTableStats]): Unit = {
     for (t <- externaltables) {
       if (!stringToStats.exists(x => x._1 == t)) {
-        SnappyTableMetrics.removeExternalTableMetrics(t)
-        externaltables -= t
+        if (t != null) {
+          SnappyTableMetrics.removeExternalTableMetrics(t)
+          externaltables -= t
+        }
       }
     }
   }

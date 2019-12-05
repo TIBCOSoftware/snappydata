@@ -17,22 +17,18 @@
 package io.snappydata.metrics
 
 import java.io.{File, PrintWriter}
-import java.nio.file.{Files, Paths}
 import java.sql.{Connection, DriverManager}
 
+import io.snappydata.Constant
 import io.snappydata.cluster.{ClusterManagerTestBase, SplitClusterDUnitTest}
 import io.snappydata.test.dunit.AvailablePortHelper
 import org.apache.spark.Logging
 import org.json4s.jackson.JsonMethods._
-import java.util
-
 import org.junit.Assert.assertEquals
-import org.apache.spark.sql.collection.Utils
 import org.json4s.DefaultFormats
 
 import scala.collection.mutable
 import scala.sys.process._
-import scala.util.matching.Regex
 
 class SnappyMetricsSystemDUnitTest(s: String)
     extends ClusterManagerTestBase(s) with Logging {
@@ -40,9 +36,6 @@ class SnappyMetricsSystemDUnitTest(s: String)
 
   val port = AvailablePortHelper.getRandomAvailableTCPPort
   val netPort = AvailablePortHelper.getRandomAvailableTCPPort
-  val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
-  val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
-  val netPort4 = AvailablePortHelper.getRandomAvailableTCPPort
   val snappyProductDir = System.getenv("SNAPPY_HOME")
 
   override def beforeClass(): Unit = {
@@ -60,16 +53,15 @@ class SnappyMetricsSystemDUnitTest(s: String)
         s" -peer-discovery-port=$port -client-port=$netPort")
     pw.close()
     val pw1 = new PrintWriter(new File(s"$confDir/leads"))
-    pw1.write(s"localhost -locators=localhost[$port] -dir=$snappyProductDir/work/lead1\n")
-    pw1.write(s"localhost -locators=localhost[$port] -dir=$snappyProductDir/work/lead2")
+    pw1.write(s"localhost -locators=localhost[$port] " +
+        s"-dir=$snappyProductDir/work/lead1 -spark.ui.port=3333\n")
+    pw1.write(s"localhost -locators=localhost[$port] " +
+        s"-dir=$snappyProductDir/work/lead2 -spark.ui.port=3334")
     pw1.close()
     val pw2 = new PrintWriter(new File(s"$confDir/servers"))
-    pw2.write(s"localhost -locators=localhost[$port] -client-port=$netPort2" +
-        s" -dir=$snappyProductDir/work/server1\n")
-    pw2.write(s"localhost -locators=localhost[$port] -client-port=$netPort3" +
-        s" -dir=$snappyProductDir/work/server2\n")
-    pw2.write(s"localhost -locators=localhost[$port] -client-port=$netPort4" +
-        s" -dir=$snappyProductDir/work/server3")
+    pw2.write(s"localhost -locators=localhost[$port] -dir=$snappyProductDir/work/server1\n")
+    pw2.write(s"localhost -locators=localhost[$port] -dir=$snappyProductDir/work/server2\n")
+    pw2.write(s"localhost -locators=localhost[$port] -dir=$snappyProductDir/work/server3")
     pw2.close()
     logInfo(s"Starting snappy cluster in $snappyProductDir/work")
 
@@ -79,10 +71,10 @@ class SnappyMetricsSystemDUnitTest(s: String)
 
   override def afterClass(): Unit = {
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
-    s"rm -rf $snappyProductDir/work".!!
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
+    // s"rm -rf $snappyProductDir/work".!!
+    // Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
+    // Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
+    // Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
   }
 
   def jsonStrToMap(jsonStr: String): Map[String, AnyVal] = {
@@ -91,7 +83,7 @@ class SnappyMetricsSystemDUnitTest(s: String)
   }
 
   def collectJsonStats(): mutable.Map[String, AnyVal] = {
-    val url = "http://localhost:5050/metrics/json/"
+    val url = "http://localhost:3333/metrics/json/"
     val json = scala.io.Source.fromURL(url).mkString
     val data = jsonStrToMap(json)
     val rs = data.-("counters", "meters", "histograms", "timers", "version")
@@ -119,13 +111,11 @@ class SnappyMetricsSystemDUnitTest(s: String)
     found
   }
 
-  def getConnection(): Connection = {
-    val driver = "io.snappydata.jdbc.ClientDriver"
-    Utils.classForName(driver).newInstance
-    DriverManager.getConnection(s"jdbc:snappydata:thrift://localhost[$netPort]")
-  }
+  def getConnection(netPort: Int): Connection =
+    DriverManager.getConnection(s"${Constant.DEFAULT_THIN_CLIENT_URL}localhost:$netPort")
 
   def testMetricsMonitoring(): Unit = {
+    Thread.sleep(10000)
     doTestMetricsWhenClusterStarted()
     doTestMetricsAfterTableCreation()
     doTestMetricsAfterTableDeletion()
@@ -276,7 +266,7 @@ class SnappyMetricsSystemDUnitTest(s: String)
   }
 
   def doTestMetricsAfterTableCreation(): Unit = {
-    val conn = getConnection()
+    val conn = getConnection(netPort)
     val stmt = conn.createStatement()
     val path = getClass.getResource("/northwind/orders" +
         ".csv").getPath
@@ -319,51 +309,35 @@ class SnappyMetricsSystemDUnitTest(s: String)
         assertEquals("APP.TEST2", v)}
       if (containsWords(k, Array("TableMetrics.APP.TEST2", "isReplicatedTable"))) {
         assertEquals(false, v)}
-      if (containsWords(k, Array("TableMetrics.APP.TEST2", "sizeSpillToDisk"))) {
-        assertEquals(scala.math.BigInt(0), v)}
       if (containsWords(k, Array("TableMetrics.APP.TEST2", "isAnyBucketLost"))) {
         assertEquals(false, v)}
-      if (containsWords(k, Array("TableMetrics.APP.TEST2", "totalSize"))) {
-        assertEquals(scala.math.BigInt(535128), v)}
       if (containsWords(k, Array("TableMetrics.APP.TEST2", "redundancy"))) {
         assertEquals(scala.math.BigInt(0), v)}
       if (containsWords(k, Array("TableMetrics.APP.TEST2", "rowCount"))) {
         assertEquals(scala.math.BigInt(831), v)}
       if (containsWords(k, Array("TableMetrics.APP.TEST2", "isRedundancyImpaired"))) {
         assertEquals(false, v)}
-      if (containsWords(k, Array("TableMetrics.APP.TEST2", "bucketCount"))) {
-        assertEquals(scala.math.BigInt(24), v)}
       if (containsWords(k, Array("TableMetrics.APP.TEST2", "isColumnTable"))) {
         assertEquals(true, v)}
-      if (containsWords(k, Array("TableMetrics.APP.TEST2", "sizeInMemory"))) {
-        assertEquals(scala.math.BigInt(535128), v)}
       if (containsWords(k, Array("TableMetrics.APP.TEST.", "tableName"))) {
         assertEquals("APP.TEST", v)}
       if (containsWords(k, Array("TableMetrics.APP.TEST.", "isReplicatedTable"))) {
         assertEquals(true, v)}
-      if (containsWords(k, Array("TableMetrics.APP.TEST.", "sizeSpillToDisk"))) {
-        assertEquals(scala.math.BigInt(0), v)}
       if (containsWords(k, Array("TableMetrics.APP.TEST.", "isAnyBucketLost"))) {
         assertEquals(false, v)}
-      if (containsWords(k, Array("TableMetrics.APP.TEST.", "totalSize"))) {
-        assertEquals(scala.math.BigInt(6336), v)}
       if (containsWords(k, Array("TableMetrics.APP.TEST.", "redundancy"))) {
         assertEquals(scala.math.BigInt(0), v)}
       if (containsWords(k, Array("TableMetrics.APP.TEST.", "rowCount"))) {
         assertEquals(scala.math.BigInt(2), v)}
       if (containsWords(k, Array("TableMetrics.APP.TEST.", "isRedundancyImpaired"))) {
         assertEquals(false, v)}
-      if (containsWords(k, Array("TableMetrics.APP.TEST.", "bucketCount"))) {
-        assertEquals(scala.math.BigInt(1), v)}
       if (containsWords(k, Array("TableMetrics.APP.TEST.", "isColumnTable"))) {
         assertEquals(false, v)}
-      if (containsWords(k, Array("TableMetrics.APP.TEST.", "sizeInMemory"))) {
-        assertEquals(scala.math.BigInt(6336), v)}
     }
   }
 
   def doTestMetricsAfterTableDeletion(): Unit = {
-    val conn = getConnection()
+    val conn = getConnection(netPort)
     val stmt = conn.createStatement()
     stmt.execute("drop table test")
     stmt.execute("drop table test1")
