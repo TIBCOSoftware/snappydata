@@ -117,8 +117,7 @@ class OpLogRdd(
               DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.CHAR, isNullable,
                 metadata.getLong("size").toInt)
           }
-        }
-        else {
+        } else {
           // when - create table using column as select ..- is used,
           // it create string column with no base information in metadata
           DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.CLOB, isNullable)
@@ -222,12 +221,12 @@ class OpLogRdd(
   def getFromDVD(schema: StructType, dvd: DataValueDescriptor, i: Integer,
       valueArr: Array[Array[Byte]], complexSchema: Seq[StructField]): Any = {
     val field = schema(i)
+    // complexFieldIndex is only required for Array, Map, struct. For others we use dvd.getObject
     val complexFieldIndex = if (complexSchema == null) 0 else complexSchema.indexOf(field) + 1
     field.dataType match {
       case ShortType => if (dvd.isNull) null else dvd.getShort
       case ByteType => if (dvd.isNull) null else dvd.getByte
       case arrayType: ArrayType =>
-        assert(field.dataType == arrayType)
         val array = valueArr(complexFieldIndex)
         val data = new SerializedArray(8)
         if (array != null) {
@@ -235,7 +234,6 @@ class OpLogRdd(
           data.toArray(arrayType.elementType)
         } else null
       case mapType: MapType =>
-        assert(field.dataType == mapType)
         val map = valueArr(complexFieldIndex)
         val data = new SerializedMap()
         if (map != null) {
@@ -245,7 +243,6 @@ class OpLogRdd(
           jmap
         } else null
       case structType: StructType =>
-        assert(field.dataType == structType)
         val struct = valueArr(complexFieldIndex)
         if (struct != null) {
           val data = new SerializedRow(4, structType.length)
@@ -303,9 +300,17 @@ class OpLogRdd(
     val rowFormatter = getRowFormatter(versionNum, schemaOfVersion)
     val dvdArr = new Array[DataValueDescriptor](schemaOfVersion.length)
     val projectColumns: Array[String] = schema.fields.map(_.name)
-    val complexSch = schemaOfVersion.filter(f =>
-      f.dataType match {
-        case _: ArrayType | _: MapType | _: StructType | _: StringType => true
+    val complexSch = schemaOfVersion.filter(structField =>
+      structField.dataType match {
+        case _: ArrayType | _: MapType | _: StructType | _: BinaryType => true
+        case _: StringType => {
+          if (structField.metadata.contains("base")) {
+            structField.metadata.getString("base") match {
+              case "STRING" | "CLOB" => true
+              case _ =>  false
+            }
+          } else true
+        }
         case _ => false
       }
     )

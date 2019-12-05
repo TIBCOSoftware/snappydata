@@ -23,9 +23,7 @@ import java.util.Properties
 
 import scala.collection.mutable.ArrayBuffer
 
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.TestUtil
-import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SnappyFunSuite.resultSetToDataset
 import io.snappydata.{Property, SnappyFunSuite}
 import org.junit.Assert._
@@ -1558,4 +1556,29 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("drop schema xy")
   }
 
+  test("SDENT-75-GetTypeInfo-Boolean-Test") {
+    snc
+    val serverHostPort = TestUtil.startNetServer()
+    val driverName = "io.snappydata.jdbc.ClientDriver"
+    val url = s"JDBC:SNAPPYDATA://$serverHostPort"
+    // scalastyle:off
+    Class.forName(driverName)
+    val properties = null //new Properties
+    val conn = DriverManager.getConnection(url, properties)
+    assert(null != conn)
+    val stmt = conn.createStatement()
+    val resultSet = conn.getMetaData().getTypeInfo()
+    var count = 0;
+    while (resultSet.next()) {
+      count = count + 1;
+      if (count == 26) {
+        var typeName = resultSet.getString(1);
+        var typeNum = resultSet.getInt(2);
+        assert("BOOLEAN" == typeName)
+        assert(typeNum == -7)
+      }
+    }
+
+    conn.close()
+  }
 }
