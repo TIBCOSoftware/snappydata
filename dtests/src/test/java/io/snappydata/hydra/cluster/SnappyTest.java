@@ -891,6 +891,7 @@ public class SnappyTest implements Serializable {
    * the test for stopping all locators which have been started in the test.
    **/
   public static synchronized void restoreLocatorConfigData() {
+    if(snappyTest == null) snappyTest = new SnappyTest();
     snappyTest.restoreConfigData("locators");
   }
 
@@ -904,6 +905,7 @@ public class SnappyTest implements Serializable {
    * which have been started in the test.
    **/
   public static synchronized void restoreServerConfigData() {
+    if(snappyTest == null) snappyTest = new SnappyTest();
     snappyTest.restoreConfigData("servers");
   }
 
@@ -917,6 +919,7 @@ public class SnappyTest implements Serializable {
    * which have been started in the test.
    **/
   public static synchronized void restoreLeadConfigData() {
+    if(snappyTest == null) snappyTest = new SnappyTest();
     snappyTest.restoreConfigData("leads");
   }
 
