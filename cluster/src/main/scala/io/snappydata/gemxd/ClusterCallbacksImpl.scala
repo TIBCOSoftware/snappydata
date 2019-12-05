@@ -186,8 +186,8 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
         val savePath = filePath + File.separator + table.toUpperCase
         tableData.write.mode(SaveMode.Overwrite).option("header", "true").format(formatType)
             .save(savePath)
-        logDebug(s"EXPORT_DATA procedure is exporting table $table in $formatType format" +
-            s"at path: $savePath ")
+        logDebug(s"EXPORT_DATA procedure exported table $table in $formatType format" +
+            s"at path $savePath ")
       } match {
         case scala.util.Success(_) =>
         case scala.util.Failure(exception) =>
