@@ -2186,7 +2186,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
   // Call to update Structured Streaming UI Tab
-  updateStructuredStreamingUITab()
+  // updateStructuredStreamingUITab()
 
 }
 
