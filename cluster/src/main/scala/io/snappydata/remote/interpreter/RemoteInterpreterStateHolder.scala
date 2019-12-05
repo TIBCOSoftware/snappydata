@@ -20,20 +20,23 @@ package io.snappydata.remote.interpreter
 import java.io._
 import java.lang.reflect.Method
 import java.net.URLClassLoader
+import java.nio.file.{Files, Paths}
 
 import com.gemstone.gemfire.internal.shared.StringPrintWriter
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.Constant
 import io.snappydata.gemxd.SnappySessionPerConnection
-import org.apache.spark.SparkContext
+import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.repl.SparkILoop
-import org.apache.spark.sql.{CachedDataFrame, SnappySession}
+import org.apache.spark.sql.CachedDataFrame
+import org.apache.spark.sql.execution.RefreshMetadata
 
 import scala.collection.mutable
-import scala.tools.nsc.Settings
+import scala.tools.nsc.{GenericRunnerSettings, Settings}
 import scala.tools.nsc.interpreter.{IMain, LoopCommands, Results}
 
-class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authToken: String) {
+class RemoteInterpreterStateHolder(
+    val connId: Long, val user: String, val authToken: String) extends Logging {
 
   val sc: SparkContext = SparkContext.getOrCreate()
   val snappy = SnappySessionPerConnection.getSnappySessionForConnection(connId)
@@ -44,8 +47,11 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
   lazy val pw = new StringPrintWriter()
   lazy val strOpStream = new StringOutputStrem(pw)
 
+  private val suffix = s"repl${connId}${user}"
+  private val replOutputDirStr = s"${RemoteInterpreterStateHolder.replOutputDir}/$suffix"
+  RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_LOADER_WITH_REPL, replOutputDirStr)
+
   var intp: SparkILoop = createSparkILoop
-  initIntp()
 
   val allInterpretedLinesForReplay: mutable.ArrayBuffer[String] = new mutable.ArrayBuffer[String]()
 
@@ -58,7 +64,7 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
   }
 
 
-  lazy val commandMethod: Method = {
+  def commandMethod: Method = {
     val methods = this.intp.getClass.getSuperclass.getSuperclass.getDeclaredMethods
     val commandmethod = methods.find(_.getName == "colonCommand").getOrElse(
       throw new IllegalStateException("expected colonCommand to be there"))
@@ -75,59 +81,71 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
 
   def interpret(code: Array[String], replay: Boolean,
       options: Map[String, String] = null): AnyRef = {
-    this.resultBuffer.clear()
-    pw.reset()
-    if (code != null && !code.isEmpty && code(0).trim.startsWith(":")) {
-      return processCommand(code(0).tail)
-    }
-    scala.Console.setOut(strOpStream)
-    val tmpsb = new StringBuilder
-    tmpsb.append(incomplete.toString())
-    incomplete.setLength(0)
-    var i = 0
-    var lastResult: Results.Result = Results.Success
-    while(i < code.length && !(lastResult == Results.Error)) {
-      val line = code(i)
-      if (tmpsb.isEmpty) tmpsb.append(line)
-      else tmpsb.append("\n" + line)
-      if (replay) println(line)
-      lastResult = intp.interpret(tmpsb.toString())
-      if (!(lastResult == Results.Error) && !replay) {
-        allInterpretedLinesForReplay += line
-      }
-      if (lastResult == Results.Success) tmpsb.clear()
-      resultBuffer += pw.toString.stripLineEnd
+    try {
+      this.resultBuffer.clear()
       pw.reset()
-      i += 1
-    }
-    // return empty. process command will do the needful
-    if (replay) return Array.empty
+      if (!replay) sc.setLocalProperty(Constant.REPL_OUTPUT_DIR, replOutputDirStr)
 
-    if (!(lastResult == Results.Incomplete)) {
-      pw.reset()
-      incomplete.setLength(0)
-    } else {
-      incomplete.append(tmpsb.toString())
-      resultBuffer +=  "___INCOMPLETE___"
-    }
-    if (options != null && options.nonEmpty &&
-      options.isDefinedAt(RemoteInterpreterStateHolder.optionDF)) {
-      var allRequests = intp.prevRequestList.reverse
-      while (allRequests.nonEmpty) {
-        var request = allRequests.head
-        val x = request.lineRep.evalEither.right.get
-        if (x != null && x.isInstanceOf[CachedDataFrame]) {
-          if (x.asInstanceOf[CachedDataFrame].schema.fields.nonEmpty) return x
-        }
-        allRequests = allRequests.tail
+      if (code != null && !code.isEmpty && code(0).trim.startsWith(":")) {
+        return processCommand(code(0).tail)
       }
+      scala.Console.setOut(strOpStream)
+      val tmpsb = new StringBuilder
+      tmpsb.append(incomplete.toString())
+      incomplete.setLength(0)
+      var i = 0
+      var lastResult: Results.Result = Results.Success
+      while (i < code.length && !(lastResult == Results.Error)) {
+        val line = code(i)
+        if (tmpsb.isEmpty) tmpsb.append(line)
+        else tmpsb.append("\n" + line)
+        if (replay) println(line)
+        lastResult = intp.interpret(tmpsb.toString())
+        if (!(lastResult == Results.Error) && !replay) {
+          allInterpretedLinesForReplay += line
+        }
+        if (lastResult == Results.Success) tmpsb.clear()
+        resultBuffer += pw.toString.stripLineEnd
+        pw.reset()
+        i += 1
+      }
+      // return empty. process command will do the needful
+      if (replay) return Array.empty
+
+      if (!(lastResult == Results.Incomplete)) {
+        pw.reset()
+        incomplete.setLength(0)
+      } else {
+        incomplete.append(tmpsb.toString())
+        resultBuffer += "___INCOMPLETE___"
+      }
+      if (options != null && options.nonEmpty &&
+        options.isDefinedAt(RemoteInterpreterStateHolder.optionDF)) {
+        var allRequests = intp.prevRequestList.reverse
+        while (allRequests.nonEmpty) {
+          var request = allRequests.head
+          val x = request.lineRep.evalEither.right.get
+          if (x != null && x.isInstanceOf[CachedDataFrame]) {
+            if (x.asInstanceOf[CachedDataFrame].schema.fields.nonEmpty) return x
+          }
+          allRequests = allRequests.tail
+        }
+      }
+      resultBuffer.toArray.flatMap(_.split("\n"))
+    } finally {
+      sc.setLocalProperty(Constant.REPL_OUTPUT_DIR, null)
     }
-    resultBuffer.toArray.flatMap(_.split("\n"))
   }
 
   def processCommand(command: String): Array[String] = {
     scala.Console.setOut(strOpStream)
+    logDebug(s"command to process is ${command}")
+    logDebug(s"Current list of commands = ${intp.commands}")
+    logDebug("Looping starts")
+    intp.commands.foreach(x => logDebug(s"command = ${x.name} and usage = ${x.usage}"))
+    logDebug("Looping ends")
     val result = commandMethod.invoke(this.intp, command)
+    logDebug(s"commandMethod = $commandMethod")
     if (resultBuffer.isEmpty) {
       val output = pw.toString
       val returnArray = output.split("\n")
@@ -153,20 +171,61 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
     modifiedOrigLine + nonModifiableStmnt
   }
 
-  def createSparkILoop: SparkILoop = {
-    val settings: Settings = new Settings
+  private def scalaOptionError(msg: String): Unit = {
+    this.pw.write(msg)
+  }
+
+  private def getSettings(replOpPath: String): Settings = {
     var classpath: String = ""
     val paths: Seq[File] = currentClassPath()
     for (f <- paths) {
       if (classpath.length > 0) classpath += File.pathSeparator
       classpath += f.getAbsolutePath
     }
-    val in = new BufferedReader(new StringReader(""))
+    val interpArguments = List(
+      "-Yrepl-outdir", s"${replOpPath}",
+      "-classpath", classpath
+    )
+
+    val gs = new GenericRunnerSettings(scalaOptionError)
+    gs.processArguments(interpArguments, true)
+    gs
+  }
+
+  private def deleteAndCreateDir = {
+    val replOutputPath = Paths.get(replOutputDirStr)
+    val outputDir = {
+      // delete the directory if it already exists. May be reset caused it for which
+      // connId will remain same. Also connId may be repeated across restarts
+      var reachedCreation = false
+      try {
+        if (Files.isDirectory(replOutputPath)) {
+          Files.delete(replOutputPath)
+        }
+        reachedCreation = true
+        Files.createDirectory(replOutputPath)
+      } catch {
+        case io: IOException if !reachedCreation => // ignore. may be it does not exists anymore
+      }
+    }
+  }
+
+  def createSparkILoop: SparkILoop = {
+    if (this.intp != null) return this.intp
+    deleteAndCreateDir
+    var classpath: String = ""
+    val paths: Seq[File] = currentClassPath()
+    for (f <- paths) {
+      if (classpath.length > 0) classpath += File.pathSeparator
+      classpath += f.getAbsolutePath
+    }
     val intp = new RemoteILoop(pw, this)
-    settings.classpath.value = classpath
+    val settings: Settings = getSettings(replOutputDirStr)
     intp.settings = settings
     intp.createInterpreter()
     pw.reset()
+    this.intp = intp
+    initIntp
     intp
   }
 
@@ -179,6 +238,7 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
     // snappy.clear()
     incomplete.setLength(0)
     allInterpretedLinesForReplay.clear()
+    RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_LOADER_WITH_REPL, replOutputDirStr)
   }
 
   private def currentClassPath(): Seq[File] = {
@@ -220,10 +280,13 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
     intp.clearExecutionWrapper()
     intp.close()
     pw.reset()
+    intp = null
     intp = createSparkILoop
     initIntp()
     incomplete.setLength(0)
     allInterpretedLinesForReplay.clear()
+    // ask a`ll the executors to drop their class loaders against this repl
+    RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_LOADER_WITH_REPL, replOutputDirStr)
   }
 
   def history(): Unit = {
@@ -262,11 +325,15 @@ class RemoteInterpreterStateHolder(val connId: Long, val user: String, val authT
 
 object RemoteInterpreterStateHolder {
   private val optionDF = "returnDF"
+  val replOutputDir = "/home/nekumar/repl"
 }
 
 class RemoteILoop(spw: StringPrintWriter, intpHelper: RemoteInterpreterStateHolder)
-  extends SparkILoop(null.asInstanceOf[BufferedReader], new PrintWriter(spw)) {
+  extends SparkILoop(null.asInstanceOf[BufferedReader], new PrintWriter(spw)) with Logging {
 
+  def createSparkInterpreter(): Unit = {
+    super.createInterpreter()
+  }
   /** Available commands */
   override def commands: List[LoopCommand] = serviceableCommands
 
