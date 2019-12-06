@@ -2543,10 +2543,14 @@ public class SnappyTest implements Serializable {
         line = null;
         String connResetErr = "Connection reset by peer";
         String askTimedOutErr = "Ask timed out on ";
+        String noSuchJobID ="No such job ID";
         while ((line = br.readLine()) != null && !found) {
           if (line.toLowerCase().contains(connResetErr.toLowerCase()) || line.toLowerCase().contains(askTimedOutErr.toLowerCase())) {
             found = true;
             Log.getLogWriter().info("Job submission failed with : " + line);
+          } else if(line.toLowerCase().contains(noSuchJobID.toLowerCase())){
+            Log.getLogWriter().info("Job ID " + str + " not found. Sleeping before proceeding test ... ");
+            sleepForMs(30);
           }
         }
         br.close();
