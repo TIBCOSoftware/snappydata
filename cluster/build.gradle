@@ -132,7 +132,16 @@ dependencies {
     exclude(group: 'com.jcraft', module: 'jsch')
     exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
   }
+
   compile "io.snappydata:spark-metrics:${snappySparkMetricsLibVersion}"
+
+  compile (group: 'com.databricks', name:'spark-xml_2.11', version: sparkXmlVersion) {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+  }
+  compile (group: 'com.databricks', name:'spark-avro_2.11', version: sparkAvroVersion) {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.codehaus.jackson', module: 'jackson-mapper-asl')
+  }
 
   compile(group:'com.google.cloud.bigdataoss', name:'gcs-connector', version: gcsHadoop2ConnectorVersion, classifier: 'shaded') 
   
