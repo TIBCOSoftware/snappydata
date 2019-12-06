@@ -322,6 +322,14 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.codeSplitFunctionParamsSizeInSHA",
     s"The number of group by keys or aggregates which should be used as parameters at a time" +
       s" for code splitting function", Some(5))
+
+  // By default it will be same as MAX_TASK_FAILURES
+  // User should set it to 0, if they want insert to fail on any failure.
+  // this is used in TaskSchedulerImpl.SNAPPY_WRITE_RETRY_PROP Any change here
+  // should be done reflected there too.
+  val MaxRetryAttemptsForWrite: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}maxRetryAttemptsForWrite",
+    s"The number of times a write task should be retried before all tasks failing." , Some(4))
 }
 
 // extractors for properties
