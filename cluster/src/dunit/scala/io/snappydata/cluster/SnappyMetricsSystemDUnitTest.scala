@@ -39,6 +39,7 @@ class SnappyMetricsSystemDUnitTest(s: String)
   val snappyProductDir = System.getenv("SNAPPY_HOME")
 
   override def beforeClass(): Unit = {
+    super.beforeClass()
     logInfo(s"Starting snappy cluster in $snappyProductDir/work with locator client port $netPort")
     (s"mkdir -p $snappyProductDir/work/locator" +
         s" $snappyProductDir/work/lead1" +
@@ -54,9 +55,9 @@ class SnappyMetricsSystemDUnitTest(s: String)
     pw.close()
     val pw1 = new PrintWriter(new File(s"$confDir/leads"))
     pw1.write(s"localhost -locators=localhost[$port] " +
-        s"-dir=$snappyProductDir/work/lead1 -spark.ui.port=3333\n")
+        s"-dir=$snappyProductDir/work/lead1 -spark.ui.port=9090\n")
     pw1.write(s"localhost -locators=localhost[$port] " +
-        s"-dir=$snappyProductDir/work/lead2 -spark.ui.port=3334")
+        s"-dir=$snappyProductDir/work/lead2 -spark.ui.port=8090")
     pw1.close()
     val pw2 = new PrintWriter(new File(s"$confDir/servers"))
     pw2.write(s"localhost -locators=localhost[$port] -dir=$snappyProductDir/work/server1\n")
@@ -70,6 +71,7 @@ class SnappyMetricsSystemDUnitTest(s: String)
   }
 
   override def afterClass(): Unit = {
+    super.afterClass()
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
     // s"rm -rf $snappyProductDir/work".!!
     // Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
@@ -83,7 +85,7 @@ class SnappyMetricsSystemDUnitTest(s: String)
   }
 
   def collectJsonStats(): mutable.Map[String, AnyVal] = {
-    val url = "http://localhost:3333/metrics/json/"
+    val url = "http://localhost:9090/metrics/json/"
     val json = scala.io.Source.fromURL(url).mkString
     val data = jsonStrToMap(json)
     val rs = data.-("counters", "meters", "histograms", "timers", "version")
