@@ -19,101 +19,119 @@
 
 package io.snappydata.metrics
 
+import com.gemstone.gemfire.CancelException
+import com.gemstone.gemfire.i18n.LogWriterI18n
 import io.snappydata.metrics.SnappyMetricsSystem.{createGauge, updateHistogram}
 import com.pivotal.gemfirexd.internal.engine.ui.MemberStatistics
-import java.util
-
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 
 object SnappyMemberMetrics {
 
-  def convertStatsToMetrics(member: String, memberDetails: MemberStatistics,
-       allMetaEntries: util.Map[String, String]) {
-    val shortDirName = memberDetails.getUserDir.substring(
-      memberDetails.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
+  private val logger: LogWriterI18n = Misc.getGemFireCache.getLoggerI18n
 
-    val memberUuid = allMetaEntries.
-        get(Constant.MEMBER_ID_PREFIX + shortDirName + member + "__").toString
+  def convertStatsToMetrics(member: String, memberDetails: MemberStatistics) {
 
-    val pId = memberDetails.getProcessId
+    try {
+      val cache = Misc.getGemFireCacheNoThrow
+      if (cache != null) {
+        val shortDirName = memberDetails.getUserDir.substring(
+          memberDetails.getUserDir.lastIndexOf(System.getProperty("file.separator")) + 1)
 
-    val nameOrId = {
-      if (memberDetails.getName.isEmpty
-        || memberDetails.getName.equalsIgnoreCase("NA")) {
-        memberDetails.getId
-      } else {
-        memberDetails.getName
+        val memberUuid = Misc.getMemStore.getMetadataCmdRgn.
+            getAll(Misc.getMemStore.getMetadataCmdRgn.keySet()).
+            get(Constant.MEMBER_ID_PREFIX + shortDirName + member + "__")
+
+        val pId = memberDetails.getProcessId
+
+        val nameOrId = {
+          if (memberDetails.getName.isEmpty
+              || memberDetails.getName.equalsIgnoreCase("NA")) {
+            memberDetails.getId
+          } else {
+            memberDetails.getName
+          }
+        }
+
+        val memberType = {
+          if (memberDetails.isLead || memberDetails.isLeadActive) {
+            "LEAD"
+          } else if (memberDetails.isLocator) {
+            "LOCATOR"
+          } else if (memberDetails.isDataServer) {
+            "DATA SERVER"
+          } else {
+            "CONNECTOR"
+          }
+        }
+
+        val namespace = s"MemberMetrics.$shortDirName-$memberUuid"
+
+        createGauge(s"$namespace.memberId", memberDetails.getId.asInstanceOf[AnyVal])
+        createGauge(s"$namespace.nameOrId", nameOrId.asInstanceOf[AnyVal])
+        createGauge(s"$namespace.host", memberDetails.getHost.asInstanceOf[AnyVal])
+        createGauge(s"$namespace.shortDirName", shortDirName.asInstanceOf[AnyVal])
+        createGauge(s"$namespace.fullDirName", memberDetails.getUserDir.asInstanceOf[AnyVal])
+        createGauge(s"$namespace.logFile", memberDetails.getLogFile.asInstanceOf[AnyVal])
+        createGauge(s"$namespace.processId", memberDetails.getProcessId.asInstanceOf[AnyVal])
+        createGauge(s"$namespace.diskStoreUUID", memberDetails.getDiskStoreUUID.asInstanceOf[AnyVal])
+        createGauge(s"$namespace.diskStoreName", memberDetails.getDiskStoreName.asInstanceOf[AnyVal])
+        createGauge(s"$namespace.status", memberDetails.getStatus.asInstanceOf[AnyVal])
+        createGauge(s"$namespace.memberType", memberType.asInstanceOf[AnyVal])
+        createGauge(s"$namespace.isLocator", memberDetails.isLocator)
+        createGauge(s"$namespace.isDataServer", memberDetails.isDataServer)
+        createGauge(s"$namespace.isLead", memberDetails.isLead)
+        createGauge(s"$namespace.isActiveLead", memberDetails.isLeadActive)
+        createGauge(s"$namespace.cores", memberDetails.getCores)
+        createGauge(s"$namespace.cpuActive", memberDetails.getCpuActive)
+        createGauge(s"$namespace.clients", memberDetails.getClientsCount)
+        createGauge(s"$namespace.jvmHeapMax", memberDetails.getJvmMaxMemory)
+        createGauge(s"$namespace.jvmHeapUsed", memberDetails.getJvmUsedMemory)
+        createGauge(s"$namespace.jvmHeapTotal", memberDetails.getJvmTotalMemory)
+        createGauge(s"$namespace.jvmHeapFree", memberDetails.getJvmFreeMemory)
+        createGauge(s"$namespace.heapStoragePoolUsed", memberDetails.getHeapStoragePoolUsed)
+        createGauge(s"$namespace.heapStoragePoolSize", memberDetails.getHeapStoragePoolSize)
+        createGauge(s"$namespace.heapExecutionPoolUsed", memberDetails.getHeapExecutionPoolUsed)
+        createGauge(s"$namespace.heapExecutionPoolSize", memberDetails.getHeapExecutionPoolSize)
+        createGauge(s"$namespace.heapMemorySize", memberDetails.getHeapMemorySize)
+        createGauge(s"$namespace.heapMemoryUsed", memberDetails.getHeapMemoryUsed)
+        createGauge(s"$namespace.offHeapStoragePoolUsed", memberDetails.getOffHeapStoragePoolUsed)
+        createGauge(s"$namespace.offHeapStoragePoolSize", memberDetails.getOffHeapStoragePoolSize)
+        createGauge(s"$namespace.offHeapExecutionPoolUsed", memberDetails.getOffHeapExecutionPoolUsed)
+        createGauge(s"$namespace.offHeapExecutionPoolSize", memberDetails.getOffHeapExecutionPoolSize)
+        createGauge(s"$namespace.offHeapMemorySize", memberDetails.getOffHeapMemorySize)
+        createGauge(s"$namespace.offHeapMemoryUsed", memberDetails.getOffHeapMemoryUsed)
+        createGauge(s"$namespace.diskStoreDiskSpace", memberDetails.getDiskStoreDiskSpace)
+        updateHistogram(s"$namespace.cpuUsageTrend",
+          memberDetails.getUsageTrends(MemberStatistics.TREND_CPU_USAGE).toList)
+        updateHistogram(s"$namespace.jvmUsageTrend",
+          memberDetails.getUsageTrends(MemberStatistics.TREND_JVM_HEAP_USAGE).toList)
+        updateHistogram(s"$namespace.heapUsageTrend",
+          memberDetails.getUsageTrends(MemberStatistics.TREND_HEAP_USAGE).toList)
+        updateHistogram(s"$namespace.heapStorageUsageTrend",
+          memberDetails.getUsageTrends(MemberStatistics.TREND_HEAP_STORAGE_USAGE).toList)
+        updateHistogram(s"$namespace.heapExecutionUsageTrend",
+          memberDetails.getUsageTrends(MemberStatistics.TREND_HEAP_EXECUTION_USAGE).toList)
+        updateHistogram(s"$namespace.offHeapUsageTrend",
+          memberDetails.getUsageTrends(MemberStatistics.TREND_OFFHEAP_USAGE).toList)
+        updateHistogram(s"$namespace.offHeapStorageUsageTrend",
+          memberDetails.getUsageTrends(MemberStatistics.TREND_OFFHEAP_STORAGE_USAGE).toList)
+        updateHistogram(s"$namespace.offHeapExecutionUsageTrend",
+          memberDetails.getUsageTrends(MemberStatistics.TREND_OFFHEAP_EXECUTION_USAGE).toList)
+        updateHistogram(s"$namespace.aggrMemoryUsageTrend",
+          memberDetails.getUsageTrends(MemberStatistics.TREND_AGGR_MEMORY_USAGE).toList)
+        updateHistogram(s"$namespace.diskStoreDiskSpaceTrend",
+          memberDetails.getUsageTrends(MemberStatistics.TREND_DISKSTORE_DISKSPACE_USAGE).toList)
       }
+    } catch {
+      case _: CancelException => // ignore
+      case e: Exception =>
+        val msg = if (e.getMessage ne null) e.getMessage else e.toString
+        if (!msg.contains("com.gemstone.gemfire.cache.CacheClosedException")) {
+          logger.warning(e)
+        } else {
+          logger.error(e)
+        }
     }
-
-    val memberType = {
-      if (memberDetails.isLead || memberDetails.isLeadActive) {
-        "LEAD"
-      } else if (memberDetails.isLocator) {
-        "LOCATOR"
-      } else if (memberDetails.isDataServer) {
-        "DATA SERVER"
-      } else {
-        "CONNECTOR"
-      }
-    }
-
-    val namespace = s"MemberMetrics.$shortDirName-$memberUuid"
-
-    createGauge(s"$namespace.memberId", memberDetails.getId.asInstanceOf[AnyVal])
-    createGauge(s"$namespace.nameOrId", nameOrId.asInstanceOf[AnyVal])
-    createGauge(s"$namespace.host", memberDetails.getHost.asInstanceOf[AnyVal])
-    createGauge(s"$namespace.shortDirName", shortDirName.asInstanceOf[AnyVal])
-    createGauge(s"$namespace.fullDirName", memberDetails.getUserDir.asInstanceOf[AnyVal])
-    createGauge(s"$namespace.logFile", memberDetails.getLogFile.asInstanceOf[AnyVal])
-    createGauge(s"$namespace.processId", memberDetails.getProcessId.asInstanceOf[AnyVal])
-    createGauge(s"$namespace.diskStoreUUID", memberDetails.getDiskStoreUUID.asInstanceOf[AnyVal])
-    createGauge(s"$namespace.diskStoreName", memberDetails.getDiskStoreName.asInstanceOf[AnyVal])
-    createGauge(s"$namespace.status", memberDetails.getStatus.asInstanceOf[AnyVal])
-    createGauge(s"$namespace.memberType", memberType.asInstanceOf[AnyVal])
-    createGauge(s"$namespace.isLocator", memberDetails.isLocator)
-    createGauge(s"$namespace.isDataServer", memberDetails.isDataServer)
-    createGauge(s"$namespace.isLead", memberDetails.isLead)
-    createGauge(s"$namespace.isActiveLead", memberDetails.isLeadActive)
-    createGauge(s"$namespace.cores", memberDetails.getCores)
-    createGauge(s"$namespace.cpuActive", memberDetails.getCpuActive)
-    createGauge(s"$namespace.clients", memberDetails.getClientsCount)
-    createGauge(s"$namespace.jvmHeapMax", memberDetails.getJvmMaxMemory)
-    createGauge(s"$namespace.jvmHeapUsed", memberDetails.getJvmUsedMemory)
-    createGauge(s"$namespace.jvmHeapTotal", memberDetails.getJvmTotalMemory)
-    createGauge(s"$namespace.jvmHeapFree", memberDetails.getJvmFreeMemory)
-    createGauge(s"$namespace.heapStoragePoolUsed", memberDetails.getHeapStoragePoolUsed)
-    createGauge(s"$namespace.heapStoragePoolSize", memberDetails.getHeapStoragePoolSize)
-    createGauge(s"$namespace.heapExecutionPoolUsed", memberDetails.getHeapExecutionPoolUsed)
-    createGauge(s"$namespace.heapExecutionPoolSize", memberDetails.getHeapExecutionPoolSize)
-    createGauge(s"$namespace.heapMemorySize", memberDetails.getHeapMemorySize)
-    createGauge(s"$namespace.heapMemoryUsed", memberDetails.getHeapMemoryUsed)
-    createGauge(s"$namespace.offHeapStoragePoolUsed", memberDetails.getOffHeapStoragePoolUsed)
-    createGauge(s"$namespace.offHeapStoragePoolSize", memberDetails.getOffHeapStoragePoolSize)
-    createGauge(s"$namespace.offHeapExecutionPoolUsed", memberDetails.getOffHeapExecutionPoolUsed)
-    createGauge(s"$namespace.offHeapExecutionPoolSize", memberDetails.getOffHeapExecutionPoolSize)
-    createGauge(s"$namespace.offHeapMemorySize", memberDetails.getOffHeapMemorySize)
-    createGauge(s"$namespace.offHeapMemoryUsed", memberDetails.getOffHeapMemoryUsed)
-    createGauge(s"$namespace.diskStoreDiskSpace", memberDetails.getDiskStoreDiskSpace)
-    updateHistogram(s"$namespace.cpuUsageTrend",
-      memberDetails.getUsageTrends(MemberStatistics.TREND_CPU_USAGE).toList)
-    updateHistogram(s"$namespace.jvmUsageTrend",
-      memberDetails.getUsageTrends(MemberStatistics.TREND_JVM_HEAP_USAGE).toList)
-    updateHistogram(s"$namespace.heapUsageTrend",
-      memberDetails.getUsageTrends(MemberStatistics.TREND_HEAP_USAGE).toList)
-    updateHistogram(s"$namespace.heapStorageUsageTrend",
-      memberDetails.getUsageTrends(MemberStatistics.TREND_HEAP_STORAGE_USAGE).toList)
-    updateHistogram(s"$namespace.heapExecutionUsageTrend",
-      memberDetails.getUsageTrends(MemberStatistics.TREND_HEAP_EXECUTION_USAGE).toList)
-    updateHistogram(s"$namespace.offHeapUsageTrend",
-      memberDetails.getUsageTrends(MemberStatistics.TREND_OFFHEAP_USAGE).toList)
-    updateHistogram(s"$namespace.offHeapStorageUsageTrend",
-      memberDetails.getUsageTrends(MemberStatistics.TREND_OFFHEAP_STORAGE_USAGE).toList)
-    updateHistogram(s"$namespace.offHeapExecutionUsageTrend",
-      memberDetails.getUsageTrends(MemberStatistics.TREND_OFFHEAP_EXECUTION_USAGE).toList)
-    updateHistogram(s"$namespace.aggrMemoryUsageTrend",
-      memberDetails.getUsageTrends(MemberStatistics.TREND_AGGR_MEMORY_USAGE).toList)
-    updateHistogram(s"$namespace.diskStoreDiskSpaceTrend",
-      memberDetails.getUsageTrends(MemberStatistics.TREND_DISKSTORE_DISKSPACE_USAGE).toList)
   }
 }

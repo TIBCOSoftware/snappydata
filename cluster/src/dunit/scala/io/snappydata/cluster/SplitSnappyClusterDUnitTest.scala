@@ -1229,6 +1229,15 @@ object SplitSnappyClusterDUnitTest
       Assert.fail("Should have thrown CatalogStaleException.")
     } catch {
       case _: CatalogStaleException =>
+        // Waiting for some time before retrying as catalog version is updated twice for create
+        // table. First time to create table and the another alter table operation is performed
+        // to populate primary keys. See `org.apache.spark.sql.SnappySession.createTableInternal`
+        // Since these two operations are not atomic, it was causing this test to fail
+        // intermittently. Adding this wait time to make sure that both operation is completed
+        // before retry.
+        // In our trouble shooting guide we have given code example with multiple retries and hence
+        // this should not be an issue if multiple retries are performed.
+        Thread.sleep(2000)
         // retrying putInto operation and it should pass
         dataFrame.write.putInto("T5")
     }

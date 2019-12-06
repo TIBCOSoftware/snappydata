@@ -16,8 +16,8 @@
  */
 package org.apache.spark.sql
 
+import java.lang.reflect.Method
 import java.sql.{Connection, SQLException, SQLWarning}
-import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Calendar, Properties}
@@ -1371,8 +1371,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     // check for permissions in the schema which should be done before the session catalog
     // createTable call since store table will be created by that time
-    val resolvedName = sessionCatalog.resolveTableIdentifier(tableIdent)
-    sessionCatalog.checkSchemaPermission(resolvedName.database.get, resolvedName.table,
+    val resolvedIdentifier = sessionCatalog.resolveTableIdentifier(tableIdent)
+    sessionCatalog.checkSchemaPermission(resolvedIdentifier.database.get, resolvedIdentifier.table,
       defaultUser = null, ignoreIfNotExists = true)
 
     val schema = userSpecifiedSchema match {
@@ -1411,7 +1411,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case None => {
         // case when create api was used - sql text cannot be captured in this case.
         userSpecifiedSchema match {
-          case Some(schema) => s"create table ${resolvedName.table} (${getDDLSchema(schema)})"
+          case Some(schema) => s"create table ${resolvedIdentifier.table} (${getDDLSchema(schema)})"
           case None => ""
         }
       }
@@ -1430,7 +1430,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
 
     val tableDesc = CatalogTable(
-      identifier = resolvedName,
+      identifier = resolvedIdentifier,
       tableType = tableType,
       storage = storage,
       schema = schema,
@@ -1439,19 +1439,32 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       partitionColumnNames = partitionColumns,
       bucketSpec = bucketSpec)
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
+
+    // Checking whether table already exist before executing create table plan. This flag is later
+    // used to decide whether to populate primary keys or not. i.e. if the table was already
+    // existing then we skip the step to alter table in catalog to populate primary key
+    // information to avoid unnecessary catalog version increment.
+    val tableAlreadyExisted = sessionState.catalog.tableExists(resolvedIdentifier)
     sessionState.executePlan(plan).toRdd
-    val df = table(resolvedName)
+    val df = table(resolvedIdentifier)
     val relation = df.queryExecution.analyzed.collectFirst {
       case l: LogicalRelation => l.relation
     }
     snappyContextFunctions.postRelationCreation(relation, this)
-    var catalogTable = externalCatalog.getTable(resolvedName.database.get, resolvedName.table)
-    val primaryKeys = getPrimaryKeys(resolvedName.database.get, resolvedName.table)
+    if (!tableAlreadyExisted) {
+      updatePrimaryKeyDetails(resolvedIdentifier)
+    }
+    df
+  }
+
+  private def updatePrimaryKeyDetails(resolvedIdentifier: TableIdentifier): Unit = {
+    val catalogTable = externalCatalog.getTable(resolvedIdentifier.database.get,
+      resolvedIdentifier.table)
+    val primaryKeys = getPrimaryKeys(resolvedIdentifier.database.get, resolvedIdentifier.table)
     if (primaryKeys.nonEmpty) {
       sessionCatalog.alterTable(catalogTable.copy(properties =
           catalogTable.properties + (s"primary_keys" -> primaryKeys.mkString(","))))
     }
-    df
   }
 
   /**
@@ -1472,9 +1485,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       val rs = ps.executeQuery()
       if (rs.next()) {
         val keys = rs.getString(1)
-        if (keys != null && !keys.eq(""))
+        if (keys != null && !keys.eq("")) {
           // keys for table with c1, c2 as primary key looks like '+c1+c2'
           primaryKeys = keys.split("\\+").filter(!_.equals(""))
+        }
       }
     } catch {
       case sqle: SQLException =>
@@ -1655,7 +1669,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         // and update it into the metastore.
 
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
-        val primaryKeys = getPrimaryKeys(metadata.identifier.database.get, metadata.identifier.table)
+        val primaryKeys = getPrimaryKeys(metadata.identifier.database.get,
+          metadata.identifier.table)
         sessionCatalog.alterTable(metadata.copy(
           properties = metadata.properties +
               (s"altTxt_${System.currentTimeMillis()}" -> sql) +
@@ -2154,6 +2169,25 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     (scalaTypeVal, SnappySession.getDataType(storeType, storePrecision, storeScale))
   }
+
+  /*
+     Method to add/update Structured Streaming UI Tab if cluster is running in embedded mode or
+     smart connector mode using SnappyData's Spark distribution
+  */
+  def updateStructuredStreamingUITab(): Unit = {
+    try {
+      val updateUIMethod: Method = super.getClass.getMethod("updateUIWithStructuredStreamingTab")
+      updateUIMethod.invoke(this)
+    } catch {
+      case e: NoSuchMethodException =>
+        logWarning("Unable to add Structured Streaming UI Tab because " +
+            "updateUIWithStructuredStreamingTab method is not present in SparkSession class. " +
+            "It seems spark distribution used is not snappy-spark distribution.")
+    }
+  }
+  // Call to update Structured Streaming UI Tab
+  // updateStructuredStreamingUITab()
+
 }
 
 private class FinalizeSession(session: SnappySession)
