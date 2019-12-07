@@ -157,7 +157,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
         Misc.getMemStore.getBootProperty(Attribute.PASSWORD_ATTR))
     }
 
-    val tablesArr = if (tableNames.equalsIgnoreCase("all")) {
+    var tablesArr = if (tableNames.equalsIgnoreCase("all")) {
       RecoveryService.getTables.map(ct =>
         ct.storage.locationUri match {
           case Some(_) => null // external tables will not be exported
@@ -189,6 +189,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
         case scala.util.Success(_) =>
         case scala.util.Failure(exception) =>
           logError(s"Error recovering table: $table.")
+          tablesArr = tablesArr.filter(_!=table)
           if (!ignoreError) {
             throw new Exception(exception)
           }
