@@ -40,6 +40,7 @@ import com.pivotal.gemfirexd.internal.iapi.types.TypeId
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
+import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
@@ -1416,6 +1417,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         }
       }
     }
+    val maskedSql = ServiceUtils.maskPasswordsInString(orgSqlText)
     // if there is no path option for external DataSources, then mark as MANAGED except for JDBC
     val storage = DataSource.buildStorageFormatFromOptions(fullOptions)
     val tableType = if (!providerIsBuiltIn && storage.locationUri.isEmpty &&
@@ -1423,10 +1425,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       CatalogTableType.MANAGED
     } else CatalogTableType.EXTERNAL
     // It errors out in case of large statements, hence breaking into parts while storing
-    val orgSqlTextParts = orgSqlText.grouped(3500).toSeq
+    val orgSqlTextParts = maskedSql.grouped(3500).toSeq
     val sqlTextMap = mutable.Map(s"numPartsOrgSqlText_${System.currentTimeMillis()}"
         -> orgSqlTextParts.size.toString)
-    orgSqlText.grouped(3500).toSeq.zipWithIndex.foreach{
+    orgSqlTextParts.zipWithIndex.foreach{
       case(part, index) => sqlTextMap += (s"sqlTextpart.$index" -> s"$part")
     }
 
