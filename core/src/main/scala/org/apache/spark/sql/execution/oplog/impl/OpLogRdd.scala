@@ -402,16 +402,16 @@ class OpLogRdd(
    * @param phdrCol PlaceHolderDiskRegion of column batch
    */
   def iterateColData(phdrCol: PlaceHolderDiskRegion): Iterator[Row] = {
-    val directBuffers = mutable.ListBuffer.empty[ByteBuffer]
     if (phdrCol.getRegionMap == null || phdrCol.getRegionMap.isEmpty) return Iterator.empty
     val regMap = phdrCol.getRegionMap
     // assert(regMap != null, "region map for column batch is null")
-    logDebug(s"RegionMap keys for $phdrCol are: ${regMap.keySet()}")
+    logDebug(s"RegionMap size for $phdrCol are: ${regMap.keySet().size()}")
     regMap.keySet().iterator().asScala.flatMap {
       // for every stats key there will be a key corresponding to every column in schema
       // we can get keys and therefore values of a column batch from the stats key by
       // changing the index to corresponding column index
       case k: ColumnFormatKey if k.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX =>
+        val directBuffers = mutable.ListBuffer.empty[ByteBuffer]
         // get required info about deletes
         val delKey = k.withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
         val delEntry = regMap.getEntry(delKey)
