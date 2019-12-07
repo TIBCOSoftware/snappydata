@@ -1422,6 +1422,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         !Utils.toLowerCase(provider).contains("jdbc")) {
       CatalogTableType.MANAGED
     } else CatalogTableType.EXTERNAL
+    // It errors out in case of large statements, hence breaking into parts while storing
     val orgSqlTextParts = orgSqlText.grouped(3500).toSeq
     val sqlTextMap = mutable.Map(s"numPartsOrgSqlText_${System.currentTimeMillis()}"
         -> orgSqlTextParts.size.toString)

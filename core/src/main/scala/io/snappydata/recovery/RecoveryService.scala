@@ -65,7 +65,8 @@ object RecoveryService extends Logging {
       Seq[SnappyRegionStats], Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = _
   var catalogTableCount = 0
   val snappyHiveExternalCatalog = HiveClientUtil
-      .getOrCreateExternalCatalog(SnappyContext().sparkContext, SnappyContext().sparkContext.getConf)
+      .getOrCreateExternalCatalog(SnappyContext().sparkContext, SnappyContext().sparkContext
+          .getConf)
   var enableTableCountInUI: Boolean = _
 
   private def isGrantRevokeStatement(conflatable: DDLConflatable) = {
@@ -690,26 +691,6 @@ object RecoveryService extends Logging {
         } in the catalog.")
     }
   }
-
-  case class ExportDataArgs(formatType: String, tables: Seq[String],
-      outputDir: String, ignoreError: Boolean)
-
-  val exportDataArgsList: mutable.MutableList[ExportDataArgs] = mutable.MutableList.empty
-
-  /**
-   * capture the arguments used by the procedure EXPORT_DATA and cache them for later generating
-   * helper scripts to load all this data back into new cluster
-   *
-   * @param formatType  spark output format
-   * @param tables      comma separated qualified names of tables
-   * @param outputDir   base output path for one call of EXPORT_DATA procedure
-   * @param ignoreError whether to move on to next table in case of failure
-   */
-  def captureArguments(formatType: String, tables: Seq[String],
-      outputDir: String, ignoreError: Boolean): Unit = {
-    exportDataArgsList += new ExportDataArgs(formatType, tables, outputDir, ignoreError)
-  }
-
 }
 
 object RegionDiskViewOrdering extends Ordering[RecoveryModePersistentView] {
