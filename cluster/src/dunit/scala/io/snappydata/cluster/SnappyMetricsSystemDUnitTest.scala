@@ -17,6 +17,7 @@
 package io.snappydata.cluster
 
 import java.io.{File, PrintWriter}
+import java.nio.file.{Files, Paths}
 import java.sql.{Connection, DriverManager, Statement}
 
 import io.snappydata.Constant
@@ -76,10 +77,10 @@ class SnappyMetricsSystemDUnitTest(s: String)
   override def afterClass(): Unit = {
     super.afterClass()
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
-    // s"rm -rf $snappyProductDir/work".!!
-    // Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
-    // Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
-    // Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
+    s"rm -rf $snappyProductDir/work".!!
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
   }
 
   def jsonStrToMap(jsonStr: String): Map[String, AnyVal] = {
@@ -274,7 +275,6 @@ class SnappyMetricsSystemDUnitTest(s: String)
   }
 
   def doTestMetricsAfterTableCreation(): Unit = {
-    logInfo("doTestMetricsAfterTableCreation=====" + conn + " " + stmt)
     val path = getClass.getResource("/northwind/orders" +
         ".csv").getPath
     stmt.execute(s"create external table test1 using csv options(path '${
