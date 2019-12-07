@@ -269,12 +269,10 @@ object SnappyMetricsSystem {
     Map[String, SnappyExternalTableStats]): Unit = {
     for (t <- externaltables) {
       if (!stringToStats.exists(x => x._1 == t)) {
-        if (t != null) {
-          SnappyTableMetrics.removeExternalTableMetrics(t)
-          externaltables -= t
-        }
+        SnappyTableMetrics.removeExternalTableMetrics(t)
       }
     }
+    externaltables = externaltables.filter(d => stringToStats.contains(d))
   }
 
   def setMetricsForExternalTableStatDetails(externalTableBuff:
