@@ -132,7 +132,40 @@ dependencies {
     exclude(group: 'com.jcraft', module: 'jsch')
     exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
   }
+
   compile "io.snappydata:spark-metrics:${snappySparkMetricsLibVersion}"
+
+  compile (group: 'com.databricks', name:'spark-xml_2.11', version: sparkXmlVersion) {
+    //exclude(group: 'org.scala-lang', module: 'scala-library')
+  }
+  compile (group: 'com.databricks', name:'spark-avro_2.11', version: sparkAvroVersion) {
+    //exclude(group: 'org.scala-lang', module: 'scala-library')
+    //exclude(group: 'org.apache.avro', module: 'avro')
+  }
+
+  compile(group:'com.google.cloud.bigdataoss', name:'gcs-connector', version: gcsHadoop2ConnectorVersion, classifier: 'shaded') 
+  
+  compile(group: 'org.apache.hadoop', name: 'hadoop-azure', version: hadoopVersion) {
+    // exclude some dependencies like in hadoop-aws to avoid conflicts with other deps
+    exclude(group: 'asm', module: 'asm')
+    exclude(group: 'org.codehaus.jackson', module: 'jackson-mapper-asl')
+    exclude(group: 'org.ow2.asm', module: 'asm')
+    exclude(group: 'org.apache.zookeeper', module: 'zookeeper')
+    exclude(group: 'org.jboss.netty', module: 'netty')
+    exclude(group: 'jline', module: 'jline')
+    exclude(group: 'commons-logging', module: 'commons-logging')
+    exclude(group: 'org.mockito', module: 'mockito-all')
+    exclude(group: 'org.mortbay.jetty', module: 'servlet-api-2.5')
+    exclude(group: 'javax.servlet', module: 'servlet-api')
+    exclude(group: 'junit', module: 'junit')
+    exclude(group: 'com.google.guava', module: 'guava')
+    exclude(group: 'com.sun.jersey')
+    exclude(group: 'com.sun.jersey.jersey-test-framework')
+    exclude(group: 'com.sun.jersey.contribs')
+    exclude(group: 'com.google.protobuf', module: 'protobuf-java')
+    exclude(group: 'com.jcraft', module: 'jsch')
+    exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
+}
 
   testCompile project(':dunit')
   testCompile "it.unimi.dsi:fastutil:${fastutilVersion}"
