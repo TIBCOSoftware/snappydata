@@ -134,7 +134,8 @@ pages:
     - 'SnappyData Monitoring UI': 'monitoring/monitoring.md'
     - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
     - 'Configuring Logging': 'monitoring/configure_logging.md'
-    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'    
+    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'  
+    - 'Recovering Data During Cluster Failures': 'monitoring/recoveringdata.md'  
 # -- Topic - Reference Guide
 - 'Managing Security': 'security/security.md'
 - 'Managing Security': 
@@ -229,6 +230,7 @@ pages:
         - 'unblock-disk-store': 'reference/command_line_utilities/store-unblock-disk-stores.md'
         - 'run': 'reference/command_line_utilities/store-run.md'
         - 'version': 'reference/command_line_utilities/store-version.md'
+        - 'Data Extractor': 'reference/command_line_utilities/data_extractor.md'
     - 'Snappy-SQL Shell Interactive Commands': 'reference/interactive_commands/store_command_reference.md'
     - 'Snappy-SQL Shell Interactive Commands':
         - 'autocommit': 'reference/interactive_commands/autocommit.md'
