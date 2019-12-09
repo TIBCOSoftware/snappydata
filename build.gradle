@@ -117,6 +117,10 @@ allprojects {
     junitVersion = '4.12'
     mockitoVersion = '1.10.19'
     hadoopVersion = '2.7.7'
+    gcsHadoop2ConnectorVersion = 'hadoop2-2.0.0'
+    gcsHadoop3ConnectorVersion = 'hadoop3-2.0.0'
+    sparkAvroVersion = '4.0.0'
+    sparkXmlVersion = '0.4.1'
     scalatestVersion = '2.2.6'
     jettyVersion = '9.2.26.v20180806'
     guavaVersion = '14.0.1'
@@ -168,7 +172,7 @@ allprojects {
     sparkJobServerVersion = '0.6.2.10'
     eclipseCollectionsVersion = '9.2.0'
     fastutilVersion = '8.2.2'
-    sparkMetricsLibVersion = '2.0.0'
+    snappySparkMetricsLibVersion = '2.0.0.1'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
