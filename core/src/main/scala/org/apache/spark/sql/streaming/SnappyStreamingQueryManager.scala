@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.streaming
 
+import io.snappydata.Property.HashAggregateSize
 import org.apache.spark.sql.execution.streaming.{Sink, StreamingQueryWrapper}
 import org.apache.spark.sql.{AnalysisException, DataFrame, SnappySession}
 import org.apache.spark.util.{Clock, SystemClock}
@@ -41,6 +42,12 @@ class SnappyStreamingQueryManager(snappySession: SnappySession)
     }
 
     def startQuery = {
+      // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
+      // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
+      // implies that Snappydata aggregation optimisation will be turned off for any usage of
+      // this session including non-streaming queries.
+
+      HashAggregateSize.set(snappySession.sessionState.conf, "-1")
       super.startQuery(userSpecifiedName, userSpecifiedCheckpointLocation, df, sink, outputMode,
         useTempCheckpointLocation, recoverFromCheckpointLocation, trigger, triggerClock)
     }

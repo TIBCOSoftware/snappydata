@@ -116,7 +116,6 @@ dependencies {
   compile "com.esotericsoftware:kryo-shaded:${kryoVersion}"
   compile "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}"
   compile "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
-  compile "com.groupon.dse:spark-metrics:${sparkMetricsLibVersion}"
 
   compileOnly "com.rabbitmq:amqp-client:${rabbitMqVersion}"
 
