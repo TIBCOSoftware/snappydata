@@ -186,23 +186,28 @@ object ServiceUtils {
    * @return similar string with masked passwords
    */
   def maskPasswordsInString(str: String): String = {
-    val jdbcPattern1 = ".*jdbc.*(?i)\\bpassword\\b=([^);&]*).*".r
+    val jdbcPattern1 = ".*jdbc.*(?i)\\bpassword\\b=([^);&']*).*".r
     val jdbcPattern2 = ".*jdbc.*:(.*)@.*".r
     val s3Pattern1 = "s3[an]?://([^:]*):([^@]*)@.*".r
-    var maskedStr = ""
+    val optionPattern1 = ".*password '([^']*)'.*".r
+    var maskedStr = str.replace("\n", " ")
     val mask = "xxxxx"
 
-    str match {
-      case jdbcPattern1(passwd) => maskedStr = str.replace(passwd, mask)
+    maskedStr match {
+      case jdbcPattern1(passwd) => maskedStr = maskedStr.replace(passwd, mask)
       case _ =>
     }
-    str match {
-      case jdbcPattern2(passwd) => maskedStr = str.replace(passwd, mask)
+    maskedStr match {
+      case jdbcPattern2(passwd) => maskedStr = maskedStr.replace(passwd, mask)
       case _ =>
     }
-    str match {
-      case s3Pattern1(passwd3, passwd4) => maskedStr = str.replace(passwd3, mask)
+    maskedStr match {
+      case s3Pattern1(passwd3, passwd4) => maskedStr = maskedStr.replace(passwd3, mask)
           .replace(passwd4, mask)
+      case _ =>
+    }
+    maskedStr match {
+      case optionPattern1(passwd) => maskedStr = maskedStr.replace(passwd, mask)
       case _ =>
     }
     maskedStr
