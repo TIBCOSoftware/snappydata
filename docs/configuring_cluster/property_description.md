@@ -167,30 +167,31 @@ $ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k
 ```
 
-| Property | Description|
-|--------|--------|
+| Property | Description|Component|
+|--------|--------|--------|
 |-allow-explicit-commit|See [allow-explicit-commit](/reference/configuration_parameters/allow-explicit-commit.md) | |
-|-init-scripts|See [init-scripts](/reference/configuration_parameters/init-scripts.md)| |
-|-skip-constraint-checks|See [skip-constraint-checks](/reference/configuration_parameters/skip-constraint-checks.md)| |
-|-skip-locks|See [skip-locks](/reference/configuration_parameters/skip-locks.md)| |
 |-gemfirexd.datadictionary.allow-startup-errors|See [gemfirexd.datadictionary.allow-startup-errors](/reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors.md)| |
 |-gemfirexd.query-cancellation-interval|See [gemfirexd.query-cancellation-interval](/reference/configuration_parameters/snappydata.query-cancellation-interval.md)| |
 |-gemfirexd.query-timeout| See [gemfirexd.query-timeout](/reference/configuration_parameters/snappydata.query-timeout.md)||
-|-snappydata.column.batchSize |The default size of blocks to use for storage in SnappyData column and store. When inserting data into the column storage this is the unit (in bytes or k/m/g suffixes for unit) that is used to split the data into chunks for efficient storage and retrieval. </br> This property can also be set for each table in the `create table` DDL. Maximum allowed size is 2GB. The default is 24m.|
-|-snappydata.column.maxDeltaRows|The maximum number of rows that can be in the delta buffer of a column table. The size of the delta buffer is already limited by `ColumnBatchSize` property, but this allows a lower limit on the number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of `ColumnBatchSize` and this property is hit first. It can also be set for each table in the `create table` DDL, else this setting is used for the `create table`|
-|-snappydata.hiveServer.enabled|Enables the Hive Thrift server for SnappyData.This is enabled by default when you start the cluster. Thus it adds an additional 10 seconds to the cluster startup time. To avoid this additional time, you can set the property to false.|
-|-snappydata.sql.hashJoinSize|The join would be converted into a hash join if the table is of size less than the `hashJoinSize`.  The limit specifies an estimate on the input data size (in bytes or k/m/g/t suffixes for unit). The default value is 100MB.|
-|-snappydata.sql.hashAggregateSize|Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) and not the output size. Set this only if there are queries that can return a large number of rows in aggregation results. The default value is set to 0 which means, no limit is set on the size, so the optimized hash aggregation is always used.|
-|-snappydata.sql.planCacheSize|Number of query plans that will be cached.|
-|-spark.sql.autoBroadcastJoinThreshold|Configures the maximum size in bytes for a table that is broadcast to all server nodes when performing a join.  By setting this value to **-1** broadcasting can be disabled. |
-|-snappydata.linkPartitionsToBuckets|When this property is set to true, each bucket is always treated as a separate partition in column/row table scans. When this is set to false, SnappyData creates only as many partitions as executor cores by clubbing multiple buckets into each partition when possible. The default is false.|
-|-snappydata.preferPrimaries|Use this property to configure your preference to use primary buckets in queries. This reduces the scalability of queries in the interest of reduced memory usage for secondary buckets. The default is false.|
-|-snappydata.sql.partitionPruning|Use this property to set/unset the partition pruning of queries.|
-|-snappydata.sql.tokenize|Use this property to enable/disable tokenization.|
-|-snappydata.cache.putIntoInnerJoinResultSize| Use this property with extreme limits such as 1K and 10GB. The default is 100 MB.|
-|-snappydata.scheduler.pool|Use this property to define scheduler pool to either default or low latency. You can also assign queries to different pools.|
-|-snappydata.enable-experimental-features|Use this property to enable and disable experimental features. You can call out in case some features are completely broken and need to be removed from the product.|
+|-init-scripts|See [init-scripts](/reference/configuration_parameters/init-scripts.md)| |
+|-skip-constraint-checks|See [skip-constraint-checks](/reference/configuration_parameters/skip-constraint-checks.md)| 
+|-skip-locks|See [skip-locks](/reference/configuration_parameters/skip-locks.md)| |
+|-snappydata.cache.putIntoInnerJoinResultSize| Use this property with extreme limits such as 1K and 10GB. The default is 100 MB.||
+|-snappydata.column.batchSize |The default size of blocks to use for storage in SnappyData column and store. When inserting data into the column storage this is the unit (in bytes or k/m/g suffixes for unit) that is used to split the data into chunks for efficient storage and retrieval. </br> This property can also be set for each table in the `create table` DDL. Maximum allowed size is 2GB. The default is 24m.||
+|-snappydata.column.maxDeltaRows|The maximum number of rows that can be in the delta buffer of a column table. The size of the delta buffer is already limited by `ColumnBatchSize` property, but this allows a lower limit on the number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of `ColumnBatchSize` and this property is hit first. It can also be set for each table in the `create table` DDL, else this setting is used for the `create table`||
+|-snappydata.enable-experimental-features|Use this property to enable and disable experimental features. You can call out in case some features are completely broken and need to be removed from the product.||
+|-snappydata.hiveServer.enabled|Enables the Hive Thrift server for SnappyData.This is enabled by default when you start the cluster. Thus it adds an additional 10 seconds to the cluster startup time. To avoid this additional time, you can set the property to false.||
+|-snappydata.linkPartitionsToBuckets|When this property is set to true, each bucket is always treated as a separate partition in column/row table scans. When this is set to false, SnappyData creates only as many partitions as executor cores by clubbing multiple buckets into each partition when possible. The default is false.||
+|-snappydata.preferPrimaries|Use this property to configure your preference to use primary buckets in queries. This reduces the scalability of queries in the interest of reduced memory usage for secondary buckets. The default is false.||
+|-snappydata.scheduler.pool|Use this property to define scheduler pool to either default or low latency. You can also assign queries to different pools.||
+|-spark.sql.autoBroadcastJoinThreshold|Configures the maximum size in bytes for a table that is broadcast to all server nodes when performing a join.  By setting this value to **-1** broadcasting can be disabled. ||
+|-snappydata.sql.hashAggregateSize|Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) and not the output size. Set this only if there are queries that can return a large number of rows in aggregation results. The default value is set to 0 which means, no limit is set on the size, so the optimized hash aggregation is always used.||
+|-snappydata.sql.hashJoinSize|The join would be converted into a hash join if the table is of size less than the `hashJoinSize`.  The limit specifies an estimate on the input data size (in bytes or k/m/g/t suffixes for unit). The default value is 100MB.||
+|-snappydata.sql.partitionPruning|Use this property to set/unset the partition pruning of queries.||
 |-snappydata.sql.planCaching|Use this property to enable/disable plan caching. By default it is disabled. |Lead|
+|-snappydata.sql.planCacheSize|Number of query plans that will be cached.||
+|-snappydata.sql.tokenize|Use this property to enable/disable tokenization.||
+|snappydata.recovery.enableTableCountInUI|In the recovery mode, by default, the table counts and sizes do not appear on the UI. To view the table counts, you should set this property to **true** in the lead's conf file. By default, the property is set to **false**, and the table count is shown as **-1**. ||
 |sync-commits| See [sync-commits](/reference/configuration_parameters/sync-commits.md)||
 
 <a id="aqp"></a>
