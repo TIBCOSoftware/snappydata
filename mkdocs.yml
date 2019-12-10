@@ -218,6 +218,8 @@ pages:
         - 'SET_TRACE_FLAG': 'reference/inbuilt_system_procedures/set-trace-flag.md'
         - 'SYS.REMOVE_METASTORE_ENTRY': 'reference/inbuilt_system_procedures/sys_remove_metastore_entry.md'
         - 'DSID': 'reference/inbuilt_system_procedures/dsid.md'
+        - 'SYS.EXPORT_DDLS': 'reference/inbuilt_system_procedures/export_ddl.md'
+        - 'SYS.EXPORT_DATA': 'reference/inbuilt_system_procedures/export_data.md'
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 
         - 'MEMBERS': 'reference/system_tables/members.md'
