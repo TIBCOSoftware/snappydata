@@ -43,7 +43,18 @@ class SnappyJDBCSuite extends JDBCSuite
           "(address=host2:2222,priority=2,key2=value2))]/db",
       // s3 path pattern1
       "s3a://DUMMYKEY175GDRZIF4QQ:DUMMYKEY2zUkvIS88xrMJ7v5cMmQEWRjqS@" +
-          "ryft-public-sample-data/passengers.txt"
+          "ryft-public-sample-data/passengers.txt",
+      // no password
+      "jdbc:mysql://localhost/test",
+      // jdbc pattern and option pattern
+      s"""
+         |CREATE table jdbctable
+         |USING org.apache.spark.sql.jdbc
+         |OPTIONS (
+         | url 'jdbc:h2:mem:testdb0;user=testUser;password=testPass',
+         | dbtable 'TEST.PEOPLE',
+         | user 'testUser',
+         | PASSWORD 'myanotherpass')""".stripMargin
     )
     val expectedUrls = Seq("jdbc:mysql://[(host=myhost1,port=1111,user=sandy," +
         "password=xxxxx),(host=myhost2,port=2222,user=finn,password=xxxxx)]/db",
@@ -58,7 +69,11 @@ class SnappyJDBCSuite extends JDBCSuite
       "jdbc:mysql://sandy:xxxxx@[myhost1:1111,myhost2:2222]/db",
       "jdbc:mysql://sandy:xxxxx@[(address=host1:1111,priority=1,key1=value1)," +
           "(address=host2:2222,priority=2,key2=value2))]/db",
-      "s3a://xxxxx:xxxxx@ryft-public-sample-data/passengers.txt"
+      "s3a://xxxxx:xxxxx@ryft-public-sample-data/passengers.txt",
+      "jdbc:mysql://localhost/test",
+      " CREATE table jdbctable USING org.apache.spark.sql.jdbc OPTIONS (  url " +
+          "'jdbc:h2:mem:testdb0;user=testUser;password=xxxxx',  dbtable 'TEST.PEOPLE'," +
+          "  user 'testUser',  PASSWORD 'xxxxx')"
     )
     val maskedUrls = jdbcUrls.map(url => ServiceUtils.maskPasswordsInString(url))
     jdbcUrls.indices.foreach(i => assert(maskedUrls(i).equals(expectedUrls(i)),
