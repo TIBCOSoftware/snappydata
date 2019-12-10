@@ -189,7 +189,7 @@ object ServiceUtils {
     val jdbcPattern1 = ".*jdbc.*(?i)\\bpassword\\b=([^);&']*).*".r
     val jdbcPattern2 = ".*jdbc.*:(.*)@.*".r
     val s3Pattern1 = "s3[an]?://([^:]*):([^@]*)@.*".r
-    val optionPattern1 = ".*password '([^']*)'.*".r
+    val optionPattern1 = ".*(?i)\\bpassword\\b '([^']*)'.*".r
     var maskedStr = str.replace("\n", " ")
     val mask = "xxxxx"
 

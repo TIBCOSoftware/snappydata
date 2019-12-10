@@ -54,7 +54,7 @@ class SnappyJDBCSuite extends JDBCSuite
          | url 'jdbc:h2:mem:testdb0;user=testUser;password=testPass',
          | dbtable 'TEST.PEOPLE',
          | user 'testUser',
-         | password 'myanotherpass')""".stripMargin
+         | PASSWORD 'myanotherpass')""".stripMargin
     )
     val expectedUrls = Seq("jdbc:mysql://[(host=myhost1,port=1111,user=sandy," +
         "password=xxxxx),(host=myhost2,port=2222,user=finn,password=xxxxx)]/db",
@@ -73,7 +73,7 @@ class SnappyJDBCSuite extends JDBCSuite
       "jdbc:mysql://localhost/test",
       " CREATE table jdbctable USING org.apache.spark.sql.jdbc OPTIONS (  url " +
           "'jdbc:h2:mem:testdb0;user=testUser;password=xxxxx',  dbtable 'TEST.PEOPLE'," +
-          "  user 'testUser',  password 'xxxxx')"
+          "  user 'testUser',  PASSWORD 'xxxxx')"
     )
     val maskedUrls = jdbcUrls.map(url => ServiceUtils.maskPasswordsInString(url))
     jdbcUrls.indices.foreach(i => assert(maskedUrls(i).equals(expectedUrls(i)),
