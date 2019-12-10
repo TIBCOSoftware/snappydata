@@ -16,9 +16,9 @@ In the Recovery mode:
 
 To bring up the cluster and salvage the data, do the following:
 
-*	[Launch the cluster in a Recovery mode](#launchclusterrecovery)
-*	[Retrieve table definitions and data](#retrievedata)
-*	[Load a new cluster with data extracted from Recovery mode](#loadextractdata)
+1.	[Launch the cluster in a Recovery mode](#launchclusterrecovery)
+2.	[Retrieve table definitions and data](#retrievedata)
+3.	[Load a new cluster with data extracted from Recovery mode](#loadextractdata)
 
 <a id= launchclusterrecovery> </a>
 ### Launching a Cluster in Recovery Mode
