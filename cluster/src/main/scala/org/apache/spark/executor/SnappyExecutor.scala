@@ -134,13 +134,13 @@ class SnappyExecutor(
 
       private def mutableLoaderWithRepl(key: ClassLoaderKey): ClassLoader = {
         try {
-          logInfo("KN: making class loader with repl")
           val _userClassPathFirst: java.lang.Boolean = userClassPathFirst
-          val klass = Utils.classForName("org.apache.spark.repl.ExecutorClassLoader")
+          val klass = Utils.classForName("org.apache.spark.repl.SnappyExecutorClassLoader")
             .asInstanceOf[Class[_ <: ClassLoader]]
           val constructor = klass.getConstructor(classOf[SparkConf], classOf[SparkEnv],
             classOf[String], classOf[ClassLoader], classOf[Boolean])
-          constructor.newInstance(conf, env, key.appName, replClassLoader, _userClassPathFirst)
+          val cl = constructor.newInstance(conf, env, key.appName, replClassLoader, java.lang.Boolean.TRUE)
+          cl
         } catch {
           case _: ClassNotFoundException =>
             logError("Could not find org.apache.spark.repl.ExecutorClassLoader on classpath!")
@@ -159,14 +159,14 @@ class SnappyExecutor(
 
     override def hashCode(): Int = {
       if (!isReplPath) (appName, appTime).hashCode()
-      else (true, appName).hashCode() // repl output dir is in appName
+      else appName.hashCode() // repl output dir is in appName
     }
 
     override def equals(obj: Any): Boolean = {
       obj match {
         case x: ClassLoaderKey =>
           if (!isReplPath) (x.appName, x.appTime).equals(appName, appTime)
-          else (x.appName, x.isReplPath).equals(appName, isReplPath)
+          else x.appName.equals(appName)
         case _ => false
       }
     }
@@ -187,21 +187,21 @@ class SnappyExecutor(
             .CHANGEABLE_JAR_NAME, "")
         val replOutputDir = taskDeserializationProps.getProperty(
           io.snappydata.Constant.REPL_OUTPUT_DIR)
-        logInfo(s"Submitted Application Details $appDetails and replOutputdir = $replOutputDir")
+        logDebug(s"Submitted Application Details $appDetails and replOutputdir = $replOutputDir")
         if (!appDetails.isEmpty) {
           val appNameAndJars = appDetails.split(",")
           val threadClassLoader =
             classLoaderCache.getUnchecked(new ClassLoaderKey(appNameAndJars(0),
               appNameAndJars(1), appNameAndJars))
-          logInfo(s"Setting thread classloader  $threadClassLoader")
+          logDebug(s"Setting thread classloader  $threadClassLoader")
           Thread.currentThread().setContextClassLoader(threadClassLoader)
         } else if (replOutputDir != null) {
-          logInfo(s"Application Details empty so repl class loader $replOutputDir")
+          logInfo(s"Application Details empty so repl class loader for $replOutputDir")
           val cKey = new ClassLoaderKey(replOutputDir,
             null, null, true)
-          cKey.setUserClassPathFirst(userClassPathFirst)
+          cKey.setUserClassPathFirst(true)
           val threadClassLoader = classLoaderCache.getUnchecked(cKey)
-          logInfo(s"Setting thread classloader with repl $threadClassLoader")
+          logDebug(s"Setting thread classloader with repl $threadClassLoader for $replOutputDir")
           Thread.currentThread().setContextClassLoader(threadClassLoader)
         }
       }
