@@ -29,7 +29,7 @@ import io.snappydata.gemxd.SnappySessionPerConnection
 import io.snappydata.impl.LeadImpl
 import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.repl.SparkILoop
-import org.apache.spark.sql.CachedDataFrame
+import org.apache.spark.sql.{CachedDataFrame, Dataset}
 import org.apache.spark.sql.execution.RefreshMetadata
 
 import scala.collection.mutable
@@ -120,14 +120,17 @@ class RemoteInterpreterStateHolder(
         incomplete.append(tmpsb.toString())
         resultBuffer += "___INCOMPLETE___"
       }
-      if (options != null && options.nonEmpty &&
+      if (lastResult == Results.Success && options != null && options.nonEmpty &&
         options.isDefinedAt(RemoteInterpreterStateHolder.optionDF)) {
+        val symbolName = options.get(RemoteInterpreterStateHolder.optionDF).get
         var allRequests = intp.prevRequestList.reverse
         while (allRequests.nonEmpty) {
           var request = allRequests.head
-          val x = request.lineRep.evalEither.right.get
-          if (x != null && x.isInstanceOf[CachedDataFrame]) {
-            if (x.asInstanceOf[CachedDataFrame].schema.fields.nonEmpty) return x
+          if (request.value.rawname != null && request.value.rawname.toString.equals(symbolName)) {
+            val x = request.lineRep.evalEither.right.get
+            if (x != null && x.isInstanceOf[CachedDataFrame]) {
+              if (x.asInstanceOf[CachedDataFrame].schema.fields.nonEmpty) return x
+            }
           }
           allRequests = allRequests.tail
         }
@@ -140,13 +143,7 @@ class RemoteInterpreterStateHolder(
 
   def processCommand(command: String): Array[String] = {
     scala.Console.setOut(strOpStream)
-    logDebug(s"command to process is ${command}")
-    logDebug(s"Current list of commands = ${intp.commands}")
-    logDebug("Looping starts")
-    intp.commands.foreach(x => logDebug(s"command = ${x.name} and usage = ${x.usage}"))
-    logDebug("Looping ends")
     val result = commandMethod.invoke(this.intp, command)
-    logDebug(s"commandMethod = $commandMethod")
     if (resultBuffer.isEmpty) {
       val output = pw.toString
       val returnArray = output.split("\n")
