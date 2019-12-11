@@ -96,6 +96,10 @@ class LeadImpl extends ServerImpl with Lead
 
     isTestSetup = bootProperties.getProperty("isTest", "false").toBoolean
     bootProperties.remove("isTest")
+    val enableTableCountInUI =
+      bootProperties.getProperty("snappydata.recovery.enableTableCountInUI", "false")
+    bootProperties.remove("snappydata.recovery.enableTableCountInUI")
+
     val authSpecified = Misc.checkLDAPAuthProvider(bootProperties)
 
     ServiceUtils.setCommonBootDefaults(bootProperties, forLocator = false)
@@ -331,8 +335,11 @@ class LeadImpl extends ServerImpl with Lead
       }
 
       // If recovery mode then initialize the recovery service
-      if(Misc.getGemFireCache.isSnappyRecoveryMode) {
-        RecoveryService.collectViewsAndPrepareCatalog()
+      if (Misc.getGemFireCache.isSnappyRecoveryMode) {
+        if (enableTableCountInUI.equalsIgnoreCase("true"))
+          RecoveryService.collectViewsAndPrepareCatalog(true)
+        else
+          RecoveryService.collectViewsAndPrepareCatalog(false)
       }
 
       if (jobServerWait) {

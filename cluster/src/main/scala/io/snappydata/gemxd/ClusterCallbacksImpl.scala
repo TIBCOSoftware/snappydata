@@ -157,7 +157,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
         Misc.getMemStore.getBootProperty(Attribute.PASSWORD_ATTR))
     }
 
-    val tablesArr = if (tableNames.equalsIgnoreCase("all")) {
+    var tablesArr = if (tableNames.equalsIgnoreCase("all")) {
       RecoveryService.getTables.map(ct =>
         ct.storage.locationUri match {
           case Some(_) => null // external tables will not be exported
@@ -173,28 +173,31 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     logDebug(s"Using connection ID: $connId\n Export path:" +
         s" $exportUri\n Format Type: $formatType\n Table names: $tableNames")
 
-    val filePath = if (exportUri.endsWith(File.separator)) {
+    val exportPath = if (exportUri.endsWith(File.separator)) {
       exportUri.substring(0, exportUri.length - 1) +
           s"_${System.currentTimeMillis()}" + File.separator
     } else {
       exportUri + s"_${System.currentTimeMillis()}" + File.separator
     }
-    RecoveryService.captureArguments(formatType, tablesArr, filePath, ignoreError)
     tablesArr.foreach(f = table => {
       Try {
         val tableData = session.sql(s"select * from $table;")
-        logInfo(s"EXPORT_DATA procedure is exporting table: $table.")
+        val savePath = exportPath + File.separator + table.toUpperCase
         tableData.write.mode(SaveMode.Overwrite).option("header", "true").format(formatType)
-            .save(filePath + File.separator + table.toUpperCase)
+            .save(savePath)
+        logDebug(s"EXPORT_DATA procedure exported table $table in $formatType format" +
+            s"at path $savePath ")
       } match {
         case scala.util.Success(_) =>
         case scala.util.Failure(exception) =>
           logError(s"Error recovering table: $table.")
+          tablesArr = tablesArr.filter(_!=table)
           if (!ignoreError) {
             throw new Exception(exception)
           }
       }
     })
+    generateLoadScripts(connId, exportPath, formatType, tablesArr)
   }
 
   override def exportDDLs(connId: lang.Long, exportUri: String): Unit = {
@@ -214,37 +217,31 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   /**
-   * generates spark-shell code which helps user to reload data exported through EXPORT_DATA procedure
-   *
+   * generates spark-shell code which helps user to reload
+   * data exported through EXPORT_DATA procedure
    */
-  def generateLoadScripts(connId: lang.Long): Unit = {
+  def generateLoadScripts(connId: lang.Long, exportPath: String,
+      formatType: String, tablesArr: Seq[String]): Unit = {
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     var loadScriptString = ""
 
-    RecoveryService.exportDataArgsList.foreach(args => {
-      val generatedScriptPath = s"${args.outputDir.replaceAll("/$", "")}_load_scripts"
-      args.tables.foreach(table => {
-        val tableExternal = s"temp_${table.replace('.', '_')}"
-        val additionalOptions = args.formatType match {
-          case "csv" => ",header 'true'"
-          case _ => ""
-        }
-        // todo do testing for all formats and ensure generated scripts handles all scenarios
-        loadScriptString += s"""
-          |CREATE EXTERNAL TABLE $tableExternal USING ${args.formatType}
-          |OPTIONS (PATH '${args.outputDir}/${table.toUpperCase}'${additionalOptions});
-          |INSERT OVERWRITE $table SELECT * FROM $tableExternal;
-          |
+    val generatedScriptPath = s"${exportPath.replaceAll("/$", "")}_load_scripts"
+    tablesArr.foreach(table => {
+      val tableExternal = s"temp_${table.replace('.', '_')}"
+      val additionalOptions = formatType match {
+        case "csv" => ",header 'true'"
+        case _ => ""
+      }
+      // todo do testing for all formats and ensure generated scripts handles all scenarios
+      loadScriptString +=
+          s"""
+             |CREATE EXTERNAL TABLE $tableExternal USING ${formatType}
+             |OPTIONS (PATH '${exportPath}/${table.toUpperCase}'${additionalOptions});
+             |INSERT OVERWRITE $table SELECT * FROM $tableExternal;
+             |
         """.stripMargin
-//        loadScriptString += s"""
-//                               |var $tableExternal = sn.read.${d.formatType}("${d.outputDir}/${table.toUpperCase}")
-//                               |$tableExternal.write.mode("overwrite").insertInto("${table}")
-//                               |$tableExternal = null
-//                               |
-//      """.stripMargin
-      })
-      session.sparkContext.parallelize(Seq(loadScriptString), 1).saveAsTextFile(generatedScriptPath)
     })
+    session.sparkContext.parallelize(Seq(loadScriptString), 1).saveAsTextFile(generatedScriptPath)
   }
 
   override def setLeadClassLoader(): Unit = {
