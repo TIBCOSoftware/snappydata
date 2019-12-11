@@ -29,6 +29,7 @@ The following topics are covered in this section:
 * [Environment](#environment)
 
 * [Executors](#executors)
+* [Structured Streaming](#structuredstream)
 
 * [SQL](#sql)
 
@@ -57,7 +58,7 @@ The **Dashboard** page displays the following sections:
 
 * [External Tables](#external-table)
 
-You can use the search and sort functionalities in any of the sections, except for the **Cluster** section.  Sorting is enabled to sort items in an ascending and descending order. Further, you can also set the number of items that must be listed in each of these sections.
+You can use the search and sort functionalities in any of the sections, except for the **Cluster** section. Sorting is enabled to sort items in an ascending and descending order. Further, you can also set the number of items that must be listed in each of these sections.
 
 <a id="cluster"></a>
 ### Cluster
@@ -182,44 +183,6 @@ The following details are included:
 |     **Log Details **  |     Displays details of the loaded logs such as  Loaded Bytes, Start and End Indexes of Loaded Bytes, and Total Bytes of logs content.   |
 |  **Logs**      | Displays the actual log entries from the log files. </br> It also displays the following buttons: </br> <ul><li>**Load New** - Loads the latest log entries from the log file, if generated, after logs were last loaded or updated.</li><li>**Load More** - Loads older log entries from log files, if available.</li></ul>  |
 
-
-<a id="sql"></a>
-## SQL
-The SQL section shows all the queries and their corresponding details along with their execution plans and stagewise breakups.
-
-| Item  | Description |
-|--------|--------|
-|  **Colocated**    | When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions.   |
-|**Whole-Stage Code Generation** |  A whole stage code generation node compiles a sub-tree of plans that support code generation together into a single Java function, which helps improve execution performance.      |
-|    **Per node execution timing**    |   Displays the time required for the execution of each node. If there are too many rows that are not getting filtered or exchanged.     |
-|   **Pool Name**     | Default/Low Latency. Applications can explicitly configure the use of this pool using a SQL command `set snappydata.scheduler.pool=lowlatency`.       |
-|**Query Node Details**|   Hover over a component to view its details.     |
-|     **Filter**   |   Displays the number of rows that are filtered for each node.      |
-|    **Joins**    |   If HashJoin puts pressure on memory, you can change the HashJoin size to use SortMergeJoin to avoid on-heap memory pressure.      |
-
-<a id="spark_cache"></a>
-## Spark Cache
-
-Spark Cache is the inbuilt storage mechanism of Spark. When you do a `dataSet.cache()`, it uses this storage to store the dataset's data in a columnar format. This storage can be configured to be one of the following:
-
-- MEMORY_ONLY,
-- MEMORY_AND_DISK,
-- MEMORY_ONLY_SER,
-- MEMORY_AND_DISK_SER,
-- DISK_ONLY,
-- MEMORY_ONLY_2,
-- MEMORY_AND_DISK_2
-
-For more details, see [RDD Persistence section](https://spark.apache.org/docs/latest/rdd-programming-guide.html).
-
-<a id="environment"></a>
-## Environment
-The Environment page provides detailed configurations for Spark environment including JVM, SparkContext, and SparkSession.
-
-<a id="executors"></a>
-## Executors
-Executors are the entities that perform the tasks within a Spark job. Each Spark job is divided into multiple stages which can have one or more tasks depending on the number of partitions to be processed. All these tasks are scheduled on executor nodes which actually run them.
-
 <a id="jobs"></a>
 ## Jobs
 The **Jobs** page lists all the Spark jobs. Each Spark action is translated as a Spark job. A job encapsulates the whole execution of an API or SQL. For example, `dataSet.count()` triggers a job.
@@ -246,6 +209,124 @@ On this page, you can view the total time required for all the tasks in a job to
 * **Number of parallel tasks**: Due to concurrency, multiple queries may take cores and a specific query can take longer. To fix this, you can create a new scheduler and [assign appropriate cores to it](../best_practices/setup_cluster.md).
 
 * **GC time**: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory, especially when you have row tables.
+
+
+<a id="spark_cache"></a>
+## Spark Cache
+
+Spark Cache is the inbuilt storage mechanism of Spark. When you do a `dataSet.cache()`, it uses this storage to store the dataset's data in a columnar format. This storage can be configured to be one of the following:
+
+- MEMORY_ONLY,
+- MEMORY_AND_DISK,
+- MEMORY_ONLY_SER,
+- MEMORY_AND_DISK_SER,
+- DISK_ONLY,
+- MEMORY_ONLY_2,
+- MEMORY_AND_DISK_2
+
+For more details, see [RDD Persistence section](https://spark.apache.org/docs/latest/rdd-programming-guide.html).
+
+<a id="environment"></a>
+## Environment
+The Environment page provides detailed configurations for Spark environment including JVM, SparkContext, and SparkSession.
+
+<a id="executors"></a>
+## Executors
+Executors are the entities that perform the tasks within a Spark job. Each Spark job is divided into multiple stages which can have one or more tasks depending on the number of partitions to be processed. All these tasks are scheduled on executor nodes which actually run them.
+
+<a id="structuredstream"></a>
+## Structured Streaming
+
+![Structured Streaming](../Images/MonitoringUI/snappy_structuredstreamingtab.png)
+
+Structured Streaming tab provides a real-time view into all the running structured streaming queries in the cluster. You can navigate, visualize, and monitor all the structured streaming queries from a sinle location. Further, you can also track various statistics of these queries such as Start Date and Time, Uptime, Current and Total Inputs from streaming sources, Processing Rate and Time, number of batches processed, Average Batch Processing Time, and so on. 
+All these statistics are automatically refreshed after every five seconds.
+
+!!!Attention
+	The Structured Streaming tab is available in the Embedded mode as well as in the Smart Connector mode. However, in the Smart Connector mode, this tab is visible only if you use the Snappy-Spark distribution. In case you use the upstream or stock spark distribution, then the Structured Streaming tab will not be visible. 
+
+You must check the Structured Streaming tab for the streaming queries on the corresponding Monitoring consoles. For example, if you have submitted a streaming query to be executed in the Embedded cluster, then you must check the Monitoring console of the corresponding Embedded cluster of TIBCO ComputeDB.  In case the streaming query is submitted to be  executed in a Smart Connector cluster, then you must check the Monitoring Console of the corresponding Smart Connector cluster.
+
+The following details are shown on the Structured Streaming tab:
+
+### Query Statistics Information
+
+| Item  | Description |
+|--------|--------|
+|  **Query Names**    | A list of the active and inactive streaming queries in the cluster, which also acts as the query navigation panel. You can select a query and monitor the status of that query. The relevant statistics of the query  are displayed on right side. </br> You can configure the maximum number of queries using the property  **spark.sql.streaming.uiRunningQueriesDisplayLimit**. The default value is **20**. When the maximum limit is reached, then the newly created streaming queries gets added only after replacing the oldest inactive quer. If there are no inactive queries present in the existing query list then the newly created streaming queries are not displayed.</br>Click the list header to sort the list.|
+| **Query Name**|A unique name given to structured streaming query submitted to the cluster.|
+|**Start Date & Time**|Calendar date and clock time when the structured streaming query was started or restarted.|
+|**Uptime**| Total time that has passed since the streaming has started.|
+|**Trigger** **Interval**| Total number of batches processed since streaming query has been started.|
+|**Status**| Status can be **Active** or **Inactive**.</br> *	Active: Query is running </br> *	Inactive: Query has stopped or failed|
+|**Total Input Records**| Total count of records received from the sources and processed since the streaming query has been started.|
+|**Current Input Rate**| Number of input records per second in a batch, which has been received in the current event trigger. This value is the number of records received between the start time of previous event and start time of current event and divided by the number of seconds between these two events.|
+|**Current Processing Rate**|Average input records processed per second. This value is number of input records processed per second between the start time and the end time of the current event.|
+|**Total Batch Processing Time**| Total time taken to process all the batches and events from the start time of the streaming query until now.|
+|**Avg. Batch Processing Time**| Average processing time per batch. This value is the total batch processing time, which is divided by the number of batches processed since the streaming query has started.|
+
+### Structured Streaming Queries Sources
+
+| Item  | Description |
+|--------|--------|
+|**Type** | Source Type can be one of the following:</br> FileStream Kafka Memory</br> Socket</br> JDBC (only available with enterprise version) |
+|**Description** |Description is a string representation of the source object. In general, it is a concise but informative representation. </br>For example: **KafkaSource[Subscribe[adImpressionTopic]] ** |
+|**Input Records** | Number of input records received in current trigger event. |
+|**Input Rate** | Input records per second for current trigger. |
+|**Processing Rate** | Records processed per second for current trigger. |
+
+### Structured Streaming Queries Sink
+
+| Item  | Description |
+|--------|--------|
+|**Type** | Any of the following sink type for the structured streaming queries :</br>Snappy Store</br>File Stream</br>Memory</br>Foreach</br>Kafka:
+|**Description** | Description is a string representation of the sink object. In general, it is a concise but informative representation. For example:</br>`SnappyStoreSink[queryname -> log_stream, tablename -> aggrAdImpressions, checkpointlocation ->/home/skapse/tmp/io.snappydata.adanalytics.SnappyAPILogAggreg ator1$, sinkcallback -> org.apache.spark.sql.streaming.DefaultSnappySinkCallback]`
+
+### Graphical Charts
+
+The Structured Streaming tab presents four types of graphical charts. All these charts display historical trends or behavior of respective parameters for a given number of data points or sample size. You can customize the data points sample size by setting the configuration parameter **spark.sql.streaming.uiTrendsMaxSampleSize**. The default value is **60** data points, which indicates that all the graphical charts display data of the last 60 events.
+
+#### Input Records
+
+![Input Records](../Images/MonitoringUI/inputrecords_chart.png)
+This line chart displays the number of input records received for each of the batches in the last n trigger events.
+
+#### Input Rate Vs. Processing Rate
+
+![Input Rate Vs. Processing Rate](../Images/MonitoringUI/inputrate_vs_processingrate_chart.png)
+
+This line chart displays the behavior of two parameters, for the last n triggers, in two curve lines.  One line represents the input rate that is the number of input records per second in the given triggers batch. The other line represents the processing rate, which is the number of records processed per second in the given trigger's batch.
+
+#### Processing Time (in Miiliseconds)
+
+![Processing Time](../Images/MonitoringUI/processing_time_chart.png)
+
+This line chart displays the time taken to process all the input records received in each of the batches for the last n triggers. This chart also displays the processing threshold line, which is the expected maximum time limit in milliseconds for processing a batch. This chart allows you to supervise whether the processing is happening within the time limit specified for Event Trigger Interval. 
+In case the trend line for the Processing Time trend line is continuously below the Processing Threshold, then that indicates that there are enough resources to handle the streaming query operations. However, if the Processing Time trend line is often above the Processing Threshold, then that indicates that resources are insufficient to handle the streaming query operations, and you must add resources to manage the streaming input load.
+
+#### Agregation State
+
+![Aggregation State](../Images/MonitoringUI/aggregatestate_chart.png)
+
+This line chart is displayed only if the streaming query is using one or more aggregate functions. You can expect to see the line displayed in the chart to keep rising continuously or at least be at the same level if not rising.
+
+<a id="sql"></a>
+## SQL
+The SQL section shows all the queries and their corresponding details along with their execution plans and stagewise breakups.
+
+| Item  | Description |
+|--------|--------|
+|  **Colocated**    | When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions.   |
+|**Whole-Stage Code Generation** |  A whole stage code generation node compiles a sub-tree of plans that support code generation together into a single Java function, which helps improve execution performance.      |
+|    **Per node execution timing**    |   Displays the time required for the execution of each node. If there are too many rows that are not getting filtered or exchanged.     |
+|   **Pool Name**     | Default/Low Latency. Applications can explicitly configure the use of this pool using a SQL command `set snappydata.scheduler.pool=lowlatency`.       |
+|**Query Node Details**|   Hover over a component to view its details.     |
+|     **Filter**   |   Displays the number of rows that are filtered for each node.      |
+|    **Joins**    |   If HashJoin puts pressure on memory, you can change the HashJoin size to use SortMergeJoin to avoid on-heap memory pressure.      |
+
+<a id="hivethriftser"></a>
+## Hive Thrift Server
+
 
 <a id="historyserver"></a>
 ## Spark History Server
