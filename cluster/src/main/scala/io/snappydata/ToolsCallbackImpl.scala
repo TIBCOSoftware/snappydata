@@ -264,4 +264,9 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
   override def updateIntpGrantRevoke(grantor: String, isGrant: Boolean, users: String): Unit = {
     SnappyInterpreterExecute.handleNewPermissions(grantor, isGrant, users)
   }
+
+  override def refreshLdapGroupCallback(group: String): Unit = {
+    SnappyInterpreterExecute.refreshOnLdapGroupRefresh(group)
+  }
+
 }
