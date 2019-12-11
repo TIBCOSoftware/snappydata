@@ -23,6 +23,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, QueryHint}
+import org.apache.spark.Logging
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
@@ -47,7 +48,7 @@ import scala.collection.mutable
 import scala.util.Try
 
 abstract class SnappyDDLParser(session: SnappySession)
-    extends SnappyBaseParser(session) {
+    extends SnappyBaseParser(session) with Logging {
 
   // reserved keywords
   final def ALL: Rule0 = rule { keyword(Consts.ALL) }
@@ -473,8 +474,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def interpretCode: Rule1[LogicalPlan] = rule {
-    EXEC ~ ws ~ (capture("SCALA") | capture("scala")) ~ codeChunk ~> {
-      (scalaKeyWord: String, code: String) =>
+    EXEC ~ ws ~ ignoreCase("scala") ~ codeChunk ~> { (code: String) =>
       val trimmedCodeLC = code.replace("\\s+", " ").trim.toLowerCase
       if (trimmedCodeLC.startsWith("options")) {
         val startOptionIndex = code.indexOf('(')
@@ -512,9 +512,6 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected def codeChunk: Rule1[String] = rule {
     capture(ANY.*) ~ EOI ~> ((code : String) => code )
-    /***
-    '{' ~ capture(ANY) ~ '}' ~> ((code : String) => code )
-     ***/
   }
 
 
