@@ -24,8 +24,9 @@ import java.nio.file.{Files, Paths}
 
 import com.gemstone.gemfire.internal.shared.StringPrintWriter
 import com.pivotal.gemfirexd.Attribute
-import io.snappydata.Constant
+import io.snappydata.{Constant, ServiceManager}
 import io.snappydata.gemxd.SnappySessionPerConnection
+import io.snappydata.impl.LeadImpl
 import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.repl.SparkILoop
 import org.apache.spark.sql.CachedDataFrame
@@ -47,7 +48,7 @@ class RemoteInterpreterStateHolder(
   lazy val pw = new StringPrintWriter()
   lazy val strOpStream = new StringOutputStrem(pw)
 
-  private val suffix = s"repl${connId}${user}"
+  private val suffix = s"repl${connId}${user}-${System.currentTimeMillis()}"
   private val replOutputDirStr = s"${RemoteInterpreterStateHolder.replOutputDir}/$suffix"
   RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_LOADER_WITH_REPL, replOutputDirStr)
 
@@ -183,6 +184,7 @@ class RemoteInterpreterStateHolder(
       classpath += f.getAbsolutePath
     }
     val interpArguments = List(
+      "-Yrepl-class-based",
       "-Yrepl-outdir", s"${replOpPath}",
       "-classpath", classpath
     )
@@ -226,6 +228,9 @@ class RemoteInterpreterStateHolder(
     pw.reset()
     this.intp = intp
     initIntp
+    Thread.currentThread().setContextClassLoader(intp.classLoader)
+    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    lead.urlclassloader.addClassLoader(intp.classLoader)
     intp
   }
 
@@ -234,6 +239,8 @@ class RemoteInterpreterStateHolder(
     intp.close()
     strOpStream.close()
     pw.close()
+    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    lead.urlclassloader.removeClassLoader(intp.classLoader)
     // let the session close handle snappy clear.
     // snappy.clear()
     incomplete.setLength(0)
@@ -280,6 +287,8 @@ class RemoteInterpreterStateHolder(
     intp.clearExecutionWrapper()
     intp.close()
     pw.reset()
+    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    lead.urlclassloader.removeClassLoader(intp.classLoader)
     intp = null
     intp = createSparkILoop
     initIntp()
