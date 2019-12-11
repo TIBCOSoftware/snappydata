@@ -135,7 +135,8 @@ Refer to the [Spark SQL JDBC source access for how to parallelize access when de
 The example below demonstrates how you can load data from a NoSQL store:
 
 !!! Note
-	Before you begin, you must install the corresponding Spark-Cassandra connector jar. To do so, copy the Spark-Cassandra connector jar file to the **/jars** directory located in the home directory and then restart the cluster.
+	Before you begin, you must install the corresponding Spark-Cassandra connector jar. To do so, you can execute the 
+    `deploy jar <unique-alias-name> '<Cassandra Connector jar>';` command.
 
 <!--**TODO** This isn't a single JAR from what I know. The above step needs testing and clarity. -- Jags
 -->
