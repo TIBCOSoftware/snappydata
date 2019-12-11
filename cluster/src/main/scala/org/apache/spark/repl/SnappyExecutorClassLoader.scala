@@ -64,7 +64,6 @@ class SnappyExecutorClassLoader(conf: SparkConf,
       collector, DataReqType.GET_CLASS_BYTES, 0L, sourcePath)
     fetchClassByteMsg.executeFunction();
     val result = collector.getResult.get(0)
-    logInfo(s"KN: resule obtained = $result")
     val fileContent = result.asInstanceOf[Array[Byte]]
     new ByteArrayInputStream(fileContent)
   }

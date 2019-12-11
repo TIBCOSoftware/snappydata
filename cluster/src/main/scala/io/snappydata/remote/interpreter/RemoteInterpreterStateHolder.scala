@@ -335,7 +335,11 @@ class RemoteInterpreterStateHolder(
 
 object RemoteInterpreterStateHolder {
   private val optionDF = "returnDF"
-  val replOutputDir = "/home/nekumar/repl"
+  val sc = SparkContext.getOrCreate()
+  // TODO why tmp is not working
+  // val tmpDir = sc.getConf.get("spark.local.dir", "/tmp")
+  // val replOutputDir = s"$tmpDir"
+  val replOutputDir = System.getProperty("user.home")
 }
 
 class RemoteILoop(spw: StringPrintWriter, intpHelper: RemoteInterpreterStateHolder)
