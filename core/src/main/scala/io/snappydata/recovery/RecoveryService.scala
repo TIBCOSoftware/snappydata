@@ -20,14 +20,18 @@ package io.snappydata.recovery
 
 import java.util.function.BiConsumer
 
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats,
-  SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{
+  SnappyExternalTableStats, SnappyIndexStats,
+  SnappyRegionStats
+}
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegionHelper
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.ddl.{DDLConflatable, GfxdDDLQueueEntry,
-  GfxdDDLRegionQueue}
+import com.pivotal.gemfirexd.internal.engine.ddl.{
+  DDLConflatable, GfxdDDLQueueEntry,
+  GfxdDDLRegionQueue
+}
 import com.pivotal.gemfirexd.internal.engine.distributed.RecoveryModeResultCollector
 import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode
 import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode
@@ -45,8 +49,10 @@ import io.snappydata.Constant
 
 import org.apache.spark.sql.{SnappyContext, SnappyParser, SnappySession}
 import io.snappydata.sql.catalog.ConnectorExternalCatalog
-import io.snappydata.thrift.{CatalogFunctionObject, CatalogMetadataDetails, CatalogSchemaObject,
-  CatalogTableObject}
+import io.snappydata.thrift.{
+  CatalogFunctionObject, CatalogMetadataDetails, CatalogSchemaObject,
+  CatalogTableObject
+}
 
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogTable}
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructField, StructType}
@@ -59,7 +65,9 @@ object RecoveryService extends Logging {
       Seq[SnappyRegionStats], Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = _
   var catalogTableCount = 0
   val snappyHiveExternalCatalog = HiveClientUtil
-      .getOrCreateExternalCatalog(SnappyContext().sparkContext, SnappyContext().sparkContext.getConf)
+      .getOrCreateExternalCatalog(SnappyContext().sparkContext, SnappyContext().sparkContext
+          .getConf)
+  var enableTableCountInUI: Boolean = _
 
   private def isGrantRevokeStatement(conflatable: DDLConflatable) = {
     val sqlText = conflatable.getValueToConflate
@@ -82,22 +90,34 @@ object RecoveryService extends Logging {
       var tblCounts: Seq[SnappyRegionStats] = Seq()
       catalogTableCount = allTables.length
       allTables.foreach(table => {
-        table.storage.locationUri match {
-          case Some(_) => // external tables can be seen in show tables but filtered out in UI
-          case None =>
-            if (recoveryStats == null ||
-                !recoveryStats._1.map(_.getTableName).contains(table.qualifiedName))
-              logDebug(s"Querying table: $table for count")
-            val recCount = snappySession.sql(s"SELECT count(1) FROM ${table.qualifiedName}")
+        try {
+          table.storage.locationUri match {
+            case Some(_) => // external tables can be seen in show tables but filtered out in UI
+            case None =>
+              if (recoveryStats == null ||
+                  !recoveryStats._1.map(_.getTableName).contains(table.qualifiedName))
+                logDebug(s"Querying table: $table for count")
+              val recCount = if (enableTableCountInUI) {
+                snappySession.sql(s"SELECT count(1) FROM ${table.qualifiedName}")
                 .collect()(0).getLong(0)
-            val (numBuckets, isReplicated) = RecoveryService
-                .getNumBuckets(table.qualifiedName.split('.')(0).toUpperCase(),
-                  table.qualifiedName.split('.')(1).toUpperCase())
+              } else -1L
+              val (numBuckets, isReplicatedTable) = RecoveryService
+                  .getNumBuckets(table.qualifiedName.split('.')(0).toUpperCase(),
+                    table.qualifiedName.split('.')(1).toUpperCase())
+              val regionStats = new SnappyRegionStats()
+              regionStats.setRowCount(recCount)
+              regionStats.setTableName(table.qualifiedName)
+              regionStats.setReplicatedTable(isReplicatedTable)
+              regionStats.setBucketCount(numBuckets)
+              regionStats.setColumnTable(getProvider(table.qualifiedName).equalsIgnoreCase
+              ("column"))
+              tblCounts :+= regionStats
+          }
+        } catch {
+          case e: Exception => logError(s"Error querying table $table.\n$e")
             val regionStats = new SnappyRegionStats()
-            regionStats.setRowCount(recCount)
+            regionStats.setRowCount(-1L)
             regionStats.setTableName(table.qualifiedName)
-            regionStats.setReplicatedTable(isReplicated)
-            regionStats.setBucketCount(numBuckets)
             regionStats.setColumnTable(getProvider(table.qualifiedName).equalsIgnoreCase("column"))
             tblCounts :+= regionStats
         }
@@ -371,7 +391,7 @@ object RecoveryService extends Logging {
           s"Schema name not found for the table ${table.identifier.table}")
       }
       var schema: StructType = StructType(DataType.fromJson(schemaJsonStr).asInstanceOf[StructType]
-              .map(f => f.copy(name = f.name.toLowerCase)))
+          .map(f => f.copy(name = f.name.toLowerCase)))
 
       assert(schema != null, s"schemaJson read from catalog table is null " +
           s"for ${table.identifier.table}")
@@ -460,10 +480,11 @@ object RecoveryService extends Logging {
   def isReplicated(schemaName: String, tableName: String): Boolean =
     memberObject.getReplicatedRegions.contains(s"/$schemaName/$tableName")
 
-  def collectViewsAndPrepareCatalog(): Unit = {
+  def collectViewsAndPrepareCatalog(enableTableCountInUI: Boolean): Unit = {
     // Send a message to all the servers and locators to send back their
     // respective persistent state information.
     logDebug("Start collecting PersistentStateInRecoveryMode from all the servers/locators.")
+    this.enableTableCountInUI = enableTableCountInUI
     val collector = new RecoveryModeResultCollector()
     val msg = new RecoveredMetadataRequestMessage(collector)
     msg.executeFunction()
@@ -670,26 +691,6 @@ object RecoveryService extends Logging {
         } in the catalog.")
     }
   }
-
-  case class ExportDataArgs(formatType: String, tables: Seq[String],
-      outputDir: String, ignoreError: Boolean)
-
-  val exportDataArgsList: mutable.MutableList[ExportDataArgs] = mutable.MutableList.empty
-
-  /**
-   * capture the arguments used by the procedure EXPORT_DATA and cache them for later generating
-   * helper scripts to load all this data back into new cluster
-   *
-   * @param formatType  spark output format
-   * @param tables      comma separated qualified names of tables
-   * @param outputDir   base output path for one call of EXPORT_DATA procedure
-   * @param ignoreError whether to move on to next table in case of failure
-   */
-  def captureArguments(formatType: String, tables: Seq[String],
-      outputDir: String, ignoreError: Boolean): Unit = {
-    exportDataArgsList += new ExportDataArgs(formatType, tables, outputDir, ignoreError)
-  }
-
 }
 
 object RegionDiskViewOrdering extends Ordering[RecoveryModePersistentView] {
