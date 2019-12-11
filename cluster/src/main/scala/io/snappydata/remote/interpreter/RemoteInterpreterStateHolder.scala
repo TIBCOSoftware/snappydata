@@ -131,6 +131,10 @@ class RemoteInterpreterStateHolder(
             if (x != null && x.isInstanceOf[CachedDataFrame]) {
               if (x.asInstanceOf[CachedDataFrame].schema.fields.nonEmpty) return x
             }
+            if (x != null && x.isInstanceOf[Dataset[_]]) {
+              val df = x.asInstanceOf[Dataset[_]].toDF()
+              return df
+            }
           }
           allRequests = allRequests.tail
         }
