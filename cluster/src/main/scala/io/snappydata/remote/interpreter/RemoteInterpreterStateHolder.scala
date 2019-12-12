@@ -27,14 +27,15 @@ import com.pivotal.gemfirexd.Attribute
 import io.snappydata.{Constant, ServiceManager}
 import io.snappydata.gemxd.SnappySessionPerConnection
 import io.snappydata.impl.LeadImpl
+import org.apache.commons.io.FileUtils
 import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.repl.SparkILoop
-import org.apache.spark.sql.{CachedDataFrame, Dataset}
+import org.apache.spark.sql.{AnalysisException, CachedDataFrame, Dataset}
 import org.apache.spark.sql.execution.RefreshMetadata
 
 import scala.collection.mutable
 import scala.tools.nsc.{GenericRunnerSettings, Settings}
-import scala.tools.nsc.interpreter.{IMain, LoopCommands, Results}
+import scala.tools.nsc.interpreter.Results
 
 class RemoteInterpreterStateHolder(
     val connId: Long, val user: String, val authToken: String) extends Logging {
@@ -48,8 +49,8 @@ class RemoteInterpreterStateHolder(
   lazy val pw = new StringPrintWriter()
   lazy val strOpStream = new StringOutputStrem(pw)
 
-  private val suffix = s"repl${connId}${user}-${System.currentTimeMillis()}"
-  private val replOutputDirStr = s"${RemoteInterpreterStateHolder.replOutputDir}/$suffix"
+  private val sessionReplDir = s"repl${connId}${user}-${System.currentTimeMillis()}"
+  private val replOutputDirStr = s"${RemoteInterpreterStateHolder.replOutputDir}/$sessionReplDir"
   RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_LOADER_WITH_REPL, replOutputDirStr)
 
   var intp: SparkILoop = createSparkILoop
@@ -57,6 +58,7 @@ class RemoteInterpreterStateHolder(
   val allInterpretedLinesForReplay: mutable.ArrayBuffer[String] = new mutable.ArrayBuffer[String]()
 
   private def initIntp(): Unit = {
+    logDebug(s"Initializing the interpreter created for ${user} for connId ${connId}")
     intp.interpret("import org.apache.spark.sql.functions._")
     intp.interpret("org.apache.spark.sql.SnappySession")
     intp.bind("sc", sc)
@@ -83,6 +85,7 @@ class RemoteInterpreterStateHolder(
   def interpret(code: Array[String], replay: Boolean,
       options: Map[String, String] = null): AnyRef = {
     try {
+      logDebug(s"Interpreting lines ${code} for user ${user} on conn ${connId}")
       this.resultBuffer.clear()
       pw.reset()
       if (!replay) sc.setLocalProperty(Constant.REPL_OUTPUT_DIR, replOutputDirStr)
@@ -101,6 +104,7 @@ class RemoteInterpreterStateHolder(
         if (tmpsb.isEmpty) tmpsb.append(line)
         else tmpsb.append("\n" + line)
         if (replay) println(line)
+        logDebug(s"Interpreting line ${tmpsb.toString()} for ${user} for connId ${connId}")
         lastResult = intp.interpret(tmpsb.toString())
         if (!(lastResult == Results.Error) && !replay) {
           allInterpretedLinesForReplay += line
@@ -128,17 +132,14 @@ class RemoteInterpreterStateHolder(
           var request = allRequests.head
           if (request.value.rawname != null && request.value.rawname.toString.equals(symbolName)) {
             val x = request.lineRep.evalEither.right.get
-            if (x != null && x.isInstanceOf[CachedDataFrame]) {
-              if (x.asInstanceOf[CachedDataFrame].schema.fields.nonEmpty) return x
-            }
-            if (x != null && x.isInstanceOf[Dataset[_]]) {
-              val df = x.asInstanceOf[Dataset[_]].toDF()
-              return df
-            }
+            if (x != null && (x.isInstanceOf[CachedDataFrame] || x.isInstanceOf[Dataset[_]])) return x
           }
           allRequests = allRequests.tail
         }
+        // code coming here means that required symbol was not found
+        throw new RuntimeException(s"${symbolName} was not found for $user")
       }
+
       resultBuffer.toArray.flatMap(_.split("\n"))
     } finally {
       sc.setLocalProperty(Constant.REPL_OUTPUT_DIR, null)
@@ -147,6 +148,7 @@ class RemoteInterpreterStateHolder(
 
   def processCommand(command: String): Array[String] = {
     scala.Console.setOut(strOpStream)
+    logDebug(s"Running command $command for ${user} for connId ${connId}")
     val result = commandMethod.invoke(this.intp, command)
     if (resultBuffer.isEmpty) {
       val output = pw.toString
@@ -203,7 +205,7 @@ class RemoteInterpreterStateHolder(
       var reachedCreation = false
       try {
         if (Files.isDirectory(replOutputPath)) {
-          Files.delete(replOutputPath)
+          FileUtils.deleteDirectory(new File(replOutputDirStr))
         }
         reachedCreation = true
         Files.createDirectory(replOutputPath)
@@ -336,10 +338,8 @@ class RemoteInterpreterStateHolder(
 object RemoteInterpreterStateHolder {
   private val optionDF = "returnDF"
   val sc = SparkContext.getOrCreate()
-  // TODO why tmp is not working
-  // val tmpDir = sc.getConf.get("spark.local.dir", "/tmp")
-  // val replOutputDir = s"$tmpDir"
-  val replOutputDir = System.getProperty("user.home")
+  val tmpDir = sc.getConf.get("spark.local.dir", "/tmp")
+  val replOutputDir = s"$tmpDir"
 }
 
 class RemoteILoop(spw: StringPrintWriter, intpHelper: RemoteInterpreterStateHolder)
