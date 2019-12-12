@@ -48,8 +48,7 @@ class RemoteInterpreterStateHolder(
 
   lazy val pw = new StringPrintWriter()
   lazy val strOpStream = new StringOutputStrem(pw)
-
-  private val sessionReplDir = s"repl${connId}${user}-${System.currentTimeMillis()}"
+  private val sessionReplDir = s"repl${connId}${user}-${System.nanoTime()}"
   private val replOutputDirStr = s"${RemoteInterpreterStateHolder.replOutputDir}/$sessionReplDir"
   RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_LOADER_WITH_REPL, replOutputDirStr)
 
@@ -385,7 +384,7 @@ class RemoteILoop(spw: StringPrintWriter, intpHelper: RemoteInterpreterStateHold
 object RemoteILoop {
   private val notTBeInheritedCommandNames = Set(
     "h?", "edit", "line", "load", "paste", "power",
-    "quit", "replay", "reset", "settings", "history")
+    "quit", "replay", "reset", "settings", "history", "require", "save")
 
   private val snappyOverrideImpls = Set("replay", "reset", "history")
 }
