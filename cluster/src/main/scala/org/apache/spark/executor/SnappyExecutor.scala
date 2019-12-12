@@ -134,7 +134,6 @@ class SnappyExecutor(
 
       private def mutableLoaderWithRepl(key: ClassLoaderKey): ClassLoader = {
         try {
-          val _userClassPathFirst: java.lang.Boolean = userClassPathFirst
           val klass = Utils.classForName("org.apache.spark.repl.SnappyExecutorClassLoader")
             .asInstanceOf[Class[_ <: ClassLoader]]
           val constructor = klass.getConstructor(classOf[SparkConf], classOf[SparkEnv],
