@@ -5,7 +5,6 @@ import java.io._
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector
 import com.pivotal.gemfirexd.internal.engine.distributed.message.GetLeadNodeInfoMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.message.GetLeadNodeInfoMsg.DataReqType
-import org.apache.commons.io.FileUtils
 import org.apache.spark.{SparkConf, SparkEnv}
 
 class SnappyExecutorClassLoader(conf: SparkConf,
@@ -15,26 +14,12 @@ class SnappyExecutorClassLoader(conf: SparkConf,
       userClassPathFirst: Boolean) extends ExecutorClassLoader(
         conf, env, classUri, parent, userClassPathFirst) {
 
-  lazy val tmpDestDir = getOrCreateTempLocationForThisLoader
-
-  private def getOrCreateTempLocationForThisLoader: String = {
-    val lastIndexSlash = classUri.lastIndexOf('/')
-    val replOutputDir = classUri.substring(lastIndexSlash+1)
-    val tmpDir = env.conf.get("spark.local.dir", "/tmp")
-    val dirPath = s"$tmpDir/$replOutputDir"
-    FileUtils.deleteDirectory(new File(dirPath))
-    if (!(new File(dirPath).mkdir())) {
-      throw new RuntimeException(s"Could not create tmp directory for repl $classUri")
-    }
-    dirPath
-  }
-
   override def findClassLocally(name: String): Option[Class[_]] = {
     val pathInDirectory = name.replace('.', '/') + ".class"
     var inputStream: InputStream = null
     try {
       val fullPath = s"$classUri/$pathInDirectory"
-      inputStream = pullFromLead(name, fullPath, s"$tmpDestDir/$name")
+      inputStream = pullFromLead(name, fullPath)
       val bytes = readAndTransformClass(name, inputStream)
       Some(defineClass(name, bytes, 0, bytes.length))
     } catch {
@@ -58,10 +43,11 @@ class SnappyExecutorClassLoader(conf: SparkConf,
     }
   }
 
-  private def pullFromLead(name: String, sourcePath: String, destPath: String) = {
+  private def pullFromLead(name: String, sourcePath: String) = {
     val collector = new GfxdListResultCollector
     val fetchClassByteMsg = new GetLeadNodeInfoMsg(
       collector, DataReqType.GET_CLASS_BYTES, 0L, sourcePath)
+    logDebug(s"Pulling class bytes for ${name} class from lead member")
     fetchClassByteMsg.executeFunction();
     val result = collector.getResult.get(0)
     val fileContent = result.asInstanceOf[Array[Byte]]

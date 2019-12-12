@@ -69,13 +69,11 @@ class CommandLineToolsSuite extends SnappyTestRunner {
                                             "val df2 = snappy.table(\"test_exec\")\n" +
                                             "val df3 = df1.union(df2)\n" +
                                             "df3.show"))
-      stmnt.execute("exec scala options(returnDF 'true') snappy.table(\"test_exec\")")
+      stmnt.execute("exec scala options(returnDF 'df33') val df33 = snappy.table(\"test_exec\")")
       rs = stmnt.getResultSet
       assert(rs.next())
-      // expected count is 1 because .table api returns DataSet and exec scala needs cached dataframe
-      // to return result
-      assert(rs.getMetaData.getColumnCount == 1)
-      assert(stmnt.execute("exec scala options(returnDF 'true') snappy.sql(\"select * from test_exec\")"))
+      assert(rs.getMetaData.getColumnCount == 2)
+      assert(stmnt.execute("exec scala options(returnDF 'df4') val df4 = snappy.sql(\"select * from test_exec\")"))
       rs = stmnt.getResultSet
       assert(rs.next())
       assert(rs.getMetaData.getColumnCount == 2)
@@ -83,6 +81,23 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       assert(stmnt.execute("select * from test_exec"))
       rs = stmnt.getResultSet
       assert(!rs.next())
+      assert(stmnt.execute("exec scala options(returnDF 'ds2') case class ClassData(a: String, b: Int)\n" +
+                           "val sqlContext = new org.apache.spark.sql.SQLContext(sc)\n" +
+                           "import sqlContext.implicits._\n" +
+                           "val ds1 = Seq((\"a\", 1), (\"b\", 2), (\"c\", 3)).toDF(\"a\", \"b\").as[ClassData]\n" +
+                           "var rdd = sc.parallelize(Seq((\"a\", 1), (\"b\", 2), (\"c\", 3)), 1)\n" +
+                           "val ds2 = rdd.toDF(\"a\", \"b\").as[ClassData]"))
+      rs = stmnt.getResultSet
+      assert(rs.getMetaData.getColumnCount == 2)
+      assert(rs.next())
+      var col2val = rs.getInt(2)
+      assert((col2val == 1 || col2val == 2 || col2val == 3))
+      assert(rs.next())
+      col2val = rs.getInt(2)
+      assert(col2val == 1 || col2val == 2 || col2val == 3)
+      assert(rs.next())
+      val col1val = rs.getString(1)
+      assert(col1val.equals("a") || col1val.equals("b") || col1val.equals("c"))
     } finally {
       // do cleanup
       stmnt.execute("drop table if exists test_app")
@@ -91,15 +106,6 @@ class CommandLineToolsSuite extends SnappyTestRunner {
   }
 
   test("snappy scala") {
-//    val scala_code1 = Seq(
-//      "case class TestData(c1: Int, c2: String)",
-//      "  var rdd = sc.parallelize(",
-//      "  (1 to 10).map(i => TestData(i, i.toString)))",
-//      "  val dataDF = snappy.createDataFrame(rdd)",
-//      "  val tablename = \"testtable\"",
-//      "  dataDF.write.insertInto(tableName)",
-//      ":qu"
-//    )
     val scala_code1 = Seq(
       "case class TestData(c1: Int, c2: String)",
       "val x = TestData(1, \"1\")",
@@ -176,6 +182,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       rs = stmnt.getResultSet
       assert(rs.next())
       assert(rs.getInt(1) == 1)
+
     } finally {
       stmnt.execute("drop table if exists testtable")
       stmnt.execute("drop table if exists tmptable")
@@ -461,7 +468,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
     }
   }
 
-  test ("SNAP-3223 Executing query using driver class com.snappydata.jdbc.ClientDriver"){
+  test("SNAP-3223 Executing query using driver class com.snappydata.jdbc.ClientDriver"){
     // Adding test case here to reuse the infrastructure of already running cluster
     // created by this suite.
     def getJdbcConnectionWithComSnappyData(netPort: Int): Connection = {
