@@ -50,7 +50,6 @@ class RemoteInterpreterStateHolder(
   lazy val strOpStream = new StringOutputStrem(pw)
   private val sessionReplDir = s"repl${connId}${user}-${System.nanoTime()}"
   private val replOutputDirStr = s"${RemoteInterpreterStateHolder.replOutputDir}/$sessionReplDir"
-  RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_LOADER_WITH_REPL, replOutputDirStr)
 
   var intp: SparkILoop = createSparkILoop
 
@@ -60,8 +59,11 @@ class RemoteInterpreterStateHolder(
     logDebug(s"Initializing the interpreter created for ${user} for connId ${connId}")
     intp.interpret("import org.apache.spark.sql.functions._")
     intp.interpret("org.apache.spark.sql.SnappySession")
-    intp.bind("sc", sc)
-    intp.bind("snappy", snappy)
+    intp.bind("snappy", "org.apache.spark.sql.SnappySession", snappy, List("@transient"))
+    var res = intp.interpret(
+      """
+        |@transient val sc = snappy.sparkContext
+      """.stripMargin)
     pw.reset()
   }
 

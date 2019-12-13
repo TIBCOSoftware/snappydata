@@ -79,7 +79,6 @@ class SnappyExecutor(
   private val classLoaderCache = {
     val loader = new CacheLoader[ClassLoaderKey, ClassLoader]() {
       override def load(key: ClassLoaderKey): ClassLoader = {
-        logInfo("KN: making class loader with repl and key = " + key.appName)
         if (key.isReplPath) return mutableLoaderWithRepl(key)
         logInfo(s"Creating ClassLoader for key = $key" +
           s" with appTime = ${key.appTime} and appName = ${key.appName}")
