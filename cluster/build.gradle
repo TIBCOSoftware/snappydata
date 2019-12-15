@@ -142,9 +142,8 @@ dependencies {
     //exclude(group: 'org.scala-lang', module: 'scala-library')
     //exclude(group: 'org.apache.avro', module: 'avro')
   }
+  compile(group:'com.google.cloud.bigdataoss', name:'gcs-connector', version: gcsHadoop2ConnectorVersion, classifier: 'shaded')
 
-  compile(group:'com.google.cloud.bigdataoss', name:'gcs-connector', version: gcsHadoop2ConnectorVersion, classifier: 'shaded') 
-  
   compile(group: 'org.apache.hadoop', name: 'hadoop-azure', version: hadoopVersion) {
     // exclude some dependencies like in hadoop-aws to avoid conflicts with other deps
     exclude(group: 'asm', module: 'asm')
