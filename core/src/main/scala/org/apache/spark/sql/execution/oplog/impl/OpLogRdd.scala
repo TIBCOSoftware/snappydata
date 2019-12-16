@@ -403,6 +403,7 @@ class OpLogRdd(
    */
   def iterateColData(phdrCol: PlaceHolderDiskRegion): Iterator[Row] = {
     if (phdrCol.getRegionMap == null || phdrCol.getRegionMap.isEmpty) return Iterator.empty
+    val directBuffers = mutable.ListBuffer.empty[ByteBuffer]
     val regMap = phdrCol.getRegionMap
     // assert(regMap != null, "region map for column batch is null")
     logDebug(s"RegionMap size for $phdrCol are: ${regMap.keySet().size()}")
@@ -411,7 +412,6 @@ class OpLogRdd(
       // we can get keys and therefore values of a column batch from the stats key by
       // changing the index to corresponding column index
       case k: ColumnFormatKey if k.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX =>
-        val directBuffers = mutable.ListBuffer.empty[ByteBuffer]
         // get required info about deletes
         val delKey = k.withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
         val delEntry = regMap.getEntry(delKey)
