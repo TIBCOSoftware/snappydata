@@ -31,16 +31,16 @@ Do the following to use Apache Zeppelin with TIBCO ComputeDB:
 
 *	**I already have a Zeppelin installation, do I still need to install TIBCO ComputeDB’s Zeppelin separately?**
 	*	No. You may download the notebooks from here <provide link for Github> and import them into your Zeppelin.
-	*	Additionally, you must setup the JDBC interpreter to connect to TIBCO ComputeDB. [Configure JDBC Interpreter](concurrent_apache_zeppelin_access_to_secure_snappydata.md#configinterpreter).
+	*	Additionally, you must set up the JDBC interpreter to connect to TIBCO ComputeDB. [Configure JDBC Interpreter](concurrent_apache_zeppelin_access_to_secure_snappydata.md#configinterpreter).
 
 *	**Do these notebooks depend on specific Zeppelin version?**
 	Yes, these notebooks were developed on Zeppelin version 0.8.2.
 
 *	**Are there any configuration files of Zeppelin that I need to be aware of?**
-	For advanced multi user settings, refer to the **zeppelin-site.xml** and **shiro.ini**. For more details and options,  refer to the Apache Zeppelin documentation.
+	For advanced multi-user settings, refer to the **zeppelin-site.xml** and **shiro.ini**. For more details and options,  refer to the Apache Zeppelin documentation.
 
 *	**Is Zeppelin the only interface to interact with TIBCO ComputeDB?**
-	No, if you prefer command line interface, then the product provides two command line interfaces. The SQL interface, which can be accessed using **./bin/snappy** and the experimental scala interpreter can be invoked using **./bin/snappy-scala**. 
+	No, if you prefer a command-line interface, then the product provides two command-line interfaces. The SQL interface, which can be accessed using **./bin/snappy** and the experimental scala interpreter can be invoked using **./bin/snappy-scala**. 
 
 *	**How to configure Apache Zeppelin to securely and concurrently access the TIBCO ComputeDB Cluster?**
 	Refer to [How to Configure Apache Zeppelin to Securely and Concurrently access the TIBCO ComputeDB Cluster](concurrent_apache_zeppelin_access_to_secure_snappydata.md).
