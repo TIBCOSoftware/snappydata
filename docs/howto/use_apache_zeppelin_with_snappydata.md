@@ -1,6 +1,51 @@
 <a id="howto-zeppelin"></a>
 # How to Use Apache Zeppelin with TIBCO ComputeDB
 
+Do the following to use Apache Zeppelin with TIBCO ComputeDB:
+
+1.	[Download and Install TIBCO ComputeDB](/install/install_on_premise.md). The install zip for computeDB contains the Apache Zeppelin zip folder. 
+2.	[Configure the TIBCO ComputeDB Cluster](/configuring_cluster/configuring_cluster.md).
+3.	Unzip the Apache Zeppelin artifact<name>.
+4.	Change to **Zeppelin** directory and start Zeppelin.
+			cd Zeppelin directory
+			./bin/zeppelin-daemon.sh start
+5.	Go to localhost:8080 or (AWS-AMI_PublicIP):8080.
+
+![homepage](../Images/zeppelin.png)
+
+## FAQs
+
+*	**I am on the homepage, what should I do next?**
+	*	If you are using TIBCO ComputeDB for the first time, you can start with the QuickStart notebooks to start exploring the capabilities of the product. 
+	*	If you have used TIBCO ComputeDB earlier and just want to explore the new interface, you can download data from external sources using the notebooks in the External Data Sources section.
+
+*	**I get an error when I run a paragraph?**
+	*	By design, the anonymous user is not allowed to execute notebooks.
+	*	You may clone the notebook and proceed in the cloned notebook.
+
+*	**Do I need to change any setting in Zeppelin to work with the multi-node cluster?**
+	*	Yes, but this requires Zeppelin’s admin user access. By default, you access the Zeppelin notebooks as an anonymous user. For admin user access, click the **Configuration** tab and enter your credentials in the **Login** box. You can find the admin credentials in the **zeppelin-dir/conf/shiro.ini** file.
+	![homepage](../Images/zeppelin_3.png)
+	*	Update the appropriate IP of a server node in the jdbc URL (highlighted in the following image).
+	![homepage](../Images/zeppelin_2.png)
+
+*	**I already have a Zeppelin installation, do I still need to install TIBCO ComputeDB’s Zeppelin separately?**
+	*	No. You may download the notebooks from here <provide link for Github> and import them into your Zeppelin.
+	*	Additionally, you must setup the JDBC interpreter to connect to TIBCO ComputeDB. [Configure JDBC Interpreter](concurrent_apache_zeppelin_access_to_secure_snappydata.md#configinterpreter).
+
+*	**Do these notebooks depend on specific Zeppelin version?**
+	Yes, these notebooks were developed on Zeppelin version 0.8.2.
+
+*	**Are there any configuration files of Zeppelin that I need to be aware of?**
+	For advanced multi user settings, refer to the **zeppelin-site.xml** and **shiro.ini**. For more details and options,  refer to the Apache Zeppelin documentation.
+
+*	**Is Zeppelin the only interface to interact with TIBCO ComputeDB?**
+	No, if you prefer command line interface, then the product provides two command line interfaces. The SQL interface, which can be accessed using **./bin/snappy** and the experimental scala interpreter can be invoked using **./bin/snappy-scala**. 
+
+*	**How to configure Apache Zeppelin to securely and concurrently access the TIBCO ComputeDB Cluster?**
+	Refer to [How to Configure Apache Zeppelin to Securely and Concurrently access the TIBCO ComputeDB Cluster](concurrent_apache_zeppelin_access_to_secure_snappydata.md).
+
+<!--- 
 ## Step 1: Download, Install and Configure TIBCO ComputeDB
 1. [Download and Install TIBCO ComputeDB](../install/install_on_premise.md#download-snappydata) </br>
  The table below lists the version of the TIBCO ComputeDB Zeppelin Interpreter and Apache Zeppelin Installer for the supported TIBCO ComputeDB Releases.
@@ -100,4 +145,4 @@
 
 If you are using TIBCO ComputeDB Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with TIBCO ComputeDB or future releases, the approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
 
-
+--->
