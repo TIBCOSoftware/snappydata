@@ -15,3 +15,5 @@ The following topics are covered in this section:
 * [Securing TIBCO ComputeDB Monitoring Console Connections](../configuring_cluster/securinguiconnection.md)
 
 * [Getting Information from TIBCO ComputeDB System Tables](monitor-manage.md)
+
+* [Recovering Data During Cluster Failures](recoveringdata.md)
