@@ -185,6 +185,15 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     })
   }
 
+  override def invalidateReplClassLoader(replDir: String): Unit = {
+    try {
+      val snappyexecutor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
+      snappyexecutor.invalidateReplLoader(replDir)
+    } catch {
+      case npe: NullPointerException => // ignore
+    }
+  }
+
   override def getAllGlobalCmnds: Array[String] = {
     GemFireXDUtils.waitForNodeInitialization()
     val r = Misc.getMemStore.getMetadataCmdRgn
@@ -255,4 +264,9 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
   override def updateIntpGrantRevoke(grantor: String, isGrant: Boolean, users: String): Unit = {
     SnappyInterpreterExecute.handleNewPermissions(grantor, isGrant, users)
   }
+
+  override def refreshLdapGroupCallback(group: String): Unit = {
+    SnappyInterpreterExecute.refreshOnLdapGroupRefresh(group)
+  }
+
 }
