@@ -16,10 +16,12 @@ class SnappyExecutorClassLoader(conf: SparkConf,
 
   override def findClassLocally(name: String): Option[Class[_]] = {
     val pathInDirectory = name.replace('.', '/') + ".class"
+    logInfo(s"KN: findingClassLocally SECL for name: $pathInDirectory")
     var inputStream: InputStream = null
     try {
       val fullPath = s"$classUri/$pathInDirectory"
       inputStream = pullFromLead(name, fullPath)
+      logInfo(s"KN: findingClassLocally SECL for name: $pathInDirectory pulling done")
       val bytes = readAndTransformClass(name, inputStream)
       Some(defineClass(name, bytes, 0, bytes.length))
     } catch {
@@ -47,7 +49,7 @@ class SnappyExecutorClassLoader(conf: SparkConf,
     val collector = new GfxdListResultCollector
     val fetchClassByteMsg = new GetLeadNodeInfoMsg(
       collector, DataReqType.GET_CLASS_BYTES, 0L, sourcePath)
-    logDebug(s"Pulling class bytes for ${name} class from lead member")
+    logDebug(s"Pulling class bytes for ${name} class from lead member", new Exception)
     fetchClassByteMsg.executeFunction();
     val result = collector.getResult.get(0)
     val fileContent = result.asInstanceOf[Array[Byte]]
