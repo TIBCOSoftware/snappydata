@@ -48,7 +48,7 @@ class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExe
       }
     }
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
-    val lp = session.sessionState.sqlParser.parsePlan(sql).asInstanceOf[InterpretCodeCommand]
+    val lp = session.sessionState.sqlParser.parseExec(sql).asInstanceOf[InterpretCodeCommand]
     val interpreterHelper = SnappyInterpreterExecute.getOrCreateStateHolder(connId, user, authToken, group)
     try {
       interpreterHelper.interpret(lp.code.split("\n"), lp.options)
@@ -85,14 +85,14 @@ object SnappyInterpreterExecute {
       }
       val commaSepVals = users.split(",")
       commaSepVals.foreach(u => {
+        val uUC = u.toUpperCase
         if (isGrant) {
-          // println(s"KN: hnp grantor inside u = $u")
-          if (u.startsWith(Constants.LDAP_GROUP_PREFIX))
-            permissions.addLdapGroup(u)
+          if (uUC.startsWith(Constants.LDAP_GROUP_PREFIX))
+            permissions.addLdapGroup(uUC)
           else permissions.addUser(u)
         } else {
-          if (u.startsWith(Constants.LDAP_GROUP_PREFIX))
-            removeAGroupAndCleanup(u)
+          if (uUC.startsWith(Constants.LDAP_GROUP_PREFIX))
+            removeAGroupAndCleanup(uUC)
           else removeAUserAndCleanup(u)
         }
       })
@@ -208,7 +208,13 @@ object SnappyInterpreterExecute {
     }
 
     def refreshOnLdapGroupRefresh(group: String): Unit = {
-      val grantees = ExternalStoreUtils.getExpandedGranteesIterator(Seq(group)).toList
+      val groupUC = group.toUpperCase
+      val groupstr = if (!groupUC.startsWith(Constants.LDAP_GROUP_PREFIX)) {
+        s"${Constants.LDAP_GROUP_PREFIX}:$group"
+      } else {
+        group
+      }
+      val grantees = ExternalStoreUtils.getExpandedGranteesIterator(Seq(groupstr)).toList
       groupToUsersMap.put(group, grantees)
     }
   }
