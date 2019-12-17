@@ -57,6 +57,8 @@ import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.util.LocalDirectoryCleanupUtil
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
 
+import scala.collection.mutable.ArrayBuffer
+
 class LeadImpl extends ServerImpl with Lead
     with ProtocolOverrides with Logging {
 
@@ -94,6 +96,10 @@ class LeadImpl extends ServerImpl with Lead
 
     isTestSetup = bootProperties.getProperty("isTest", "false").toBoolean
     bootProperties.remove("isTest")
+    val enableTableCountInUI =
+      bootProperties.getProperty("snappydata.recovery.enableTableCountInUI", "false")
+    bootProperties.remove("snappydata.recovery.enableTableCountInUI")
+
     val authSpecified = Misc.checkLDAPAuthProvider(bootProperties)
 
     ServiceUtils.setCommonBootDefaults(bootProperties, forLocator = false)
@@ -329,8 +335,11 @@ class LeadImpl extends ServerImpl with Lead
       }
 
       // If recovery mode then initialize the recovery service
-      if(Misc.getGemFireCache.isSnappyRecoveryMode) {
-        RecoveryService.collectViewsAndPrepareCatalog()
+      if (Misc.getGemFireCache.isSnappyRecoveryMode) {
+        if (enableTableCountInUI.equalsIgnoreCase("true"))
+          RecoveryService.collectViewsAndPrepareCatalog(true)
+        else
+          RecoveryService.collectViewsAndPrepareCatalog(false)
       }
 
       if (jobServerWait) {
@@ -771,7 +780,35 @@ class ExtendibleURLClassLoader(parent: ClassLoader)
     super.addURL(url)
   }
 
+  val loaders: ArrayBuffer[ClassLoader] = new ArrayBuffer
   override def getURLs: Array[URL] = super.getURLs
+
+  def addClassLoader(cl: ClassLoader): Unit = {
+    loaders.synchronized {
+      loaders += cl
+    }
+  }
+
+  def removeClassLoader(cl: ClassLoader): Unit = {
+    loaders.synchronized {
+      loaders -= cl
+    }
+  }
+
+  override def loadClass(name: String): Class[_] = {
+    var classInstance: Option[Class[_]] = None
+    if (loaders.nonEmpty) {
+      loaders.iterator.takeWhile(_ => !classInstance.isDefined).foreach { cl =>
+        try {
+          classInstance = Some(cl.loadClass(name))
+        } catch {
+          case cnfe: ClassNotFoundException => // ignore
+        }
+      }
+    }
+    if (classInstance.isDefined) return classInstance.get
+    super.loadClass(name)
+  }
 }
 
 object LeadImpl {
@@ -786,6 +823,7 @@ object LeadImpl {
 
   def invokeLeadStop(): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    SnappyMetricsSystem.stop()
     lead.internalStop(lead.bootProperties)
   }
 }

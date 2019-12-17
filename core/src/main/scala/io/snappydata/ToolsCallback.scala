@@ -75,6 +75,10 @@ trait ToolsCallback {
 
   def getLeadClassLoader: URLClassLoader
 
+  def invalidateReplClassLoader(replDir: String): Unit
+
+  def refreshLdapGroupCallback(group: String): Unit
+
   /**
    * Check permission to write to given schema for a user. Returns the normalized user or
    * LDAP group name of the schema owner (or passed user itself if security is disabled).

@@ -51,7 +51,7 @@ import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEn
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SnappySession}
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.{Partition, TaskContext}
+import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
 class OpLogRdd(
     @transient private val session: SnappySession,
@@ -67,6 +67,7 @@ class OpLogRdd(
     var tableSchemas: mutable.Map[String, StructType],
     var versionMap: mutable.Map[String, Int],
     var tableColIdsMap: mutable.Map[String, Array[Int]],
+    var bucketHostMap: mutable.Map[Int, String],
     private var primaryKeysString: String,
     private var keyColumnsString: String)
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
@@ -112,9 +113,11 @@ class OpLogRdd(
             case "VARCHAR" =>
               DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.VARCHAR, isNullable,
                 metadata.getLong("size").toInt)
+            case "CHAR" =>
+              DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.CHAR, isNullable,
+                metadata.getLong("size").toInt)
           }
-        }
-        else {
+        } else {
           // when - create table using column as select ..- is used,
           // it create string column with no base information in metadata
           DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.CLOB, isNullable)
@@ -218,12 +221,12 @@ class OpLogRdd(
   def getFromDVD(schema: StructType, dvd: DataValueDescriptor, i: Integer,
       valueArr: Array[Array[Byte]], complexSchema: Seq[StructField]): Any = {
     val field = schema(i)
+    // complexFieldIndex is only required for Array, Map, struct. For others we use dvd.getObject
     val complexFieldIndex = if (complexSchema == null) 0 else complexSchema.indexOf(field) + 1
     field.dataType match {
       case ShortType => if (dvd.isNull) null else dvd.getShort
       case ByteType => if (dvd.isNull) null else dvd.getByte
       case arrayType: ArrayType =>
-        assert(field.dataType == arrayType)
         val array = valueArr(complexFieldIndex)
         val data = new SerializedArray(8)
         if (array != null) {
@@ -231,7 +234,6 @@ class OpLogRdd(
           data.toArray(arrayType.elementType)
         } else null
       case mapType: MapType =>
-        assert(field.dataType == mapType)
         val map = valueArr(complexFieldIndex)
         val data = new SerializedMap()
         if (map != null) {
@@ -241,7 +243,6 @@ class OpLogRdd(
           jmap
         } else null
       case structType: StructType =>
-        assert(field.dataType == structType)
         val struct = valueArr(complexFieldIndex)
         if (struct != null) {
           val data = new SerializedRow(4, structType.length)
@@ -299,9 +300,17 @@ class OpLogRdd(
     val rowFormatter = getRowFormatter(versionNum, schemaOfVersion)
     val dvdArr = new Array[DataValueDescriptor](schemaOfVersion.length)
     val projectColumns: Array[String] = schema.fields.map(_.name)
-    val complexSch = schemaOfVersion.filter(f =>
-      f.dataType match {
-        case _: ArrayType | _: MapType | _: StructType | _: StringType => true
+    val complexSch = schemaOfVersion.filter(structField =>
+      structField.dataType match {
+        case _: ArrayType | _: MapType | _: StructType | _: BinaryType => true
+        case _: StringType => {
+          if (structField.metadata.contains("base")) {
+            structField.metadata.getString("base") match {
+              case "STRING" | "CLOB" => true
+              case _ =>  false
+            }
+          } else true
+        }
         case _ => false
       }
     )
@@ -393,11 +402,11 @@ class OpLogRdd(
    * @param phdrCol PlaceHolderDiskRegion of column batch
    */
   def iterateColData(phdrCol: PlaceHolderDiskRegion): Iterator[Row] = {
-    val directBuffers = mutable.ListBuffer.empty[ByteBuffer]
     if (phdrCol.getRegionMap == null || phdrCol.getRegionMap.isEmpty) return Iterator.empty
+    val directBuffers = mutable.ListBuffer.empty[ByteBuffer]
     val regMap = phdrCol.getRegionMap
     // assert(regMap != null, "region map for column batch is null")
-    logDebug(s"RegionMap keys for $phdrCol are: ${regMap.keySet()}")
+    logDebug(s"RegionMap size for $phdrCol are: ${regMap.keySet().size()}")
     regMap.keySet().iterator().asScala.flatMap {
       // for every stats key there will be a key corresponding to every column in schema
       // we can get keys and therefore values of a column batch from the stats key by
@@ -409,8 +418,7 @@ class OpLogRdd(
         val (deleteBuffer, deleteDecoder) = if (delEntry ne null) {
           val regValue = DiskEntry.Helper.readValueFromDisk(delEntry.asInstanceOf[DiskEntry],
             phdrCol).asInstanceOf[ColumnFormatValue]
-          val valueBuffer = regValue.asInstanceOf[ColumnFormatValue]
-              .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
+          val valueBuffer = regValue.getValueRetain(FetchRequest.DECOMPRESS).getBuffer
           valueBuffer -> new ColumnDeleteDecoder(valueBuffer)
         } else (null, null)
         // get required info about columns
@@ -459,14 +467,20 @@ class OpLogRdd(
             val deltaColIndex = ColumnDelta.deltaColumnIndex(colIndx, 0)
             val deltaEntry1 = regMap.getEntry(k.withColumnIndex(deltaColIndex))
             val delta1 = if (deltaEntry1 ne null) {
-              DiskEntry.Helper.readValueFromDisk(deltaEntry1.asInstanceOf[DiskEntry],
-                phdrCol).asInstanceOf[ColumnFormatValue].getBuffer
+              val buffer = DiskEntry.Helper.readValueFromDisk(deltaEntry1.asInstanceOf[DiskEntry],
+                phdrCol).asInstanceOf[ColumnFormatValue]
+                  .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
+              if(buffer.isDirect) directBuffers += buffer
+              buffer
             } else null
 
             val deltaEntry2 = regMap.getEntry(k.withColumnIndex(deltaColIndex - 1))
             val delta2 = if (deltaEntry2 ne null) {
-              DiskEntry.Helper.readValueFromDisk(deltaEntry2.asInstanceOf[DiskEntry],
-                phdrCol).asInstanceOf[ColumnFormatValue].getBuffer
+              val buffer = DiskEntry.Helper.readValueFromDisk(deltaEntry2.asInstanceOf[DiskEntry],
+                phdrCol).asInstanceOf[ColumnFormatValue]
+                  .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
+              if(buffer.isDirect) directBuffers += buffer
+              buffer
             } else null
 
             val updateDecoder = if ((delta1 ne null) || (delta2 ne null)) {
@@ -479,7 +493,7 @@ class OpLogRdd(
             while ((deleteDecoder ne null) && deleteDecoder.deleted(rowNum + currentDeleted)) {
               // null counts should be added as we go even for deleted records
               // because it is required to build indexes in colbatch
-              Row.fromSeq(schema.indices.map { colIndx =>
+              schema.indices.map { colIndx =>
                 val decoderAndValue = decodersAndValues(colIndx)
                 val colDecoder = decoderAndValue._1
                 val colNextNullPosition = colDecoder.getNextNullPosition
@@ -488,7 +502,7 @@ class OpLogRdd(
                   colDecoder.findNextNullPosition(
                     decoderAndValue._2, colNextNullPosition, colNullCounts(colIndx))
                 }
-              })
+              }
               // calculate how many consecutive rows to skip so that
               // i+numDeletd points to next un deleted row
               currentDeleted += 1
@@ -525,6 +539,19 @@ class OpLogRdd(
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
     logDebug(s"starting compute for partition ${split.index} of table $fqtnUpper")
     try {
+      val currentHost = SparkEnv.get.executorId
+      val expectedHost = bucketHostMap.getOrElse(split.index, "")
+      require(expectedHost.nonEmpty, s"Preferred host cannot be empty for partition ${split
+          .index} of table $fqtnUpper. Verify corresponding entry in combinedViewsMapSortedSet " +
+          s"from debug logs of the leader.")
+
+      if(expectedHost != currentHost) {
+        throw new IllegalStateException(s"Expected compute to launch at $expectedHost," +
+            s" but was launched at $currentHost. Try increasing value of " +
+            s"spark.locality.wait.process higher than current value(default 1800s) in recovery " +
+            s"mode. Refer troubleshooting section under Data Extractor Tool for more explanation.")
+      }
+
       val diskStores = Misc.getGemFireCache.listDiskStores()
       var diskStrCol: DiskStoreImpl = null
       var diskStrRow: DiskStoreImpl = null
@@ -708,6 +735,11 @@ class OpLogRdd(
       output.writeInt(ele._2.length)
       output.writeInts(ele._2)
     })
+    output.writeInt(bucketHostMap.size)
+    bucketHostMap.foreach(ele => {
+      output.writeInt(ele._1)
+      output.writeString(ele._2)
+    })
     StructTypeSerializer.write(kryo, output, schema)
   }
 
@@ -742,6 +774,13 @@ class OpLogRdd(
       val v = input.readInts(vlength)
       tableColIdsMap.put(k, v)
     }
+    val bucketHostMapSize = input.readInt()
+    bucketHostMap = collection.mutable.Map.empty
+    (0 until bucketHostMapSize).foreach(_ => {
+      val k = input.readInt()
+      val v = input.readString()
+      bucketHostMap.put(k, v)
+    })
     schema = StructTypeSerializer.read(kryo, input, c = null)
   }
 }
