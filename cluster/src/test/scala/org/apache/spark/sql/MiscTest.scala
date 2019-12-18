@@ -154,4 +154,15 @@ class MiscTest extends SnappyFunSuite with Logging {
     conn.close()
     TestUtil.stopNetServer()
   }
+
+  test("SNAP-2087 failure in JSON queries with complex types") {
+    val locs = getClass.getResource("/locomotives.json").getPath
+    //    val ds = snc.read.json(sc.wholeTextFiles(locs).values)
+    // multi-line json file supported, hence no need of the workaround
+    val ds = snc.read.format("json").option("wholeFile", "true").load(locs)
+
+    assert(ds.count() === 89)
+    assert(ds.filter("model = 'ES44AC'").count() === 12)
+  }
+
 }
