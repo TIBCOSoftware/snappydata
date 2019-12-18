@@ -540,7 +540,7 @@ This section covers the following:
 
 <a id="launchawsinstance"></a>
 ### Deploying SnappyData Cluster with AWS Management Console
-To launch the instance and start the SnappyData cluster on a single EC2 instance:
+To launch the instance and start the SnappyData cluster on EC2 instance(s):
 
 1. Open the [Amazon EC2 console](https://console.aws.amazon.com/ec2/) and sign in using your AWS login credentials.
 
@@ -558,7 +558,9 @@ To launch the instance and start the SnappyData cluster on a single EC2 instance
 
 		* You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.
 
-		* On **Configure Security Group** page, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (to access SnappyData Monitoring Console) for public IP address of your laptop or client terminal.
+		* For the setup across multiple EC2 instances, specify the appropriate number for *Number of instances* field on **Configure Instance** page. For example, to launch a SnappyData cluster with 3 servers and 1 locator and 1 lead on separate instances, specify the number as 5. You can also launch locator and lead processes on a single EC2 instance, thereby reducing the instances to 4.
+
+		* On **Configure Security Group** page, ensure that you open ports 22 (for SSH access to the EC2 instance) and 5050 (to access SnappyData Monitoring Console) for public IP address of your laptop or client terminal. For the setup on multiple instances, you also must open all traffic between the instances in this security group. You can do that by adding a rule with the group id of this security group as value for **Source**.
 
 		* If you need to connect to the SnappyData cluster via a JDBC client application or tool, open ports 1527 and 1528 for the public IP of the host where your application/tool is running, in the security group.
 
@@ -570,7 +572,7 @@ To launch the instance and start the SnappyData cluster on a single EC2 instance
 
 9. Click **View Instances**. The dashboard which lists the EC2 instances is displayed.
 
-10. Click **Refresh** to view the updated list and the status of the instance you just created.
+10. Click **Refresh** to view the updated list and the status of the instance(s) you just created.
 
 11. Once the status of the instance changes to **running**, connect to the instance via SSH. You require:
 
@@ -587,9 +589,9 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
 		* The public DNS/IP of the instance is available on the EC2 dashboard > **Instances** page. Select your EC2 instance and look for it in the lower half of the page.
 
-12. Download the required SnappyData distribution (.tar.gz) into this EC2 instance. You can find the latest SnappyData Community Edition (OSS) release [here](https://github.com/snappydatainc/snappydata/releases/latest).
+12. Download the required SnappyData distribution (.tar.gz) into the EC2 instance(s). You can find the latest SnappyData Community Edition (OSS) release [here](https://github.com/snappydatainc/snappydata/releases/latest).
 
-    * When we make the SnappyData AMI available on AWS in future, it will have the distribution pre-installed. In that case, you can jump to [step 15](#15step).
+    * When we make the SnappyData AMI available on AWS in future, it will have the distribution pre-installed. In that case, you can jump to [step 4](#15step) below.
 
 13. Extract the tarball to /opt/snappydata/.
 
@@ -603,13 +605,9 @@ Refer to the following documentation, for more information on [accessing an EC2 
 		sudo yum -y -q install java-1.8.0-openjdk-devel
 		java -version  # Ensure it prints correct Java version
 
-15. <a id="15step"></a>Setup [passwordless ssh](../reference/misc/passwordless_ssh.md) on this instance. This requirement may be removed in future, for single-instance installation on AWS.
+    Repeat above three steps for all the instances launched.
 
-16. Run below commands to update the cluster configuration.
-
-		curl http://169.254.169.254/latest/meta-data/local-ipv4 > /opt/snappydata/conf/locators
-		curl http://169.254.169.254/latest/meta-data/local-ipv4 > /opt/snappydata/conf/servers
-		curl http://169.254.169.254/latest/meta-data/local-ipv4 > /opt/snappydata/conf/leads
+15. <a id="15step"></a>If you are launching the cluster across multiple EC2 instances, you need to setup [passwordless ssh](../reference/misc/passwordless_ssh.md) access across these instances. This is not required for launching SnappyData cluster on a single EC2 instance.
 
 17. Go to the **/opt/snappydata** directory. Run the following command to start a basic cluster with one data node, one lead, and one locator.
 
@@ -617,6 +615,13 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
 <a id="accesssnappydatacluster"></a>
 ### Accessing SnappyData Cluster
+
+Before you access the SnappyData cluster, you must configure cluster's security group to allow connections from your client host on required ports.
+
+To open these ports to the world (not recommended) when you do not know the IP address of your client host, you can specify `0.0.0.0/0` as **Source** against above port range in the security group.
+But then, and if your cluster does not have security enabled, any unknown user on the internet can connect to your cluster.
+
+So it is strongly recommended to add specific IP addresses as **Source**, in the format `XXX.XXX.XXX.XXX/32` in your security group.
 
 The quickest way to connect to your SnappyData cluster is probably using the snappy shell utility packaged with the distribution.
 
@@ -628,7 +633,7 @@ You can launch the snappy shell either from the same EC2 instance or from your l
 
 	    	./bin/snappy
 
-    * **Important** Before connecting to the cluster, make sure the security group attached to this EC2 instance has ports 1527-1528 open for the public IP of the same ec2 instance.
+    * **Important** Before connecting to the cluster, make sure the security group attached to this EC2 instance has ports 1527-1528 open for the *public IP of the same ec2 instance*.
 
     * Now, connect to the cluster using its private IP (you can also use the public DNS/IP instead):
 
@@ -645,4 +650,6 @@ You can launch the snappy shell either from the same EC2 instance or from your l
     * Now, connect to the cluster using the public DNS/IP of its EC2 instance:
 
     		snappy> connect client '<public-ip-of-EC2-instance>:1527';
+
+
 
