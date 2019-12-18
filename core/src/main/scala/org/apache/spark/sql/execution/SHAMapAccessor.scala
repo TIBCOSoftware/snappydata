@@ -910,29 +910,98 @@ case class SHAMapAccessor(@transient session: SnappySession,
         }
         else {
           val actualKeyLen = if (numBytesForNullKeyBits == 0) lenTerm else s"($lenTerm - 1)"
-          val equalityCheck = s"""$actualKeyLen == $numKeyBytesTerm &&
-               |$byteArrayEqualsClass.arrayEquals($vdBaseObjectTerm, $posTerm - $actualKeyLen + $vdBaseOffsetTerm,
-               |${keyVars.head.value}.getBaseObject(), ${keyVars.head.value}.getBaseOffset(),
-               | $actualKeyLen)
-             """.stripMargin
+
           s"""
              |boolean $skipLookupTerm = false;
              |if ($posTerm != -1 && !${keyVars.head.isNull} && $keyTerm == ${hashVar(0)}
-             | && $equalityCheck && $overflowHashMapsTerm == null) {
-             |$skipLookupTerm = true;
-             |$valueOffsetTerm = $posTerm;
-             |$keyExistedTerm = true;
+             |  && $overflowHashMapsTerm == null && $actualKeyLen == $numKeyBytesTerm ) {
+               |boolean isStringEquals = true;
+               |Object leftBase = $vdBaseObjectTerm;
+               |long leftOffset = $posTerm - $actualKeyLen + $vdBaseOffsetTerm;
+               |Object rightBase = ${keyVars.head.value}.getBaseObject();
+               |long rightOffset = ${keyVars.head.value}.getBaseOffset();
+               |long endOffset = leftOffset + $actualKeyLen;
+               |// try to align at least one side
+               |boolean keepChecking = true;
+               |if ((rightOffset & 0x7) != 0 && (leftOffset & 0x7) != 0) { // mod 8
+                 |final long alignedOffset = Math.min(((leftOffset + 7) >>> 3) << 3, endOffset);
+                 |if (Platform.unaligned()) {
+                   |if (leftOffset <= (alignedOffset - 4)) {
+                     |if (Platform.getInt(leftBase, leftOffset) !=
+                       |Platform.getInt(rightBase, rightOffset)) {
+                       |isStringEquals = false;
+                       |keepChecking = false;
+                     |}
+                     |leftOffset += 4;
+                     |rightOffset += 4;
+                   |}
+                 |}
+                 |while (leftOffset < alignedOffset && keepChecking) {
+                   |if (Platform.getByte(leftBase, leftOffset) !=
+                     |Platform.getByte(rightBase, rightOffset)) {
+                     |isStringEquals = false;
+                     |keepChecking = false;
+                     |break;
+                   |}
+                   |leftOffset++;
+                   |rightOffset++;
+                 |}
+               |}
+               |// for architectures that support unaligned accesses, chew it up 8 bytes at a time
+               |if (keepChecking &&
+                 |(Platform.unaligned() || (((leftOffset & 0x7) == 0) && ((rightOffset & 0x7) == 0)))) {
+                 |endOffset -= 8;
+                 |while (leftOffset <= endOffset) {
+                   |if (Platform.getLong(leftBase, leftOffset) !=
+                     |Platform.getLong(rightBase, rightOffset)) {
+                     |isStringEquals = false;
+                     |keepChecking = false;
+                     |break;
+                   |}
+                   |leftOffset += 8;
+                   |rightOffset += 8;
+                 |}
+                 |endOffset += 4;
+                 |if (leftOffset <= endOffset && keepChecking) {
+                   |if (Platform.getInt(leftBase, leftOffset) !=
+                     |Platform.getInt(rightBase, rightOffset)) {
+                     |isStringEquals = false;
+                     |keepChecking = false;
+                   |}
+                   |leftOffset += 4;
+                   |rightOffset += 4;
+                 |}
+                 |endOffset += 4;
+               |}
+               |// this will finish off the unaligned comparisons, or do the entire aligned
+               |// comparison whichever is needed.
+               |while (leftOffset < endOffset && keepChecking) {
+                 |if (Platform.getByte(leftBase, leftOffset) !=
+                   |Platform.getByte(rightBase, rightOffset)) {
+                   |isStringEquals = false;
+                   |keepChecking = false;
+                   |break;
+                 |}
+                 |leftOffset++;
+                 |rightOffset++;
+               |}
+
+               |if (isStringEquals) {
+                 |$skipLookupTerm = true;
+                 |$valueOffsetTerm = $posTerm;
+                 |$keyExistedTerm = true;
+               |}
              |}
-           if (!$skipLookupTerm) {
-             $lookUpInsertCode
-             if (${keyVars.head.isNull}) {
-               $posTerm = -1L;
-             } else if ($overflowHashMapsTerm == null) {
-               $posTerm = $valueOffsetTerm;
-               $keyTerm = ${hashVar(0)};
-               $lenTerm = $numKeyBytesTerm;
+             if (!$skipLookupTerm) {
+               $lookUpInsertCode
+               if (${keyVars.head.isNull}) {
+                 $posTerm = -1L;
+               } else if ($overflowHashMapsTerm == null) {
+                 $posTerm = $valueOffsetTerm;
+                 $keyTerm = ${hashVar(0)};
+                 $lenTerm = $numKeyBytesTerm;
+               }
              }
-           }
          """.stripMargin
         }
     }.getOrElse(lookUpInsertCode)
@@ -1869,9 +1938,73 @@ case class SHAMapAccessor(@transient session: SnappySession,
           } else {
             s"$numKeyBytes - 1"
           }
+         /*
           s"""
               return $byteArrayEqualsClass.arrayEquals($vdBaseObjectTerm, $valueOffset,
             $paramName.getBaseObject(), $paramName.getBaseOffset(), $stringLengthArg);"""
+          */
+          s"""
+             |long leftOffset = $valueOffset;
+             |long endOffset = leftOffset + $stringLengthArg;
+             |Object rightBase = $paramName.getBaseObject();
+             |long rightOffset = $paramName.getBaseOffset();
+             |    // try to align at least one side
+             |    if ((rightOffset & 0x7) != 0 && (leftOffset & 0x7) != 0) { // mod 8
+             |      final long alignedOffset = Math.min(((leftOffset + 7) >>> 3) << 3, endOffset);
+             |      if (Platform.unaligned()) {
+             |        if (leftOffset <= (alignedOffset - 4)) {
+             |          if (Platform.getInt($vdBaseObjectTerm, leftOffset) !=
+             |              Platform.getInt(rightBase, rightOffset)) {
+             |            return false;
+             |          }
+             |          leftOffset += 4;
+             |          rightOffset += 4;
+             |        }
+             |      }
+             |      while (leftOffset < alignedOffset) {
+             |        if (Platform.getByte($vdBaseObjectTerm, leftOffset) !=
+             |            Platform.getByte(rightBase, rightOffset)) {
+             |          return false;
+             |        }
+             |        leftOffset++;
+             |        rightOffset++;
+             |      }
+             |    }
+             |    // for architectures that support unaligned accesses, chew it up 8 bytes at a time
+             |    if (Platform.unaligned() || (((leftOffset & 0x7) == 0) && ((rightOffset & 0x7) == 0))) {
+             |      endOffset -= 8;
+             |      while (leftOffset <= endOffset) {
+             |        if (Platform.getLong($vdBaseObjectTerm, leftOffset) !=
+             |            Platform.getLong(rightBase, rightOffset)) {
+             |          return false;
+             |        }
+             |        leftOffset += 8;
+             |        rightOffset += 8;
+             |      }
+             |      endOffset += 4;
+             |      if (leftOffset <= endOffset) {
+             |        if (Platform.getInt($vdBaseObjectTerm, leftOffset) !=
+             |            Platform.getInt(rightBase, rightOffset)) {
+             |          return false;
+             |        }
+             |        leftOffset += 4;
+             |        rightOffset += 4;
+             |      }
+             |      endOffset += 4;
+             |    }
+             |    // this will finish off the unaligned comparisons, or do the entire aligned
+             |    // comparison whichever is needed.
+             |    while (leftOffset < endOffset) {
+             |      if (Platform.getByte($vdBaseObjectTerm, leftOffset) !=
+             |          Platform.getByte(rightBase, rightOffset)) {
+             |        return false;
+             |      }
+             |      leftOffset++;
+             |      rightOffset++;
+             |    }
+             |    return true;
+           """.stripMargin
+
         }
         else {
           s"return $valueHolder.equals($paramName);"
