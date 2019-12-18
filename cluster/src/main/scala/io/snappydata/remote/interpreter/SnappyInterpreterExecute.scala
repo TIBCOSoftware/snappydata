@@ -27,13 +27,14 @@ import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.InterpreterExecute
 import io.snappydata.Constant
+import io.snappydata.ToolsCallbackImpl.logInfo
 import io.snappydata.gemxd.SnappySessionPerConnection
+import org.apache.log4j.Logger
 import org.apache.spark.Logging
 import org.apache.spark.sql.execution.InterpretCodeCommand
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExecute with Logging {
 
@@ -221,13 +222,15 @@ object SnappyInterpreterExecute {
 
   object PermissionChecker {
 
+    private val logger = Logger.getLogger(
+      "io.snappydata.remote.interpreter.SnappyInterpreterExecute")
+
     def isAllowed(key: String, currentUser: String, tableSchema: String): Boolean = {
       if (currentUser.equalsIgnoreCase(tableSchema) ||
         currentUser.equalsIgnoreCase(dbOwner)) return true
 
       val permissionsObj = Misc.getMemStore.getMetadataCmdRgn.get(key)
       if (permissionsObj == null) return false
-
       permissionsObj.asInstanceOf[PermissionChecker].isAllowed(currentUser)._1
     }
 
@@ -249,6 +252,7 @@ object SnappyInterpreterExecute {
             else permissions.removeUser(u)
           }
         })
+        logger.debug(s"Putting permission obj = $permissions against key = $key")
         Misc.getMemStore.getMetadataCmdRgn.put(key, permissions)
       }
     }

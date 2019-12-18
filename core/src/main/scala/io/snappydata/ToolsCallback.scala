@@ -85,7 +85,7 @@ trait ToolsCallback {
    */
   def checkSchemaPermission(schema: String, currentUser: String): String
 
-  def isUserAuthorizedForExtTable(conn: Connection, currentUser: String,
+  def isUserAuthorizedForExtTable(currentUser: String,
     metastoreTableIdentifier: Option[TableIdentifier]): Exception
 
   def updateGrantRevokeOnExternalTable(grantor: String, isGrant: Boolean,

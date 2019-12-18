@@ -292,7 +292,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
   }
 
 
-  override def isUserAuthorizedForExtTable(conn: Connection, currentUser: String,
+  override def isUserAuthorizedForExtTable(currentUser: String,
     metastoreTableIdentifier: Option[TableIdentifier]): Exception = {
     if (!Misc.isSecurityEnabled) return null
     if (metastoreTableIdentifier.isDefined) {
@@ -308,11 +308,15 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
         currentUser
       }
       val table = metastoreTableIdentifier.get.table
-      val fqtn = schema + "." + table
+      val fqtn = if (table.indexOf('.') > 0) table
+      else schema + "." + table
       val key = GrantRevokeOnExternalTable.getMetaRegionKey(fqtn)
       if (!PermissionChecker.isAllowed(key, currentUser, schema)) {
+        logDebug(s"current user $currentUser not authorized to access $fqtn")
         return StandardException.newException(
           SQLState.AUTH_NO_EXECUTE_PERMISSION, currentUser, "external table", "", schema, table)
+      } else {
+        logDebug(s"current user $currentUser is authorized to access $fqtn")
       }
     }
     null
