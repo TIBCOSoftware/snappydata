@@ -333,17 +333,19 @@ case class SHAMapAccessor(@transient session: SnappySession,
                |$offsetTerm += ${dt.defaultSize};
                      """.stripMargin
         case t if t =:= typeOf[UTF8String] =>
-          val tempLenTerm = ctx.freshName("tempLen")
+          val tempLenTerm = if (skipLength) None else Some(ctx.freshName("tempLen"))
 
           val lengthWritingPart = if (!skipLength) {
-            s"""$platformClass.putInt($baseObjectTerm, $offsetTerm, $tempLenTerm);
+            s"""
+               |int ${tempLenTerm.get} = $variable.numBytes();
+               |$platformClass.putInt($baseObjectTerm, $offsetTerm, ${tempLenTerm.get});
                |$offsetTerm += 4;""".stripMargin
           } else ""
 
-          s"""int $tempLenTerm = $variable.numBytes();
+          s"""
              |$lengthWritingPart
              |$variable.writeToMemory($baseObjectTerm, $offsetTerm);
-             |$offsetTerm += $tempLenTerm;
+             |$offsetTerm += ${tempLenTerm.getOrElse(s"$variable.numBytes()")};
                """.stripMargin
         case _ => throw new UnsupportedOperationException("unknown type " + dt)
       }
@@ -715,6 +717,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     valueInitCode: String, evaluatedInputCode: String, keyVars: Seq[ExprCode],
     keysDataType: Seq[DataType], aggregateDataTypes: Seq[DataType],
     dictionaryCode: Option[DictionaryCode], dictionaryArrayTerm: String,
+    dictionaryArraySizeTerm: String,
     aggFuncDependentOnGroupByKey: Boolean): String = {
     val hashVar = Array(ctx.freshName("hash"))
     val tempValueData = ctx.freshName("tempValueData")
@@ -887,12 +890,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
              |${if (aggFuncDependentOnGroupByKey) keysPrepCodeCode else ""}
              |if ($dictionaryArrayTerm != null && $overflowHashMapsTerm == null &&
              |${dictionaryCode.map(_.dictionaryIndex.value).get} <
-             | ${dictionaryCode.map(_.dictionary.value).get}.size() &&
+             | $dictionaryArraySizeTerm &&
              |${dictionaryCode.map(_.dictionaryIndex.value).get} >= 0) {
-               |$posTerm = $dictionaryArrayTerm[${dictionaryCode.map(_.dictionaryIndex.value).get}];
-               |if ($posTerm > 0) {
+               |$valueOffsetTerm = $dictionaryArrayTerm[${dictionaryCode.map(_.dictionaryIndex.value).get}];
+               |if ($valueOffsetTerm > 0) {
                  |$skipLookupTerm = true;
-                 |$valueOffsetTerm = $posTerm;
                  |$keyExistedTerm = true;
                |}
              |}
@@ -908,7 +910,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
         }
         else {
           val actualKeyLen = if (numBytesForNullKeyBits == 0) lenTerm else s"($lenTerm - 1)"
-          val equalityCheck = s"""$actualKeyLen == ${keyVars.head.value}.numBytes() &&
+          val equalityCheck = s"""$actualKeyLen == $numKeyBytesTerm &&
                |$byteArrayEqualsClass.arrayEquals($vdBaseObjectTerm, $posTerm - $actualKeyLen + $vdBaseOffsetTerm,
                |${keyVars.head.value}.getBaseObject(), ${keyVars.head.value}.getBaseOffset(),
                | $actualKeyLen)
@@ -1850,8 +1852,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
         val nullHolder = ctx.freshName("nullHolder")
         val lengthHolder = ctx.freshName("lengthHolder")
         val getLengthCode = s"""
-           $lengthHolder = $columnEncodingClassObject.readInt($vdBaseObjectTerm, $valueOffset);
-           $valueOffset += 4;
+           int $lengthHolder = $columnEncodingClassObject.readInt($vdBaseObjectTerm, $valueOffset);
         """
 
         val getValueCode = keyDataType match {
@@ -1882,6 +1883,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           s"""
              |$getLengthCode
              |if ($numKeyBytes == $lengthHolder) {
+             |  $valueOffset += 4;
              |  $getValueCode
              |  $valueEqualityCode
              |} else {
@@ -1892,6 +1894,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           s"""
              |$getLengthCode
              |if ($lengthHolder == $numKeyBytes) {
+             |  $valueOffset += 4;
              |  $getNullCode
              |  if (${SHAMapAccessor.getExpressionForNullEvalFromMask(0, 1,
                   nullHolder)} == $isNull) {
@@ -1916,7 +1919,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
            |    long $valueOffset = $mapValueBaseOffset + $valueStartOffset;
            |    $paramJavaType $valueHolder = ${ctx.defaultValue(keyDataType)};
            |    byte $nullHolder = 0;
-           |    int $lengthHolder = 0;
            |    $equalityCode
            |  }
          """.stripMargin
