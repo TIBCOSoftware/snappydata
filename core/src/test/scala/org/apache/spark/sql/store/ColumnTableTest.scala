@@ -1300,6 +1300,13 @@ class ColumnTableTest
         "{\"name\":\"Michael\",\"state\":\"California\",\"lane\":\"15\"}")
   }
 
+  test("SNAP-2087 failure in JSON queries with complex types") {
+    val locs = getClass.getResource("/locomotives.json").getPath
+    val ds = snc.read.json(sc.wholeTextFiles(locs).values)
+    assert(ds.count() === 89)
+    assert(ds.filter("model = 'ES44AC'").count() === 12)
+  }
+
   test("same generated code for multiple sessions (check statsPredicate ordering)") {
     var session = new SnappySession(snc.sparkContext)
     session.sql("drop table if exists t1")
