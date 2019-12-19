@@ -87,7 +87,7 @@ object WorkingWithJson extends SnappySQLJob {
     morePeople.write.insertInto("people")
 
     //print schema of the table
-    println("Print Schema of the table people\n################")
+    println("Print Schema of the People table.\n################")
     println(snSession.table("people").schema)
     println
 
@@ -127,8 +127,9 @@ object WorkingWithJson extends SnappySQLJob {
     println("Contents of the table locomotives:\n################")
     resultDF.show(truncate = false)
 
-    snSession.sql("CREATE TABLE stg_locomotives (dateIso STRING, emission_tier STRING, engine " +
-        "STRING, fleet STRING, hqLatLng STRUCT<lat: DOUBLE, lng: DOUBLE>, installedOn " +
+    println("Creating external table using SQL syntax on the same multi-line json file.")
+    snSession.sql("CREATE EXTERNAL TABLE stg_locomotives (dateIso STRING, emission_tier STRING, " +
+        "engine STRING, fleet STRING, hqLatLng STRUCT<lat: DOUBLE, lng: DOUBLE>, installedOn " +
         "STRING, manufacturer STRING, model STRING, parent STRING, serial_no STRING, " +
         "type STRING, uri STRING) USING JSON OPTIONS (wholefile 'true', path " +
         s"'$locomotives_path')")
