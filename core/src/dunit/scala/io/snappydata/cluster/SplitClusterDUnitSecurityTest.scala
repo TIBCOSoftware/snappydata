@@ -148,11 +148,12 @@ class SplitClusterDUnitSecurityTest(s: String)
     val compressionArg = this.compressionArg
     val waitForInit = "-jobserver.waitForInitialization=true"
     val ldapConf = getLdapConf
+    val syspropExtTableAuthz = "-DCHECK_EXTERNAL_TABLE_AUTHZ=true"
     writeToFile(
       s"localhost  -peer-discovery-port=$port -client-port=$netPort $compressionArg $ldapConf",
       s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port] $waitForInit $compressionArg $ldapConf",
-      s"$confDir/leads")
+    writeToFile(s"localhost  -locators=localhost[$port] $waitForInit $compressionArg $ldapConf" +
+      s" $syspropExtTableAuthz", s"$confDir/leads")
     writeToFile(
       s"""localhost  -locators=localhost[$port] -client-port=$netPort1 $compressionArg $ldapConf
           |localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg $ldapConf
