@@ -252,7 +252,6 @@ class RemoteInterpreterStateHolder(
     strOpStream.close()
     pw.close()
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
-    lead.urlclassloader.removeClassLoader(intp.classLoader)
     // let the session close handle snappy clear.
     // snappy.clear()
     incomplete.setLength(0)
@@ -300,7 +299,6 @@ class RemoteInterpreterStateHolder(
     intp.close()
     pw.reset()
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
-    lead.urlclassloader.removeClassLoader(intp.classLoader)
     intp = null
     intp = createSparkILoop
     initIntp()
