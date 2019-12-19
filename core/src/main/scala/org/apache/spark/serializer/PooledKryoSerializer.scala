@@ -328,9 +328,7 @@ private[spark] final class PooledKryoSerializerInstance(
 
   override def deserialize[T: ClassTag](buffer: ByteBuffer): T = {
     KryoSerializerPool.deserialize(buffer,
-      (kryo, in) => {
-        kryo.readClassAndObject(in).asInstanceOf[T]
-      })
+      (kryo, in) => kryo.readClassAndObject(in).asInstanceOf[T])
   }
 
   override def deserialize[T: ClassTag](buffer: ByteBuffer,

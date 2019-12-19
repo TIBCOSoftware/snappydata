@@ -240,9 +240,9 @@ class RemoteInterpreterStateHolder(
     // Thread.currentThread().setContextClassLoader(intp.classLoader)
     // val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
     // lead.urlclassloader.addClassLoader(intp.classLoader)
-//    logInfo(s"KN: adding repl loader = ${intp.classLoader} obj = ${intp.classLoader}" +
-//      s" to lead loader = ${lead.urlclassloader} with obj ${System.identityHashCode(lead.urlclassloader)}")
-    logInfo(s"KN: intp classloader = ${intp.classLoader}")
+    // logInfo(s"KN: adding repl loader = ${intp.classLoader} obj = ${intp.classLoader}" +
+    // s" to lead loader = ${lead.urlclassloader} with obj ${System.identityHashCode(lead.urlclassloader)}")
+    // logInfo(s"KN: intp classloader = ${intp.classLoader}")
     intp
   }
 
