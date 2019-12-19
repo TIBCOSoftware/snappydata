@@ -34,8 +34,10 @@ import org.apache.spark.sql.{AnalysisException, CachedDataFrame, Dataset}
 import org.apache.spark.sql.execution.RefreshMetadata
 
 import scala.collection.mutable
+import scala.reflect.classTag
+import scala.tools.nsc.interpreter.StdReplTags.tagOfIMain
 import scala.tools.nsc.{GenericRunnerSettings, Settings}
-import scala.tools.nsc.interpreter.Results
+import scala.tools.nsc.interpreter.{IMain, NamedParam, Results}
 
 class RemoteInterpreterStateHolder(
     val connId: Long, val user: String, val authToken: String) extends Logging {
@@ -49,13 +51,16 @@ class RemoteInterpreterStateHolder(
   lazy val pw = new StringPrintWriter()
   lazy val strOpStream = new StringOutputStrem(pw)
   private val sessionReplDir = s"repl${connId}${user}-${System.nanoTime()}"
-  private val replOutputDirStr = s"${RemoteInterpreterStateHolder.replOutputDir}/$sessionReplDir"
+  val replOutputDirStr = s"${RemoteInterpreterStateHolder.replOutputDir}/$sessionReplDir"
 
   var intp: SparkILoop = createSparkILoop
 
   val allInterpretedLinesForReplay: mutable.ArrayBuffer[String] = new mutable.ArrayBuffer[String]()
 
   private def initIntp(): Unit = {
+    intp.initializeSynchronous()
+    intp.setContextClassLoader()
+    intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain]))
     logDebug(s"Initializing the interpreter created for ${user} for connId ${connId}")
     intp.interpret("import org.apache.spark.sql.functions._")
     intp.interpret("org.apache.spark.sql.SnappySession")
@@ -232,9 +237,12 @@ class RemoteInterpreterStateHolder(
     pw.reset()
     this.intp = intp
     initIntp
-    Thread.currentThread().setContextClassLoader(intp.classLoader)
-    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
-    lead.urlclassloader.addClassLoader(intp.classLoader)
+    // Thread.currentThread().setContextClassLoader(intp.classLoader)
+    // val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    // lead.urlclassloader.addClassLoader(intp.classLoader)
+    // logInfo(s"KN: adding repl loader = ${intp.classLoader} obj = ${intp.classLoader}" +
+    // s" to lead loader = ${lead.urlclassloader} with obj ${System.identityHashCode(lead.urlclassloader)}")
+    // logInfo(s"KN: intp classloader = ${intp.classLoader}")
     intp
   }
 
@@ -244,7 +252,6 @@ class RemoteInterpreterStateHolder(
     strOpStream.close()
     pw.close()
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
-    lead.urlclassloader.removeClassLoader(intp.classLoader)
     // let the session close handle snappy clear.
     // snappy.clear()
     incomplete.setLength(0)
@@ -292,7 +299,6 @@ class RemoteInterpreterStateHolder(
     intp.close()
     pw.reset()
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
-    lead.urlclassloader.removeClassLoader(intp.classLoader)
     intp = null
     intp = createSparkILoop
     initIntp()

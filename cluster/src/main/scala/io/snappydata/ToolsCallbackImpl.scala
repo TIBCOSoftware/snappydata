@@ -19,7 +19,7 @@ package io.snappydata
 import java.io.{File, RandomAccessFile}
 import java.lang.reflect.InvocationTargetException
 import java.net.{URI, URLClassLoader}
-import java.sql.Connection
+import java.util.Properties
 
 import scala.collection.JavaConverters._
 import com.gemstone.gemfire.cache.EntryExistsException
@@ -324,5 +324,10 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
 
   override def refreshLdapGroupCallback(group: String): Unit = {
     SnappyInterpreterExecute.refreshOnLdapGroupRefresh(group)
+  }
+
+  override def getIntpClassLoader(taskProps: Properties): ClassLoader = {
+    val prop = taskProps.getProperty(Constant.REPL_OUTPUT_DIR)
+    SnappyInterpreterExecute.getLoader(prop)
   }
 }

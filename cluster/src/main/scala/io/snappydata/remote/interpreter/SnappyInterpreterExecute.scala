@@ -73,6 +73,14 @@ object SnappyInterpreterExecute {
     Misc.getMemStore.getDatabase.getDataDictionary.getAuthorizationDatabaseOwner.toLowerCase()
   }
 
+  def getLoader(prop: String): ClassLoader = {
+    val x = connToIntpHelperMap.find(x => x._2._3.replOutputDirStr.equals(prop))
+    if (x.isDefined) {
+      return x.get._2._3.intp.classLoader
+    }
+    null
+  }
+
   def handleNewPermissions(grantor: String, isGrant: Boolean, users: String): Unit = {
     if (!Misc.isSecurityEnabled) return
     var lockTaken = false
