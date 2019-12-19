@@ -18,6 +18,7 @@ package io.snappydata
 
 import java.io.File
 import java.net.URLClassLoader
+import java.util.Properties
 
 import org.apache.spark.SparkContext
 
@@ -81,4 +82,6 @@ trait ToolsCallback {
    * LDAP group name of the schema owner (or passed user itself if security is disabled).
    */
   def checkSchemaPermission(schema: String, currentUser: String): String
+
+  def getIntpClassLoader(taskProps: Properties): ClassLoader
 }

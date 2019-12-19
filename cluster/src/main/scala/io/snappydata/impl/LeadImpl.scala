@@ -780,35 +780,7 @@ class ExtendibleURLClassLoader(parent: ClassLoader)
     super.addURL(url)
   }
 
-  val loaders: ArrayBuffer[ClassLoader] = new ArrayBuffer
   override def getURLs: Array[URL] = super.getURLs
-
-  def addClassLoader(cl: ClassLoader): Unit = {
-    loaders.synchronized {
-      loaders += cl
-    }
-  }
-
-  def removeClassLoader(cl: ClassLoader): Unit = {
-    loaders.synchronized {
-      loaders -= cl
-    }
-  }
-
-  override def loadClass(name: String): Class[_] = {
-    var classInstance: Option[Class[_]] = None
-    if (loaders.nonEmpty) {
-      loaders.iterator.takeWhile(_ => !classInstance.isDefined).foreach { cl =>
-        try {
-          classInstance = Some(cl.loadClass(name))
-        } catch {
-          case cnfe: ClassNotFoundException => // ignore
-        }
-      }
-    }
-    if (classInstance.isDefined) return classInstance.get
-    super.loadClass(name)
-  }
 }
 
 object LeadImpl {
