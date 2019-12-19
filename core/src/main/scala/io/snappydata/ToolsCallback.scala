@@ -18,7 +18,11 @@ package io.snappydata
 
 import java.io.File
 import java.net.URLClassLoader
+<<<<<<< HEAD
 import java.sql.Connection
+=======
+import java.util.Properties
+>>>>>>> master
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -90,4 +94,6 @@ trait ToolsCallback {
 
   def updateGrantRevokeOnExternalTable(grantor: String, isGrant: Boolean,
     tid: TableIdentifier, users: String, catalogTable: CatalogTable): Unit
+
+  def getIntpClassLoader(taskProps: Properties): ClassLoader
 }

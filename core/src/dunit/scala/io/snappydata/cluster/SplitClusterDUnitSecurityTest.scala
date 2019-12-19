@@ -425,6 +425,7 @@ class SplitClusterDUnitSecurityTest(s: String)
   }
 
   def executeSQL(stmt: Statement, s: String): Unit = {
+    logInfo("Executing SQL: " + s)
     stmt.execute(s)
     val rs = stmt.getResultSet
     if (rs ne null) {
@@ -506,7 +507,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     var user2Stmt = user2Conn.createStatement()
 
     adminConn = getConn(adminUser1)
-    var adminStmt = adminConn.createStatement()
+    val adminStmt = adminConn.createStatement()
 
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, user1Stmt,
       Map("COLUMN_BATCH_SIZE" -> "1k"))
@@ -520,6 +521,7 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     val sqls = List(s"select * from $jdbcUser1.$embeddedColTab1",
       s"select * from $jdbcUser1.$embeddedRowTab1",
+      s"select count(*) from $jdbcUser1.$embeddedColTab1",
       s"insert into $jdbcUser1.$embeddedColTab1 values (1, '$jdbcUser2', 1.1)",
       s"insert into $jdbcUser1.$embeddedRowTab1 values (1, '$jdbcUser2', 1.1)",
       s"update $jdbcUser1.$embeddedColTab1 set col1 = 0, col2 = '$value by $jdbcUser2' where " +
@@ -531,6 +533,11 @@ class SplitClusterDUnitSecurityTest(s: String)
     )
 
     sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
+    val snap1849 = s"select count(*) from $jdbcUser1.$embeddedRowTab1";
+    // Verify that it fails in embedded case
+    assertFailure(() => {executeSQL(user2Stmt, snap1849)}, snap1849)
+    // Verify that it fails in smart connector case - TODO Not yet fixed
+    // assertFailure(() => {snc.sql(s).collect()}, snap1849)
     sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
 
     def verifyGrantRevoke(op: String, sqls: List[String]): Unit = {
@@ -546,12 +553,12 @@ class SplitClusterDUnitSecurityTest(s: String)
       sqls.foreach(s => executeSQL(adminStmt, s))
     }
 
-    verifyGrantRevoke("select", List(sqls(0), sqls(1)))
-    verifyGrantRevoke("insert", List(sqls(2), sqls(3)))
+    verifyGrantRevoke("select", List(sqls(0), sqls(1), sqls(2)))
+    verifyGrantRevoke("insert", List(sqls(3), sqls(4)))
     // No update on column tables
-    verifyGrantRevoke("update", List(sqls(4), sqls(5)))
+    verifyGrantRevoke("update", List(sqls(5), sqls(6)))
     // No delete on column tables
-    verifyGrantRevoke("delete", List(sqls(6), sqls(7)))
+    verifyGrantRevoke("delete", List(sqls(7), sqls(8)))
 
     // SNAPPY_HIVE_METASTORE should not be modifiable by users.
     val sql = s"insert into ${Misc.SNAPPY_HIVE_METASTORE}.VERSION values (1212, 'NA', 'NA')"
@@ -568,10 +575,10 @@ class SplitClusterDUnitSecurityTest(s: String)
     user2Stmt = user2Conn.createStatement()
     assertFailure(() => {executeSQL(user2Stmt, sqls(0))}, sqls(0)) // select on embeddedColTab1
     assertFailure(() => {snc.sql(sqls(0)).collect()}, sqls(0)) // select on embeddedColTab1
-    executeSQL(user2Stmt, sqls(3)) // insert into embeddedRowTab1
-    snc.sql(sqls(3)).collect() // insert into embeddedRowTab1
-    assertFailure(() => {executeSQL(user2Stmt, sqls(7))}, sqls(7)) // delete on embeddedRowTab1
-    assertFailure(() => {snc.sql(sqls(6)).collect()}, sqls(6)) // delete on embeddedColTab1
+    executeSQL(user2Stmt, sqls(4)) // insert into embeddedRowTab1
+    snc.sql(sqls(4)).collect() // insert into embeddedRowTab1
+    assertFailure(() => {executeSQL(user2Stmt, sqls(8))}, sqls(8)) // delete on embeddedRowTab1
+    assertFailure(() => {snc.sql(sqls(7)).collect()}, sqls(7)) // delete on embeddedColTab1
   }
 
   def restartCluster(): Unit = {
