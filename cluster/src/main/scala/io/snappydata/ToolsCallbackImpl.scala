@@ -23,15 +23,21 @@ import java.util.Properties
 
 import scala.collection.JavaConverters._
 import com.gemstone.gemfire.cache.EntryExistsException
+import com.pivotal.gemfirexd.Constants
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.{ExtendibleURLClassLoader, LeadImpl}
 import io.snappydata.remote.interpreter.SnappyInterpreterExecute
+import io.snappydata.remote.interpreter.SnappyInterpreterExecute.PermissionChecker
 import org.apache.spark.executor.SnappyExecutor
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{AnalysisException, SnappyContext}
+import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.catalog.CatalogTable
+import org.apache.spark.sql.execution.GrantRevokeOnExternalTable
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.execution.ui.SQLTab
@@ -42,6 +48,7 @@ import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkCallbacks, SparkContext, SparkFiles}
 
 import scala.collection.immutable.HashSet
+import scala.collection.mutable.ArrayBuffer
 
 object ToolsCallbackImpl extends ToolsCallback with Logging {
 
@@ -264,6 +271,55 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
 
   override def updateIntpGrantRevoke(grantor: String, isGrant: Boolean, users: String): Unit = {
     SnappyInterpreterExecute.handleNewPermissions(grantor, isGrant, users)
+  }
+
+  def updateGrantRevokeOnExternalTable(grantor: String, isGrant: Boolean,
+    td: TableIdentifier, users: String, catalogTable: CatalogTable): Unit = {
+
+    // this can be issued by only dbOwner or table owner
+    val tableOwner = catalogTable.owner
+    val dbOwner = SnappyInterpreterExecute.dbOwner
+    if (!(grantor.equalsIgnoreCase(tableOwner) || grantor.equalsIgnoreCase(dbOwner))) {
+      throw StandardException.newException(
+        SQLState.AUTH_NO_OBJECT_PERMISSION, grantor,
+        "grant/revoke permission on ", "external table", td)
+    }
+
+    val fqtn: String = if (td.identifier.indexOf('.') > 0) td.identifier
+    else grantor + "." + td.identifier
+    val key = GrantRevokeOnExternalTable.getMetaRegionKey(fqtn)
+    PermissionChecker.addRemoveUserForKey(key, isGrant, users)
+  }
+
+
+  override def isUserAuthorizedForExtTable(currentUser: String,
+    metastoreTableIdentifier: Option[TableIdentifier]): Exception = {
+    if (!Misc.isSecurityEnabled) return null
+    if (metastoreTableIdentifier.isDefined) {
+      val dbOwner = SnappyInterpreterExecute.dbOwner
+      val identifier = metastoreTableIdentifier.get.identifier
+      val database = if (metastoreTableIdentifier.get.database.isDefined)
+        metastoreTableIdentifier.get.database.get
+      else null
+      val schema = if (identifier.indexOf('.') > 0) identifier.substring(identifier.indexOf('.'))
+      else if (database != null) {
+        database
+      } else {
+        currentUser
+      }
+      val table = metastoreTableIdentifier.get.table
+      val fqtn = if (table.indexOf('.') > 0) table
+      else schema + "." + table
+      val key = GrantRevokeOnExternalTable.getMetaRegionKey(fqtn)
+      if (!PermissionChecker.isAllowed(key, currentUser, schema)) {
+        logDebug(s"current user $currentUser not authorized to access $fqtn")
+        return StandardException.newException(
+          SQLState.AUTH_NO_EXECUTE_PERMISSION, currentUser, "external table", "", schema, table)
+      } else {
+        logDebug(s"current user $currentUser is authorized to access $fqtn")
+      }
+    }
+    null
   }
 
   override def refreshLdapGroupCallback(group: String): Unit = {

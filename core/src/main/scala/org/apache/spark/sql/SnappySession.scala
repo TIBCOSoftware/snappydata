@@ -17,7 +17,7 @@
 package org.apache.spark.sql
 
 import java.lang.reflect.Method
-import java.sql.{Connection, SQLException, SQLWarning}
+import java.sql.{CallableStatement, Connection, PreparedStatement, SQLException, SQLWarning}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Calendar, Properties}
@@ -28,12 +28,12 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{Cache, CacheBuilder}
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.TypeId
@@ -43,7 +43,6 @@ import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
@@ -55,7 +54,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{Command, Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
-import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -69,7 +68,7 @@ import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNes
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLPlanExecutionEnd, SparkListenerSQLPlanExecutionStart}
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappySessionState}
 import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
-import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect, SnappySessionCatalog, SnappySharedState, StaticSQLConf}
+import org.apache.spark.sql.internal._
 import org.apache.spark.sql.row.{JDBCMutableRelation, SnappyStoreDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
@@ -209,8 +208,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val logical = sessionState.sqlParser.parsePlan(sqlText, clearExecutionData = true)
     SparkSession.setActiveSession(this)
     val ap: Analyzer = sessionState.analyzer
-    // logInfo(s"KN: Batches ${ap.batches.filter(
-    //  _.name.equalsIgnoreCase("Resolution")).mkString("_")}")
     ap.execute(logical)
   }
 
@@ -2190,7 +2187,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
   // Call to update Structured Streaming UI Tab
   updateStructuredStreamingUITab()
-
 }
 
 private class FinalizeSession(session: SnappySession)
@@ -2453,6 +2449,19 @@ object SnappySession extends Logging {
       hints
     }
 
+    val checkAuthOfExternalTables = java.lang.Boolean.parseBoolean(
+      System.getProperty("CHECK_EXTERNAL_TABLE_AUTHZ"))
+    // second condition means smart connector mode
+    if (checkAuthOfExternalTables || (ToolsCallbackInit.toolsCallback == null)) {
+      // check for external tables in the plan.
+      // TODO: For Smart Connector we can send a procedure to check the credentials
+      val scanNodes = executedPlan.collect {
+        case dsc: DataSourceScanExec if !dsc.relation.isInstanceOf[PartitionedDataSourceScan] => dsc
+      }
+      if (scanNodes != null && scanNodes.nonEmpty) {
+        checkCurrentUserAllowed(session, scanNodes)
+      }
+    }
     val (rdd, shuffleDependencies, shuffleCleanups) = if (planCaching) {
       val shuffleDeps = findShuffleDependencies(cachedRDD).toArray
       val cleanups = new Array[Future[Unit]](shuffleDeps.length)
@@ -2462,6 +2471,46 @@ object SnappySession extends Logging {
       executionString, planInfo, rdd, shuffleDependencies, RowEncoder(qe.analyzed.schema),
       shuffleCleanups, rddId, noSideEffects, queryHints,
       executionId, planStartTime, planEndTime, session.hasLinkPartitionsToBuckets)
+  }
+
+  private def checkCurrentUserAllowed(session: SnappySession,
+      scanNodes: Seq[SparkPlan]): Boolean = {
+    val currentUser = session.conf.get(Attribute.USERNAME_ATTR)
+    if (ToolsCallbackInit.toolsCallback != null) {
+      scanNodes.foreach(n => {
+        val dse = n.asInstanceOf[DataSourceScanExec]
+        val authzException = ToolsCallbackInit.toolsCallback.isUserAuthorizedForExtTable(
+          currentUser, dse.metastoreTableIdentifier)
+        if (authzException != null) throw authzException
+      })
+      true
+    } else {
+      // Smart Connector Mode
+      val tables = scanNodes.map(n => {
+        val dse = n.asInstanceOf[DataSourceScanExec]
+        dse.metastoreTableIdentifier
+      }).filter(_.isDefined).map(_.get).map(_.unquotedString)
+      if (tables != null && tables.nonEmpty) {
+        val connection = session.getConnection
+        val cstmt = connection.prepareCall("call sys.CHECK_AUTHZ_ON_EXT_TABLES(?, ?, ?)")
+        try {
+          cstmt.setString(1, currentUser)
+          val allTablesStr = tables.mkString(",")
+          cstmt.setString(2, allTablesStr)
+          cstmt.registerOutParameter(3, java.sql.Types.VARCHAR)
+          cstmt.execute()
+          val ret = cstmt.getString(3)
+          if (ret != null && ret.nonEmpty) {
+            // throw exception
+            throw new AnalysisException(s"${currentUser}  not authorized to access $ret")
+          }
+        } finally {
+          if (cstmt != null) cstmt.close()
+          if (connection != null) connection.close()
+        }
+      }
+      false
+    }
   }
 
   private[this] lazy val planCache = {

@@ -92,6 +92,31 @@ case class GrantRevokeIntpCommand(
   }
 }
 
+case class GrantRevokeOnExternalTable(
+   isGrant: Boolean, table: TableIdentifier, users: String) extends RunnableCommand {
+
+  // This is handled directly by Remote Interpreter code
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val tcb = ToolsCallbackInit.toolsCallback
+    if (tcb == null) {
+      throw new AnalysisException("Granting/Revoking" +
+        " on external table not supported from smart connector mode");
+    }
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val ct = session.sessionCatalog.getTableMetadata(table)
+    val user = session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR)
+    tcb.updateGrantRevokeOnExternalTable(user, isGrant, table, users, ct)
+    Nil
+  }
+}
+
+object GrantRevokeOnExternalTable {
+  val META_REGION_KEY_PREFIX = "##_EXTERNAL__GRANT__REVOKE_##"
+  def getMetaRegionKey(fqtn: String): String = {
+    META_REGION_KEY_PREFIX + "####" + fqtn
+  }
+}
+
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
     baseTable: Option[String],

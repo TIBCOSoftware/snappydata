@@ -206,6 +206,79 @@ class QueryRoutingDUnitSecurityTest(val s: String)
     // Only admin should be able to run
     doExecScalaSimpleStuff(st)
   }
+
+  private def doSimpleStuffOnExtTable(st: Statement,
+      fqtn: String, expectException: Boolean = false): Unit = {
+    try {
+      st.execute(s"select count(*) from $fqtn")
+      val rs = st.getResultSet
+      assert(rs.next())
+      if (expectException) assert(false, "expected exception")
+    } catch {
+      case sqle: SQLException => {
+        if (expectException) {
+          // SQLState should be
+          assert("42504".equals(sqle.getSQLState))
+        } else {
+          sqle.printStackTrace()
+          println(s"sqle state: ${sqle.getSQLState}")
+          assert(false, s"did not expect exception on table $fqtn")
+        }
+      }
+    }
+  }
+
+  def testExtTableGrantRevoke(): Unit = {
+    System.setProperty("CHECK_EXTERNAL_TABLE_AUTHZ", "true")
+    try {
+      val adminUser = ClusterManagerLDAPTestBase.admin
+      val nonAdminUser = "gemfire3"
+      val adminFQTN = adminUser + ".t1"
+      val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+      vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+      // scalastyle:off println
+      val connAdmin = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, adminUser, adminUser)
+      val st = connAdmin.createStatement()
+      st.execute(s"create external table t1 using csv options(path " +
+        s"'${getClass.getResource("/northwind/orders.csv").getPath}', header 'true', " +
+        s"inferschema 'true', maxCharsPerColumn '4096')")
+      doSimpleStuffOnExtTable(st, adminFQTN)
+      val connNoAdmin = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, nonAdminUser, nonAdminUser)
+      val st2 = connNoAdmin.createStatement()
+      doSimpleStuffOnExtTable(st2, adminFQTN, true)
+      st.execute(s"grant all on t1 to $nonAdminUser")
+      doSimpleStuffOnExtTable(st2, adminFQTN)
+      st.execute(s"revoke all on t1 from $nonAdminUser")
+      doSimpleStuffOnExtTable(st2, adminFQTN, true)
+      try {
+        st2.execute(s"grant all on $adminFQTN to $nonAdminUser")
+        assert(false, "expected exception in granting as not super user")
+      } catch {
+        case sqle: SQLException => if (!"4250A".equals(sqle.getSQLState)) {
+          throw sqle
+        }
+      }
+      // allow gemGroup3 -- allowed users then will be gemfire6, 7 and 8
+      // Before grant expect exception
+      val connNoAdminGrp1 = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, "gemfire7", "gemfire7")
+      val st7 = connNoAdminGrp1.createStatement()
+      doSimpleStuffOnExtTable(st7, adminFQTN, true)
+      st.execute(s"grant all on $adminFQTN to LDAPGROUP:gemGroup3")
+      doSimpleStuffOnExtTable(st7, adminFQTN)
+      val connNoAdminGrp2 = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, "gemfire8", "gemfire8")
+      val st8 = connNoAdminGrp2.createStatement()
+      doSimpleStuffOnExtTable(st8, adminFQTN)
+      // now revoke all and expect exception
+      st.execute(s"revoke all on t1 from $nonAdminUser,LDAPGROUP:gemGroup3")
+      doSimpleStuffOnExtTable(st2, adminFQTN, true)
+      doSimpleStuffOnExtTable(st7, adminFQTN, true)
+      doSimpleStuffOnExtTable(st8, adminFQTN, true)
+      // Only admin should be able to run
+      doSimpleStuffOnExtTable(st, adminFQTN)
+    } finally {
+      System.setProperty("CHECK_EXTERNAL_TABLE_AUTHZ", "false")
+    }
+  }
 }
 
 object QueryRoutingDUnitSecurityTest {
