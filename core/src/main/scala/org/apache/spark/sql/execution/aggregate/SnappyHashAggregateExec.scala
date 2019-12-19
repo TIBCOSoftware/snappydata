@@ -279,13 +279,19 @@ case class SnappyHashAggregateExec(
     if (groupingExpressions.isEmpty || !canConsume(plan)) ""
     else {
       dictionaryArrayInit = ctx.freshName("dictionaryArrayInit")
+      dictionaryArraySize = ctx.freshName("dictionaryArraySize")
+      dictionaryArraySizeField = ctx.freshName("dictionaryArraySizeField")
       if (useByteBufferMapBasedAggregation) {
+        ctx.addMutableState("int", dictionaryArraySizeField, s"$dictionaryArraySizeField = -1;")
         ctx.addNewFunction(dictionaryArrayInit,
           s"""
              |private void $dictionaryArrayInit() {
              |}
          """.stripMargin)
-        s"$dictionaryArrayInit();"
+
+        s"""$dictionaryArrayInit();
+            |final int $dictionaryArraySize = $dictionaryArraySizeField;
+         """.stripMargin
       } else {
         dictionaryArrayTerm = ctx.freshName("dictionaryArray")
         val className = keyBufferAccessor.getClassName
@@ -498,6 +504,8 @@ case class SnappyHashAggregateExec(
   @transient private var maskTerm: String = _
   @transient private var dictionaryArrayTerm: String = _
   @transient private var dictionaryArrayInit: String = _
+  @transient private var dictionaryArraySizeField: String = _
+  @transient private var dictionaryArraySize: String = _
 
 
 
@@ -1338,6 +1346,7 @@ case class SnappyHashAggregateExec(
         ctx.addMutableState(classOf[StringDictionary].getName, dictionary.value, "")
         dictionaryArrayTerm = ctx.freshName("dictionaryArrayTerm")
         ctx.addMutableState("long []", dictionaryArrayTerm, s"$dictionaryArrayTerm = null;")
+
         ctx.addNewFunction(dictionaryArrayInit,
           s"""
              |public void $dictionaryArrayInit() {
@@ -1345,17 +1354,22 @@ case class SnappyHashAggregateExec(
              |  if (${d.dictionary.isNull}) {
              |    $dictionaryArrayTerm = null;
              |  } else {
-             |    if ($dictionaryArrayTerm == null ||
-             |    $dictionaryArrayTerm.length < ${d.dictionary.value}.size()) {
-             |      $dictionaryArrayTerm = new long[${d.dictionary.value}.size()];
+             |   int temp = ${d.dictionary.value}.size();
+                 if ($dictionaryArrayTerm == null ||
+             |    $dictionaryArrayTerm.length < temp) {
+             |      $dictionaryArrayTerm = new long[temp];
              |    } else {
-             |       for (int i = 0; i < ${d.dictionary.value}.size(); ++i) {
+             |       for (int i = 0; i < temp; ++i) {
              |         $dictionaryArrayTerm[i] = 0;
              |       }
              |    }
+             |    $dictionaryArraySizeField = temp;
              |  }
              |}
            """.stripMargin)
+
+
+
       case None =>
     }
 
@@ -1374,7 +1388,7 @@ case class SnappyHashAggregateExec(
     // evaluate map lookup code before updateEvals possibly modifies the keyVars
     val mapCode = byteBufferAccessor.generateMapGetOrInsert(initVars, initCode, evaluatedInputCode,
       keysExpr, keysDataType, aggBuffDataTypes, dictionaryCode, dictionaryArrayTerm,
-      aggFuncDependentOnGroupByKey)
+      dictionaryArraySize, aggFuncDependentOnGroupByKey)
 
     // declare & initialize the buffer variables
     val bufferVarsFromInitVars = byteBufferAccessor.aggregateBufferVars.zip(initVars).
