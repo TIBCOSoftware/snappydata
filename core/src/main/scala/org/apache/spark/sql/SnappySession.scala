@@ -2454,7 +2454,6 @@ object SnappySession extends Logging {
     // second condition means smart connector mode
     if (checkAuthOfExternalTables || (ToolsCallbackInit.toolsCallback == null)) {
       // check for external tables in the plan.
-      // TODO: For Smart Connector we can send a procedure to check the credentials
       val scanNodes = executedPlan.collect {
         case dsc: DataSourceScanExec if !dsc.relation.isInstanceOf[PartitionedDataSourceScan] => dsc
       }
