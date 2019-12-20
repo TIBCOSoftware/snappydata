@@ -2472,9 +2472,9 @@ object SnappySession extends Logging {
       executionId, planStartTime, planEndTime, session.hasLinkPartitionsToBuckets)
   }
 
-  private def checkCurrentUserAllowed(session: SnappySession,
-      scanNodes: Seq[SparkPlan]): Boolean = {
-    val currentUser = session.conf.get(Attribute.USERNAME_ATTR)
+  private def checkCurrentUserAllowed(session: SnappySession, scanNodes: Seq[SparkPlan]): Unit = {
+    val currentUser = session.conf.get(Attribute.USERNAME_ATTR, default = null)
+    if (currentUser eq null) return
     if (ToolsCallbackInit.toolsCallback != null) {
       scanNodes.foreach(n => {
         val dse = n.asInstanceOf[DataSourceScanExec]
@@ -2482,8 +2482,8 @@ object SnappySession extends Logging {
           currentUser, dse.metastoreTableIdentifier)
         if (authzException != null) throw authzException
       })
-      true
-    } else {
+    } else if (SnappyContext.getClusterMode(session.sparkContext)
+        .isInstanceOf[ThinClientConnectorMode]) {
       // Smart Connector Mode
       val tables = scanNodes.map(n => {
         val dse = n.asInstanceOf[DataSourceScanExec]
@@ -2501,14 +2501,13 @@ object SnappySession extends Logging {
           val ret = cstmt.getString(3)
           if (ret != null && ret.nonEmpty) {
             // throw exception
-            throw new AnalysisException(s"${currentUser}  not authorized to access $ret")
+            throw new AnalysisException(s"$currentUser  not authorized to access $ret")
           }
         } finally {
           if (cstmt != null) cstmt.close()
           if (connection != null) connection.close()
         }
       }
-      false
     }
   }
 

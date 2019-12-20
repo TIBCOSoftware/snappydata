@@ -1372,6 +1372,7 @@ task buildAll {
   dependsOn getTasksByName('assemble', true).collect { it.path }
   dependsOn getTasksByName('product', true).collect { it.path }
   dependsOn getTasksByName('testClasses', true).collect { it.path }
+  dependsOn copyShadowJars
   mustRunAfter cleanAll
 }
 task buildDtests {
@@ -1386,7 +1387,9 @@ task checkAll {
   if (rootProject.hasProperty('spark')) {
     dependsOn ':snappy-spark:check'
   }
-  dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
+  if (!rootProject.hasProperty('cluster.skip')) {
+    dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
+  }
   dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
   if (!rootProject.hasProperty('aqp.skip') && hasAqpProject && isEnterpriseProduct) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
