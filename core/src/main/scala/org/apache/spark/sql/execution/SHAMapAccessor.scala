@@ -1845,9 +1845,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
            |          delta += 1;
            |        }
            |      } else {
-           |        if (this.maxSizeReached()) {
+           |        /*if (this.maxSizeReached()) {
            |          throw $bbHashMapObject.bsle();
-           |        }
+           |        }*/
            |        // insert into the map and rehash if required
            |        long relativeOffset = $customNewInsertTerm($paramName, $numKeyBytesTerm,
            |         $isNullTerm, numBytes);
