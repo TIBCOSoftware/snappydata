@@ -27,7 +27,9 @@ import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.InterpreterExecute
 import io.snappydata.Constant
+import io.snappydata.ToolsCallbackImpl.logInfo
 import io.snappydata.gemxd.SnappySessionPerConnection
+import org.apache.log4j.Logger
 import org.apache.spark.Logging
 import org.apache.spark.sql.execution.InterpretCodeCommand
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -63,12 +65,20 @@ object SnappyInterpreterExecute {
   private val connToIntpHelperMap = new mutable.HashMap[
     Long, (String, String, RemoteInterpreterStateHolder)]
 
-  private var permissions = new ScalaCodePermissionChecker
+  private var permissions = new PermissionChecker
 
   private var INITIALIZED = false
 
-  private lazy val dbOwner = {
+  lazy val dbOwner = {
     Misc.getMemStore.getDatabase.getDataDictionary.getAuthorizationDatabaseOwner.toLowerCase()
+  }
+
+  def getLoader(prop: String): ClassLoader = {
+    val x = connToIntpHelperMap.find(x => x._2._3.replOutputDirStr.equals(prop))
+    if (x.isDefined) {
+      return x.get._2._3.intp.classLoader
+    }
+    null
   }
 
   def handleNewPermissions(grantor: String, isGrant: Boolean, users: String): Unit = {
@@ -169,14 +179,14 @@ object SnappyInterpreterExecute {
     val key = Constant.GRANT_REVOKE_KEY
     val permissionsObj = Misc.getMemStore.getMetadataCmdRgn.get(key)
     if (permissionsObj != null) {
-      permissions = permissionsObj.asInstanceOf[ScalaCodePermissionChecker]
+      permissions = permissionsObj.asInstanceOf[PermissionChecker]
     } else {
-      permissions = new ScalaCodePermissionChecker
+      permissions = new PermissionChecker
     }
     INITIALIZED = true
   }
 
-  private class ScalaCodePermissionChecker extends Serializable {
+  private class PermissionChecker extends Serializable {
     private val groupToUsersMap: mutable.Map[String, List[String]] = new mutable.HashMap
     private val allowedUsers: mutable.ListBuffer[String] = new mutable.ListBuffer[String]
 
@@ -215,6 +225,44 @@ object SnappyInterpreterExecute {
       }
       val grantees = ExternalStoreUtils.getExpandedGranteesIterator(Seq(groupstr)).toList
       groupToUsersMap.put(group, grantees)
+    }
+  }
+
+  object PermissionChecker {
+
+    private val logger = Logger.getLogger(
+      "io.snappydata.remote.interpreter.SnappyInterpreterExecute")
+
+    def isAllowed(key: String, currentUser: String, tableSchema: String): Boolean = {
+      if (currentUser.equalsIgnoreCase(tableSchema) ||
+        currentUser.equalsIgnoreCase(dbOwner)) return true
+
+      val permissionsObj = Misc.getMemStore.getMetadataCmdRgn.get(key)
+      if (permissionsObj == null) return false
+      permissionsObj.asInstanceOf[PermissionChecker].isAllowed(currentUser)._1
+    }
+
+    def addRemoveUserForKey(key: String, isGrant: Boolean, users: String): Unit = {
+      PermissionChecker.synchronized {
+        val permissionsObj = Misc.getMemStore.getMetadataCmdRgn.get(key)
+        val permissions = if (permissionsObj != null) permissionsObj.asInstanceOf[PermissionChecker]
+        else new PermissionChecker
+        // expand the users list. Can be a mix of normal user and ldap group
+        val commaSepVals = users.split(",")
+        commaSepVals.foreach(u => {
+          if (isGrant) {
+            if (u.startsWith(Constants.LDAP_GROUP_PREFIX))
+              permissions.addLdapGroup(u)
+            else permissions.addUser(u)
+          } else {
+            if (u.startsWith(Constants.LDAP_GROUP_PREFIX))
+              permissions.removeLdapGroup(u)
+            else permissions.removeUser(u)
+          }
+        })
+        logger.debug(s"Putting permission obj = $permissions against key = $key")
+        Misc.getMemStore.getMetadataCmdRgn.put(key, permissions)
+      }
     }
   }
 }

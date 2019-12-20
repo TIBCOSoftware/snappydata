@@ -23,20 +23,18 @@ import java.util.Properties
 
 import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process._
-
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.Constant
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
-import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable, VM}
+import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
-
-import org.apache.spark.SparkUtilsAccess
+import org.apache.spark.{SparkContext, SparkUtilsAccess}
 import org.apache.spark.sql.types.{IntegerType, StructField}
-import org.apache.spark.sql.{ParseException, Row, SnappyContext, SnappySession, TableNotFoundException}
+import org.apache.spark.sql._
 
 class SplitClusterDUnitSecurityTest(s: String)
     extends DistributedTestBase(s)
@@ -54,7 +52,7 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   private[this] val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
-  bootProps.setProperty("log-level", "config")
+  bootProps.setProperty("log-level", "info")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores", TestUtils.defaultCores.toString)
   System.setProperty(Constant.COMPRESSION_MIN_SIZE, compressionMinSize)
@@ -75,6 +73,8 @@ class SplitClusterDUnitSecurityTest(s: String)
   val jdbcUser2 = "gemfire2"
   val jdbcUser3 = "gemfire3"
   val jdbcUser4 = "gemfire4"
+  val jdbcUser7 = "gemfire7"
+  val jdbcUser8 = "gemfire8"
   val adminUser1 = "gemfire10"
 
   val group1 = "gemGroup1"
@@ -148,11 +148,12 @@ class SplitClusterDUnitSecurityTest(s: String)
     val compressionArg = this.compressionArg
     val waitForInit = "-jobserver.waitForInitialization=true"
     val ldapConf = getLdapConf
+    val syspropExtTableAuthz = "-DCHECK_EXTERNAL_TABLE_AUTHZ=true"
     writeToFile(
       s"localhost  -peer-discovery-port=$port -client-port=$netPort $compressionArg $ldapConf",
       s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port] $waitForInit $compressionArg $ldapConf",
-      s"$confDir/leads")
+    writeToFile(s"localhost  -locators=localhost[$port] $waitForInit $compressionArg $ldapConf" +
+      s" $syspropExtTableAuthz", s"$confDir/leads")
     writeToFile(
       s"""localhost  -locators=localhost[$port] -client-port=$netPort1 $compressionArg $ldapConf
           |localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg $ldapConf
@@ -425,6 +426,7 @@ class SplitClusterDUnitSecurityTest(s: String)
   }
 
   def executeSQL(stmt: Statement, s: String): Unit = {
+    logInfo("Executing SQL: " + s)
     stmt.execute(s)
     val rs = stmt.getResultSet
     if (rs ne null) {
@@ -433,6 +435,64 @@ class SplitClusterDUnitSecurityTest(s: String)
     }
   }
 
+  private def doSimpleStuffOnExtTable(user: String,
+      fqtn: String, expectException: Boolean = false): Unit = {
+    val session = snc.snappySession
+    try {
+      session.conf.set(Attribute.USERNAME_ATTR, user)
+      session.conf.set(Attribute.PASSWORD_ATTR, user)
+      session.sql(s"select count(*) from $fqtn")
+      if (expectException) assert(false, "expected exception")
+    } catch {
+      case ae: AnalysisException => {
+        if (expectException) {
+          // SQLState should be
+          assert(ae.getMessage.contains("not authorized to access"))
+        } else {
+          ae.printStackTrace()
+          assert(false, s"did not expect exception on table $fqtn")
+        }
+      }
+    } finally {
+      session.clear()
+      session.close()
+    }
+  }
+
+  def testExtTableGrantRevoke(): Unit = {
+    System.setProperty("CHECK_EXTERNAL_TABLE_AUTHZ", "true")
+    try {
+      adminConn = getConn(adminUser1, true)
+      val nonAdminUser = "gemfire3"
+      val adminFQTN = adminUser1 + ".t1"
+      // scalastyle:off println
+      val st = adminConn.createStatement()
+      st.execute(s"create external table t1 using csv options(path " +
+        s"'${getClass.getResource("/northwind/orders.csv").getPath}', header 'true', " +
+        s"inferschema 'true', maxCharsPerColumn '4096')")
+      doSimpleStuffOnExtTable(adminUser1, adminFQTN)
+      val connNoAdmin = getConn(jdbcUser1)
+      doSimpleStuffOnExtTable(jdbcUser1, adminFQTN, true)
+      st.execute(s"grant all on t1 to $nonAdminUser")
+      doSimpleStuffOnExtTable(nonAdminUser, adminFQTN)
+      st.execute(s"revoke all on t1 from $nonAdminUser")
+      doSimpleStuffOnExtTable(nonAdminUser, adminFQTN, true)
+
+      // allow gemGroup3 -- allowed users then will be gemfire6, 7 and 8
+      // Before grant expect exception
+      doSimpleStuffOnExtTable(jdbcUser7, adminFQTN, true)
+      st.execute(s"grant all on $adminFQTN to LDAPGROUP:gemGroup3")
+      doSimpleStuffOnExtTable(jdbcUser7, adminFQTN)
+      // now revoke all and expect exception
+      st.execute(s"revoke all on t1 from $nonAdminUser,LDAPGROUP:gemGroup3")
+      doSimpleStuffOnExtTable(jdbcUser7, adminFQTN, true)
+      doSimpleStuffOnExtTable(jdbcUser8, adminFQTN, true)
+      // Only admin should be able to run
+      doSimpleStuffOnExtTable(adminUser1, adminFQTN)
+    } finally {
+      System.setProperty("CHECK_EXTERNAL_TABLE_AUTHZ", "false")
+    }
+  }
   /**
     * Grant and revoke select, insert, update and delete operations and verify from smart and
     * embedded side.
@@ -448,7 +508,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     var user2Stmt = user2Conn.createStatement()
 
     adminConn = getConn(adminUser1)
-    var adminStmt = adminConn.createStatement()
+    val adminStmt = adminConn.createStatement()
 
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, user1Stmt,
       Map("COLUMN_BATCH_SIZE" -> "1k"))
@@ -462,6 +522,7 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     val sqls = List(s"select * from $jdbcUser1.$embeddedColTab1",
       s"select * from $jdbcUser1.$embeddedRowTab1",
+      s"select count(*) from $jdbcUser1.$embeddedColTab1",
       s"insert into $jdbcUser1.$embeddedColTab1 values (1, '$jdbcUser2', 1.1)",
       s"insert into $jdbcUser1.$embeddedRowTab1 values (1, '$jdbcUser2', 1.1)",
       s"update $jdbcUser1.$embeddedColTab1 set col1 = 0, col2 = '$value by $jdbcUser2' where " +
@@ -473,6 +534,11 @@ class SplitClusterDUnitSecurityTest(s: String)
     )
 
     sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
+    val snap1849 = s"select count(*) from $jdbcUser1.$embeddedRowTab1";
+    // Verify that it fails in embedded case
+    assertFailure(() => {executeSQL(user2Stmt, snap1849)}, snap1849)
+    // Verify that it fails in smart connector case - TODO Not yet fixed
+    // assertFailure(() => {snc.sql(s).collect()}, snap1849)
     sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
 
     def verifyGrantRevoke(op: String, sqls: List[String]): Unit = {
@@ -488,12 +554,12 @@ class SplitClusterDUnitSecurityTest(s: String)
       sqls.foreach(s => executeSQL(adminStmt, s))
     }
 
-    verifyGrantRevoke("select", List(sqls(0), sqls(1)))
-    verifyGrantRevoke("insert", List(sqls(2), sqls(3)))
+    verifyGrantRevoke("select", List(sqls(0), sqls(1), sqls(2)))
+    verifyGrantRevoke("insert", List(sqls(3), sqls(4)))
     // No update on column tables
-    verifyGrantRevoke("update", List(sqls(4), sqls(5)))
+    verifyGrantRevoke("update", List(sqls(5), sqls(6)))
     // No delete on column tables
-    verifyGrantRevoke("delete", List(sqls(6), sqls(7)))
+    verifyGrantRevoke("delete", List(sqls(7), sqls(8)))
 
     // SNAPPY_HIVE_METASTORE should not be modifiable by users.
     val sql = s"insert into ${Misc.SNAPPY_HIVE_METASTORE}.VERSION values (1212, 'NA', 'NA')"
@@ -510,10 +576,10 @@ class SplitClusterDUnitSecurityTest(s: String)
     user2Stmt = user2Conn.createStatement()
     assertFailure(() => {executeSQL(user2Stmt, sqls(0))}, sqls(0)) // select on embeddedColTab1
     assertFailure(() => {snc.sql(sqls(0)).collect()}, sqls(0)) // select on embeddedColTab1
-    executeSQL(user2Stmt, sqls(3)) // insert into embeddedRowTab1
-    snc.sql(sqls(3)).collect() // insert into embeddedRowTab1
-    assertFailure(() => {executeSQL(user2Stmt, sqls(7))}, sqls(7)) // delete on embeddedRowTab1
-    assertFailure(() => {snc.sql(sqls(6)).collect()}, sqls(6)) // delete on embeddedColTab1
+    executeSQL(user2Stmt, sqls(4)) // insert into embeddedRowTab1
+    snc.sql(sqls(4)).collect() // insert into embeddedRowTab1
+    assertFailure(() => {executeSQL(user2Stmt, sqls(8))}, sqls(8)) // delete on embeddedRowTab1
+    assertFailure(() => {snc.sql(sqls(7)).collect()}, sqls(7)) // delete on embeddedColTab1
   }
 
   def restartCluster(): Unit = {
