@@ -607,11 +607,11 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
     Repeat above three steps for all the instances launched.
 
-15. <a id="15step"></a>If you are launching the cluster across multiple EC2 instances, you need to 1) setup [passwordless ssh](../reference/misc/passwordless_ssh.md) access these instances and 2) provide EC2 instance information in SnappyData's conf files. You can skip these requirements for launching SnappyData cluster on a single EC2 instance.
+15. <a id="15step"></a>If you are launching the cluster across multiple EC2 instances, you need to 1) setup [passwordless ssh](../reference/misc/passwordless_ssh.md) access across these instances and 2) provide EC2 instance information in SnappyData's conf files. You can skip these requirements for launching SnappyData cluster on a single EC2 instance.
 
     At a minimum, provide private IP addresses of EC2 instances in appropriate conf files, viz. `conf/locators`, `conf/servers` and `conf/leads`.
 
-    Sample conf files for a cluster with 3 servers, 1 locator and 1 lead are given below. The locator and the lead process run on the same EC2 instance.
+    Sample conf files for a cluster with 3 servers, 1 locator and 1 lead are given below. Here the locator and lead processes are configured to run on the same EC2 instance.
 
         cat /opt/snappydata/conf/locators
         172.16.32.180
@@ -621,7 +621,7 @@ Refer to the following documentation, for more information on [accessing an EC2 
         172.16.32.182
         172.16.32.183
 
-        cat /opt/snappydata/conf/locators
+        cat /opt/snappydata/conf/leads
         172.16.32.180
 
 16. Go to the **/opt/snappydata** directory. Run the following command to start your cluster. By default, it'll launch a basic cluster with one data server, one lead, and one locator.
@@ -633,8 +633,8 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
 Before you access the SnappyData cluster, you must configure cluster's security group to allow connections from your client host on required ports.
 
-To open these ports to the world (not recommended) when you do not know the IP address of your client host, you can specify `0.0.0.0/0` as **Source** against above port range in the security group.
-But then, and if your cluster does not have security enabled, any unknown user on the internet can connect to your cluster.
+In case you do not know the IP address of your client host, you can open these ports to the world (though, not recommended) by specifying `0.0.0.0/0` as **Source** against above port range in the security group.
+Note that in such a case, any unknown user on the internet can connect to your cluster, if your cluster does not have security enabled.
 
 So it is strongly recommended to add specific IP addresses as **Source**, in the format `XXX.XXX.XXX.XXX/32` in your security group.
 
@@ -654,6 +654,8 @@ You can launch the snappy shell either from the same EC2 instance or from your l
 
 	    	snappy> connect client '(private-ip-of-EC2-instance):1527';
 
+    * To connect to the cluster running on multiple EC2 instances, you can use private IP of the EC2 instance where either the locator or any of the servers is running.
+
 2. Connecting to the cluster from your laptop (or any host outside AWS VPC):
 
     * Launch the snappy shell:
@@ -666,5 +668,4 @@ You can launch the snappy shell either from the same EC2 instance or from your l
 
     		snappy> connect client '<public-ip-of-EC2-instance>:1527';
 
-
-
+    * To connect to the cluster running on multiple EC2 instances, you can use public IP of the EC2 instance where either the locator or any of the servers is running.
