@@ -23,22 +23,26 @@ These steps are provided as a guide for setting up passwordless SSH. Check with 
         `systemctl enable sshd` Or `systemctl enable ssh`
         `systemctl start sshd` Or `systemctl start ssh`
 
+    Perform above two steps for all the systems which will be part of the SnappyData cluster.
+
     Mac OS X has a built-in SSH client.
 
 3. **Generate an RSA key pair**<br>
-    Generate an RSA key pair by running the following command on your system.
+    Generate an RSA key pair on your local or primary system by running the following command.
         `ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ''`
     This will create two files (a key pair) at `~/.ssh/` path: 1) `id_rsa` which is the private key and 2) `id_rsa.pub` - the public key.
 
 4.  **Copy the Public Key**<br>
-    Once the key pair is generated, append the contents of this public key file, to the authorized key file (typically `~/.ssh/authorized_keys`) on the remote host(s).
-    With this, you can ssh to this remote host(s) from your local system, without providing the password.
+    Once the key pair is generated, append the contents of the public key file `id_rsa.pub`, to the authorized key file `~/.ssh/authorized_keys` on all the remote hosts.
+
+    With this, you can ssh to these remote hosts from your local system, without providing the password.
+    This also enables you to execute cluster start, stop or status scripts from your local system.
 
     For the single node setup, you can simply append it by executing `cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys` on your system.
 
 5. **Two-Way Access**<br>
-    Optionally, if you want to also do ssh login from remote host to your system without providing the password, copy your `id_rsa` file generated above and place it at `~/.ssh/` on the remote host(s).
-    Make sure you do not have a `id_rsa` file already created at that location.
+    Optionally, if you want to also do ssh login from remote hosts to your system without providing the password, copy your `id_rsa` file generated above and place it at `~/.ssh/` on the remote hosts.
+    Make sure you do not already have a `id_rsa` file present at that location on remote hosts.
         `scp ~/.ssh/id_rsa <remote-host>:~/.ssh/`    # You'll be asked for password here.
 
     Also, make sure it is not writable for other users.

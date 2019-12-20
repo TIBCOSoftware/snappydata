@@ -607,9 +607,24 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
     Repeat above three steps for all the instances launched.
 
-15. <a id="15step"></a>If you are launching the cluster across multiple EC2 instances, you need to setup [passwordless ssh](../reference/misc/passwordless_ssh.md) access across these instances. This is not required for launching SnappyData cluster on a single EC2 instance.
+15. <a id="15step"></a>If you are launching the cluster across multiple EC2 instances, you need to 1) setup [passwordless ssh](../reference/misc/passwordless_ssh.md) access these instances and 2) provide EC2 instance information in SnappyData's conf files. You can skip these requirements for launching SnappyData cluster on a single EC2 instance.
 
-17. Go to the **/opt/snappydata** directory. Run the following command to start a basic cluster with one data node, one lead, and one locator.
+    At a minimum, provide private IP addresses of EC2 instances in appropriate conf files, viz. `conf/locators`, `conf/servers` and `conf/leads`.
+
+    Sample conf files for a cluster with 3 servers, 1 locator and 1 lead are given below. The locator and the lead process run on the same EC2 instance.
+
+        cat /opt/snappydata/conf/locators
+        172.16.32.180
+
+        cat /opt/snappydata/conf/servers
+        172.16.32.181
+        172.16.32.182
+        172.16.32.183
+
+        cat /opt/snappydata/conf/locators
+        172.16.32.180
+
+16. Go to the **/opt/snappydata** directory. Run the following command to start your cluster. By default, it'll launch a basic cluster with one data server, one lead, and one locator.
 
 		./sbin/snappy-start-all.sh
 
