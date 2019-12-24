@@ -411,10 +411,10 @@ object SparkSQLExecuteImpl {
         val dvd = dvds(index)
         if (row.isNullAt(index)) {
           dvd.setToNull()
-          index += 1
           if (types(index) == StoredFormatIds.REF_TYPE_ID) {
             refTypeIndex += 1
           }
+          index += 1
         } else {
           types(index) match {
             case StoredFormatIds.SQL_VARCHAR_ID |
