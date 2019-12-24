@@ -250,13 +250,14 @@ object SnappyInterpreterExecute {
         // expand the users list. Can be a mix of normal user and ldap group
         val commaSepVals = users.split(",")
         commaSepVals.foreach(u => {
+          val uUC = u.toUpperCase
           if (isGrant) {
             if (u.toUpperCase.startsWith(Constants.LDAP_GROUP_PREFIX)) {
-              permissions.addLdapGroup(u)
+              permissions.addLdapGroup(uUC)
             } else permissions.addUser(u)
           } else {
             if (u.toUpperCase.startsWith(Constants.LDAP_GROUP_PREFIX)) {
-              permissions.removeLdapGroup(u)
+              permissions.removeLdapGroup(uUC)
             } else permissions.removeUser(u)
           }
         })
