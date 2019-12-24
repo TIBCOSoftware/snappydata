@@ -2474,7 +2474,7 @@ object SnappySession extends Logging {
 
   private def checkCurrentUserAllowed(session: SnappySession, scanNodes: Seq[SparkPlan]): Unit = {
     val currentUser = session.conf.get(Attribute.USERNAME_ATTR, default = null)
-    if (currentUser eq null) return
+    if (currentUser eq null) return // Why not throw error instead?
     if (ToolsCallbackInit.toolsCallback != null) {
       scanNodes.foreach(n => {
         val dse = n.asInstanceOf[DataSourceScanExec]
