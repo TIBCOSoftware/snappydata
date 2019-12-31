@@ -277,7 +277,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     td: TableIdentifier, users: String, catalogTable: CatalogTable): Unit = {
 
     // this can be issued by only dbOwner or table owner
-    val tableOwner = catalogTable.database  // catalog database should be table owner too. Owner was found to be OS username !!
+    val tableOwner = catalogTable.database  // catalogTable.owner returns an OS user
     val dbOwner = SnappyInterpreterExecute.dbOwner
     if (!(grantor.equalsIgnoreCase(tableOwner) || grantor.equalsIgnoreCase(dbOwner))) {
       throw StandardException.newException(
@@ -298,7 +298,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     if (metastoreTableIdentifier.isDefined) {
       val identifier = metastoreTableIdentifier.get.identifier
       val database = metastoreTableIdentifier.get.database.getOrElse(null)
-      val schema = if (identifier.indexOf('.') > 0) identifier.substring(identifier.indexOf('.'))
+      val schema = if (identifier.indexOf('.') > 0) identifier.substring(0, identifier.indexOf('.'))
       else if (database != null) {
         database
       } else {

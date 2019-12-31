@@ -2473,8 +2473,14 @@ object SnappySession extends Logging {
   }
 
   private def checkCurrentUserAllowed(session: SnappySession, scanNodes: Seq[SparkPlan]): Unit = {
-    val currentUser = session.conf.get(Attribute.USERNAME_ATTR, default = null)
-    if (currentUser eq null) return // Why not throw error instead?
+    val currentUser = SnappyContext.getClusterMode(session.sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+        session.conf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, null)
+      case _ => session.conf.get(Attribute.USERNAME_ATTR, default = null)
+    }
+    if ((currentUser eq null) || currentUser.isEmpty) {
+      throw new AnalysisException("Username not provided.")
+    }
     if (ToolsCallbackInit.toolsCallback != null) {
       scanNodes.foreach(n => {
         val dse = n.asInstanceOf[DataSourceScanExec]
