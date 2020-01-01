@@ -406,11 +406,14 @@ object SparkSQLExecuteImpl {
       input.array(), input.position(), input.available())
     unsafeRows.map { row =>
       var index = 0
-      var writeIndex = 0
+      var refTypeIndex = 0
       while (index < numFields) {
         val dvd = dvds(index)
         if (row.isNullAt(index)) {
           dvd.setToNull()
+          if (types(index) == StoredFormatIds.REF_TYPE_ID) {
+            refTypeIndex += 1
+          }
           index += 1
         } else {
           types(index) match {
@@ -464,14 +467,14 @@ object SparkSQLExecuteImpl {
               dvd.setValue(row.getDouble(index))
             case StoredFormatIds.REF_TYPE_ID =>
               // convert to Json using JacksonGenerator
-              val writer = writers(writeIndex)
-              val generator = generators(writeIndex)
+              val writer = writers(refTypeIndex)
+              val generator = generators(refTypeIndex)
               Utils.generateJson(generator, row, index,
                 dataTypes(index).asInstanceOf[DataType])
               val json = writer.toString
               writer.reset()
               dvd.setValue(json)
-              writeIndex += 1
+              refTypeIndex += 1
             case StoredFormatIds.SQL_BLOB_ID =>
               // all complex types too work with below because all of
               // Array, Map, Struct (as well as Binary itself) transport
