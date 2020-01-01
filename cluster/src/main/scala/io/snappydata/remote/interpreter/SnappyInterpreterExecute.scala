@@ -252,13 +252,11 @@ object SnappyInterpreterExecute {
         commaSepVals.foreach(u => {
           val uUC = u.toUpperCase
           if (isGrant) {
-            if (u.toUpperCase.startsWith(Constants.LDAP_GROUP_PREFIX)) {
-              permissions.addLdapGroup(uUC)
-            } else permissions.addUser(u)
+            if (uUC.startsWith(Constants.LDAP_GROUP_PREFIX)) permissions.addLdapGroup(uUC)
+            else permissions.addUser(u)
           } else {
-            if (u.toUpperCase.startsWith(Constants.LDAP_GROUP_PREFIX)) {
-              permissions.removeLdapGroup(uUC)
-            } else permissions.removeUser(u)
+            if (uUC.startsWith(Constants.LDAP_GROUP_PREFIX)) permissions.removeLdapGroup(uUC)
+            else permissions.removeUser(u)
           }
         })
         logger.debug(s"Putting permission obj = $permissions against key = $key")

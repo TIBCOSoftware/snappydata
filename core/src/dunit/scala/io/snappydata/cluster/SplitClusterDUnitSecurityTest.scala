@@ -447,6 +447,8 @@ class SplitClusterDUnitSecurityTest(s: String)
   private def doSimpleStuffOnExtTable(user: String,
       fqtn: String, session: SnappySession, expectException: Boolean = false): Unit = {
     val sql = s"select count(*) from $fqtn"
+
+    // Verify in smart connector mode
     try {
       session.sql(sql)
       if (expectException) assert(false, "Expected an exception but none found!")
@@ -465,6 +467,7 @@ class SplitClusterDUnitSecurityTest(s: String)
       session.close()
     }
 
+    // Verify in embedded mode
     val conn = getConn(user, false)
     try {
       conn.createStatement().execute(sql)
