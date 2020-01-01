@@ -219,7 +219,7 @@ object SnappyInterpreterExecute {
     def refreshOnLdapGroupRefresh(group: String): Unit = {
       val groupUC = group.toUpperCase
       val groupstr = if (!groupUC.startsWith(Constants.LDAP_GROUP_PREFIX)) {
-        s"${Constants.LDAP_GROUP_PREFIX}:$group"
+        s"${Constants.LDAP_GROUP_PREFIX}$group"
       } else {
         group
       }
