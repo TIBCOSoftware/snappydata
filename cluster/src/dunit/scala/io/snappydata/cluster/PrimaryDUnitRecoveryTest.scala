@@ -1666,8 +1666,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       stmt.execute(s"""INSERT INTO $fqtn SELECT
                       |3, 3.3, Array('2022-11-18 11:31:11.333', '2022-02-11 22:11:22.111'),
                       |Map(cast('2022-11-18 11:31:11.333' as timestamp),cast('2044-11-11' as
-                      |date)), Struct
-                      |(cast(null as timestamp), '2011-11-11'), Map(cast('2044-11-11' as date),
+                      | date)), Struct(cast(null as timestamp), '2011-11-11'),
+                      | Map(cast('2044-11-11' as date),
                       |cast('2022-11-18 11:31:11.333' as timestamp))""".stripMargin)
 
       // ===================================
@@ -1811,12 +1811,11 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       rs = stmtRec.executeQuery("select * from gemfire10.t2")
       rs.next()
       val expectedResult2: ListBuffer[Array[Any]] = ListBuffer(
-        // todo: fix timestamp output once null value is fixed. Look for 1970-01-01...
         Array(1, 1.1,
           """{"col_0":["2011-11-11","2010-12-12",null]}""",
           """{"col_1":{"1":"2011-11-11"}}""",
           """{"col_2":{"f1":1.1,"f2":"2011-11-11"}}""",
-          """{"col_3":["1970-01-01T05:30:00.000+05:30","2022-02-22T22:22:22.222+05:30"]}"""),
+          """{"col_3":[null,"2022-02-22T22:22:22.222+05:30"]}"""),
         Array(2, null,
           """{"col_0":[null,"2022-11-11","2044-06-06","2006-06-05"]}""",
           """{"col_1":{"2":null}}""",
@@ -1826,7 +1825,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
           """{"col_0":["2044-11-11","2088-12-12"]}""",
           """{"col_1":{"3":"2044-11-11"}}""",
           """{"col_2":{"f1":3.3,"f2":"2044-11-11"}}""",
-          """{"col_3":["2019-02-18T15:31:55.333+05:30","1970-01-01T05:30:00.000+05:30"]}""")
+          """{"col_3":["2019-02-18T15:31:55.333+05:30",null]}""")
       )
       compareResult(expectedResult2,
         getRecFromResultSet(rs, "integer,double,array,map,struct,array"))
@@ -1851,7 +1850,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
           """{"col_0":[null,"2022-11-11","2044-06-06","2006-06-05"]}""",
           """{"col_1":{"1":null}}""",
           """{"col_2":{"f1":1.1}}""",
-          """{"col_3":["1970-01-01T05:30:00.000+05:30","2022-02-22T22:22:22.222+05:30"]}"""),
+          """{"col_3":[null,"2022-02-22T22:22:22.222+05:30"]}"""),
         Array(2, 2.2,
           """{"col_0":["2011-11-11","2010-12-12",null]}""",
           """{"col_1":{"2":"2011-11-11"}}""",
@@ -1861,7 +1860,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
           """{"col_0":["2044-11-11","2088-12-12"]}""",
           """{"col_1":{"3":"2044-11-11"}}""",
           """{"col_2":{"f1":3.3,"f2":"2044-11-11"}}""",
-          """{"col_3":["2019-02-18T15:31:55.333+05:30","1970-01-01T05:30:00.000+05:30"]}""")
+          """{"col_3":["2019-02-18T15:31:55.333+05:30",null]}""")
       )
       compareResult(expectedResult4,
         getRecFromResultSet(rs, "integer,double,array,map,struct,array"))
@@ -1906,12 +1905,12 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       rs = stmtRec.executeQuery("select * from gemfire10.t8")
       val expectedResult8: ListBuffer[Array[Any]] = ListBuffer(
         Array(2, 2.2,
-          """{"col_0":["2111-11-11T15:31:55.333+05:30","1970-01-01T05:30:00.000+05:30","1970-01-01T05:30:00.000+05:30"]}""".stripMargin,
+          """{"col_0":["2111-11-11T15:31:55.333+05:30",null,null]}""",
           """{"col_1":{"4476679315333000":"2011-11-11"}}""",
           """{"col_2":{"f1":"2022-02-22T22:22:22.222+05:30"}}""",
           """{"col_3":{"15289":"2111-11-11T15:31:55.333+05:30"}}"""),
         Array(1, 1.1,
-          """{"col_0":["1970-01-01T05:30:00.000+05:30","2019-02-18T15:31:55.333+05:30","2022-02-22T22:22:22.222+05:30"]}""",
+          """{"col_0":[null,"2019-02-18T15:31:55.333+05:30","2022-02-22T22:22:22.222+05:30"]}""",
           """{"col_1":{"1550484115333000":null}}""",
           """{"col_2":{"f1":"2022-02-22T22:22:22.222+05:30"}}""",
           """{"col_3":{"19045":"2019-02-18T15:31:55.333+05:30"}}"""),
@@ -1922,7 +1921,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
           """{"col_3":{"27343":"2022-11-18T11:31:11.333+05:30"}}""")
       )
       compareResult(expectedResult8,
-        getRecFromResultSet(rs, "integer,double,array,map,struct"))
+        getRecFromResultSet(rs, "integer,double,array,map,struct,map"))
       rs.close()
 
       // 9: null and not null atomic data only 1 bucket update/delete alter add/drop/add

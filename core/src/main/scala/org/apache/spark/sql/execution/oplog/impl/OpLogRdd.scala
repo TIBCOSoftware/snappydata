@@ -236,8 +236,9 @@ class OpLogRdd(
               if (daysSinceEpoch == null) null else DateTimeUtils.toJavaDate(daysSinceEpoch)
             })
           } else if (arrayType.elementType == TimestampType) {
-            data.toArray[Long](LongType).map(nsSinceEpoch => {
-              if (nsSinceEpoch == null) null else new Timestamp(nsSinceEpoch / 1000)
+            data.toArray[Object](LongType).map(nsSinceEpoch => {
+              if (nsSinceEpoch == null) null
+              else new Timestamp(nsSinceEpoch.asInstanceOf[Long] / 1000)
             })
           } else {
             data.toArray(arrayType.elementType)
@@ -749,8 +750,9 @@ class OpLogRdd(
             if (daysSinceEpoch == null) null else DateTimeUtils.toJavaDate(daysSinceEpoch)
           })
         } else if (a.elementType == TimestampType) {
-          decoder.readArray(value, rowNum).toArray[Long](LongType).map(nsSinceEpoch => {
-            if (nsSinceEpoch == null) null else new Timestamp(nsSinceEpoch / 1000)
+          decoder.readArray(value, rowNum).toArray[Object](LongType).map(nsSinceEpoch => {
+            if (nsSinceEpoch == null) null else new Timestamp(nsSinceEpoch.asInstanceOf[Long] /
+                1000)
           })
         } else {
           decoder.readArray(value, rowNum).toArray(a.elementType)
