@@ -495,8 +495,11 @@ class SplitClusterDUnitSecurityTest(s: String)
       if (adminConn == null) adminConn = getConn(adminUser1, true)
       doTest(adminConn.createStatement(), t1, s"$adminUser1.$t1", adminUser1)
       val jdbc5Conn = getConn(jdbcUser5)
-      doTest(jdbc5Conn.createStatement(), t1, s"$jdbcUser5.$t1", jdbcUser5)
-      jdbc5Conn.close()
+      try {
+        doTest(jdbc5Conn.createStatement(), t1, s"$jdbcUser5.$t1", jdbcUser5)
+      } finally {
+        jdbc5Conn.close()
+      }
     } finally {
       System.setProperty("CHECK_EXTERNAL_TABLE_AUTHZ", "false")
     }
@@ -553,6 +556,9 @@ class SplitClusterDUnitSecurityTest(s: String)
       getConn(jdbcUser1, true).close() // Just initialize snc.
       group3.foreach(u => doSimpleStuffOnExtTable(u, fqtn, ss(u)))
       doSimpleStuffOnExtTable(jdbcUser9, fqtn, ss(jdbcUser9), true)
+    } else {
+      // This is admin connection. Test REFRESH_LDAP_GROUP works fine (SNAP-3281)
+      st.execute("call SYS.REFRESH_LDAP_GROUP('gemGroup1')")
     }
   }
 
