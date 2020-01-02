@@ -2473,8 +2473,12 @@ object SnappySession extends Logging {
   }
 
   private def checkCurrentUserAllowed(session: SnappySession, scanNodes: Seq[SparkPlan]): Unit = {
-    val currentUser = session.conf.get(Attribute.USERNAME_ATTR, default = null)
-    if (currentUser eq null) return
+    var currentUser = SnappyContext.getClusterMode(session.sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+        session.conf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, null)
+      case _ => session.conf.get(Attribute.USERNAME_ATTR, default = null)
+    }
+    if (currentUser eq null) currentUser = ""
     if (ToolsCallbackInit.toolsCallback != null) {
       scanNodes.foreach(n => {
         val dse = n.asInstanceOf[DataSourceScanExec]

@@ -21,8 +21,10 @@ import java.nio.file.{Files, Paths}
 import java.sql.{Connection, SQLException, Statement}
 import java.util.Properties
 
+import scala.collection.mutable
 import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process._
+
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -32,6 +34,7 @@ import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
+
 import org.apache.spark.{SparkContext, SparkUtilsAccess}
 import org.apache.spark.sql.types.{IntegerType, StructField}
 import org.apache.spark.sql._
@@ -73,8 +76,11 @@ class SplitClusterDUnitSecurityTest(s: String)
   val jdbcUser2 = "gemfire2"
   val jdbcUser3 = "gemfire3"
   val jdbcUser4 = "gemfire4"
+  val jdbcUser5 = "gemfire5"
+  val jdbcUser6 = "gemfire6"
   val jdbcUser7 = "gemfire7"
   val jdbcUser8 = "gemfire8"
+  val jdbcUser9 = "gemfire9"
   val adminUser1 = "gemfire10"
 
   val group1 = "gemGroup1"
@@ -393,7 +399,10 @@ class SplitClusterDUnitSecurityTest(s: String)
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, u)
     props.setProperty(Attribute.PASSWORD_ATTR, u)
-    if (setSNC) snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    if (setSNC) {
+      if (snc != null) snc.sparkContext.stop()
+      snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    }
     SplitClusterDUnitTest.getConnection(locatorClientPort, props)
   }
 
@@ -436,63 +445,123 @@ class SplitClusterDUnitSecurityTest(s: String)
   }
 
   private def doSimpleStuffOnExtTable(user: String,
-      fqtn: String, expectException: Boolean = false): Unit = {
-    val session = snc.snappySession
+      fqtn: String, session: SnappySession, expectException: Boolean = false): Unit = {
+    val sql = s"select count(*) from $fqtn"
+
+    // Verify in smart connector mode
     try {
-      session.conf.set(Attribute.USERNAME_ATTR, user)
-      session.conf.set(Attribute.PASSWORD_ATTR, user)
-      session.sql(s"select count(*) from $fqtn")
-      if (expectException) assert(false, "expected exception")
+      session.sql(sql)
+      if (expectException) assert(false, "Expected an exception but none found!")
     } catch {
       case ae: AnalysisException => {
         if (expectException) {
           // SQLState should be
-          assert(ae.getMessage.contains("not authorized to access"))
+          assert(ae.getMessage.contains(s"$user  not authorized to access"),
+            s"Actual message: ${ae.getMessage}")
         } else {
-          ae.printStackTrace()
-          assert(false, s"did not expect exception on table $fqtn")
+          assert(false, s"Did not expect exception on table $fqtn: ${ae.getMessage()}")
         }
       }
     } finally {
       session.clear()
       session.close()
     }
+
+    // Verify in embedded mode
+    val conn = getConn(user, false)
+    try {
+      conn.createStatement().execute(sql)
+      assert (!expectException, "Expected an exception but none found!")
+    } catch {
+      case sqle: SQLException => {
+        if (expectException) {
+          // SQLState should be
+          val names = fqtn.split("\\.")
+          assert(sqle.getMessage.contains(s"User '$user' does not have external table " +
+              s"permission on  '${names(0)}'.'${names(1)}'"), s"Actual message: ${sqle.getMessage}")
+        } else {
+          assert(false, s"Did not expect exception on table $fqtn: ${sqle.getMessage}")
+        }
+      }
+    } finally {
+      conn.close()
+    }
   }
 
   def testExtTableGrantRevoke(): Unit = {
     System.setProperty("CHECK_EXTERNAL_TABLE_AUTHZ", "true")
     try {
-      adminConn = getConn(adminUser1, true)
-      val nonAdminUser = "gemfire3"
-      val adminFQTN = adminUser1 + ".t1"
-      // scalastyle:off println
-      val st = adminConn.createStatement()
-      st.execute(s"create external table t1 using csv options(path " +
-        s"'${getClass.getResource("/northwind/orders.csv").getPath}', header 'true', " +
-        s"inferschema 'true', maxCharsPerColumn '4096')")
-      doSimpleStuffOnExtTable(adminUser1, adminFQTN)
-      val connNoAdmin = getConn(jdbcUser1)
-      doSimpleStuffOnExtTable(jdbcUser1, adminFQTN, true)
-      st.execute(s"grant all on t1 to $nonAdminUser")
-      doSimpleStuffOnExtTable(nonAdminUser, adminFQTN)
-      st.execute(s"revoke all on t1 from $nonAdminUser")
-      doSimpleStuffOnExtTable(nonAdminUser, adminFQTN, true)
-
-      // allow gemGroup3 -- allowed users then will be gemfire6, 7 and 8
-      // Before grant expect exception
-      doSimpleStuffOnExtTable(jdbcUser7, adminFQTN, true)
-      st.execute(s"grant all on $adminFQTN to LDAPGROUP:gemGroup3")
-      doSimpleStuffOnExtTable(jdbcUser7, adminFQTN)
-      // now revoke all and expect exception
-      st.execute(s"revoke all on t1 from $nonAdminUser,LDAPGROUP:gemGroup3")
-      doSimpleStuffOnExtTable(jdbcUser7, adminFQTN, true)
-      doSimpleStuffOnExtTable(jdbcUser8, adminFQTN, true)
-      // Only admin should be able to run
-      doSimpleStuffOnExtTable(adminUser1, adminFQTN)
+      val t1 = "t1_ext"
+      if (adminConn == null) adminConn = getConn(adminUser1, true)
+      doTest(adminConn.createStatement(), t1, s"$adminUser1.$t1", adminUser1)
+      val jdbc5Conn = getConn(jdbcUser5)
+      try {
+        doTest(jdbc5Conn.createStatement(), t1, s"$jdbcUser5.$t1", jdbcUser5)
+      } finally {
+        jdbc5Conn.close()
+      }
     } finally {
       System.setProperty("CHECK_EXTERNAL_TABLE_AUTHZ", "false")
     }
   }
+
+  private def doTest(st: Statement, t1: String, fqtn: String, schemaOwner: String): Unit = {
+    st.execute(s"create external table $t1 using csv options(path " +
+      s"'${getClass.getResource("/northwind/orders.csv").getPath}', header 'true', " +
+      s"inferschema 'true', maxCharsPerColumn '4096')")
+    val group3 = Seq(jdbcUser6, jdbcUser7, jdbcUser8)
+    val group6 = Seq(jdbcUser1, jdbcUser2, jdbcUser3, jdbcUser6, jdbcUser9)
+
+    def ss(u: String): SnappySession = {
+      snc.snappySession.conf.set(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, u)
+      snc.snappySession.conf.set(Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR, u)
+      snc.snappySession
+    }
+
+    doSimpleStuffOnExtTable(adminUser1, fqtn, ss(adminUser1))
+    if (!schemaOwner.equals(adminUser1)) { // schema owner is different from admin
+      doSimpleStuffOnExtTable(schemaOwner, fqtn, ss(schemaOwner))
+    }
+    doSimpleStuffOnExtTable(jdbcUser3, fqtn, ss(jdbcUser3), true)
+    st.execute(s"grant all on $t1 to $jdbcUser3")
+    doSimpleStuffOnExtTable(jdbcUser3, fqtn, ss(jdbcUser3))
+    st.execute(s"revoke all on $t1 from $jdbcUser3")
+    doSimpleStuffOnExtTable(jdbcUser3, fqtn, ss(jdbcUser3), true)
+
+    // Grant all to gemGroup3 (gemfire6,7,8) and gemGroup6 (gemfire1,2,3,6,9)
+    // Before grant, expect exception
+    (group3 ++ group6).foreach(u => doSimpleStuffOnExtTable(u, fqtn, ss(u), true))
+
+    st.execute(s"grant all on $fqtn to LDAPGROUP:gemGroup3,ldapgroup:gemGroup6")
+    (group3 ++ group6).foreach(u => doSimpleStuffOnExtTable(u, fqtn, ss(u)))
+
+    // Now revoke all from group3 and expect exception
+    st.execute(s"revoke all on $t1 from $jdbcUser3,ldapgroup:gemGroup3")
+    Seq(jdbcUser7, jdbcUser8).foreach(u => doSimpleStuffOnExtTable(u, fqtn,
+      ss(u), true))
+    // gemGroup6 still has grants
+    group6.foreach(u => doSimpleStuffOnExtTable(u, fqtn, ss(u)))
+
+    st.execute(s"revoke all on $t1 from ldapGroup:gemGroup6")
+    group6.foreach(u => doSimpleStuffOnExtTable(u, fqtn, ss(u), true))
+
+    // Only admin and schema owner should have permissions
+    doSimpleStuffOnExtTable(adminUser1, fqtn, ss(adminUser1))
+    if (!schemaOwner.equals(adminUser1)) {
+      doSimpleStuffOnExtTable(schemaOwner, fqtn, ss(schemaOwner))
+
+      // Verify permissions are retained even after the cluster is restarted.
+      st.execute(s"grant all on $fqtn to LDAPGROUP:gemGroup3")
+      restartCluster()
+      getConn(jdbcUser1, true).close() // Just initialize snc.
+      group3.foreach(u => doSimpleStuffOnExtTable(u, fqtn, ss(u)))
+      doSimpleStuffOnExtTable(jdbcUser9, fqtn, ss(jdbcUser9), true)
+    } else {
+      // This is admin connection. Test REFRESH_LDAP_GROUP works fine (SNAP-3281)
+      st.execute("call SYS.REFRESH_LDAP_GROUP('gemGroup1')")
+    }
+  }
+
   /**
     * Grant and revoke select, insert, update and delete operations and verify from smart and
     * embedded side.
@@ -583,10 +652,11 @@ class SplitClusterDUnitSecurityTest(s: String)
   }
 
   def restartCluster(): Unit = {
-    user1Conn.close()
-    user2Conn.close()
+    if (user1Conn != null) user1Conn.close()
+    if (user2Conn != null) user2Conn.close()
     if (user4Conn != null) user4Conn.close()
     adminConn.close()
+    adminConn = null
     snc.sparkContext.stop()
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
