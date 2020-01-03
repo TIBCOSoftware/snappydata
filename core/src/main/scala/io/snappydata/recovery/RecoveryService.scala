@@ -203,7 +203,10 @@ object RecoveryService extends Logging {
     })
 
     val tempViewBuffer: mutable.Buffer[String] = List.empty.toBuffer
-    val tempTableBuffer: mutable.Buffer[(String, String)] = List.empty.toBuffer
+    //  tempTableBuffer ===> ("text_timestamp", "ddl string", "use schemaName;")
+    // "use schemaName" is added to handle ddls of tables in different schemas with same
+    // table-name.
+    val tempTableBuffer: mutable.Buffer[(String, String, String)] = List.empty.toBuffer
 
     val allTables = snappyHiveExternalCatalog.getAllTables()
     allTables.foreach(table => {
@@ -223,11 +226,13 @@ object RecoveryService extends Logging {
         val createTableString = (0 until numSqlTextParts).map { i =>
           table.properties.getOrElse(s"sqlTextpart.$i", null)
         }.mkString
-        tempTableBuffer append ((s"createTableString_$createTimestamp", createTableString))
+        tempTableBuffer append ((s"createTableString_$createTimestamp", createTableString,
+            s"use ${table.database}"))
       }
       // ========== covers alter statements ================
-      allkeys.filter(f => f.contains("altTxt")).foreach(key =>
-        tempTableBuffer append ((key, table.properties(key))))
+      allkeys.filter(f => f.contains("altTxt")).foreach { key =>
+        tempTableBuffer append ((key, table.properties(key), s"use ${table.database}"))
+      }
 
       // ============ covers view statements ============
       table.viewOriginalText match {
@@ -238,7 +243,9 @@ object RecoveryService extends Logging {
 
     // the sorting is required to arrange statements amongst tables
     val sortedTempTableBuffer =
-      tempTableBuffer.sortBy(tup => tup._1.split("_")(1).toLong).map(_._2)
+      tempTableBuffer.sortBy(tup => tup._1.split("_")(1).toLong).flatMap(tup => {
+        mutable.Buffer[String](tup._3, tup._2)
+      })
     ddlBuffer.appendAll(sortedTempTableBuffer)
 
     // view ddls should be at the end so that the extracted ddls won't fail when replayed as is.
@@ -250,7 +257,6 @@ object RecoveryService extends Logging {
             alias.startsWith(Constant.MEMBER_ID_PREFIX) ||
             !cmdObj.isInstanceOf[String])) {
           val cmd = cmdObj.asInstanceOf[String]
-          logInfo("#RecoveryService " + alias + cmd)
           val cmdFields = cmd.split("\\|", -1)
           if (cmdFields.length > 1) {
             val repos = cmdFields(1)
