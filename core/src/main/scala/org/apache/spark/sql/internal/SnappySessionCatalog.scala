@@ -337,7 +337,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     } else {
       val orgSqlText = snappySession.getContextObject[String]("orgSqlText") match {
         case Some(s) => s
-        case None => s"create database $schemaName"
+        case None => s"create database if not exists $schemaName"
       }
       super.createDatabase(CatalogDatabase(schemaName, schemaDescription(schemaName),
         getDefaultDBPath(schemaName), Map("orgSqlText" -> orgSqlText)), ignoreIfExists)
@@ -397,7 +397,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
     val orgSqlText = snappySession.getContextObject[String]("orgSqlText") match {
       case Some(s) => s
-      case None => s"create database $schemaName"
+      case None => s"create database if not exists $schemaName"
     }
     val schemaDefinitionWithDdl = schemaDefinition.copy(properties =
       schemaDefinition.properties ++ Map("orgSqlText" -> orgSqlText))
