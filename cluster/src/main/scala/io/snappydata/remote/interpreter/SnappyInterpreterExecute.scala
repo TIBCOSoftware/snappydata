@@ -31,8 +31,9 @@ import io.snappydata.gemxd.SnappySessionPerConnection
 import org.apache.log4j.Logger
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.execution.InterpretCodeCommand
+import org.apache.spark.sql.execution.{GrantRevokeOnExternalTable, InterpretCodeCommand}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 import com.pivotal.gemfirexd.internal.iapi.util.StringUtil
@@ -141,6 +142,25 @@ object SnappyInterpreterExecute {
     } finally {
       if (lockTaken) intpRWLock.writeLock().unlock()
     }
+    updateMetaRegion(group)
+  }
+
+  private def updateMetaRegion(group: String): Unit = {
+    val r = Misc.getMemStore.getMetadataCmdRgn
+    val allAuthKeys = r.keySet().asScala.filter(s =>
+      s.startsWith(GrantRevokeOnExternalTable.META_REGION_KEY_PREFIX))
+    allAuthKeys.foreach(k => {
+      val p = r.get(k)
+      if (p != null) {
+        p.asInstanceOf[PermissionChecker].addLdapGroup(getNameWithLDAPPrefix(group), true)
+      }
+    })
+  }
+
+  private def getNameWithLDAPPrefix(g: String): String = {
+    val gUC = StringUtil.SQLToUpperCase(g)
+    if (!gUC.startsWith(Constants.LDAP_GROUP_PREFIX)) s"${Constants.LDAP_GROUP_PREFIX}$g"
+    else g
   }
 
   private def updatePersistentState = {
@@ -207,7 +227,8 @@ object SnappyInterpreterExecute {
       if (allowedUsers.contains(toBeRemovedUser)) allowedUsers -= toBeRemovedUser
     }
 
-    def addLdapGroup(group: String): Unit = {
+    def addLdapGroup(group: String, updateOnly: Boolean = false): Unit = {
+      if (updateOnly && !groupToUsersMap.contains(group)) return
       val grantees = ExternalStoreUtils.getExpandedGranteesIterator(Seq(group)).filterNot(
         _.startsWith(Constants.LDAP_GROUP_PREFIX)).map(_.toLowerCase).toList
       groupToUsersMap += (group -> grantees)
@@ -218,13 +239,8 @@ object SnappyInterpreterExecute {
     }
 
     def refreshOnLdapGroupRefresh(group: String): Unit = {
-      val groupUC = StringUtil.SQLToUpperCase(group)
-      val groupstr = if (!groupUC.startsWith(Constants.LDAP_GROUP_PREFIX)) {
-        s"${Constants.LDAP_GROUP_PREFIX}$group"
-      } else {
-        group
-      }
-      val grantees = ExternalStoreUtils.getExpandedGranteesIterator(Seq(groupstr)).toList
+      val grantees = ExternalStoreUtils.getExpandedGranteesIterator(Seq(
+        getNameWithLDAPPrefix(group))).toList
       groupToUsersMap.put(group, grantees)
     }
   }
