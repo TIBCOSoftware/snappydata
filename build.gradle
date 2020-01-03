@@ -72,7 +72,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.2-SNAPSHOT'
+  version = '1.2.0'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -108,7 +108,7 @@ allprojects {
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.1.1'
-    snappySparkVersion = '2.1.1.7'
+    snappySparkVersion = '2.1.1.8'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     sparkCurrentVersion = '2.3.2'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
@@ -155,7 +155,7 @@ allprojects {
     antlr2Version = '2.7.7'
 
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.5-SNAPSHOT'
+    snappyStoreVersion = '1.6.5'
     snappydataVersion = version
     pulseVersion = '1.5.1'
     zeppelinInterpreterVersion = '0.7.3.6'
@@ -167,9 +167,10 @@ allprojects {
     osFamilyName = osName.getFamilyName().replace(' ', '').toLowerCase()
     osVersion = System.getProperty('os.version')
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
+    buildDateShort = ''
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
-    sparkJobServerVersion = '0.6.2.10'
+    sparkJobServerVersion = '0.6.2.11'
     eclipseCollectionsVersion = '9.2.0'
     fastutilVersion = '8.2.2'
     snappySparkMetricsLibVersion = '2.0.0.1'
@@ -572,7 +573,7 @@ subprojects {
 
   // apply default manifest
   if (rootProject.hasProperty('enablePublish')) {
-    createdBy = 'TIBCO Software Inc.'
+    createdBy = vendorName
   }
   jar {
     manifest {
@@ -1237,12 +1238,14 @@ buildDeb {
 distTar {
   // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.tar.gz'
   if (isEnterpriseProduct) {
-    archiveName = 'TIB_compute_' + version + '_' + osFamilyName + '.tar.gz'
+    if (rootProject.hasProperty('withDate')) {
+      buildDateShort = "${new Date().format('yyyyMMdd')}_"
+    }
+    archiveName = 'TIB_compute_' + version + '_' + buildDateShort + osFamilyName + '.tar.gz'
   } else {
     classifier 'bin'
   }
   dependsOn product
-  // also package VSD
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
@@ -1256,12 +1259,14 @@ distTar {
 distZip {
   // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.zip'
   if (isEnterpriseProduct) {
-    archiveName = 'TIB_compute_' + version + '_' + osFamilyName + '.zip'
+    if (rootProject.hasProperty('withDate')) {
+      buildDateShort = "${new Date().format('yyyyMMdd')}_"
+    }
+    archiveName = 'TIB_compute_' + version + '_' + buildDateShort + osFamilyName + '.zip'
   } else {
     classifier 'bin'
   }
   dependsOn product
-  // also package VSD
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }

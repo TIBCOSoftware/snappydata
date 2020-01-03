@@ -27,14 +27,16 @@ import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.InterpreterExecute
 import io.snappydata.Constant
-import io.snappydata.ToolsCallbackImpl.logInfo
 import io.snappydata.gemxd.SnappySessionPerConnection
 import org.apache.log4j.Logger
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.execution.InterpretCodeCommand
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-
 import scala.collection.mutable
+
+import com.pivotal.gemfirexd.internal.iapi.util.StringUtil
+
 
 class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExecute with Logging {
 
@@ -44,13 +46,14 @@ class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExe
     if (Misc.isSecurityEnabled && !user.equalsIgnoreCase(SnappyInterpreterExecute.dbOwner)) {
       if (!allowed) {
         // throw exception
-        throw StandardException.newException(
-          SQLState.AUTH_NO_EXECUTE_PERMISSION, user, "scala code execution", "", "ComputeDB", "Cluster")
+        throw StandardException.newException(SQLState.AUTH_NO_EXECUTE_PERMISSION, user,
+          "scala code execution", "", "ComputeDB", "Cluster")
       }
     }
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     val lp = session.sessionState.sqlParser.parseExec(sql).asInstanceOf[InterpretCodeCommand]
-    val interpreterHelper = SnappyInterpreterExecute.getOrCreateStateHolder(connId, user, authToken, group)
+    val interpreterHelper = SnappyInterpreterExecute.getOrCreateStateHolder(connId, user,
+      authToken, group)
     try {
       interpreterHelper.interpret(lp.code.split("\n"), lp.options)
     } finally {
@@ -94,14 +97,12 @@ object SnappyInterpreterExecute {
       }
       val commaSepVals = users.split(",")
       commaSepVals.foreach(u => {
-        val uUC = u.toUpperCase
+        val uUC = StringUtil.SQLToUpperCase(u)
         if (isGrant) {
-          if (uUC.startsWith(Constants.LDAP_GROUP_PREFIX))
-            permissions.addLdapGroup(uUC)
+          if (uUC.startsWith(Constants.LDAP_GROUP_PREFIX)) permissions.addLdapGroup(uUC)
           else permissions.addUser(u)
         } else {
-          if (uUC.startsWith(Constants.LDAP_GROUP_PREFIX))
-            removeAGroupAndCleanup(uUC)
+          if (uUC.startsWith(Constants.LDAP_GROUP_PREFIX)) removeAGroupAndCleanup(uUC)
           else removeAUserAndCleanup(u)
         }
       })
@@ -217,9 +218,9 @@ object SnappyInterpreterExecute {
     }
 
     def refreshOnLdapGroupRefresh(group: String): Unit = {
-      val groupUC = group.toUpperCase
+      val groupUC = StringUtil.SQLToUpperCase(group)
       val groupstr = if (!groupUC.startsWith(Constants.LDAP_GROUP_PREFIX)) {
-        s"${Constants.LDAP_GROUP_PREFIX}:$group"
+        s"${Constants.LDAP_GROUP_PREFIX}$group"
       } else {
         group
       }
@@ -234,8 +235,9 @@ object SnappyInterpreterExecute {
       "io.snappydata.remote.interpreter.SnappyInterpreterExecute")
 
     def isAllowed(key: String, currentUser: String, tableSchema: String): Boolean = {
-      if (currentUser.equalsIgnoreCase(tableSchema) ||
-        currentUser.equalsIgnoreCase(dbOwner)) return true
+      if (currentUser.equalsIgnoreCase(tableSchema) || currentUser.equalsIgnoreCase(dbOwner)) {
+        return true
+      }
 
       val permissionsObj = Misc.getMemStore.getMetadataCmdRgn.get(key)
       if (permissionsObj == null) return false
@@ -250,13 +252,12 @@ object SnappyInterpreterExecute {
         // expand the users list. Can be a mix of normal user and ldap group
         val commaSepVals = users.split(",")
         commaSepVals.foreach(u => {
+          val uUC = StringUtil.SQLToUpperCase(u)
           if (isGrant) {
-            if (u.startsWith(Constants.LDAP_GROUP_PREFIX))
-              permissions.addLdapGroup(u)
+            if (uUC.startsWith(Constants.LDAP_GROUP_PREFIX)) permissions.addLdapGroup(uUC)
             else permissions.addUser(u)
           } else {
-            if (u.startsWith(Constants.LDAP_GROUP_PREFIX))
-              permissions.removeLdapGroup(u)
+            if (uUC.startsWith(Constants.LDAP_GROUP_PREFIX)) permissions.removeLdapGroup(uUC)
             else permissions.removeUser(u)
           }
         })
