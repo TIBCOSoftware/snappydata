@@ -39,7 +39,7 @@ import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 
-class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scalastyle:ignore
+class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
     with Logging {
 
   val adminUser1 = "gemfire10"
@@ -138,7 +138,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
 
     // empty column table & not null column
     // covers - empty buckets
-    stmt.execute("CREATE TABLE tapp.test1coltab2" +
+    stmt.execute("CREATE TABLE tapp.test1coltab1" +
         " (col1 int, col2 int NOT NULL, col3 varchar(22) NOT NULL)" +
         " USING COLUMN OPTIONS (BUCKETS '5', COLUMN_MAX_DELTA_ROWS '10')")
 
@@ -534,8 +534,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       }
       rs.close()
 
-      rs = stmtRec.executeQuery("SELECT * FROM tapp.test1coltab2")
-      logDebug("SELECT * FROM tapp.test1coltab2")
+      rs = stmtRec.executeQuery("SELECT * FROM tapp.test1coltab1")
+      logDebug("SELECT * FROM tapp.test1coltab1")
       str.clear()
       while (rs.next()) {
         str ++= s"${rs.getInt(2)}\t"
@@ -591,7 +591,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
         logDebug(c2)
         str ++= s"$c2\t"
       }
-      assert(str.toString().toUpperCase().contains("TEST1COLTAB2")
+      assert(str.toString().toUpperCase().contains("TEST1COLTAB1")
           && str.toString().toUpperCase().contains("TEST1ROWTAB3"))
       rs.close()
 
