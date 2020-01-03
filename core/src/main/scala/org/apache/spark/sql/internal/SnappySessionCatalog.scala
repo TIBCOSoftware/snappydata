@@ -337,7 +337,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     } else {
       val orgSqlText = snappySession.getContextObject[String]("orgSqlText") match {
         case Some(s) => s
-        case None => ""
+        case None => s"create database $schemaName"
       }
       super.createDatabase(CatalogDatabase(schemaName, schemaDescription(schemaName),
         getDefaultDBPath(schemaName), Map("orgSqlText" -> orgSqlText)), ignoreIfExists)
@@ -395,11 +395,18 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val schemaName = formatDatabaseName(schemaDefinition.name)
     validateSchemaName(schemaName, checkForDefault = false)
 
+    val orgSqlText = snappySession.getContextObject[String]("orgSqlText") match {
+      case Some(s) => s
+      case None => s"create database $schemaName"
+    }
+    val schemaDefinitionWithDdl = schemaDefinition.copy(properties =
+      schemaDefinition.properties ++ Map("orgSqlText" -> orgSqlText))
+
     // create in catalogs first
     if (snappySession.enableHiveSupport) {
-      hiveSessionCatalog.createDatabase(schemaDefinition, ignoreIfExists)
+      hiveSessionCatalog.createDatabase(schemaDefinitionWithDdl, ignoreIfExists)
     }
-    super.createDatabase(schemaDefinition, ignoreIfExists)
+    super.createDatabase(schemaDefinitionWithDdl, ignoreIfExists)
 
     // then in store if catalog was successful
     createStoreSchema(schemaName, ignoreIfExists, authId = None)
