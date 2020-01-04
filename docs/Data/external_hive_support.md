@@ -44,6 +44,7 @@ When you create  a SparkSession with Hive support, the external catalog (aka Met
 |javax.jdo.option.ConnectionPassword| The password to use to connect to a Hive Metastore database.|
 
 From a TIBCO ComputeDB cluster, you can access and query the Hive tables using a Snappy Session. After establishing a connection with the Metastore, you can do the following:
+
 *	Import Hive tables defined in an external Hive catalog into TIBCO ComputeDB catalog tables.
 *	Use Hive tables as external tables for queries, including joins with tables defined in the TIBCO ComputeDB catalog.
 *	Query the Hive tables. 
@@ -52,6 +53,7 @@ From a TIBCO ComputeDB cluster, you can access and query the Hive tables using a
 Spark optimizations for Hive tables are also available through Snappy Session. 
 
 You can access Hive tables created in the following ecosystems:
+
 *	Apache Hive
 *	AWS
 *	Azure
@@ -63,10 +65,10 @@ The **hive-site.xml** configuration file provides information about the Hive con
 
 For using Hive Metastore in TIBCO ComputeDB, do the following:
 
-1.	Copy the **hive-site.xml** from `<Hive installation folder>`/**conf** directory to **tibcocomputedb/build-artifacts/scala-2.11/snappy/conf** folder or the use the trimmed down version of **hive-site.xml**.
-2.	If you are using MySQL as the Metastore database, copy the **mysql-connector** jar file (for example, **mysql-connector-java-5.1.48.jar**) from `<Hive installation folder>`/lib to the TIBCO ComputeDB classpath, that is  **<`TIBCO ComputeDB installation folder>`/jars/**. For any other Metastore database, copy the relevant connector jars to the TIBCO ComputeDB jars folder.
+1.	Copy the **hive-site.xml** from `<Hive installation folder>`/**conf** directory to **tibcocomputedb/build-artifacts/scala-2.11/snappy/conf** folder or use the trimmed version of **hive-site.xml**.
+2.	If you are using MySQL as the Metastore database, copy the **mysql-connector** jar file (for example, **mysql-connector-java-5.1.48.jar**) from `<Hive installation folder>`/lib to the TIBCO ComputeDB classpath, that is  **`<TIBCO ComputeDB installation folder>`/jars/**. For any other Metastore database, copy the relevant connector jars to the TIBCO ComputeDB **jars** folder.
 
-### Example - Trimmed down version of hive-site.xml
+### Example - Trimmed Version of hive-site.xml
 
 ```
 <configuration>
@@ -92,17 +94,17 @@ For using Hive Metastore in TIBCO ComputeDB, do the following:
 </configuration>
 ```
 ## List of Ecosystem Connectors
-For TIBCO ComputeDB, the following connectors are tested in the combination with the corresponding ecosytems:
+The following connectors are tested with the corresponding ecosytems for TIBCO ComputeDB:
 
 |Ecosystem| Connector | Example|
 |:--------|:--------| :--------|
-|Apache Hive | MySQL|mysql-connector-java-5.1.48.jar|
-|Azure HDInsight|  MSSQL|mssql-jdbc-7.0.0.jre8.jar|
-|AWS EMR| MySQL | 	mysql-connector-java-5.1.12.jar|
-|Cloudera|MySQL|	mysql-connector-java-5.1.48.jar|
+|**Apache Hive **| MySQL|mysql-connector-java-5.1.48.jar|
+|**Azure HDInsight**|  MSSQL|mssql-jdbc-7.0.0.jre8.jar|
+|**AWS EMR**| MySQL | 	mysql-connector-java-5.1.12.jar|
+|**Cloudera**|MySQL|	mysql-connector-java-5.1.48.jar|
 
 ## Accessing Hive Tables from TIBCO ComputeDB Cluster
-After configuring the settings to connect the TIBCO ComputeDB cluster to an external Metastore, set the property **spark.sql.catalogImplementation = hive**. You can set this property only at the session-level. After setting this property, you can run queries on the Hive table, perform the join operations between Hive and TIBCO ComputeDB native tables, perform the join operations between Hive tables. 
+After configuring the settings to connect the TIBCO ComputeDB cluster to an external Metastore, set the property **spark.sql.catalogImplementation = hive**. You can set this property only at the session-level. After setting this property, you can run queries on the Hive table, perform the join operations between Hive and TIBCO ComputeDB native tables, perform the join operations between Hive tables.
 
 If you set the property **spark.sql.catalogImplementation = in-memory**, you cannot access the Hive tables.  TIBCO ComputeDB acts as the execution engine for Hive table query execution. You can refer the following examples to access and query the Hive tables:
 
@@ -134,16 +136,19 @@ If you set the property **spark.sql.catalogImplementation = in-memory**, you can
 
 Following are some issues that you may come across and their corresponding solutions / workarounds:
 
-*	*If the property **hive.execution.engine** is set  as Tez then the following exception is shown:
-java.lang.RuntimeException: java.lang.IllegalArgumentException: Error while instantiating 'org.apache.spark.sql.hive.HiveExternalCatalog'*
+*	If the property **hive.execution.engine** is set  as Tez then the following exception is shown:
+
+	*java.lang.RuntimeException: java.lang.IllegalArgumentException: Error while instantiating 		'org.apache.spark.sql.hive.HiveExternalCatalog'*
 
 	This exception can occur when you have copied the **hive-site.xml** file to **Conf** folder  and if you have provided the value of the xml property **hive.execution.engine** as Tez. This exception is caused by **java.lang.ClassNotFoundException: org.apache.tez.dag.api.SessionNotRunning**
 	
-    **Workaround:** In case you have copied all the contents from the hive-site.xml file to the TIBCO ComputeDB conf file, ensure that the value of the XML property hive.execution.engine is left empty.
+	**Workaround:** In case you have copied all the contents from the hive-site.xml file to the TIBCO ComputeDB conf file, ensure that the value of the XML property hive.execution.engine is left empty.</br>
     
 *	*Unable to open a test connection to the given database. JDBC url = jdbc:mysql://dev11:3306/metastore_db?createDatabaseIfNotExist=true, username = hive. Terminating connection pool (set lazyInit to true if you expect to start your database after your app*
-	This error occurs when the MySQL process (Metadata server process) does not get started. 
-	**Workaround**: Ensure to start the Metastore service before connecting to Hive Beeline CLI. 
+	
+    This error occurs when the MySQL process (Metadata server process) does not get started. 
+	
+    **Workaround**: Ensure to start the Metastore service before connecting to Hive Beeline CLI. 
 
 *	When the TIBCO Compute DB cluster, Hive, MySQL (Metadata Server) are running, and MySQL (Metadata Server) process stops abruptly, then Snappy shell becomes unresponsive.
 
@@ -158,7 +163,8 @@ java.lang.RuntimeException: java.lang.IllegalArgumentException: Error while inst
     java.sql.SQLException: Access denied for user 'APP'@'<hostname>' (using password: YES)*
 
 *	While accessing the hive table, if you do not set the parameter **javax.jdo.option.ConnectionURL**, then an exception is not shown. However, you cannot access the Hive tables. 
-	**For example:**
+	
+    **For example:**
     
             snappy> show tables in default;
             schemaName                 |tableName                             |isTemporary
@@ -172,6 +178,6 @@ java.lang.RuntimeException: java.lang.IllegalArgumentException: Error while inst
 
             0 rows selected
 
-*	While using Azure HDInsight, if you do not set the parameter **fs.azure.account.key.hadoopmetastohdistorage.blob.core.windows.net**, the following exception is shown:	
+*	While using Azure HDInsight, if you do not set the parameter **fs.azure.account.key.hadoopmetastohdistorage.blob.core.windows.net**, the following exception is shown:
 
 	*ERROR 38000: (SQLState=38000 Severity=20000) (Server=hostname:port  Thread=ThriftProcessor-0) The exception 'com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException: myID: 127.0.0.1(22841)<v1>:51028, caused by org.apache.hadoop.fs.azure.AzureException: org.apache.hadoop.fs.azure.AzureException: Container hadoopmetastore-2019-12-13t09-18-59-359z in account hadoopmetastohdistorage.blob.core.windows.net not found, and we can't create  it using anoynomous credentials.' was thrown while evaluating an expression.*
