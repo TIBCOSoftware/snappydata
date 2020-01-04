@@ -128,8 +128,9 @@ pages:
     - 'Sample Selection': 'sde/sample_selection.md'
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
-- 'Working with External Data Sources': 'connectors/connector.md'
+- 'Working with Data Sources': 'connectors/connector.md'  
 - 'Working with External Data Sources':
+    - 'Connecting to External Hive Metastores': 'Data/external_hive_support.md' 
     - 'Deploying Third Party Connectors': 'connectors/deployment_dependency_jar.md'  
     - 'Using the TIBCO ComputeDB GemFire Connector': 'connectors/gemfire_connector.md'  
     - 'Using the TIBCO ComputeDB CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
