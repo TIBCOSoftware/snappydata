@@ -39,7 +39,7 @@ import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 
-class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scalastyle:ignore
+class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
     with Logging {
 
   val adminUser1 = "gemfire10"
@@ -138,7 +138,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
 
     // empty column table & not null column
     // covers - empty buckets
-    stmt.execute("CREATE TABLE tapp.test1coltab2" +
+    stmt.execute("CREATE TABLE tapp.test1coltab1" +
         " (col1 int, col2 int NOT NULL, col3 varchar(22) NOT NULL)" +
         " USING COLUMN OPTIONS (BUCKETS '5', COLUMN_MAX_DELTA_ROWS '10')")
 
@@ -534,8 +534,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       }
       rs.close()
 
-      rs = stmtRec.executeQuery("SELECT * FROM tapp.test1coltab2")
-      logDebug("SELECT * FROM tapp.test1coltab2")
+      rs = stmtRec.executeQuery("SELECT * FROM tapp.test1coltab1")
+      logDebug("SELECT * FROM tapp.test1coltab1")
       str.clear()
       while (rs.next()) {
         str ++= s"${rs.getInt(2)}\t"
@@ -591,7 +591,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
         logDebug(c2)
         str ++= s"$c2\t"
       }
-      assert(str.toString().toUpperCase().contains("TEST1COLTAB2")
+      assert(str.toString().toUpperCase().contains("TEST1COLTAB1")
           && str.toString().toUpperCase().contains("TEST1ROWTAB3"))
       rs.close()
 
@@ -1553,15 +1553,20 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       // 2: null and not null complex types 1 bucket
       fqtn = "gemfire10.t2"
       stmt.executeUpdate(
-        s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
-           |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<date>,
+           |c4 Map<Int,date> NOT NULL, c5 Struct<f1:float, f2:date>, c6 Array<timestamp>)
            | USING COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
       stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-          s" 1, 1.1, Array(1,null,111), Map(1,true), Struct(1.1, 1)")
+          s" 1, 1.1, Array('2011-11-11', '2010-12-12', null), Map(1,'2011-11-11')," +
+          s" Struct(1.1, '2011-11-11'), Array(null, " +
+          s"'2022-02-22 22:22:22.222')")
       stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-          s" 2, null, Array(null,22,222), Map(2,false), Struct(2.2, 2)")
+          s" 2, null, Array(null,'2022-11-11', '2044-06-06', '2006-06-05')," +
+          s" Map(2, cast(null as date)), Struct(2.2, cast(null as date))," +
+          s" Array('2019-02-18 15:31:55.333', '2022-02-22 22:22:22.222')")
       stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-          s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
+          s" 3, 3.3, Array('2044-11-11', '2088-12-12'), Map(3,'2044-11-11'), " +
+          s"Struct(3.3, '2044-11-11'), Array('2019-02-18 15:31:55.333', null)")
 
       // ==========================================
       // ====== Column tables row buffer only =====
@@ -1580,15 +1585,19 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       // 4: null and not null complex types 2 buckets
       fqtn = "gemfire10.t4"
       stmt.executeUpdate(
-        s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
-           |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<date>,
+           |c4 Map<Int,date> NOT NULL, c5 Struct<f1:float, f2:date>, c6 Array<timestamp>)
            | USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '4')""".stripMargin)
       stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-          s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
+          s" 1, 1.1, Array(null,'2022-11-11', '2044-06-06', '2006-06-05'), Map(1,cast(null as " +
+          s"date)), Struct(1.1, cast(null as date)), Array(null, '2022-02-22 22:22:22.222')")
       stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-          s" 2, null, Array(2,22,222), Map(2,false), Struct(2.2, 2)")
+          s" 2, null, Array('2011-11-11', '2010-12-12', null), Map(2,'2011-11-11')," +
+          s" Struct(2.2, '2011-11-11'), Array('2019-02-18 15:31:55.333', '2022-02-22 " +
+          s"22:22:22.222')")
       stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-          s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
+          s" 3, 3.3, Array('2044-11-11', '2088-12-12'), Map(3,'2044-11-11')," +
+          s" Struct(3.3, '2044-11-11'), Array('2019-02-18 15:31:55.333', null)")
 
 
       // =======================================================
@@ -1635,19 +1644,31 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
       stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 4")
 
-      // 8: null and not null complex types 2 buckets
+      // 8: null and not null complex types 1 buckets
       fqtn = "gemfire10.t8"
-      stmt.execute(
-        s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
-           |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
-           | USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '2')""".stripMargin)
+      stmt.execute(s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<timestamp>,
+           | c4 Map<timestamp,date> NOT NULL, c5 Struct<f1:timestamp, f2:date>,
+           | c6 Map<date, timestamp>) USING COLUMN
+           |  options (buckets '1', COLUMN_MAX_DELTA_ROWS '2')""".stripMargin)
       stmt.execute(s"""INSERT INTO $fqtn SELECT
-           |1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)""".stripMargin)
+                      |1, 1.1, Array(null,'2019-02-18 15:31:55.333','2022-02-22 22:22:22.222'),
+                      | Map(cast('2019-02-18 15:31:55.333' as timestamp),cast(null as date))
+                      |, Struct('2022-02-22 22:22:22.222', cast(null as date)), Map(cast
+                      |('2022-02-22' as date),
+                      |cast('2019-02-18 15:31:55.333' as timestamp))""".stripMargin)
       stmt.execute(s"""INSERT INTO $fqtn SELECT
-           |2, 2.2, Array(2,22,222), Map(2,false), null""".stripMargin)
+                      |2, 2.2, Array('2111-11-11 15:31:55.333', '2022-02-22 44:33:55.666', null),
+                      | Map(cast('2111-11-11 15:31:55.333' as timestamp),cast('2011-11-11' as
+                      | date)), Struct('2022-02-22 22:22:22.222', cast(null as date)),
+                      |  Map(cast('2011-11-11' as date),cast('2111-11-11 15:31:55.333' as
+                      |  timestamp))"""
+          .stripMargin)
       stmt.execute(s"""INSERT INTO $fqtn SELECT
-           |3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)""".stripMargin)
-
+                      |3, 3.3, Array('2022-11-18 11:31:11.333', '2022-02-11 22:11:22.111'),
+                      |Map(cast('2022-11-18 11:31:11.333' as timestamp),cast('2044-11-11' as
+                      | date)), Struct(cast(null as timestamp), '2011-11-11'),
+                      | Map(cast('2044-11-11' as date),
+                      |cast('2022-11-18 11:31:11.333' as timestamp))""".stripMargin)
 
       // ===================================
       // ======= Row table partitioned =====
@@ -1697,19 +1718,6 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
       stmt.execute(s"ALTER TABLE $fqtn ADD COLUMN c2 integer")
       stmt.execute(s"INSERT INTO $fqtn VALUES (9, 99, 999)")
-
-      // 12: null and not null complex types no alter
-      //          fqtn = "gemfire10.t12"
-      //          stmt.execute(
-      //            s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
-      //               |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>) USING row"""
-      // .stripMargin)
-      //          stmt.execute(s"INSERT INTO $fqtn SELECT" +
-      //              s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
-      //          stmt.execute(s"INSERT INTO $fqtn SELECT" +
-      //              s" 2, 2.2, Array(2,22,222), Map(2,false), null")
-      //          stmt.execute(s"INSERT INTO $fqtn SELECT" +
-      //              s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
 
       // covers bulk updates, deletes
       fqtn = "gemfire10.t13"
@@ -1803,15 +1811,24 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       rs = stmtRec.executeQuery("select * from gemfire10.t2")
       rs.next()
       val expectedResult2: ListBuffer[Array[Any]] = ListBuffer(
-        Array(1, 1.1, """{"col_0":[1,null,111]}""", """{"col_1":{"1":true}}""",
-          """{"col_2":{"f1":1.1,"f2":1}}"""),
-        Array(2, 2.2, """{"col_0":[null,22,222]}""", """{"col_1":{"2":false}}""",
-          """{"col_2":{"f1":2.2,"f2":2}}"""),
-        Array(3, 3.3, """{"col_0":[3,33,333]}""", """{"col_1":{"3":false}}""",
-          """{"col_2":{"f1":3.3,"f2":3}}""")
+        Array(1, 1.1,
+          """{"col_0":["2011-11-11","2010-12-12",null]}""",
+          """{"col_1":{"1":"2011-11-11"}}""",
+          """{"col_2":{"f1":1.1,"f2":"2011-11-11"}}""",
+          """{"col_3":[null,"2022-02-22T22:22:22.222+05:30"]}"""),
+        Array(2, null,
+          """{"col_0":[null,"2022-11-11","2044-06-06","2006-06-05"]}""",
+          """{"col_1":{"2":null}}""",
+          """{"col_2":{"f1":2.2}}""",
+          """{"col_3":["2019-02-18T15:31:55.333+05:30","2022-02-22T22:22:22.222+05:30"]}"""),
+        Array(3, 3.3,
+          """{"col_0":["2044-11-11","2088-12-12"]}""",
+          """{"col_1":{"3":"2044-11-11"}}""",
+          """{"col_2":{"f1":3.3,"f2":"2044-11-11"}}""",
+          """{"col_3":["2019-02-18T15:31:55.333+05:30",null]}""")
       )
       compareResult(expectedResult2,
-        getRecFromResultSet(rs, "integer,double,array,map,struct"))
+        getRecFromResultSet(rs, "integer,double,array,map,struct,array"))
       rs.close()
 
       // testcase 3
@@ -1829,15 +1846,24 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       rs = stmtRec.executeQuery("select * from gemfire10.t4")
       rs.next()
       val expectedResult4: ListBuffer[Array[Any]] = ListBuffer(
-        Array(1, 1.1, """{"col_0":[1,11,111]}""", """{"col_1":{"1":true}}""",
-          """{"col_2":{"f1":1.1,"f2":1}}"""),
-        Array(2, 2.2, """{"col_0":[2,22,222]}""", """{"col_1":{"2":false}}""",
-          """{"col_2":{"f1":2.2,"f2":2}}"""),
-        Array(3, 3.3, """{"col_0":[3,33,333]}""", """{"col_1":{"3":false}}""",
-          """{"col_2":{"f1":3.3,"f2":3}}""")
+        Array(1, 1.1,
+          """{"col_0":[null,"2022-11-11","2044-06-06","2006-06-05"]}""",
+          """{"col_1":{"1":null}}""",
+          """{"col_2":{"f1":1.1}}""",
+          """{"col_3":[null,"2022-02-22T22:22:22.222+05:30"]}"""),
+        Array(2, 2.2,
+          """{"col_0":["2011-11-11","2010-12-12",null]}""",
+          """{"col_1":{"2":"2011-11-11"}}""",
+          """{"col_2":{"f1":2.2,"f2":"2011-11-11"}}""",
+          """{"col_3":["2019-02-18T15:31:55.333+05:30","2022-02-22T22:22:22.222+05:30"]}"""),
+        Array(3, 3.3,
+          """{"col_0":["2044-11-11","2088-12-12"]}""",
+          """{"col_1":{"3":"2044-11-11"}}""",
+          """{"col_2":{"f1":3.3,"f2":"2044-11-11"}}""",
+          """{"col_3":["2019-02-18T15:31:55.333+05:30",null]}""")
       )
       compareResult(expectedResult4,
-        getRecFromResultSet(rs, "integer,double,array,map,struct"))
+        getRecFromResultSet(rs, "integer,double,array,map,struct,array"))
       rs.close()
 
       // testcase 5
@@ -1878,14 +1904,24 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       // 8: null and not null complex types 2 buckets
       rs = stmtRec.executeQuery("select * from gemfire10.t8")
       val expectedResult8: ListBuffer[Array[Any]] = ListBuffer(
-        Array(2, 2.2, """{"col_0":[2,22,222]}""", """{"col_1":{"2":false}}""", null),
-        Array(1, 1.1, """{"col_0":[1,11,111]}""", """{"col_1":{"1":true}}""",
-          """{"col_2":{"f1":1.1,"f2":1}}"""),
-        Array(3, 3.3, """{"col_0":[3,33,333]}""", """{"col_1":{"3":false}}""",
-          """{"col_2":{"f1":3.3,"f2":3}}""")
+        Array(2, 2.2,
+          """{"col_0":["2111-11-11T15:31:55.333+05:30",null,null]}""",
+          """{"col_1":{"4476679315333000":"2011-11-11"}}""",
+          """{"col_2":{"f1":"2022-02-22T22:22:22.222+05:30"}}""",
+          """{"col_3":{"15289":"2111-11-11T15:31:55.333+05:30"}}"""),
+        Array(1, 1.1,
+          """{"col_0":[null,"2019-02-18T15:31:55.333+05:30","2022-02-22T22:22:22.222+05:30"]}""",
+          """{"col_1":{"1550484115333000":null}}""",
+          """{"col_2":{"f1":"2022-02-22T22:22:22.222+05:30"}}""",
+          """{"col_3":{"19045":"2019-02-18T15:31:55.333+05:30"}}"""),
+        Array(3, 3.3,
+          """{"col_0":["2022-11-18T11:31:11.333+05:30","2022-02-11T22:11:22.111+05:30"]}""",
+          """{"col_1":{"1668751271333000":"2044-11-11"}}""",
+          """{"col_2":{"f2":"2011-11-11"}}""",
+          """{"col_3":{"27343":"2022-11-18T11:31:11.333+05:30"}}""")
       )
       compareResult(expectedResult8,
-        getRecFromResultSet(rs, "integer,double,array,map,struct"))
+        getRecFromResultSet(rs, "integer,double,array,map,struct,map"))
       rs.close()
 
       // 9: null and not null atomic data only 1 bucket update/delete alter add/drop/add

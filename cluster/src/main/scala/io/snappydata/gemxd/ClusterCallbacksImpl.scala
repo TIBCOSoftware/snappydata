@@ -180,6 +180,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     } else {
       exportUri + s"_${System.currentTimeMillis()}" + File.separator
     }
+    var failedTables = Seq.empty[String]
     tablesArr.foreach(f = table => {
       Try {
         val tableData = session.sql(s"select * from $table;")
@@ -193,11 +194,17 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
         case scala.util.Failure(exception) =>
           logError(s"Error recovering table: $table.")
           tablesArr = tablesArr.filter(_!=table)
+          failedTables = failedTables :+ table
           if (!ignoreError) {
             throw new Exception(exception)
           }
       }
     })
+    logInfo(
+      s"""Successfully exported ${tablesArr.size} tables.
+         |Exported tables are: ${tablesArr.mkString(", ")}
+         |Failed to export ${failedTables.size} tables.
+         |Failed tables are ${failedTables.mkString(", ")}""".stripMargin)
     generateLoadScripts(connId, exportPath, formatType, tablesArr)
   }
 
@@ -215,6 +222,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
       arrBuf.append(ddl.trim + ";\n")
     })
     session.sparkContext.parallelize(arrBuf, 1).saveAsTextFile(filePath)
+    logInfo(s"Successfully exported ${arrBuf.size} DDL statements.")
   }
 
   /**
