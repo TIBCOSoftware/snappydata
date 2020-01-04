@@ -231,16 +231,88 @@ class OpLogRdd(
         val data = new SerializedArray(8)
         if (array != null) {
           data.pointTo(array, Platform.BYTE_ARRAY_OFFSET, array.length)
-          data.toArray(arrayType.elementType)
+          if (arrayType.elementType == DateType) {
+            data.toArray[Integer](IntegerType).map(daysSinceEpoch => {
+              if (daysSinceEpoch == null) null else DateTimeUtils.toJavaDate(daysSinceEpoch)
+            })
+          } else if (arrayType.elementType == TimestampType) {
+            data.toArray[Object](LongType).map(nsSinceEpoch => {
+              if (nsSinceEpoch == null) null
+              else new Timestamp(nsSinceEpoch.asInstanceOf[Long] / 1000)
+            })
+          } else {
+            data.toArray(arrayType.elementType)
+          }
         } else null
       case mapType: MapType =>
         val map = valueArr(complexFieldIndex)
         val data = new SerializedMap()
+        // todo: refactor following code.
         if (map != null) {
           data.pointTo(map, Platform.BYTE_ARRAY_OFFSET)
-          val jmap = new java.util.HashMap[Any, Any](data.numElements())
-          data.foreach(mapType.keyType, mapType.valueType, (k, v) => jmap.put(k, v))
-          jmap
+          val jMap = new java.util.HashMap[Any, Any](data.numElements())
+          if (mapType.keyType == DateType && mapType.valueType == DateType) {
+            data.foreach(IntegerType, IntegerType, (k, v) => {
+              val dateKey = DateTimeUtils.toJavaDate(k.asInstanceOf[Integer])
+              val dateValue = if (v == null) null else DateTimeUtils
+                  .toJavaDate(v.asInstanceOf[Integer])
+              jMap.put(dateKey, dateValue)
+            })
+            jMap
+          } else if (mapType.keyType == TimestampType && mapType.valueType == TimestampType) {
+            data.foreach(LongType, LongType, (k, v) => {
+              val timestampKey = new Timestamp(k.asInstanceOf[Long] / 1000)
+              val timestampValue = if (v == null) null
+              else new Timestamp(v.asInstanceOf[Long] / 1000)
+              jMap.put(timestampKey, timestampValue)
+            })
+            jMap
+          } else if (mapType.keyType == DateType && mapType.valueType == TimestampType) {
+            data.foreach(IntegerType, LongType, (k, v) => {
+              val dateKey = DateTimeUtils.toJavaDate(k.asInstanceOf[Integer])
+              val timestampValue = if (v == null) null
+              else new Timestamp(v.asInstanceOf[Long] / 1000)
+              jMap.put(dateKey, timestampValue)
+            })
+            jMap
+          } else if (mapType.keyType == TimestampType && mapType.valueType == DateType) {
+            data.foreach(LongType, IntegerType, (k, v) => {
+              val timestampKey = new Timestamp(k.asInstanceOf[Long] / 1000)
+              val dateValue = if (v == null) null
+              else DateTimeUtils.toJavaDate(v.asInstanceOf[Integer])
+              jMap.put(timestampKey, dateValue)
+            })
+            jMap
+          } else if (mapType.valueType == DateType) {
+            data.foreach(mapType.keyType, IntegerType, (k, v) => {
+              val dateValue = if (v == null) null
+              else DateTimeUtils.toJavaDate(v.asInstanceOf[Integer])
+              jMap.put(k, dateValue)
+            })
+            jMap
+          } else if (mapType.valueType == TimestampType) {
+            data.foreach(mapType.keyType, LongType, (k, v) => {
+              val timestampValue = if (v == null) null
+              else new Timestamp(v.asInstanceOf[Long] / 1000)
+              jMap.put(k, timestampValue)
+            })
+            jMap
+          } else if (mapType.keyType == DateType) {
+            data.foreach(IntegerType, mapType.valueType, (k, v) => {
+              val dateKey = DateTimeUtils.toJavaDate(k.asInstanceOf[Integer])
+              jMap.put(dateKey, v)
+            })
+            jMap
+          } else if (mapType.keyType == TimestampType) {
+            data.foreach(LongType, mapType.valueType, (k, v) => {
+              val timestampKey = new Timestamp(k.asInstanceOf[Long] / 1000)
+              jMap.put(timestampKey, v)
+            })
+            jMap
+          } else {
+            data.foreach(mapType.keyType, mapType.valueType, (k, v) => jMap.put(k, v))
+            jMap
+          }
         } else null
       case structType: StructType =>
         val struct = valueArr(complexFieldIndex)
@@ -250,9 +322,9 @@ class OpLogRdd(
           data
         } else null
       case BinaryType =>
-        if (!dvd.isNull){
-        val blobValue = dvd.getObject.asInstanceOf[HarmonySerialBlob]
-        Source.fromInputStream(blobValue.getBinaryStream).map(e => e.toByte).toArray
+        if (!dvd.isNull) {
+          val blobValue = dvd.getObject.asInstanceOf[HarmonySerialBlob]
+          Source.fromInputStream(blobValue.getBinaryStream).map(e => e.toByte).toArray
         } else null
       case _ => dvd.getObject
     }
@@ -671,7 +743,21 @@ class OpLogRdd(
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
         decoder.readLongDecimal(value, d.precision, d.scale, rowNum)
       case d: DecimalType => decoder.readDecimal(value, d.precision, d.scale, rowNum)
-      case a: ArrayType => decoder.readArray(value, rowNum).toArray(a.elementType)
+      case a: ArrayType => {
+        if (a.elementType == DateType) {
+          decoder.readArray(value, rowNum).toArray[Integer](IntegerType)
+              .map(daysSinceEpoch => {
+            if (daysSinceEpoch == null) null else DateTimeUtils.toJavaDate(daysSinceEpoch)
+          })
+        } else if (a.elementType == TimestampType) {
+          decoder.readArray(value, rowNum).toArray[Object](LongType).map(nsSinceEpoch => {
+            if (nsSinceEpoch == null) null else new Timestamp(nsSinceEpoch.asInstanceOf[Long] /
+                1000)
+          })
+        } else {
+          decoder.readArray(value, rowNum).toArray(a.elementType)
+        }
+      }
       case _: MapType => decoder.readMap(value, rowNum)
       case s: StructType => decoder.readStruct(value, s.length, rowNum)
       case _ => null
