@@ -99,7 +99,7 @@ object RecoveryService extends Logging {
                 logDebug(s"Querying table: $table for count")
               val recCount = if (enableTableCountInUI) {
                 snappySession.sql(s"SELECT count(1) FROM ${table.qualifiedName}")
-                .collect()(0).getLong(0)
+                    .collect()(0).getLong(0)
               } else -1L
               val (numBuckets, isReplicatedTable) = RecoveryService
                   .getNumBuckets(table.qualifiedName.split('.')(0).toUpperCase(),
@@ -132,41 +132,45 @@ object RecoveryService extends Logging {
 
     if (!Misc.getGemFireCache.isSnappyRecoveryMode) {
       val dd = Misc.getMemStore.getDatabase.getDataDictionary
-      if (dd == null) {
-        throw Util.generateCsSQLException(SQLState.SHUTDOWN_DATABASE, Attribute.GFXD_DBNAME)
-      }
-      dd.lockForReadingRT(null)
-      val ddlQ = new GfxdDDLRegionQueue(Misc.getMemStore.getDDLStmtQueue.getRegion)
-      ddlQ.initializeQueue(dd)
-      val allDDLs: java.util.List[GfxdDDLQueueEntry] = ddlQ.peekAndRemoveFromQueue(-1, -1)
-      val preProcessedqueue = ddlQ.getPreprocessedDDLQueue(
-        allDDLs, null, null, null, false).iterator
-
-      import scala.collection.JavaConversions._
-      for (queueEntry <- preProcessedqueue) {
-        queueEntry.getValue match {
-          case conflatable: DDLConflatable =>
-            val schema = conflatable.getSchemaForTableNoThrow
-            if (conflatable.isCreateDiskStore) {
-              ddlBuffer.add(conflatable.getValueToConflate)
-            } else if (Misc.SNAPPY_HIVE_METASTORE == schema ||
-                Misc.SNAPPY_HIVE_METASTORE == conflatable.getCurrentSchema ||
-                Misc.SNAPPY_HIVE_METASTORE == conflatable.getRegionToConflate) {
-            } else if (conflatable.isAlterTable || conflatable.isCreateIndex ||
-                isGrantRevokeStatement(conflatable) ||
-                conflatable.isCreateTable || conflatable.isDropStatement ||
-                conflatable.isCreateSchemaText) {
-              val ddl = conflatable.getValueToConflate
-              val ddlLowerCase = ddl.toLowerCase()
-              if ("create[ ]+diskstore".r.findFirstIn(ddlLowerCase).isDefined ||
-                  "create[ ]+index".r.findFirstIn(ddlLowerCase).isDefined ||
-                  ddlLowerCase.trim.contains("^grant") ||
-                  ddlLowerCase.trim.contains("^revoke")) {
-                ddlBuffer.add(ddl)
-              }
-            }
-          case _ =>
+      try {
+        if (dd == null) {
+          throw Util.generateCsSQLException(SQLState.SHUTDOWN_DATABASE, Attribute.GFXD_DBNAME)
         }
+        dd.lockForReadingRT(null)
+        val ddlQ = new GfxdDDLRegionQueue(Misc.getMemStore.getDDLStmtQueue.getRegion)
+        ddlQ.initializeQueue(dd)
+        val allDDLs: java.util.List[GfxdDDLQueueEntry] = ddlQ.peekAndRemoveFromQueue(-1, -1)
+        val preProcessedqueue = ddlQ.getPreprocessedDDLQueue(
+          allDDLs, null, null, null, false).iterator
+
+        import scala.collection.JavaConversions._
+        for (queueEntry <- preProcessedqueue) {
+          queueEntry.getValue match {
+            case conflatable: DDLConflatable =>
+              val schema = conflatable.getSchemaForTableNoThrow
+              if (conflatable.isCreateDiskStore) {
+                ddlBuffer.add(conflatable.getValueToConflate)
+              } else if (Misc.SNAPPY_HIVE_METASTORE == schema ||
+                  Misc.SNAPPY_HIVE_METASTORE == conflatable.getCurrentSchema ||
+                  Misc.SNAPPY_HIVE_METASTORE == conflatable.getRegionToConflate) {
+              } else if (conflatable.isAlterTable || conflatable.isCreateIndex ||
+                  isGrantRevokeStatement(conflatable) ||
+                  conflatable.isCreateTable || conflatable.isDropStatement ||
+                  conflatable.isCreateSchemaText) {
+                val ddl = conflatable.getValueToConflate
+                val ddlLowerCase = ddl.toLowerCase()
+                if ("create[ ]+diskstore".r.findFirstIn(ddlLowerCase).isDefined ||
+                    "create[ ]+index".r.findFirstIn(ddlLowerCase).isDefined ||
+                    ddlLowerCase.trim.contains("^grant") ||
+                    ddlLowerCase.trim.contains("^revoke")) {
+                  ddlBuffer.add(ddl)
+                }
+              }
+            case _ =>
+          }
+        }
+      } finally {
+        dd.unlockAfterReading(null)
       }
     } else {
       val otherDdls = mostRecentMemberObject.getOtherDDLs.asScala
@@ -317,7 +321,7 @@ object RecoveryService extends Logging {
   def getExecutorHost(fqtn: String, bucketId: Int = -1): Seq[String] = {
     val rowRegionPath = getRowRegionPath(fqtn, bucketId)
     // for null region maps select random host
-    val rowRegionPathKey = combinedViewsMapSortedSet.keySet.filter(_.contains(rowRegionPath+"#$"))
+    val rowRegionPathKey = combinedViewsMapSortedSet.keySet.filter(_.contains(rowRegionPath + "#$"))
 
     if (rowRegionPathKey.size != 0) {
       assert(rowRegionPathKey.size == 1,
