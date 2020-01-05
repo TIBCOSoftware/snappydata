@@ -139,6 +139,7 @@ pages:
     - 'TIBCO ComputeDB Monitoring UI': 'monitoring/monitoring.md'
     - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
     - 'Configuring Logging': 'monitoring/configure_logging.md'
+    - 'Monitoring with Metrics': 'monitoring/metrics.md'
     - 'Getting Information from TIBCO ComputeDB System Tables': 'monitoring/monitor-manage.md'
     - 'Recovering Data During Cluster Failures': 'monitoring/recoveringdata.md'      
 # -- Topic - Reference Guide
