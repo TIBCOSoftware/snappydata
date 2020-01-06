@@ -556,6 +556,18 @@ class SplitClusterDUnitSecurityTest(s: String)
       getConn(jdbcUser1, true).close() // Just initialize snc.
       group3.foreach(u => doSimpleStuffOnExtTable(u, fqtn, ss(u)))
       doSimpleStuffOnExtTable(jdbcUser9, fqtn, ss(jdbcUser9), true)
+
+      // Verify admin can grant permissions on external tables of other users.
+      val aConn = getConn(adminUser1, false)
+      try {
+        val aSt = aConn.createStatement()
+        aSt.execute(s"grant all on $fqtn to gemfire9")
+        doSimpleStuffOnExtTable(jdbcUser9, fqtn, ss(jdbcUser9))
+        aSt.execute(s"revoke all on $fqtn from gemfire9")
+        doSimpleStuffOnExtTable(jdbcUser9, fqtn, ss(jdbcUser9), true)
+      } finally {
+        aConn.close()
+      }
     } else {
       // This is admin connection. Test REFRESH_LDAP_GROUP works fine (SNAP-3281)
       st.execute("call SYS.REFRESH_LDAP_GROUP('gemGroup1')")
