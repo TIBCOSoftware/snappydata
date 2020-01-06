@@ -22,7 +22,6 @@ import java.util.{List, Iterator => JIterator}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
-
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -43,6 +42,8 @@ import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
+import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.{Row, SaveMode}
 
 /**
@@ -179,6 +180,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     } else {
       exportUri + s"_${System.currentTimeMillis()}" + File.separator
     }
+    var failedTables = Seq.empty[String]
     tablesArr.foreach(f = table => {
       Try {
         val tableData = session.sql(s"select * from $table;")
@@ -192,11 +194,17 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
         case scala.util.Failure(exception) =>
           logError(s"Error recovering table: $table.")
           tablesArr = tablesArr.filter(_!=table)
+          failedTables = failedTables :+ table
           if (!ignoreError) {
             throw new Exception(exception)
           }
       }
     })
+    logInfo(
+      s"""Successfully exported ${tablesArr.size} tables.
+         |Exported tables are: ${tablesArr.mkString(", ")}
+         |Failed to export ${failedTables.size} tables.
+         |Failed tables are ${failedTables.mkString(", ")}""".stripMargin)
     generateLoadScripts(connId, exportPath, formatType, tablesArr)
   }
 
@@ -214,6 +222,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
       arrBuf.append(ddl.trim + ";\n")
     })
     session.sparkContext.parallelize(arrBuf, 1).saveAsTextFile(filePath)
+    logInfo(s"Successfully exported ${arrBuf.size} DDL statements.")
   }
 
   /**
@@ -258,4 +267,10 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def getInterpreterExecution(sql: String, v: Version,
     connId: lang.Long): InterpreterExecute = new SnappyInterpreterExecute(sql, connId)
+
+  override def isUserAuthorizedForExternalTable (user: String, table: String): Boolean = {
+    val tcb = ToolsCallbackInit.toolsCallback
+    if (tcb.isUserAuthorizedForExtTable(user, Some(TableIdentifier(table))) != null) return false
+    true
+  }
 }

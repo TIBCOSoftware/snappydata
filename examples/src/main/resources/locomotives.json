@@ -1,0 +1,1268 @@
+[
+    {
+        "uri": "/locomotives/1",
+        "type": "Diesel-electric",
+        "model": "ES44AC",
+        "serial_no": "001",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-1",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-1",
+        "installedOn": "01/12/2005",
+        "dateIso": "2005-12-01T13:15:31Z",
+        "hqLatLng": {
+            "lat": 33.914605,
+            "lng": -117.253374
+        }
+    },
+    {
+        "uri": "/locomotives/2",
+        "type": "Diesel-electric",
+        "model": "SD70ACe",
+        "serial_no": "002",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-1",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/v16-2-1",
+        "hqLatLng": {
+            "lat": 47.655492,
+            "lng": -117.427025
+        }
+    },
+    {
+        "uri": "/locomotives/3",
+        "type": "Diesel-electric",
+        "model": "ES44AC",
+        "serial_no": "003",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-1",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-2",
+        "installedOn" : "02/12/2005",
+        "dateIso": "2005-12-02T13:15:31Z",
+        "hqLatLng": {
+            "lat": 46.860395,
+            "lng": -109.473494
+        }
+    },
+    {
+        "uri": "/locomotives/4",
+        "type": "Diesel-electric",
+        "model": "AD40SPe",
+        "serial_no": "004",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-2",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/v16-2-2",    
+        "hqLatLng": {
+            "lat": 45.784314,
+            "lng": -108.500856
+        }
+    },
+    {
+        "uri": "/locomotives/5",
+        "type": "Diesel-electric",
+        "model": "ES44AC",
+        "serial_no": "005",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-3",
+        "installedOn": "10/12/2005",
+        "dateIso": "2005-12-10T13:15:31Z",
+        "hqLatLng": {
+            "lat": 35.022757,
+            "lng": -83.009365
+        }
+    },
+    {
+        "uri": "/locomotives/6",
+        "type": "Diesel-electric",
+        "model": "SD70ACe",
+        "serial_no": "006",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-2",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/v16-2-3",
+        "installedOn": "11/12/2005",
+        "dateIso": "2005-12-11T13:15:31Z",
+        "hqLatLng": {
+            "lat": 33.120118,
+            "lng": -81.563755
+        }
+    },
+    {
+        "uri": "/locomotives/7",
+        "type": "Diesel-electric",
+        "model": "ES44AC",
+        "serial_no": "007",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-3",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-4",
+        "installedOn": "12/12/2005",
+        "dateIso": "2005-12-12T13:15:31Z",
+        "hqLatLng": {
+            "lat": 36.739438,
+            "lng": -79.66268
+        }
+    },
+    {
+        "uri": "/locomotives/8",
+        "type": "Diesel-electric",
+        "model": "GL23TCe",
+        "serial_no": "008",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-3",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/v16-2-4",
+        "hqLatLng": {
+            "lat": 41.876813,
+            "lng": -113.717141
+        }
+    },
+    {
+        "uri": "/locomotives/9",
+        "type": "Diesel-electric",
+        "model": "ES44AC",
+        "serial_no": "009",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-3",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-5",
+        "hqLatLng": {
+            "lat": 36.669408,
+            "lng": -115.617391
+        }
+    },
+    {
+        "uri": "/locomotives/10",
+        "type": "Diesel-electric",
+        "model": "SD70ACe",
+        "serial_no": "0010",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-4",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/v16-2-5",
+        "hqLatLng": {
+            "lat": 47.941049,
+            "lng": -100.126484
+        }
+    },
+    {
+        "uri": "/locomotives/11",
+        "type": "Diesel-electric",
+        "model": "ES44AC",
+        "serial_no": "0011",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-4",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-6",
+        "hqLatLng": {
+            "lat": 32.7086,
+            "lng": -108.190375
+        }
+    },
+    {
+        "uri": "/locomotives/12",
+        "type": "Diesel-electric",
+        "model": "SD70ACe",
+        "serial_no": "0012",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-4",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/v16-2-6",
+        "hqLatLng": {
+            "lat": 34.099394,
+            "lng": -90.261741
+        }
+    },
+    {
+        "uri": "/locomotives/13",
+        "type": "Diesel-electric",
+        "model": "GL23TCe",
+        "serial_no": "0013",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-5",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/v16-2-7",
+        "hqLatLng": {
+            "lat": 36.050366,
+            "lng": -91.340363
+        }
+    },
+    {
+        "uri": "/locomotives/14",
+        "type": "Diesel-electric",
+        "model": "ES44AC",
+        "serial_no": "0014",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-5",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-7",
+        "hqLatLng": {
+            "lat": 35.931077,
+            "lng": -79.643374
+        }
+    },
+    {
+        "uri": "/locomotives/15",
+        "type": "Diesel-electric",
+        "model": "SD70ACe",
+        "serial_no": "0015",
+        "emission_tier": "0+",
+        "fleet": "/fleets/up-5",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/v16-2-8",
+        "hqLatLng": {
+            "lat": 45.314087,
+            "lng": -90.969283
+        }
+    },
+    {
+        "uri": "/locomotives/16",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0016",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-1",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-1",
+        "hqLatLng": {
+            "lat": 47.781463,
+            "lng": -116.940009
+        }
+    },
+    {
+        "uri": "/locomotives/17",
+        "type": "",
+        "model": "B40-8",
+        "serial_no": "0017",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-1",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-8",
+        "hqLatLng": {
+            "lat": 32.863603,
+            "lng": -97.327141
+        }
+    },
+    {
+        "uri": "/locomotives/18",
+        "type": "Diesel-electric",
+        "model": "MP15AC",
+        "serial_no": "0018",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-1",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/645",
+        "hqLatLng": {
+            "lat": 42.090136,
+            "lng": -102.875767
+        }
+    },
+    {
+        "uri": "/locomotives/19",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0019",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-2",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-1",
+        "hqLatLng": {
+            "lat": 32.147267,
+            "lng": -83.87744
+        }
+    },
+    {
+        "uri": "/locomotives/20",
+        "type": "Diesel-electric",
+        "model": "ES44DC",
+        "serial_no": "0020",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-9",
+        "hqLatLng": {
+            "lat": 38.191536,
+            "lng": -85.472672
+        }
+    },
+    {
+        "uri": "/locomotives/21",
+        "type": "Diesel-electric",
+        "model": "SD80MAC",
+        "serial_no": "0021",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-2",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/v20-1",
+        "hqLatLng": {
+            "lat": 43.49188,
+            "lng": -122.944105
+        }
+    },
+    {
+        "uri": "/locomotives/22",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0022",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-2",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-2",
+        "hqLatLng": {
+            "lat": 45.96556,
+            "lng": -116.989515
+        }
+    },
+    {
+        "uri": "/locomotives/23",
+        "type": "Diesel-electric",
+        "model": "ES44DC",
+        "serial_no": "0023",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-10",
+        "hqLatLng": {
+            "lat": 41.788715,
+            "lng": -114.601854
+        }
+    },
+    {
+        "uri": "/locomotives/24",
+        "type": "Diesel-electric",
+        "model": "SD80MAC",
+        "serial_no": "0024",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-2",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/v20-2",
+        "hqLatLng": {
+            "lat": 38.097843,
+            "lng": -118.161825
+        }
+    },
+    {
+        "uri": "/locomotives/25",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0025",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-2",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-3",
+        "hqLatLng": {
+            "lat": 38.12204,
+            "lng": -106.260561
+        }
+    },
+    {
+        "uri": "/locomotives/26",
+        "type": "Diesel-electric",
+        "model": "ES44DC",
+        "serial_no": "0026",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-11",
+        "hqLatLng": {
+            "lat": 36.628722,
+            "lng": -103.908348
+        }
+    },
+    {
+        "uri": "/locomotives/27",
+        "type": "Diesel-electric",
+        "model": "SD80MAC",
+        "serial_no": "0027",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-3",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/v20-3",
+        "hqLatLng": {
+            "lat": 33.544224,
+            "lng": -104.506977
+        }
+    },
+    {
+        "uri": "/locomotives/28",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0028",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-3",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-4",
+        "hqLatLng": {
+            "lat": 36.87125,
+            "lng": -102.557858
+        }
+    },
+    {
+        "uri": "/locomotives/29",
+        "type": "Diesel-electric",
+        "model": "ES44DC",
+        "serial_no": "0029",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-3",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-12",
+        "hqLatLng": {
+            "lat": 34.708707,
+            "lng": -97.179306
+        }
+    },
+    {
+        "uri": "/locomotives/30",
+        "type": "Diesel-electric",
+        "model": "SD80MAC",
+        "serial_no": "0030",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-3",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/v20-4",
+        "hqLatLng": {
+            "lat": 41.103915,
+            "lng": -78.286601
+        }
+    },
+    {
+        "uri": "/locomotives/31",
+        "type": "Diesel-electric",
+        "model": "SD80MAC",
+        "serial_no": "0031",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-4",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/v20-5",
+        "hqLatLng": {
+            "lat": 31.351436,
+            "lng": -105.258803
+        }
+    },
+    {
+        "uri": "/locomotives/32",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0032",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-4",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-5",
+        "hqLatLng": {
+            "lat": 30.062855,
+            "lng": -102.111381
+        }
+    },
+    {
+        "uri": "/locomotives/33",
+        "type": "Diesel-electric",
+        "model": "ES44DC",
+        "serial_no": "0033",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-4",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-13",
+        "hqLatLng": {
+            "lat": 26.634179,
+            "lng": -98.514328
+        }
+    },
+    {
+        "uri": "/locomotives/34",
+        "type": "Diesel-electric",
+        "model": "SD80MAC",
+        "serial_no": "0034",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-4",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/v20-6",
+        "hqLatLng": {
+            "lat": 29.93051,
+            "lng": -95.969945
+        }
+    },
+    {
+        "uri": "/locomotives/35",
+        "type": "Diesel-electric",
+        "model": "ES44DC",
+        "serial_no": "0035",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-5",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-14",
+        "hqLatLng": {
+            "lat": 44.940593,
+            "lng": -110.825888
+        }
+    },
+    {
+        "uri": "/locomotives/36",
+        "type": "Diesel-electric",
+        "model": "SD80MAC",
+        "serial_no": "0036",
+        "emission_tier": "0+",
+        "fleet": "/fleets/bnsf-5",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/v20-7",
+        "hqLatLng": {
+            "lat": 41.307371,
+            "lng": -104.574386
+        }
+    },
+    {
+        "uri": "/locomotives/37",
+        "type": "Diesel-electric",
+        "model": "ES44AC",
+        "serial_no": "0037",
+        "emission_tier": "0+",
+        "fleet": "/fleets/csx-1",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-15",
+        "hqLatLng": {
+            "lat": 43.488604,
+            "lng": -116.913932
+        }
+    },
+    {
+        "uri": "/locomotives/38",
+        "type": "Diesel-electric",
+        "model": "GL23TCe",
+        "serial_no": "0038",
+        "emission_tier": "0+",
+        "fleet": "/fleets/csx-1",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/v16-2-9",
+        "hqLatLng": {
+            "lat": 40.26462,
+            "lng": -74.496063
+        }
+    },
+    {
+        "uri": "/locomotives/39",
+        "type": "Diesel-electric",
+        "model": "ES44AC",
+        "serial_no": "0039",
+        "emission_tier": "0+",
+        "fleet": "/fleets/csx-1",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-16",
+        "hqLatLng": {
+            "lat": 43.650927,
+            "lng": -74.570743
+        }
+    },
+    {
+        "uri": "/locomotives/40",
+        "type": "Diesel-electric",
+        "model": "SD70ACe",
+        "serial_no": "0040",
+        "emission_tier": "0+",
+        "fleet": "/fleets/csx-2",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/v16-2-10",
+        "hqLatLng": {
+            "lat": 41.394707,
+            "lng": -83.905661
+        }
+    },
+    {
+        "uri": "/locomotives/41",
+        "type": "Diesel-electric",
+        "model": "ES44AC",
+        "serial_no": "0041",
+        "emission_tier": "0+",
+        "fleet": "/fleets/csx-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-17",
+        "hqLatLng": {
+            "lat": 45.40759,
+            "lng": -103.471649
+        }
+    },
+    {
+        "uri": "/locomotives/42",
+        "type": "Diesel-electric",
+        "model": "SD70ACe",
+        "serial_no": "0042",
+        "emission_tier": "0+",
+        "fleet": "/fleets/csx-2",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/v16-2-11",
+        "hqLatLng": {
+            "lat": 42.284877,
+            "lng": -99.513644
+        }
+    },
+    {
+        "uri": "/locomotives/43",
+        "type": "Diesel-electric",
+        "model": "ES44AC",
+        "serial_no": "0043",
+        "emission_tier": "0+",
+        "fleet": "/fleets/csx-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-18",
+        "hqLatLng": {
+            "lat": 39.173252,
+            "lng": -90.552123
+        }
+    },
+    {
+        "uri": "/locomotives/44",
+        "type": "Diesel-electric",
+        "model": "SD70ACe",
+        "serial_no": "0044",
+        "emission_tier": "0+",
+        "fleet": "/fleets/csx-2",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/v16-2-12",
+        "hqLatLng": {
+            "lat": 40.775543,
+            "lng": -123.336355
+        }
+    },
+    {
+        "uri": "/locomotives/45",
+        "type": "Diesel-electric",
+        "model": "ES44AC",
+        "serial_no": "0045",
+        "emission_tier": "0+",
+        "fleet": "/fleets/csx-3",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v12-19",
+        "hqLatLng": {
+            "lat": 41.394707,
+            "lng": -119.079633
+        }
+    },
+    {
+        "uri": "/locomotives/46",
+        "type": "Diesel-electric",
+        "model": "GL23TCe",
+        "serial_no": "0046",
+        "emission_tier": "0+",
+        "fleet": "/fleets/csx-3",
+        "manufacturer": "/manufacturers/electro-motive-diesel",
+        "engine": "/engines/v16-2-13",
+        "hqLatLng": {
+            "lat": 39.921845,
+            "lng": -111.985095
+        }
+    },
+    {
+        "uri": "/locomotives/47",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0047",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-1",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-2",
+        "hqLatLng": {
+            "lat": 41.674215,
+            "lng": -110.118111
+        }
+    },
+    {
+        "uri": "/locomotives/48",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0048",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-1",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-3",
+        "hqLatLng": {
+            "lat": 43.829065,
+            "lng": -108.038521
+        }
+    },
+    {
+        "uri": "/locomotives/49",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0049",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-1",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-4",
+        "hqLatLng": {
+            "lat": 48.730575,
+            "lng": -121.358846
+        }
+    },
+    {
+        "uri": "/locomotives/50",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0050",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-1",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-5",
+        "hqLatLng": {
+            "lat": 47.988616,
+            "lng": -117.610012
+        }
+    },
+    {
+        "uri": "/locomotives/51",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0051",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-1",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-6",
+        "hqLatLng": {
+            "lat": 46.141609,
+            "lng": -120.321935
+        }
+    },
+    {
+        "uri": "/locomotives/52",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0052",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-1",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-7",
+        "hqLatLng": {
+            "lat": 44.629206,
+            "lng": -120.960034
+        }
+    },
+    {
+        "uri": "/locomotives/53",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0053",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-8",
+        "hqLatLng": {
+            "lat": 48.572493,
+            "lng": -114.57904
+        }
+    },
+    {
+        "uri": "/locomotives/54",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0054",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-9",
+        "hqLatLng": {
+            "lat": 48.677936,
+            "lng": -109.873057
+        }
+    },
+    {
+        "uri": "/locomotives/55",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0055",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-10",
+        "hqLatLng": {
+            "lat": 48.572493,
+            "lng": -104.927787
+        }
+    },
+    {
+        "uri": "/locomotives/56",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0056",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-11",
+        "hqLatLng": {
+            "lat": 46.746176,
+            "lng": -104.608737
+        }
+    },
+    {
+        "uri": "/locomotives/57",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0057",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-12",
+        "hqLatLng": {
+            "lat": 41.721683,
+            "lng": -109.952819
+        }
+    },
+    {
+        "uri": "/locomotives/58",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0058",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-13",
+        "hqLatLng": {
+            "lat": 43.771496,
+            "lng": -107.240897
+        }
+    },
+    {
+        "uri": "/locomotives/59",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0059",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-14",
+        "hqLatLng": {
+            "lat": 43.424917,
+            "lng": -93.681285
+        }
+    },
+    {
+        "uri": "/locomotives/60",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0060",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-15",
+        "hqLatLng": {
+            "lat": 42.018661,
+            "lng": -95.994395
+        }
+    },
+    {
+        "uri": "/locomotives/61",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0061",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-16",
+        "hqLatLng": {
+            "lat": 33.191119,
+            "lng": -100.700378
+        }
+    },
+    {
+        "uri": "/locomotives/62",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0062",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-17",
+        "hqLatLng": {
+            "lat": 39.481317,
+            "lng": -80.440722
+        }
+    },
+    {
+        "uri": "/locomotives/63",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0063",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-18",
+        "hqLatLng": {
+            "lat": 42.211153,
+            "lng": -71.617224
+        }
+    },
+    {
+        "uri": "/locomotives/64",
+        "type": "Diesel-electric",
+        "model": "C40-8W ",
+        "serial_no": "0064",
+        "emission_tier": "0+",
+        "fleet": "/fleets/ns-2",
+        "manufacturer": "/manufacturers/GE",
+        "engine": "/engines/v16-19",
+        "hqLatLng": {
+            "lat": 44.171027,
+            "lng": -69.992906
+        }
+    },
+    {
+        "uri": "/locomotives/65",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0065",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-1",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-6",
+        "hqLatLng": {
+            "lat": 50.750961,
+            "lng": -111.035917
+        }
+    },
+    {
+        "uri": "/locomotives/66",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0066",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-1",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-7",
+        "hqLatLng": {
+            "lat": 54.165178,
+            "lng": -125.631473
+        }
+    },
+    {
+        "uri": "/locomotives/67",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0067",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-1",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-8",
+        "hqLatLng": {
+            "lat": 54.517653,
+            "lng": -111.462679
+        }
+    },
+    {
+        "uri": "/locomotives/68",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0068",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-1",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-9",
+        "hqLatLng": {
+            "lat": 57.466212,
+            "lng": -113.51957
+        }
+    },
+    {
+        "uri": "/locomotives/69",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0069",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-2",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-10",
+        "hqLatLng": {
+            "lat": 58.648156,
+            "lng": -105.758545
+        }
+    },
+    {
+        "uri": "/locomotives/70",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0070",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-2",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-11",
+        "hqLatLng": {
+            "lat": 52.479733,
+            "lng": -107.757597
+        }
+    },
+    {
+        "uri": "/locomotives/71",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0071",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-2",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-12",
+        "hqLatLng": {
+            "lat": 50.259228,
+            "lng": -103.14772
+        }
+    },
+    {
+        "uri": "/locomotives/72",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0072",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-2",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-13",
+        "hqLatLng": {
+            "lat": 49.939207,
+            "lng": -108.136696
+        }
+    },
+    {
+        "uri": "/locomotives/73",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0073",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-2",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-14",
+        "hqLatLng": {
+            "lat": 55.252082,
+            "lng": -99.996572
+        }
+    },
+    {
+        "uri": "/locomotives/74",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0074",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-2",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-15",
+        "hqLatLng": {
+            "lat": 52.213168,
+            "lng": -95.47359
+        }
+    },
+    {
+        "uri": "/locomotives/75",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0075",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-3",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-16",
+        "hqLatLng": {
+            "lat": 44.264612,
+            "lng": -78.588661
+        }
+    },
+    {
+        "uri": "/locomotives/76",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0076",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-3",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-17",
+        "hqLatLng": {
+            "lat": 44.088886,
+            "lng": -65.04682
+        }
+    },
+    {
+        "uri": "/locomotives/77",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0077",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-3",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-18",
+        "hqLatLng": {
+            "lat": 46.513021,
+            "lng": -67.070163
+        }
+    },
+    {
+        "uri": "/locomotives/78",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0078",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-3",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-19",
+        "hqLatLng": {
+            "lat": 48.387737,
+            "lng": -72.315866
+        }
+    },
+    {
+        "uri": "/locomotives/79",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0079",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-3",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-20",
+        "hqLatLng": {
+            "lat": 43.12077,
+            "lng": -81.576942
+        }
+    },
+    {
+        "uri": "/locomotives/80",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0080",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-4",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-21",
+        "hqLatLng": {
+            "lat": 49.281775,
+            "lng": -117.735624
+        }
+    },
+    {
+        "uri": "/locomotives/81",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0081",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-4",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-22",
+        "hqLatLng": {
+            "lat": 49.267239,
+            "lng": -119.584813
+        }
+    },
+    {
+        "uri": "/locomotives/82",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0082",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-4",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-23",
+        "hqLatLng": {
+            "lat": 49.209053,
+            "lng": -120.320033
+        }
+    },
+    {
+        "uri": "/locomotives/83",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0083",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-4",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-25",
+        "hqLatLng": {
+            "lat": 49.179934,
+            "lng": -120.854738
+        }
+    },
+    {
+        "uri": "/locomotives/84",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0084",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-4",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-26",
+        "hqLatLng": {
+            "lat": 49.296307,
+            "lng": -118.827314
+        }
+    },
+    {
+        "uri": "/locomotives/85",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0085",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-4",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-27",
+        "hqLatLng": {
+            "lat": 49.640363,
+            "lng": -126.242998
+        }
+    },
+    {
+        "uri": "/locomotives/86",
+        "type": "Diesel-electric",
+        "model": "3GS21B",
+        "serial_no": "0086",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-4",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-28",
+        "hqLatLng": {
+            "lat": 46.244201,
+            "lng": -73.666786
+        }
+    },
+    {
+        "uri": "/locomotives/87",
+        "type": "Diesel-electric",
+        "model": "3GS21B-87",
+        "serial_no": "0087",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-4",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-26",
+        "hqLatLng": {
+            "lat": 49.296307,
+            "lng": -118.827314
+        },
+        "parent": "/locomotives/86",    
+        "installedOn": "05/12/2014",
+        "dateIso": "2014-12-05T13:15:31Z"
+
+    },
+    {
+        "uri": "/locomotives/88",
+        "type": "Diesel-electric",
+        "model": "3GS21B-88",
+        "serial_no": "0085",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-4",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-27",
+        "hqLatLng": {
+            "lat": 49.640363,
+            "lng": -126.242998
+        },
+        "parent": "/locomotives/87",    
+        "dateIso": "2015-11-05T13:15:30Z"
+
+    },
+    {
+        "uri": "/locomotives/89",
+        "type": "Diesel-electric",
+        "model": "3GS21B-89",
+        "serial_no": "0086",
+        "emission_tier": "0+",
+        "fleet": "/fleets/cn-4",
+        "manufacturer": "/manufacturers/national-railway-equipment",
+        "engine": "/engines/QSK19-28",
+        "hqLatLng": {
+            "lat": 46.244201,
+            "lng": -73.666786
+        },
+        "parent": "/locomotives/88",
+        "installedOn": "05/12/2015",
+       "dateIso": "2015-12-05T13:15:31Z"
+    }
+]

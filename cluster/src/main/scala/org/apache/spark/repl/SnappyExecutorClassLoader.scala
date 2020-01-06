@@ -16,10 +16,12 @@ class SnappyExecutorClassLoader(conf: SparkConf,
 
   override def findClassLocally(name: String): Option[Class[_]] = {
     val pathInDirectory = name.replace('.', '/') + ".class"
+    // logDebug(s"KN: findingClassLocally SECL for name: $pathInDirectory")
     var inputStream: InputStream = null
     try {
       val fullPath = s"$classUri/$pathInDirectory"
       inputStream = pullFromLead(name, fullPath)
+      // logDebug(s"KN: findingClassLocally SECL for name: $pathInDirectory pulling done")
       val bytes = readAndTransformClass(name, inputStream)
       Some(defineClass(name, bytes, 0, bytes.length))
     } catch {
