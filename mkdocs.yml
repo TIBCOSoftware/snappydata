@@ -99,6 +99,7 @@ pages:
     - 'Managing JAR Files': 'programming_guide/managing_jar_files.md'
     - 'Using Snappy Shell': 'programming_guide/using_snappydata_shell.md'
     - 'Using the Spark Shell and spark-submit': 'programming_guide/using_the_spark_shell_and_spark-submit.md'
+    - 'Using the Scala Interpreter': 'programming_guide/scala_interpreter.md'
     - 'Working with Hadoop YARN cluster Manager': 'programming_guide/working_with_hadoop_yarn_cluster_manager.md'
     - 'Using JDBC with TIBCO ComputeDB': 'programming_guide/using_jdbc_with_snappydata.md'
     - 'Accessing TIBCO ComputeDB Tables from any Spark (2.1+) Cluster': 'programming_guide/spark_jdbc_connector.md'
