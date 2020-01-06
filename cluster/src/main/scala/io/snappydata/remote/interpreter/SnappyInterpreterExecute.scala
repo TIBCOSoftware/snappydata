@@ -142,6 +142,7 @@ object SnappyInterpreterExecute {
     } finally {
       if (lockTaken) intpRWLock.writeLock().unlock()
     }
+    // TODO (Optimization) Reuse the grantees list retrieved above in below method.
     updateMetaRegion(group)
   }
 
