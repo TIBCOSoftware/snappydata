@@ -286,7 +286,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     }
 
     val fqtn: String = if (td.identifier.indexOf('.') > 0) td.identifier
-    else grantor + "." + td.identifier
+    else tableOwner + "." + td.identifier
     val key = GrantRevokeOnExternalTable.getMetaRegionKey(fqtn)
     PermissionChecker.addRemoveUserForKey(key, isGrant, users)
   }
