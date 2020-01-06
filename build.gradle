@@ -168,6 +168,13 @@ allprojects {
     osVersion = System.getProperty('os.version')
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
     buildDateShort = ''
+    if (rootProject.hasProperty('withDate')) {
+      buildDateShort = "${new Date().format('yyyyMMdd')}_"
+    }
+    devEdition = ''
+    if (rootProject.hasProperty('dev')) {
+      devEdition = "-dev"
+    }
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
     sparkJobServerVersion = '0.6.2.11'
@@ -1238,10 +1245,7 @@ buildDeb {
 distTar {
   // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.tar.gz'
   if (isEnterpriseProduct) {
-    if (rootProject.hasProperty('withDate')) {
-      buildDateShort = "${new Date().format('yyyyMMdd')}_"
-    }
-    archiveName = 'TIB_compute_' + version + '_' + buildDateShort + osFamilyName + '.tar.gz'
+    archiveName = 'TIB_compute' + devEdition + '_' + version + '_' + buildDateShort + osFamilyName + '.tar.gz'
   } else {
     classifier 'bin'
   }
@@ -1259,10 +1263,7 @@ distTar {
 distZip {
   // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.zip'
   if (isEnterpriseProduct) {
-    if (rootProject.hasProperty('withDate')) {
-      buildDateShort = "${new Date().format('yyyyMMdd')}_"
-    }
-    archiveName = 'TIB_compute_' + version + '_' + buildDateShort + osFamilyName + '.zip'
+    archiveName = 'TIB_compute' + devEdition + '_' + version + '_' + buildDateShort + osFamilyName + '.zip'
   } else {
     classifier 'bin'
   }
