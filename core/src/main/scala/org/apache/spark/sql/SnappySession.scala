@@ -2557,6 +2557,7 @@ object SnappySession extends Logging {
         }
       } finally {
         session.currentKey = null
+        session.removeContextObject("orgSqlText")
       }
     } else {
       logDebug(s"Using cached plan for: $sqlText (existing: ${cachedDF.queryString})")
