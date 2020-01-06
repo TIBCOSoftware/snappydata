@@ -823,6 +823,24 @@ abstract class SnappyDDLParser(session: SnappySession)
               .DUMMY_TABLE_QUALIFIED_NAME))), input.sliceString(0, input.length)))
   }
 
+  final def ExtTableIdentifier: Rule1[TableIdentifier] = rule {
+    // case-sensitivity already taken care of properly by "identifier"
+    (identifierExt ~ '.' ~ ws).? ~ identifierExt ~> ((schema: Any, table: String) => {
+      val td = TableIdentifier(table, schema.asInstanceOf[Option[String]])
+      val tmetadata = session.sessionCatalog.getTableMetadata(td)
+      if (tmetadata.tableType == CatalogTableType.EXTERNAL) push(td)
+      else MISMATCH
+    })
+  }
+
+  protected def grantRevokeExternal: Rule1[LogicalPlan] = rule {
+    GRANT ~ ws ~ ALL ~ ws ~ ON ~ ExtTableIdentifier ~ TO ~ capture(ANY.*) ~> {
+      (td: TableIdentifier, users: String) => GrantRevokeOnExternalTable(true, td, users)
+    } |
+    REVOKE ~ ws ~ ALL ~ ws ~ ON ~ ExtTableIdentifier ~ FROM ~ capture(ANY.*) ~> {
+      (td: TableIdentifier, users: String) => GrantRevokeOnExternalTable(false, td, users)
+    }
+  }
   /**
    * Handle other statements not appropriate for SnappyData's builtin sources but used by hive/file
    * based sources in Spark. This rule should always be at the end of the "start" rule so that
@@ -1024,7 +1042,8 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected final def allowDDL: Rule0 = rule {
     MATCH ~> (() => test({
-      SnappyContext.getClusterMode(session.sparkContext).isInstanceOf[ThinClientConnectorMode] || !Misc.getGemFireCache.isSnappyRecoveryMode
+      SnappyContext.getClusterMode(session.sparkContext).isInstanceOf[ThinClientConnectorMode] ||
+        !Misc.getGemFireCache.isSnappyRecoveryMode
     }))
   }
 
@@ -1033,7 +1052,8 @@ abstract class SnappyDDLParser(session: SnappySession)
     dropTable | truncateTable | createView | createTempViewUsing | dropView | alterView | createSchema |
     dropSchema | alterTableToggleRowLevelSecurity | createPolicy | dropPolicy |
     alterTableProps | alterTableOrView | alterTable | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | grantRevokeIntp | passThrough | interpretCode )
+    createIndex | dropIndex | createFunction | dropFunction | grantRevokeIntp | grantRevokeExternal |
+      passThrough | interpretCode )
   }
 
   protected def partitionSpec: Rule1[Map[String, Option[String]]]
