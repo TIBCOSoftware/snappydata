@@ -19,7 +19,7 @@ package org.apache.spark.sql
 import java.lang.reflect.Method
 import java.sql.{CallableStatement, Connection, PreparedStatement, SQLException, SQLWarning}
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import java.util.{Calendar, Properties}
 
 import scala.collection.JavaConverters._
@@ -692,6 +692,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   override def close(): Unit = synchronized {
     clear()
     externalCatalog.close()
+    if (this.uniqueId != 0) {
+      val tcb = ToolsCallbackInit.toolsCallback
+      if (tcb != null) {
+        tcb.closeAndClearScalaInterpreter(uniqueId)
+        uniqueId = 0
+      }
+    }
   }
 
   /**
@@ -2187,6 +2194,15 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
   // Call to update Structured Streaming UI Tab
   updateStructuredStreamingUITab()
+
+  @volatile private var uniqueId = 0L
+
+  def getUniqueIdForExecScala(): Long = {
+    if (uniqueId != 0L) {
+      uniqueId = SnappySession.nextDummyId
+    }
+    uniqueId
+  }
 }
 
 private class FinalizeSession(session: SnappySession)
@@ -2718,6 +2734,9 @@ object SnappySession extends Logging {
       jarServerFiles = jarServerFiles ++ uris
     })
   }
+
+  private val dummyId: AtomicLong = new AtomicLong(0)
+  private def nextDummyId = dummyId.decrementAndGet()
 }
 
 final class CachedKey(val session: SnappySession,
