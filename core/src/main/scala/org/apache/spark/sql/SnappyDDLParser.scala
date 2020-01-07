@@ -494,12 +494,13 @@ abstract class SnappyDDLParser(session: SnappySession)
           optionsMap += key -> value
         })
         println(optionsMap.toMap)
-        InterpretCodeCommand(scalaCode, optionsMap.toMap)
+        InterpretCodeCommand(scalaCode, session, optionsMap.toMap)
       } else {
-        InterpretCodeCommand(code)
+        InterpretCodeCommand(code, session)
       }
     }
   }
+
   protected def grantRevokeIntp: Rule1[LogicalPlan] = rule {
     GRANT ~ ws ~ PRIVILEGE ~ ws ~ EXEC ~ ws ~ SCALA ~ ws ~ TO ~
       ws ~ capture(ANY.*) ~> {

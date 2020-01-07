@@ -69,10 +69,25 @@ import scala.tools.nsc.interpreter.IMain
  */
 case class InterpretCodeCommand(
      code: String,
+     snappySession: SnappySession,
      options: Map[String, String] = Map.empty) extends RunnableCommand {
 
+  lazy val df: Dataset[Row] = {
+    val tcb = ToolsCallbackInit.toolsCallback
+    if (tcb != null) {
+      // supported in embedded mode only
+      tcb.getScalaCodeDF(code, snappySession, options)
+    } else {
+      null
+    }
+  }
+
+
   // This is handled directly by Remote Interpreter code
-  override def run(sparkSession: SparkSession): Seq[Row] = Nil
+  override def run(sparkSession: SparkSession): Seq[Row] = df.collect()
+
+  override def output: Seq[Attribute] = df.schema.fields.map(
+    x => AttributeReference(x.name, x.dataType, x.nullable)())
 }
 
 case class GrantRevokeIntpCommand(
