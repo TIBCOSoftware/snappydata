@@ -97,5 +97,5 @@ trait ToolsCallback {
   def getScalaCodeDF(code: String,
     snappySession: SnappySession, options: Map[String, String]): Dataset[Row]
 
-  def closeAndClearScalaInterpreter(uniqueId: Long)
+  def closeAndClearScalaInterpreter(uniqueId: Long): Unit
 }

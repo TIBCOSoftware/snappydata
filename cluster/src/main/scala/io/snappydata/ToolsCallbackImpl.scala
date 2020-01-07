@@ -333,7 +333,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     SnappyInterpreterExecute.getScalaCodeDF(code, session, options)
   }
 
-  override def closeAndClearScalaInterpreter(uniqueId: Long) = {
+  override def closeAndClearScalaInterpreter(uniqueId: Long): Unit = {
     SnappyInterpreterExecute.closeRemoteInterpreter(uniqueId)
   }
 }
