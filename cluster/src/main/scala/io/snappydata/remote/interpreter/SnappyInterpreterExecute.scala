@@ -222,9 +222,9 @@ object SnappyInterpreterExecute {
       }
     }
     val id: Long = session.getUniqueIdForExecScala()
-    val interpreterHelper = SnappyInterpreterExecute.getOrCreateStateHolder(id, user, authToken, group)
+    val intpHelper = SnappyInterpreterExecute.getOrCreateStateHolder(id, user, authToken, group)
     try {
-      val ret = interpreterHelper.interpret(code.split("\n"), options)
+      val ret = intpHelper.interpret(code.split("\n"), options)
       if (ret.isInstanceOf[Array[String]]) {
         import scala.collection.JavaConversions._
         val structType = StructType(Seq(StructField("C0", StringType)))
