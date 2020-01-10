@@ -46,3 +46,14 @@ Using generated load scripts
 run ‘/home/xyz/extracted/data_1571059786952_load_scripts/part-00000’;
 
 ```
+
+
+For statistics search the leader log for the following message:
+
+```
+Successfully exported <N>  tables.
+Exported tables are: <TableNames>
+Failed to export <N> tables.
+Failed tables are <TableNames>
+```
+

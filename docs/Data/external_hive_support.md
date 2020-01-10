@@ -3,11 +3,9 @@
 ## Overview
 Hive Metastore is the central repository of Apache Hive metadata. It contains metadata (column names, data types, partitions, comments, etc.) of the objects that you create in Apache Hive.
 
-![Remote Mode](../Images/externalhivemetastore/externalhivemetastorepic.png)
+All Apache Hive implementations require a Hive service.  **Hive Service** includes three processes; HiveServer2 (includes  compiler and execution engine), MetaStore, and WebHCat. The Thrift interfaces include **Drivers**, which are processes that interpret the query. You can implement the Hive Metastore using the tables in a relational database such as MySQL. By default, Apache Hive uses a built-in Derby SQL server for this purpose. For running Apache Hive on a production cluster, you require  MySQL or any other similar relational database. 
 
-All Apache Hive implementations require a Hive service.  **Hive Service** includes three processes; HiveServer2 (includes HiveServer2 or thrift server, compiler, and execution engine), MetaStore, and WebHCat. The Thrift interfaces include **Drivers**, which are processes that interpret the query. You can implement the Hive Metastore using the tables in a relational database such as MySQL. By default, Apache Hive uses a built-in Derby SQL server for this purpose. For running Apache Hive on a production cluster, you require  MySQL or any other similar relational database. 
-
-Apache Hive supports the following databases. You can change the relational database to use any of the following supported databases:
+Apache Hive Metastore service supports the following databases. You can change the relational database to use any of the following supported databases:
 
 *	Derby
 *	MySQL
@@ -15,7 +13,7 @@ Apache Hive supports the following databases. You can change the relational data
 *	Oracle
 *	Postgres
 
-In TIBCO  ComputeDB, you can deploy the Hive Metastore in any of the following modes:
+TIBCO ComputeDB can connect to the Hive Metastore in any of the following modes:
 
 ### Local Mode
 
@@ -65,7 +63,7 @@ The **hive-site.xml** configuration file provides information about the Hive con
 
 For using Hive Metastore in TIBCO ComputeDB, do the following:
 
-1.	Copy the **hive-site.xml** from `<Hive installation folder>`/**conf** directory to **tibcocomputedb/build-artifacts/scala-2.11/snappy/conf** folder or use the trimmed version of **hive-site.xml**.
+1.	Copy the **hive-site.xml** from `<Hive installation folder>`/**conf** directory to **`<TCDB installation folder>`/conf** folder or use the trimmed version of **hive-site.xml**.
 2.	If you are using MySQL as the Metastore database, copy the **mysql-connector** jar file (for example, **mysql-connector-java-5.1.48.jar**) from `<Hive installation folder>`/lib to the TIBCO ComputeDB classpath, that is  **`<TIBCO ComputeDB installation folder>`/jars/**. For any other Metastore database, copy the relevant connector jars to the TIBCO ComputeDB **jars** folder.
 
 ### Example - Trimmed Version of hive-site.xml
@@ -108,7 +106,7 @@ After configuring the settings to connect the TIBCO ComputeDB cluster to an exte
 
 If you set the property **spark.sql.catalogImplementation = in-memory**, you cannot access the Hive tables.  TIBCO ComputeDB acts as the execution engine for Hive table query execution. You can refer the following examples to access and query the Hive tables:
 
-*	To point to the external Hive catalog from the snappy session, set the following property. You can set this property at the session level and global level.
+*	To point to the external Hive catalog from the snappy session, set the following property. This can be set only at session level and not at global level.
 		
         	snappy-sql> set spark.sql.catalogImplementation=hive;
 

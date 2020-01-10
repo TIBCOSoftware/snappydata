@@ -27,6 +27,9 @@ $ docker run hello-world
 
 You can use the Dockerfile that is provided and create your own Docker image of TIBCO ComputeDB. Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) script and place it into a directory. The Dockerfile contains a link to the latest TIBCO ComputeDB OSS version to build the image.
 
+!!!Note
+	To download the Dockerfile on Linux or MAC, use the wget command. </br>` wget https://raw.githubusercontent.com/SnappyDataInc/snappy-cloud-tools/master/docker/Dockerfile` 
+
 Move into the directory containing the downloaded Dockerfile and then run the Docker build command with the required details to build the Docker image. 
 
 If you have already downloaded the TIBCO ComputeDB tarfile locally onto your machine, use the following steps to build an image from the downloaded binaries. To download TIBCO ComputeDB, refer to the [Provisioning TIBCO ComputeDB](https://snappydatainc.github.io/snappydata/install/) section in the product documentation.

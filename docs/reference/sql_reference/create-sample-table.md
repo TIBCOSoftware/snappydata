@@ -39,7 +39,7 @@ CREATE SAMPLE TABLE table_name ON base_table_name
     FRACTION 'population-fraction',  //Must be a double
     STRATARESERVOIRSIZE 'strata-initial-capacity',  // Default 50 Must be an integer.
     )
-    AS select_statement
+    
 ```
 For more information on column-definition, refer to [Column Definition For Column Table](create-table.md#column-definition).
 
@@ -81,7 +81,7 @@ snappy>CREATE TABLE CUSTOMER_SAMPLE (
 ```pre
 snappy>CREATE SAMPLE TABLE CUSTOMER_SAMPLE on CUSTOMER_BASE
       OPTIONS (qcs 'C_NATIONKEY',fraction '0.05', 
-      strataReservoirSize '50') AS (SELECT * FROM CUSTOMER_BASE);
+      strataReservoirSize '50');
 ```    
 
 !!! Note

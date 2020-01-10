@@ -1,5 +1,5 @@
 <a id="howto-zeppelin"></a>
-# How to Use Apache Zeppelin with TIBCO ComputeDB
+# Using Apache Zeppelin with TIBCO ComputeDB
 
 Do the following to use Apache Zeppelin with TIBCO ComputeDB:
 
@@ -12,6 +12,8 @@ Do the following to use Apache Zeppelin with TIBCO ComputeDB:
 5.	Go to localhost:8080 or (AWS-AMI_PublicIP):8080.
 
 ![homepage](../Images/zeppelin.png)
+
+Refer [here](concurrent_apache_zeppelin_access_to_secure_snappydata.md) for instructions to configure Apache Zeppelin for securely accessing TIBCO ComputeDB Cluster.
 
 ## FAQs
 
@@ -30,7 +32,7 @@ Do the following to use Apache Zeppelin with TIBCO ComputeDB:
 	![homepage](../Images/zeppelin_2.png)
 
 *	**I already have a Zeppelin installation, do I still need to install TIBCO ComputeDB’s Zeppelin separately?**
-	*	No. You may download the notebooks from here <provide link for Github> and import them into your Zeppelin.
+	*	No. You may download the notebooks from [here](https://github.com/SnappyDataInc/zeppelin-interpreter/tree/master/examples/notebook) and import them into your Zeppelin.
 	*	Additionally, you must set up the JDBC interpreter to connect to TIBCO ComputeDB. [Configure JDBC Interpreter](concurrent_apache_zeppelin_access_to_secure_snappydata.md#configinterpreter).
 
 *	**Do these notebooks depend on specific Zeppelin version?**

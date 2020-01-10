@@ -31,23 +31,23 @@ Set credentials as enviroment variable:
         export AWS_ACCESS_KEY_ID=<Amazon S3 Access Key>
         export AWS_SECRET_ACCESS_KEY=<Amazon S3 Secret Key>
 
-### Setting the Access or Secret Key Properties through Shell 
-
-        set spark.hadoop.fs.s3a.access.key=<Amazon S3 Access Key>
-        set spark.hadoop.fs.s3a.secret.key=<Amazon S3 Secret Key>
 
 ## Azure Blob
 
-### Accessing Data from Azure Secured BLOB Storage
-Setting the credentails in hive-site.xml works across all the shells.
-fs.azure.account.key.your-storage_account_name.core.windows.net
-CREATE TABLE testADLS1 USING CSV Options (path 'wasbs://container_name@storage_account_name.blob.core.windows.net/dir/file')
+###  Setting Credentials through hive-site.xml
+
+Set the following property in hive-site.xml
+	fs.azure.account.key.your-storage_account_name.core.windows.net
+
+### Setting Credentials through Spark Property
+
+	sc.hadoopConfiguration.set("fs.azure.account.key.<your-storage_account_name>.dfs.core.windows.net", "<secretKey>")
 
 ### Accessing Data from Azure without Secured BLOB Storage
-CREATE TABLE testADLS1 USING CSV Options (path 'wasb://container_name@storage_account_name.blob.core.windows.net/dir/file')
+    CREATE TABLE testADLS1 USING CSV Options (path 	'wasb://container_name@storage_account_name.blob.core.windows.net/dir/file')
 
-### Setting Credentails through Spark Property
-sc.hadoopConfiguration.set("fs.azure.account.key.<your-storage_account_name>.dfs.core.windows.net", "<secretKey>")
+### Accessing Data from Azure through Secured BLOB Storage
+    CREATE TABLE testADLS1 USING CSV Options (path 	'wasb://container_name@storage_account_name.blob.core.windows.net/dir/file')
 
 ## GCS
 

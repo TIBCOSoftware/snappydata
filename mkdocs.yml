@@ -1,4 +1,4 @@
-site_name: 1.1.1
+site_name: 1.2.0
 site_url: http://www.snappydata.io
 site_description: Product documentation for TIBCO ComputeDB™
 site_author: TIBCO ComputeDB™ Team
@@ -26,6 +26,7 @@ pages:
 #    - 'Docker Image': 'quickstart/getting_started_with_docker_image.md'
     - 'Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
     - 'TIBCO ComputeDB Quickstart Guide': 'quickstart/snappydataquick_start.md'
+    - 'Using Apache Zeppelin with TIBCO ComputeDB': 'howto/use_apache_zeppelin_with_snappydata.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
     - 'Benchmark 16-20x Faster Performance than Apache Spark': 'quickstart/performance_apache_spark.md'
     - 'Using SQL': 'quickstart/using_sql.md'
@@ -87,7 +88,6 @@ pages:
     - 'How to connect TIBCO Spotfire® Desktop to TIBCO ComputeDB': 'howto/connecttibcospotfire.md' 
     - 'How to connect TIBCO® Data Virtualization to TIBCO ComputeDB': 'howto/connecttibcodv.md'
     - 'How to Connect Tableau to TIBCO ComputeDB': 'howto/tableauconnect.md' 
-    - 'How to Use Apache Zeppelin with TIBCO ComputeDB': 'howto/use_apache_zeppelin_with_snappydata.md'
     - 'How to Configure Apache Zeppelin to Securely and Concurrently access the TIBCO ComputeDB Cluster': 'howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md'
 #    - 'List of Properties':    (to be updated later)
 #        - 'Property Details': 'configuring_cluster/property_details.md'
@@ -99,6 +99,7 @@ pages:
     - 'Managing JAR Files': 'programming_guide/managing_jar_files.md'
     - 'Using Snappy Shell': 'programming_guide/using_snappydata_shell.md'
     - 'Using the Spark Shell and spark-submit': 'programming_guide/using_the_spark_shell_and_spark-submit.md'
+    - 'Using pyspark Shell': 'programming_guide/using_pyspark_shell.md'
     - 'Using the Scala Interpreter': 'programming_guide/scala_interpreter.md'
     - 'Working with Hadoop YARN cluster Manager': 'programming_guide/working_with_hadoop_yarn_cluster_manager.md'
     - 'Using JDBC with TIBCO ComputeDB': 'programming_guide/using_jdbc_with_snappydata.md'
@@ -355,5 +356,5 @@ extra_css:
 markdown_extensions:
     - admonition 
     
-copyright: Copyright © 2017-2019 TIBCO Software Inc. All rights reserved. 
+copyright: Copyright © 2017-2020 TIBCO Software Inc. All rights reserved. 
 
