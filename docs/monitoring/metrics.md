@@ -1,27 +1,29 @@
 # Monitoring with Metrics
 
-Metrics constitutes of the measurements of resource usage or behavior that can be observed and collected all over TIBCO ComputeDB clusters. Using the Metrics feature, you can monitor the cluster health and statistics.  Monitoring the clusters allows you to do the following:
+Metrics constitutes of the measurements of resource usage or behavior that can be observed and collected all over TIBCO ComputeDB clusters. Using the Metrics, you can monitor the cluster health and statistics.  Monitoring the clusters allows you to do the following:
 
 *	Increase availability by quickly detecting downtime/degradation.
 *	Facilitate performance monitoring by external tools. These external tools can handle functions such as metrics aggregation, alerting, and visualization.
 
-TIBCO ComputeDB uses the [Spark’s Metrics Subsystem](https://spark.apache.org/docs/latest/monitoring.html#metrics) for metrics collection. This system allows you to publish the metrics to a variety of sinks that you can enable for metrics collection. By default, the Metrics servlet sink is enabled.  
-Spark supports the following sinks for Metrics. TIBCO ComputeDB can send metrics to all these sinks. However, it is recommended to use the **MetricsServlet** for exploratory purposes.
+TIBCO ComputeDB uses the [Spark’s Metrics Subsystem](https://spark.apache.org/docs/latest/monitoring.html#metrics) for metrics collection. This system allows you to publish the metrics to a variety of sinks that you can enable for metrics collection. 
+Spark supports the following sinks for Metrics. TIBCO ComputeDB can send metrics to all these sinks. However, MetricsServlet sink is enabled by default and all the metrics get published here.
 
 | Sink | Description |
 |--------|--------|
-|   MetricsServlet     |  Adds a servlet within the existing Spark UI to serve metrics data as JSON data. </br>This is used for exploratory analysis and is easily accessible via a web page. </br>The servlet URL is http://<leadhost>:5050/metrics/json.        |
+|   MetricsServlet     |  Adds a servlet within the existing Spark UI to serve metrics data as JSON data. </br>The metrics are published here by default and can be easily accessible via a web page. </br>The servlet URL is http://<leadhost>:5050/metrics/json.        |
 |      JmxSink  |     Register metrics for viewing in a JMX console. Monitoring tools/ agents that understand the JMX protocol, such as JMX exporter from Prometheus, can export this information to external monitoring systems for storage and visualization.   |
 |   CsvSink     |   Exports metrics data to CSV files at regular intervals.     |
 |      ConsoleSink  |   Logs metrics information to the console.    |
 |      GraphiteSink  |     Sends metrics to a Graphite node.   |
 |  Slf4jSink      |    Sends metrics to slf4j as log entries.    |
-|      StatsdSink  |  Sends metrics to a StatsD node.|
 
 !!!Note
 	You cannot store metrics for long term retention as well as for archival purposes. Detailed instructions for integration with external monitoring systems to build monitoring dashboards by sourcing metrics data from the sinks will be published in a future release.
 
-Whenever you start the cluster, the metrics are published and made available through commonly used sinks, which can be consumed by monitoring tools. In TIBCO ComputeDB, you can publish the metrics using the collector service on the Lead node. Metrics are not published for Smart Connector mode. 
+Whenever you start the cluster, the metrics are published and made available through commonly used sinks, which can be consumed by monitoring tools. 
+
+!!!Note
+	Metrics are not published for Smart Connector mode. 
 
 The following type of metrics are made available for TIBCO ComputeDB:
 
@@ -32,21 +34,20 @@ The following type of metrics are made available for TIBCO ComputeDB:
     
 	*	Cluster and node status
 	*	Cluster and node uptime/downtime
+	*	Member Statistics
+	*	Table Statistics
 
 *	**Performance Metrics**</br>
 	This type of metric provides insights into system performance. 
 
 	Examples:
     
-    *	Throughput measured as transactions per second / Queries served per hour (TPS/ QpH)
-    *	The total number of queries served
-    *	Number of jobs running/completed
     *	Resource usage for system-level resources such as CPU, memory, disk, and network.
     *	Resource usage for ComputeDB application/component resources such as heap or off-heap memory and their percentage utilization etc.
 
 ## Enabling the Sinks for Metrics collection
 
-If  you want to publish the TIBCO ComputeDB metrics in any of the sinks, you must enable these sinks in the **metrics.properties** file, which is located in the **conf** folder of the TIBCO ComputeDB installation directory. 
+If you want to publish the TIBCO ComputeDB metrics using any of the sinks, you must enable these sinks in the **metrics.properties** file, which is located in the **conf** folder of the TIBCO ComputeDB installation directory. 
 
 To enable a sink, do the following:
 
@@ -54,24 +55,29 @@ To enable a sink, do the following:
 	
     	cp metrics.properties.template metrics.properties
     
-2.	Uncomment the properties of the Sink that you want to enable and provide the necessary property values. 
-	For example, for enabling ConsoleSink, you must uncomment the following properties: 
-    
-		#Enable ConsoleSink for all instances by class name
-		#*.sink.console.class=org.apache.spark.metrics.sink.ConsoleSink
-		# Polling period for the ConsoleSink
-		#*.sink.console.period=10
-		# Unit of the polling period for the ConsoleSink
-		#*.sink.console.unit=seconds
-		# Polling period for the ConsoleSink specific for the master instance
-		#master.sink.console.period=15
-		# Unit of the polling period for the ConsoleSink specific for the master instance
-		#master.sink.console.unit=seconds
-		
+2.	Uncomment the properties (remove the #) of the sink that you want to enable and provide the necessary property values. For example, for enabling CsvSink, you must uncomment the following properties:
+
+        # Enable CsvSink for all instances by class name
+        *.sink.csv.class=org.apache.spark.metrics.sink.CsvSink
+
+        # Polling period for the CsvSink
+        *.sink.csv.period=1
+
+        # Unit of the polling period for the CsvSink
+        *.sink.csv.unit=minutes
+
+        # Polling directory for CsvSink
+        *.sink.csv.directory=/tmp/
+
+        # Polling period for the CsvSink specific for the worker instance
+        worker.sink.csv.period=10
+
+        # Unit of the polling period for the CsvSink specific for the worker instance
+        worker.sink.csv.unit=minutes
 
 3.	Start the cluster for the configurations to take effect by executing this command from the TIBCO ComputeDB installation folder:
 
-		./sbin/snappy-start-all.sh`
+			./sbin/snappy-start-all.sh
 
 
 !!!Note
@@ -79,33 +85,30 @@ To enable a sink, do the following:
 
 ## Accessing Metrics
 
-You can check the TIBCO ComputeDB metrics collected through MetricsServlet at the following URL:
-`<Lead node hostname>:<5050>/metrics/json`
-
-The default sink for metrics monitoring is **MetricServlet** and the metrics for TIBCO ComputeDB are available at `http://(lead-hostname):5050/metrics/json`.
+You can check the TIBCO ComputeDB metrics collected through **MetricsServlet**, which is enabled by default, at the following URL: `<LeadNode-hostname>:<5050>/metrics/json`
 
 ### Accessing Metrics from JmxSink 
 Do the following to access Metrics from JmxSink:
 
-1.	Enable **org.apache.spark.metrics.sink.JmxSink** in the metrics configuration file. You can then use **JConsole** to access Metrics through JMX.
- 
-		*.sink.jmx.class=org.apache.spark.metrics.sink.JmxSink
+1.	If **org.apache.spark.metrics.sink.JmxSink** is enabled in the **metrics.properties** file, you can use **JConsole** to access Metrics captured through JmxSink. To enable JmxSink, uncomment the properties for the JmxSink in the **metrics.properties** file. For example:
 
-3.	Launch **JConsole**, select TIBCO ComputeDB primary lead process. 
-3.	Go to **MBeans** > **metrics**, to access the TIBCO ComputeDB Metrics. For remote processes, you need to add the following JMX remote properties in the node configuration file.
+			*.sink.jmx.class=org.apache.spark.metrics.sink.JmxSink
 
-        -jmx-manager=true -jmx-manager-start=true 
-        -jmx-manager-port=<port_value>
-	
+2.	Launch **JConsole** and connect to the host on which primary lead node is running, select the process ID of TIBCO ComputeDB primary lead process. 
+3.	Go to **MBeans** > **metrics**, to access the TIBCO ComputeDB Metrics. 
+	        
+!!!Note
+	To access metrics for remote processes, you need to add the following JMX remote properties in the node configuration file:</br>`-jmx-manager=true -jmx-manager-start=true -jmx-manager-port=<port_value>`
 
 ### Accessing Metrics from CsvSink 
 Do the following to access Metrics from CsvSink:
 
-1.	Enable **org.apache.spark.metrics.sink.CsvSink** in metrics configuration file.
+1.	If **org.apache.spark.metrics.sink.CsvSink** is enabled in the **metrics.properties** file, you can access the metrics captured in the CSV files at the location specified in the ** *.sink.csv.directory** property.  To enable CsvSink, uncomment the properties for the CsvSink in the **metrics.properties** file. For example, 
 
     	*.sink.csv.class=org.apache.spark.metrics.sink.CsvSink
  
-2.	You can now access the CSV files created for TIBCO ComputeDB statistics from the value specified in the ***.sink.csv.directory** property. Ensure that the directory already exists and has the write permissions.
+!!!Note
+	You must ensure that the location mentioned in the ***.sink.csv.directory** property already exists and has write permissions.
 
 ## Disabling Metrics Collection
 
@@ -114,14 +117,17 @@ To disable the metrics collection for a specific Sink, edit the **metrics.proper
 
 ## Statistics
 
-Using the Metrics feature, you can collect the following statistics in TIBCO  ComputeDB.
+The following statistics in TIBCO  ComputeDB are collected when you Metrics monitoring is enabled. 
+
+!!!Note
+	All memory statistics are published in MB units.
 
 ### TableCountStatistics
 
 | **Source** | **Description** |**Metric Type** | **Probable Values** |
 |--------|--------|--------|--------|
-|     embeddedTablesCount   |    Count of the embedded tables.    |     Gauge  |        |
-|  row tables      |     Count of the row tables.   |     Gauge  |        |
+|     embeddedTablesCount   |    Count of the row and column tables.    |     Gauge  |        |
+|  rowTablesCount     |     Count of the row tables.   |     Gauge  |        |
 |    columnTablesCount    |   Count of the column tables.     |   Gauge    |        |
 |   externalTablesCount     | Count of external tables.     |   Gauge    |        |
 
@@ -162,7 +168,6 @@ Using the Metrics feature, you can collect the following statistics in TIBCO  Co
 | connectorCount | Count of connectors. | Gauge |   |
 
 ### MemberStatistics
-(Histograms are published in MB units)
 
 | **Source** | **Description** | **Metric Type** | **Probable Values** |
 | --- | --- | --- | --- |
@@ -183,7 +188,7 @@ Using the Metrics feature, you can collect the following statistics in TIBCO  Co
 | isActiveLead | Flag returns true if the member is primary lead or false otherwise. | Gauge | Boolean value(True or false) |
 | cores | Total number of cores. | Gauge |   |
 | cpuActive | Number of active CPUs. | Gauge |   |
-| clients | Number of connected clients connected | Gauge |   |
+| clients | Number of clients connected.| Gauge |   |
 | jvmHeapMax | Max JVM heap size. | Gauge |   |
 | jvmHeapUsed | Used JVM heap size. | Gauge |   |
 | jvmHeapTotal | Total JVM heap size. | Gauge |   |
@@ -222,7 +227,6 @@ Using the Metrics feature, you can collect the following statistics in TIBCO  Co
 | diskStoreDiskSpaceTrend | Disk store and space trends. | Histogram |   |
 
 ###ClusterStatistics
-(Histograms are published in MB units)
 
 | **Source** | **Description** | **Metric Type** | **Probable Values** |
 | --- | --- | --- | --- |

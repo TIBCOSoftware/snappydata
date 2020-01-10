@@ -48,7 +48,7 @@ Thus the table definitions and tables in a specific format can be exported and u
 
 
 !!!Note
-	In the recovery mode, you must check the console, the logs of the server, and the lead for errors. Also, check for any tables that are skipped during the export process. In case of any failures, visit the Known issues in the release notes or [Troubleshooting Common Problems](/troubleshooting/troubleshooting.md) section in the product documentation to resolve the failures.
+	In the recovery mode, you must check the console, the logs of the server, and the lead for errors. Also, check for any tables that are skipped during the export process. In case of any failures, visit the [Known issues](#knownissues) in  or [Troubleshooting Common Problems](#trouble) section in the product documentation to resolve the failures.
 
 
 <a id= loadextractdata> </a>
@@ -76,6 +76,7 @@ Here is an example of using the DataExtractor utility to salvage data from a fau
 2.	Start the Snappy shell and run the following DDL and INSERT statements:
 
             snappy-sql
+            
             TIBCO ComputeDB version 1.2-SNAPSHOT
                 snappy-sql> connect client 'localhost:1527';
                 snappy-sql> create table customers(cid integer, name string, phone varchar(20));
@@ -87,6 +88,7 @@ and ensure that all the instances of cluster services are stopped. You can confi
 checking the output of **jps**  to verify that the services (ServerLauncher,LeaderLauncher,LocatorLauncher) are not present.
 
             snappy-stop-all.sh 
+            
             The SnappyData Leader on user1-dell(localhost-lead-1) has stopped.
             The SnappyData Server on user1-dell(localhost-server-1) has stopped.
             The SnappyData Locator on user1-dell(localhost-locator-1) has stopped.
@@ -97,6 +99,7 @@ checking the output of **jps**  to verify that the services (ServerLauncher,Lead
 4.	 Run the command `snappy-start-all.sh -r` to launch the cluster in recovery mode. Check the console output and take a note of all the instances that could come up and those that fail to come up.
 
             snappy-start-all.sh  -r
+            
             Logs generated in /home/user1/workspace/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-locator-1/snappylocator.log
             SnappyData Locator pid: 14500 status: running
               Distributed system now has 1 members.
@@ -115,21 +118,26 @@ checking the output of **jps**  to verify that the services (ServerLauncher,Lead
 can run the SELECT queries or the provided procedures to export DDLs, Data of the cluster. Run the procedure **EXPORT_DDLS** to export the definitions of tables, views, UDFs etc.
 
             snappy-sql
+            
             TIBCO ComputeDB version 1.2-SNAPSHOT 
             snappy-sql>  connect client 'localhost:1527';
             snappy-sql> call sys.EXPORT_DDLS('/tmp/recovered/ddls');
             snappy-sql> exit;
+            
             ls /tmp/recovered/ddls_1576074336371/
             part-00000  _SUCCESS
             cat /tmp/recovered/ddls_1576074336371/part-00000
             create table customers(cid integer, name string, phone varchar(20));
-            Next, run the procedure “EXPORT_DATA” to export the data of selected tables to selected location.
-            snappy-sql
+           
+           ## Next, run the procedure “EXPORT_DATA” to export the data of selected tables to selected location.
+           
+           	snappy-sql
             TIBCO ComputeDB version 1.2-SNAPSHOT 
             snappy-sql> connect client 'localhost:1527';
             snappy-sql> call sys.EXPORT_DATA('/tmp/recovered/data', 'csv', 'all', true);
             snappy-sql> exit;
             ls /tmp/recovered/data_1576074561789
+            
             APP.CUSTOMERS
             ls /tmp/recovered/data_1576074561789/APP.CUSTOMERS/
             part-00000-5da7511d-e2ca-4fe5-9c97-23c8d1f52204.csv  _SUCCESS
@@ -140,6 +148,7 @@ can run the SELECT queries or the provided procedures to export DDLs, Data of th
             ls /tmp/recovered/data_1576074561789_load_scripts/
             part-00000  _SUCCESS
             cat /tmp/recovered/data_1576074561789_load_scripts/part-00000 
+            
             CREATE EXTERNAL TABLE temp_app_customers USING csv
             OPTIONS (PATH '/tmp/recovered/data_1576074561789//APP.CUSTOMERS',header 'true');
             INSERT OVERWRITE app.customers SELECT * FROM temp_app_customers;
@@ -196,11 +205,13 @@ In the recovery mode, by default, the table counts and sizes do not appear on th
 
 The cluster that you have started in the recovery mode with the flag, can get busy fetching the table counts for some time based on the data size. If the table counts are enabled and there is an error while reading a particular table, the count is shown as **-1**.
 
+<a id= knownissues> </a>
 ## Known Issues
 
 *	If one of the replicas of the table partitions is corrupt, the Data Extractor utility attempts to recover data from redundant replicas. However, if the redundancy is not available, and if the data files are corrupt, the utility fails to recover data.
 *	The Leader log contains an error message: ***Table/View 'DBS' does not exist***. You can ignore this message.
 
+<a id= trouble> </a>
 ## Troubleshooting
 
 *	Your TIBCO ComputeDB cluster has tables with big schema or a large number of buckets and this cluster has stopped without any exceptions in the log.	
@@ -214,7 +225,7 @@ The cluster that you have started in the recovery mode with the flag, can get bu
 	*	The expected host is the best option to get the data; others are not in good shape.
 	It is imperative to use a specific host for a particular partition( of a table) to get data in recovery mode reliably.
     
-    You can also face this error when there was a failure on server **x** hence the task scheduler re-launches the task on server **y**, without waiting for the time-out. In this case the log for server **x** should be analysed for errors.
+    You can also face this error when there was a failure on **server** **x** hence the task scheduler re-launches the task on server **y**, without waiting for the time-out. In this case the log for **server** **x** should be analysed for errors.
    
 *	You are facing memory-related issues such as **LowMemoryException** or if the server gets killed and a `jvmkill_<pid>.log` is generated in the server directory. In such a case enough memory may not be available to the servers.</br>	
 	**Workaround**: Decrease the number of CPUs available for each server. This action ensures that at a time, less number of tasks are launched simultaneously. You can also decrease the cores by individually setting the `-spark.executor.cores` property to a lower value, in the server's conf file. After this, restart the cluster in recovery mode and again export the failed tables.

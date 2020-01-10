@@ -1,4 +1,4 @@
-# Working with External Data Sources
+# Working with Data Sources
 
 TIBCO ComputeDB relies on the Spark SQL Data Sources API to parallelly load data from a wide variety of sources. Any data source or database that supports Spark to load or save state can be accessed from within TIBCO ComputeDB. 
 

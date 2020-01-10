@@ -27,3 +27,6 @@ Reloading extracted DDLs
 run ‘/home/xyz/extracted/ddls_1571059691610/part-00000’;
 
 ```
+
+
+For statistics search the leader log for message `Successfully exported <N> DDL statements.`
