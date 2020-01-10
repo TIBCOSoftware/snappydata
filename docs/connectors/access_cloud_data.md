@@ -47,24 +47,25 @@ Set the following property in hive-site.xml
     CREATE TABLE testADLS1 USING CSV Options (path 	'wasb://container_name@storage_account_name.blob.core.windows.net/dir/file')
 
 ### Accessing Data from Azure through Secured BLOB Storage
-    CREATE TABLE testADLS1 USING CSV Options (path 	'wasb://container_name@storage_account_name.blob.core.windows.net/dir/file')
+    CREATE TABLE testADLS1 USING CSV Options (path 'wasb://container_name@storage_account_name.blob.core.windows.net/dir/file')
 
 ## GCS
 
 ### Setting Credentials in hive-site.xml 
-Setting the credentials in hive-site.xml works in all the shells.
+Setting the credentials in **hive-site.xml** works in all the shells.
 google.cloud.auth.service.account.json.keyfile
 
-CREATE EXTERNAL TABLE airline_ext USING parquet OPTIONS(path 'gs://bucket_name/object_name ')
+    CREATE EXTERNAL TABLE airline_ext USING parquet OPTIONS(path 'gs://bucket_name/object_name ')
 
 ### Setting Credentials through Spark property on Shell 
-sc.hadoopConfiguration.set("google.cloud.auth.service.account.json.keyfile","<json file path>") . 
+
+	sc.hadoopConfiguration.set("google.cloud.auth.service.account.json.keyfile","`<json file path>`") . 
 
 ### Setting the Properties in lead/on shell using -spark.hadoop
--spark.hadoop.google.cloud.auth.service.account.json.keyfile=<json file path>
+
+	-spark.hadoop.google.cloud.auth.service.account.json.keyfile=<json file path>
 
 ## EMR HDFS
-Accessing data from EMR HDFS location from snappy cluster
-running on ec2
+Accessing data from EMR HDFS location from snappy cluster running on ec2
 
-create external table categories using csv options(path 'hdfs://34.230.86.97/user/hadoop/NW/categories.csv');
+    create external table categories using csv options(path 'hdfs://34.230.86.97/user/hadoop/NW/categories.csv');

@@ -131,7 +131,9 @@ pages:
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
 - 'Working with Data Sources': 'connectors/connector.md'  
-- 'Working with External Data Sources':
+- 'Working with Data Sources':
+    - 'Supported Data Formats': 'Data/data_formats.md'
+    - 'Accessing Cloud Storages': 'connectors/access_cloud_data.md'
     - 'Connecting to External Hive Metastores': 'Data/external_hive_support.md' 
     - 'Deploying Third Party Connectors': 'connectors/deployment_dependency_jar.md'  
     - 'Using the TIBCO ComputeDB GemFire Connector': 'connectors/gemfire_connector.md'  

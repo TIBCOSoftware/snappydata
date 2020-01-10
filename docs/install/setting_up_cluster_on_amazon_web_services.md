@@ -605,6 +605,8 @@ To launch the instance and start the TIBCO ComputeDB cluster on a single EC2 ins
 17. Go to the **/opt/snappydata** directory. Run the following command to start a basic cluster with one data node, one lead, and one locator.
 
 		./sbin/snappy-start-all.sh
+        
+18. 	After deploying TIBCO ComputeDB, follow the instructions [here](/howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin.
 
 <a id="accesssnappydatacluster"></a>
 ### Accessing TIBCO ComupteDB Cluster

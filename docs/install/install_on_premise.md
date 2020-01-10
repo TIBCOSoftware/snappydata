@@ -5,6 +5,8 @@ TIBCO ComputeDB runs on UNIX-like systems (for example, Linux, Mac OS). With on-
 
 For quick start instructions on Installing TIBCO ComputeDB on-premise, refer [Getting Started with TIBCO ComputeDB On-premise](/quickstart/getting_started_by_installing_snappydata_on-premise.md). 
 
+After installing TIBCO ComputeDB, follow the instructions [here](/howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin.
+
 <a id="singlehost"></a>
 ## Single-Host Installation
 
@@ -24,6 +26,7 @@ Start a basic cluster with one data node, one lead, and one locator:
 ```
 
 For custom configuration and to start more nodes, refer [configuring the TIBCO ComputeDB cluster](../configuring_cluster/configuring_cluster.md).
+
 
 <a id="multihost"></a>
 ## Multi-Host Installation
