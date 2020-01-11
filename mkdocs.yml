@@ -190,6 +190,7 @@ pages:
             - 'CREATE TABLE': 'reference/sql_reference/create-table.md'
             - 'CREATE TEMPORARY TABLE': 'reference/sql_reference/create-temporary-table.md'
             - 'CREATE VIEW': 'reference/sql_reference/create-view.md'
+        - 'EXPLAIN': 'reference/sql_reference/explain.md'        
         - 'DELETE': 'reference/sql_reference/delete.md'
         - 'DROP Statements': 'reference/sql_reference/drop-statements.md'
         - 'DROP Statements':
@@ -207,6 +208,8 @@ pages:
         - 'GRANT': 'reference/sql_reference/grant.md'
         - 'INSERT': 'reference/sql_reference/insert.md'
         - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
+        - 'LIST': 'reference/sql_reference/list.md'
+        - 'EXPLAIN': 'reference/sql_reference/explain.md'
         - 'PUT INTO': 'reference/sql_reference/put-into.md'
         - 'REVOKE': 'reference/sql_reference/revoke.md'
         - 'SELECT': 'reference/sql_reference/select.md'
