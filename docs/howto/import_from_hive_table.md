@@ -1,7 +1,7 @@
-# How to Import Data from Hive Table into SnappyData Table
+# How to Import Data from Hive Table into TIBCO ComputeDB Table
 
 
-Using a Snappy session, you can read an existing hive tables that are defined in an external hive catalog, use hive tables as external tables from SnappySession for queries, including joins with tables defined in SnappyData catalog,  and also define new Hive table or view to be stored in external hive catalog. Using a SnappySession, you can also define a new hive table or view to be stored in an external hive catalog.
+Using a Snappy session, you can read an existing hive tables that are defined in an external hive catalog, use hive tables as external tables from SnappySession for queries, including joins with tables defined in TIBCO ComputeDB catalog,  and also define new Hive table or view to be stored in external hive catalog. Using a SnappySession, you can also define a new hive table or view to be stored in an external hive catalog.
 
 When working with Hive, one must instantiate Snappy session with Hive support, including connectivity to a persistent Hive metastore, support for Hive serdes, and Hive user-defined functions.
 
@@ -73,7 +73,7 @@ Run the following steps to test Snappy with Apache Hadoop:
         snappy-sql> create table if not exists default.t1(id int) row format delimited fields terminated by ',';
         snappy-sql> insert into default.t1 select id, concat(id) from range(100);
 
-If you have not configure any of the configuration files mentioned above( hive-site.xml, core-site.xml, hdfs-site.xml) and started the Hadoop and Hive daemons, you will see the following error in SnappyData:
+If you have not configure any of the configuration files mentioned above( hive-site.xml, core-site.xml, hdfs-site.xml) and started the Hadoop and Hive daemons, you will see the following error in TIBCO ComputeDB:
 
 ```
 No Datastore found in the Distributed System for 'execution on remote node null'.
@@ -92,7 +92,7 @@ For more details, refer the following links:
 <!---
 **Option 1** 
 
-If Hive tables have data stored in Apache Parquet format or Optimized Row Columnar (ORC) format the data can be copied directly into SnappyData tables.
+If Hive tables have data stored in Apache Parquet format or Optimized Row Columnar (ORC) format the data can be copied directly into TIBCO ComputeDB tables.
 
 For example,
 ```pre
