@@ -149,7 +149,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def exportData(connId: lang.Long, exportUri: String,
-      formatType: String, tableNames: String, ignoreError: lang.Boolean): Unit = {
+      formatType: String, tableNames: String, ignoreError: lang.Boolean): String = {
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     if (Misc.isSecurityEnabled) {
       session.conf.set(Attribute.USERNAME_ATTR,
@@ -200,15 +200,17 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
           }
       }
     })
-    logInfo(
+    val message =
       s"""Successfully exported ${tablesArr.size} tables.
          |Exported tables are: ${tablesArr.mkString(", ")}
          |Failed to export ${failedTables.size} tables.
-         |Failed tables are ${failedTables.mkString(", ")}""".stripMargin)
+         |Failed tables are ${failedTables.mkString(", ")}""".stripMargin
+    logInfo(message)
     generateLoadScripts(connId, exportPath, formatType, tablesArr)
+    message
   }
 
-  override def exportDDLs(connId: lang.Long, exportUri: String): Unit = {
+  override def exportDDLs(connId: lang.Long, exportUri: String): String = {
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
     val filePath = if (exportUri.endsWith(File.separator)) {
       exportUri.substring(0, exportUri.length - 1) +
@@ -222,7 +224,9 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
       arrBuf.append(ddl.trim + ";\n")
     })
     session.sparkContext.parallelize(arrBuf, 1).saveAsTextFile(filePath)
-    logInfo(s"Successfully exported ${arrBuf.size} DDL statements.")
+    val message = s"Successfully exported ${arrBuf.size} DDL statements."
+    logInfo(message)
+    message
   }
 
   /**
