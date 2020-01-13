@@ -1,7 +1,7 @@
 # Approximate Query Processing (AQP)
 
 !!! Note
-	This is the beta version of the AQP feature which is still undergoing final testing before its official release. This feature is not supported in the Smart Connector mode. 
+	This feature is not supported in the Smart Connector mode. 
 
 The following topics are covered in this section:
 
