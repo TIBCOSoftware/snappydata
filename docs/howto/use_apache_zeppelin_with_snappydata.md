@@ -26,7 +26,7 @@ Refer [here](concurrent_apache_zeppelin_access_to_secure_snappydata.md) for inst
 	*	You may clone the notebook and proceed in the cloned notebook.
 
 *	**Do I need to change any setting in Zeppelin to work with the multi-node cluster?**
-	*	Yes, but this requires Zeppelin’s admin user access. By default, you access the Zeppelin notebooks as an anonymous user. For admin user access, click the **Configuration** tab and enter your credentials in the **Login** box. You can find the admin credentials in the **zeppelin-dir/conf/shiro.ini** file.
+	*	Yes, but this requires Zeppelin’s admin user access. By default, you access the Zeppelin notebooks as an anonymous user. For admin user access, click the **Interpreter** tab and enter your credentials in the **Login** box. You can find the admin credentials in the **zeppelin-dir/conf/shiro.ini** file.
 	![homepage](../Images/zeppelin_3.png)
 	*	Update the appropriate IP of a server node in the jdbc URL (highlighted in the following image).
 	![homepage](../Images/zeppelin_2.png)
