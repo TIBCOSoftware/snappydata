@@ -16,12 +16,10 @@ class SnappyExecutorClassLoader(conf: SparkConf,
 
   override def findClassLocally(name: String): Option[Class[_]] = {
     val pathInDirectory = name.replace('.', '/') + ".class"
-    // logDebug(s"KN: findingClassLocally SECL for name: $pathInDirectory")
     var inputStream: InputStream = null
     try {
       val fullPath = s"$classUri/$pathInDirectory"
       inputStream = pullFromLead(name, fullPath)
-      // logDebug(s"KN: findingClassLocally SECL for name: $pathInDirectory pulling done")
       val bytes = readAndTransformClass(name, inputStream)
       Some(defineClass(name, bytes, 0, bytes.length))
     } catch {
@@ -31,7 +29,10 @@ class SnappyExecutorClassLoader(conf: SparkConf,
         None
       case e: Exception =>
         // Something bad happened while checking if the class exists
-        logError(s"Failed to check existence of class $name on REPL class server at $uri", e)
+        if (!(e.getClass.getName.equals("com.gemstone.gemfire.cache.execute.FunctionException")
+          && name.startsWith("org.apache.spark"))) {
+          logError(s"Failed to check existence of class $name on REPL class server at $uri", e)
+        }
         None
     } finally {
       if (inputStream != null) {

@@ -23,7 +23,7 @@ import java.util.Properties
 
 import scala.collection.JavaConverters._
 import com.gemstone.gemfire.cache.EntryExistsException
-import com.pivotal.gemfirexd.Constants
+import com.pivotal.gemfirexd.{Attribute, Constants}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -34,7 +34,7 @@ import io.snappydata.impl.{ExtendibleURLClassLoader, LeadImpl}
 import io.snappydata.remote.interpreter.SnappyInterpreterExecute
 import io.snappydata.remote.interpreter.SnappyInterpreterExecute.PermissionChecker
 import org.apache.spark.executor.SnappyExecutor
-import org.apache.spark.sql.{AnalysisException, SnappyContext}
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTable
 import org.apache.spark.sql.execution.GrantRevokeOnExternalTable
@@ -326,5 +326,14 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
   override def getIntpClassLoader(taskProps: Properties): ClassLoader = {
     val prop = taskProps.getProperty(Constant.REPL_OUTPUT_DIR)
     SnappyInterpreterExecute.getLoader(prop)
+  }
+
+  override def getScalaCodeDF(code: String,
+    session: SnappySession, options: Map[String, String]): Dataset[Row] = {
+    SnappyInterpreterExecute.getScalaCodeDF(code, session, options)
+  }
+
+  override def closeAndClearScalaInterpreter(uniqueId: Long): Unit = {
+    SnappyInterpreterExecute.closeRemoteInterpreter(uniqueId)
   }
 }
