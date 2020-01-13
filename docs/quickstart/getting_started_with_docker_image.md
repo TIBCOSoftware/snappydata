@@ -100,7 +100,7 @@ $ docker run -itd --net=host --name computedb myrepo/computedb start all
 
 ```
 
-### Launching TIBCO ComputeDB Container on Linux macOS
+### Launching TIBCO ComputeDB Container on macOS
 
 If you are using macOS, you must redirect the ports manually using the `-p` parameter. If you use `--net=host`, it may not work correctly on the macOS. You can use the following modified command for macOS:
 
