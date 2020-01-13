@@ -1,19 +1,27 @@
 # Accessing Cloud Data
 
 ## AWS
-You can access the Public Data on AWS Cloud storage using any of the following methods:
+To access the data on AWS cloud storage, you must set the credentials using any of the following methods:
 
-
+*	Using hive-site.xml File
+*	Setting the Access or Secret Key Properties
+*	Setting the Access or Secret Key Properties through Environment Variable
 
 ### Using hive-site.xml File 
 
-1.	Add the following key properties into **conf** > **hive-site.xml** file:
-	*	fs.s3a.access.key
-	*	fs.s3a.secret.key 
+Add the following key properties into **conf** > **hive-site.xml** file:
 
-2.	Create an external table using the following command:
-    		s3a://<bucketName>/<folderName> command.
-
+```
+   <property>
+       <name>fs.s3a.access.key</name>
+       <value>Amazon S3 Access Key</value>
+   </property>
+   <property>
+       <name>fs.s3a.secret.key</name>
+       <value>Amazon S3 Secret Key</value>
+   </property>
+```
+   
 ### Setting the Access or Secret Key Properties
 
 1.	Add the following properties in **conf**/**leads** file:
@@ -31,41 +39,81 @@ Set credentials as enviroment variable:
         export AWS_ACCESS_KEY_ID=<Amazon S3 Access Key>
         export AWS_SECRET_ACCESS_KEY=<Amazon S3 Secret Key>
 
+### Accessing Data from AWS Cloud Storage
+
+Create an external table using the following command:
+
+```
+create external table staging_parquet using parquet options (path 's3a://<bucketName>/<folderName>');
+create table parquet_test using column as select * from staging_parquet;
+```
+
+### Unsetting the Access or Secret Key Properties
+
+You can run the **org.apache.hadoop.fs.FileSystem.closeAll()** command on the snappy-scala shell or in the job. This clears the cache. Ensure that there are no queries running on the cluster when you are executing this property.  After this  you can set the new credentials. 
 
 ## Azure Blob
+
+To access the data on Azure Blob storage, you must set the credentials using any of the following methods:
+
+*	Setting Credentials through hive-site.xml
+*	Setting Credentials through Spark Property
 
 ###  Setting Credentials through hive-site.xml
 
 Set the following property in hive-site.xml
-	fs.azure.account.key.your-storage_account_name.core.windows.net
 
-### Setting Credentials through Spark Property
+```
+	<property> 
+    	<name>fs.azure.account.key.youraccount.blob.core.windows.net</name> 
+    	<value>YOUR ACCESS KEY</value>
+    </property>
+```
 
-	sc.hadoopConfiguration.set("fs.azure.account.key.<your-storage_account_name>.dfs.core.windows.net", "<secretKey>")
+### Setting Credentials through Spark Property 
+
+
+```
+sc.hadoopConfiguration.set("fs.azure.account.key.<your-storage_account_name>.dfs.core.windows.net", "<YOUR ACCESS KEY>")
+```
 
 ### Accessing Data from Azure without Secured BLOB Storage
-    CREATE TABLE testADLS1 USING CSV Options (path 	'wasb://container_name@storage_account_name.blob.core.windows.net/dir/file')
+
+```
+    CREATE EXTERNAL TABLE testADLS1 USING PARQUET Options (path 'wasb://container_name@storage_account_name.blob.core.windows.net/dir/file')
+```
 
 ### Accessing Data from Azure through Secured BLOB Storage
-    CREATE TABLE testADLS1 USING CSV Options (path 'wasb://container_name@storage_account_name.blob.core.windows.net/dir/file')
+
+```
+    CREATE EXTERNAL TABLE testADLS1 USING PARQUET Options (path 'wasbs://container_name@storage_account_name.blob.core.windows.net/dir/file')
+```
 
 ## GCS
 
-### Setting Credentials in hive-site.xml 
-Setting the credentials in **hive-site.xml** works in all the shells.
-google.cloud.auth.service.account.json.keyfile
+To access the data on GCS cloud storage, you must set the credentials using any of the following methods:
 
-    CREATE EXTERNAL TABLE airline_ext USING parquet OPTIONS(path 'gs://bucket_name/object_name ')
+*	Setting Credentials through hive-site.xml
+*	Setting Credentials through Spark Property
+
+### Setting Credentials in hive-site.xml 
+```
+
+   <property>
+       <name>google.cloud.auth.service.account.json.keyfile</name>
+       <value>/path/to/keyfile</value>
+   </property>
+
+```
 
 ### Setting Credentials through Spark property on Shell 
 
-	sc.hadoopConfiguration.set("google.cloud.auth.service.account.json.keyfile","`<json file path>`") . 
+```
+sc.hadoopConfiguration.set("google.cloud.auth.service.account.json.keyfile","`<json file path>`")
+``` 
 
-### Setting the Properties in lead/on shell using -spark.hadoop
+### Accessing Data from GCS Cloud Storage
 
-	-spark.hadoop.google.cloud.auth.service.account.json.keyfile=<json file path>
-
-## EMR HDFS
-Accessing data from EMR HDFS location from snappy cluster running on ec2
-
-    create external table categories using csv options(path 'hdfs://34.230.86.97/user/hadoop/NW/categories.csv');
+```
+CREATE EXTERNAL TABLE airline_ext USING parquet OPTIONS(path 'gs://bucket_name/object_name ')
+```
