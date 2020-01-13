@@ -1086,6 +1086,11 @@ task product(type: Zip) {
           into "${snappyProductDir}/connectors"
           include "*.jar"
         }
+        copy {
+          from "${jdbcConnectorProject.projectDir}/../tdv-connector/lib"
+          into "${snappyProductDir}/connectors"
+          include "csjdbc8.jar"
+        }
       }
       if (hasGemFireConnectorProject) {
         copy {

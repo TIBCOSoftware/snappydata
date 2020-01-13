@@ -21,6 +21,7 @@ import java.net.URLClassLoader
 import java.util.Properties
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.{Dataset, Row, SnappySession}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTable
 
@@ -92,4 +93,9 @@ trait ToolsCallback {
     tid: TableIdentifier, users: String, catalogTable: CatalogTable): Unit
 
   def getIntpClassLoader(taskProps: Properties): ClassLoader
+
+  def getScalaCodeDF(code: String,
+    snappySession: SnappySession, options: Map[String, String]): Dataset[Row]
+
+  def closeAndClearScalaInterpreter(uniqueId: Long): Unit
 }
