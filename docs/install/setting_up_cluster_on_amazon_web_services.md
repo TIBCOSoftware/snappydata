@@ -624,9 +624,11 @@ Refer to the following documentation, for more information on [accessing an EC2 
         cat /opt/snappydata/conf/leads
         172.16.32.180
 
-16. Go to the **/opt/snappydata** directory. Run the following command to start your cluster. By default, it'll launch a basic cluster with one data server, one lead, and one locator.
+16. Go to the **/opt/snappydata** directory. Run the following command to start your cluster. By default, it will launch a basic cluster with one data server, one lead, and one locator.
 
 		./sbin/snappy-start-all.sh
+
+17.	After deploying SnappyData, follow the instructions [here](/howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin.
 
 <a id="accesssnappydatacluster"></a>
 ### Accessing SnappyData Cluster

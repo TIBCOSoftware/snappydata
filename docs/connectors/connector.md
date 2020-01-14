@@ -1,4 +1,4 @@
-# Working with External Data Sources
+# Working with Data Sources
 
 SnappyData relies on the Spark SQL Data Sources API to parallelly load data from a wide variety of sources. Any data source or database that supports Spark to load or save state can be accessed from within SnappyData. 
 
@@ -13,5 +13,8 @@ For more information see:
 
 * [START HERE - How to load data into SnappyData Tables](../howto/load_data_into_snappydata_tables.md)
 * [Data Loading examples using Spark SQL/Data Sources API](../howto/load_data_from_external_data_stores.md)
+* [Supported Data Formats](../Data/data_formats.md)
+* [Accessing Cloud Storages](access_cloud_data.md)
+* [Connecting to External Hive Metastores](../Data/external_hive_support.md)
 * [Using the SnappyData Change Data Capture (CDC) Connector](cdc_connector.md)
 * [Using the SnappyData GemFire Connector](gemfire_connector.md)

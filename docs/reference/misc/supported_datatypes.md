@@ -322,8 +322,6 @@ The data type representing `Long` values. It's a 64-bit signed integer (equivale
 | Minimum value   | java.lang.Long.MIN_VALUE                          |
 |    Maximum value   | java.lang.Long.MAX_VALUE |
 
-
-
 <a id="map"></a>
 ## MAP
 
