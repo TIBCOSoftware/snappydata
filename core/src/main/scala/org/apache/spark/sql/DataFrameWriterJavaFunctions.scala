@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.snappy.DataFrameWriterExtensions
+import org.apache.spark.sql.snappydata.DataFrameWriterExtensions
 
 
 class DataFrameWriterJavaFunctions(val dfWriter: DataFrameWriter[_]) {

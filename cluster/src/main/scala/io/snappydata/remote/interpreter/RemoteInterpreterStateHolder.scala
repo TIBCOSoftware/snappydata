@@ -30,7 +30,7 @@ import io.snappydata.impl.LeadImpl
 import org.apache.commons.io.FileUtils
 import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.repl.SparkILoop
-import org.apache.spark.sql.{AnalysisException, CachedDataFrame, Dataset}
+import org.apache.spark.sql.{CachedDataFrame, Dataset}
 import org.apache.spark.sql.execution.RefreshMetadata
 
 import scala.collection.mutable
@@ -114,6 +114,17 @@ class RemoteInterpreterStateHolder(
         lastResult = intp.interpret(tmpsb.toString())
         if (!(lastResult == Results.Error) && !replay) {
           allInterpretedLinesForReplay += line
+        } else if (lastResult == Results.Error) {
+          logWarning(s"Got error while interpreting line $line")
+          resultBuffer += pw.toString.stripLineEnd
+          val output = resultBuffer.toArray.flatMap(_.split("\n"))
+          val outputsb = new mutable.StringBuilder()
+          output.foreach(l => {
+            outputsb.append(l)
+            outputsb.append("\n")
+          })
+          throw new RuntimeException(s"Got error while interpreting line $line" +
+            s" and interpreter output = ${outputsb.toString()}")
         }
         if (lastResult == Results.Success) tmpsb.clear()
         resultBuffer += pw.toString.stripLineEnd

@@ -23,7 +23,7 @@ import org.apache.spark.api.java.JavaPairRDD._
 import org.apache.spark.api.java.JavaRDD
 import org.apache.spark.api.java.JavaSparkContext.fakeClassTag
 import org.apache.spark.api.java.function.{FlatMapFunction, Function => JFunction}
-import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.snappydata._
 
 
 class RDDJavaFunctions[U](val javaRDD: JavaRDD[U]) {

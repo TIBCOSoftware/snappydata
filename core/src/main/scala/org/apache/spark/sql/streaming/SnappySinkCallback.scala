@@ -230,7 +230,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
   }
 }
 
-import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.snappydata._
 
 class DefaultSnappySinkCallback extends SnappySinkCallback with Logging {
   def process(snappySession: SnappySession, parameters: Map[String, String],

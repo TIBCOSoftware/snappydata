@@ -25,7 +25,7 @@ import io.snappydata.core.{Data, TRIPDATA}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.snappydata._
 import org.apache.spark.sql.types.{DateType, FloatType, IntegerType, StringType, StructField, StructType, TimestampType}
 
 /**

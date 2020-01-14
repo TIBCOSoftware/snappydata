@@ -137,8 +137,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       "case class TestData(c1: Int, c2: String)",
       "val x = TestData(1, \"1\")",
       "snappy.sql(\"create table tmptable(c1 int not null, c2 string)\")",
-      "snappy.sql(\"insert into tmptable values(1, \'1\')\")",
-      ":qu"
+      "snappy.sql(\"insert into tmptable values(1, \'1\')\")"
     )
     val conn = getJdbcConnection(1527)
     var stmnt = conn.createStatement()
@@ -157,8 +156,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
         "var rdd = sc.parallelize((1 to 10).map(i => new NewClass(i, i.toString)))",
         "rdd.count",
         "println(\"Just before calling rdd.collect\")",
-        "rdd.collect.foreach(println(_))",
-        ":quit"
+        "rdd.collect.foreach(println(_))"
       )
       stmnt = conn.createStatement()
       cmdOutput = "snappyscala-output1.txt"
@@ -173,18 +171,15 @@ class CommandLineToolsSuite extends SnappyTestRunner {
   test("snappy scala run") {
     val scala_code1 = Seq(
       "snappy.sql(\"create table tmptable(c1 int not null, c2 string)\")",
-      "snappy.sql(\"insert into tmptable values(1, \'1\')\")",
-      ":qu"
+      "snappy.sql(\"insert into tmptable values(1, \'1\')\")"
     )
     val scala_code2 = Seq(
       "snappy.sql(\"create table tmptable2(c1 int not null, c2 string)\")",
-      "snappy.sql(\"insert into tmptable2 values(1, \'1\')\")",
-      ":qu"
+      "snappy.sql(\"insert into tmptable2 values(1, \'1\')\")"
     )
     val scala_code3 = Seq(
       "snappy.sql(\"create table tmptable3(c1 int not null, c2 string)\")",
-      "snappy.sql(\"insert into tmptable3 values(1, \'1\')\")",
-      ":qu"
+      "snappy.sql(\"insert into tmptable3 values(1, \'1\')\")"
     )
     val conn = getJdbcConnection(1527)
     val stmnt = conn.createStatement()

@@ -23,7 +23,7 @@ import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
 
-import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.snappydata._
 import org.apache.spark.sql.{SnappySession, SnappyJobValid, DataFrame, SnappyContext, SnappyJobValidation, SnappySQLJob}
 
 /**

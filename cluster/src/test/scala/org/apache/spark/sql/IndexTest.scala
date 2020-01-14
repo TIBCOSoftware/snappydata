@@ -61,7 +61,7 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
           StructField("b", IntegerType, false) :: Nil)
 
     val df = snc.createDataFrame(data, struct)
-    import snappy._
+    import snappydata._
     df.write.putInto("APP.CHECKO")
 
     assert(snc.sql("select * from checko").count() == 6)

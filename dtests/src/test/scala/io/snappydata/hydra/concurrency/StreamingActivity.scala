@@ -103,7 +103,7 @@ object StreamingActivity extends SnappyStreamingJob {
         df.cache()
         // inserts
         df.write.insertInto(tableName)
-        import org.apache.spark.sql.snappy._
+        import org.apache.spark.sql.snappydata._
         df.write.putInto(tableName)
         df.unpersist()
       } else {

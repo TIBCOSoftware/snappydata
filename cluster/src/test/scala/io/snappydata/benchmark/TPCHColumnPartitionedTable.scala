@@ -21,7 +21,7 @@ import java.sql.Statement
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
-import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.snappydata._
 import org.apache.spark.sql.{DataFrame, SQLContext, SnappyContext, Column}
 
 

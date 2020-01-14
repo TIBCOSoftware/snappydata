@@ -34,7 +34,7 @@ class DataFrameJavaFunctions(val df: DataFrame) {
    * }}}
    */
   def stratifiedSample(options: java.util.Map[String, Object]): SampleDataFrame = {
-    snappy.snappyOperationsOnDataFrame(df).stratifiedSample(options.toMap)
+    snappydata.snappyOperationsOnDataFrame(df).stratifiedSample(options.toMap)
   }
 
   /**
@@ -45,14 +45,14 @@ class DataFrameJavaFunctions(val df: DataFrame) {
    * @return
    */
   def withTime(time: java.lang.Long): DataFrameWithTime =
-    snappy.snappyOperationsOnDataFrame(df).withTime(time)
+    snappydata.snappyOperationsOnDataFrame(df).withTime(time)
 
   /**
    * Append to an existing cache table.
    * Automatically uses #cacheQuery if not done already.
    */
   def appendToTempTableCache(tableName: String): Unit =
-    snappy.snappyOperationsOnDataFrame(df).appendToTempTableCache(tableName)
+    snappydata.snappyOperationsOnDataFrame(df).appendToTempTableCache(tableName)
 
 
  /* def errorStats(columnName: String,
@@ -67,7 +67,7 @@ class DataFrameJavaFunctions(val df: DataFrame) {
        else
          groupByColumns
 
-    val result = snappy.samplingOperationsOnDataFrame(df)
+    val result = snappydata.samplingOperationsOnDataFrame(df)
         .errorEstimateAverage(columnName, confidence, groupedColumns.toSet)
 
     result.mapValues(toJDouble(_))
@@ -76,7 +76,7 @@ class DataFrameJavaFunctions(val df: DataFrame) {
 
   def withError(error: JDouble,
       confidence: JDouble = Constant.DEFAULT_CONFIDENCE): DataFrame =
-    snappy.convertToAQPFrame(df).withError(error, confidence)
+    snappydata.convertToAQPFrame(df).withError(error, confidence)
 
 }
 

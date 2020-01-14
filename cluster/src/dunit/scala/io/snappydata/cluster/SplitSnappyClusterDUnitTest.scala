@@ -1220,7 +1220,7 @@ object SplitSnappyClusterDUnitTest
         .add(StructField("col1", StringType))
         .add(StructField("col2", StringType))
     val dataFrame = snc.createDataFrame(rdd, schema)
-    import org.apache.spark.sql.snappy._
+    import org.apache.spark.sql.snappydata._
     try {
       Thread.sleep(2000)
       for (_ <- 1 to 10) {
