@@ -299,7 +299,7 @@ This line chart displays the number of input records received for each of the ba
 
 This line chart displays the behavior of two parameters, for the last **n** triggers, in two curve lines. **n** refers to value configured for **spark.sql.streaming.uiTrendsMaxSampleSize**, which defaults to **60**. One line represents the input rate that is the number of input records per second in the given triggers. The other line represents the processing rate, which is the number of records processed per second in the given triggers. Processing rate should ideally remain higher than Input rate. If it is below the input rate, then that indicates that the streaming query is falling behind the input data and you may need to add more resources to the cluster to keep up the processing speed.
 
-#### Processing Time (in Miiliseconds)
+#### Processing Time (in Milliseconds)
 
 ![Processing Time](../Images/MonitoringUI/processing_time_chart.png)
 
