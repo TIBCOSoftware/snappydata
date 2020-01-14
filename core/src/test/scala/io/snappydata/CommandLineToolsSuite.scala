@@ -199,7 +199,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
         printWriter.close()
       })
 
-      SnappyScalaShell("scala_code", scala_code1, cmdOutput,
+      SnappyScalaShell("scala_code", Seq.empty, cmdOutput,
         s"$snappyscalaShell -r $scalaFileToRun1")
       stmnt.execute("create table testtable as select * from tmptable")
       assert(stmnt.execute("select count(*) from testtable"))
@@ -208,7 +208,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       assert(rs.getInt(1) == 1)
 
       // Two files
-      SnappyScalaShell("scala_code", scala_code1, cmdOutput,
+      SnappyScalaShell("scala_code", Seq.empty, cmdOutput,
         s"$snappyscalaShell -r $scalaFileToRun2,$scalaFileToRun3")
       assert(stmnt.execute("select count(*) from tmptable2"))
       rs = stmnt.getResultSet
