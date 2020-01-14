@@ -77,13 +77,13 @@ Set the following property in hive-site.xml
 sc.hadoopConfiguration.set("fs.azure.account.key.<your-storage_account_name>.dfs.core.windows.net", "<YOUR ACCESS KEY>")
 ```
 
-### Accessing Data from Azure without Secured BLOB Storage
+### Accessing Data from Azure Unsecured BLOB Storage
 
 ```
     CREATE EXTERNAL TABLE testADLS1 USING PARQUET Options (path 'wasb://container_name@storage_account_name.blob.core.windows.net/dir/file')
 ```
 
-### Accessing Data from Azure through Secured BLOB Storage
+### Accessing Data from Azure Secured BLOB Storage
 
 ```
     CREATE EXTERNAL TABLE testADLS1 USING PARQUET Options (path 'wasbs://container_name@storage_account_name.blob.core.windows.net/dir/file')
@@ -115,5 +115,13 @@ sc.hadoopConfiguration.set("google.cloud.auth.service.account.json.keyfile","`<j
 ### Accessing Data from GCS Cloud Storage
 
 ```
-CREATE EXTERNAL TABLE airline_ext USING parquet OPTIONS(path 'gs://bucket_name/object_name ')
+CREATE EXTERNAL TABLE airline_ext USING parquet OPTIONS(path 'gs://bucket_name/object_name')
+```
+
+## EMR HDFS 
+
+You can use the following command to access data from EMR HDFS location for a cluster that is running on ec2:
+
+```
+create external table categories using csv options(path 'hdfs://<masternode IP address>/<file_path>');
 ```
