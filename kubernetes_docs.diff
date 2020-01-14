@@ -1,0 +1,73 @@
+diff --git a/docs/kubernetes.md b/docs/kubernetes.md
+index 6ec7bf1..576b0eb 100644
+--- a/docs/kubernetes.md
++++ b/docs/kubernetes.md
+@@ -15,9 +15,9 @@ The following sections are included in this topic:
+ 
+ *	[List of Configuration Parameters for SnappyData Chart](#chartparameters)
+ 
+-*	[Kubernetes Obects Used in SnappyData Chart](#kubernetesobjects)
++*	[Kubernetes Objects Used in SnappyData Chart](#kubernetesobjects)
+ 
+-*	[Accesing Logs and Configuring Log Level](#accesslogs)
++*	[Accessing Logs and Configuring Log Level](#accesslogs)
+ 
+ 
+ <a id= prerequisites> </a>
+@@ -27,8 +27,8 @@ The following prerequisites must be met to deploy SnappyData on Kubernetes:
+ 
+ *	**Kubernetes cluster**</br> A running Kubernetes cluster of version 1.9 or higher. SnappyData has been tested on Google Container Engine(GKE) as well as on Pivotal Container Service (PKS). If Kubernetes cluster is not available, you can set it up as mentioned [here](#pksaccess).
+ 
+-*	**Helm tool**</br> Helm tool must be deployed in the Kubernetes environment. Helm comprises of two parts, that is a client and a Tiller (Server portion of Helm) inside the kube-system namespace. Tiller runs inside the Kubernetes cluster and manages the deployment of charts or packages. You can follow the instructions [here](https://docs.pivotal.io/runtimes/pks/1-1/configure-tiller-helm.html) to deploy Helm in your Kubernetes enviroment.
+-*	**Docker image**</br> Helm charts use the Docker images to launch the container on Kubernetes. [You can refer to these steps](quickstart/getting_started_with_docker_image.md#build-your-docker) to build your Docker image for SnappyData, provided you have its tarball with you. TIBCO does not provide a Docker image for SnappyData.
++*	**Helm tool**</br> Helm tool must be deployed in the Kubernetes environment. You can follow the instructions [here](https://helm.sh/docs/intro/install/) to deploy Helm in your Kubernetes enviroment.
++*	**Docker image**</br> Helm charts use Docker image to launch the SnappyData cluster on Kubernetes. [You can refer to these steps](quickstart/getting_started_with_docker_image.md) to build and publish your Docker image for SnappyData. TIBCO does not provide a Docker image for SnappyData.
+ 
+ 
+ <a id= pksaccess> </a>
+@@ -61,6 +61,19 @@ If you would like to deploy Kubernetes on-premises, you can use any of the follo
+ `git clone https://github.com/SnappyDataInc/spark-on-k8s`</br>
+ `cd spark-on-k8s/charts`
+ 
++2.	Edit the **snappydata > values.yaml**  file to configure in the SnappyData chart. Specify the details of your SnappyData Docker image as mentioned in the example below. Replace values for image and tag appropriatly with your Dockerhub registry name, image name and tag .
++           
++```
++image: your-dockerhub-registry/snappydata-docker-image
++imageTag: 1.2
++imagePullPolicy: IfNotPresent
++```
++       To pull a Docker image from a private registry, create a secret by following steps as mentioned [here](#https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials) and specify the name of the secret in values.yaml as shown below. Note that, secret must be created in the namespace in which SnappyData will be deployed (namespace "snappy" in this case)
++
++```
++imagePullSecrets: secretName
++``` 
++
+ 3.	Optionally, you can edit the **snappydata > values.yaml**  file to change the default configurations in the SnappyData chart. Configurations can be specified in the respective attributes for locators, leaders, and servers in this file. Refer [List of Configuration Parameters for SnappyData Chart](#chartparameters)
+ 
+ 4.	Install the **snappydata** chart using the following command:</br>
+@@ -82,7 +95,7 @@ To find the IP addresses and port numbers of the SnappyData processes, use comma
+ In the [output](#output), three services namely **snappydata-leader-public**, **snappydata-locator-public** and 
+ **snappydata-server-public**  of type **LoadBalancer** are seen which expose the endpoints for locator, lead, and server respectively. These services have external IP addresses assigned and therefore can be accessed from outside Kubernetes. The remaining services that do not have external IP addresses are those that are created for internal use.
+ 
+-**snappydata-leader-public** service exposes port **5050** for SnappyData Monitoring Console and port **8090** to accept [SnappyData jobs](#jobkubernetes).</br>
++**snappydata-leader-public** service exposes port **5050** for SnappyData Monitoring Console, port **10000** for Hive Thrift server and port **8090** to accept [SnappyData jobs](#jobkubernetes).</br>
+ **snappydata-locator-public** service exposes port **1527** to accept [JDBC/ODBC connections](#jdbckubernetes).
+ 
+ You can do the following on the SnappyData cluster that is deployed on Kubernetes:
+@@ -161,7 +174,7 @@ However, for submitting a SnappyData job in Kubernetes deployment, you need to u
+ `kubectl get svc --namespace=snappy`</br>
+ The output displays the external IP address of **snappydata-leader-public** service which must be noted. ![Snappy-Leader-Service](./Images/services_Leader_Public.png)
+ 
+-3.	Change to SnappyData product directory.</br>
++2.	Change to SnappyData product directory.</br>
+ `cd $SNAPPY_HOME`
+ 
+ 3.	Submit the job using the external IP of the **snappydata-leader-public** service and the port number **8090** in the **--lead** option.</br> Following is an example of submitting a SnappyData Job:
+@@ -197,6 +210,7 @@ You can modify the **values.yaml**  file to configure the SnappyData chart. The
+ | `image` |  Docker repo from which the SnappyData Docker image is pulled.    |  `snappydatainc/snappydata`   |
+ | `imageTag` |  Tag of the SnappyData Docker image that is pulled. |   |
+ | `imagePullPolicy` | Pull policy for the image.  | `IfNotPresent` |
++| `imagePullSecrets` | Secret name to be used to pull image from a private registry | |
+ | `locators.conf` | List of the configuration options that is passed to the locators. | |
+ | `locators.resources` | Resource configuration for the locator Pods. User can configure CPU/memory requests and limit the usage. | `locators.requests.memory` is set to `1024Mi`. |
+ | `locators.persistence.storageClass` | Storage class that is used while dynamically provisioning a volume. | Default value is not defined so `default` storage class for the cluster is chosen.  |
