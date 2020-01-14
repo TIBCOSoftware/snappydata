@@ -176,7 +176,7 @@ val numbersRdd = sc.parallelize(data, 1)
 val collectedNumbers = numbersRdd.map(multiply(\_, 2).toString()).collect()
 ```
 
-The execution of the last line fails as the closure cannot be serialized due to this issue. This is referring to the function **multiple** that is defined outside the closure.
+The execution of the last line fails as the closure cannot be serialized due to this issue. This is referring to the function **multiply** that is defined outside the closure.
 
 Similarly, even the following example fails:
 
