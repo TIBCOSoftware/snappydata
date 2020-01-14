@@ -27,7 +27,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
-import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.snappydata._
 import scala.util.Random
 
 object ConcPutIntoWith30Columns extends SnappySQLJob {

@@ -254,7 +254,7 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
     // create a SnappyData table
     snc.createTable("blacklist", "row", dfBlackList.schema, Map.empty[String, String])
 
-    import org.apache.spark.sql.snappy._
+    import org.apache.spark.sql.snappydata._
     dfBlackList.write.putInto("blacklist") // populate the table 'blacklist'.
 
     val topic = newTopic()

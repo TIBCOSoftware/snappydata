@@ -29,7 +29,7 @@ import org.apache.spark.{Partition, TaskContext}
  * Implicit conversions used by Snappy.
  */
 // scalastyle:off
-object snappy extends Serializable {
+object snappydata extends Serializable {
 // scalastyle:on
 
   implicit def snappyOperationsOnDataFrame(df: DataFrame): SnappyDataFrameOperations = {
@@ -43,7 +43,7 @@ object snappy extends Serializable {
   implicit def samplingOperationsOnDataFrame(df: DataFrame): SampleDataFrame = {
     df.sparkSession match {
       case sc: SnappySession =>
-        val plan = snappy.unwrapSubquery(df.logicalPlan)
+        val plan = snappydata.unwrapSubquery(df.logicalPlan)
         if (sc.snappyContextFunctions.isStratifiedSample(plan)) {
           new SampleDataFrame(sc, plan)
         } else {

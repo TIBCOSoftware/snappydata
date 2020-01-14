@@ -21,7 +21,7 @@ import java.io.PrintWriter
 
 import io.snappydata.hydra.TestUtil
 
-import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.snappydata._
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 
 object CTTestUtil {

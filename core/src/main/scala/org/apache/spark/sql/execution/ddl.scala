@@ -754,7 +754,7 @@ case class PutIntoValuesColumnTable(db: String, tableName: String,
     }
     val schema = sparkSession.sharedState
         .externalCatalog.getTable(db, tableName).schema
-    import snappy._
+    import snappydata._
     var rowRdd = List.empty[Any]
     val valuesList = v1.toList
     if (colNames.isEmpty) {

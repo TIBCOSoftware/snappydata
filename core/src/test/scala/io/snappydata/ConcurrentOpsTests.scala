@@ -53,7 +53,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
           (1 to 2000).map(i => TestData(i, i.toString)))
 
         val dataDF = snc.createDataFrame(rdd)
-        import org.apache.spark.sql.snappy._
+        import org.apache.spark.sql.snappydata._
         dataDF.write.insertInto(tableName)
         dataDF.write.putInto(tableName)
         dataDF.write.deleteFrom(tableName)
@@ -110,7 +110,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val rdd = session.sparkContext.parallelize(
       (1 to 2000).map(i => TestData(i, i.toString)))
     val dataDF = session.createDataFrame(rdd)
-    import org.apache.spark.sql.snappy._
+    import org.apache.spark.sql.snappydata._
     dataDF.write.putInto(tableName)
     dataDF.write.deleteFrom(tableName)
 
@@ -122,7 +122,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
           (1 to 2000).map(i => TestData(i, i.toString)))
 
         val dataDF = snc.createDataFrame(rdd)
-        import org.apache.spark.sql.snappy._
+        import org.apache.spark.sql.snappydata._
         dataDF.write.putInto(tableName)
         dataDF.write.deleteFrom(tableName)
       }
@@ -145,7 +145,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val rdd = session.sparkContext.parallelize(
       (1 to 2000).map(i => TestData(i, i.toString)))
     val dataDF = session.createDataFrame(rdd)
-    import org.apache.spark.sql.snappy._
+    import org.apache.spark.sql.snappydata._
     dataDF.write.putInto(tableName)
 
     val t = new Thread(new Runnable {
@@ -155,7 +155,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
           (1 to 2000).map(i => TestData(i, i.toString)))
 
         val dataDF = snc.createDataFrame(rdd)
-        import org.apache.spark.sql.snappy._
+        import org.apache.spark.sql.snappydata._
         dataDF.write.putInto(tableName)
         dataDF.write.deleteFrom(tableName)
       }
@@ -182,7 +182,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
         (1 to 2000).map(i => TestData(i, i.toString)))
 
       val dataDF = newSnc.createDataFrame(rdd)
-      import org.apache.spark.sql.snappy._
+      import org.apache.spark.sql.snappydata._
       dataDF.write.putInto(tableName)
       val result = newSnc.sql("SELECT * FROM " + tableName)
       val r2 = result.collect
@@ -298,7 +298,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
         (1 to 2000).map(i => TestData(i, i.toString)))
       logInfo(s"SKKS The total parallelism is ${rdd.getNumPartitions}")
       val dataDF = snc.createDataFrame(rdd)
-      import org.apache.spark.sql.snappy._
+      import org.apache.spark.sql.snappydata._
       dataDF.write.putInto(tableName)
       val result = snc.sql("SELECT * FROM " + tableName)
       val r2 = result.collect
@@ -341,7 +341,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       val rdd = snc.sparkContext.parallelize(
         (1 to 2000).map(i => TestData(i, i.toString)))
       val dataDF = snc.createDataFrame(rdd)
-      import org.apache.spark.sql.snappy._
+      import org.apache.spark.sql.snappydata._
       dataDF.write.putInto(tableName)
       val result = snc.sql("SELECT * FROM " + tableName)
       val r2 = result.collect
@@ -353,7 +353,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       val rdd = snc.sparkContext.parallelize(
         (1 to 2000).map(i => TestData(i, i.toString)))
       val dataDF = snc.createDataFrame(rdd)
-      import org.apache.spark.sql.snappy._
+      import org.apache.spark.sql.snappydata._
       dataDF.write.putInto(tableName)
       val result = snc.sql("SELECT * FROM " + tableName)
       val r2 = result.collect
@@ -442,7 +442,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       val rdd = snc.sparkContext.parallelize(
         (1 to 2000).map(i => TestData(i, i.toString)))
       val dataDF = snc.createDataFrame(rdd)
-      import org.apache.spark.sql.snappy._
+      import org.apache.spark.sql.snappydata._
       dataDF.write.putInto(table)
     }
 
@@ -513,7 +513,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       val rdd = session.sparkContext.parallelize(
         (1 to 2000).map(i => TestData(i, i.toString)))
       val dataDF = snc.createDataFrame(rdd)
-      import org.apache.spark.sql.snappy._
+      import org.apache.spark.sql.snappydata._
       dataDF.write.putInto(table)
       val result = snc.sql("SELECT * FROM " + table)
       val r2 = result.collect
@@ -529,7 +529,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       val rdd = session.sparkContext.parallelize(
         (1 to 2000).map(i => TestData(i, i.toString)))
       val dataDF = snc.createDataFrame(rdd)
-      import org.apache.spark.sql.snappy._
+      import org.apache.spark.sql.snappydata._
       logInfo(s"SKSK for table $table the count is " + dataDF.filter(s"key1 <= $maxKey").count())
       dataDF.filter(s"key1 <= $maxKey").write.deleteFrom(table)
 

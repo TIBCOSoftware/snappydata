@@ -51,7 +51,7 @@ case class SnappySortExec(sortPlan: SortExec, child: SparkPlan)
     val spillSize = longMetric("spillSize")
     val sortTime = longMetric("sortTime")
 
-    import org.apache.spark.sql.snappy._
+    import org.apache.spark.sql.snappydata._
 
     child.execute().mapPartitionsPreserveInternal(itr =>
 

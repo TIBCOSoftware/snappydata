@@ -25,7 +25,7 @@ import io.snappydata.hydra.northwind.NWTestJob
 import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 import scala.util.{Failure, Success, Try}
 
-import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.snappydata._
 import scala.util.Random
 
 object InsertFromJsonFile extends SnappySQLJob {

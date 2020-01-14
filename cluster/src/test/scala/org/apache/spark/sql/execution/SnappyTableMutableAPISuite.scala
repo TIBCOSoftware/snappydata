@@ -23,7 +23,7 @@ import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.apache.spark.Logging
-import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.snappydata._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql._
 

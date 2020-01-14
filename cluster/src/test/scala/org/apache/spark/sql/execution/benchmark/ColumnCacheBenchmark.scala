@@ -233,7 +233,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     val benchmark = new Benchmark("PutInto Vs Insert", size)
     val sparkSession = this.sparkSession
     val snappySession = this.snappySession
-    import org.apache.spark.sql.snappy._
+    import org.apache.spark.sql.snappydata._
     if (GemFireCacheImpl.getCurrentBufferAllocator.isDirect) {
       logInfo("ColumnCacheBenchmark: using off-heap for performance comparison")
     } else {
@@ -397,7 +397,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   private def createAndTestPutIntoInBigTable(): Unit = {
     snappySession.sql("drop table if exists wide_table")
     snappySession.sql("drop table if exists wide_table1")
-    import org.apache.spark.sql.snappy._
+    import org.apache.spark.sql.snappydata._
     val size = 100
     val num_col = 300
     val str = (1 to num_col).map(i => s" '$i' as C$i")
