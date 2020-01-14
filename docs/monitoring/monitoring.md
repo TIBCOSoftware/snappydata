@@ -326,10 +326,6 @@ The SQL section shows all the queries and their corresponding details along with
 |     **Filter**   |   Displays the number of rows that are filtered for each node.      |
 |    **Joins**    |   If HashJoin puts pressure on memory, you can change the HashJoin size to use SortMergeJoin to avoid on-heap memory pressure.      |
 
-<a id="hivethriftser"></a>
-## Hive Thrift Server
-
-
 <a id="historyserver"></a>
 ## Spark History Server
 The Spark History server is a Spark UI extension. It is a web application that lets you analyze the running as well as completed SQL queries and the associated Spark jobs. The metadata collected in the form of event logs by the Spark History server can be shipped from a TIBCO ComputeDB cluster to another TIBCO ComputeDB cluster for further analysis.
