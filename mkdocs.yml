@@ -326,7 +326,6 @@ pages:
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up TIBCO ComputeDB ODBC Driver': 'setting_up_odbc_driver-tableau_desktop.md'
     - 'Setting Up TIBCO ComputeDB JDBC Client and QlikView': 'setting_up_jdbc_driver_qlikview.md'
-- 'Unsupported Third-Party Modules': 'unsupported.md'
 - 'Experimental Features': 'experimental.md'
 - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting Common Problems':
@@ -337,7 +336,8 @@ pages:
     - 'Resolving Catalog Inconsistency Issues': 'troubleshooting/catalog_inconsistency.md'
     - 'Troubleshooting Out-of-Memory (OOM) Error': 'troubleshooting/oom.md'
     - 'Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script': 'troubleshooting/collect_debug_artifacts.md'
-    - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'  
+    - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md' 
+- 'Unsupported Third-Party Modules': 'unsupported.md' 
 #- Additional Information: additional_files/additional_docs.md
 #- About:
 #   - Contributing: about/contributing.md
