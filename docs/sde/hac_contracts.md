@@ -5,10 +5,10 @@ TIBCO ComputeDB combines state-of-the-art approximate query processing technique
 When an error constraint is not met, the action to be taken is defined in the behavior clause. 
 
 ## Behavior Clause
-Synopsis Data Engine has HAC support using the following behavior clause. 
+Approximate Query Processing (AQP) has HAC support using the following behavior clause. 
 
 ### `<do_nothing>`
-The SDE engine returns the estimate as is. 
+The AQP engine returns the estimate as is. 
 
 ![DO NOTHING](../Images/aqp_donothing.png)
 

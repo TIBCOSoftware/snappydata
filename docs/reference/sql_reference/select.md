@@ -26,7 +26,7 @@ sort_expressions:
     : expression [ASC|DESC][, expression [ASC|DESC], ...]
 ```
 
-For information on executing queries on Synopsis Data Engine, refer to [SDE](/../../aqp.md).
+For information on executing queries on Approximate Query Processing (AQP), refer to [AQP](/../../aqp.md).
 ## Description
 
 Output data from one or more relations.
