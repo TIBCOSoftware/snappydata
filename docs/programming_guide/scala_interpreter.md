@@ -31,6 +31,7 @@ exec scala [options (returnDF ‘dfName’)] <Scala_code>k
 
 *	**exec** and **scala** are the keywords to identify this SQL type. 
 
+
 *	**options** is an optional part of the syntax. If it is present, then after the keyword **options**, you can specify the allowed options inside parentheses. Currently, only one optional parameter, that is **returnDF**, can be specified with the execution. For this option, you can provide the name of any actual symbol in the Scala code, which is of type DataFrame. 
 Through the **returnDF** option, you can request the system to return the result of the specific dataframe, which got created as the result of the Scala code execution. By default, the **exec scala** just returns the output of each interpreted line, which the interpreter prints on the Console after executing each line. 
 
@@ -93,11 +94,11 @@ x: Int = 5
 ```
 ## The following Scala code creates a table using the available snappy session. This can be accessed through the symbol ‘snappy’. It then inserts a couple of rows, obtains a dataframe object, and then uses the df.show command.
 
-snappy> exec scala snappy.sql("create table t1(c1 int not null)")
+snappy> exec scala snappysession.sql("create table t1(c1 int not null)")
   /* This is a data frame test */
   // Check the collect output
-  snappy.sql("insert into t1 values (1), (2)")
- val df = snappy.table("t1")
+  snappysession.sql("insert into t1 values (1), (2)")
+ val df = snappysession.table("t1")
  val cnt = df.count
  df.show;
 C0                                                                                                                              
@@ -117,7 +118,7 @@ cnt: Long = 2
 ```
 
 !!!Note
-	The variable **session** is not declared anywhere; however, the above code uses it. This **snappy** symbol name is for the object **SnappySession**, which represents this database connection. Similarly, **sc** is there to access the singleton SparkContext present on the lead node.
+	The variable **snappysession** is not declared anywhere; however, the above code uses it. This **snappysession** symbol name is for the object **SnappySession**, which represents this database connection. Similarly, **sc** is there to access the singleton SparkContext present on the lead node.
 
 **Example 3** 
 
