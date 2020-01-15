@@ -326,6 +326,7 @@ pages:
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up TIBCO ComputeDB ODBC Driver': 'setting_up_odbc_driver-tableau_desktop.md'
     - 'Setting Up TIBCO ComputeDB JDBC Client and QlikView': 'setting_up_jdbc_driver_qlikview.md'
+- 'Experimental Features': 'experimental.md'
 - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting Common Problems':
     - 'Member Startup Problems': 'troubleshooting/member_startup_problems.md'
