@@ -34,9 +34,16 @@ localhost -auth-provider=LDAP -J-Dsnappydata.RESTRICT_TABLE_CREATION=true -user=
 ## LDAP Groups in TIBCO ComputeDB Authorization
 TIBCO ComputeDB extends the SQL GRANT statement to support LDAP Group names as Grantees.
 
-Here is an example SQL to grant privileges to individual users:
+Here is an example SQL to grant privileges to individual users on column/row tables:
+
 ```pre
 GRANT SELECT ON TABLE t TO sam,bob;
+```
+
+Here is an example SQL to grant privileges to individual users on external tables:
+
+```pre
+GRANT ALL ON EXT_T1 TO samb,bob;
 ```
 
 You can also grant privileges to LDAP groups using the following syntax:
@@ -44,6 +51,12 @@ You can also grant privileges to LDAP groups using the following syntax:
 ```pre
 GRANT SELECT ON Table t TO ldapGroup:<groupName>, bob;
 GRANT INSERT ON Table t TO ldapGroup:<groupName>, bob;
+```
+
+You can also grant privileges to LDAP groups using the following syntax on external tables:
+
+```pre
+GRANT ALL ON EXT_T1 TO ldapGroup:<groupName>, bob;
 ```
 
 TIBCO ComputeDB fetches the current list of members for the LDAP Group and grants each member privileges individually (stored in TIBCO ComputeDB). </br>
