@@ -423,7 +423,8 @@ object SnappyParserConsts {
     // rand() plans are not to be cached since each run should use different seed
     // and the Spark impls create the seed in constructor rather than in generated code
     "rand" -> Array.emptyIntArray, "randn" -> Array.emptyIntArray,
-    "like" -> Array(1), "rlike" -> Array(1), "approx_count_distinct" -> Array(1)))
+    "like" -> Array(1), "rlike" -> Array(1), "first_value" -> Array(1), "last_value" -> Array(1),
+    "sort_array" -> Array(1), "approx_count_distinct" -> Array(1)))
 
   /**
    * Registering a Keyword with this method marks it a reserved keyword,
@@ -456,6 +457,7 @@ object SnappyParserConsts {
 
   final val COLUMN_SOURCE = "column"
   final val ROW_SOURCE = "row"
+  final val OPLOG_SOURCE = "oplog"
   final val DEFAULT_SOURCE = ROW_SOURCE
 
   // reserved keywords
@@ -532,6 +534,7 @@ object SnappyParserConsts {
   final val DISTRIBUTE: Keyword = nonReservedKeyword("distribute")
   final val ENABLE: Keyword = nonReservedKeyword("enable")
   final val END: Keyword = nonReservedKeyword("end")
+  final val EXEC: Keyword = nonReservedKeyword("exec")
   final val EXECUTE: Keyword = nonReservedKeyword("execute")
   final val EXPLAIN: Keyword = nonReservedKeyword("explain")
   final val EXTENDED: Keyword = nonReservedKeyword("extended")
@@ -561,6 +564,7 @@ object SnappyParserConsts {
   final val RESET: Keyword = nonReservedKeyword("reset")
   final val RESTRICT: Keyword = nonReservedKeyword("restrict")
   final val RLIKE: Keyword = nonReservedKeyword("rlike")
+  final val SCALA: Keyword = nonReservedKeyword("scala")
   final val SCHEMAS: Keyword = nonReservedKeyword("schemas")
   final val SEMI: Keyword = nonReservedKeyword("semi")
   final val SHOW: Keyword = nonReservedKeyword("show")
@@ -689,6 +693,7 @@ object SnappyParserConsts {
   final val PERCENT: Keyword = new Keyword("percent")
   final val POLICY: Keyword = new Keyword("policy")
   final val PRIMARY: Keyword = new Keyword("primary")
+  final val PRIVILEGE: Keyword = new Keyword("privilege")
   final val PURGE: Keyword = new Keyword("purge")
   final val PUT: Keyword = new Keyword("put")
   final val REFRESH: Keyword = new Keyword("refresh")

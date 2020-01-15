@@ -415,6 +415,8 @@ private[spark] class KryoStringFixDeserializationStream(
 
   override def readObject[T: ClassTag](): T = {
     try {
+      val cl = Thread.currentThread().getContextClassLoader
+      poolObject.kryo.setClassLoader(cl)
       poolObject.kryo.readClassAndObject(input).asInstanceOf[T]
     } catch {
       // DeserializationStream uses the EOF exception to indicate
