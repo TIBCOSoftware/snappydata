@@ -62,12 +62,10 @@ class RemoteInterpreterStateHolder(
     intp.setContextClassLoader()
     intp.quietBind(NamedParam[IMain]("$intp", intp)(tagOfIMain, classTag[IMain]))
     logDebug(s"Initializing the interpreter created for ${user} for connId ${connId}")
-    intp.interpret("import org.apache.spark.sql.functions._")
-    intp.interpret("org.apache.spark.sql.SnappySession")
-    intp.bind("snappy", "org.apache.spark.sql.SnappySession", snappy, List("@transient"))
+    intp.bind("snappysession", "org.apache.spark.sql.SnappySession", snappy, List("@transient"))
     var res = intp.interpret(
       """
-        |@transient val sc = snappy.sparkContext
+        |@transient val sc = snappysession.sparkContext
       """.stripMargin)
     pw.reset()
   }
@@ -114,6 +112,17 @@ class RemoteInterpreterStateHolder(
         lastResult = intp.interpret(tmpsb.toString())
         if (!(lastResult == Results.Error) && !replay) {
           allInterpretedLinesForReplay += line
+        } else if (lastResult == Results.Error) {
+          logWarning(s"Got error while interpreting line $line")
+          resultBuffer += pw.toString.stripLineEnd
+          val output = resultBuffer.toArray.flatMap(_.split("\n"))
+          val outputsb = new mutable.StringBuilder()
+          output.foreach(l => {
+            outputsb.append(l)
+            outputsb.append("\n")
+          })
+          throw new RuntimeException(s"Got error while interpreting line $line" +
+            s" and interpreter output = ${outputsb.toString()}")
         }
         if (lastResult == Results.Success) tmpsb.clear()
         resultBuffer += pw.toString.stripLineEnd

@@ -276,7 +276,7 @@ object SnappyUtilLauncher extends StoreCallback {
     println()
     println("Type in expressions to have them evaluated.\n")
     println("Spark context available as 'sc'")
-    println("Snappy session available as 'snappy'.\n")
+    println("Snappy session available as 'snappysession'.\n")
     // scalastyle:on println
   }
 }
