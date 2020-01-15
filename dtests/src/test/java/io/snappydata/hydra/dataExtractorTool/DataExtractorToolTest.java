@@ -315,12 +315,17 @@ public class DataExtractorToolTest extends SnappyTest {
 
   public void createDummyData() {
     boolean isOOME = false;
+    try{
     while (!isOOME) {
       if (SnappyBB.getBB().getSharedMap().containsKey("IS_OOME"))
         isOOME = (Boolean) SnappyBB.getBB().getSharedMap().get("IS_OOME");
       if (isOOME) break;
       HydraTask_executeSnappyJob();
     }
+}
+catch(Exception ex){ 
+   Log.getLogWriter().info("Caught exception as the servers are down with OOME as isOOME = " + isOOME);
+ }
     Log.getLogWriter().info("The servers are down with OOME as isOOME = " + isOOME);
   }
 

@@ -99,8 +99,8 @@ public class SnappyConcurrencyTest extends SnappyTest {
       conn.createStatement().executeUpdate(query);
     }
     if (isStabilityTest) {
-      query = "set snappydata.sql.hashAggregateSize=-1";
-      conn.createStatement().executeUpdate(query);
+     // query = "set snappydata.sql.hashAggregateSize=-1";
+     // conn.createStatement().executeUpdate(query);
       /*query = "set spark.driver.maxResultSize=6g";
       conn.createStatement().executeUpdate(query);*/
     }
@@ -239,8 +239,8 @@ public class SnappyConcurrencyTest extends SnappyTest {
   public static void createViewsAndDependantTablesForStabilityTest() throws SQLException {
     Connection conn = getLocatorConnection();
     String query;
-    query = "set snappydata.sql.hashAggregateSize=-1";
-    conn.createStatement().executeUpdate(query);
+  //  query = "set snappydata.sql.hashAggregateSize=-1";
+ //   conn.createStatement().executeUpdate(query);
     query = "set spark.driver.maxResultSize=6g";
     conn.createStatement().executeUpdate(query);
     query = "create or replace view revenue as select  l_suppkey as supplier_no, " +
