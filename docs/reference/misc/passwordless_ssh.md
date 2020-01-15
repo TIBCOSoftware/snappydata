@@ -1,22 +1,49 @@
 <a id="ssh"></a>
 ## Configuring SSH Login without Password
 
-!!! Note
-	Before you begin ensure that you have configured SSH login without password.
-
 By default, Secure Socket Shell (SSH) requires a password for authentication on a remote server.
-This setting needs to be modified to allow you to login to the remote host through the SSH protocol, without having to enter your SSH password multiple times when working with SnappyData.
+But with some changes in the configuration, you can login to the remote host through the SSH protocol, without having to enter your SSH password multiple times.
 
-To install and configure SSH, do the following:
+This is specially helpful when using the cluster start/stop scripts like `snappy-start-all.sh` to launch the SnappyData cluster spanning multiple hosts.
 
-1. **Install SSH** <br>
-	To install SSH,  type: </br>`sudo apt-get install ssh` </br>
+These steps are provided as a guide for setting up passwordless SSH. Check with your system administrator for more details.
+
+1. **Check SSH** <br>
+    Check if ssh is installed on your Linux-based host(s) using below command.
+        `systemctl status sshd`
+
+    Or on systems where `systemctl` is not available (for example, some versions of Linux Mint), use below command:
+        `service ssh status`
+
+2. **Install and start SSH** <br>
+	To install SSH on Ubuntu systems, run `apt update && apt install openssh-server`
+    On RHEL/CentOS systems, the command is `yum -y install openssh-server openssh-clients`
+
+    Then enable and start the SSH service:
+        `systemctl enable sshd` Or `systemctl enable ssh`
+        `systemctl start sshd` Or `systemctl start ssh`
+
+    Perform above two steps for all the systems which will be part of the SnappyData cluster.
+
     Mac OS X has a built-in SSH client.
 
-2. **Generate an RSA key pair**<br>
-    To generate an RSA key pair run the following command on the client computer, </br>
-    `ssh-keygen -t rsa` </br>
-    Press **Enter** when prompted to enter the file in which to save the key, and for the pass phrase.
+3. **Generate an RSA key pair**<br>
+    Generate an RSA key pair on your local or primary system by running the following command.
+        `ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ''`
+    This will create two files (a key pair) at `~/.ssh/` path: 1) `id_rsa` which is the private key and 2) `id_rsa.pub` - the public key.
 
-3.  **Copy the Public Key**<br>
-    Once the key pair is generated, copy the contents of the public key file, to the authorized key on the remote site, by typing `cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys`
+4.  **Copy the Public Key**<br>
+    Once the key pair is generated, append the contents of the public key file `id_rsa.pub`, to the authorized key file `~/.ssh/authorized_keys` on all the remote hosts.
+
+    With this, you can ssh to these remote hosts from your local system, without providing the password.
+    This also enables you to execute cluster start, stop or status scripts from your local system.
+
+    For the single node setup, you can simply append it by executing `cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys` on your system.
+
+5. **Two-Way Access**<br>
+    Optionally, if you want to also do ssh login from remote hosts to your system without providing the password, copy your `id_rsa` file generated above and place it at `~/.ssh/` on the remote hosts.
+    Make sure you do not already have a `id_rsa` file present at that location on remote hosts.
+        `scp ~/.ssh/id_rsa <remote-host>:~/.ssh/`    # You'll be asked for password here.
+
+    Also, make sure it is not writable for other users.
+        `chmod 600 ~/.ssh/id_rsa`    # On remote host

@@ -25,8 +25,8 @@ To download and install the ODBC driver:
 
     | Version | ODBC Driver |
     |--------|--------|
-    |32-bit for 32-bit platform|TIB_compute-odbc_1.1.1_win_x86_32bit.zip|
-    |64-bit for 64-bit platform|TIB_compute-odbc_1.1.1_win_x64_64bit.zip|
+    |32-bit for 32-bit platform|TIB_compute-odbc_1.2.0_win_x86.zip|
+    |64-bit for 64-bit platform|TIB_compute-odbc_1.2.0_win_x64.zip|
 
 4. Double-click on the extracted **TIB_compute-odbc_1.1.1_win.msi** file, and follow the steps to complete the installation.
 
@@ -38,11 +38,14 @@ Once you have installed the TIBCO ComputeDB ODBC Driver, you can connect to TIBC
 
 *	Use the TIBCO ComputeDB Driver Connection URL:
 
-			Driver=TIBCO ComputeDB ODBC Driver;server=<locator address>;port=<LocatorPort>;user=<userName>;password=<password>
+			Driver=TIBCO ComputeDB ODBC Driver;server=<locator address>;port=<LocatorPort>;user=<userName>;password=<password>;load-balance=true
 	
     In case you want to connect with a specific server:
     
     		Driver=TIBCO ComputeDB ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>;load-balance=false
+
+	!!!Note
+    	On the AWS instance, there are issues when you connect with the locator port and address. Therefore,on the AWS instance, it is necessary to provide the load-balance=false property, while connecting to the server.
 
 *	Create a TIBCO ComputeDB DSN (Data Source Name) using the installed TIBCO ComputeDB ODBC Driver. Refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>
 When prompted, select the TIBCO ComputeDB ODBC Driver from the list of drivers and enter a Data Source name. You can then enter either TIBCO ComputeDB Server Host, Port, User Name, and Password or TIBCO ComputeDB Locator Host, Port, User Name and Password.

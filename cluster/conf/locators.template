@@ -52,6 +52,9 @@
 #
 #     <private hostname/IP> -client-bind-address=<private hostname/IP> -hostname-for-clients=<public hostname/IP for clients>
 #
+# NOTE: For AWS environment, the cluster launch script (snappy-start-all.sh) automatically appends above two properties with
+# appropriate values to the locator's configuration, so that users do not have to specify them here explicitly.
+#
 # III) Logging to different directory 
 # Specify the startup directory where the logs and configuration files for that locator instance
 # are managed. 
