@@ -118,7 +118,7 @@ cnt: Long = 2
 ```
 
 !!!Note
-	The variable **snappysession** is not declared anywhere; however, the above code uses it. This **snappysession** symbol name is for the object **SnappySession**, which represents this database connection. Similarly, **sc** is there to access the singleton SparkContext present on the lead node.
+	The variable **snappysession** is not declared anywhere; however, the above code uses it. The **snappysession** symbol name is for the object **SnappySession**, which represents this database connection. Similarly, **sc** is there to access the singleton SparkContext present on the lead node.
 
 **Example 3** 
 
@@ -166,7 +166,7 @@ Thus, the following example fails with closure serialization error.
 ```
 exec scala def multiply(number: Int, factor: Int): Int = {
 
-    number \* factor
+    number * factor
 
 }
 
@@ -174,7 +174,7 @@ val data = Array(1, 2, 3, 4, 5)
 
 val numbersRdd = sc.parallelize(data, 1)
 
-val collectedNumbers = numbersRdd.map(multiply(\_, 2).toString()).collect()
+val collectedNumbers = numbersRdd.map(multiply(_, 2)).collect()
 ```
 
 The execution of the last line fails as the closure cannot be serialized due to this issue. This is referring to the function **multiply** that is defined outside the closure.
@@ -183,13 +183,13 @@ Similarly, even the following example fails:
 
 ```
 
-Val x = 5
+val x = 5
 
 val data = Array(1, 2, 3, 4, 5)
 
 val numbersRdd = sc.parallelize(data, 1)
 
-val collectedNumbers = numbersRdd.map(\_ \* x).toString()).collect()
+val collectedNumbers = numbersRdd.map(_ * x).collect()
 ```
 
 This is because the closure is referring to **x**, which is defined outside the closure. 
