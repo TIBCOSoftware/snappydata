@@ -19,21 +19,21 @@ package io.snappydata.hydra.udaf
 object UDAFUtils {
   val createUDAF = "create function mean_udaf as io.snappydata.hydra.MeanMarks " +
     "returns double " +
-    "using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/MeanMarkUDAF.jar'"
+    "using jar '/export/shared/QA_DATA/UDAF/jars/MeanMarkUDAF.jar'"
 
   val createCleverUDAF = "create function cleverstudent_udaf " +
     "as io.snappydata.hydra.CleverStudent " +
     "returns double using jar " +
-    "'/home/cbhatt/TestWork/out/artifacts/TestWork_jar/cleverStudent.jar'"
+    "'/export/shared/QA_DATA/UDAF/jars/cleverStudent.jar'"
 
   val createDullUDAF = "create function dullstudent_udaf as " +
     "io.snappydata.hydra.DullStudent " +
     "returns double using jar " +
-    "'/home/cbhatt/TestWork/out/artifacts/TestWork_jar/dullStudent.jar'"
+    "'/export/shared/QA_DATA/UDAF/jars/dullStudent.jar'"
 
   val createUDAFWithDifferentFunctionality = "create function mean_udaf " +
     "as io.snappydata.hydra.CleverStudent returns double " +
-    "using jar '/home/cbhatt/TestWork/MeanMarkUDAF.jar'"
+    "using jar '/export/shared/QA_DATA/UDAF/jars/MeanMarkDiffFunc/MeanMarkUDAF.jar'"
 
   val createUDAFWrongJarPath = "create function mean_udaf as io.snappydata.hydra.MeanMarks " +
     "returns double " +
@@ -42,11 +42,11 @@ object UDAFUtils {
   val createUDAFWrongQualifiedClass = "create function mean_udaf " +
     "as io.snappydata.udaftest.AvgMarks " +
     "returns double " +
-    "using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/MeanMarkUDAF.jar'"
+    "using jar '/export/shared/QA_DATA/UDAF/jars/MeanMarkUDAF.jar'"
 
   val createUDAFWrongReturnType = "create function mean_udaf as io.snappydata.hydra.MeanMarks " +
     "returns Boolean " +
-    "using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/MeanMarkUDAF.jar'"
+    "using jar '/export/shared/QA_DATA/UDAF/jars/MeanMarkUDAF.jar'"
 
   val dropUDAF = "drop function if exists mean_udaf"
   val dropCleverUDAF = "drop function if exists cleverstudent_udaf"
@@ -55,7 +55,7 @@ object UDAFUtils {
   val createStagingStudent = "create external table if not exists staging_student" +
     "(studentid int,name string,class int," +
     "maths double,english double,physics double,socialst double,year int,total double) " +
-    "using csv options(path '/home/cbhatt/UDAF_Data_1')"
+    "using csv options(path '/export/shared/QA_DATA/UDAF/data/UDAF_Data')"
 
   val dropStagingStudent = "drop table if exists stagingStudent"
 
