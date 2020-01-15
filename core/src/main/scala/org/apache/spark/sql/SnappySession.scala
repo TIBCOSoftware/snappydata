@@ -16,12 +16,14 @@
  */
 package org.apache.spark.sql
 
+import java.lang.reflect.Method
 import java.sql.{Connection, SQLException, SQLWarning}
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import java.util.{Calendar, Properties}
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
@@ -32,12 +34,14 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{Cache, CacheBuilder}
+import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.TypeId
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
+import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
@@ -52,7 +56,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{Command, Filter, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
-import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -66,7 +70,7 @@ import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNes
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLPlanExecutionEnd, SparkListenerSQLPlanExecutionStart}
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappySessionState}
 import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
-import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect, SnappySessionCatalog, SnappySharedState, StaticSQLConf}
+import org.apache.spark.sql.internal._
 import org.apache.spark.sql.row.{JDBCMutableRelation, SnappyStoreDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
@@ -206,8 +210,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val logical = sessionState.sqlParser.parsePlan(sqlText, clearExecutionData = true)
     SparkSession.setActiveSession(this)
     val ap: Analyzer = sessionState.analyzer
-    // logInfo(s"KN: Batches ${ap.batches.filter(
-    //  _.name.equalsIgnoreCase("Resolution")).mkString("_")}")
     ap.execute(logical)
   }
 
@@ -692,6 +694,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   override def close(): Unit = synchronized {
     clear()
     externalCatalog.close()
+    if (this.uniqueId != 0) {
+      val tcb = ToolsCallbackInit.toolsCallback
+      if (tcb != null) {
+        tcb.closeAndClearScalaInterpreter(uniqueId)
+        uniqueId = 0
+      }
+    }
   }
 
   /**
@@ -831,9 +840,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *                        name is present, else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
-      baseTable: Option[String],
-      samplingOptions: Map[String, String],
-      allowExisting: Boolean): DataFrame = {
+    baseTable: Option[String],
+    samplingOptions: Map[String, String],
+    allowExisting: Boolean): DataFrame = {
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
@@ -852,8 +861,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *                        name is present, else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
-      baseTable: String, samplingOptions: java.util.Map[String, String],
-      allowExisting: Boolean): DataFrame = {
+    baseTable: String, samplingOptions: java.util.Map[String, String],
+    allowExisting: Boolean): DataFrame = {
     createSampleTable(tableName, Option(baseTable),
       samplingOptions.asScala.toMap, allowExisting)
   }
@@ -872,10 +881,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *                        name is present, else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
-      baseTable: Option[String],
-      schema: StructType,
-      samplingOptions: Map[String, String],
-      allowExisting: Boolean = false): DataFrame = {
+    baseTable: Option[String],
+    schema: StructType,
+    samplingOptions: Map[String, String],
+    allowExisting: Boolean = false): DataFrame = {
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       Some(JdbcExtendedUtils.normalizeSchema(schema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
@@ -895,9 +904,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *                        name is present, else it will throw table exist exception
    */
   def createSampleTable(tableName: String,
-      baseTable: String, schema: StructType,
-      samplingOptions: java.util.Map[String, String],
-      allowExisting: Boolean): DataFrame = {
+    baseTable: String, schema: StructType,
+    samplingOptions: java.util.Map[String, String],
+    allowExisting: Boolean): DataFrame = {
     createSampleTable(tableName, Option(baseTable), schema,
       samplingOptions.asScala.toMap, allowExisting)
   }
@@ -1369,8 +1378,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     // check for permissions in the schema which should be done before the session catalog
     // createTable call since store table will be created by that time
-    val resolvedName = sessionCatalog.resolveTableIdentifier(tableIdent)
-    sessionCatalog.checkSchemaPermission(resolvedName.database.get, resolvedName.table,
+    val resolvedIdentifier = sessionCatalog.resolveTableIdentifier(tableIdent)
+    sessionCatalog.checkSchemaPermission(resolvedIdentifier.database.get, resolvedIdentifier.table,
       defaultUser = null, ignoreIfNotExists = true)
 
     val schema = userSpecifiedSchema match {
@@ -1404,28 +1413,134 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             sessionCatalog.resolveExistingTable(b).unquotedString
       }
     }
+    val orgSqlText = getContextObject[String]("orgSqlText") match {
+      case Some(s) => s
+      case None => {
+        // case when create api was used - sql text cannot be captured in this case.
+        userSpecifiedSchema match {
+          case Some(schema) => s"create table ${resolvedIdentifier.table} (${getDDLSchema(schema)})"
+          case None => ""
+        }
+      }
+    }
+    val maskedSql = ServiceUtils.maskPasswordsInString(orgSqlText)
     // if there is no path option for external DataSources, then mark as MANAGED except for JDBC
     val storage = DataSource.buildStorageFormatFromOptions(fullOptions)
     val tableType = if (!providerIsBuiltIn && storage.locationUri.isEmpty &&
         !Utils.toLowerCase(provider).contains("jdbc")) {
       CatalogTableType.MANAGED
     } else CatalogTableType.EXTERNAL
+    // It errors out in case of large statements, hence breaking into parts while storing
+    val orgSqlTextParts = maskedSql.grouped(3500).toSeq
+    val sqlTextMap = mutable.Map(s"numPartsOrgSqlText_${System.currentTimeMillis()}"
+        -> orgSqlTextParts.size.toString)
+    orgSqlTextParts.zipWithIndex.foreach{
+      case(part, index) => sqlTextMap += (s"sqlTextpart.$index" -> s"$part")
+    }
+
     val tableDesc = CatalogTable(
-      identifier = resolvedName,
+      identifier = resolvedIdentifier,
       tableType = tableType,
       storage = storage,
       schema = schema,
       provider = Some(provider),
+      properties = sqlTextMap.toMap,
       partitionColumnNames = partitionColumns,
       bucketSpec = bucketSpec)
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
+
+    // Checking whether table already exist before executing create table plan. This flag is later
+    // used to decide whether to populate primary keys or not. i.e. if the table was already
+    // existing then we skip the step to alter table in catalog to populate primary key
+    // information to avoid unnecessary catalog version increment.
+    val tableAlreadyExisted = sessionState.catalog.tableExists(resolvedIdentifier)
     sessionState.executePlan(plan).toRdd
-    val df = table(resolvedName)
+    val df = table(resolvedIdentifier)
     val relation = df.queryExecution.analyzed.collectFirst {
       case l: LogicalRelation => l.relation
     }
     snappyContextFunctions.postRelationCreation(relation, this)
+    if (!tableAlreadyExisted) {
+      updatePrimaryKeyDetails(resolvedIdentifier)
+    }
     df
+  }
+
+  private def updatePrimaryKeyDetails(resolvedIdentifier: TableIdentifier): Unit = {
+    val catalogTable = externalCatalog.getTable(resolvedIdentifier.database.get,
+      resolvedIdentifier.table)
+    val primaryKeys = getPrimaryKeys(resolvedIdentifier.database.get, resolvedIdentifier.table)
+    if (primaryKeys.nonEmpty) {
+      sessionCatalog.alterTable(catalogTable.copy(properties =
+          catalogTable.properties + (s"primary_keys" -> primaryKeys.mkString(","))))
+    }
+  }
+
+  /**
+   * Queries sys.indexes table and returns csv string of primary column names of given table
+   *
+   * @param schema schema  that the table belongs to
+   * @param table  table for which primary keys are to be found
+   * @return primary keys of given table as csv string
+   */
+  def getPrimaryKeys(schema: String, table: String): Array[String] = {
+    var primaryKeys = Array.empty[String]
+    val conn = getConnection
+    try {
+      val sql = s"""SELECT COLUMNS_AND_ORDER FROM sys.indexes WHERE
+                   |INDEXTYPE = 'PRIMARY KEY' AND schemaname = '${schema.toUpperCase}' AND
+                   |tablename = '${table.toUpperCase}'""".stripMargin
+      val ps = conn.prepareStatement(sql)
+      val rs = ps.executeQuery()
+      if (rs.next()) {
+        val keys = rs.getString(1)
+        if (keys != null && !keys.eq("")) {
+          // keys for table with c1, c2 as primary key looks like '+c1+c2'
+          primaryKeys = keys.split("\\+").filter(!_.equals(""))
+        }
+      }
+    } catch {
+      case sqle: SQLException =>
+        if (sqle.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${sqle.getMessage}\n" +
+              "Ensure that the 'driver' option is set appropriately and " +
+              "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw sqle
+        }
+    } finally {
+      conn.commit()
+      conn.close()
+    }
+    primaryKeys
+  }
+
+  def getDDLSchema(schema: StructType): String = {
+    schema.fields.map(f => s"${f.name} ${getSQLType(f.dataType)}").mkString(", ")
+  }
+
+  def getSQLType(dataType: DataType): String = {
+    dataType match {
+      case IntegerType => "integer"
+      case LongType => "long"
+      case StringType => "string"
+      case FloatType => "float"
+      case DoubleType => "double"
+      case t: DecimalType => s"decimal(${t.precision},${t.scale})"
+      case DateType => "date"
+      case TimestampType => "timestamp"
+      case BooleanType => "boolean"
+      case ByteType => "byte"
+      case ShortType => "short"
+      case BinaryType => "binary"
+      case v: VarcharType => s"varchar(${v.length})"
+      case a: ArrayType => s"array<${a.elementType}>"
+      case m: MapType => s"map<${m.keyType}, ${m.valueType}>"
+      case s: StructType => {
+        val structFields = s.fields.map(f => s" ${f.name}:${f.dataType} ").mkString(",")
+        s"struct<${structFields}>"
+      }
+    }
   }
 
   private[sql] def addBaseTableOption(baseTable: Option[String],
@@ -1501,11 +1616,24 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     if (sessionCatalog.isTemporaryTable(tableIdent)) {
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
+    val orgSqlText = getContextObject[String]("orgSqlText") match {
+      case Some(str) => str
+      case None => {
+        if (isAddColumn) {
+          s"alter table ${tableIdent.table} add column ${column.name}" +
+              s" ${getSQLType(column.dataType)}"
+        } else {
+          s"alter table ${tableIdent.table} drop column ${column.name}"
+        }
+      }
+    }
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
         ar.alterTable(tableIdent, isAddColumn, column, extensions)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
-        sessionCatalog.alterTable(metadata.copy(schema = ar.schema))
+        sessionCatalog.alterTable(metadata.copy(schema = ar.schema,
+          properties = metadata.properties +
+              (s"altTxt_${System.currentTimeMillis()}" -> orgSqlText)))
       case _ => throw new AnalysisException(
         s"ALTER TABLE ${tableIdent.unquotedString} supported only for row tables")
     }
@@ -1543,6 +1671,20 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(r: JDBCMutableRelation, _, _) =>
         r.executeUpdate(sql, JdbcExtendedUtils.toUpperCase(getCurrentSchema))
+
+        // when "alter table add constraint" is fired, it directly fires the sql
+        // as in on gemfire layer... to capture the sql string in catalog properties for ddls
+        // export, we can we just add sql string to properties in CatalogTable
+        // and update it into the metastore.
+
+        val metadata = sessionCatalog.getTableMetadata(tableIdent)
+        val primaryKeys = getPrimaryKeys(metadata.identifier.database.get,
+          metadata.identifier.table)
+        sessionCatalog.alterTable(metadata.copy(
+          properties = metadata.properties +
+              (s"altTxt_${System.currentTimeMillis()}" -> sql) +
+              (s"primary_keys" -> primaryKeys.mkString(","))
+        ))
       case _ => throw new AnalysisException(
         s"ALTER TABLE ${tableIdent.unquotedString} variant only supported for row tables")
     }
@@ -1770,12 +1912,20 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
-  private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
+  /**
+   * creates a internal connection to snappydata and returns it
+   * @return connection to snappydata
+   */
+  private def getConnection: Connection = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
       Some(this), ExternalStoreUtils.emptyCIMutableMap)
     val jdbcOptions = new JDBCOptions(connProperties.url, "",
       connProperties.connProps.asScala.toMap)
-    val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
+    JdbcUtils.createConnectionFactory(jdbcOptions)()
+  }
+
+  private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
+    val conn = getConnection
     try {
       val sql = constructDropSQL(indexName, ifExists)
       JdbcExtendedUtils.executeUpdate(sql, conn)
@@ -2027,6 +2177,33 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case _ => (-1, -1)
     }
     (scalaTypeVal, SnappySession.getDataType(storeType, storePrecision, storeScale))
+  }
+
+  /*
+     Method to add/update Structured Streaming UI Tab if cluster is running in embedded mode or
+     smart connector mode using SnappyData's Spark distribution
+  */
+  def updateStructuredStreamingUITab(): Unit = {
+    try {
+      val updateUIMethod: Method = super.getClass.getMethod("updateUIWithStructuredStreamingTab")
+      updateUIMethod.invoke(this)
+    } catch {
+      case e: NoSuchMethodException =>
+        logWarning("Unable to add Structured Streaming UI Tab because " +
+            "updateUIWithStructuredStreamingTab method is not present in SparkSession class. " +
+            "It seems spark distribution used is not snappy-spark distribution.")
+    }
+  }
+  // Call to update Structured Streaming UI Tab
+  updateStructuredStreamingUITab()
+
+  @volatile private var uniqueId = 0L
+
+  def getUniqueIdForExecScala(): Long = {
+    if (uniqueId != 0L) {
+      uniqueId = SnappySession.nextDummyId
+    }
+    uniqueId
   }
 }
 
@@ -2290,6 +2467,18 @@ object SnappySession extends Logging {
       hints
     }
 
+    val checkAuthOfExternalTables = java.lang.Boolean.parseBoolean(
+      System.getProperty("CHECK_EXTERNAL_TABLE_AUTHZ"))
+    // second condition means smart connector mode
+    if (checkAuthOfExternalTables || (ToolsCallbackInit.toolsCallback == null)) {
+      // check for external tables in the plan.
+      val scanNodes = executedPlan.collect {
+        case dsc: DataSourceScanExec if !dsc.relation.isInstanceOf[PartitionedDataSourceScan] => dsc
+      }
+      if (scanNodes != null && scanNodes.nonEmpty) {
+        checkCurrentUserAllowed(session, scanNodes)
+      }
+    }
     val (rdd, shuffleDependencies, shuffleCleanups) = if (planCaching) {
       val shuffleDeps = findShuffleDependencies(cachedRDD).toArray
       val cleanups = new Array[Future[Unit]](shuffleDeps.length)
@@ -2299,6 +2488,49 @@ object SnappySession extends Logging {
       executionString, planInfo, rdd, shuffleDependencies, RowEncoder(qe.analyzed.schema),
       shuffleCleanups, rddId, noSideEffects, queryHints,
       executionId, planStartTime, planEndTime, session.hasLinkPartitionsToBuckets)
+  }
+
+  private def checkCurrentUserAllowed(session: SnappySession, scanNodes: Seq[SparkPlan]): Unit = {
+    var currentUser = SnappyContext.getClusterMode(session.sparkContext) match {
+      case ThinClientConnectorMode(_, _) =>
+        session.conf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, null)
+      case _ => session.conf.get(Attribute.USERNAME_ATTR, default = null)
+    }
+    if (currentUser eq null) currentUser = ""
+    if (ToolsCallbackInit.toolsCallback != null) {
+      scanNodes.foreach(n => {
+        val dse = n.asInstanceOf[DataSourceScanExec]
+        val authzException = ToolsCallbackInit.toolsCallback.isUserAuthorizedForExtTable(
+          currentUser, dse.metastoreTableIdentifier)
+        if (authzException != null) throw authzException
+      })
+    } else if (SnappyContext.getClusterMode(session.sparkContext)
+        .isInstanceOf[ThinClientConnectorMode]) {
+      // Smart Connector Mode
+      val tables = scanNodes.map(n => {
+        val dse = n.asInstanceOf[DataSourceScanExec]
+        dse.metastoreTableIdentifier
+      }).filter(_.isDefined).map(_.get).map(_.unquotedString)
+      if (tables != null && tables.nonEmpty) {
+        val connection = session.getConnection
+        val cstmt = connection.prepareCall("call sys.CHECK_AUTHZ_ON_EXT_TABLES(?, ?, ?)")
+        try {
+          cstmt.setString(1, currentUser)
+          val allTablesStr = tables.mkString(",")
+          cstmt.setString(2, allTablesStr)
+          cstmt.registerOutParameter(3, java.sql.Types.VARCHAR)
+          cstmt.execute()
+          val ret = cstmt.getString(3)
+          if (ret != null && ret.nonEmpty) {
+            // throw exception
+            throw new AnalysisException(s"$currentUser  not authorized to access $ret")
+          }
+        } finally {
+          if (cstmt != null) cstmt.close()
+          if (connection != null) connection.close()
+        }
+      }
+    }
   }
 
   private[this] lazy val planCache = {
@@ -2328,6 +2560,7 @@ object SnappySession extends Logging {
       session.currentKey = key
       try {
         val execution = session.executePlan(plan)
+        session.addContextObject[String]("orgSqlText", sqlText)
         cachedDF = evaluatePlan(execution, session, sqlShortText, sqlText, paramLiterals, paramsId)
         // put in cache if the DF has to be cached
         if (planCaching && cachedDF.isCached) {
@@ -2342,6 +2575,7 @@ object SnappySession extends Logging {
         }
       } finally {
         session.currentKey = null
+        session.removeContextObject("orgSqlText")
       }
     } else {
       logDebug(s"Using cached plan for: $sqlText (existing: ${cachedDF.queryString})")
@@ -2453,7 +2687,8 @@ object SnappySession extends Logging {
     case _ => StringType
   }
 
-  def getValue(dvd: stypes.DataValueDescriptor): Any = dvd match {
+  def getValue(dvd: stypes.DataValueDescriptor, returnUTF8String: Boolean = true): Any =
+    dvd match {
     case i: stypes.SQLInteger => i.getInt
     case si: stypes.SQLSmallint => si.getShort
     case ti: stypes.SQLTinyint => ti.getByte
@@ -2467,11 +2702,19 @@ object SnappySession extends Logging {
       val charArray = cl.getCharArray()
       if (charArray != null) {
         val str = String.valueOf(charArray)
-        UTF8String.fromString(str)
+        if (returnUTF8String) {
+          UTF8String.fromString(str)
+        } else str
       } else null
-    case lvc: stypes.SQLLongvarchar => UTF8String.fromString(lvc.getString)
-    case vc: stypes.SQLVarchar => UTF8String.fromString(vc.getString)
-    case c: stypes.SQLChar => UTF8String.fromString(c.getString)
+    case lvc: stypes.SQLLongvarchar => if (returnUTF8String) {
+      UTF8String.fromString(lvc.getString)
+    } else lvc.getString
+    case vc: stypes.SQLVarchar => if (returnUTF8String) {
+      UTF8String.fromString(vc.getString)
+    } else vc.getString
+    case c: stypes.SQLChar => if (returnUTF8String) {
+      UTF8String.fromString(c.getString)
+    } else c.getString
     case ts: stypes.SQLTimestamp => ts.getTimestamp(null)
     case t: stypes.SQLTime => t.getTime(null)
     case d: stypes.SQLDate =>
@@ -2493,6 +2736,9 @@ object SnappySession extends Logging {
       jarServerFiles = jarServerFiles ++ uris
     })
   }
+
+  private val dummyId: AtomicLong = new AtomicLong(0)
+  private def nextDummyId = dummyId.decrementAndGet()
 }
 
 final class CachedKey(val session: SnappySession,

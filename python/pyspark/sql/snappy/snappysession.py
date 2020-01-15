@@ -61,9 +61,9 @@ class SnappySession(SparkSession):
         :return: :class:`DataFrame`
         """
         if provider is None:
-            provider = self.getConf("spark.sql.sources.default", "org.apache.spark.sql.parquet")
+            provider = self.conf.get("spark.sql.sources.default", "org.apache.spark.sql.parquet")
         if schema is None:
-            df = self._jsparkSession.createTable(tableName, provider, allowExisting, options)
+            df = self._jsparkSession.createTable(tableName, provider, options, allowExisting)
         else:
             if isinstance(schema, str):
                 df = self._jsparkSession.createTable(tableName, provider, schema, options, allowExisting)

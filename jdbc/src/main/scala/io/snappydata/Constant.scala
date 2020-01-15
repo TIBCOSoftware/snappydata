@@ -28,6 +28,8 @@ object Constant {
 
   val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:"
 
+  val RECOVER_MODE_URL = "jdbc:derby:"
+
   val DEFAULT_THIN_CLIENT_URL = "jdbc:snappydata://"
 
   val POOLED_THIN_CLIENT_URL = "jdbc:snappydata:pool://"
@@ -35,6 +37,8 @@ object Constant {
   val SNAPPY_URL_PREFIX = "snappydata://"
 
   val JDBC_EMBEDDED_DRIVER = "io.snappydata.jdbc.EmbeddedDriver"
+
+  val JDBC_RECOVERYMODE_DRIVER = "org.apache.derby.jdbc.ClientDriver"
 
   val JDBC_CLIENT_DRIVER = "io.snappydata.jdbc.ClientDriver"
 
@@ -151,6 +155,8 @@ object Constant {
 
   val CHANGEABLE_JAR_NAME = "SNAPPY_CHANGEABLE_JAR_NAME"
 
+  val REPL_OUTPUT_DIR = "REPL_OUTPUT_DIR"
+
   val SNAPPY_JOB_URL = "__SNAPPY_JOB_URL_"
 
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
@@ -160,4 +166,10 @@ object Constant {
   val COMPLEX_TYPE_AS_JSON_HINT = "complexTypeAsJson"
 
   val COMPLEX_TYPE_AS_JSON_DEFAULT = true
+
+  val CLUSTER_ID = "__cluster_id__"
+
+  val MEMBER_ID_PREFIX = "__member_id__"
+
+  val GRANT_REVOKE_KEY = "##_INTP__GRANT__REVOKE_##"
 }

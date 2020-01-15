@@ -56,12 +56,14 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.RefreshMetadata
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.client.HiveClientImpl
-import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
+import org.apache.spark.sql.internal.StaticSQLConf.{GLOBAL_TEMP_DATABASE, SCHEMA_STRING_LENGTH_THRESHOLD, WAREHOUSE_PATH}
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
-import org.apache.spark.sql.sources.JdbcExtendedUtils.normalizeSchema
+import org.apache.spark.sql.sources.JdbcExtendedUtils.{toLowerCase, toUpperCase, normalizeSchema}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.LongType
+import org.apache.spark.sql.{AnalysisException, _}
+import org.apache.spark.{SparkConf, SparkException}
 
 class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     val hadoopConf: Configuration, val createTime: Long)
@@ -70,8 +72,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   {
     // fire dummy queries to initialize more components of hive meta-store
     withHiveExceptionHandling {
-      assert(!client.tableExists(SYS_SCHEMA, "dbs"))
-      assert(!client.functionExists(SYS_SCHEMA, "funcs"))
+       assert(!client.tableExists(SYS_SCHEMA, "dbs"))
+       assert(!client.functionExists(SYS_SCHEMA, "funcs"))
     }
   }
 
@@ -388,9 +390,21 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         }
       }
     }
-
     try {
-      withHiveExceptionHandling(super.createTable(catalogTable, ifExists))
+      val catalogTable_ = if (catalogTable.properties.contains("schemaPart.0")) {
+        // schemaJson is already added during preprocessed queue replay and hence we skip in lead
+        catalogTable
+      } else {
+        val schemaParts = catalogTable.schema.json.grouped(3500).toSeq
+        val schemaJsonMap = new mutable.HashMap[String, String]
+        schemaJsonMap += ("NoOfschemaParts" -> s"${schemaParts.size}")
+        schemaParts.zipWithIndex.foreach{ case(part, index) =>
+          schemaJsonMap += (s"schemaPart.$index" -> s"$part")
+        }
+        catalogTable.copy(properties =
+            catalogTable.properties ++ schemaJsonMap)
+      }
+      withHiveExceptionHandling(super.createTable(catalogTable_, ifExists))
     } catch {
       case e: TableAlreadyExistsException =>
         val objectType = CatalogObjectType.getTableType(tableDefinition)
@@ -435,7 +449,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         if (ignoreIfNotExists) return else throw new TableNotFoundException(schema, table)
       case Some(t) => t
     }
-    withHiveExceptionHandling(super.dropTable(schema, table, ignoreIfNotExists = false, purge))
+    withHiveExceptionHandling(super.dropTable(schema, table, ignoreIfNotExists, purge))
 
     // drop all policies for the table
     if (Misc.getMemStoreBooting.isRLSEnabled) {
@@ -482,7 +496,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         val newProps = JdbcExtendedUtils.addSplitProperty(catalogTable.schema.json,
           SnappyExternalCatalog.TABLE_SCHEMA, oldRawDefinition.properties, maxLen)
         withHiveExceptionHandling(client.alterTable(oldRawDefinition.copy(
-          schema = catalogTable.schema, properties = newProps.toMap)))
+          schema = catalogTable.schema, properties = catalogTable.properties ++ newProps.toMap)))
 
         registerCatalogSchemaChange(schemaName -> tableName :: Nil)
         return

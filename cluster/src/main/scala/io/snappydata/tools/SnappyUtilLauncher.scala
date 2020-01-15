@@ -17,12 +17,13 @@
 package io.snappydata.tools
 
 import java.io.{File, IOException}
+import java.nio.file.{Files, Paths}
 import java.util
 
 import com.gemstone.gemfire.internal.GemFireUtilLauncher.{CommandEntry, SCRIPT_NAME}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
-import com.gemstone.gemfire.internal.{GemFireTerminateError, GemFireUtilLauncher}
-import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
+import com.gemstone.gemfire.internal.{GemFireTerminateError, GemFireUtilLauncher, GemFireVersion}
+import com.pivotal.gemfirexd.internal.iapi.tools.i18n.{LocalizedOutput, LocalizedResource}
 import com.pivotal.gemfirexd.internal.impl.tools.ij.utilMain
 import com.pivotal.gemfirexd.internal.tools.ij
 import com.pivotal.gemfirexd.tools.GfxdUtilLauncher.GET_CANONICAL_PATH_ARG
@@ -30,7 +31,10 @@ import com.pivotal.gemfirexd.tools.internal.{JarTools, MiscTools}
 import com.pivotal.gemfirexd.tools.{GfxdSystemAdmin, GfxdUtilLauncher}
 import io.snappydata.LocalizedMessages
 import io.snappydata.gemxd.{SnappyDataVersion, SnappySystemAdmin}
+import jline.console.ConsoleReader
 import org.apache.spark.sql.execution.columnar.impl.StoreCallback
+
+import scala.util.Properties.{javaVersion, javaVmName, versionString}
 
 /**
  * Launcher class encompassing snappy processes command lines.
@@ -105,12 +109,22 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
 
 object SnappyUtilLauncher extends StoreCallback {
 
+  val SNAPPY_SPARK_SHELL = "snappy-scala"
+
+  var INTERPRETER_MODE = false
+
+  var printNewWelcome = false
   init()
 
   private def init(): Unit = {
     SCRIPT_NAME = System.getenv("SNAPPY_SCRIPT_NAME") match {
       case s if (s eq null) || s.length == 0 => "snappy"
       case s => s
+    }
+    if (SNAPPY_SPARK_SHELL.equals(SCRIPT_NAME)) {
+      System.setProperty("LAUNCHER_INTERPRETER_MODE", "true")
+      printNewWelcome = true
+      INTERPRETER_MODE = true
     }
   }
 
@@ -123,9 +137,20 @@ object SnappyUtilLauncher extends StoreCallback {
 
     val launcher = new SnappyUtilLauncher()
 
+    // TODO: this needs to be switched off because 'exec scala' executes
+    // scala code and can have a lot of '!' which is treated special by the
+    // console reader which we don't want.
+    // Will see if there can be a better workaround. Couldn't find any though
+    System.setProperty(ConsoleReader.JLINE_EXPAND_EVENTS, "false")
+
     try {
       // no args will default to using ij
-      if (args.length == 0) {
+      if (args.length == 0 || INTERPRETER_MODE) {
+        if (INTERPRETER_MODE) {
+          validateIntpArgs(args)
+          launcher.setInitialCommands(
+            SnappyUtilLauncher.CONNECT_STR, SnappyUtilLauncher.INITIAL_FILES_TO_RUN_STR)
+        }
         launcher.invoke(Array(SCRIPT_NAME))
       }
       // short-circuit for the internal "--get-canonical-path" argument used by
@@ -158,5 +183,100 @@ object SnappyUtilLauncher extends StoreCallback {
         }
         throw re;
     }
+  }
+
+  val intpUsage = s"\nUsage:\n" +
+    s"\n${SCRIPT_NAME} [OPTIONS]\n\n" +
+    s"OPTIONS and Default values\n" +
+    s"\n   -c LOCATOR_OR_SERVER_ENDPOINT  (default value is locahost:1527)\n" +
+    s"\n   -u USERNAME                    (default value is APP)\n" +
+    s"\n   -p PASSWORD                    (default value is APP)\n" +
+    s"\n   -r SCALA_FILE_PATHS            (comma separated paths if multiple)\n" +
+    s"\n   -h, --help                     (prints script usage)\n"
+
+
+  private def validateArgs(options: Map[Symbol, Any]): Unit = {
+    val hostport = options.get('connection) match {
+      case Some(x) => x.toString
+      case None => "localhost:1527"
+    }
+    val user = options.getOrElse('user, "APP")
+    val passwd = options.getOrElse('password, "APP")
+    CONNECT_STR = s"connect client '${hostport};user=${user};password=${passwd}'"
+    val filesToRun = options.get('run) match {
+      case Some(x) => val files = x.toString
+        files.split(",").foreach(p => {
+          val path = Paths.get(p)
+          if (!Files.exists(path)) {
+            println(s"File $path does not exists")
+            System.exit(1)
+          }
+        })
+        files
+      case None => ""
+    }
+    if (filesToRun.nonEmpty) {
+      INITIAL_FILES_TO_RUN_STR = filesToRun.toString
+    }
+  }
+
+  // expected comma separated files
+  private var INITIAL_FILES_TO_RUN_STR: String = null
+  private var CONNECT_STR: String = null;
+
+  private def validateIntpArgs(args: Array[String]): Unit = {
+    val arglist = args.toList
+    type ArgsMap = Map[Symbol, Any]
+
+    def isSwitch(s : String) = (s(0) == '-')
+
+    def nextOption(map : ArgsMap, list: List[String]) : ArgsMap = {
+
+      list match {
+        case Nil => map
+        case ("-c" ) :: value :: tail =>
+          nextOption(map ++ Map('connection -> value), tail)
+        case ("-u") :: value :: tail =>
+          nextOption(map ++ Map('user -> value), tail)
+        case ("-p") :: value :: tail =>
+          nextOption(map ++ Map('password -> value), tail)
+        case ("-r") :: value :: tail =>
+          nextOption(map ++ Map('run -> value), tail)
+        case ("-h" | "--help") :: tail =>
+          println(intpUsage)
+          System.exit(0)
+          Map.empty
+        case option :: tail => println(s"\nBad option $option or its usage")
+          println(intpUsage)
+          System.exit(0)
+          Map.empty
+      }
+    }
+
+    val options = nextOption(Map(),arglist)
+    if (printNewWelcome) printWelcomeEnterprise()
+    validateArgs(options)
+  }
+
+  def printWelcomeEnterprise() {
+    val version = GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage
+    import org.apache.spark.SPARK_VERSION
+    // scalastyle:off println
+    println()
+    println("""Welcome to
+    ______                            __       ____  ____
+   / ____/___  ____ ___  ____  __  __/ /____  / __ \/ __ )
+  / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ / / / __  |
+ / /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /_/ / /_/ /  version %s on Spark version %s
+ \____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_____/_____/
+                     /_/""".format(version, SPARK_VERSION))
+    val welcomeMsg = "\nUsing Scala %s (%s, Java %s)".format(
+      versionString, javaVmName, javaVersion)
+    println(welcomeMsg)
+    println()
+    println("Type in expressions to have them evaluated.\n")
+    println("Spark context available as 'sc'")
+    println("Snappy session available as 'snappy'.\n")
+    // scalastyle:on println
   }
 }
