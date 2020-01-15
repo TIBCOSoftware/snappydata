@@ -38,7 +38,7 @@ The example above queries the TopK table which returns the top 40 (the depth of 
 ## Approximate TopK analytics for time series data
 Time is used as an attribute in creating the TopK structures. Time can be an attribute of the incoming data set (which is frequently the case with streaming data sets) and in the absence of that, the system uses arrival time of the batch as the time stamp for that incoming batch. The TopK structure is populated along the dimension of time. As an example, the most re-tweeted hashtags in each window are stored in the data structure. This allows us to issue queries like, "what are the most popular hashtags in a given time interval?" Queries of this nature are typically difficult to execute and not easy to optimize (due to space considerations) in a traditional system.
 
-Here is an example of a time-based query on the TopK structure which returns the most popular hashtags in the time interval queried. The TIBCO ComputeDB SDE module provides two attributes startTime and endTime which can be used to run queries on arbitrary time intervals.
+Here is an example of a time-based query on the TopK structure which returns the most popular hashtags in the time interval queried. The TIBCO ComputeDB AQP module provides two attributes startTime and endTime which can be used to run queries on arbitrary time intervals.
 	
 	
 	select hashtag, EstimatedValue, ErrorBoundsInfo from MostPopularTweets where 

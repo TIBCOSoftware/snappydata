@@ -11,6 +11,6 @@ The OLAP scheduler and job server coordinate all OLAP and Spark jobs and are cap
 
 To support replica consistency, fast point updates, and instantaneous detection of failure conditions in the cluster, TIBCO ComputeDB uses a P2P (peer-to-peer) cluster membership service that ensures view consistency and virtual synchrony in the cluster. Any of the in-memory tables can be synchronously replicated using this P2P cluster.
 
-In addition to the exact Dataset, data can also be summarized using probabilistic data structures, such as stratified samples and other forms of synopses. Using our API the applications can choose to trade accuracy for performance. The query engine of TIBCO ComputeDB has built-in support for Synopsis Data Engine (SDE) and exploits appropriate probabilistic data structures to meet the user’s requested level of accuracy or performance.
+In addition to the exact Dataset, data can also be summarized using probabilistic data structures, such as stratified samples and other forms of synopses. Using our API the applications can choose to trade accuracy for performance. The query engine of TIBCO ComputeDB has built-in support for Approximate Query Processing (AQP) and exploits appropriate probabilistic data structures to meet the user’s requested level of accuracy or performance.
 
 To understand the data flow architecture, you are first walked through a real-time use case that involves stream processing, ingesting into an in-memory store and interactive analytics.
