@@ -20,14 +20,18 @@ package io.snappydata.recovery
 
 import java.util.function.BiConsumer
 
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats,
-  SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{
+  SnappyExternalTableStats, SnappyIndexStats,
+  SnappyRegionStats
+}
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegionHelper
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.ddl.{DDLConflatable, GfxdDDLQueueEntry,
-  GfxdDDLRegionQueue}
+import com.pivotal.gemfirexd.internal.engine.ddl.{
+  DDLConflatable, GfxdDDLQueueEntry,
+  GfxdDDLRegionQueue
+}
 import com.pivotal.gemfirexd.internal.engine.distributed.RecoveryModeResultCollector
 import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode
 import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode
@@ -45,8 +49,10 @@ import io.snappydata.Constant
 
 import org.apache.spark.sql.{SnappyContext, SnappyParser, SnappySession}
 import io.snappydata.sql.catalog.ConnectorExternalCatalog
-import io.snappydata.thrift.{CatalogFunctionObject, CatalogMetadataDetails, CatalogSchemaObject,
-  CatalogTableObject}
+import io.snappydata.thrift.{
+  CatalogFunctionObject, CatalogMetadataDetails, CatalogSchemaObject,
+  CatalogTableObject
+}
 
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogTable}
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructField, StructType}
@@ -59,7 +65,9 @@ object RecoveryService extends Logging {
       Seq[SnappyRegionStats], Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = _
   var catalogTableCount = 0
   val snappyHiveExternalCatalog = HiveClientUtil
-      .getOrCreateExternalCatalog(SnappyContext().sparkContext, SnappyContext().sparkContext.getConf)
+      .getOrCreateExternalCatalog(SnappyContext().sparkContext, SnappyContext().sparkContext
+          .getConf)
+  var enableTableCountInUI: Boolean = _
 
   private def isGrantRevokeStatement(conflatable: DDLConflatable) = {
     val sqlText = conflatable.getValueToConflate
@@ -82,22 +90,34 @@ object RecoveryService extends Logging {
       var tblCounts: Seq[SnappyRegionStats] = Seq()
       catalogTableCount = allTables.length
       allTables.foreach(table => {
-        table.storage.locationUri match {
-          case Some(_) => // external tables can be seen in show tables but filtered out in UI
-          case None =>
-            if (recoveryStats == null ||
-                !recoveryStats._1.map(_.getTableName).contains(table.qualifiedName))
-              logDebug(s"Querying table: $table for count")
-            val recCount = snappySession.sql(s"SELECT count(1) FROM ${table.qualifiedName}")
-                .collect()(0).getLong(0)
-            val (numBuckets, isReplicated) = RecoveryService
-                .getNumBuckets(table.qualifiedName.split('.')(0).toUpperCase(),
-                  table.qualifiedName.split('.')(1).toUpperCase())
+        try {
+          table.storage.locationUri match {
+            case Some(_) => // external tables can be seen in show tables but filtered out in UI
+            case None =>
+              if (recoveryStats == null ||
+                  !recoveryStats._1.map(_.getTableName).contains(table.qualifiedName))
+                logDebug(s"Querying table: $table for count")
+              val recCount = if (enableTableCountInUI) {
+                snappySession.sql(s"SELECT count(1) FROM ${table.qualifiedName}")
+                    .collect()(0).getLong(0)
+              } else -1L
+              val (numBuckets, isReplicatedTable) = RecoveryService
+                  .getNumBuckets(table.qualifiedName.split('.')(0).toUpperCase(),
+                    table.qualifiedName.split('.')(1).toUpperCase())
+              val regionStats = new SnappyRegionStats()
+              regionStats.setRowCount(recCount)
+              regionStats.setTableName(table.qualifiedName)
+              regionStats.setReplicatedTable(isReplicatedTable)
+              regionStats.setBucketCount(numBuckets)
+              regionStats.setColumnTable(getProvider(table.qualifiedName).equalsIgnoreCase
+              ("column"))
+              tblCounts :+= regionStats
+          }
+        } catch {
+          case e: Exception => logError(s"Error querying table $table.\n$e")
             val regionStats = new SnappyRegionStats()
-            regionStats.setRowCount(recCount)
+            regionStats.setRowCount(-1L)
             regionStats.setTableName(table.qualifiedName)
-            regionStats.setReplicatedTable(isReplicated)
-            regionStats.setBucketCount(numBuckets)
             regionStats.setColumnTable(getProvider(table.qualifiedName).equalsIgnoreCase("column"))
             tblCounts :+= regionStats
         }
@@ -112,41 +132,45 @@ object RecoveryService extends Logging {
 
     if (!Misc.getGemFireCache.isSnappyRecoveryMode) {
       val dd = Misc.getMemStore.getDatabase.getDataDictionary
-      if (dd == null) {
-        throw Util.generateCsSQLException(SQLState.SHUTDOWN_DATABASE, Attribute.GFXD_DBNAME)
-      }
-      dd.lockForReadingRT(null)
-      val ddlQ = new GfxdDDLRegionQueue(Misc.getMemStore.getDDLStmtQueue.getRegion)
-      ddlQ.initializeQueue(dd)
-      val allDDLs: java.util.List[GfxdDDLQueueEntry] = ddlQ.peekAndRemoveFromQueue(-1, -1)
-      val preProcessedqueue = ddlQ.getPreprocessedDDLQueue(
-        allDDLs, null, null, null, false).iterator
-
-      import scala.collection.JavaConversions._
-      for (queueEntry <- preProcessedqueue) {
-        queueEntry.getValue match {
-          case conflatable: DDLConflatable =>
-            val schema = conflatable.getSchemaForTableNoThrow
-            if (conflatable.isCreateDiskStore) {
-              ddlBuffer.add(conflatable.getValueToConflate)
-            } else if (Misc.SNAPPY_HIVE_METASTORE == schema ||
-                Misc.SNAPPY_HIVE_METASTORE == conflatable.getCurrentSchema ||
-                Misc.SNAPPY_HIVE_METASTORE == conflatable.getRegionToConflate) {
-            } else if (conflatable.isAlterTable || conflatable.isCreateIndex ||
-                isGrantRevokeStatement(conflatable) ||
-                conflatable.isCreateTable || conflatable.isDropStatement ||
-                conflatable.isCreateSchemaText) {
-              val ddl = conflatable.getValueToConflate
-              val ddlLowerCase = ddl.toLowerCase()
-              if ("create[ ]+diskstore".r.findFirstIn(ddlLowerCase).isDefined ||
-                  "create[ ]+index".r.findFirstIn(ddlLowerCase).isDefined ||
-                  ddlLowerCase.trim.contains("^grant") ||
-                  ddlLowerCase.trim.contains("^revoke")) {
-                ddlBuffer.add(ddl)
-              }
-            }
-          case _ =>
+      try {
+        if (dd == null) {
+          throw Util.generateCsSQLException(SQLState.SHUTDOWN_DATABASE, Attribute.GFXD_DBNAME)
         }
+        dd.lockForReadingRT(null)
+        val ddlQ = new GfxdDDLRegionQueue(Misc.getMemStore.getDDLStmtQueue.getRegion)
+        ddlQ.initializeQueue(dd)
+        val allDDLs: java.util.List[GfxdDDLQueueEntry] = ddlQ.peekAndRemoveFromQueue(-1, -1)
+        val preProcessedqueue = ddlQ.getPreprocessedDDLQueue(
+          allDDLs, null, null, null, false).iterator
+
+        import scala.collection.JavaConversions._
+        for (queueEntry <- preProcessedqueue) {
+          queueEntry.getValue match {
+            case conflatable: DDLConflatable =>
+              val schema = conflatable.getSchemaForTableNoThrow
+              if (conflatable.isCreateDiskStore) {
+                ddlBuffer.add(conflatable.getValueToConflate)
+              } else if (Misc.SNAPPY_HIVE_METASTORE == schema ||
+                  Misc.SNAPPY_HIVE_METASTORE == conflatable.getCurrentSchema ||
+                  Misc.SNAPPY_HIVE_METASTORE == conflatable.getRegionToConflate) {
+              } else if (conflatable.isAlterTable || conflatable.isCreateIndex ||
+                  isGrantRevokeStatement(conflatable) ||
+                  conflatable.isCreateTable || conflatable.isDropStatement ||
+                  conflatable.isCreateSchemaText) {
+                val ddl = conflatable.getValueToConflate
+                val ddlLowerCase = ddl.toLowerCase()
+                if ("create[ ]+diskstore".r.findFirstIn(ddlLowerCase).isDefined ||
+                    "create[ ]+index".r.findFirstIn(ddlLowerCase).isDefined ||
+                    ddlLowerCase.trim.contains("^grant") ||
+                    ddlLowerCase.trim.contains("^revoke")) {
+                  ddlBuffer.add(ddl)
+                }
+              }
+            case _ =>
+          }
+        }
+      } finally {
+        dd.unlockAfterReading(null)
       }
     } else {
       val otherDdls = mostRecentMemberObject.getOtherDDLs.asScala
@@ -183,7 +207,10 @@ object RecoveryService extends Logging {
     })
 
     val tempViewBuffer: mutable.Buffer[String] = List.empty.toBuffer
-    val tempTableBuffer: mutable.Buffer[(String, String)] = List.empty.toBuffer
+    //  tempTableBuffer ===> ("text_timestamp", "ddl string", "use schemaName;")
+    // "use schemaName" is added to handle ddls of tables in different schemas with same
+    // table-name.
+    val tempTableBuffer: mutable.Buffer[(String, String, String)] = List.empty.toBuffer
 
     val allTables = snappyHiveExternalCatalog.getAllTables()
     allTables.foreach(table => {
@@ -203,11 +230,13 @@ object RecoveryService extends Logging {
         val createTableString = (0 until numSqlTextParts).map { i =>
           table.properties.getOrElse(s"sqlTextpart.$i", null)
         }.mkString
-        tempTableBuffer append ((s"createTableString_$createTimestamp", createTableString))
+        tempTableBuffer append ((s"createTableString_$createTimestamp", createTableString,
+            s"use ${table.database}"))
       }
       // ========== covers alter statements ================
-      allkeys.filter(f => f.contains("altTxt")).foreach(key =>
-        tempTableBuffer append ((key, table.properties(key))))
+      allkeys.filter(f => f.contains("altTxt")).foreach { key =>
+        tempTableBuffer append ((key, table.properties(key), s"use ${table.database}"))
+      }
 
       // ============ covers view statements ============
       table.viewOriginalText match {
@@ -218,7 +247,9 @@ object RecoveryService extends Logging {
 
     // the sorting is required to arrange statements amongst tables
     val sortedTempTableBuffer =
-      tempTableBuffer.sortBy(tup => tup._1.split("_")(1).toLong).map(_._2)
+      tempTableBuffer.sortBy(tup => tup._1.split("_")(1).toLong).flatMap(tup => {
+        mutable.Buffer[String](tup._3, tup._2)
+      })
     ddlBuffer.appendAll(sortedTempTableBuffer)
 
     // view ddls should be at the end so that the extracted ddls won't fail when replayed as is.
@@ -230,7 +261,6 @@ object RecoveryService extends Logging {
             alias.startsWith(Constant.MEMBER_ID_PREFIX) ||
             !cmdObj.isInstanceOf[String])) {
           val cmd = cmdObj.asInstanceOf[String]
-          logInfo("#RecoveryService " + alias + cmd)
           val cmdFields = cmd.split("\\|", -1)
           if (cmdFields.length > 1) {
             val repos = cmdFields(1)
@@ -291,7 +321,7 @@ object RecoveryService extends Logging {
   def getExecutorHost(fqtn: String, bucketId: Int = -1): Seq[String] = {
     val rowRegionPath = getRowRegionPath(fqtn, bucketId)
     // for null region maps select random host
-    val rowRegionPathKey = combinedViewsMapSortedSet.keySet.filter(_.contains(rowRegionPath+"#$"))
+    val rowRegionPathKey = combinedViewsMapSortedSet.keySet.filter(_.contains(rowRegionPath + "#$"))
 
     if (rowRegionPathKey.size != 0) {
       assert(rowRegionPathKey.size == 1,
@@ -371,7 +401,7 @@ object RecoveryService extends Logging {
           s"Schema name not found for the table ${table.identifier.table}")
       }
       var schema: StructType = StructType(DataType.fromJson(schemaJsonStr).asInstanceOf[StructType]
-              .map(f => f.copy(name = f.name.toLowerCase)))
+          .map(f => f.copy(name = f.name.toLowerCase)))
 
       assert(schema != null, s"schemaJson read from catalog table is null " +
           s"for ${table.identifier.table}")
@@ -460,10 +490,11 @@ object RecoveryService extends Logging {
   def isReplicated(schemaName: String, tableName: String): Boolean =
     memberObject.getReplicatedRegions.contains(s"/$schemaName/$tableName")
 
-  def collectViewsAndPrepareCatalog(): Unit = {
+  def collectViewsAndPrepareCatalog(enableTableCountInUI: Boolean): Unit = {
     // Send a message to all the servers and locators to send back their
     // respective persistent state information.
     logDebug("Start collecting PersistentStateInRecoveryMode from all the servers/locators.")
+    this.enableTableCountInUI = enableTableCountInUI
     val collector = new RecoveryModeResultCollector()
     val msg = new RecoveredMetadataRequestMessage(collector)
     msg.executeFunction()
@@ -670,26 +701,6 @@ object RecoveryService extends Logging {
         } in the catalog.")
     }
   }
-
-  case class ExportDataArgs(formatType: String, tables: Seq[String],
-      outputDir: String, ignoreError: Boolean)
-
-  val exportDataArgsList: mutable.MutableList[ExportDataArgs] = mutable.MutableList.empty
-
-  /**
-   * capture the arguments used by the procedure EXPORT_DATA and cache them for later generating
-   * helper scripts to load all this data back into new cluster
-   *
-   * @param formatType  spark output format
-   * @param tables      comma separated qualified names of tables
-   * @param outputDir   base output path for one call of EXPORT_DATA procedure
-   * @param ignoreError whether to move on to next table in case of failure
-   */
-  def captureArguments(formatType: String, tables: Seq[String],
-      outputDir: String, ignoreError: Boolean): Unit = {
-    exportDataArgsList += new ExportDataArgs(formatType, tables, outputDir, ignoreError)
-  }
-
 }
 
 object RegionDiskViewOrdering extends Ordering[RecoveryModePersistentView] {

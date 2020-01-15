@@ -23,9 +23,7 @@ import java.util.Properties
 
 import scala.collection.mutable.ArrayBuffer
 
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.TestUtil
-import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SnappyFunSuite.resultSetToDataset
 import io.snappydata.{Property, SnappyFunSuite}
 import org.junit.Assert._
@@ -37,6 +35,8 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.joins.HashJoinExec
 import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.functions.{collect_list, last}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext, SparkSession}
 
@@ -417,6 +417,53 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("drop table airline")
     conn.close()
     TestUtil.stopNetServer()
+  }
+
+  test("SNAP-3267. Window function causes vm crash" +
+    " due to underlying byte array for unsafe row creation being shared") {
+
+    val eventsPath: String = getClass.getResource("/events.parquet").getPath
+
+    snc.sql(s"create external table events_external using " +
+      s"parquet options (path '$eventsPath')")
+
+    snc.sql("create table IF NOT EXISTS events (CASE_ID string NOT NULL, " +
+      "ACTIVITY_ID string, " +
+      "ACTIVITY_START_TIMESTAMP timestamp, ACTIVITY_END_TIMESTAMP timestamp, " +
+      "RESOURCE_ID string, CASES_EXTRA_ATTRIBUTES string, COMBINED_EXTRA_ATTRIBUTES string, " +
+      "DURATION_DAYS int, DURATION_SEC long,NEXT_ACTIVITY_ID string,NEXT_RESOURCE_ID string, " +
+      "PREV_RESOURCE_ID string,EDGE string,PREV_ACTIVITY_ID string,REPEAT_SELF_LOOP_FLAG int, " +
+      "REDO_SELF_LOOP_FLAG int, START_FLAG int, END_FLAG int, ANALYSIS_ID varchar(257), " +
+      "P_YEAR string, P_MONTH string, P_DAY string, RowID long, idPK varchar(257)) " +
+      "USING column OPTIONS (PARTITION_BY 'ANALYSIS_ID', BUCKETS '128', " +
+      "KEY_COLUMNS 'ANALYSIS_ID, idPK') as select * from events_external")
+
+    val variantsPath: String = getClass.getResource("/variants.parquet").getPath
+
+    snc.sql(s"create external table variants_external using parquet options" +
+      s" (path '$variantsPath')")
+
+    snc.sql("create table IF NOT EXISTS variants " +
+      "(variants string, variant_id  bigint, frequency bigint, " +
+      "occurences_percent double, ANALYSIS_ID  varchar(257), idPK varchar(257))" +
+      " USING column OPTIONS (PARTITION_BY 'ANALYSIS_ID', BUCKETS '128', " +
+      "KEY_COLUMNS 'ANALYSIS_ID, idPK') as select * from variants_external")
+
+
+    val df_events = snc.sql(s"select ACTIVITY_ID,CASE_ID,ACTIVITY_START_TIMESTAMP" +
+      s"   from events ")
+
+    val snappySession = snc.snappySession
+    import snappySession.implicits._
+    val df_cases_1 = df_events.select($"CASE_ID", collect_list("ACTIVITY_ID").
+      over(Window.partitionBy("CASE_ID").orderBy("ACTIVITY_START_TIMESTAMP")).
+      alias("VARIANTS")).groupBy($"CASE_ID").agg(last($"CASE_ID"), last($"VARIANTS").as("X"))
+    df_cases_1.count()
+    df_cases_1.select($"X").collect().map(_.getSeq(0).mkString(","))
+    snc.dropTable("variants", true)
+    snc.dropTable("events", true)
+    snc.dropTable("variants_external", true)
+    snc.dropTable("events_external", true)
   }
 
   test("Column table creation test - SNAP-2577") {
@@ -1558,4 +1605,29 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("drop schema xy")
   }
 
+  test("SDENT-75-GetTypeInfo-Boolean-Test") {
+    snc
+    val serverHostPort = TestUtil.startNetServer()
+    val driverName = "io.snappydata.jdbc.ClientDriver"
+    val url = s"JDBC:SNAPPYDATA://$serverHostPort"
+    // scalastyle:off
+    Class.forName(driverName)
+    val properties = null //new Properties
+    val conn = DriverManager.getConnection(url, properties)
+    assert(null != conn)
+    val stmt = conn.createStatement()
+    val resultSet = conn.getMetaData().getTypeInfo()
+    var count = 0;
+    while (resultSet.next()) {
+      count = count + 1;
+      if (count == 26) {
+        var typeName = resultSet.getString(1);
+        var typeNum = resultSet.getInt(2);
+        assert("BOOLEAN" == typeName)
+        assert(typeNum == -7)
+      }
+    }
+
+    conn.close()
+  }
 }

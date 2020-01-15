@@ -117,8 +117,7 @@ class OpLogRdd(
               DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.CHAR, isNullable,
                 metadata.getLong("size").toInt)
           }
-        }
-        else {
+        } else {
           // when - create table using column as select ..- is used,
           // it create string column with no base information in metadata
           DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.CLOB, isNullable)
@@ -222,30 +221,100 @@ class OpLogRdd(
   def getFromDVD(schema: StructType, dvd: DataValueDescriptor, i: Integer,
       valueArr: Array[Array[Byte]], complexSchema: Seq[StructField]): Any = {
     val field = schema(i)
+    // complexFieldIndex is only required for Array, Map, struct. For others we use dvd.getObject
     val complexFieldIndex = if (complexSchema == null) 0 else complexSchema.indexOf(field) + 1
     field.dataType match {
       case ShortType => if (dvd.isNull) null else dvd.getShort
       case ByteType => if (dvd.isNull) null else dvd.getByte
       case arrayType: ArrayType =>
-        assert(field.dataType == arrayType)
         val array = valueArr(complexFieldIndex)
         val data = new SerializedArray(8)
         if (array != null) {
           data.pointTo(array, Platform.BYTE_ARRAY_OFFSET, array.length)
-          data.toArray(arrayType.elementType)
+          if (arrayType.elementType == DateType) {
+            data.toArray[Integer](IntegerType).map(daysSinceEpoch => {
+              if (daysSinceEpoch == null) null else DateTimeUtils.toJavaDate(daysSinceEpoch)
+            })
+          } else if (arrayType.elementType == TimestampType) {
+            data.toArray[Object](LongType).map(nsSinceEpoch => {
+              if (nsSinceEpoch == null) null
+              else new Timestamp(nsSinceEpoch.asInstanceOf[Long] / 1000)
+            })
+          } else {
+            data.toArray(arrayType.elementType)
+          }
         } else null
       case mapType: MapType =>
-        assert(field.dataType == mapType)
         val map = valueArr(complexFieldIndex)
         val data = new SerializedMap()
+        // todo: refactor following code.
         if (map != null) {
           data.pointTo(map, Platform.BYTE_ARRAY_OFFSET)
-          val jmap = new java.util.HashMap[Any, Any](data.numElements())
-          data.foreach(mapType.keyType, mapType.valueType, (k, v) => jmap.put(k, v))
-          jmap
+          val jMap = new java.util.HashMap[Any, Any](data.numElements())
+          if (mapType.keyType == DateType && mapType.valueType == DateType) {
+            data.foreach(IntegerType, IntegerType, (k, v) => {
+              val dateKey = DateTimeUtils.toJavaDate(k.asInstanceOf[Integer])
+              val dateValue = if (v == null) null else DateTimeUtils
+                  .toJavaDate(v.asInstanceOf[Integer])
+              jMap.put(dateKey, dateValue)
+            })
+            jMap
+          } else if (mapType.keyType == TimestampType && mapType.valueType == TimestampType) {
+            data.foreach(LongType, LongType, (k, v) => {
+              val timestampKey = new Timestamp(k.asInstanceOf[Long] / 1000)
+              val timestampValue = if (v == null) null
+              else new Timestamp(v.asInstanceOf[Long] / 1000)
+              jMap.put(timestampKey, timestampValue)
+            })
+            jMap
+          } else if (mapType.keyType == DateType && mapType.valueType == TimestampType) {
+            data.foreach(IntegerType, LongType, (k, v) => {
+              val dateKey = DateTimeUtils.toJavaDate(k.asInstanceOf[Integer])
+              val timestampValue = if (v == null) null
+              else new Timestamp(v.asInstanceOf[Long] / 1000)
+              jMap.put(dateKey, timestampValue)
+            })
+            jMap
+          } else if (mapType.keyType == TimestampType && mapType.valueType == DateType) {
+            data.foreach(LongType, IntegerType, (k, v) => {
+              val timestampKey = new Timestamp(k.asInstanceOf[Long] / 1000)
+              val dateValue = if (v == null) null
+              else DateTimeUtils.toJavaDate(v.asInstanceOf[Integer])
+              jMap.put(timestampKey, dateValue)
+            })
+            jMap
+          } else if (mapType.valueType == DateType) {
+            data.foreach(mapType.keyType, IntegerType, (k, v) => {
+              val dateValue = if (v == null) null
+              else DateTimeUtils.toJavaDate(v.asInstanceOf[Integer])
+              jMap.put(k, dateValue)
+            })
+            jMap
+          } else if (mapType.valueType == TimestampType) {
+            data.foreach(mapType.keyType, LongType, (k, v) => {
+              val timestampValue = if (v == null) null
+              else new Timestamp(v.asInstanceOf[Long] / 1000)
+              jMap.put(k, timestampValue)
+            })
+            jMap
+          } else if (mapType.keyType == DateType) {
+            data.foreach(IntegerType, mapType.valueType, (k, v) => {
+              val dateKey = DateTimeUtils.toJavaDate(k.asInstanceOf[Integer])
+              jMap.put(dateKey, v)
+            })
+            jMap
+          } else if (mapType.keyType == TimestampType) {
+            data.foreach(LongType, mapType.valueType, (k, v) => {
+              val timestampKey = new Timestamp(k.asInstanceOf[Long] / 1000)
+              jMap.put(timestampKey, v)
+            })
+            jMap
+          } else {
+            data.foreach(mapType.keyType, mapType.valueType, (k, v) => jMap.put(k, v))
+            jMap
+          }
         } else null
       case structType: StructType =>
-        assert(field.dataType == structType)
         val struct = valueArr(complexFieldIndex)
         if (struct != null) {
           val data = new SerializedRow(4, structType.length)
@@ -253,9 +322,9 @@ class OpLogRdd(
           data
         } else null
       case BinaryType =>
-        if (!dvd.isNull){
-        val blobValue = dvd.getObject.asInstanceOf[HarmonySerialBlob]
-        Source.fromInputStream(blobValue.getBinaryStream).map(e => e.toByte).toArray
+        if (!dvd.isNull) {
+          val blobValue = dvd.getObject.asInstanceOf[HarmonySerialBlob]
+          Source.fromInputStream(blobValue.getBinaryStream).map(e => e.toByte).toArray
         } else null
       case _ => dvd.getObject
     }
@@ -303,9 +372,17 @@ class OpLogRdd(
     val rowFormatter = getRowFormatter(versionNum, schemaOfVersion)
     val dvdArr = new Array[DataValueDescriptor](schemaOfVersion.length)
     val projectColumns: Array[String] = schema.fields.map(_.name)
-    val complexSch = schemaOfVersion.filter(f =>
-      f.dataType match {
-        case _: ArrayType | _: MapType | _: StructType | _: StringType => true
+    val complexSch = schemaOfVersion.filter(structField =>
+      structField.dataType match {
+        case _: ArrayType | _: MapType | _: StructType | _: BinaryType => true
+        case _: StringType => {
+          if (structField.metadata.contains("base")) {
+            structField.metadata.getString("base") match {
+              case "STRING" | "CLOB" => true
+              case _ =>  false
+            }
+          } else true
+        }
         case _ => false
       }
     )
@@ -397,11 +474,11 @@ class OpLogRdd(
    * @param phdrCol PlaceHolderDiskRegion of column batch
    */
   def iterateColData(phdrCol: PlaceHolderDiskRegion): Iterator[Row] = {
-    val directBuffers = mutable.ListBuffer.empty[ByteBuffer]
     if (phdrCol.getRegionMap == null || phdrCol.getRegionMap.isEmpty) return Iterator.empty
+    val directBuffers = mutable.ListBuffer.empty[ByteBuffer]
     val regMap = phdrCol.getRegionMap
     // assert(regMap != null, "region map for column batch is null")
-    logDebug(s"RegionMap keys for $phdrCol are: ${regMap.keySet()}")
+    logDebug(s"RegionMap size for $phdrCol are: ${regMap.keySet().size()}")
     regMap.keySet().iterator().asScala.flatMap {
       // for every stats key there will be a key corresponding to every column in schema
       // we can get keys and therefore values of a column batch from the stats key by
@@ -413,8 +490,7 @@ class OpLogRdd(
         val (deleteBuffer, deleteDecoder) = if (delEntry ne null) {
           val regValue = DiskEntry.Helper.readValueFromDisk(delEntry.asInstanceOf[DiskEntry],
             phdrCol).asInstanceOf[ColumnFormatValue]
-          val valueBuffer = regValue.asInstanceOf[ColumnFormatValue]
-              .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
+          val valueBuffer = regValue.getValueRetain(FetchRequest.DECOMPRESS).getBuffer
           valueBuffer -> new ColumnDeleteDecoder(valueBuffer)
         } else (null, null)
         // get required info about columns
@@ -463,14 +539,20 @@ class OpLogRdd(
             val deltaColIndex = ColumnDelta.deltaColumnIndex(colIndx, 0)
             val deltaEntry1 = regMap.getEntry(k.withColumnIndex(deltaColIndex))
             val delta1 = if (deltaEntry1 ne null) {
-              DiskEntry.Helper.readValueFromDisk(deltaEntry1.asInstanceOf[DiskEntry],
-                phdrCol).asInstanceOf[ColumnFormatValue].getBuffer
+              val buffer = DiskEntry.Helper.readValueFromDisk(deltaEntry1.asInstanceOf[DiskEntry],
+                phdrCol).asInstanceOf[ColumnFormatValue]
+                  .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
+              if(buffer.isDirect) directBuffers += buffer
+              buffer
             } else null
 
             val deltaEntry2 = regMap.getEntry(k.withColumnIndex(deltaColIndex - 1))
             val delta2 = if (deltaEntry2 ne null) {
-              DiskEntry.Helper.readValueFromDisk(deltaEntry2.asInstanceOf[DiskEntry],
-                phdrCol).asInstanceOf[ColumnFormatValue].getBuffer
+              val buffer = DiskEntry.Helper.readValueFromDisk(deltaEntry2.asInstanceOf[DiskEntry],
+                phdrCol).asInstanceOf[ColumnFormatValue]
+                  .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
+              if(buffer.isDirect) directBuffers += buffer
+              buffer
             } else null
 
             val updateDecoder = if ((delta1 ne null) || (delta2 ne null)) {
@@ -483,7 +565,7 @@ class OpLogRdd(
             while ((deleteDecoder ne null) && deleteDecoder.deleted(rowNum + currentDeleted)) {
               // null counts should be added as we go even for deleted records
               // because it is required to build indexes in colbatch
-              Row.fromSeq(schema.indices.map { colIndx =>
+              schema.indices.map { colIndx =>
                 val decoderAndValue = decodersAndValues(colIndx)
                 val colDecoder = decoderAndValue._1
                 val colNextNullPosition = colDecoder.getNextNullPosition
@@ -492,7 +574,7 @@ class OpLogRdd(
                   colDecoder.findNextNullPosition(
                     decoderAndValue._2, colNextNullPosition, colNullCounts(colIndx))
                 }
-              })
+              }
               // calculate how many consecutive rows to skip so that
               // i+numDeletd points to next un deleted row
               currentDeleted += 1
@@ -530,16 +612,16 @@ class OpLogRdd(
     logDebug(s"starting compute for partition ${split.index} of table $fqtnUpper")
     try {
       val currentHost = SparkEnv.get.executorId
-      val expectedHost  = bucketHostMap.getOrElse(split.index,"")
-      require(expectedHost.nonEmpty, s"No preferred host found." +
-          s" Error while getting executor host," +
-          s" please check RecoveryService logs for more information.")
+      val expectedHost = bucketHostMap.getOrElse(split.index, "")
+      require(expectedHost.nonEmpty, s"Preferred host cannot be empty for partition ${split
+          .index} of table $fqtnUpper. Verify corresponding entry in combinedViewsMapSortedSet " +
+          s"from debug logs of the leader.")
 
       if(expectedHost != currentHost) {
         throw new IllegalStateException(s"Expected compute to launch at $expectedHost," +
             s" but was launched at $currentHost. Try increasing value of " +
-            s"spark.locality.wait.process higher than current value in recovery mode." +
-            s"Refer troubleshooting section under Data Extractor Tool for more explanation.")
+            s"spark.locality.wait.process higher than current value(default 1800s) in recovery " +
+            s"mode. Refer troubleshooting section under Data Extractor Tool for more explanation.")
       }
 
       val diskStores = Misc.getGemFireCache.listDiskStores()
@@ -661,7 +743,21 @@ class OpLogRdd(
       case d: DecimalType if d.precision <= Decimal.MAX_LONG_DIGITS =>
         decoder.readLongDecimal(value, d.precision, d.scale, rowNum)
       case d: DecimalType => decoder.readDecimal(value, d.precision, d.scale, rowNum)
-      case a: ArrayType => decoder.readArray(value, rowNum).toArray(a.elementType)
+      case a: ArrayType => {
+        if (a.elementType == DateType) {
+          decoder.readArray(value, rowNum).toArray[Integer](IntegerType)
+              .map(daysSinceEpoch => {
+            if (daysSinceEpoch == null) null else DateTimeUtils.toJavaDate(daysSinceEpoch)
+          })
+        } else if (a.elementType == TimestampType) {
+          decoder.readArray(value, rowNum).toArray[Object](LongType).map(nsSinceEpoch => {
+            if (nsSinceEpoch == null) null else new Timestamp(nsSinceEpoch.asInstanceOf[Long] /
+                1000)
+          })
+        } else {
+          decoder.readArray(value, rowNum).toArray(a.elementType)
+        }
+      }
       case _: MapType => decoder.readMap(value, rowNum)
       case s: StructType => decoder.readStruct(value, s.length, rowNum)
       case _ => null
