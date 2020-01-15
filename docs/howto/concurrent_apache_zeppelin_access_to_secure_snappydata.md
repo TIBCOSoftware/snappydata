@@ -39,6 +39,7 @@ Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](ht
 		Zeppelin web server is started on port 8080
 		http://<IP address>:8080/#/
 
+<a id="configinterpreter"></a>
 ## Configure the Interpreter
 
 1. Log on to Zeppelin from your web browser and select **Interpreter** from the **Settings** option.

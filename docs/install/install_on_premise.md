@@ -3,6 +3,10 @@
 
 SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.
 
+For quick start instructions on Installing SnappyData on-premise, refer [Getting Started with SnappyData On-premise](/quickstart/getting_started_by_installing_snappydata_on-premise.md). 
+
+After installing SnappyData, follow the instructions [here](/howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin.
+
 <a id="singlehost"></a>
 ## Single-Host Installation
 
@@ -111,11 +115,3 @@ In case the machines in your cluster do not share a common path as well as canno
 	*	`$SNAPPY_HOME/sbin/snappy-server.sh`
 	
 	*	`$SNAPPY_HOME/sbin/snappy-lead.sh`
-
-
-
-
- 
-
-
-

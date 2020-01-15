@@ -105,13 +105,13 @@ The following list of commonly used configuration properties can be set to confi
 |-spark.jobserver.port|The port on which to run the jobserver. Default port is 8090.|Lead|
 |-spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks. For more information, refer to [Best Practices](../best_practices/important_settings.md#spark-local-dir).|Lead</br>Server|
 |-spark.network.timeout|The default timeout for all network interactions while running queries.|Lead|
-|-spark.sql.autoBroadcastJoinThreshold|Configures the maximum size in bytes for a table that is broadcast to all server nodes when performing a join.  By setting this value to **-1** broadcasting can be disabled. |
-|-spark.sql.codegen.wholeStage<a id="wholeStageCodeGen"></a>|Turn ON/OFF whole stage code generation in Spark/Snappy SQL. The default is True. |Lead|
+|-spark.sql.autoBroadcastJoinThreshold|Configures the maximum size in bytes for a table that is broadcast to all server nodes when performing a join.  By setting this value to **-1** broadcasting can be disabled. |Lead|
 |-spark.sql.codegen.cacheSize<a id="codegencache"></a>|Size of the generated code cache. This effectively controls the maximum number of query plans whose generated code (Classes) is cached. The default is 2000. |Lead|
-|-spark.sql.aqp.numBootStrapTrials|Number of bootstrap trials to do for calculating error bounds. The default value is100. </br>This property must be set in the **conf/leads** file.|
-|-spark.sql.aqp.error|Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1. The default value is0.2. </br>This property can be set as connection property in the Snappy SQL shell.|
-|-spark.sql.aqp.confidence|Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> The default value is0.95. </br>This property can be set as connection property in the Snappy SQL shell.|
-|-spark.sql.aqp.behavior|The action to be taken if the error computed goes outside the error tolerance limit. The default value is`DO_NOTHING`. </br>This property can be set as connection property in the Snappy SQL shell.|
+|-spark.sql.codegen.wholeStage<a id="wholeStageCodeGen"></a>|Turn ON/OFF whole stage code generation in Spark/Snappy SQL. The default is True. |Lead|
+|-spark.sql.aqp.numBootStrapTrials|Number of bootstrap trials to do for calculating error bounds. The default value is100. </br>This property must be set in the **conf/leads** file.|Lead|
+|-spark.sql.aqp.error|Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1. The default value is0.2. </br>This property can be set as connection property in the Snappy SQL shell.|Lead|
+|-spark.sql.aqp.confidence|Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> The default value is0.95. </br>This property can be set as connection property in the Snappy SQL shell.|Lead|
+|-spark.sql.aqp.behavior|The action to be taken if the error computed goes outside the error tolerance limit. The default value is`DO_NOTHING`. </br>This property can be set as connection property in the Snappy SQL shell.|Lead|
 |-spark.ssl.enabled<a id="ssl_spark_enabled"></a>|Enables or disables Spark layer encryption. The default is false. |Lead|
 |-spark.ssl.keyPassword<a id="ssl_spark_password"></a>|The password to the private key in the key store. |Lead|
 |-spark.ssl.keyStore<a id="ssl_spark_keystore"></a>|Path to the key store file. The path can be absolute or relative to the directory in which the process is started.|Lead|

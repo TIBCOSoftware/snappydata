@@ -1,4 +1,4 @@
-site_name: SnappyData™ 1.1.1
+site_name: SnappyData™ 1.2.0
 site_url: http://www.snappydata.io
 site_description: Project documentation for SnappyData
 site_author: SnappyData Team
@@ -25,6 +25,7 @@ pages:
     - 'Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
 #    - 'Docker Image': 'quickstart/getting_started_with_docker_image.md'
     - 'Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
+    - 'Using Apache Zeppelin with SnappyData': 'howto/use_apache_zeppelin_with_snappydata.md'
     - 'SnappyData Quickstart Guide': 'quickstart/snappydataquick_start.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
     - 'Benchmark 16-20x Faster Performance than Apache Spark': 'quickstart/performance_apache_spark.md'
@@ -95,6 +96,8 @@ pages:
     - 'Managing JAR Files': 'programming_guide/managing_jar_files.md'
     - 'Using Snappy Shell': 'programming_guide/using_snappydata_shell.md'
     - 'Using the Spark Shell and spark-submit': 'programming_guide/using_the_spark_shell_and_spark-submit.md'
+    - 'Using pyspark Shell': 'programming_guide/using_pyspark_shell.md'
+    - 'Using the Scala Interpreter': 'programming_guide/scala_interpreter.md'
     - 'Working with Hadoop YARN cluster Manager': 'programming_guide/working_with_hadoop_yarn_cluster_manager.md'
     - 'Using JDBC with SnappyData': 'programming_guide/using_jdbc_with_snappydata.md'
     - 'Accessing SnappyData Tables from any Spark (2.1+) Cluster': 'programming_guide/spark_jdbc_connector.md'
@@ -124,8 +127,11 @@ pages:
     - 'Sample Selection': 'sde/sample_selection.md'
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
-- 'Working with External Data Sources': 'connectors/connector.md'
-- 'Working with External Data Sources':
+- 'Working with Data Sources': 'connectors/connector.md'  
+- 'Working with Data Sources':
+    - 'Supported Data Formats': 'Data/data_formats.md'
+    - 'Accessing Cloud Storages': 'connectors/access_cloud_data.md'
+    - 'Connecting to External Hive Metastores': 'Data/external_hive_support.md' 
     - 'Deploying Third Party Connectors': 'connectors/deployment_dependency_jar.md'  
     - 'Using the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
     - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
@@ -134,7 +140,9 @@ pages:
     - 'SnappyData Monitoring UI': 'monitoring/monitoring.md'
     - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
     - 'Configuring Logging': 'monitoring/configure_logging.md'
-    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'    
+    - 'Monitoring with Metrics': 'monitoring/metrics.md'
+    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'  
+    - 'Recovering Data During Cluster Failures': 'monitoring/recoveringdata.md'  
 # -- Topic - Reference Guide
 - 'Managing Security': 'security/security.md'
 - 'Managing Security': 
@@ -193,9 +201,12 @@ pages:
             - 'DEPLOY PACKAGE': 'reference/sql_reference/deploy_package.md'
             - 'DEPLOY JAR': 'reference/sql_reference/deploy_jar.md'
             - 'UNDEPLOY': 'reference/sql_reference/undeploy.md'
+        - 'EXPLAIN': 'reference/sql_reference/explain.md'
         - 'GRANT': 'reference/sql_reference/grant.md'
         - 'INSERT': 'reference/sql_reference/insert.md'
         - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
+        - 'LIST': 'reference/sql_reference/list.md'
+        - 'PIVOT': 'reference/sql_reference/pivot.md'
         - 'PUT INTO': 'reference/sql_reference/put-into.md'
         - 'REVOKE': 'reference/sql_reference/revoke.md'
         - 'SELECT': 'reference/sql_reference/select.md'
@@ -212,6 +223,8 @@ pages:
         - 'SET_TRACE_FLAG': 'reference/inbuilt_system_procedures/set-trace-flag.md'
         - 'SYS.REMOVE_METASTORE_ENTRY': 'reference/inbuilt_system_procedures/sys_remove_metastore_entry.md'
         - 'DSID': 'reference/inbuilt_system_procedures/dsid.md'
+        - 'SYS.EXPORT_DDLS': 'reference/inbuilt_system_procedures/export_ddl.md'
+        - 'SYS.EXPORT_DATA': 'reference/inbuilt_system_procedures/export_data.md'
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 
         - 'MEMBERS': 'reference/system_tables/members.md'
@@ -346,5 +359,5 @@ extra_css:
 markdown_extensions:
     - admonition 
     
-copyright: Copyright © 2017-2019 TIBCO Software Inc. All rights reserved. 
+copyright: Copyright © 2017-2020 TIBCO Software Inc. All rights reserved. 
 
