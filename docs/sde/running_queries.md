@@ -47,7 +47,7 @@ snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).orderBy( desc("Month_")).with
 ```
 
 ## Supporting BI Tools or Existing Apps
-To allow BI tools and existing Apps that say might be generating SQL, SDE also supports specifying these options through your SQL connection or using the Snappy SQLContext. 
+To allow BI tools and existing Apps that say might be generating SQL, AQP also supports specifying these options through your SQL connection or using the Snappy SQLContext. 
 
 ```pre
 snContext.sql(s"spark.sql.aqp.error=$error")
