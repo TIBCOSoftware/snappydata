@@ -135,9 +135,10 @@ pages:
     - 'Supported Data Formats': 'Data/data_formats.md'
     - 'Accessing Cloud Storages': 'connectors/access_cloud_data.md'
     - 'Connecting to External Hive Metastores': 'Data/external_hive_support.md' 
-    - 'Deploying Third Party Connectors': 'connectors/deployment_dependency_jar.md'  
     - 'Using the TIBCO ComputeDB GemFire Connector': 'connectors/gemfire_connector.md'  
+    - 'Connecting to TDV as Data Source from TIBCO ComputeDB': 'connectors/tdv.md'  
     - 'Using the TIBCO ComputeDB CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
+    - 'Deploying Third Party Connectors': 'connectors/deployment_dependency_jar.md'  
 - 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
 - 'Managing and Monitoring':
     - 'TIBCO ComputeDB Monitoring UI': 'monitoring/monitoring.md'

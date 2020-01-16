@@ -36,7 +36,7 @@ snSession.sql("CREATE TABLE AIRLINE USING column AS (SELECT Year AS Year_, " +
 ```
 
 **Create a sample table for the above base table**:
-Attribute 'qcs' in the statement below specifies the columns used for stratification and attribute 'fraction' specifies how big the sample needs to be (3% of the base table AIRLINE in this case). For more information on Synopsis Data Engine, refer to the [AQP documentation](../aqp.md#working-with-stratified-samples).
+Attribute 'qcs' in the statement below specifies the columns used for stratification and attribute 'fraction' specifies how big the sample needs to be (3% of the base table AIRLINE in this case). For more information on AQP, refer to the [AQP documentation](../aqp.md#working-with-stratified-samples).
 
 
 ```pre

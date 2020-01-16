@@ -12,7 +12,7 @@ TIBCO ComputeDB edition 1.2.0 is tested and works with TIBCO Data Virtualization
 ## Connecting to TDV from TIBCO ComputeDB
 
 1.	Publish the view from TDV Studio that needs to be accessed as a data source from TIBCO ComputeDB. 
-2.	Note the name of the Data Source that is associated with the View that should be published. For more information, refer to the TDV documentation.
+2.	Note the name of the Data Source that is associated with the view that should be published. For more information, refer to the TDV documentation.
 3.	Log on to the machine where TIBCO ComputeDB is installed and go to the ComputeDB installation directory.
 
 4.	Make sure ComputeDB is running by executing the following command:	
@@ -35,7 +35,7 @@ TIBCO ComputeDB edition 1.2.0 is tested and works with TIBCO Data Virtualization
             snappy>deploy jar dv-jar '/opt/tib_computedb_TIB_compute_1.2.0_linux/connectors/csjdbc8.jar';
 	
     !!!Note
-    	This command should be executed only once, when you connect to the TDV cluster for the first time.
+    	You should execute this command only once when you connect to the TDV cluster for the first time.
 
 8.	Create an external table with JDBC options:
 
@@ -47,17 +47,17 @@ TIBCO ComputeDB edition 1.2.0 is tested and works with TIBCO Data Virtualization
 9.	Run the required SQL queries on the created external table.
 
 
-If both, TDV Studio and TIBCO ComputeDB are installed on different machines, ensure the machine on which TDV Studio is hosted, is accessible from the machine on which TIBCO ComputeDB is installed. If TDV is installed on a Windows machine, ensure to create a rule in the Firewall settings to allow the inbound traffic for all ports from the machine on which TIBCO ComputeDB is installed. The following steps ow detail the procedure to do this on Windows Server 2012 edition:
+If you install both TDV Studio and TIBCO ComputeDB on different machines, ensure the machine on which TDV Studio is hosted, is accessible from the machine on which TIBCO ComputeDB is installed. If TDV is installed on a Windows machine, ensure to create a rule in the Firewall settings. This rule should allow the inbound traffic for all the ports from the machine on which TIBCO ComputeDB is installed. Use the following steps to do this on Windows Server 2012 edition:
 
-Go to Windows Firewall with Advanced Security -> New rule.
-Enter / select the following values:
-For the ‘type of rule’, select Port. Click Next.
-For ‘Does this rule apply to TCP or UDP’, select TCP.
-For ‘Does this rule apply to all local ports or specific local ports’, select All local ports.
-For ‘What action should be taken…..’, select Allow the connection.
-For ‘When does this rule apply?’, select all the options.
-Enter appropriate name for the rule and click on the Finish button.
+1.	Go to Windows Firewall with Advanced Security -> New rule.
+2.	Provide the following details:
+	
+    | Item | Option to Select |
+	|--------|--------|
+	|   **Type of rule**    |    Port   |
+    |**Does this rule apply to TCP or UDP**|  TCP|
+    |**Does this rule apply to all local ports or specific local ports**|  Select All local ports.|
+    |**What action should be taken….**|Allow the connection|
+    |**When does this rule apply?**| Select all the options|
 
-
-
-      
+3.	Enter the appropriate name for the rule and click on the Finish button.
