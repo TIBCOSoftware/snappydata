@@ -22,13 +22,13 @@ In this example below, a sample table is created for an S3 (external) dataset:
 
 ```pre
 CREATE EXTERNAL TABLE TAXIFARE USING parquet 
-  OPTIONS(path 's3a://<AWS_SECRET_ACCESS_KEY>:<AWS_ACCESS_KEY_ID>@zeppelindemo/nyctaxifaredata_cleaned');
+  OPTIONS(path 's3a://<AWS_SECRET_ACCESS_KEY>:<AWS_ACCESS_KEY_ID>@computedb-test-data/nyctaxifaredata_cleaned');
 //Next, create the sample sourced from this table ..
 CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE 
   options  (qcs 'hack_license', fraction '0.01');
 ```
 
-When creating a base table, if you have applied the **partition by** clause, the clause is also applied to the sample table. The sample table also inherits the **number of buckets**, **redundancy** and **persistence** properties from the base table.
+When creating a base table, if you have applied the **partition by** clause, the clause is also applied to the sample table.
 
 For sample tables, the **overflow** property is set to **False** by default. (For row and column tables the default value is  **True**). 
 
@@ -41,7 +41,7 @@ USING COLUMN OPTIONS (partition_by '<column_name_a>', Buckets '7', Redundancy '1
 CREATE TABLE SAMPLETABLENAME <column details> 
 USING COLUMN_SAMPLE OPTIONS (qcs '<column_name_b>',fraction '0.05', 
 strataReservoirSize '50', baseTable 'baseTableName')
-// In this case, sample table 'sampleTableName' is partitioned by column 'column_name_a', has 7 buckets and 1 redundancy.
+
 ```
 
 
@@ -51,8 +51,7 @@ strataReservoirSize '50', baseTable 'baseTableName')
 		*	dataFrame.write
 		*	Using JDBC API batch insert
 		*	Insert into table values select * from x
-Then the data is also sampled and put into sample table(s) if exists.
-    
+    Then the data is also sampled and put into sample table(s) if exists.
     * For successful creation of sample tables, the number of buckets in the sample table should be more than the number of nodes in the cluster. 
 
 ## QCS (Query Column Set) and Sample Selection

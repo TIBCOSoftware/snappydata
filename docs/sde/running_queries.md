@@ -5,8 +5,8 @@ Queries can be executed directly on sample tables or on the base table. Any quer
 Here is the syntax:
 
 ```pre
-> > SELECT ... FROM .. WHERE .. GROUP BY ...<br>
-> > WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`
+SELECT ... FROM .. WHERE .. GROUP BY ...<br>
+WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`
 ```
     
 * **WITH ERROR** - this is a mandatory clause. The values are  0 < value(double) < 1 . 
@@ -60,12 +60,11 @@ Applications or tools using JDBC/ODBC can set the following properties.
 
 *	When using Apache Zeppelin JDBC interpreter or the Snappy SQL you can set the values as follows:
 
-    ```pre
-    set spark.sql.aqp.error=$error;
-    set spark.sql.aqp.confidence=$confidence;
-    set spark.sql.aqp.behavior=$behavior;
+            set spark.sql.aqp.error=$error;
+            set spark.sql.aqp.confidence=$confidence;
+            set spark.sql.aqp.behavior=$behavior;
 
-    ```
+    
 *	Setting AQP specific properties as a connection level property using JDBC:
 	    
           Properties prop = new Properties();

@@ -18,8 +18,7 @@ CREATE TABLE [IF NOT EXISTS] table_name
     QCS 'column-name', // column-name [, column-name ] *
     FRACTION 'population-fraction',  //Must be a double
     STRATARESERVOIRSIZE 'strata-initial-capacity',  // Default 50 Must be an integer.
-    )
-    [AS select_statement];
+    );
 ```    
 
 **Mode 2**
