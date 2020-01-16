@@ -50,7 +50,7 @@ The following topics are covered in this section:
 
 * [How to use Transactions Isolation Levels](howto/use_transactions_isolation_levels.md)<a id="howto-transactions"></a>
 
-* [How to use Synopsis Data Engine to Run Approximate Queries](howto/use_synopsis_data_engine_to_run_approximate_queries.md)<a id="howto-sde"></a>
+* [How to use Approximate Query Processing (AQP) to Run Approximate Queries](howto/use_synopsis_data_engine_to_run_approximate_queries.md)<a id="howto-sde"></a>
 
 * [How to use Python to Create Tables and Run Queries](howto/use_python_to_create_tables_and_run_queries.md)<a id="howto-python"></a>
 

@@ -78,7 +78,7 @@ pages:
     - 'How to Store and Query Objects': 'howto/store_and_query_objects.md'
     - 'How to use Stream Processing with TIBCO ComputeDB': 'howto/use_stream_processing_with_snappydata.md'
     - 'How to use Transactions Isolation Levels': 'howto/use_transactions_isolation_levels.md'
-    - 'How to use Synopsis Data Engine to Run Approximate Queries': 'howto/use_synopsis_data_engine_to_run_approximate_queries.md'
+    - 'How to use Approximate Query Processing (AQP)to Run Approximate Queries': 'howto/use_synopsis_data_engine_to_run_approximate_queries.md'
     - 'How to use Python to Create Tables and Run Queries': 'howto/use_python_to_create_tables_and_run_queries.md'
     - 'How to Connect using ODBC Driver': 'howto/connect_using_odbc_driver.md'
     - 'How to Connect to the Cluster from External Network': 'howto/connect_to_the_cluster_from_external_clients.md'
@@ -121,7 +121,7 @@ pages:
     - 'Structured Streaming': 'best_practices/structured_streaming_best_practices.md'     
     - 'Important Settings': 'best_practices/important_settings.md'
     - 'TIBCO ComputeDB Distributed Transactions': 'best_practices/transactions_best_practices.md'      
-- 'Approximate Query Processing': 'aqp.md'
+- 'Approximate Query Processing (AQP)': 'aqp.md'
 - 'Approximate Query Processing': 
     - 'Key Concepts': 'sde/key_concepts.md'
     - 'Working with Stratified Samples': 'sde/working_with_stratified_samples.md'
