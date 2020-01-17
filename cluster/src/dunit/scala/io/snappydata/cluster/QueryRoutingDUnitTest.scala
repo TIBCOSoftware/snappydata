@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,32 +19,27 @@ package io.snappydata.cluster
 
 import java.io.File
 import java.math.BigDecimal
-import java.sql.{Connection, DatabaseMetaData, DriverManager, ResultSet, SQLException, Statement}
+import java.sql.{Connection, DatabaseMetaData, DriverManager, PreparedStatement, ResultSet, SQLException, Statement}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.DistributedMember
-
-import scala.collection.mutable
-import scala.collection.JavaConverters._
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import io.snappydata.Constant._
 import io.snappydata.Property
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
-import junit.framework.TestCase
 import org.apache.commons.io.FileUtils
 import org.junit.Assert
+import org.junit.Assert.assertEquals
+
 import org.apache.spark.Logging
-import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
-import org.apache.spark.sql.catalyst.expressions.SubqueryExpression
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.Decimal
 import org.apache.spark.sql.{IndexTest, SaveMode, SingleNodeTest, SnappyContext, SnappySession, TPCHUtils}
-import org.apache.spark.util.Benchmark
 
 /**
  * Tests for query routing from JDBC client driver.
@@ -79,8 +74,8 @@ class QueryRoutingDUnitTest(val s: String)
     logInfo("metadata col cnt = " + md.getColumnCount + " col name = " +
         md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 1)
-    assert(md.getColumnName(1).equals("COL1"))
-    assert(md.getTableName(1).equals("COLUMNTABLEQR"))
+    assert(md.getColumnName(1).equalsIgnoreCase("COL1"))
+    assert(md.getTableName(1).equalsIgnoreCase("COLUMNTABLEQR"))
 
     // 2nd query which compiles in gemxd too but needs to be routed
     s.execute("select * from TEST.ColumnTableQR")
@@ -94,12 +89,12 @@ class QueryRoutingDUnitTest(val s: String)
     logInfo("2nd metadata col cnt = " + md.getColumnCount + " col name = " +
         md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 3)
-    assert(md.getColumnName(1).equals("COL1"))
-    assert(md.getColumnName(2).equals("COL2"))
-    assert(md.getColumnName(3).equals("COL3"))
-    assert(md.getTableName(1).equals("COLUMNTABLEQR"))
-    assert(md.getTableName(2).equals("COLUMNTABLEQR"))
-    assert(md.getTableName(3).equals("COLUMNTABLEQR"))
+    assert(md.getColumnName(1).equalsIgnoreCase("COL1"))
+    assert(md.getColumnName(2).equalsIgnoreCase("COL2"))
+    assert(md.getColumnName(3).equalsIgnoreCase("COL3"))
+    assert(md.getTableName(1).equalsIgnoreCase("COLUMNTABLEQR"))
+    assert(md.getTableName(2).equalsIgnoreCase("COLUMNTABLEQR"))
+    assert(md.getTableName(3).equalsIgnoreCase("COLUMNTABLEQR"))
 
     vm1.invoke(new SerializableRunnable() {
       override def run(): Unit = {
@@ -146,10 +141,10 @@ class QueryRoutingDUnitTest(val s: String)
       cnt += 1
       cnt match {
         case 1 => assert(9 == rs.getInt(1), s"Expected 9 but found ${rs.getInt(1)}")
-        case 2 => assert(7 == rs.getInt(1),s"Expected 7 but found ${rs.getInt(1)}")
-        case 3 => assert(5 == rs.getInt(1),s"Expected 5 but found ${rs.getInt(1)}")
-        case 4 => assert(4 == rs.getInt(1),s"Expected 4 but found ${rs.getInt(1)}")
-        case 5 => assert(1 == rs.getInt(1),s"Expected 1 but found ${rs.getInt(1)}")
+        case 2 => assert(7 == rs.getInt(1), s"Expected 7 but found ${rs.getInt(1)}")
+        case 3 => assert(5 == rs.getInt(1), s"Expected 5 but found ${rs.getInt(1)}")
+        case 4 => assert(4 == rs.getInt(1), s"Expected 4 but found ${rs.getInt(1)}")
+        case 5 => assert(1 == rs.getInt(1), s"Expected 1 but found ${rs.getInt(1)}")
       }
     }
     assert(cnt == 5)
@@ -261,7 +256,7 @@ class QueryRoutingDUnitTest(val s: String)
     // Unit test for DSID function
     val membersList = mutable.MutableList[String]()
     val members: java.util.Set[DistributedMember] = GemFireXDUtils.
-      getGfxdAdvisor.adviseDataStores(null);
+        getGfxdAdvisor.adviseDataStores(null)
     import scala.collection.JavaConverters._
     members.asScala.foreach(m => {
       membersList += m.getId
@@ -314,7 +309,7 @@ class QueryRoutingDUnitTest(val s: String)
   def testSnap1296_1297(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
-    createTableAndInsertData
+    createTableAndInsertData()
 
     val conn = getANetConnection(netPort1)
     val ps = conn.prepareStatement("select * from TEST.ColumnTableQR")
@@ -322,19 +317,19 @@ class QueryRoutingDUnitTest(val s: String)
     val md = rs.getMetaData
 
     assert(md.getColumnCount == 3, "column count is = " + md.getColumnCount)
-    assert(md.getColumnName(1).equals("COL1"))
-    assert(md.getColumnName(2).equals("COL2"))
-    assert(md.getColumnName(3).equals("COL3"))
-    assert(md.getTableName(1).equals("COLUMNTABLEQR"))
-    assert(md.getTableName(2).equals("COLUMNTABLEQR"))
-    assert(md.getTableName(3).equals("COLUMNTABLEQR"))
+    assert(md.getColumnName(1).equalsIgnoreCase("COL1"))
+    assert(md.getColumnName(2).equalsIgnoreCase("COL2"))
+    assert(md.getColumnName(3).equalsIgnoreCase("COL3"))
+    assert(md.getTableName(1).equalsIgnoreCase("COLUMNTABLEQR"))
+    assert(md.getTableName(2).equalsIgnoreCase("COLUMNTABLEQR"))
+    assert(md.getTableName(3).equalsIgnoreCase("COLUMNTABLEQR"))
 
     var cnt = 0
     while (rs.next()) {
       val col1 = rs.getString(1)
       val col2 = rs.getString(2)
       val col3 = rs.getString(3)
-      println(s"col1 = $col1, col2 = $col2, col3 = $col3")
+      logInfo(s"col1 = $col1, col2 = $col2, col3 = $col3")
       cnt += 1
     }
     assert(cnt == 5)
@@ -346,19 +341,19 @@ class QueryRoutingDUnitTest(val s: String)
     val rs2 = ps2.getResultSet
     val md2 = rs2.getMetaData
     assert(md2.getColumnCount == 3)
-    assert(md2.getColumnName(1).equals("COL1"))
-    assert(md2.getColumnName(2).equals("COL2"))
-    assert(md2.getColumnName(3).equals("COL3"))
-    assert(md2.getTableName(1).equals("COLUMNTABLEQR"))
-    assert(md2.getTableName(2).equals("COLUMNTABLEQR"))
-    assert(md2.getTableName(3).equals("COLUMNTABLEQR"))
+    assert(md2.getColumnName(1).equalsIgnoreCase("COL1"))
+    assert(md2.getColumnName(2).equalsIgnoreCase("COL2"))
+    assert(md2.getColumnName(3).equalsIgnoreCase("COL3"))
+    assert(md2.getTableName(1).equalsIgnoreCase("COLUMNTABLEQR"))
+    assert(md2.getTableName(2).equalsIgnoreCase("COLUMNTABLEQR"))
+    assert(md2.getTableName(3).equalsIgnoreCase("COLUMNTABLEQR"))
 
     var cnt2 = 0
     while (rs2.next()) {
       val col1 = rs2.getInt(1)
       val col2 = rs2.getString(2)
       val col3 = rs2.getString(3)
-      println(s"col1 = $col1, col2 = $col2, col3 = $col3")
+      logInfo(s"col1 = $col1, col2 = $col2, col3 = $col3")
       assert(col1 == 1)
       cnt2 += 1
     }
@@ -407,7 +402,7 @@ class QueryRoutingDUnitTest(val s: String)
     logInfo("metadata colCount=" + md.getColumnCount + " colName=" +
         md.getColumnName(1) + " tableName=" + md.getTableName(1))
     assert(md.getColumnCount == 1)
-    assert(md.getColumnName(1) == "count(UNIQUECARRIER)",
+    assert(md.getColumnName(1).equalsIgnoreCase("count(UNIQUECARRIER)"),
       "columnName=" + md.getColumnName(1))
 
     // check successful run with larger number (>8) of columns (SNAP-607)
@@ -478,7 +473,7 @@ class QueryRoutingDUnitTest(val s: String)
       var tableType = rs.getString("tabletype")
       assert("C".equals(tableType))
       var schemaname = rs.getString("tableschemaname")
-      assert("APP".equals(schemaname))
+      assert("APP".equalsIgnoreCase(schemaname))
 
       // just check few metadata for internal column table absence
       checkDBAPIsForNonInclusionOfInternalColTable(conn)
@@ -489,7 +484,7 @@ class QueryRoutingDUnitTest(val s: String)
       tableType = rs.getString("tabletype")
       assert("T".equals(tableType))
       schemaname = rs.getString("tableschemaname")
-      assert("APP".equals(schemaname))
+      assert("APP".equalsIgnoreCase(schemaname))
 
       val dbmd = conn.getMetaData
       val rSet = dbmd.getTables(null, "APP", null,
@@ -540,9 +535,9 @@ class QueryRoutingDUnitTest(val s: String)
         results += columnsMd.getString(4)
       }
       assert(results.size == 3, s"Got columns = ${results.size} but expected 3")
-      assert(results.contains("COL1"), s"columns = $results")
-      assert(results.contains("COL2"))
-      assert(results.contains("COL3"))
+      assert(results.contains("col1"), s"columns = $results")
+      assert(results.contains("col2"))
+      assert(results.contains("col3"))
       results.clear()
 
       s.execute(s"DROP TABLE APP_PARQUET.$parquetTable")
@@ -779,7 +774,7 @@ class QueryRoutingDUnitTest(val s: String)
         (tableName, snc.table(tableName).count())
       }.toMap
 
-      tableSizes.foreach(println)
+      tableSizes.foreach(s => logInfo(s.toString()))
 
       val i = new IndexTest
       i.runBenchmark("select o_orderkey from orders where o_orderkey = 1", tableSizes, 2)
@@ -797,7 +792,7 @@ class QueryRoutingDUnitTest(val s: String)
   def testLimitStatementRouting(): Unit = {
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
-    println(s"network server started at $serverHostPort")
+    logInfo(s"network server started at $serverHostPort")
 
     val tableName = "order_line_col"
     val snc = SnappyContext(sc)
@@ -915,7 +910,7 @@ class QueryRoutingDUnitTest(val s: String)
         }
       })
       stmt.executeBatch()
-      println(s"committed $numRows rows")
+      logInfo(s"committed $numRows rows")
     } finally {
       stmt.close()
       conn.close()
@@ -981,7 +976,7 @@ class QueryRoutingDUnitTest(val s: String)
     }
 
     if (assertionFailed) {
-      println(builder.toString())
+      logInfo(builder.toString())
     }
 
     assert(!assertionFailed)
@@ -991,7 +986,7 @@ class QueryRoutingDUnitTest(val s: String)
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
 
-    println(s"Connected to $serverHostPort")
+    logInfo(s"Connected to $serverHostPort")
 
     val stmt1 = conn.createStatement()
     val stmt2 = conn.createStatement()
@@ -1012,7 +1007,7 @@ class QueryRoutingDUnitTest(val s: String)
           s" and ol_str_id LIKE '%0' " +
           s""
       val rs2 = stmt2.executeQuery(qry2)
-      verifyQuery("query", rs1 , rs2)
+      verifyQuery("query", rs1, rs2)
       rs1.close()
       rs2.close()
 
@@ -1029,7 +1024,7 @@ class QueryRoutingDUnitTest(val s: String)
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
     val conn = DriverManager.getConnection("jdbc:snappydata://localhost:" + serverHostPort)
-    println(s"Connected to $serverHostPort")
+    logInfo(s"Connected to $serverHostPort")
 
     val stmt = conn.createStatement();
     try {
@@ -1054,4 +1049,258 @@ class QueryRoutingDUnitTest(val s: String)
     }
   }
 
+  def testSNAP2707withPreparedStatement(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+    val snc = SnappyContext(sc)
+    stmt.execute("drop table if exists t1")
+    stmt.execute("create table t1(id integer, str string) using column options" +
+        "(key_columns 'id', COLUMN_MAX_DELTA_ROWS '7', BUCKETS '2')")
+    var ps: PreparedStatement = null
+    for (i <- 1 to 10) {
+      snc.sql("insert into t1 values(" + i + ",'str" + i + "')")
+    }
+
+    var rscnt = stmt.executeQuery("select count(*) from t1")
+    rscnt.next()
+    assertEquals(10, rscnt.getInt(1))
+
+    val rs = stmt.executeQuery("select * from t1 order by id")
+    var i = 1
+    while (rs.next()) {
+      assertEquals(i, rs.getInt(1))
+      assertEquals("str" + i, rs.getString(2))
+      i = i + 1
+    }
+
+    val query2 = "put into t1 values(?,?)"
+    ps = conn.prepareStatement(query2)
+    for (i <- 1 to 20) {
+      ps.setInt(1, i)
+      ps.setString(2, "str_" + i)
+      ps.executeUpdate()
+    }
+    var rscnt2 = stmt.executeQuery("select count(*) from t1")
+    rscnt2.next()
+    assertEquals(20, rscnt2.getInt(1))
+
+    val rs2 = stmt.executeQuery("select * from t1 order by id")
+    var i2 = 0
+    while (rs.next()) {
+      assertEquals(i2, rs2.getInt(1))
+      assertEquals("str_" + i2, rs2.getString(2))
+      i2 = i2 + 1
+    }
+
+    val query1 = "put into t1 values(?,?)"
+    ps = conn.prepareStatement(query1)
+    for (i <- 1 to 30) {
+      ps.setInt(1, i)
+      ps.setString(2, "strings_" + i)
+      ps.addBatch()
+      if (i % 10 == 0) {
+        ps.executeBatch()
+      }
+    }
+    ps.executeBatch()
+
+    var rscnt1 = stmt.executeQuery("select count(*) from t1")
+    rscnt1.next()
+    assertEquals(30, rscnt1.getInt(1))
+
+    val rs1 = stmt.executeQuery("select * from t1 order by id")
+    var i1 = 1
+    while (rs1.next()) {
+      assertEquals(i1, rs1.getInt(1))
+      assertEquals("strings_" + i1, rs1.getString(2))
+      i1 = i1 + 1
+    }
+
+    val query3 = "put into t1(id,str) values(?,?)"
+    ps = conn.prepareStatement(query3)
+    for (i <- 11 to 20) {
+      ps.setInt(1, i)
+      ps.setString(2, "str123_" + i)
+      ps.addBatch()
+      if (i % 10 == 0) {
+        ps.executeBatch()
+      }
+    }
+    ps.executeBatch()
+
+    var rscnt3 = stmt.executeQuery("select count(*) from t1")
+    rscnt3.next()
+    assertEquals(30, rscnt3.getInt(1))
+
+    val rs3 = stmt.executeQuery("select * from t1 where id >= 11 and id <= 20 order by id")
+    var i3 = 11
+    while (rs3.next()) {
+      assertEquals(i3, rs3.getInt(1))
+      assertEquals("str123_" + i3, rs3.getString(2))
+      i3 = i3 + 1
+    }
+
+    val query4 = "put into t1(id) values(?)"
+    ps = conn.prepareStatement(query4)
+    for (i <- 31 to 40) {
+      ps.setInt(1, i)
+      ps.addBatch()
+      if (i % 10 == 0) {
+        ps.executeBatch()
+      }
+    }
+    ps.executeBatch()
+
+    var rscnt4 = stmt.executeQuery("select count(*) from t1")
+    rscnt4.next()
+    assertEquals(40, rscnt4.getInt(1))
+
+    val rs4 = stmt.executeQuery("select * from t1 where id >= 31 and id <= 40 order by id")
+    var i4 = 31
+    while (rs4.next()) {
+      assertEquals(i4, rs4.getInt(1))
+      assertEquals(null, rs4.getString(2))
+      i4 = i4 + 1
+    }
+  }
+
+  def testSNAP3038withPreparedStatement(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+    val snc = SnappyContext(sc)
+    stmt.execute("drop schema if exists std1")
+    stmt.execute("create schema std1")
+    stmt.execute("drop table if exists std1.t1")
+    stmt.execute("create table std1.t1(id integer, str string) using column options" +
+        "(key_columns 'id', COLUMN_MAX_DELTA_ROWS '7', BUCKETS '2')")
+    var ps: PreparedStatement = null
+    for (i <- 1 to 10) {
+      snc.sql("insert into std1.t1 values(" + i + ",'str" + i + "')")
+    }
+
+    var rscnt = stmt.executeQuery("select count(*) from std1.t1")
+    rscnt.next()
+    assertEquals(10, rscnt.getInt(1))
+
+    val rs = stmt.executeQuery("select * from std1.t1 order by id")
+    var i = 1
+    while (rs.next()) {
+      assertEquals(i, rs.getInt(1))
+      assertEquals("str" + i, rs.getString(2))
+      i = i + 1
+    }
+
+    val query2 = "put into std1.t1 values(?,?)"
+    ps = conn.prepareStatement(query2)
+    for (i <- 1 to 20) {
+      ps.setInt(1, i)
+      ps.setString(2, "str_" + i)
+      ps.executeUpdate()
+    }
+    var rscnt2 = stmt.executeQuery("select count(*) from std1.t1")
+    rscnt2.next()
+    assertEquals(20, rscnt2.getInt(1))
+
+    val rs2 = stmt.executeQuery("select * from std1.t1 order by id")
+    var i2 = 0
+    while (rs.next()) {
+      assertEquals(i2, rs2.getInt(1))
+      assertEquals("str_" + i2, rs2.getString(2))
+      i2 = i2 + 1
+    }
+
+    val query1 = "put into std1.t1 values(?,?)"
+    ps = conn.prepareStatement(query1)
+    for (i <- 1 to 30) {
+      ps.setInt(1, i)
+      ps.setString(2, "strings_" + i)
+      ps.addBatch()
+      if (i % 10 == 0) {
+        ps.executeBatch()
+      }
+    }
+    ps.executeBatch()
+
+    var rscnt1 = stmt.executeQuery("select count(*) from std1.t1")
+    rscnt1.next()
+    assertEquals(30, rscnt1.getInt(1))
+
+    val rs1 = stmt.executeQuery("select * from std1.t1 order by id")
+    var i1 = 1
+    while (rs1.next()) {
+      assertEquals(i1, rs1.getInt(1))
+      assertEquals("strings_" + i1, rs1.getString(2))
+      i1 = i1 + 1
+    }
+
+    val query3 = "put into std1.t1(id,str) values(?,?)"
+    ps = conn.prepareStatement(query3)
+    for (i <- 11 to 20) {
+      ps.setInt(1, i)
+      ps.setString(2, "str123_" + i)
+      ps.addBatch()
+      if (i % 10 == 0) {
+        ps.executeBatch()
+      }
+    }
+    ps.executeBatch()
+
+    var rscnt3 = stmt.executeQuery("select count(*) from std1.t1")
+    rscnt3.next()
+    assertEquals(30, rscnt3.getInt(1))
+
+    val rs3 = stmt.executeQuery("select * from std1.t1 where id >= 11 and id <= 20 order by id")
+    var i3 = 11
+    while (rs3.next()) {
+      assertEquals(i3, rs3.getInt(1))
+      assertEquals("str123_" + i3, rs3.getString(2))
+      i3 = i3 + 1
+    }
+
+    val query4 = "put into std1.t1(id) values(?)"
+    ps = conn.prepareStatement(query4)
+    for (i <- 31 to 40) {
+      ps.setInt(1, i)
+      ps.addBatch()
+      if (i % 10 == 0) {
+        ps.executeBatch()
+      }
+    }
+    ps.executeBatch()
+
+    var rscnt4 = stmt.executeQuery("select count(*) from std1.t1")
+    rscnt4.next()
+    assertEquals(40, rscnt4.getInt(1))
+
+    val rs4 = stmt.executeQuery("select * from std1.t1 where id >= 31 and id <= 40 order by id")
+    var i4 = 31
+    while (rs4.next()) {
+      assertEquals(i4, rs4.getInt(1))
+      assertEquals(null, rs4.getString(2))
+      i4 = i4 + 1
+    }
+  }
+
+  def testSchemaAndTableNames: Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+
+    stmt.executeUpdate("create database db1")
+
+    stmt.executeUpdate("create table db1.t1 (c1 integer, c2 integer)")
+
+    val rs = stmt.executeQuery("select * from db1.t1")
+    assert(rs.getMetaData.getSchemaName(1).equalsIgnoreCase(""),
+      s"expected '' but received ${rs.getMetaData.getSchemaName(1)}")
+    assert(rs.getMetaData.getTableName(1).equalsIgnoreCase("t1"),
+      s"expected 't1' but received ${rs.getMetaData.getTableName(1)}")
+    assert(rs.getMetaData.getColumnCount.equals(2))
+    rs.close()
+  }
 }

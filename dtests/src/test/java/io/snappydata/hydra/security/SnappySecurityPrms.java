@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -99,12 +99,12 @@ public class SnappySecurityPrms extends SnappyPrms{
 
   public static int getExpectedExcptCnt() {
     Long key = expectedExcptCnt;
-    return tasktab().intAt(key, tab().intAt(key, 1));
+    return tasktab().intAt(key, tab().intAt(key, 0));
   }
 
   public static int getUnExpectedExcptCnt() {
     Long key = unExpectedExcptCnt;
-    return tasktab().intAt(key, tab().intAt(key, 1));
+    return tasktab().intAt(key, tab().intAt(key, 0));
   }
 
   public static Vector getUserName() {

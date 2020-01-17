@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,15 +19,9 @@
 
 package org.apache.spark.ui
 
-import java.text.SimpleDateFormat
-import java.util.Date
 import javax.servlet.http.HttpServletRequest
 
-import scala.collection.mutable
 import scala.xml.Node
-
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyRegionStats}
-import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.internal.Logging
 
@@ -85,8 +79,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                               UIUtils.prependBaseUri("/static/snappydata/snappy-dashboard.js")
                             }></script>
 
-    val pageContent = jsScripts ++ pageTitleNode ++ clusterStatsDetails ++ membersStatsDetails ++
-                      tablesStatsDetails ++ extTablesStatsDetails
+    val pageContent = jsScripts ++ pageTitleNode ++ clusterStatsDetails ++
+                      membersStatsDetails ++ tablesStatsDetails ++ extTablesStatsDetails
 
     UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500),
       useDataTables = true, isSnappyPage = true)
@@ -119,7 +113,19 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         </h3>
       </div>
     </div>
-    <div id="CPUCoresContainer" style="position: absolute; width: 100%;">
+    <div id="dateContainer">
+      <div id="clusterDateDetails">
+        <div style="float: left;">
+          <div class="startedonlabel">Started On:</div>
+          <div id="clusterStartDate"></div>
+        </div>
+        <div style="float: right;">
+          <div class="uptimelabel">Uptime:</div>
+          <div id="clusterUptime"></div>
+        </div>
+      </div>
+    </div>
+    <div id="CPUCoresContainer">
       <div id="CPUCoresDetails">
         <div id="TotalCoresHolder">
           <span style="padding-left: 5px;"> Total CPU Cores: </span>
@@ -306,6 +312,22 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.tableStatsColumn("bucketCount")}
               </span>
             </th>
+            <th class="table-th-col-heading" style="width: 100px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={
+                    SnappyDashboardPage.tableStatsColumn("redundancyTooltip")
+                    }>
+                {SnappyDashboardPage.tableStatsColumn("redundancy")}
+              </span>
+            </th>
+            <th class="table-th-col-heading" style="width: 100px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={
+                    SnappyDashboardPage.tableStatsColumn("redundancyStatusTooltip")
+                    }>
+                {SnappyDashboardPage.tableStatsColumn("redundancyStatus")}
+              </span>
+            </th>
           </tr>
         </thead>
       </table>
@@ -351,7 +373,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 }
 
 object SnappyDashboardPage {
-  val pageHeaderText = "SnappyData Dashboard"
+  val pageHeaderText = "Dashboard"
 
   object Status {
     val normal = "Normal"
@@ -363,7 +385,7 @@ object SnappyDashboardPage {
   val ValueNotApplicable = "N/A"
 
   val clusterStatsTitle = "Cluster"
-  val clusterStatsTitleTooltip = "SnappyData Clusters Summary"
+  val clusterStatsTitleTooltip = "Clusters Summary"
   val clusterStats = scala.collection.mutable.HashMap.empty[String, Any]
   clusterStats += ("status" -> "Cluster Status")
   clusterStats += ("members" -> "Members")
@@ -384,7 +406,7 @@ object SnappyDashboardPage {
   clusterStats += ("jvmHeapUsageTooltip" -> "Clusters Total JVM Heap Usage")
 
   val membersStatsTitle = "Members"
-  val membersStatsTitleTooltip = "SnappyData Members Summary"
+  val membersStatsTitleTooltip = "Members Summary"
   val memberStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
   memberStatsColumn += ("expandCollapseTooltip" -> "Expand/Collapse All Rows")
   memberStatsColumn += ("status" -> "Status")
@@ -433,7 +455,7 @@ object SnappyDashboardPage {
   memberStatsColumn += ("jvmHeapMemoryTooltip" -> "Members used and total JVM Heap")
 
   val tablesStatsTitle = "Tables"
-  val tablesStatsTitleTooltip = "SnappyData Tables Summary"
+  val tablesStatsTitleTooltip = "Tables Summary"
   val tableStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
   tableStatsColumn += ("id" -> "Id")
   tableStatsColumn += ("idTooltip" -> "Tables unique Identifier")
@@ -454,10 +476,15 @@ object SnappyDashboardPage {
   tableStatsColumn += ("totalSizeTooltip" ->
       "Tables Total Size (In Memory size + Overflown To Disk Size)")
   tableStatsColumn += ("bucketCount" -> "Buckets")
-  tableStatsColumn += ("bucketCountTooltip" -> "Number of Buckets in Table")
+  tableStatsColumn += ("bucketCountTooltip" ->
+      "Number of Buckets in Table. Red number indicates some buckets are offline.")
+  tableStatsColumn += ("redundancy" -> "Redundancy")
+  tableStatsColumn += ("redundancyTooltip" -> "Number of redundant copies")
+  tableStatsColumn += ("redundancyStatus" -> "Redundancy Status")
+  tableStatsColumn += ("redundancyStatusTooltip" -> "Is redundancy satisfied or broken")
 
   val extTablesStatsTitle = "External Tables"
-  val extTablesStatsTitleTooltip = "SnappyData ExternalTables Summary"
+  val extTablesStatsTitleTooltip = "External Tables Summary"
   val extTableStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
   extTableStatsColumn += ("id" -> "Id")
   extTableStatsColumn += ("idTooltip" -> "External Tables unique Identifier")

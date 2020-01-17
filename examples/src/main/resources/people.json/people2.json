@@ -1,0 +1,3 @@
+{"name":"Adam", "age":21, "address":{"city":"Columbus","state":"Ohio"}}
+{"name":"John", "age":44, "address":{"city":"San Diego", "state":"California"}}
+{"name":"Carol", "age":37, "address":{"city":"San Diego", "state":"California"}}

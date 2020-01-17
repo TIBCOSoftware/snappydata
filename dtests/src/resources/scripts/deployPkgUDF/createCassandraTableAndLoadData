@@ -1,0 +1,14 @@
+DROP KEYSPACE if exists test;
+CREATE KEYSPACE test WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 3};
+use test;
+CREATE TABLE customer(customer_id int PRIMARY KEY, customer_name text, customer_city text, customer_phone varint);
+insert into customer(customer_id,customer_name,customer_city,customer_phone) values(1,'aa','pune',123226789);
+insert into customer(customer_id,customer_name,customer_city,customer_phone) values(2,'bb','nagpure',123356789);
+insert into customer(customer_id,customer_name,customer_city,customer_phone) values(3,'cc','mumbai',124456789);
+insert into customer(customer_id,customer_name,customer_city,customer_phone) values(4,'cc','pune',125556789);
+insert into customer(customer_id,customer_name,customer_city,customer_phone) values(5,'cc','mumbai',126656789);
+insert into customer(customer_id,customer_name,customer_city,customer_phone) values(6,'cc','kerela',127756789);
+insert into customer(customer_id,customer_name,customer_city,customer_phone) values(7,'cc','pune',128856789);
+insert into customer(customer_id,customer_name,customer_city,customer_phone) values(8,'cc','nashik',129956789);
+insert into customer(customer_id,customer_name,customer_city,customer_phone) values(9,'cc','pune',121156789);
+insert into customer(customer_id,customer_name,customer_city,customer_phone) values(10,'cc','pune',120056789);

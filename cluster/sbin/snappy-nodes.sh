@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -201,8 +201,8 @@ function execute() {
 
     # set the default client-bind-address and locator's peer-discovery-address
     if [ -z "${clientBindAddress}" -a "${componentType}" != "lead" ]; then
-      args="${args} -client-bind-address=${host}"
-      clientBindAddress="${host}"
+      preCommand="${preCommand}export IMPLICIT_CLIENT_BIND_ADDRESS=$host; "
+      export IMPLICIT_CLIENT_BIND_ADDRESS="${host}"
     fi
     if [ -z "$(echo $args $"${@// /\\ }" | grep 'peer-discovery-address=')" -a "${componentType}" = "locator" ]; then
       args="${args} -peer-discovery-address=${host}"
@@ -243,7 +243,11 @@ function execute() {
       -*) postArgs="$postArgs $arg"
     esac
   done
-  if [ "$host" != "localhost" ]; then
+  THIS_HOST_IP=
+  if [ "$(echo `uname -s`)" == "Linux" ]; then
+    THIS_HOST_IP="$(echo `hostname -I` | grep "$host")"
+  fi
+  if [ "$host" != "localhost" -a -z "$THIS_HOST_IP" ]; then
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
       (ssh $SPARK_SSH_OPTS "$host" \
@@ -276,6 +280,7 @@ function execute() {
     fi
   fi
 
+  childPids[$LAST_PID]="$host"
   df=${dirfolder}
   if [ -z "${df}" ]; then
     df=$(echo ${dirparam} | cut -d'=' -f2)
@@ -293,6 +298,8 @@ index=1
 isServerStart=
 declare -a leadHosts
 declare -a leadCounts
+declare -a childPids
+
 if [ "$componentType" = "server" -a -n "$(echo $"${@// /\\ }" | grep -w start)" ]; then
   isServerStart=1
 fi
@@ -410,4 +417,18 @@ else
   fi
   execute "$@"
 fi
-wait
+
+if [ "$isServerStart" ]; then
+  # server status file
+  SERVERS_STATUS_FILE="$SNAPPY_HOME/work/members-status.txt"
+  if [ -f $SERVERS_STATUS_FILE ]; then
+    rm $SERVERS_STATUS_FILE
+  fi
+  touch $SERVERS_STATUS_FILE
+  for pid in "${!childPids[@]}"; do
+    wait $pid
+    echo "$? ${childPids[${pid}]}" >> $SERVERS_STATUS_FILE
+  done
+else
+  wait
+fi

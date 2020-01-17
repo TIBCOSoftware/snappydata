@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,6 +21,7 @@ import java.nio.file.{Files, Paths}
 import java.sql.{Connection, SQLException, Statement}
 import java.util.Properties
 
+import scala.collection.mutable
 import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process._
 
@@ -30,21 +31,22 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.Constant
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
-import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable, VM}
+import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
 
-import org.apache.spark.TestPackageUtils
+import org.apache.spark.{SparkContext, SparkUtilsAccess}
 import org.apache.spark.sql.types.{IntegerType, StructField}
-import org.apache.spark.sql.{Row, SnappyContext, SnappySession, TableNotFoundException}
+import org.apache.spark.sql._
 
 class SplitClusterDUnitSecurityTest(s: String)
     extends DistributedTestBase(s)
         with SplitClusterDUnitTestBase
-        with Serializable {
+        with Serializable
+        with SnappyJobTestSupport {
 
   private[this] var ldapProperties: Properties = new Properties()
-  private var restartLdap = false;
+  private var restartLdap = false
 
   private val embeddedColTab1 = "EMBEDDEDCOLTAB1"
   private val smartColTab1 = "SMARTCOLTAB1"
@@ -53,7 +55,7 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   private[this] val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
-  bootProps.setProperty("log-level", "config")
+  bootProps.setProperty("log-level", "info")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
   bootProps.setProperty("spark.executor.cores", TestUtils.defaultCores.toString)
   System.setProperty(Constant.COMPRESSION_MIN_SIZE, compressionMinSize)
@@ -74,6 +76,11 @@ class SplitClusterDUnitSecurityTest(s: String)
   val jdbcUser2 = "gemfire2"
   val jdbcUser3 = "gemfire3"
   val jdbcUser4 = "gemfire4"
+  val jdbcUser5 = "gemfire5"
+  val jdbcUser6 = "gemfire6"
+  val jdbcUser7 = "gemfire7"
+  val jdbcUser8 = "gemfire8"
+  val jdbcUser9 = "gemfire9"
   val adminUser1 = "gemfire10"
 
   val group1 = "gemGroup1"
@@ -115,10 +122,9 @@ class SplitClusterDUnitSecurityTest(s: String)
   def startArgs: Array[AnyRef] = Array(
     SplitClusterDUnitSecurityTest.locatorPort, bootProps).asInstanceOf[Array[AnyRef]]
 
-  private val snappyProductDir =
-    testObject.getEnvironmentVariable("SNAPPY_HOME")
+  override val snappyProductDir = testObject.getEnvironmentVariable("SNAPPY_HOME")
 
-  private val jobConfigFile = s"$snappyProductDir/conf/job.config"
+  override val jobConfigFile = s"$snappyProductDir/conf/job.config"
 
   override protected val sparkProductDir: String =
     testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
@@ -148,11 +154,12 @@ class SplitClusterDUnitSecurityTest(s: String)
     val compressionArg = this.compressionArg
     val waitForInit = "-jobserver.waitForInitialization=true"
     val ldapConf = getLdapConf
+    val syspropExtTableAuthz = "-DCHECK_EXTERNAL_TABLE_AUTHZ=true"
     writeToFile(
       s"localhost  -peer-discovery-port=$port -client-port=$netPort $compressionArg $ldapConf",
       s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port] $waitForInit $compressionArg $ldapConf",
-      s"$confDir/leads")
+    writeToFile(s"localhost  -locators=localhost[$port] $waitForInit $compressionArg $ldapConf" +
+      s" $syspropExtTableAuthz", s"$confDir/leads")
     writeToFile(
       s"""localhost  -locators=localhost[$port] -client-port=$netPort1 $compressionArg $ldapConf
           |localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg $ldapConf
@@ -196,6 +203,8 @@ class SplitClusterDUnitSecurityTest(s: String)
       ldapServer.stopService()
     }
   }
+
+  override def testConcurrentOpsOnColumnTables(): Unit = {}
 
   override def testColumnTableCreation(): Unit = {}
 
@@ -390,7 +399,10 @@ class SplitClusterDUnitSecurityTest(s: String)
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, u)
     props.setProperty(Attribute.PASSWORD_ATTR, u)
-    if (setSNC) snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    if (setSNC) {
+      if (snc != null) snc.sparkContext.stop()
+      snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    }
     SplitClusterDUnitTest.getConnection(locatorClientPort, props)
   }
 
@@ -423,11 +435,142 @@ class SplitClusterDUnitSecurityTest(s: String)
   }
 
   def executeSQL(stmt: Statement, s: String): Unit = {
+    logInfo("Executing SQL: " + s)
     stmt.execute(s)
     val rs = stmt.getResultSet
     if (rs ne null) {
       while (rs.next()) {}
       rs.close()
+    }
+  }
+
+  private def doSimpleStuffOnExtTable(user: String,
+      fqtn: String, session: SnappySession, expectException: Boolean = false): Unit = {
+    val sql = s"select count(*) from $fqtn"
+
+    // Verify in smart connector mode
+    try {
+      session.sql(sql)
+      if (expectException) assert(false, "Expected an exception but none found!")
+    } catch {
+      case ae: AnalysisException => {
+        if (expectException) {
+          // SQLState should be
+          assert(ae.getMessage.contains(s"$user  not authorized to access"),
+            s"Actual message: ${ae.getMessage}")
+        } else {
+          assert(false, s"Did not expect exception on table $fqtn: ${ae.getMessage()}")
+        }
+      }
+    } finally {
+      session.clear()
+      session.close()
+    }
+
+    // Verify in embedded mode
+    val conn = getConn(user, false)
+    try {
+      conn.createStatement().execute(sql)
+      assert (!expectException, "Expected an exception but none found!")
+    } catch {
+      case sqle: SQLException => {
+        if (expectException) {
+          // SQLState should be
+          val names = fqtn.split("\\.")
+          assert(sqle.getMessage.contains(s"User '$user' does not have external table " +
+              s"permission on  '${names(0)}'.'${names(1)}'"), s"Actual message: ${sqle.getMessage}")
+        } else {
+          assert(false, s"Did not expect exception on table $fqtn: ${sqle.getMessage}")
+        }
+      }
+    } finally {
+      conn.close()
+    }
+  }
+
+  def testExtTableGrantRevoke(): Unit = {
+    System.setProperty("CHECK_EXTERNAL_TABLE_AUTHZ", "true")
+    try {
+      val t1 = "t1_ext"
+      if (adminConn == null) adminConn = getConn(adminUser1, true)
+      doTest(adminConn.createStatement(), t1, s"$adminUser1.$t1", adminUser1)
+      val jdbc5Conn = getConn(jdbcUser5)
+      try {
+        doTest(jdbc5Conn.createStatement(), t1, s"$jdbcUser5.$t1", jdbcUser5)
+      } finally {
+        jdbc5Conn.close()
+      }
+    } finally {
+      System.setProperty("CHECK_EXTERNAL_TABLE_AUTHZ", "false")
+    }
+  }
+
+  private def doTest(st: Statement, t1: String, fqtn: String, schemaOwner: String): Unit = {
+    st.execute(s"create external table $t1 using csv options(path " +
+      s"'${getClass.getResource("/northwind/orders.csv").getPath}', header 'true', " +
+      s"inferschema 'true', maxCharsPerColumn '4096')")
+    val group3 = Seq(jdbcUser6, jdbcUser7, jdbcUser8)
+    val group6 = Seq(jdbcUser1, jdbcUser2, jdbcUser3, jdbcUser6, jdbcUser9)
+
+    def ss(u: String): SnappySession = {
+      snc.snappySession.conf.set(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, u)
+      snc.snappySession.conf.set(Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR, u)
+      snc.snappySession
+    }
+
+    doSimpleStuffOnExtTable(adminUser1, fqtn, ss(adminUser1))
+    if (!schemaOwner.equals(adminUser1)) { // schema owner is different from admin
+      doSimpleStuffOnExtTable(schemaOwner, fqtn, ss(schemaOwner))
+    }
+    doSimpleStuffOnExtTable(jdbcUser3, fqtn, ss(jdbcUser3), true)
+    st.execute(s"grant all on $t1 to $jdbcUser3")
+    doSimpleStuffOnExtTable(jdbcUser3, fqtn, ss(jdbcUser3))
+    st.execute(s"revoke all on $t1 from $jdbcUser3")
+    doSimpleStuffOnExtTable(jdbcUser3, fqtn, ss(jdbcUser3), true)
+
+    // Grant all to gemGroup3 (gemfire6,7,8) and gemGroup6 (gemfire1,2,3,6,9)
+    // Before grant, expect exception
+    (group3 ++ group6).foreach(u => doSimpleStuffOnExtTable(u, fqtn, ss(u), true))
+
+    st.execute(s"grant all on $fqtn to LDAPGROUP:gemGroup3,ldapgroup:gemGroup6")
+    (group3 ++ group6).foreach(u => doSimpleStuffOnExtTable(u, fqtn, ss(u)))
+
+    // Now revoke all from group3 and expect exception
+    st.execute(s"revoke all on $t1 from $jdbcUser3,ldapgroup:gemGroup3")
+    Seq(jdbcUser7, jdbcUser8).foreach(u => doSimpleStuffOnExtTable(u, fqtn,
+      ss(u), true))
+    // gemGroup6 still has grants
+    group6.foreach(u => doSimpleStuffOnExtTable(u, fqtn, ss(u)))
+
+    st.execute(s"revoke all on $t1 from ldapGroup:gemGroup6")
+    group6.foreach(u => doSimpleStuffOnExtTable(u, fqtn, ss(u), true))
+
+    // Only admin and schema owner should have permissions
+    doSimpleStuffOnExtTable(adminUser1, fqtn, ss(adminUser1))
+    if (!schemaOwner.equals(adminUser1)) {
+      doSimpleStuffOnExtTable(schemaOwner, fqtn, ss(schemaOwner))
+
+      // Verify permissions are retained even after the cluster is restarted.
+      st.execute(s"grant all on $fqtn to LDAPGROUP:gemGroup3")
+      restartCluster()
+      getConn(jdbcUser1, true).close() // Just initialize snc.
+      group3.foreach(u => doSimpleStuffOnExtTable(u, fqtn, ss(u)))
+      doSimpleStuffOnExtTable(jdbcUser9, fqtn, ss(jdbcUser9), true)
+
+      // Verify admin can grant permissions on external tables of other users.
+      val aConn = getConn(adminUser1, false)
+      try {
+        val aSt = aConn.createStatement()
+        aSt.execute(s"grant all on $fqtn to gemfire9")
+        doSimpleStuffOnExtTable(jdbcUser9, fqtn, ss(jdbcUser9))
+        aSt.execute(s"revoke all on $fqtn from gemfire9")
+        doSimpleStuffOnExtTable(jdbcUser9, fqtn, ss(jdbcUser9), true)
+      } finally {
+        aConn.close()
+      }
+    } else {
+      // This is admin connection. Test REFRESH_LDAP_GROUP works fine (SNAP-3281)
+      st.execute("call SYS.REFRESH_LDAP_GROUP('gemGroup1')")
     }
   }
 
@@ -446,7 +589,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     var user2Stmt = user2Conn.createStatement()
 
     adminConn = getConn(adminUser1)
-    var adminStmt = adminConn.createStatement()
+    val adminStmt = adminConn.createStatement()
 
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, user1Stmt,
       Map("COLUMN_BATCH_SIZE" -> "1k"))
@@ -460,6 +603,7 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     val sqls = List(s"select * from $jdbcUser1.$embeddedColTab1",
       s"select * from $jdbcUser1.$embeddedRowTab1",
+      s"select count(*) from $jdbcUser1.$embeddedColTab1",
       s"insert into $jdbcUser1.$embeddedColTab1 values (1, '$jdbcUser2', 1.1)",
       s"insert into $jdbcUser1.$embeddedRowTab1 values (1, '$jdbcUser2', 1.1)",
       s"update $jdbcUser1.$embeddedColTab1 set col1 = 0, col2 = '$value by $jdbcUser2' where " +
@@ -471,6 +615,11 @@ class SplitClusterDUnitSecurityTest(s: String)
     )
 
     sqls.foreach(s => assertFailure(() => {executeSQL(user2Stmt, s)}, s))
+    val snap1849 = s"select count(*) from $jdbcUser1.$embeddedRowTab1";
+    // Verify that it fails in embedded case
+    assertFailure(() => {executeSQL(user2Stmt, snap1849)}, snap1849)
+    // Verify that it fails in smart connector case - TODO Not yet fixed
+    // assertFailure(() => {snc.sql(s).collect()}, snap1849)
     sqls.foreach(s => assertFailure(() => {snc.sql(s).collect()}, s))
 
     def verifyGrantRevoke(op: String, sqls: List[String]): Unit = {
@@ -486,12 +635,12 @@ class SplitClusterDUnitSecurityTest(s: String)
       sqls.foreach(s => executeSQL(adminStmt, s))
     }
 
-    verifyGrantRevoke("select", List(sqls(0), sqls(1)))
-    verifyGrantRevoke("insert", List(sqls(2), sqls(3)))
+    verifyGrantRevoke("select", List(sqls(0), sqls(1), sqls(2)))
+    verifyGrantRevoke("insert", List(sqls(3), sqls(4)))
     // No update on column tables
-    verifyGrantRevoke("update", List(sqls(4), sqls(5)))
+    verifyGrantRevoke("update", List(sqls(5), sqls(6)))
     // No delete on column tables
-    verifyGrantRevoke("delete", List(sqls(6), sqls(7)))
+    verifyGrantRevoke("delete", List(sqls(7), sqls(8)))
 
     // SNAPPY_HIVE_METASTORE should not be modifiable by users.
     val sql = s"insert into ${Misc.SNAPPY_HIVE_METASTORE}.VERSION values (1212, 'NA', 'NA')"
@@ -508,17 +657,18 @@ class SplitClusterDUnitSecurityTest(s: String)
     user2Stmt = user2Conn.createStatement()
     assertFailure(() => {executeSQL(user2Stmt, sqls(0))}, sqls(0)) // select on embeddedColTab1
     assertFailure(() => {snc.sql(sqls(0)).collect()}, sqls(0)) // select on embeddedColTab1
-    executeSQL(user2Stmt, sqls(3)) // insert into embeddedRowTab1
-    snc.sql(sqls(3)).collect() // insert into embeddedRowTab1
-    assertFailure(() => {executeSQL(user2Stmt, sqls(7))}, sqls(7)) // delete on embeddedRowTab1
-    assertFailure(() => {snc.sql(sqls(6)).collect()}, sqls(6)) // delete on embeddedColTab1
+    executeSQL(user2Stmt, sqls(4)) // insert into embeddedRowTab1
+    snc.sql(sqls(4)).collect() // insert into embeddedRowTab1
+    assertFailure(() => {executeSQL(user2Stmt, sqls(8))}, sqls(8)) // delete on embeddedRowTab1
+    assertFailure(() => {snc.sql(sqls(7)).collect()}, sqls(7)) // delete on embeddedColTab1
   }
 
   def restartCluster(): Unit = {
-    user1Conn.close()
-    user2Conn.close()
+    if (user1Conn != null) user1Conn.close()
+    if (user2Conn != null) user2Conn.close()
     if (user4Conn != null) user4Conn.close()
     adminConn.close()
+    adminConn = null
     snc.sparkContext.stop()
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
@@ -674,7 +824,7 @@ class SplitClusterDUnitSecurityTest(s: String)
       s"select * from $schema.$t1",
       s"delete from $schema.$t1 where id = 10",
       s"select * from $schema.$t1",
-      s"create table $schema.$t1r (id int, name string) using column",
+      s"create table $schema.$t1r (id int, name string)",
       s"CREATE VIEW $schema.${t1}view AS SELECT id, name FROM $schema.$t1",
       s"CREATE TEMPORARY VIEW ${t1}viewtemp AS SELECT id, name FROM $schema.$t1",
       s"CREATE GLOBAL TEMPORARY VIEW ${t1}viewtempg AS SELECT id, name FROM $schema.$t1",
@@ -684,19 +834,37 @@ class SplitClusterDUnitSecurityTest(s: String)
           s"'../../quickstart/src/main/resources/customer.csv')")
         .foreach(executeSQL(user1Stmt, _))
 
+    // check that triggers are neither allowed to be attached to column tables
+    // or have column tables as target
+    try {
+      executeSQL(stmt, s"CREATE TRIGGER trig AFTER DELETE ON $schema.$t1 REFERENCING " +
+          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t1 WHERE id = OLD.id")
+      assert(assertion = false, "expected exception creating trigger on column table")
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "0A000" => // expected
+    }
+    try {
+      executeSQL(stmt, s"CREATE TRIGGER trig AFTER DELETE ON $schema.$t1r REFERENCING " +
+          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t1 WHERE id = OLD.id")
+      assert(assertion = false, "expected exception with trigger targeting column table")
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "0A000" => // expected
+    }
+
     // user gemfire2 of same group gemGroup1
     Seq(s"select * from $schema.$t1",
       s"create table $schema.$t2 (id int, name string) using column",
       s"create table $schema.$t2r (id int, name string)",
       s"show tables in $schema",
       s"select * from $schema.$t2",
-      s"CREATE TRIGGER trig AFTER DELETE ON $schema.$t1 REFERENCING " +
-          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2 WHERE id = OLD.id",
+      s"CREATE TRIGGER trig AFTER DELETE ON $schema.$t1r REFERENCING " +
+          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2r WHERE id = OLD.id",
       s"insert into $schema.$t2 values (1, '1'), (2, '2'), (3, '3')," +
           s" (4, '4'), (5, '5'), (6, '6')",
       s"select * from $schema.$t2",
       s"delete from $schema.$t1 where name like 'two'",
       s"drop table $schema.$t1r",
+      s"create table $schema.$t1r (id int, name string)",
       s"select * from $schema.$t2").foreach(executeSQL(user2Stmt, _))
 
     // user gemfire1
@@ -708,8 +876,8 @@ class SplitClusterDUnitSecurityTest(s: String)
     executeSQL(user4Stmt, s"show tables in $schema")
     Seq(s"select * from $schema.$t1",
       s"create table $schema.gemfour (id int, name string) using column",
-      s"CREATE TRIGGER trigfour AFTER DELETE ON $schema.$t1 REFERENCING " +
-          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2 WHERE id = OLD.id",
+      s"CREATE TRIGGER trigfour AFTER DELETE ON $schema.$t1r REFERENCING " +
+          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2r WHERE id = OLD.id",
       s"insert into $schema.$t2 values (1, '1'), (2, '2'), (3, '3')," +
           s" (4, '4'), (5, '5'), (6, '6')",
       s"update $schema.$t1 set id = 100 where name like 'four'",
@@ -726,7 +894,7 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     // Grant DML permissions to gemfire4 and ensure it works.
     executeSQL(user1Stmt, s"grant select on $schema.$t1 to ldapgroup:$group2")
-    executeSQL(user1Stmt, s"grant select on $schema.$t2 to ldapgroup:$group2") // due to trigger
+    executeSQL(user1Stmt, s"grant select on $schema.$t2r to ldapgroup:$group2") // due to trigger
     executeSQL(user4Stmt, s"select * from $schema.$t1")
     executeSQL(user1Stmt, s"grant insert on $schema.$t1 to ldapgroup:$group2")
     executeSQL(user4Stmt, s"insert into $schema.$t1 values (111, 'gemfire4 111')," +
@@ -734,12 +902,12 @@ class SplitClusterDUnitSecurityTest(s: String)
     executeSQL(user2Stmt, s"grant update on $schema.$t1 to ldapgroup:$group2")
     executeSQL(user4Stmt, s"update $schema.$t1 set name = 'gemfire4 111 updated' where id = 111")
     executeSQL(user2Stmt, s"grant delete on $schema.$t1 to ldapgroup:$group2")
-    executeSQL(user2Stmt, s"grant delete on $schema.$t2 to ldapgroup:$group2") // due to trigger
+    executeSQL(user2Stmt, s"grant delete on $schema.$t2r to ldapgroup:$group2") // due to trigger
     executeSQL(user4Stmt, s"delete from $schema.$t1 where id = 111")
-    executeSQL(user2Stmt, s"grant trigger on $schema.$t1 to ldapgroup:$group2")
-    executeSQL(user2Stmt, s"grant trigger on $schema.$t2 to ldapgroup:$group2")
-    executeSQL(user4Stmt, s"CREATE TRIGGER trigfour AFTER DELETE ON $schema.$t1 REFERENCING " +
-        s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2 WHERE id = OLD.id")
+    executeSQL(user2Stmt, s"grant trigger on $schema.$t1r to ldapgroup:$group2")
+    executeSQL(user2Stmt, s"grant trigger on $schema.$t2r to ldapgroup:$group2")
+    executeSQL(user4Stmt, s"CREATE TRIGGER trigfour AFTER DELETE ON $schema.$t1r REFERENCING " +
+        s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2r WHERE id = OLD.id")
 
     // Revoke all and ensure it works too.
     Seq(s"revoke select on $schema.$t1 from ldapgroup:$group2",
@@ -747,16 +915,16 @@ class SplitClusterDUnitSecurityTest(s: String)
       s"revoke update on $schema.$t1 from ldapgroup:$group2",
       s"revoke delete on $schema.$t1 from ldapgroup:$group2",
       s"revoke delete on $schema.$t2 from ldapgroup:$group2",
-      s"revoke trigger on $schema.$t1 from ldapgroup:$group2",
-      s"revoke trigger on $schema.$t2 from ldapgroup:$group2")
+      s"revoke trigger on $schema.$t1r from ldapgroup:$group2",
+      s"revoke trigger on $schema.$t2r from ldapgroup:$group2")
         .foreach(executeSQL(user1Stmt, _))
     Seq(s"select * from $schema.$t1",
       s"insert into $schema.$t1 values (111, 'gemfire4 111')," +
           s" (222, 'gemfire4 222')",
       s"update $schema.$t1 set name = 'gemfire4 111 updated' where id = 111",
       s"delete from $schema.$t1 where id = 111",
-      s"CREATE TRIGGER trigfournew AFTER DELETE ON $schema.$t1 REFERENCING " +
-          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2 WHERE id = OLD.id")
+      s"CREATE TRIGGER trigfournew AFTER DELETE ON $schema.$t1r REFERENCING " +
+          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2r WHERE id = OLD.id")
         .foreach(sql => assertFailures(() => {
           executeSQL(user4Stmt, sql)
         }, sql, Seq("42500", "42502", "42506", "42507")))
@@ -789,6 +957,49 @@ class SplitClusterDUnitSecurityTest(s: String)
     }
   }
 
+  def testMetastoreAccessAdminOnlySmartConn: Unit = {
+    getConn(adminUser1, true)
+    import org.scalatest.Assertions.intercept
+    var thrown = intercept[ParseException] {
+      snc.sql("select * from SNAPPY_HIVE_METASTORE.version")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+
+    thrown = intercept[ParseException] {
+      snc.sql("update SNAPPY_HIVE_METASTORE.version set version_comment = 'comment changed'")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+    thrown = intercept[ParseException] {
+      snc.sql("insert into SNAPPY_HIVE_METASTORE.version values (4, '1.2.3', 'dummy comment')")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+    thrown = intercept[ParseException] {
+      snc.sql("delete from SNAPPY_HIVE_METASTORE.version where ver_id = 2")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+
+
+    getConn(jdbcUser1, true)
+    thrown = intercept[ParseException] {
+      snc.sql("select * from SNAPPY_HIVE_METASTORE.version")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+
+    thrown = intercept[ParseException] {
+      snc.sql("update SNAPPY_HIVE_METASTORE.version set version_comment = 'comment changed'")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+
+    thrown = intercept[ParseException] {
+      snc.sql("insert into SNAPPY_HIVE_METASTORE.version values (4, '1.2.3', 'dummy comment')")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+    thrown = intercept[ParseException] {
+      snc.sql("delete from SNAPPY_HIVE_METASTORE.version where ver_id = 2")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+  }
+
   def _testLDAPGroupOwnershipSmartConnector(): Unit = {
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, adminUser1)
@@ -797,38 +1008,24 @@ class SplitClusterDUnitSecurityTest(s: String)
     snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
     val sns = snc.snappySession
 
-    sns.sql("create schema groupSchema authorization gemGroup1");
-  }
-
-  def getJobJar(className: String, packageStr: String = ""): String = {
-    val dir = new File(s"$snappyProductDir/../../../cluster/build-artifacts/scala-2.11/classes/"
-        + s"scala/test/$packageStr")
-    assert(dir.exists() && dir.isDirectory, s"snappy-cluster scala tests not compiled. Directory " +
-        s"not found: $dir")
-    val jar = TestPackageUtils.createJarFile(dir.listFiles(new FileFilter {
-      override def accept(pathname: File): Boolean = {
-        pathname.getName.contains("SecureJob")
-      }
-    }).toList, Some(packageStr))
-    assert(!jar.isEmpty, s"No class files found for SecureJob")
-    jar
+    sns.sql("create schema groupSchema authorization gemGroup1")
   }
 
   def testSnappyJob(): Unit = {
-    val jobBaseStr = buildJobBaseStr("io.snappydata.cluster", "SnappySecureJob")
-    submitAndVerifyJob(jobBaseStr, s" --conf $opCode=sqlOps --conf $outputFile=SnappyValidJob.out")
+    // Create config file with credentials
+    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
+
+    val className = "io.snappydata.cluster.jobs.SnappySecureJob"
+    submitAndWaitForCompletion(className,
+      s" --conf $opCode=sqlOps --conf $outputFile=SnappyValidJob.out")
 
     val colTab = "JOB_COLTAB"
     val rowTab = "JOB_ROWTAB"
-    def submitJob(op: String): Unit = {
-      val job = s"$jobBaseStr --conf $opCode=$op --conf $otherColTabName=$jdbcUser2.$colTab" +
-          s" --conf $otherRowTabName=$jdbcUser2.$rowTab --conf $outputFile=Snappy${op}Job.out"
-      logInfo(s"Submitting job $job")
-      val consoleLog = job.!!
-      logInfo(consoleLog)
-      val jobId = getJobId(consoleLog)
-      assert(consoleLog.contains("STARTED"), "Job not started")
-      DistributedTestBase.waitForCriterion(getWaitCriterion(jobId), 60000, 500, true)
+    def submitJobWithOperation(op: String): Unit = {
+      submitAndWaitForCompletion(className, s""" --conf $opCode=$op
+       --conf $otherColTabName=$jdbcUser2.$colTab
+        --conf $otherRowTabName=$jdbcUser2.$rowTab
+        --conf $outputFile=Snappy${op}Job.out""")
     }
 
     user2Conn = getConn(jdbcUser2, setSNC = true)
@@ -837,85 +1034,51 @@ class SplitClusterDUnitSecurityTest(s: String)
       Map("COLUMN_BATCH_SIZE" -> "1k"))
     SplitClusterDUnitTest.createTableUsingJDBC(rowTab, "row", user2Conn, stmt)
 
-    submitJob("nogrant") // tells job to verify DMLs without any explicit grant
+    submitJobWithOperation("nogrant") // tells job to verify DMLs without any explicit grant
 
     Seq("select", "insert", "update", "delete").foreach(dml => {
       permitConn(stmt, "grant", dml, colTab, rowTab, jdbcUser1)
-      submitJob(dml) // tells job to verify respective dml
+      submitJobWithOperation(dml) // tells job to verify respective dml
       permitConn(stmt, "revoke", dml, colTab, rowTab, jdbcUser1)
     })
 
     Seq("select", "insert", "update", "delete").foreach(dml => {
       permit(snc.snappySession, "grant", dml, colTab, rowTab, jdbcUser1)
-      submitJob(dml) // tells job to verify respective dml
+      submitJobWithOperation(dml) // tells job to verify respective dml
       permit(snc.snappySession, "revoke", dml, colTab, rowTab, jdbcUser1)
     })
 
     // Submit the same job with invalid credentials
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
     writeToFile(s"-u $jdbcUser1:invalid", jobConfigFile)
-    logInfo(s"Re-submitting job $jobBaseStr with invalid credentials.")
-    val consoleLog = s"$jobBaseStr --conf $outputFile=SnappyInvalidJob.out".!!
+    logInfo(s"Re-submitting job $className with invalid credentials.")
+    val consoleLog = submitJob(className, s" --conf $outputFile=SnappyInvalidJob.out")
     logInfo(consoleLog)
     assert(consoleLog.contains("The supplied authentication is invalid"), "Job should have failed")
   }
 
   def testSnappyStreamingJob(): Unit = {
-    submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "SnappyStreamingSecureJob"),
-      s" --stream --conf $opCode=sqlOps --conf $outputFile=SnappyStreamingValidJob.out")
+    // Create config file with credentials
+    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.SnappyStreamingSecureJob",
+      s" --stream --conf $opCode=sqlOps" +
+          s" --conf $outputFile=SnappyStreamingValidJob.out")
   }
 
   def testSnappyJavaJob(): Unit = {
-    submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "SnappyJavaSecureJob"),
-      s" --conf $opCode=sqlOps --conf $outputFile=SnappyJavaValidJob.out")
+    // Create config file with credentials
+    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.SnappyJavaSecureJob",
+      s" --conf $opCode=sqlOps" +
+          s" --conf $outputFile=SnappyJavaValidJob.out")
   }
 
   def testSnappyJavaStreamingJob(): Unit = {
-    submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "SnappyJavaStreamingSecureJob"),
-      s" --stream --conf $opCode=sqlOps --conf $outputFile=SnappyJavaStreamingValidJob.out")
-  }
-
-  def submitAndVerifyJob(jobBaseStr: String, jobCmdAffix: String): Unit = {
     // Create config file with credentials
     writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
-
-    val job = s"$jobBaseStr $jobCmdAffix"
-    logInfo(s"Submitting job $job")
-    val consoleLog = job.!!
-    logInfo(consoleLog)
-    val jobId = getJobId(consoleLog)
-    assert(consoleLog.contains("STARTED"), "Job not started")
-
-    val wc = getWaitCriterion(jobId)
-    DistributedTestBase.waitForCriterion(wc, 60000, 1000, true)
-  }
-
-  private def getWaitCriterion(jobId: String): WaitCriterion = {
-    new WaitCriterion {
-      var consoleLog = ""
-      override def done() = {
-        consoleLog = (s"$snappyProductDir/bin/snappy-job.sh status --job-id $jobId " +
-            s" --passfile $jobConfigFile").!!
-        if (consoleLog.contains("FINISHED")) logInfo(s"Job $jobId completed. $consoleLog")
-        consoleLog.contains("FINISHED")
-      }
-      override def description() = {
-        logInfo(consoleLog)
-        s"Job $jobId did not complete in time."
-      }
-    }
-  }
-
-  private def buildJobBaseStr(packageStr: String, className: String): String = {
-    s"$snappyProductDir/bin/snappy-job.sh submit --app-name $className" +
-        s" --class $packageStr.$className" +
-        s" --app-jar ${getJobJar(className, packageStr.replaceAll("\\.", "/") + "/")}" +
-        s" --passfile $jobConfigFile"
-  }
-
-  private def getJobId(str: String): String = {
-    val idx = str.indexOf("jobId")
-    str.substring(idx + 9, idx + 45)
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.SnappyJavaStreamingSecureJob",
+      s" --stream --conf $opCode=sqlOps" +
+          s" --conf $outputFile=SnappyJavaStreamingValidJob.out")
   }
 
   def _testUDFAndProcs(): Unit = {
@@ -923,6 +1086,366 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   def _testConcurrentUsers(): Unit = {
   }
+
+  def testUDFSNAP_2636(): Unit = {
+    // Build a jar with UDF
+    val udf1Source = "public class StringLengthUDF1 implements " +
+        "org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return (s.length() - 1000); " +
+        "} }"
+    val file1 = SparkUtilsAccess.createUDFClass("StringLengthUDF1", udf1Source)
+    val jar1 = SparkUtilsAccess.createJarFile(Seq(file1), "user1udf.jar", true)
+
+    val udf2Source = "public class StringLengthUDF2 implements " +
+        "org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return (s.length() + 1000); " +
+        "} }"
+    val file2 = SparkUtilsAccess.createUDFClass("StringLengthUDF2", udf2Source)
+    val jar2 = SparkUtilsAccess.createJarFile(Seq(file2))
+
+    // Create function 1 with the jar with one user
+    user1Conn = getConn(jdbcUser1)
+    var stmt1 = user1Conn.createStatement()
+    executeSQL(stmt1, s"CREATE FUNCTION myUDF AS " +
+        s"StringLengthUDF1 returns Integer using jar '$jar1'")
+    // Select with that UDF
+    var stmt2 = user1Conn.createStatement()
+    stmt2.execute(s"select myUDF('abcd')")
+    var rs = stmt2.getResultSet
+    if (rs ne null) {
+      while (rs.next()) {
+        assert(rs.getInt(1) == -996, s"Expected -996, found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+
+    // Create function 2 with the jar with another user
+    user2Conn = getConn(jdbcUser2)
+    stmt1 = user2Conn.createStatement()
+    executeSQL(stmt1, s"CREATE FUNCTION myUDF AS " +
+        s"StringLengthUDF2 returns Integer using jar '$jar2'")
+    // Select with that UDF
+    stmt2 = user2Conn.createStatement()
+    stmt2.execute(s"select myUDF('abcd')")
+    rs = stmt2.getResultSet
+    if (rs ne null) {
+      while (rs.next()) {
+        assert(rs.getInt(1) == 1004, s"Expected 1004, found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+
+    // SNAP-3069
+    stmt2 = user1Conn.createStatement()
+    stmt2.execute(s"select myUDF('abcd')")
+    rs = stmt2.getResultSet
+    if (rs ne null) {
+      while (rs.next()) {
+        assert(rs.getInt(1) == -996, s"Expected -996, found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+
+    // Verify list jars
+    stmt2 = user2Conn.createStatement()
+    stmt2.execute(s"list jars")
+    rs = stmt2.getResultSet
+    var rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        val udfName = rs.getString(1)
+        assert(udfName.equalsIgnoreCase(s"[UDF]$jdbcUser1.myUDF")
+            || udfName.equalsIgnoreCase(s"[UDF]$jdbcUser2.myUDF"),
+          s"Unexpected UDF name $udfName")
+      }
+    }
+    assert(rows == 2, s"Expected 2 UDFs, but found $rows")
+
+    // Verify jar file paths
+    val leadDir = new File(s"$snappyProductDir/work/localhost-lead-1/snappy-jars")
+    val server1Dir = new File(s"$snappyProductDir/work/localhost-server-1")
+    val server2Dir = new File(s"$snappyProductDir/work/localhost-server-2")
+
+    leadDir.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        pathname.getName.contains("myudf") && pathname.getName.contains("jar")
+      }
+    }).foreach(x => println(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    server1Dir.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        pathname.getName.contains("myudf") && pathname.getName.contains("jar")
+      }
+    }).foreach(x => println(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    server2Dir.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        pathname.getName.contains("myudf") && pathname.getName.contains("jar")
+      }
+    }).foreach(x => println(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+
+
+    // Drop a function of jdbcUser2
+    executeSQL(stmt2, s"drop function myUDF")
+
+    // Verify function does not execute
+    stmt2 = user2Conn.createStatement()
+    try {
+      stmt2.execute(s"select myUDF('abcd')")
+      assert(false, s"Expected an exception!")
+    } catch {
+      case _: SQLException => // expected
+      case t: Throwable => assert(false, s"Unexpected exception $t")
+    } finally {
+      if (stmt2.getResultSet ne null) stmt2.getResultSet.close()
+    }
+    // Verify jar file paths
+    leadDir.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        pathname.getName.contains("myudf") && pathname.getName.contains("jar")
+      }
+    }).foreach(x => println(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    server1Dir.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        pathname.getName.contains("myudf") && pathname.getName.contains("jar")
+      }
+    }).foreach(x => println(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    server2Dir.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        pathname.getName.contains("myudf") && pathname.getName.contains("jar")
+      }
+    }).foreach(x => println(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+
+    // Verify list jars
+    stmt2.execute(s"list jars")
+    rs = stmt2.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        val udfName = rs.getString(1)
+        assert(udfName.equalsIgnoreCase(s"[UDF]$jdbcUser1.myUDF"),
+          s"Unexpected UDF name $udfName")
+      }
+    }
+    assert(rows == 1, s"Expected just 1 UDF, but found $rows")
+
+    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
+
+    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
+
+    user1Conn = getConn(jdbcUser1)
+    // Select with the existing UDF
+    stmt2 = user1Conn.createStatement()
+    stmt2.execute(s"select myUDF('abcd')")
+    rs = stmt2.getResultSet
+    if (rs ne null) {
+      while (rs.next()) {
+        assert(rs.getInt(1) == -996, s"Expected -996 post reboot, found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+
+    user2Conn = getConn(jdbcUser2)
+    // Select with the dropped UDF
+    stmt2 = user2Conn.createStatement()
+    try {
+      stmt2.execute(s"select myUDF('abcd')")
+      assert(false, s"Expected an exception!")
+    } catch {
+      case _: SQLException => // expected
+      case t: Throwable => assert(false, s"Unexpected exception $t")
+    } finally {
+      if (stmt2.getResultSet ne null) stmt2.getResultSet.close()
+    }
+
+    // Verify list jars
+    stmt2.execute(s"list jars")
+    rs = stmt2.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        val udfName = rs.getString(1)
+        assert(udfName.equalsIgnoreCase(s"[UDF]$jdbcUser1.myUDF"),
+          s"Unexpected UDF name $udfName")
+      }
+    }
+
+    val udf1SourceNew = "public class StringLengthUDF1 implements " +
+        "org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return (s.length() * 1000); " +
+        "} }"
+    val file1New = SparkUtilsAccess.createUDFClass("StringLengthUDF1", udf1SourceNew)
+    val jar1New = SparkUtilsAccess.createJarFile(Seq(file1New), "user1udf.jar", true)
+
+    stmt1 = user1Conn.createStatement()
+    executeSQL(stmt1, s"DROP FUNCTION myUDF")
+
+    stmt2 = user1Conn.createStatement()
+    try {
+      stmt2.execute(s"select myUDF('abcd')")
+      assert(false, s"Expected an exception!")
+    } catch {
+      case _: SQLException => // expected
+      case t: Throwable => assert(false, s"Unexpected exception $t")
+    }
+
+    // Verify list jars
+    stmt2.execute(s"list jars")
+    rs = stmt2.getResultSet
+    if (rs ne null) {
+      assert(!rs.next(), "'list jars' should output zero jars but didn't!")
+    }
+
+    executeSQL(stmt1, s"CREATE FUNCTION myUDF AS " +
+        s"StringLengthUDF1 returns Integer using jar '$jar1New'")
+    // Select with that UDF
+    stmt2 = user1Conn.createStatement()
+    stmt2.execute(s"select myUDF('11223344')")
+    rs = stmt2.getResultSet
+    if (rs ne null) {
+      while (rs.next()) {
+        assert(rs.getInt(1) == 8000, s"Expected 8000 with new source, found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+
+    executeSQL(user1Conn.createStatement(), s"drop function if exists myUDF")
+    executeSQL(user2Conn.createStatement(), s"drop function if exists myUDF")
+  }
+
+  // fails with: Stream '/jars/gemfire1.strlen-stringlengthudf.jar' was not found.
+  def testUDFWithQueries(): Unit = {
+    // Build a jar with UDF
+    val udf1Source = "public class StringLengthUDF implements " +
+        "org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return (s.length() + 100); " +
+        "} }"
+    var classfile = SparkUtilsAccess.createUDFClass("StringLengthUDF", udf1Source)
+    val jar1 = SparkUtilsAccess.createJarFile(Seq(classfile), "stringlengthudf.jar", true)
+
+    val udf2Source = "public class StringifyIntUDF implements " +
+        "org.apache.spark.sql.api.java.UDF1<Integer,String> {" +
+        " @Override public String call(Integer s){ " +
+        "               return (s + \" stringified\"); " +
+        "} }"
+    classfile = SparkUtilsAccess.createUDFClass("StringifyIntUDF", udf2Source)
+    val jar2 = SparkUtilsAccess.createJarFile(Seq(classfile))
+
+    var user1stmt = getConn(jdbcUser1).createStatement()
+
+    // create table and run some queries
+    val tabName = "udf_coltab"
+    executeSQL(user1stmt, s"create table $tabName (id int, name string, address varchar(100)," +
+        " contact string) using column")
+    for (i <- 1001 to 3000) {
+      executeSQL(user1stmt, s"insert into $tabName values ($i, 'name_$i', 'address_$i'," +
+          s" '98$i-765')")
+    }
+    executeSQL(user1stmt, s"select count(*) from $tabName")
+    executeSQL(user1stmt, s"select id, contact from $tabName where id > 2980")
+    executeSQL(user1stmt, s"select name, address from $tabName where contact = '981500-765'")
+
+    // create and execute udfs
+    executeSQL(user1stmt, s"CREATE FUNCTION strlen AS " +
+        s"StringLengthUDF returns Integer using jar '$jar1'")
+    executeSQL(user1stmt, s"CREATE FUNCTION stringifyInt AS " +
+        s"StringifyIntUDF returns String using jar '$jar2'")
+
+    user1stmt.execute(s"select strlen('11223344')")
+    var rs = user1stmt.getResultSet
+    var rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getInt(1) == 108, s"Expected 108, found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+    user1stmt.execute(s"select stringifyInt(11223344)")
+    rs = user1stmt.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getString(1).equals("11223344 stringified"), s"Expected" +
+            s" '11223344 stringified', found '${rs.getString(1)}'")
+      }
+      rs.close()
+    }
+
+    executeSQL(user1stmt, s"drop function if exists strlen")
+    executeSQL(user1stmt, s"drop function if exists stringifyInt")
+
+    // Now execute old queries again with new constants
+    user1stmt.execute(s"select count(*) from $tabName")
+    rs = user1stmt.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getInt(1) == 2000, s"Expected 2000 rows," +
+            s" found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+    user1stmt.execute(s"select id, contact from $tabName where id > 2985")
+    rs = user1stmt.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getInt(1) > 2985)
+      }
+      rs.close()
+    }
+    assert(rows == 15)
+    user1stmt.execute(s"select name, address from $tabName where contact = '9812000-765'")
+    rs = user1stmt.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getString(1).equalsIgnoreCase("name_2000"))
+        assert(rs.getString(2).equalsIgnoreCase("address_2000"))
+      }
+      rs.close()
+    }
+
+    // Execute some other queries too
+    user1stmt.execute(s"select * from $tabName where id = 2333")
+    rs = user1stmt.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getInt(1) == 2333)
+        assert(rs.getString(2).equalsIgnoreCase(s"name_2333"))
+        assert(rs.getString(3).equalsIgnoreCase(s"address_2333"))
+        assert(rs.getString(4).equalsIgnoreCase(s"982333-765"))
+      }
+      rs.close()
+    }
+    user1stmt.execute(s"select id, contact, name from $tabName where id < 2500 " +
+        s"and name like 'name_159%'")
+    rs = user1stmt.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getInt(1) < 1600 && rs.getInt(1) > 1589)
+        assert(rs.getString(2).contains(s"98159"))
+        assert(rs.getString(3).contains(s"name_159"))
+      }
+      rs.close()
+    }
+    assert(rows == 10, s"Expected 10 rows found $rows")
+  }
+
 }
 
 object SplitClusterDUnitSecurityTest extends SplitClusterDUnitTestObject {

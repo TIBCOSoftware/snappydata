@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,18 +19,19 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import scala.collection.JavaConverters._
+import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 
+import scala.collection.JavaConverters._
 import com.pivotal.gemfirexd.Attribute
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap
-
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.{Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
@@ -48,7 +49,7 @@ abstract case class JDBCAppendableRelation(
     provider: String,
     mode: SaveMode,
     userSchema: StructType,
-    origOptions: Map[String, String],
+    origOptions: CaseInsensitiveMap,
     externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext) extends BaseRelation
     with PrunedUnsafeFilteredScan
@@ -182,7 +183,7 @@ abstract case class JDBCAppendableRelation(
 
   override def createIndex(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit = {
     throw new UnsupportedOperationException(s"Indexes are not supported for $toString")
   }
@@ -194,4 +195,25 @@ abstract case class JDBCAppendableRelation(
   }
 
   private[sql] def externalColumnTableName: String
+
+  override def equals(that: Any): Boolean = {
+    that match {
+      case r: JDBCAppendableRelation => {
+        (this eq r) || (
+          hashCode() == r.hashCode()
+            && r.schemaName.equalsIgnoreCase(schemaName)
+            && r.tableName.equalsIgnoreCase(tableName))
+      }
+      case _ => false
+    }
+  }
+
+  override def canEqual(that: Any): Boolean = {
+    that.isInstanceOf[JDBCAppendableRelation]
+  }
+
+  override def hashCode(): Int = {
+    ClientResolverUtils.addIntToHash(JdbcExtendedUtils.toUpperCase(schemaName).hashCode,
+      JdbcExtendedUtils.toUpperCase(tableName).hashCode)
+  }
 }

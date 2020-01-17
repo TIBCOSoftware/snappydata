@@ -1,0 +1,42 @@
+ //Test with column table
+ io/snappydata/hydra/diskFullTests/diskFullTest.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  insertQueryFilePath = "$GEMFIRE/../../../dtests/src/resources/scripts/diskFullTests/insertQuery.sql"
+  snappyFileLoc="$GEMFIRE/../snappy"
+  scriptName=createAndLoadColumnTable.sql
+  fileSize=40G
+  tableType=column
+  numRecords=2000000
+
+//Test with partitioned row table
+ io/snappydata/hydra/diskFullTests/diskFullTest.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  snappyFileLoc="$GEMFIRE/../snappy"
+  insertQueryFilePath = "$GEMFIRE/../../../dtests/src/resources/scripts/diskFullTests/insertQuery.sql"
+  scriptName=createAndLoadPartitionedRowTable.sql
+  fileSize=40G
+  tableType=partitionedRow
+
+//Test with replicated row table
+ io/snappydata/hydra/diskFullTests/diskFullTest.conf
+   A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+   scriptName=createAndLoadReplicatedRowTable.sql
+   insertQueryFilePath = "$GEMFIRE/../../../dtests/src/resources/scripts/diskFullTests/insertQuery.sql"
+   snappyFileLoc="$GEMFIRE/../snappy"
+   fileSize=40G
+
+//Test with column table
+ io/snappydata/hydra/diskFullTests/diskFullTestWithDeletes.conf
+   A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+   scriptName=createAndLoadColumnTable.sql
+   snappyFileLoc="$GEMFIRE/../snappy"
+   deleteQueryFilePath = "$GEMFIRE/../../../dtests/src/resources/scripts/diskFullTests/deleteQuery.sql"
+   fileSize=40G

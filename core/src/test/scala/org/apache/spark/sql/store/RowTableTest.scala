@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,13 +26,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.types.{DateType, FloatType, IntegerType, StringType, StructField, TimestampType}
-import org.apache.spark.sql._
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import scala.util.{Failure, Success, Try}
-
-import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
-import org.apache.spark.sql.types.{IntegerType, StructField}
+import org.apache.spark.sql.types.{DateType, FloatType, IntegerType, StringType, StructField, StructType, TimestampType}
 
 /**
  * Tests for ROW tables.
@@ -248,10 +242,11 @@ class RowTableTest
 
   test("Test the creation using SQL and put a seq of rows in append/overwrite/errorifexists mode") {
 
-    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " +
-        options)
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " +
+        " USING row " + options)
 
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7), Seq(1,100,200))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7),
+      Seq(1, 100, 200))
     data.map { r =>
       snc.put(tableName, Row.fromSeq(r))
     }
@@ -263,10 +258,11 @@ class RowTableTest
 
   // should throw exception if primary key is getting updated?
   test("Test Creation using SQL with Primary Key and PUT INTO") {
-    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " +
-        options)
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " +
+        " USING row " + options)
 
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7),Seq(1, 200, 300))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7),
+      Seq(1, 200, 300))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
@@ -291,7 +287,8 @@ class RowTableTest
         options)
 
     val data1 = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7),Seq(1, 200, 300))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7),
+      Seq(1, 200, 300))
 
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -300,8 +297,8 @@ class RowTableTest
     val r1 = result1.collect
     assert(r1.length == 6)
 
-    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " +
-        options)
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " +
+        " USING row " + options)
 
     val rdd1 = sc.parallelize(data1, data1.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF1 = snc.createDataFrame(rdd1)
@@ -327,8 +324,8 @@ class RowTableTest
   }
 
   test("PUT INTO TABLE USING SQL"){
-    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " +
-        options)
+    snc.sql("CREATE TABLE " + tableName +
+        " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " + options)
     snc.sql("PUT INTO " + tableName + " VALUES(1,11, 111)")
     snc.sql("PUT INTO " + tableName +  " VALUES(2,11, 111)")
     snc.sql("PUT INTO " + tableName + " VALUES(3,11, 111)")
@@ -343,8 +340,8 @@ class RowTableTest
   }
 
   test("PUT INTO TABLE USING SQL with COLUMN NAME"){
-    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " +
-        options)
+    snc.sql("CREATE TABLE " + tableName +
+        " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " + options)
     snc.sql("PUT INTO " + tableName + " (Col1, Col2, Col3) VALUES(1,11, 111)")
     snc.sql("PUT INTO " + tableName +  " (Col1, Col2, Col3)  VALUES(2,11, 111)")
     snc.sql("PUT INTO " + tableName + " (Col1, Col2, Col3)  VALUES(3,11, 111)")
@@ -450,7 +447,63 @@ class RowTableTest
     assert(snc.sql("SELECT * FROM " + tableName).schema.fields.length == 3)
   }
 
-  test("Test alter table add column SQL with default value") {
+  test("Test alter table drop column with restrict/cascade") {
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(tableName, "row", dataDF.schema, props)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    snc.alterTable(tableName, false, StructField("col3", IntegerType, true), "cascade")
+
+    assert(snc.sql(s"select * from $tableName").columns.length == 2)
+
+    snc.sql("create table tab1 (col1 int, col2 boolean, col3 string, col4 int" +
+        ", constraint pktab1 primary key(col1), constraint tab1_uq1 unique(col4), constraint" +
+        " chktab1 check(col3 in ('aaa', 'bbb', 'ccc', 'ddd')))")
+    snc.sql("insert into tab1 values (1,false, 'aaa',2222)")
+    snc.sql("insert into tab1 values (2,true, 'bbb',3333)")
+    snc.sql("insert into tab1 values (3,false, 'ccc',444)")
+
+    snc.sql("create table tab2 (c1 int , c2 boolean, c3 float, constraint fktab2_tab1" +
+        " foreign key(c1) references tab1(col4), constraint chktab2 check (c3 > 5.5))")
+    snc.sql("insert into tab2 values (2222,true,5.6)")
+    snc.sql("insert into tab2 values (3333,true,6.6)")
+
+    snc.sql("alter table tab2 drop column c1 cascade")
+    var colsTab2 = snc.sql("select * from tab2").columns
+    assert(colsTab2.mkString(",") === "c2,c3", "Columns don't match after the alter command.")
+
+    snc.sql("alter table tab2 drop column c3 cascade")
+    colsTab2 = snc.sql("select * from tab2").columns
+    assert(colsTab2.mkString(",") === "c2", "Columns don't match after the alter command.")
+
+    snc.sql("alter table tab1 drop column col2 restrict")
+    var colsTab1 = snc.sql("select * from tab1").columns
+    assert(colsTab1.mkString(",") === "col1,col3,col4",
+      "Columns don't match after the alter command.")
+
+    snc.sql("alter table tab1 drop column col4 cascade")
+    colsTab1 = snc.sql("select * from tab1").columns
+    assert(colsTab1.mkString(",") === "col1,col3", "Columns don't match after the alter command.")
+
+    val df1 = snc.sql("select * from tab1")
+    val df2 = snc.sql("select * from tab2")
+    assert(df1.columns.length === 2,
+      "Number of columns does not match after the drop column command.")
+    assert(df2.columns.length === 1,
+      "Number of columns does not match after the drop column command.")
+    assert(df1.count() === 3 , "Row count mismatch for table: tab1")
+    assert(df2.count() === 2, "Row count mismatch for table: tab2")
+
+    try {
+      snc.sql("alter table tab1 drop column col3 restrict")
+    } catch {
+      case e: Exception => assert(e.getMessage === "Operation 'DROP COLUMN' cannot be " +
+          "performed on object 'COL3' because CONSTRAINT 'CHKTAB1' is dependent on that object.")
+    }
+  }
+
+  test("Test alter table add column SQL with default value and constraints") {
     snc.sql("drop table if exists employees")
     snc.sql("create table employees(name string, surname string)")
     snc.sql("insert into employees values ('Joe', 'Lamb')")
@@ -511,6 +564,50 @@ class RowTableTest
     assert(result(0).getDate(5).toString == "2000-09-06")
     assert(result(0).getTimestamp(6).toString == "2012-08-03 12:20:30.0")
     assert(result(0).getFloat(7) == 3.9f)
+
+    // SNAP-3108 cases
+    snc.sql("create table trade.trades (tid int not null, cid int, eid int, tradedate date)")
+    var expectedSchema = StructType(Array(StructField("tid", IntegerType, nullable = false),
+      StructField("cid", IntegerType), StructField("eid", IntegerType),
+      StructField("tradedate", DateType)))
+    assert(expectedSchema.toString() === snc.table("trade.trades").schema.toString())
+    snc.sql("insert into trade.trades values(1, 1, 1, null), (1, 2, 3, null)")
+
+    // adding PK should throw exception due to existing data
+    try {
+      snc.sql("alter table trade.trades add primary key (tid)")
+      fail("expected failure in alter table due to existing data")
+    } catch {
+      case e: Exception if e.getMessage.contains(
+        "Feature not implemented: PRIMARY KEY create in ALTER TABLE with data.") => // expected
+    }
+    // delete data and try again
+    snc.sql("truncate table trade.trades")
+    snc.sql("alter table trade.trades add primary key (tid);")
+
+    assert(expectedSchema.toString() === snc.table("trade.trades").schema.toString())
+
+    // should throw exception due to PK violation
+    try {
+      snc.sql("insert into trade.trades(tid, cid, eid) values(1, 1, 1), (1, 2, 3)")
+      fail("expected failure due to PK violation")
+    } catch {
+      case e: Exception if e.getMessage.contains(
+        "duplicate key value in a unique or primary key constraint") => // expected
+    }
+
+    snc.sql("insert into trade.trades(tid, cid, eid) values(1, 1, 1)")
+
+    // add with default value and not null
+    snc.sql("alter table trade.trades add column symbol varchar(10) default 'a' not null")
+    expectedSchema = expectedSchema.add(StructField("symbol", StringType, nullable = false))
+    assert(expectedSchema.toString() === snc.table("trade.trades").schema.toString())
+
+    snc.sql("insert into trade.trades(tid, cid, eid) values(2, 2, 2)")
+    checkAnswer(snc.sql("select * from trade.trades order by tid"),
+      Seq(Row(1, 1, 1, null, "a"), Row(2, 2, 2, null, "a")))
+
+    snc.sql("drop table trade.trades")
   }
 
   test("Test alter table add column API with default value") {
@@ -522,42 +619,42 @@ class RowTableTest
     assert(df1.collect().length == 1)
 
     snc.alterTable("EMPLOYEES", isAddColumn = true,
-      StructField("age", IntegerType, nullable = false), Option("25"))
+      StructField("age", IntegerType, nullable = false), "DEFAULT 25")
     df1 = snc.sql("select * from employees")
     assert(df1.schema.fields.length == 3)
     var v = df1.select("age").collect()
     assert(v(0).getInt(0) == 25)
 
     snc.alterTable("EMPLOYEES", isAddColumn = true,
-      StructField("state", StringType, nullable = false), Option("CA"))
+      StructField("state", StringType, nullable = false), "DEFAULT 'CA'")
     df1 = snc.sql("select * from employees")
     assert(df1.schema.fields.length == 4)
     v = df1.select("state").collect()
     assert(v(0).getString(0) == "CA")
 
     snc.alterTable("EMPLOYEES", isAddColumn = true,
-      StructField("address", StringType), None)
+      StructField("address", StringType), "")
     df1 = snc.sql("select * from employees")
     assert(df1.schema.fields.length == 5)
     v = df1.select("address").collect()
     assert(v(0).getString(0) == null)
 
     snc.alterTable("EMPLOYEES", isAddColumn = true,
-      StructField("joiningDate", DateType), Option("2000-08-03"))
+      StructField("joiningDate", DateType), "DEFAULT '2000-08-03'")
     df1 = snc.sql("select * from employees")
     assert(df1.schema.fields.length == 6)
     v = df1.select("joiningDate").collect()
     assert(v(0).getDate(0).toString == "2000-08-03")
 
     snc.alterTable("EMPLOYEES", isAddColumn = true,
-      StructField("timestampColumn", TimestampType), Option("2000-08-03 12:20:30.0"))
+      StructField("timestampColumn", TimestampType), "DEFAULT '2000-08-03 12:20:30.0'")
     df1 = snc.sql("select * from employees")
     assert(df1.schema.fields.length == 7)
     v = df1.select("timestampColumn").collect()
     assert(v(0).getTimestamp(0).toString == "2000-08-03 12:20:30.0")
 
     snc.alterTable("EMPLOYEES", isAddColumn = true,
-      StructField("floatColumn", FloatType), Option("2.4"))
+      StructField("floatColumn", FloatType), "DEFAULT 2.4")
     df1 = snc.sql("select * from employees")
     assert(df1.schema.fields.length == 8)
     v = df1.select("floatColumn").collect()
@@ -669,10 +766,12 @@ class RowTableTest
 
     snc.sql("update RowTableUpdate2 set DESCRIPTION ='No#complaints' where CODE = 5")
 
-    val df2 = snc.sql("select DESCRIPTION from RowTableUpdate2 where DESCRIPTION = 'No#complaints' ")
+    val df2 = snc.sql(
+      "select DESCRIPTION from RowTableUpdate2 where DESCRIPTION = 'No#complaints' ")
     assert(df2.count() == 1)
 
-    val df3 = snc.sql("select DESCRIPTION from RowTableUpdate2 where DESCRIPTION  in ('No#complaints', 'test1') ")
+    val df3 = snc.sql(
+      "select DESCRIPTION from RowTableUpdate2 where DESCRIPTION  in ('No#complaints', 'test1') ")
     assert(df3.count() == 2)
 
     snc.dropTable("RowTableUpdate")
@@ -690,7 +789,8 @@ class RowTableTest
         "(" +
         "PARTITIONBY 'OrderId'," +
         "PERSISTENT 'ASYNCHRONOUS')")) match {
-      case Success(df) => throw new AssertionError(" Should not have succedded with incorrect options")
+      case Success(df) =>
+        throw new AssertionError(" Should not have succedded with incorrect options")
       case Failure(error) => // Do nothing
     }
 
@@ -758,25 +858,25 @@ class RowTableTest
     snc.sql("insert into col_tab1 values(1,2)");
     snc.sql("create table col_tab2 (col1 Integer,col2 Integer) USING COLUMN options(buckets '8')");
 
-    //inserting the data to row table from row table
+    // inserting the data to row table from row table
     snc.sql("insert into row_tab2 select * from row_tab1")
     val df1 = snc.sql("select * from row_tab2")
     assert(df1.count() === 1)
 
 
-    //inserting into column table from row_table
+    // inserting into column table from row_table
     snc.sql("insert into col_tab1 select * from row_tab1")
     val df2 = snc.sql("select * from col_tab1")
-    //Row count will be 2 as we have already inserted a row after creating the table
+    // Row count will be 2 as we have already inserted a row after creating the table
     assert(df2.count() === 2)
 
 
-    //inserting the data to row table from row table
+    // inserting the data to row table from row table
     snc.sql("insert into row_tab2 select * from col_tab1")
     val df3 = snc.sql("select * from row_tab2")
     assert(df3.count() === 3)
 
-    //inserting into column table from column table
+    // inserting into column table from column table
     snc.sql("insert into col_tab2 select * from col_tab1")
     val df4 = snc.sql("select * from col_tab2")
     assert(df4.count() === 2)
@@ -784,7 +884,7 @@ class RowTableTest
   }
 
 
-  test("Test the creation of table using CREATE TABLE AS STATEMENT without specifying USING..OPTIONS") {
+  test("Test creation of table using CREATE TABLE AS STATEMENT without specifying USING OPTIONS") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -809,10 +909,11 @@ class RowTableTest
   }
 
   test("Test create table from CSV without header- SNAP-1442") {
-    snc.sql(s"create external table t1 using csv options(path '${(getClass.getResource("/northwind/regions"+
-      ".csv").getPath)}', header 'true', inferschema 'true')")
-    snc.sql("CREATE TABLE t2 (RegionID int, RegionDescription string) USING row OPTIONS(PERSISTENT 'async') AS " +
-      "(SELECT RegionID, RegionDescription FROM t1)")
+    snc.sql(s"create external table t1 using csv options(path " +
+        s"'${getClass.getResource("/northwind/regions.csv").getPath}', header 'true', " +
+        "inferschema 'true')")
+    snc.sql("CREATE TABLE t2 (RegionID int, RegionDescription string) USING row OPTIONS(" +
+        "PERSISTENT 'async') AS SELECT RegionID, RegionDescription FROM t1")
 
     val df2 = snc.sql("select * from t1")
     assert(df2.count()==4)

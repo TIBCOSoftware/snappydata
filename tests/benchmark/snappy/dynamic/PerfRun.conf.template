@@ -6,7 +6,7 @@ queries="\"1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-22\""
 #queries="\"1-3-14\""
 
 
-#spark Properties spefied in lead
+#spark Properties specified in lead
 #spark-executor-cores has nothing to do with CPU cores available.
 #sparkProperties="-J-Xmx2g -spark.network.timeout=300s -spark.driver.maxResultSize=2g -spark.shuffle.sort.bypassMergeThreshold=28"
 sparkProperties="-heap-size=1g -memory-size=1g -conserve-sockets=false"
@@ -45,7 +45,7 @@ Persistence_Type=SYNCHRONOUS
 Parquet=true
 
 # Create Parquet files from CSV (tbl) files for future tests
-# When Parquet=true, the table creation job will expect parqurt files to already exist to load data into Snappy tables.
+# When Parquet=true, the table creation job will expect parquet files to already exist in order to load data into Snappy tables.
 # When Parquet=false, one can create parquet files in table creation job for use in query execution if createParquet=true
 createParquet=true
 
@@ -59,7 +59,7 @@ leads=<host1>
 servers=(<host2> <host3> <host4>)
 #servers=(localhost)
 
-#Port required while doing exeution through JDBC
+#Port required while doing execution through JDBC
 port=1527
 
 #Log Directories
@@ -75,8 +75,8 @@ locatorProperties="-conserve-sockets=false -J-Xloggc:gc.log -J-XX:+PrintGCDetail
 serverMemory="-heap-size=1g -memory-size=2g"
 
 ### While collecting results for result validation, always keep isDynamic=false and resultCollection=false. In this case WarmupRuns and AverageRuns will not be considered
-### In case of Performance run, isDynamic is true, resultCollection is fasle and set the required number of warmupRuns and AverageRuns
-#represent whether query should use dynamic paramters or static
+### In case of Performance run, isDynamic is true, resultCollection is false and set the required number of warmupRuns and AverageRuns
+#represent whether query should use dynamic parameters or static
 IsDynamic=true
 
 #Whether to collect results.For performance testing this should be false.
@@ -84,13 +84,13 @@ ResultCollection=true
 
 #warmUpIterations
 WarmupRuns=2
-#Actual runs whose average will be taken and repordted as performance
+#Actual runs whose average will be taken and reported as performance
 AverageRuns=3
 
 # location of jar which has TPCH related class files
 TPCHJar=<TPCHJar-path>
 
-#Size of the TPCH data. Do not chage format
+#Size of the TPCH data. Do not change format
 #dataSize=1GB_Stages
 dataSize=1GB
 
@@ -114,3 +114,5 @@ traceEvents=true
 
 # seed value for random number used in generating query parameter data
 randomSeed=42
+
+threadNumber=1

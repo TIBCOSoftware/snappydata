@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -30,9 +30,11 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.aqp.SampleInsertExec
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JDBCRDD}
+import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -56,7 +58,27 @@ trait PlanInsertableRelation extends DestroyRelation with InsertableRelation {
    * Get a spark plan for insert. The result of SparkPlan execution should
    * be a count of number of inserted rows.
    */
-  def getInsertPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
+  def getInsertPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan = {
+    val baseTableInsert = getBasicInsertPlan(relation, child);
+    val catalog = child.sqlContext.sessionState.catalog.asInstanceOf[SnappySessionCatalog]
+    val fqn = resolvedName
+    val dot = fqn.indexOf('.')
+    val (schemaName, tableName) = if (dot == -1) {
+      (None, fqn)
+    } else {
+      (Some(fqn.substring(0, dot)), fqn.substring(dot + 1))
+    }
+    val ti = TableIdentifier(tableName, schemaName)
+    val sampleRelations = catalog.getSampleRelations(ti)
+    if (sampleRelations.isEmpty) {
+      baseTableInsert
+    } else {
+      SampleInsertExec (baseTableInsert, child, ti, sampleRelations, relation.schema)
+    }
+  }
+
+  def getBasicInsertPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
+  def resolvedName: String
 }
 
 trait RowPutRelation extends DestroyRelation {
@@ -83,7 +105,7 @@ trait BulkPutRelation extends DestroyRelation {
 
   def table: String
 
-  def getPutKeys: Option[Seq[String]]
+  def getPutKeys(session: SnappySession): Option[Seq[String]]
 
   /**
     * Get a spark plan for puts. If the row is already present, it gets updated
@@ -121,7 +143,7 @@ trait MutableRelation extends DestroyRelation {
   /**
     * Get the "primary key" of the row table and "key columns" of the  column table
   */
-  def getPrimaryKeyColumns: Seq[String]
+  def getPrimaryKeyColumns(session: SnappySession): Seq[String]
 
   /** Get the partitioning columns for the table, if any. */
   def partitionColumns: Seq[String]
@@ -202,6 +224,8 @@ trait SamplingRelation extends BaseRelation with SchemaInsertableRelation {
    * True if underlying sample table is using a row table as reservoir store.
    */
   def isReservoirAsRegion: Boolean
+
+  def canBeOnBuildSide: Boolean
 }
 
 @DeveloperApi
@@ -264,7 +288,7 @@ trait IndexableRelation {
     */
   def createIndex(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit
 
   /**
@@ -289,9 +313,11 @@ trait AlterableRelation {
    * @param tableIdent  Table identifier
    * @param isAddColumn True if column is to be added else it is to be dropped
    * @param column      Column to be added or dropped
+   * @param extensions  Any additional clauses accepted by underlying table storage
+   *                    like DEFAULT value or column constraints
    */
   def alterTable(tableIdent: TableIdentifier,
-      isAddColumn: Boolean, column: StructField, defaultValue: Option[String]): Unit
+      isAddColumn: Boolean, column: StructField, extensions: String): Unit
 }
 
 trait RowLevelSecurityRelation {
@@ -379,11 +405,11 @@ trait NativeTableRowLevelSecurityRelation extends DestroyRelation with RowLevelS
     if (invalidateCached) session.externalCatalog.invalidate(schemaName -> tableName)
     _relationInfoAndRegion = null
     if (fetchFromStore) {
-      _schema = JDBCRDD.resolveTable(new JDBCOptions(
-        connProperties.url, table, connProperties.connProps.asScala.toMap))
+      _schema = JdbcExtendedUtils.normalizeSchema(JDBCRDD.resolveTable(new JDBCOptions(
+        connProperties.url, table, connProperties.connProps.asScala.toMap)))
     } else {
       session.externalCatalog.getTableOption(schemaName, tableName) match {
-        case None => _schema = SnappyExternalCatalog.EMPTY_SCHEMA
+        case None => _schema = JdbcExtendedUtils.EMPTY_SCHEMA
         case Some(t) => _schema = t.schema; assert(relationInfoAndRegion ne null)
       }
     }

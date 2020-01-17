@@ -1,0 +1,5 @@
+INCLUDE $JTESTS/io/snappydata/hydra/streaming_sink/streaming_sink.bt;
+
+INCLUDE $JTESTS/io/snappydata/hydra/streaming_sink/streaming_sinkSmartConnectorMode.bt;
+
+INCLUDE $JTESTS/io/snappydata/hydra/streaming_sink/streaming_sinkAgg.bt;

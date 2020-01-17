@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -29,6 +29,7 @@ import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.ClientSharedData
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RawStoreResultSet, RegionEntryUtils}
@@ -40,10 +41,10 @@ import com.zaxxer.hikari.pool.ProxyResultSet
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.collection.MultiBucketExecutorPartition
+import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, Utils}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
-import org.apache.spark.sql.execution.{RDDKryo, SecurityUtils}
+import org.apache.spark.sql.execution.{BucketsBasedIterator, RDDKryo, SecurityUtils}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.{Partition, TaskContext, TaskContextImpl, TaskKilledException}
@@ -61,7 +62,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     protected var connProperties: ConnectionProperties,
     @transient private[sql] val filters: Array[Expression] = Array.empty[Expression],
     @transient protected val partitionEvaluator: () => Array[Partition] = () =>
-      Array.empty[Partition], protected var commitTx: Boolean,
+      Array.empty[Partition], protected val partitionPruner: () => Int = () => -1,
+    protected var commitTx: Boolean,
     protected var delayRollover: Boolean, protected var projection: Array[Int],
     @transient protected val region: Option[LocalRegion])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
@@ -95,49 +97,52 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     field
   }
 
+  private def appendCol(sb: StringBuilder, col: String): StringBuilder =
+    sb.append(Utils.toUpperCase(col))
+
   // below should exactly match ExternalStoreUtils.handledFilter
   private def compileFilter(f: Filter, sb: StringBuilder,
-      args: ArrayBuffer[Any], addAnd: Boolean): Unit = f match {
+      args: ArrayBuffer[Any], addAnd: Boolean, literal: String = ""): Unit = f match {
     case EqualTo(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" = ?")
+      appendCol(sb, col).append(" = ?")
       args += value
     case LessThan(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" < ?")
+      appendCol(sb, col).append(" < ?")
       args += value
     case GreaterThan(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" > ?")
+      appendCol(sb, col).append(" > ?")
       args += value
     case LessThanOrEqual(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" <= ?")
+      appendCol(sb, col).append(" <= ?")
       args += value
     case GreaterThanOrEqual(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" >= ?")
+      appendCol(sb, col).append(" >= ?")
       args += value
     case StringStartsWith(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(s" LIKE $value%")
+      appendCol(sb, col).append(s" LIKE $value%")
     case In(col, values) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" IN (")
+      appendCol(sb, col).append(" IN (")
       (1 until values.length).foreach(_ => sb.append("?,"))
       sb.append("?)")
       args ++= values
@@ -146,20 +151,21 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         sb.append(" AND ")
       }
       sb.append('(')
-      compileFilter(left, sb, args, addAnd = false)
+      compileFilter(left, sb, args, addAnd = false, "TRUE")
       sb.append(") AND (")
-      compileFilter(right, sb, args, addAnd = false)
+      compileFilter(right, sb, args, addAnd = false, "TRUE")
       sb.append(')')
     case Or(left, right) =>
       if (addAnd) {
         sb.append(" AND ")
       }
       sb.append('(')
-      compileFilter(left, sb, args, addAnd = false)
+      compileFilter(left, sb, args, addAnd = false, "FALSE")
       sb.append(") OR (")
-      compileFilter(right, sb, args, addAnd = false)
+      compileFilter(right, sb, args, addAnd = false, "FALSE")
       sb.append(')')
-    case _ => // no filter pushdown
+    case _ => sb.append(literal)
+     // no filter pushdown
   }
 
   /**
@@ -171,7 +177,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       val sb = new StringBuilder()
       columns.foreach { s =>
         if (sb.nonEmpty) sb.append(',')
-        sb.append('"').append(s).append('"')
+        appendCol(sb.append('"'), s).append('"')
       }
       sb.toString()
     } else "1"
@@ -262,9 +268,14 @@ class RowFormatScanRDD(@transient val session: SnappySession,
    */
   override def compute(thePart: Partition, context: TaskContext): Iterator[Any] = {
 
+    if (Misc.getMemStoreBootingNoThrow != null && useResultSet) {
+      SecurityUtils.authorizeTableOperation(tableName, projection,
+        Authorizer.SELECT_PRIV, Authorizer.SQL_SELECT_OP, connProperties)
+    }
     if (pushProjections) {
       val (conn, stmt, rs) = computeResultSet(thePart, context)
-      val itr = new ResultSetTraversal(conn, stmt, rs, context)
+      val itr = new ResultSetTraversal(conn, stmt, rs, context,
+        java.util.Collections.emptySet[Integer]())
       if (commitTx) {
         commitTxBeforeTaskCompletion(Option(conn), context)
       }
@@ -272,10 +283,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     } else {
       // explicitly check authorization for the case of column table scan
       // !pushProjections && useResultSet means a column table
-      if (useResultSet) {
-        SecurityUtils.authorizeTableOperation(tableName, projection,
-          Authorizer.SELECT_PRIV, Authorizer.SQL_SELECT_OP, connProperties)
-      }
       val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
       var tx = txManagerImpl.getTXState
       val startTX = tx eq null
@@ -300,7 +307,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           val dataItr = itr.map(r =>
             if (r.hasByteArrays) r.getRowByteArrays(null) else r.getRowBytes(null): AnyRef).asJava
           val rs = new RawStoreResultSet(dataItr, container, container.getCurrentRowFormatter)
-          new ResultSetTraversal(conn = null, stmt = null, rs, context)
+          new ResultSetTraversal(conn = null, stmt = null, rs, context, bucketIds)
         } else itr
       } else {
         val (conn, stmt, rs) = computeResultSet(thePart, context)
@@ -331,7 +338,14 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     // (updated values in ParamLiteral will take care of updating filters)
     evaluateWhereClause()
     // use incoming partitions if provided (e.g. for collocated tables)
-    val parts = partitionEvaluator()
+    var parts = partitionEvaluator()
+    if (parts != null && parts.length > 0) {
+      return parts
+    }
+
+    // In the case of Direct Row scan, partitionEvaluator will be always empty.
+    // So, evaluating partition here again..
+    parts = evaluatePartitions()
     if (parts != null && parts.length > 0) {
       return parts
     }
@@ -341,6 +355,19 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       case Some(dr: CacheDistributionAdvisee) => session.sessionState.getTablePartitions(dr)
       // system table/VTI is shown as a replicated table having a single partition
       case _ => Array(new MultiBucketExecutorPartition(0, null, 0, Nil))
+    }
+  }
+
+  private def evaluatePartitions(): Array[Partition] = {
+    partitionPruner() match {
+      case -1 =>
+        Array.empty[Partition]
+      case bucketId: Int =>
+        if (!session.partitionPruning) {
+          Array.empty[Partition]
+        } else {
+          Utils.getPartitions(region.get, bucketId)
+        }
     }
   }
 
@@ -417,28 +444,31 @@ class RowFormatScanRDD(@transient val session: SnappySession,
  * This is primarily intended to be used for cleanup.
  */
 final class ResultSetTraversal(conn: Connection,
-    stmt: Statement, val rs: ResultSet, context: TaskContext)
+    stmt: Statement, val rs: ResultSet, context: TaskContext, bucketSet: java.util.Set[Integer])
     extends ResultSetIterator[Void](conn, stmt, rs, context) {
 
   lazy val defaultCal: GregorianCalendar =
     ClientSharedData.getDefaultCleanCalendar
 
   override protected def getCurrentValue: Void = null
+  def getBucketSet(): java.util.Set[Integer] = this.bucketSet
 }
 
 final class CompactExecRowIteratorOnRS(conn: Connection,
     stmt: Statement, ers: EmbedResultSet, context: TaskContext)
     extends ResultSetIterator[AbstractCompactExecRow](conn, stmt,
       ers, context) {
-
+  def getBucketSet(): java.util.Set[Integer] = java.util.Collections.emptySet[Integer]()
   override protected def getCurrentValue: AbstractCompactExecRow = {
     ers.currentRow.asInstanceOf[AbstractCompactExecRow]
   }
 }
 
 abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalRegion,
-    bucketIds: java.util.Set[Integer], context: TaskContext) extends Iterator[T] {
+    bucketIds: java.util.Set[Integer], context: TaskContext) extends Iterator[T]
+with BucketsBasedIterator {
 
+  def getBucketSet(): java.util.Set[Integer] = this.bucketIds
   protected type PRIterator = PartitionedRegion#PRLocalScanIterator
 
   protected[this] final val taskContext = context.asInstanceOf[TaskContextImpl]

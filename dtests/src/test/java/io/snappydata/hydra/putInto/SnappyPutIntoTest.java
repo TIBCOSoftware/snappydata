@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,7 +16,15 @@
  */
 package io.snappydata.hydra.putInto;
 
+import java.sql.SQLException;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.util.Vector;
+
+import hydra.Log;
 import hydra.TestConfig;
+import io.snappydata.hydra.cdcConnector.SnappyCDCPrms;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 
@@ -38,5 +46,34 @@ public class SnappyPutIntoTest extends SnappyTest {
     String primaryLocatorPort = getPrimaryLocatorPort();
     ConcPutIntoTest.conSelect(primaryLocatorHost, primaryLocatorPort, numThreads);
   }
+
+  public static void HydraTask_bulkDelete(){
+      try {
+      Log.getLogWriter().info("Inside bulkDelete");
+      Connection conn = SnappyTest.getLocatorConnection();
+      Vector tableNames = SnappyCDCPrms.getNodeName();
+      int deleteID = 0;
+      int minID = 0;
+      long rowCount = 0L;
+      String sysTabQ = "SELECT sum(ROW_COUNT) FROM sys.TABLESTATS";
+      ResultSet rs = conn.createStatement().executeQuery(sysTabQ);
+      while (rs.next())
+        rowCount = rs.getLong(1);
+      if (rowCount >= 1000000000L) { // if total rowCount is = 1bn
+        for(int i = 0 ;i < tableNames.size();i++) {
+          String minQ = "SELECT min(ID) FROM " + tableNames.elementAt(i);
+          ResultSet rs1 = conn.createStatement().executeQuery(minQ);
+          while (rs1.next())
+            minID = rs1.getInt(1);
+          deleteID = minID + 50000000; //delete fifty million records
+          Log.getLogWriter().info("The min id is  " + minID + " the delete id is " + deleteID);
+          conn.createStatement().execute("DELETE FROM " + tableNames.elementAt(i) + " WHERE ID < " + deleteID);
+        }
+      }
+    }
+   catch (SQLException ex) {
+      throw new util.TestException("Caught exception in HydraTask_bulkDelete() " + ex.getMessage());
+   }
+ }
 
 }

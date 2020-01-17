@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -37,7 +37,7 @@
 #
 # IV) Start the SnappyData Zeppelin interpreter on the Lead node
 #
-#     lead1   -dir=/tmp/data/server -spark.ui.port=3333 -spark.executor.cores=16 -zeppelin.interpreter.enable=true -classpath=<Path to jar of Zeppelin Interpreter for SnappyData>
+#     lead1   -dir=/tmp/data/server -spark.ui.port=3333 -spark.executor.cores=16 -zeppelin.interpreter.enable=true
 #
 # For more options, see http://snappydatainc.github.io/snappydata/configuration/#configuration
 localhost

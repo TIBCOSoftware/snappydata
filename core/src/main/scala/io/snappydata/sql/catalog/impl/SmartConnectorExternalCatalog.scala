@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,7 +25,7 @@ import com.gemstone.gemfire.internal.cache.LocalRegion
 import io.snappydata.sql.catalog.{ConnectorExternalCatalog, RelationInfo, SnappyExternalCatalog}
 import io.snappydata.thrift.{CatalogMetadataDetails, CatalogMetadataRequest, CatalogSchemaObject, snappydataConstants}
 
-import org.apache.spark.sql.catalyst.analysis.{NoSuchPartitionException, NoSuchPermanentFunctionException}
+import org.apache.spark.sql.catalyst.analysis.{NoSuchPartitionException, NoSuchPermanentFunctionException, NoSuchTableException}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogTable, CatalogTablePartition}
 import org.apache.spark.sql.catalyst.expressions.{And, AttributeReference, BoundReference, Expression}
@@ -94,7 +94,7 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
       val schemaObj = result.getCatalogSchema
       CatalogDatabase(name = schemaObj.getName, description = schemaObj.getDescription,
         locationUri = schemaObj.getLocationUri, properties = schemaObj.getProperties.asScala.toMap)
-    } else throw schemaNotFoundException(schema)
+    } else throw SnappyExternalCatalog.schemaNotFoundException(schema)
   }
 
   override def databaseExists(schema: String): Boolean = {
@@ -125,6 +125,10 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
 
   override def setCurrentDatabase(schema: String): Unit = synchronized {
     connectorHelper.setCurrentSchema(schema)
+  }
+
+  override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
+    throw new UnsupportedOperationException("Schema/database definitions cannot be altered")
   }
 
   override def createTable(table: CatalogTable, ignoreIfExists: Boolean): Unit = {
@@ -185,7 +189,7 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
     try {
       Some(getTable(schema, table))
     } catch {
-      case _: TableNotFoundException => None
+      case _: NoSuchTableException => None
     }
   }
 
@@ -199,8 +203,7 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
     } else {
       assert(schema.length > 0)
       ConnectorExternalCatalog.getRelationInfo(schema -> table, catalog = this) match {
-        case None => throw new TableNotFoundException(schema, table, Some(new RuntimeException(
-          "RelationInfo for the table is missing. Its region may have been destroyed.")))
+        case None => throw new TableNotFoundException(schema, s"RealtionInfo for $table")
         case Some(r) => r -> None
       }
     }

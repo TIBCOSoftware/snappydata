@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,14 +20,7 @@ import org.apache.spark.sql.streaming.{FileStreamSourceStressTestSuite, FileStre
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyFileStreamSourceSuite extends FileStreamSourceSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "FileStreamSource offset - read Spark 2.1.0 offset json format",
-    "FileStreamSource offset - read Spark 2.1.0 offset long format",
-    "FileStreamSourceLog - read Spark 2.1.0 log format"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil
 
 class SnappyFileStreamSourceStressTestSuite extends FileStreamSourceStressTestSuite
     with SharedSnappySessionContext with SnappySparkTestUtil

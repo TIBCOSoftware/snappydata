@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,6 +16,7 @@
  */
 package io.snappydata.util
 
+import java.nio.file.{Files, Paths}
 import java.util.Properties
 import java.util.regex.Pattern
 
@@ -30,9 +31,10 @@ import _root_.com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDU
 import io.snappydata.{Constant, Property, ServerManager, SnappyTableStatsProviderService}
 
 import org.apache.spark.memory.MemoryMode
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.hive.HiveClientUtil
 import org.apache.spark.sql.{SnappyContext, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.{SparkContext, SparkEnv}
-import org.apache.spark.sql.collection.Utils
 
 /**
  * Common utility methods for store services.
@@ -42,7 +44,7 @@ object ServiceUtils {
   val LOCATOR_URL_PATTERN: Pattern = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])")
 
   private[snappydata] def getStoreProperties(
-      confProps: Seq[(String, String)]): Properties = {
+      confProps: Seq[(String, String)], forInit: Boolean = false): Properties = {
     val storeProps = new Properties()
     confProps.foreach {
       case (Property.Locators(), v) =>
@@ -62,39 +64,50 @@ object ServiceUtils {
           k.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) => storeProps.setProperty(k, v)
       case _ => // ignore rest
     }
-    setCommonBootDefaults(storeProps, forLocator = false)
+    setCommonBootDefaults(storeProps, forLocator = false, forInit)
   }
 
   private[snappydata] def setCommonBootDefaults(props: Properties,
-      forLocator: Boolean): Properties = {
+      forLocator: Boolean, forInit: Boolean = true): Properties = {
     val storeProps = if (props ne null) props else new Properties()
     if (!forLocator) {
       // set default recovery delay to 2 minutes (SNAP-1541)
-      if (storeProps.getProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP) == null) {
-        storeProps.setProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
+      storeProps.putIfAbsent(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
+      val isRecoveryMode = props.getProperty(GfxdConstants.SNAPPY_PREFIX + "recover")
+      if(isRecoveryMode != null) {
+        // It is crucial to enforce process locality in case of recovery mode
+        storeProps.putIfAbsent("spark.locality.wait.process", "1800s")
+      } else {
+        // try hard to maintain executor and node locality
+        storeProps.putIfAbsent("spark.locality.wait.process", "20s")
       }
-      // try hard to maintain executor and node locality
-      if (storeProps.getProperty("spark.locality.wait.process") == null) {
-        storeProps.setProperty("spark.locality.wait.process", "20s")
+      storeProps.putIfAbsent("spark.locality.wait", "10s")
+      // default value for spark.sql.files.maxPartitionBytes in snappy is 32mb
+      storeProps.putIfAbsent("spark.sql.files.maxPartitionBytes", "33554432")
+
+      // change hive temporary files location to be inside working directory
+      // to fix issues with concurrent queries trying to access/write same directories
+      if (forInit) {
+        ClientSharedUtils.deletePath(Paths.get(HiveClientUtil.HIVE_TMPDIR), false, false)
+        Files.createDirectories(Paths.get(HiveClientUtil.HIVE_TMPDIR))
       }
-      if (storeProps.getProperty("spark.locality.wait") == null) {
-        storeProps.setProperty("spark.locality.wait", "10s")
+      // set as system properties so that these can be overridden by
+      // hive-site.xml if required
+      val sysProps = System.getProperties
+      for ((hiveVar, dirName) <- HiveClientUtil.HIVE_DEFAULT_SETTINGS) {
+        sysProps.putIfAbsent(hiveVar.varname, dirName)
       }
     }
     // set default member-timeout higher for GC pauses (SNAP-1777)
-    if (storeProps.getProperty(DistributionConfig.MEMBER_TIMEOUT_NAME) == null) {
-      storeProps.setProperty(DistributionConfig.MEMBER_TIMEOUT_NAME, "30000")
-    }
+    storeProps.putIfAbsent(DistributionConfig.MEMBER_TIMEOUT_NAME, "30000")
     // set network partition detection by default
-    if (storeProps.getProperty(ENABLE_NETWORK_PARTITION_DETECTION_NAME) == null) {
-      storeProps.setProperty(ENABLE_NETWORK_PARTITION_DETECTION_NAME, "true")
-    }
+    storeProps.putIfAbsent(ENABLE_NETWORK_PARTITION_DETECTION_NAME, "true")
     storeProps
   }
 
   def invokeStartFabricServer(sc: SparkContext,
       hostData: Boolean): Unit = {
-    val properties = getStoreProperties(Utils.getInternalSparkConf(sc).getAll)
+    val properties = getStoreProperties(Utils.getInternalSparkConf(sc).getAll, forInit = true)
     // overriding the host-data property based on the provided flag
     if (!hostData) {
       properties.setProperty("host-data", "false")
@@ -163,5 +176,40 @@ object ServiceUtils {
           case _: Throwable => false
         }
     }
+  }
+
+  /**
+   * We capture table ddl string and add it to table properties before adding to catalog.
+   * This will also contain passwords in the string such as jdbc connection string or
+   * s3 location etc. This method masks passwords
+   * @param str DDL string that might contain jdbc/s3 passwords
+   * @return similar string with masked passwords
+   */
+  def maskPasswordsInString(str: String): String = {
+    val jdbcPattern1 = ".*jdbc.*(?i)\\bpassword\\b=([^);&']*).*".r
+    val jdbcPattern2 = ".*jdbc.*:(.*)@.*".r
+    val s3Pattern1 = "s3[an]?://([^:]*):([^@]*)@.*".r
+    val optionPattern1 = ".*(?i)\\bpassword\\b '([^']*)'.*".r
+    var maskedStr = str.replace("\n", " ")
+    val mask = "xxxxx"
+
+    maskedStr match {
+      case jdbcPattern1(passwd) => maskedStr = maskedStr.replace(passwd, mask)
+      case _ =>
+    }
+    maskedStr match {
+      case jdbcPattern2(passwd) => maskedStr = maskedStr.replace(passwd, mask)
+      case _ =>
+    }
+    maskedStr match {
+      case s3Pattern1(passwd3, passwd4) => maskedStr = maskedStr.replace(passwd3, mask)
+          .replace(passwd4, mask)
+      case _ =>
+    }
+    maskedStr match {
+      case optionPattern1(passwd) => maskedStr = maskedStr.replace(passwd, mask)
+      case _ =>
+    }
+    maskedStr
   }
 }

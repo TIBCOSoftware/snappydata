@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -944,7 +944,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         val buildInitCode = evaluateVariables(buildVars)
         genOuterJoinCodes(entryVar, buildVars, buildInitCode, mapKeyCodes,
           checkCondition, checkCode, numRows, getConsumeResultCode(numRows, resultVars),
-          keyIsUnique, declareLocalVars, moveNextValue, inputCodes)
+          keyIsUnique, declareLocalVars, moveNextValue, inputCodes, localValueVar)
 
       case LeftSemi => genSemiJoinCodes(entryVar, mapKeyCodes, checkCondition,
         checkCode, numRows, getConsumeResultCode(numRows, input),
@@ -1084,9 +1084,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       buildInitCode: String, mapKeyCodes: String,
       checkCondition: Option[ExprCode], checkCode: String, numRows: String,
       consumeResult: String, keyIsUnique: String, declareLocalVars: String,
-      moveNextValue: String, inputCodes: String): String = {
+      moveNextValue: String, inputCodes: String, localValueVar: String): String = {
   // scalastyle:on
-
+    val matchFailedCompletely = ctx.freshName("matchFailedCompletely")
     val consumeCode = checkCondition match {
       case None =>
         s"""$buildInitCode
@@ -1099,12 +1099,22 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       case Some(ev) =>
         // assign null to entryVar if checkCondition fails so that it is
         // treated like an empty outer join match by subsequent code
-        s"""if ($entryVar != null) {
-            ${ev.code}
-            if (${ev.isNull} || !${ev.value}) $entryVar = null;
-          }
+
+        s"""
+           ${ev.code}
+           if (${ev.isNull} || !${ev.value}) {
+             if ($localValueVar.$nextValueVar != null) {
+               continue;
+             }
+           } else {
+             $matchFailedCompletely = false;
+           }
           $buildInitCode
-          if ($entryVar == null) {
+
+          //TODO:to tackle case where there is filter on build side
+          //such that it is specifically looking for not null values
+          // the outer join needs to be converted to inner join
+          if ($entryVar == null || $matchFailedCompletely) {
             // set null variables for outer join in failed match
             ${buildVars.map(ev => s"${ev.isNull} = true;").mkString("\n")}
           }
@@ -1113,9 +1123,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // loop through all the matches with moveNextValue
     // null check for entryVar is already done inside mapKeyCodes
     s"""$declareLocalVars
-
       $mapKeyCodes
       $inputCodes
+      ${checkCondition.map(_ => s"boolean $matchFailedCompletely = true;").getOrElse("")}
       while (true) {
         $checkCode
         do { // single iteration loop meant for breaking out with "continue"
@@ -1123,11 +1133,11 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         } while (false);
 
         if ($entryVar == null || $keyIsUnique) break;
-
         // values will be repeatedly reassigned in the loop (if any)
         // while keys will remain the same
         $moveNextValue
-      }"""
+      }
+      """
   }
 
   private def genSemiJoinCodes(entryVar: String, mapKeyCodes: String,
@@ -1303,9 +1313,10 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // copy just reference of the object if underlying byte[] is immutable
       ObjectHashMapAccessor.cloneStringIfRequired(resultVar.value, colVar, doCopy)
     case _: ArrayType | _: MapType | _: StructType if doCopy =>
-      s"$colVar = ${resultVar.value} != null ? ${resultVar.value}.copy() : null;"
+      val javaType = ctx.javaType(dataType)
+      s"$colVar = ($javaType)(${resultVar.value} != null ? ${resultVar.value}.copy() : null);"
     case _: BinaryType if doCopy =>
-      s"$colVar = ${resultVar.value} != null ? ${resultVar.value}.clone() : null;"
+      s"$colVar = (byte[])(${resultVar.value} != null ? ${resultVar.value}.clone() : null);"
     case _ =>
       s"$colVar = ${resultVar.value};"
   }

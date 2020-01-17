@@ -7,6 +7,142 @@
 # ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
 ####################################################################################################
 
+Release 1.1.0
+
+- New Features/Fixed Issues
+
+  [SNAP-2440] Support fully qualified column names in projection
+
+  (f7ecc73) Start hive-thriftserver by default in product
+
+  [SNAP-2982] Fix for exception while startup - "MetaException: Metastore contains multiple versions"
+
+  [SNAP-2902] Mismatch in the expected and actual inserted rows, after inserting data from a column
+   table to another column table
+
+  (5fade0b) Quote table and schema name in some commands before executing on GemFireXD connection.
+   This allows support for reserved keywords in GemFireXD parser like "default" as schema name.
+
+  (1942811) Default glibc malloc settings to avoid memory defragmentation
+  
+  [SNAP-2959] Increase the weightage of lead to avoid it being thrown out of distributed system in 
+  case network partitioning
+
+  [SNAP-2975] Fix crash due to SEGV in putInto operations
+
+  (ce1874e) Including SparkR library as part of distribution
+
+  [SNAP-2962] Set default value for spark.sql.files.maxPartitionBytes to 32mb
+
+  (41594f5) Use Spark convention to return Catalog listDatabases/listTables output in lower-case
+
+  [SNAP-2860] PUT INTO <> SELECT v1, v2... throws IllegalArgumentException for Column table
+
+  [SNAP-2474] Partition pruning support added for row table scan
+
+  [SNAP-2956] Wrap non-fatal OOME from Spark layer in LowMemoryException
+
+  [SNAP-2900] UI Enhancements: Provide an ability/control, on Dashboard UI, to expand or collapse
+  whole row per member node entry in single click
+
+  [SNAP-2890] Exception occurs when the maximum column projection corresponds to 128th column 
+  position
+
+  (7607064) Spotfire Apache Spark compatibility changes:
+  - SHOW DATABASES as an alias for SHOW SCHEMAS
+  - Support in SnappySqlParser for spark.sql.variable.substitute to substitute ${var} in query string
+
+  (568b7e1) Fix for JDBC driver Jar running with Spark 2.3 + versions (java.lang.NoSuchFieldError: 
+  MAX_ROUNDED_ARRAY_LENGTH)
+
+  [SNAP-2368] Handling the case when SnappyDataBaseDialect is used to determine table schema with the 
+  table name not containing schema name
+
+  (5911532) A "--config <directory>" option can be passed to the snappy-start-all script now to 
+  take config files from that folder instead of default conf folder. Please note log4j.properties 
+  file is still taken from the default conf folder.
+
+  (1630148) Fix for filter push down to scan level when IN list has constants but in cast node.
+
+  (7a7e902) Fix backward compatibility issues with sample tables
+
+  [SNAP-2761] Use off-heap cache(if configured) for streaming-sink
+
+  [SNAP-2818] Trim the JOB_DESCRIPTION property in Spark jobs
+
+  [SNAP-2790] Key_columns option does not check for the validity of column names at time of table creation
+
+  [SNAP-2789] Enabled broadcast and exchange reuse for column and row tables
+
+  [SNAP-2751] Cannot connect to secure SnappyData cluster via Spark's Thrift server
+
+  [SNAP-2773] Improve GUI display of put into
+
+  (80f2d30) Store the temporary join result in offheap for put into operation
+
+  [SNAP-2661] Provide Snappy UI User a control over auto update
+
+  [SNAP-2381] Global lock to serialize concurrent puts
+
+  [SNAP-2712] Some in built functions returning wrong results due to tokenization and plan caching
+ 
+  (5601184) Fixing some meta-data query inconsistencies:
+  - Add support for SHOW VIEWS
+  - Use "schemaName" for the column instead of Spark's "database" in SHOW TABLES
+  - Show CHAR/VARCHAR types instead of STRING for those types of columns in meta-data queries
+
+  [SNAP-2389] NPE during lead failure/restart
+
+  [SNAP-2462] Enable common-subexpression elimination for ParamLiterals. This improves performance
+  of TPC-H Q19
+
+  [SNAP-2602] On UI add column named "Overflown Size"/ "Disk Size" in tables
+
+  (dd590a2) Perf improvement for limit query on external tables
+
+  [SNAP-2985] Fixes for multiple inconsistency issue in snapshot isolation
+
+  (91a9a63) Error in select if table(replicated) is created with backticks as 
+  delimiter
+
+  (c12fa66) Scalability improvements for snapshot isoalation
+
+  (72052fc) Change the default auto reconnect setting to false. For locator it is still set to true
+
+  (1f9d934) Fix occasional NPE in ClientService init
+
+  (be351df) Disable load-balance by default on servers
+
+  [SNAP-2591] Implemented failover in ODBC
+
+  [SNAP-2654] GemFireCacheImpl.oldEntryMap causes memory leak 
+
+  (1d5e0fc4) Always route statements like "show tables/views...", "describe" to lead from
+  snappy-shell to give consistent results
+
+  (d0a1002) Fix for "show tables" command. When the standard table type "TABLE" is given, 
+  then show all of row, column, external, sample, stream and topK tables
+
+  [SNAP-2934] Avoid double free of page that caused server crash due to SIGABORT/SIGSEGV 
+
+  [SNAP-2908] UI: Display sparklines for cpu and memory usage for individual members
+
+  [SNAP-2926] UI: Changing default page size for all tabular lists from 10 to 50, sorting 
+  members list tabular view on member type for ordering all nodes such that all locators 
+  first, then all leads and then all servers.
+
+  [SNAP-2457] Enabling plan caching for hive thrift server sessions
+
+  (b825fd6) Property to set if hive meta-store client should use isolated ClassLoader
+
+  [SNAP-2909]  Streaming micro batch thread keeps running forever when snappy-job fails due 
+  to failure from outside streaming query
+
+  [SNAP-2237]  SQL expression alias in projection cannot be used in GroupBy 
+
+  [SNAP 2634] Planner is not used in IncrementalExecution
+    
+
 Release 1.0.2.1
 
 - New Features/Fixed Issues

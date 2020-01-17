@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,11 +20,4 @@ import org.apache.spark.sql.execution.WholeStageCodegenSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyWholeStageCodegenSuite extends WholeStageCodegenSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "Aggregate should be included in WholeStageCodegen",
-    "Aggregate with grouping keys should be included in WholeStageCodegen",
-    "simple typed UDAF should be included in WholeStageCodegen"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -56,7 +56,17 @@ private[sql] final case class RowTableScan(
   override val nodeName: String = "RowTableScan"
 
   override def sameResult(plan: SparkPlan): Boolean = plan match {
-    case r: RowTableScan => r.table == table && r.numBuckets == numBuckets && r.schema == schema
+    case r: RowTableScan => r.table == table && r.numBuckets == numBuckets &&
+      r.schema == schema && (this.dataRDD match {
+      case rowRdd: RowFormatScanRDD =>
+        val rdd2 = r.dataRDD.asInstanceOf[RowFormatScanRDD]
+        rowRdd.filters.length == rdd2.filters.length &&
+        rowRdd.filters.zip(
+        rdd2.filters).forall {
+        case (expr1, expr2) => expr1.semanticEquals(expr2)
+      }
+      case _ => true
+    })
     case _ => false
   }
 

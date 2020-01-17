@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -79,12 +79,13 @@ class CubeRollupGroupingSetsTest extends SnappyFunSuite with BeforeAndAfterAll {
     assert(dfCubeResult.sameElements(snappyCubeResult))
 
     // grouping sets query equivalent to above cube query
-    val snappyGoupingSetResult = snc.sql("select col1, col2, sum(col3) from mytable group by col1, col2 " +
-        "grouping sets ((col1, col2), (col1), (col2), ()) order by col1, col2").collect()
+    val snappyGroupingSetResult = snc.sql(
+      "select col1, col2, sum(col3) from mytable group by col1, col2 " +
+          "grouping sets ((col1, col2), (col1), (col2), ()) order by col1, col2").collect()
     logInfo("DataFrame cube result")
     logInfo(dfCubeResult.mkString("\n"))
     logInfo("SnappySQL gouping sets result")
-    logInfo(snappyGoupingSetResult.mkString("\n"))
-    assert(dfCubeResult.sameElements(snappyGoupingSetResult))
+    logInfo(snappyGroupingSetResult.mkString("\n"))
+    assert(dfCubeResult.sameElements(snappyGroupingSetResult))
   }
 }

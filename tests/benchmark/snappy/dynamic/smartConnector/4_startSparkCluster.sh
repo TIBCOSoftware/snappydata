@@ -10,6 +10,6 @@ for element in "${slaves[@]}";
 echo "******************Created conf/slaves******************"
 
 #Start master and slaves from master machines
-ssh $master sh $SPARK_HOME/sbin/start-all.sh
+ssh $master bash $SPARK_HOME/sbin/start-all.sh
 
 

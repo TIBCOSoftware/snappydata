@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,27 +17,26 @@
 package org.apache.spark.sql.execution
 
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.internal.cache.LocalRegion
-
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.{RDD, ZippedPartitionsBaseRDD}
 import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
-import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnarStorePartitionedRDD, IndexColumnFormatRelation, SmartConnectorColumnRDD}
-import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
+import org.apache.spark.sql.execution.columnar.{ColumnInsertExec, ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchange}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
-import org.apache.spark.sql.execution.row.{RowFormatRelation, RowFormatScanRDD, RowTableScan}
+import org.apache.spark.sql.execution.row.{RowFormatRelation, RowFormatScanRDD, RowInsertExec, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
+
 
 
 /**
@@ -263,40 +262,56 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
   protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val sc = session.sparkContext
-    val key = session.currentKey
-    val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
-    val (result, shuffleIds) = if (oldExecutionId eq null) {
-      val (queryStringShortForm, queryStr, queryExecStr, planInfo) = if (key eq null) {
-        val callSite = sqlContext.sparkContext.getCallSite()
-        (callSite.shortForm, callSite.longForm, treeString(verbose = true),
-            PartitionedPhysicalScan.getSparkPlanInfo(this))
-      } else {
-        val paramLiterals = key.currentLiterals
-        val paramsId = key.currentParamsId
-        (key.sqlText, key.sqlText, SnappySession.replaceParamLiterals(
-          treeString(verbose = true), paramLiterals, paramsId), PartitionedPhysicalScan
-            .getSparkPlanInfo(this, paramLiterals, paramsId))
+    // Insert operations shouldn't retry.
+    child.collectFirst {
+      case _: ColumnInsertExec | _: RowInsertExec => {
+        sc.setLocalProperty(io.snappydata.Property.MaxRetryAttemptsForWrite.name
+          , io.snappydata.Property.MaxRetryAttemptsForWrite.get(session.sessionState.conf).toString)
       }
-      CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
-        queryStr, queryExecStr, planInfo) {
+    }
+
+    try {
+      val key = session.currentKey
+      val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
+      val (result, shuffleIds) = if (oldExecutionId eq null) {
+        val (queryStringShortForm, queryStr, queryExecStr, planInfo) = if (key eq null) {
+          val callSite = sqlContext.sparkContext.getCallSite()
+          (callSite.shortForm, callSite.longForm, treeString(verbose = true),
+            PartitionedPhysicalScan.getSparkPlanInfo(this))
+        } else {
+          val paramLiterals = key.currentLiterals
+          val paramsId = key.currentParamsId
+          (key.sqlText, key.sqlText, SnappySession.replaceParamLiterals(
+            treeString(verbose = true), paramLiterals, paramsId), PartitionedPhysicalScan
+            .getSparkPlanInfo(this, paramLiterals, paramsId))
+        }
+        CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
+          queryStr, queryExecStr, planInfo) {
+          preAction()
+          val rdd = child.execute()
+          val shuffleIds = SnappySession.findShuffleDependencies(rdd)
+          (collectRDD(sc, rdd), shuffleIds)
+        }._1
+      } else {
         preAction()
         val rdd = child.execute()
         val shuffleIds = SnappySession.findShuffleDependencies(rdd)
         (collectRDD(sc, rdd), shuffleIds)
-      }._1
-    } else {
-      preAction()
-      val rdd = child.execute()
-      val shuffleIds = SnappySession.findShuffleDependencies(rdd)
-      (collectRDD(sc, rdd), shuffleIds)
-    }
-    if (shuffleIds.nonEmpty) {
-      sc.cleaner match {
-        case Some(c) => shuffleIds.foreach(c.doCleanupShuffle(_, blocking = false))
-        case None =>
       }
+      if (shuffleIds.nonEmpty) {
+        sc.cleaner match {
+          case Some(c) => shuffleIds.foreach(c.doCleanupShuffle(_, blocking = false))
+          case None =>
+        }
+      }
+      result
     }
-    result
+    finally {
+      logDebug(s" Unlocking the table in execute of ExecutePlan:" +
+        s" ${child.treeString(false)}")
+      sc.setLocalProperty(io.snappydata.Property.MaxRetryAttemptsForWrite.name, null)
+      session.clearWriteLockOnTable()
+    }
   }
 
   override def executeCollect(): Array[InternalRow] = sideEffectResult
@@ -324,6 +339,8 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
   def partitionColumns: Seq[String]
 
   def connectionType: ConnectionType.Value
+
+  def getColocatedTable: Option[String]
 }
 
 /** Combines two SparkPlan or one SparkPlan and another RDD and acts as a LeafExecNode for the
