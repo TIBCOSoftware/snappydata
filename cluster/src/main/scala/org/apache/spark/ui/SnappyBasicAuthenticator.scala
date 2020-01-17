@@ -53,6 +53,13 @@ class SnappyBasicAuthenticator extends BasicAuthenticator with Logging {
         SanityManager.DEBUG_PRINT(GfxdConstants.TRACE_AUTHENTICATION, msg)
       }
       null
+    } else if (Misc.getGemFireCache.isSnappyRecoveryMode &&
+        !username.equals(memStore.getBootProperty(Attribute.USERNAME_ATTR))) {
+      val msg = s"ACCESS DENIED, user [$username]. Only admin-user is allowed in recovery mode."
+      if (GemFireXDUtils.TraceAuthentication) {
+        SanityManager.DEBUG_PRINT(GfxdConstants.TRACE_AUTHENTICATION, msg)
+      }
+      null
     } else {
       val principal = new UsernamePrincipal(username)
       val response = request match {

@@ -21,9 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
-import org.junit.Assert.assertEquals
-
 import org.apache.spark.Logging
+import org.junit.Assert.assertEquals
 
 
 // scalastyle:off println
@@ -249,6 +248,46 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     var records = ps.executeBatch()
     records.foreach(r => numRows += r)
     (1, numRows)
+  }
+
+  def testComplexDataTypes() : Unit = {
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+    stmt.execute("drop table if exists t4")
+    try {
+      stmt.execute(
+        """create table t4(col1 Array<String>, col2 int,  col3 Map<Int,Boolean>,
+          | col4 Struct<f1:float,f2:int,f3:short>) USING column
+          |  options(buckets '2', COLUMN_MAX_DELTA_ROWS '1')""".stripMargin)
+
+      stmt.execute("insert into t4 select Array('11','3','4'), 1, Map(1,true), Struct(15.4f,34,4)")
+      stmt.execute("insert into t4 select null, 2, Map(1,true), null")
+      stmt.execute("insert into t4 select Array('11','3','4'), 3, null, Struct(15.4f,34,4)")
+      val rs = stmt.executeQuery("select * from t4 order by col2")
+
+      assert(rs.next())
+      assertEquals("{\"col_0\":[\"11\",\"3\",\"4\"]}", rs.getString(1))
+      assertEquals(1, rs.getInt(2))
+      assertEquals("{\"col_1\":{\"1\":true}}", rs.getString(3))
+      assertEquals("{\"col_2\":{\"f1\":15.4,\"f2\":34,\"f3\":4}}", rs.getString(4))
+
+      assert(rs.next())
+      assertEquals(null, rs.getString(1))
+      assertEquals(2, rs.getInt(2))
+      assertEquals("{\"col_1\":{\"1\":true}}", rs.getString(3))
+      assertEquals(null, rs.getString(4))
+
+      assert(rs.next())
+      assertEquals("{\"col_0\":[\"11\",\"3\",\"4\"]}", rs.getString(1))
+      assertEquals(3, rs.getInt(2))
+      assertEquals(null, rs.getString(3))
+      assertEquals("{\"col_2\":{\"f1\":15.4,\"f2\":34,\"f3\":4}}", rs.getString(4))
+
+      assert(!rs.next())
+    } finally {
+      stmt.execute("drop table if exists t4")
+    }
   }
 
   def testConcurrentBatchDmlQueriesUsingPreparedStatement(): Unit = {

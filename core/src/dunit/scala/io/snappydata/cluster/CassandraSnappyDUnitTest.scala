@@ -92,7 +92,7 @@ class CassandraSnappyDUnitTest(val s: String)
     new File(downloadPath).mkdir()
     new File(snappyProductDir, "books.xml").createNewFile()
     sparkXmlJarPath = downloadURI("https://repo1.maven.org/maven2/com/databricks/" +
-        "spark-xml_2.11/0.5.0/spark-xml_2.11-0.5.0.jar")
+        "spark-xml_2.11/0.4.1/spark-xml_2.11-0.4.1.jar")
     val cassandraJarLoc = getLoc(downloadLoc)
     cassandraConnectorJarLoc =
       getUserAppJarLocation("spark-cassandra-connector_2.11-2.0.7.jar", downloadLoc)
@@ -234,6 +234,7 @@ class CassandraSnappyDUnitTest(val s: String)
     doTestDeployPackageWithSnappyJob()
     doTestPackageViaSnappyJobCommand()
     doTestDeployPackageWithExternalTableInSnappyShell()
+    doTestSNAP_3120()
   }
 
   def doTestPackageViaSnappyJobCommand(): Unit = {
@@ -344,12 +345,6 @@ class CassandraSnappyDUnitTest(val s: String)
     stmt1.execute("create external table books using com.databricks.spark.xml options" +
         s" (path '$snappyProductDir/books.xml')")
 
-    // Move xml jar and verify the deploy fails upon restart.
-    val xmlPath = new File(sparkXmlJarPath)
-    val tempXmlPath = new File(s"$xmlPath.bak")
-    assert(xmlPath.renameTo(tempXmlPath),
-        s"Could not move ${xmlPath.getName} to ${tempXmlPath.getName}")
-
     logInfo("Restarting the cluster for " +
         "CassandraSnappyDUnitTest.doTestDeployJarWithExternalTable()")
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
@@ -366,14 +361,12 @@ class CassandraSnappyDUnitTest(val s: String)
     assert(getCount(stmt1.getResultSet) == 3)
 
     stmt1.execute("list packages")
-    assert(getCount(stmt1.getResultSet) == 1)
+    assert(getCount(stmt1.getResultSet) == 2)
 
     stmt1.execute("undeploy cassJar")
+    stmt1.execute("undeploy xmlJar")
     stmt1.execute("list packages")
     assert(getCount(stmt1.getResultSet) == 0)
-
-    assert(tempXmlPath.renameTo(xmlPath),
-      s"Could not move ${tempXmlPath.getName} to ${xmlPath.getName}")
 
     stmt1.execute("drop table if exists customer4")
     try {
@@ -387,15 +380,6 @@ class CassandraSnappyDUnitTest(val s: String)
           sqle.getMessage.contains("Failed to find " +
               "data source: org.apache.spark.sql.cassandra") => // expected
       case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
-    }
-
-    try {
-      stmt1.execute("create external table books2 using com.databricks.spark.xml options" +
-          s" (path '$snappyProductDir/books.xml')")
-      assert(false, "External table on xml should have failed.")
-    } catch {
-      case sqle: SQLException if (sqle.getSQLState == "42000") => // expected
-      case t: Throwable => throw t
     }
   }
 
@@ -452,5 +436,45 @@ class CassandraSnappyDUnitTest(val s: String)
       case e: Exception if e.getMessage.contains("Job failed with result:") => // expected
       case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
     }
+  }
+
+  def doTestSNAP_3120(): Unit = {
+    logInfo("Running testSNAP_3120")
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 0)
+    stmt1.execute(s"deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
+        s" repos 'http://clojars.org/repo/' path '$snappyProductDir/mssqlJar1'")
+    try {
+      stmt1.execute("deploy package MSSQL1 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
+          s" repos 'http://clojars.org/repo/' path '$snappyProductDir/mssqlJar';")
+      assert(assertion = false, s"Expected an exception!")
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "38000" => // expected
+      case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
+    }
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 1)
+    var rs = stmt1.getResultSet
+    rs.next()
+    assert(rs.getString(1) == "mssql")
+
+    stmt1.execute("undeploy MSSQL")
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 0)
+
+    stmt1.execute("deploy package MSSQL1 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
+        s" repos 'http://clojars.org/repo/' path '$snappyProductDir/mssqlJar';")
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 1)
+    rs = stmt1.getResultSet
+    rs.next()
+    assert(rs.getString(1) == "mssql1")
+
+    stmt1.execute("undeploy MSSQL1")
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 0)
   }
 }

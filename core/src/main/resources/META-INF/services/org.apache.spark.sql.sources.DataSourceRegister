@@ -1,5 +1,6 @@
 org.apache.spark.sql.execution.columnar.impl.DefaultSource
 org.apache.spark.sql.execution.row.DefaultSource
+org.apache.spark.sql.execution.oplog.impl.DefaultSource
 org.apache.spark.sql.streaming.SnappyStoreSinkProvider
 org.apache.spark.sql.streaming.SocketStreamSource
 org.apache.spark.sql.streaming.FileStreamSource

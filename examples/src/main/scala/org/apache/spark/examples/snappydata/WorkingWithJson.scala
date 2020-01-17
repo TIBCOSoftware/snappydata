@@ -87,7 +87,7 @@ object WorkingWithJson extends SnappySQLJob {
     morePeople.write.insertInto("people")
 
     //print schema of the table
-    println("Print Schema of the table\n################")
+    println("Print Schema of the People table.\n################")
     println(snSession.table("people").schema)
     println
 
@@ -102,6 +102,39 @@ object WorkingWithJson extends SnappySQLJob {
 
     val allPersons = nameAndAddress.toJSON
     allPersons.show(truncate = false)
+
+    // Multi-line json example
+    println("Multi-line json example\n################")
+    val locomotives_path = s"${jobConfig.getString("json_resource_folder")}/locomotives.json"
+    val locomotivesDF = snSession.read.option("wholeFile", "true").json(locomotives_path)
+    println("Printing schema of the DataFrame locomotivesDF")
+    locomotivesDF.printSchema()
+    println("DataFrame locomotivesDF contents\n################")
+    locomotivesDF.show(false)
+    println(s"locomotivesDF row count: ${locomotivesDF.count()}")
+
+    snSession.dropTable("locomotives", ifExists = true)
+    snSession.createTable(tableName = "locomotives",
+      provider = "column",
+      schema = locomotivesDF.schema,
+      options = Map.empty[String, String],
+      allowExisting = false)
+    locomotivesDF.write.insertInto("locomotives")
+
+    val resultDF = snSession.sql("SELECT dateIso, emission_tier, engine, fleet" +
+        ", hqLatLng, installedOn, manufacturer, model," +
+        " parent, serial_no, type, uri FROM locomotives")
+    println("Contents of the table locomotives:\n################")
+    resultDF.show(truncate = false)
+
+    println("Creating external table using SQL syntax on the same multi-line json file.")
+    snSession.sql("CREATE EXTERNAL TABLE stg_locomotives (dateIso STRING, emission_tier STRING, " +
+        "engine STRING, fleet STRING, hqLatLng STRUCT<lat: DOUBLE, lng: DOUBLE>, installedOn " +
+        "STRING, manufacturer STRING, model STRING, parent STRING, serial_no STRING, " +
+        "type STRING, uri STRING) USING JSON OPTIONS (wholefile 'true', path " +
+        s"'$locomotives_path')")
+    println("Row count of the external table stg_locomotives:")
+    println(snSession.sql("SELECT * FROM stg_locomotives").count())
   }
 
   def main(args: Array[String]) {

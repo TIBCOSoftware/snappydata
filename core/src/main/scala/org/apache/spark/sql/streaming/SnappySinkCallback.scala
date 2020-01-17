@@ -115,17 +115,18 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
 private[streaming] object SnappyStoreSinkProvider {
 
   val EVENT_TYPE_COLUMN = "_eventType"
-  val SINK_STATE_TABLE = "snappysys_internal____sink_state_table"
+  private val INTERNAL_SUFFIX = "snappysys_internal____"
+  val SINK_STATE_TABLE = s"${INTERNAL_SUFFIX}sink_state_table"
   val TABLE_NAME = "tableName"
   val QUERY_NAME = "queryName"
   val SINK_CALLBACK = "sinkCallback"
   val STATE_TABLE_SCHEMA = "stateTableSchema"
   val CONFLATION = "conflation"
-  val EVENT_COUNT_COLUMN = "snappysys_internal____event_count"
+  val EVENT_COUNT_COLUMN = s"${INTERNAL_SUFFIX}event_count"
   val QUERY_ID_COLUMN = "stream_query_id"
   val BATCH_ID_COLUMN = "batch_id"
-  val TEST_FAILBATCH_OPTION = "internal___failBatch"
-  val ATTEMPTS = "internal___attempts"
+  val TEST_FAILBATCH_OPTION = s"${INTERNAL_SUFFIX}failBatch"
+  val ATTEMPTS = s"${INTERNAL_SUFFIX}attempts"
 
   object EventType {
     val INSERT = 0
@@ -221,6 +222,11 @@ case class SnappyStoreSink(snappySession: SnappySession,
     snappySession.internalCreateDataFrame(
       ds.queryExecution.toRdd,
       StructType(ds.schema.fields))
+  }
+
+  override def toString: String = {
+    val params = parameters + ("sinkCallback" -> sinkCallback.getClass.getName)
+    s"SnappyStoreSink[${params.mkString(", ")}]"
   }
 }
 

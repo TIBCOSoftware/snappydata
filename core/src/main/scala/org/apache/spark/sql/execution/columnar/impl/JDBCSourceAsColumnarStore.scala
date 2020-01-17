@@ -624,7 +624,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       val iter = gen._1.generate(refs).asInstanceOf[BufferedRowIterator]
       // put the single ColumnBatch in the iterator read by generated code
       iter.init(partitionId, Array(Iterator[Any](new ResultSetTraversal(
-        conn = null, stmt = null, rs = null, context = null),
+        conn = null, stmt = null, rs = null, context = null,
+        java.util.Collections.emptySet[Integer]()),
         ColumnBatchIterator(batch)).asInstanceOf[Iterator[InternalRow]]))
       // ignore the result which is the update count
       while (iter.hasNext) {

@@ -18,22 +18,20 @@
 package org.apache.spark.sql.execution
 
 import java.io.File
-import java.lang
 import java.nio.file.{Files, Paths}
 import java.util.Map.Entry
 import java.util.function.Consumer
+import java.util.regex.Pattern
 
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.iapi.reference.{Property => GemXDProperty}
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.Property
+import io.snappydata.{Constant, Property}
 import io.snappydata.util.ServiceUtils
-
 import org.apache.spark.SparkContext
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql._
@@ -54,6 +52,85 @@ import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 import org.apache.spark.unsafe.types.CalendarInterval
+
+import scala.tools.nsc.{GenericRunnerSettings, Settings}
+import scala.tools.nsc.interpreter.IMain
+
+
+/**
+ * Allow execution of adhoc scala code on the Lead node.
+ * Creates a new Scala interpreter for a Snappy Session. But, cached for the life of the
+ * session. Subsequent invocations of the 'interpret' command will resuse the cached
+ * interpreter. Allowing any variables (e.g. dataframe) to be preserved across invocations.
+ * State will not be preserved during Lead node failover.
+ * <p> Application is injected (1) The SnappySession in variable called 'session' and
+ * (2) The Options in a variable called 'intp_options'.
+ * <p> To return values set a variable called 'intp_return' - a Seq[Row].
+ */
+case class InterpretCodeCommand(
+     code: String,
+     snappySession: SnappySession,
+     options: Map[String, String] = Map.empty) extends RunnableCommand {
+
+  lazy val df: Dataset[Row] = {
+    val tcb = ToolsCallbackInit.toolsCallback
+    if (tcb != null) {
+      // supported in embedded mode only
+      tcb.getScalaCodeDF(code, snappySession, options)
+    } else {
+      null
+    }
+  }
+
+
+  // This is handled directly by Remote Interpreter code
+  override def run(sparkSession: SparkSession): Seq[Row] = df.collect()
+
+  override def output: Seq[Attribute] = df.schema.fields.map(
+    x => AttributeReference(x.name, x.dataType, x.nullable)())
+}
+
+case class GrantRevokeIntpCommand(
+  isGrant: Boolean, users: String) extends RunnableCommand {
+
+  // This is handled directly by Remote Interpreter code
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val tcb = ToolsCallbackInit.toolsCallback
+    if (tcb == null) {
+      throw new AnalysisException("Granting/Revoking" +
+        " of INTP not supported from smart connector mode");
+    }
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val user = session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR)
+    tcb.updateIntpGrantRevoke(user, isGrant, users)
+    Nil
+  }
+}
+
+case class GrantRevokeOnExternalTable(
+   isGrant: Boolean, table: TableIdentifier, users: String) extends RunnableCommand {
+
+  // This is handled directly by Remote Interpreter code
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val tcb = ToolsCallbackInit.toolsCallback
+    if (tcb == null) {
+      throw new AnalysisException("Granting/Revoking" +
+        " on external table not supported from smart connector mode");
+    }
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val ct = session.sessionCatalog.getTableMetadata(table)
+    val user = session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR)
+    tcb.updateGrantRevokeOnExternalTable(user, isGrant, table, users, ct)
+    Nil
+  }
+}
+
+object GrantRevokeOnExternalTable {
+  val META_REGION_KEY_PREFIX = "##_EXTERNAL__GRANT__REVOKE_##"
+  def getMetaRegionKey(fqtn: String): String = {
+    META_REGION_KEY_PREFIX + "####" + fqtn
+  }
+}
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
@@ -559,32 +636,37 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val commands = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
     val rows = new ArrayBuffer[Row]
-    commands.forEach(new Consumer[Entry[String, String]] {
-      override def accept(t: Entry[String, String]): Unit = {
-        var alias = t.getKey
-        // Skip dropped functions entry
-        if (alias.contains(ContextJarUtils.droppedFunctionsKey)) return
-        // Explicitly mark functions as UDF while listing jars/packages.
-        alias = alias.replace(ContextJarUtils.functionKeyPrefix, "[UDF]")
-        val value = t.getValue
-        val indexOf = value.indexOf('|')
-        if (indexOf > 0) {
-          // It is a package
-          val pkg = value.substring(0, indexOf)
-          rows += Row(alias, pkg, true)
-        }
-        else {
-          // It is a jar
-          val jars = value.split(',')
-          val jarfiles = jars.map(f => {
-            val lastIndexOf = f.lastIndexOf('/')
-            val length = f.length
-            if (lastIndexOf > 0) f.substring(lastIndexOf + 1, length)
-            else {
-              f
+    commands.forEach(new Consumer[Entry[String, Object]] {
+      override def accept(t: Entry[String, Object]): Unit = {
+        if (!(t.getKey.equals(Constant.CLUSTER_ID) ||
+            t.getKey.startsWith(Constant.MEMBER_ID_PREFIX))) {
+          var alias = t.getKey
+          // Skip dropped functions entry
+          if (alias.contains(ContextJarUtils.droppedFunctionsKey)) return
+          // Explicitly mark functions as UDF while listing jars/packages.
+          alias = alias.replace(ContextJarUtils.functionKeyPrefix, "[UDF]")
+          if (t.getValue.isInstanceOf[String]) {
+            val value = t.getValue.toString
+            val indexOf = value.indexOf('|')
+            if (indexOf > 0) {
+              // It is a package
+              val pkg = value.substring(0, indexOf)
+              rows += Row(alias, pkg, true)
             }
-          })
-          rows += Row(alias, jarfiles.mkString(","), false)
+            else {
+              // It is a jar
+              val jars = value.split(',')
+              val jarfiles = jars.map(f => {
+                val lastIndexOf = f.lastIndexOf('/')
+                val length = f.length
+                if (lastIndexOf > 0) f.substring(lastIndexOf + 1, length)
+                else {
+                  f
+                }
+              })
+              rows += Row(alias, jarfiles.mkString(","), false)
+            }
+          }
         }
       }
     })
@@ -599,33 +681,35 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
     val sc = sparkSession.sparkContext
     if (alias != null) {
       val cmndsSet = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
-      cmndsSet.forEach(new Consumer[Entry[String, String]] {
-        override def accept(t: Entry[String, String]): Unit = {
+      cmndsSet.forEach(new Consumer[Entry[String, Object]] {
+        override def accept(t: Entry[String, Object]): Unit = {
           val alias1 = t.getKey
           if (alias == alias1) {
-            value = t.getValue
+            value = if (t.getValue.isInstanceOf[String]) t.getValue.asInstanceOf[String] else null
           }
         }
       })
-      val indexOf = value.indexOf("|")
-      val lastIndexOf = value.lastIndexOf("|")
-      if (indexOf > 0) {
-        val coordinates = value.substring(0, indexOf)
-        val repos = Option(value.substring(indexOf + 1, lastIndexOf))
-        val jarCache = Option(value.substring(lastIndexOf + 1, value.length))
-        val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates,
-          repos, jarCache)
-        if (jarsstr.nonEmpty) {
-          val pkgs = jarsstr.split(",")
-          RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, pkgs)
-          ToolsCallbackInit.toolsCallback.removeURIs(pkgs)
+      if (value != null) {
+        val indexOf = value.indexOf("|")
+        val lastIndexOf = value.lastIndexOf("|")
+        if (indexOf > 0) {
+          val coordinates = value.substring(0, indexOf)
+          val repos = Option(value.substring(indexOf + 1, lastIndexOf))
+          val jarCache = Option(value.substring(lastIndexOf + 1, value.length))
+          val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates,
+            repos, jarCache)
+          if (jarsstr.nonEmpty) {
+            val pkgs = jarsstr.split(",")
+            RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, pkgs)
+            ToolsCallbackInit.toolsCallback.removeURIs(pkgs)
+          }
         }
-      }
-      else {
-        if (value.nonEmpty) {
-          val jars = value.split(',')
-          RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, jars)
-          ToolsCallbackInit.toolsCallback.removeURIs(jars)
+        else {
+          if (value.nonEmpty) {
+            val jars = value.split(',')
+            RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, jars)
+            ToolsCallbackInit.toolsCallback.removeURIs(jars)
+          }
         }
       }
     }
@@ -700,3 +784,4 @@ case class PutIntoValuesColumnTable(db: String, tableName: String,
     }
   }
 }
+

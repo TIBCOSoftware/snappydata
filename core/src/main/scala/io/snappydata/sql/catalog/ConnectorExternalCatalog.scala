@@ -204,6 +204,24 @@ object ConnectorExternalCatalog extends Logging {
     FunctionResource(resourceType, fullName.substring(sepIndex + 1))
   }
 
+  private[snappydata] def convertToCatalogDatabase(catalogSchemaObject: CatalogSchemaObject):
+  CatalogDatabase = {
+    import collection.JavaConverters._
+    import scala.collection.Map
+    CatalogDatabase(catalogSchemaObject.getName, catalogSchemaObject.getDescription,
+      catalogSchemaObject.getLocationUri,
+      catalogSchemaObject.getProperties.asScala.toMap)
+  }
+
+  // temp method for testing... can be removed later
+  private[snappydata] def convertFromCatalogDatabase(catalogDatabase: CatalogDatabase):
+  CatalogSchemaObject = {
+   val cso = new CatalogSchemaObject(catalogDatabase.name, catalogDatabase.description,
+      catalogDatabase.locationUri, catalogDatabase.properties.asJava)
+    cso
+  }
+
+
   private[snappydata] def convertToCatalogFunction(
       functionObj: CatalogFunctionObject): CatalogFunction = {
     CatalogFunction(FunctionIdentifier(functionObj.getFunctionName,

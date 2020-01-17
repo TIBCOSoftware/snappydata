@@ -150,6 +150,8 @@ To import into IntelliJ IDEA:
 
 * Generate Apache Avro and SnappyData required sources by expanding: **snappydata_2.11> Tasks> other**. Right-click on **generateSources** and run it. The **Run** option may not be available if indexing is still in progress, wait for indexing to complete, and then try again. <br> The first run may take some time to complete, as it downloads the jar files and other required files. This step has to be done the first time, or if **./gradlew clean** has been run, or if you have made changes to **javacc/avro/messages.xml** source files.
 
+*	Go to **File> Settings> Build, Execution, Deployment> Build tools> Gradle**. Enter **-DideaBuild** in the **Gradle VM Options** textbox.
+
 * If you get unexpected **Database not found** or **NullPointerException** errors in SnappyData-store/GemFireXD layer, run the **generateSources** target (Gradle tab) again.
 
 * If you get **NullPointerException** error when reading the **spark-version-info.properties** file, right-click and run the **copyResourcesAll** target from **snappydata_2.11> Tasks> other** (Gradle tab) to copy the required resources.

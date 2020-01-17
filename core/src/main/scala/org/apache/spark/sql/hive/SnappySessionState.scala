@@ -24,7 +24,6 @@ import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import io.snappydata.Property
-import io.snappydata.Property.HashAggregateSize
 
 import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.analysis
@@ -48,7 +47,7 @@ import org.apache.spark.sql.internal._
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager, WindowLogicalPlan}
+import org.apache.spark.sql.streaming.{LogicalDStreamPlan, SnappyStreamingQueryManager, StreamingQueryManager, WindowLogicalPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Strategy, _}
 import org.apache.spark.streaming.Duration
@@ -70,13 +69,7 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   override lazy val streamingQueryManager: StreamingQueryManager = {
-    // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
-    // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
-    // implies that Snappydata aggregation optimisation will be turned off for any usage of
-    // this session including non-streaming queries.
-
-    HashAggregateSize.set(conf, "-1")
-    new StreamingQueryManager(snappySession)
+    new SnappyStreamingQueryManager(snappySession)
   }
 
   private[sql] lazy val hiveSession: SparkSession = {

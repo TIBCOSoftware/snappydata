@@ -49,7 +49,7 @@ with Logging with Retries {
   var snappyHome = ""
   var localHostName = ""
   var currWorkingDir = ""
-  private val commandOutput = "command-output.txt"
+  protected val commandOutput = "command-output.txt"
 
   // One can ovveride this method to pass other parameters like heap size.
   def servers: String = s"$localHostName\n$localHostName"
@@ -59,6 +59,8 @@ with Logging with Retries {
   def snappyShell: String = s"$snappyHome/bin/snappy-sql"
 
   def sparkShell: String = s"$snappyHome/bin/spark-shell"
+
+  def snappyscalaShell: String = s"$snappyHome/bin/snappy-scala"
 
   def clusterSuccessString: String = "Distributed system now has 4 members"
 
@@ -156,11 +158,27 @@ with Logging with Retries {
   }
 
 
-  def SnappyShell(name: String, sqlCommand: Seq[String]): Unit = {
+  def SnappyShell(name: String, sqlCommand: Seq[String], cmdOutput: String): Unit = {
     val writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
-      new FileOutputStream(commandOutput, true))))
+      new FileOutputStream(cmdOutput, true))))
     try {
       sqlCommand pipe snappyShell foreach (s => {
+        writer.println(s)
+        if (s.toString.contains("ERROR") || s.toString.contains("Failed")) {
+          throw new Exception(s"Failed to run Query: $s")
+        }
+      })
+    } finally {
+      writer.close()
+    }
+  }
+
+  def SnappyScalaShell(name: String, scalaLines: Seq[String], cmdOutput: String,
+    cliWithArgs: String = snappyscalaShell): Unit = {
+    val writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
+      new FileOutputStream(cmdOutput, true))))
+    try {
+      scalaLines pipe cliWithArgs foreach (s => {
         writer.println(s)
         if (s.toString.contains("ERROR") || s.toString.contains("Failed")) {
           throw new Exception(s"Failed to run Query: $s")

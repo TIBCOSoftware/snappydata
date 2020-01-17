@@ -222,7 +222,7 @@ shadowJar {
   exclude 'log4j.properties'
 
   if (rootProject.hasProperty('enablePublish')) {
-    createdBy = 'SnappyData Build Team'
+    createdBy = vendorName
   } else {
     createdBy = System.getProperty('user.name')
   }

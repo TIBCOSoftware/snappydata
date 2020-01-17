@@ -61,7 +61,7 @@ column-definition-for-row-table: column-name column-data-type [ column-constrain
 *	Refer to the [identity](#id-columns) section for more information on GENERATED.</br>
 *	Refer to the [constraint](#constraint) section for more information on table-constraint and column-constraint.
 
-`column-data-type`
+### column-data-type
 The following data types are supported:
 
 ```pre
@@ -323,6 +323,18 @@ Use eviction settings to keep your table within a specified limit, either by rem
     Default in SnappyData for `synchronous` is `persistence`, `overflow` is `true` and `eviction_by` is `LRUHEAPPERCENT`.
     	
         CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) USING row OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000');
+
+### Example: Create Column Table with COMMENT Clause
+
+You can add comments about a column using the COMMENT clause. The COMMENT clause must be used in the column definition as shown in the following example:
+```
+snappy> create table foobar (a string comment 'column 1', b string not null comment 'column 2') using column;
+snappy> describe foobar;
+col_name |data_type |comment
+------------------------------
+a        |string    |column 1
+b        |string    |column 2
+```
 
 <a id="constraint"></a>
 ### Constraint (only for Row Tables)
