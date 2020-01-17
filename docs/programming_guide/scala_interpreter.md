@@ -1,27 +1,47 @@
-# Using Scala Interpreter 
+# Executing Spark Scala code using SQL  
 
-Users familiar with the command-line interpreter tools like Scala can experiment, play around with Scala programming language easily, and in frequent iterations. It also facilitates interactive programming. 
-Usually, any small change required would not only mean modifying the source code but also recompile, re-deploy, or re-run it. Interpreters do away with such complexities as they accept a program as input and readily display results as output. 
-Apache Spark has a command-line utility called **spark-shell**, which is primarily built on the Scala interpreter. Through this utility, you can launch spark-shell with any of the cluster managers. It can be launched in a local mode as well as in a client mode. 
-<Link to Spark documentation>
+** NOTE: This is an experimental feature in current release **
 
-If you want to use a spark-shell to connect to a TIBCO ComputeDB cluster, you can do so only in the Smart Connector mode. <Link to Smart Connector mode in documentation> However, if you want to execute any code in the store cluster (embedded mode), you have to comply with the contract that is defined per Spark Job Server, compile, and package the code in a JAR and then deploy the code using the Snappy-job <link to snappy-job section> command. This is cumbersome, especially for developers who want to iterate over the code quickly. Moreover, debugging such jobs is tricky as you must execute the job asynchronously, and any error requires you to track the JobIDs and poll the system to know the state  of the job.
+Prior to the 1.2 release, any execution of a Spark scala program required the user to compile his Spark program, comply to specific callback API required by ComputeDB, package the classes into a JAR and then submit the application using snappy-job tool. 
+While, this procedure might still be the right option for a production application, it is quite cumbersome for the developer or data scientist wanting to quickly run some Spark code within the ComputeDB store cluster and iterate. 
 
-TIBCO ComputeDB provides the following, on an experimental basis, to facilitate the execution of Scala code directly in an Embedded cluster mode. 
+With the introduction of the 'Exec scala' SQL command (TODO: Link to reference section), users can now simply get a JDBC or ODBC connection to the cluster and submit ad-hoc scala code to be executed. The JDBC connection provides a ongoing session with the cluster so applications can maintain state and use/return this across multiple invocations. 
 
+Beyond this developer productivity appeal, this feature also allows the user to skip using the "smart connector"(TODO: LINK) in several cases. 
+Bespoke Spark applications using the smart connector are required to launch a client Spark application with its own executors and the store cluster is mostly providing parallel access to managed data. As the client is running queries this is additional capacity that needs to be budgeted by the user. Moreover, the overall architecture is tough to understand. With 'Exec scala', any Spark application could submit scala code as a SQL command now. 
 
-*	**exec scala SQL**</br>
-	This is a SQL construct from any JDBC/ODBC client and one of the ways in which you can submit the Scala code to the TIBCO ComputeDB cluster.
+**Here is one use case that motivated us**:  Tibco data scientists using Team Studio (TIBCO Data Science platform) can now build custom operators, target ComputeDB for in-database computations and run adhoc Spark Scala code. For instance, ETL, feature engineering using Spark ML or running a training job in-memory and with parallelism. 
 
-* 	**Scala interpreter CLI utility**</br>
-	You can also submit Scala code to the TIBCO ComputeDB cluster using this command-line utility, which is similar to a spark-shell.
+Lets take a peek at the usage through some examples ....
 
+### Example 1:
+```
+// Note this is a SQL command ... this is the text you would send using a JDBC or ODBC connection
+val prepDataCommand = 
+  """ Exec scala 
+         val dataDF = snapp.read.option("header", "true").csv("../path/to/customers.csv")
+     // Variable 'snapp' is injected to your program automatically. Refers to a SnappySession instance.
+     val newDF = dataDF.withColumn("promotion", "$20")
+     newDF.createOrReplaceTempView("customers")
+     //OR, store in in-memory table
+     newDF.write.format("column").saveAsTable("customers")
+"""
+// Acquire JDBC connection and execute Spark program
+Class.forName("io.snappydata.jdbc.ClientDriver")
+val conn = DriverManager.getConnection("jdbc:snappydata://localhost:1527/")
+conn.createStatement().executeSQL(prepDataCommand)
+```
 
-## exec scala
-
-**exec scala** is an SQL feature that you can use to submit Scala code to the TIBCO ComputeDB cluster. You can submit a chunk of Scala code similar to a SQL query, which is submitted to a database on a JDBC/ODBC connection including hive thrift server SQL clients such as beeline.
-
-A parallel between a SQL query and a block of Scala code is brought about by using a fixed schema for the Scala code. Since, a select query's result set metadata is fixed, whereas there is no meaning of a fixed schema for a chunk of Scala code. Therefore, TIBCO ComputeDB provides a fixed schema to all the Scala code. This is elaborated in the following sections. 
+### Example 2:
+```
+ // return back some Dataframe ... you use keyword returnDF to indicate the variable name in scala to return
+val getDataFromCDB =
+ """ exec scala options(returnDF 'someDF') 
+       val someDF = snapp.table("customers").filter(..... )
+ """
+ResultSet rs = conn.createStatement().executeSQL(prepDataCommand)
+//Use JDBC ResultSet API to fetch result. Data types will be mapped automatically
+```
 
 ### Syntax
 
@@ -35,12 +55,23 @@ exec scala [options (returnDF ‘dfName’)] <Scala_code>k
 *	**options** is an optional part of the syntax. If it is present, then after the keyword **options**, you can specify the allowed options inside parentheses. Currently, only one optional parameter, that is **returnDF**, can be specified with the execution. For this option, you can provide the name of any actual symbol in the Scala code, which is of type DataFrame. 
 Through the **returnDF** option, you can request the system to return the result of the specific dataframe, which got created as the result of the Scala code execution. By default, the **exec scala** just returns the output of each interpreted line, which the interpreter prints on the Console after executing each line. 
 
-For more details, refer to the Examples section.
+
+
+## How does it work?
+All code from 'exec scala' is executed using the Scala REPL (TODO: Link) on the CDB Lead node. When Spark Dataframes are invoked this would automatically result in workload distribution across all the CDB servers. The Lead node manages a pool of REPL based interpreters. User SQL activity is delegated to one of the interpreters from this pool. The pool is lazily created.  
+
+
+Any connection (JDBC or ODBC) results in the creation of a SnappySession within the CDB cluster. And, the session remains associated with the connection until it is closed or dereferenced. 
+
+
+The first time 'exec scala' is executed, an interpreter from the pool gets associated with the connection. This allows the user to manage any adhoc private state on the server side. e.g. any variables, objects or even classes created will be isolated from other users.  
+The functioning of the interpreter is ditto the interactive Spark-shell (TODO: Link). With one difference. As commands are interpreted any output generated will be cached in a buffer. And, when the command is done, the cached output will be available in the client side ResultSet object. 
+
 
 <a id= secureexscala> </a>
 ### Securing the Usage of  exec scala SQL
 
-The ability to run Scala code directly into a running cluster can affect the health of the cluster. This is because there is no check on the type of code that you want to execute in the cluster. The submitted Scala code is taken to the lead node and is executed there. An erroneous code can bring down the lead node and thereby make the TIBCO ComputeDB cluster unavailable. Hence, it becomes essential to secure the use of this functionality.
+The ability to run Scala code directly on a running cluster can be dangerous. This is because there are no checks on what code you can run. The submitted Scala code is executed on the lead node and has the potential to bring it down. It becomes essential to secure the use of this functionality.
 
 By default, in a secure cluster, only the database owner is allowed to run Scala code through **exec scala** SQL or even through snappy-scala shell. The database owner is the user who brings up the TIBCO ComputeDB cluster. If different credentials are used for different components of the TIBCO ComputeDB cluster, then the credentials with which the lead node is started becomes the database owner for this purpose. Ideally, every node should start with the same superuser credentials.
 
@@ -64,7 +95,7 @@ grant privilege exec scala to LDAPGROUP:group1
 revoke privilege exec scala from user2,LDAPGROUP:group1
 ```
 
-### Examples
+### More Examples
 
 The **snappy** CLI, which is also known as the snappy-sql CLI, is commonly used to fire SQL queries interactively into a TIBCO ComputeDB cluster. You can use these command-line tools to fire Scala code as well.
 
@@ -194,6 +225,9 @@ val collectedNumbers = numbersRdd.map(_ * x).collect()
 
 This is because the closure is referring to **x**, which is defined outside the closure. 
 There are no issues if the closure has no dependency on any external variables.
+
+<TODO .... MOVE THIS TOOL DESCRIPTION TO A DIFFERENT SECTION ..... >
+
 
 ## snappy-scala CLI
 
