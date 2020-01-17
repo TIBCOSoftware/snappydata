@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -45,7 +45,8 @@ object TableDetails {
 
       new TableSummary(table.getTableName, storageModel, distributionType,
         table.isColumnTable, table.isReplicatedTable, table.getRowCount, table.getSizeInMemory,
-        table.getSizeSpillToDisk, table.getTotalSize, table.getBucketCount)
+        table.getSizeSpillToDisk, table.getTotalSize, table.getBucketCount,
+        table.getRedundancy, table.isRedundancyImpaired, table.isAnyBucketLost)
     }).values.toList
 
   }

@@ -6,7 +6,7 @@ mkdir -p  $directory
 
 mv *.csv *.out $directory/
 cp PerfRun.conf $directory/
-cp $sparkHome/conf/spark-env.sh $sparkHome/conf/spark-default.conf $directory/
+cp $sparkHome/conf/spark-env.sh $sparkHome/conf/spark-defaults.conf $directory/
 mv *.csv *.out $directory/
 
 latestProp=$directory/latestProp.props

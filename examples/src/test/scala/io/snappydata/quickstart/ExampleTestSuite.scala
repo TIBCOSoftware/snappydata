@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -40,7 +40,7 @@ class ExampleTestSuite extends SnappyTestRunner {
       s"run '$snappyHome/quickstart/scripts/oltp_queries.sql';",
       s"run '$snappyHome/quickstart/scripts/olap_queries.sql';",
       s"run '$snappyHome/quickstart/scripts/olap_approx_queries.sql';",
-      "exit;"))
+      "exit;"), commandOutput)
 
 
     Job("io.snappydata.examples.AirlineDataJob", localLead, quickStartJar)
@@ -126,7 +126,7 @@ class ExampleTestSuite extends SnappyTestRunner {
       s"CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;",
       s"insert into SNAPPY_COL_TABLE VALUES(1,1);",
       s"insert into SNAPPY_COL_TABLE VALUES(2,2);",
-      "exit;"))
+      "exit;"), commandOutput)
 
     RunExample("SmartConnectorExample",
       "snappydata.SmartConnectorExample",

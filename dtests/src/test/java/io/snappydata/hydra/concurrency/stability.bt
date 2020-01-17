@@ -1,0 +1,19 @@
+io/snappydata/hydra/concurrency/createAndLoadTablesForStabilityTest.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=1
+  dataLocation=/export/dev6a/users/sagarwal/TPCH_datagen/dbgen
+  buckets_Order_Lineitem=128
+  Buckets_Cust_Part_PartSupp=128
+  IsSupplierColumnTable=true
+  Buckets_Supplier=128
+  Redundancy=0
+  Persistence=true
+  Persistence_Type=SYNCHRONOUS
+  NumberOfLoadStages=1
+  isParquet=false
+  createParquet=false
+  traceEvents=false
+
+io/snappydata/hydra/concurrency/stabilityConcQueries.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=2
+  B=snappyClientA snappyClientAHosts=3 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+

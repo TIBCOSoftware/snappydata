@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,17 +19,24 @@ package org.apache.spark.sql
 import org.apache.spark.sql.sources.CreateTableAsSelectSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyCreateTableAsSelectSuite
-    extends CreateTableAsSelectSuite
-        with SharedSnappySessionContext with SnappySparkTestUtil {
+class SnappyCreateTableAsSelectSuite extends CreateTableAsSelectSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil {
 
-  override def ignored: Seq[String] = Seq(
-    "disallows CREATE TEMPORARY TABLE ... USING ... AS query",
-    "disallows CREATE EXTERNAL TABLE ... USING ... AS query",
-    "create table using as select - with partitioned by",
-    "create table using as select - with non-zero buckets",
-    "create table using as select - with zero buckets",
-    "SPARK-17409: CTAS of decimal calculation",
-    "specifying the column list for CTAS"
+  override def excluded: Seq[String] = Seq(
+    // SnappyData allows this syntax by design
+    "disallows CREATE EXTERNAL TABLE ... USING ... AS query"
   )
+
+  test("allows CREATE EXTERNAL TABLE ... USING ... AS query") {
+    withTable("t") {
+      sql(
+        s"""
+           |CREATE EXTERNAL TABLE t USING PARQUET
+           |OPTIONS (PATH '${path.toString}')
+           |AS SELECT 1 AS a, 2 AS b
+           """.stripMargin
+      )
+      checkAnswer(sql("SELECT a, b FROM t"), Array(Row(1, 2)))
+    }
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,12 +18,12 @@ package org.apache.spark.sql.collection
 
 import java.io.ObjectOutputStream
 import java.lang.reflect.Method
-import java.net.{URL, URLClassLoader}
 import java.nio.ByteBuffer
 import java.sql.{DriverManager, ResultSet}
 import java.util.TimeZone
 
 import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.{mutable, Map => SMap}
 import scala.language.existentials
 import scala.reflect.ClassTag
@@ -32,7 +32,7 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.shared.BufferAllocator
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
@@ -43,16 +43,15 @@ import org.eclipse.collections.impl.map.mutable.UnifiedMap
 import org.apache.spark._
 import org.apache.spark.executor.InputMetrics
 import org.apache.spark.io.CompressionCodec
-import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, GenericRow, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, EqualNullSafe, EqualTo, Expression, GenericRow, SpecificInternalRow, TokenLiteral, UnsafeProjection}
 import org.apache.spark.sql.catalyst.json.{JSONOptions, JacksonGenerator, JacksonUtils}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
-import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
+import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
 import org.apache.spark.sql.execution.SQLExecution
@@ -61,19 +60,19 @@ import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWr
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.{CastLongTime, JdbcExtendedUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
 import org.apache.spark.ui.exec.ExecutorsListener
-import org.apache.spark.unsafe.Platform
+import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark.util.{AccumulatorV2, MutableURLClassLoader}
 
-object Utils {
+object Utils extends Logging {
 
-  final val EMPTY_STRING_ARRAY = Array.empty[String]
-  final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
-  final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
+  final val EMPTY_STRING_ARRAY = SharedUtils.EMPTY_STRING_ARRAY
+  final val WEIGHTAGE_COLUMN_NAME = "snappy_sampler_weightage"
+  final val SKIP_ANALYSIS_PREFIX = "sample_"
   private final val TASKCONTEXT_FUNCTION = "getTaskContextFromTSS"
 
   // 1 - (1 - 0.95) / 2 = 0.975
@@ -94,10 +93,8 @@ object Utils {
     new AnalysisException(msg, None, None, None, cause)
 
   def columnIndex(col: String, cols: Array[String], module: String): Int = {
-    val colT = toUpperCase(col.trim)
     cols.indices.collectFirst {
-      case index if col == cols(index) => index
-      case index if colT == toUpperCase(cols(index)) => index
+      case index if col.equalsIgnoreCase(cols(index)) => index
     }.getOrElse {
       throw analysisException(
         s"""$module: Cannot resolve column name "$col" among
@@ -132,6 +129,10 @@ object Utils {
 
   def ERROR_NO_QCS(module: String): String = s"$module: QCS is empty"
 
+  def parseCSVList(s: String, parser: SnappyParser): Seq[String] = {
+    parser.parseSQLOnly(s, parser.parseIdentifiers.run()).map(Utils.toLowerCase)
+  }
+
   def qcsOf(qa: Array[String], cols: Array[String],
       module: String): (Array[Int], Array[String]) = {
     val colIndexes = qa.map(columnIndex(_, cols, module))
@@ -145,7 +146,7 @@ object Utils {
       case qi: Array[Int] => (qi, qi.map(fieldNames))
       case qs: String =>
         if (qs.isEmpty) throw analysisException(ERROR_NO_QCS(module))
-        else qcsOf(qs.split(","), fieldNames, module)
+        else qcsOf(parseCSVList(qs, new SnappyParser(session = null)).toArray, fieldNames, module)
       case qa: Array[String] => qcsOf(qa, fieldNames, module)
       case q => throw analysisException(
         s"$module: Cannot parse 'qcs'='$q'")
@@ -154,10 +155,9 @@ object Utils {
 
   def matchOption(optName: String,
       options: SMap[String, Any]): Option[(String, Any)] = {
-    val optionName = toLowerCase(optName)
-    options.get(optionName).map((optionName, _)).orElse {
+    options.get(optName).map((optName, _)).orElse {
       options.collectFirst { case (key, value)
-        if toLowerCase(key) == optionName => (key, value)
+        if key.equalsIgnoreCase(optName) => (key, value)
       }
     }
   }
@@ -398,22 +398,8 @@ object Utils {
     if (s.trim.equals("*")) {
       (true, Set.empty[String])
     } else {
-      val parser = session.snappyParser
-      (false, s.split(',').map(c => Utils.toUpperCase(parser.parseSQLOnly(
-        c, parser.parseIdentifier.run()))).toSet)
+      (false, parseCSVList(s, session.snappyParser).toSet)
     }
-  }
-
-  def hasLowerCase(k: String): Boolean = {
-    var index = 0
-    val len = k.length
-    while (index < len) {
-      if (Character.isLowerCase(k.charAt(index))) {
-        return true
-      }
-      index += 1
-    }
-    false
   }
 
   def toLowerCase(k: String): String = JdbcExtendedUtils.toLowerCase(k)
@@ -539,7 +525,7 @@ object Utils {
           // if both baseTable and schema have been specified, then both
           // should have matching schema
           try {
-            val tablePlan = catalog.lookupRelation(
+            val tablePlan = catalog.resolveRelation(
               catalog.snappySession.tableIdentifier(baseTableName))
             val tableSchema = tablePlan.schema
             if (catalog.compatibleSchema(tableSchema, s)) {
@@ -566,9 +552,9 @@ object Utils {
           try {
             // parquet and other such external tables may have different
             // schema representation so normalize the schema
-            val tablePlan = catalog.lookupRelation(
+            val tablePlan = catalog.resolveRelation(
               catalog.snappySession.tableIdentifier(baseTable))
-            (catalog.normalizeSchema(tablePlan.schema), Some(tablePlan))
+            (tablePlan.schema, Some(tablePlan))
           } catch {
             case ae: AnalysisException =>
               throw analysisException(s"Base table $baseTable " +
@@ -580,6 +566,11 @@ object Utils {
       }
     }
   }
+
+  def setCurrentSchema(session: SnappySession, schema: String, createIfNotExists: Boolean): Unit =
+    session.setCurrentSchema(schema, createIfNotExists)
+
+  def getLocalProperties(sc: SparkContext): java.util.Properties = sc.getLocalProperties
 
   def getDriverClassName(url: String): String = DriverManager.getDriver(url) match {
     case wrapper: DriverWrapper => wrapper.wrapped.getClass.getCanonicalName
@@ -693,7 +684,9 @@ object Utils {
           propName.startsWith(Constant.PROPERTY_PREFIX) ||
           propName.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) ||
           propName.startsWith("zeppelin.") ||
-          propName.startsWith("hive.")) {
+          propName.startsWith("hive.") ||
+          propName.startsWith("hadoop.") ||
+          propName.startsWith("javax.jdo.")) {
         entry.getValue match {
           case v: String => conf.set(propName, v)
           case _ =>
@@ -702,9 +695,6 @@ object Utils {
     }
     conf
   }
-
-  def newMutableURLClassLoader(urls: Array[URL]): URLClassLoader =
-    SharedUtils.newMutableURLClassLoader(urls)
 
   def setDefaultConfProperty(conf: SparkConf, name: String,
       default: String): Unit = {
@@ -796,31 +786,6 @@ object Utils {
     case _ => 1
   }
 
-  def taskMemoryManager(context: TaskContext): TaskMemoryManager =
-    context.taskMemoryManager()
-
-  def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
-    if (buffer eq null) return null
-    val row = new UnsafeRow(numColumns)
-    if (buffer.isDirect) {
-      row.pointTo(null, UnsafeHolder.getDirectBufferAddress(buffer) +
-          buffer.position(), buffer.remaining())
-    } else {
-      row.pointTo(buffer.array(), Platform.BYTE_ARRAY_OFFSET +
-          buffer.arrayOffset() + buffer.position(), buffer.remaining())
-    }
-    row
-  }
-
-  def createStatsBuffer(statsData: Array[Byte], allocator: BufferAllocator): ByteBuffer = {
-    // need to create a copy since underlying Array[Byte] can be re-used
-    val statsLen = statsData.length
-    val statsBuffer = allocator.allocateForStorage(statsLen)
-    statsBuffer.put(statsData, 0, statsLen)
-    statsBuffer.rewind()
-    statsBuffer
-  }
-
   def genTaskContextFunction(ctx: CodegenContext): String = {
     // use common taskContext variable so it is obtained only once for a plan
     if (!ctx.addedFunctions.contains(TASKCONTEXT_FUNCTION)) {
@@ -848,6 +813,74 @@ object Utils {
 
   def sqlInternal(snappy: SnappySession, sqlText: String): CachedDataFrame =
     snappy.sqInternal(sqlText)
+
+  def getPartitions(region: Any, bucketId: Int): Array[Partition] = {
+    val pr = region.asInstanceOf[PartitionedRegion]
+    val distMembers = StoreUtils.getBucketOwnersForRead(bucketId, pr)
+    val prefNodes = new ArrayBuffer[String](2)
+    distMembers.foreach(m => SnappyContext.getBlockId(m.canonicalString()) match {
+      case Some(b) => prefNodes += Utils.getHostExecutorId(b.blockId)
+      case _ =>
+    })
+    Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),
+      pr.getTotalNumberOfBuckets, prefNodes))
+  }
+
+  def getPrunedPartition(partitionColumns: Seq[String],
+                         filters: Array[Expression], schema: StructType,
+                         numBuckets: Int, partitionColumnCount: Int): Int = {
+
+    // this will yield partitioning column ordered Array of Expression (Literals/ParamLiterals).
+    // RDDs needn't have to care for orderless hashing scheme at invocation point.
+    val (pruningExpressions, fields) = partitionColumns.map { pc =>
+      filters.collectFirst {
+        case EqualTo(a: Attribute, v) if TokenLiteral.isConstant(v) &&
+          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+        case EqualTo(v, a: Attribute) if TokenLiteral.isConstant(v) &&
+          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+        case EqualNullSafe(a: Attribute, v) if TokenLiteral.isConstant(v) &&
+          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+        case EqualNullSafe(v, a: Attribute) if TokenLiteral.isConstant(v) &&
+          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+      }
+    }.filter(_.nonEmpty).map(_.get).unzip
+
+    val pcFields = StructType(fields).toAttributes
+    val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
+    val bucketIdGeneration = UnsafeProjection.create(
+      HashPartitioning(pcFields, numBuckets)
+        .partitionIdExpression :: Nil, pcFields)
+    if (pruningExpressions.nonEmpty &&
+      // verify all the partition columns are provided as filters
+      pruningExpressions.length == partitionColumnCount) {
+      pruningExpressions.zipWithIndex.foreach { case (e, i) =>
+        mutableRow(i) = e.eval(null)
+      }
+      bucketIdGeneration(mutableRow).getInt(0)
+    } else {
+      -1
+    }
+  }
+
+  def executeIfSmartConnector[T](sc: SparkContext)(f: => T): Option[T] = {
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) => Option(f)
+      case _ => None
+    }
+  }
+
+  def isSmartConnectorMode(sc: SparkContext): Boolean = {
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) => true
+      case _ => false
+    }
+  }
+
+  override def logInfo(msg: => String): Unit = super.logInfo(msg)
+
+  override def logWarning(msg: => String): Unit = super.logWarning(msg)
+
+  override def logError(msg: => String): Unit = super.logError(msg)
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
@@ -1061,17 +1094,17 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def hashCode(): Int = idx
 }
 
-object ToolsCallbackInit extends Logging {
+object ToolsCallbackInit {
   final val toolsCallback: ToolsCallback = {
     try {
       val c = org.apache.spark.util.Utils.classForName(
         "io.snappydata.ToolsCallbackImpl$")
       val tc = c.getField("MODULE$").get(null).asInstanceOf[ToolsCallback]
-      logInfo("toolsCallback initialized")
+      Utils.logInfo("toolsCallback initialized")
       tc
     } catch {
       case _: ClassNotFoundException =>
-        logWarning("ToolsCallback couldn't be INITIALIZED. " +
+        Utils.logWarning("ToolsCallback couldn't be INITIALIZED. " +
             "DriverURL won't get published to others.")
         null
     }

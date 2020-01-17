@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,11 +17,10 @@
 
 package io.snappydata.cluster
 
-import java.sql.{BatchUpdateException, Connection, DriverManager, ResultSet, SQLException}
+import java.sql._
 
 import io.snappydata.cluster.ClusterManagerLDAPTestBase.thriftPort
 import io.snappydata.test.dunit.AvailablePortHelper
-
 import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 
@@ -94,16 +93,16 @@ class QueryRoutingDUnitSecurityTest(val s: String)
     stmt.execute("create table testTable100 (id int)")
     var rs = stmt.executeQuery("show tables")
     assert(rs.next())
-    assert(rs.getString(1) == jdbcUser1.toUpperCase())
-    assert(rs.getString(2) == "TESTTABLE100")
+    assert(rs.getString(1) == jdbcUser1)
+    assert(rs.getString(2) == "testtable100")
     assert(!rs.getBoolean(3)) // isTemporary
     assert(!rs.next())
     rs.close()
 
     rs = stmt.executeQuery(s"show tables in $jdbcUser1")
     assert(rs.next())
-    assert(rs.getString(1) == jdbcUser1.toUpperCase())
-    assert(rs.getString(2) == "TESTTABLE100")
+    assert(rs.getString(1) == jdbcUser1)
+    assert(rs.getString(2) == "testtable100")
     assert(!rs.getBoolean(3)) // isTemporary
     assert(!rs.next())
     rs.close()
@@ -127,6 +126,158 @@ class QueryRoutingDUnitSecurityTest(val s: String)
 
     stmt.close()
     conn.close()
+  }
+
+  // Test if SNAPPY_HIVE_METASTORE tables can be accessed by admin user only.
+  def testMetastoreAccessAdminOnly(): Unit = {
+    val adminUser = ClusterManagerLDAPTestBase.admin
+    val jdbcUser4 = "gemfire3"
+
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"QueryRoutingDUnitSecureTest.testMetastoreAccessAdminOnly:" +
+        s" network server started at $serverHostPort")
+    // scalastyle:on println
+    QueryRoutingDUnitSecurityTest.checkMetastoreAccess(adminUser, jdbcUser4, serverHostPort)
+  }
+
+  private def doExecScalaSimpleStuff(st: Statement, expectException: Boolean = false): Unit = {
+    try {
+      st.execute("exec scala val x = 5")
+      val rs = st.getResultSet
+      assert(rs.next())
+      assert(rs.getString(1).equals("x: Int = 5"))
+      if (expectException) assert(false, "expected exception")
+    } catch {
+      case sqle: SQLException => {
+        if (expectException) {
+          // SQLState should be
+          assert("42504".equals(sqle.getSQLState))
+        } else {
+          sqle.printStackTrace()
+          println(s"sqle state: ${sqle.getSQLState}")
+          assert(false, "did not expect exception")
+        }
+      }
+    }
+  }
+
+  def testExecScalaGrantRevoke(): Unit = {
+    val adminUser = ClusterManagerLDAPTestBase.admin
+    val nonAdminUser = "gemfire3"
+
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    val connAdmin = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, adminUser, adminUser)
+    val st = connAdmin.createStatement()
+    doExecScalaSimpleStuff(st)
+    val connNoAdmin = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, nonAdminUser, nonAdminUser)
+    val st2 = connNoAdmin.createStatement()
+    doExecScalaSimpleStuff(st2, true)
+    st.execute(s"grant privilege exec scala to $nonAdminUser")
+    doExecScalaSimpleStuff(st2)
+    st.execute(s"revoke privilege exec scala from $nonAdminUser")
+    doExecScalaSimpleStuff(st2, true)
+    try {
+      st2.execute(s"grant privilege exec scala to $nonAdminUser")
+      assert(false, "expected exception in granting as not super user")
+    } catch {
+      case sqle: SQLException => if (!"4250A".equals(sqle.getSQLState)) {
+        throw sqle
+      }
+    }
+    // allow gemGroup3 -- allowed users then will be gemfire6, 7 and 8
+    // Before grant expect exception
+    val connNoAdminGrp1 = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, "gemfire7", "gemfire7")
+    val st7 = connNoAdminGrp1.createStatement()
+    doExecScalaSimpleStuff(st7, true)
+    st.execute(s"grant privilege exec scala to LDAPGROUP:gemGroup3")
+    doExecScalaSimpleStuff(st7)
+    val connNoAdminGrp2 = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, "gemfire8", "gemfire8")
+    val st8 = connNoAdminGrp2.createStatement()
+    doExecScalaSimpleStuff(st8)
+    // now revoke all and expect exception
+    st.execute(s"revoke privilege exec scala from $nonAdminUser,LDAPGROUP:gemGroup3")
+    doExecScalaSimpleStuff(st2, true)
+    doExecScalaSimpleStuff(st7, true)
+    doExecScalaSimpleStuff(st8, true)
+    // Only admin should be able to run
+    doExecScalaSimpleStuff(st)
+  }
+
+  private def doSimpleStuffOnExtTable(st: Statement,
+      fqtn: String, expectException: Boolean = false): Unit = {
+    try {
+      st.execute(s"select count(*) from $fqtn")
+      val rs = st.getResultSet
+      assert(rs.next())
+      if (expectException) assert(false, "expected exception")
+    } catch {
+      case sqle: SQLException => {
+        if (expectException) {
+          // SQLState should be
+          assert("42504".equals(sqle.getSQLState))
+        } else {
+          sqle.printStackTrace()
+          println(s"sqle state: ${sqle.getSQLState}")
+          assert(false, s"did not expect exception on table $fqtn")
+        }
+      }
+    }
+  }
+
+  def testExtTableGrantRevoke(): Unit = {
+    System.setProperty("CHECK_EXTERNAL_TABLE_AUTHZ", "true")
+    try {
+      val adminUser = ClusterManagerLDAPTestBase.admin
+      val nonAdminUser = "gemfire3"
+      val adminFQTN = adminUser + ".t1"
+      val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+      vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+      // scalastyle:off println
+      val connAdmin = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, adminUser, adminUser)
+      val st = connAdmin.createStatement()
+      st.execute(s"create external table t1 using csv options(path " +
+        s"'${getClass.getResource("/northwind/orders.csv").getPath}', header 'true', " +
+        s"inferschema 'true', maxCharsPerColumn '4096')")
+      doSimpleStuffOnExtTable(st, adminFQTN)
+      val connNoAdmin = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, nonAdminUser, nonAdminUser)
+      val st2 = connNoAdmin.createStatement()
+      doSimpleStuffOnExtTable(st2, adminFQTN, true)
+      st.execute(s"grant all on t1 to $nonAdminUser")
+      doSimpleStuffOnExtTable(st2, adminFQTN)
+      st.execute(s"revoke all on t1 from $nonAdminUser")
+      doSimpleStuffOnExtTable(st2, adminFQTN, true)
+      try {
+        st2.execute(s"grant all on $adminFQTN to $nonAdminUser")
+        assert(false, "expected exception in granting as not super user")
+      } catch {
+        case sqle: SQLException => if (!"4250A".equals(sqle.getSQLState)) {
+          throw sqle
+        }
+      }
+      // allow gemGroup3 -- allowed users then will be gemfire6, 7 and 8
+      // Before grant expect exception
+      val connNoAdminGrp1 = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, "gemfire7", "gemfire7")
+      val st7 = connNoAdminGrp1.createStatement()
+      doSimpleStuffOnExtTable(st7, adminFQTN, true)
+      st.execute(s"grant all on $adminFQTN to LDAPGROUP:gemGroup3")
+      doSimpleStuffOnExtTable(st7, adminFQTN)
+      val connNoAdminGrp2 = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, "gemfire8", "gemfire8")
+      val st8 = connNoAdminGrp2.createStatement()
+      doSimpleStuffOnExtTable(st8, adminFQTN)
+      // now revoke all and expect exception
+      st.execute(s"revoke all on t1 from $nonAdminUser,LDAPGROUP:gemGroup3")
+      doSimpleStuffOnExtTable(st2, adminFQTN, true)
+      doSimpleStuffOnExtTable(st7, adminFQTN, true)
+      doSimpleStuffOnExtTable(st8, adminFQTN, true)
+      // Only admin should be able to run
+      doSimpleStuffOnExtTable(st, adminFQTN)
+    } finally {
+      System.setProperty("CHECK_EXTERNAL_TABLE_AUTHZ", "false")
+    }
   }
 }
 
@@ -236,7 +387,8 @@ object QueryRoutingDUnitSecurityTest {
         jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2, 40, 4)
       assert(false) // fail
     } catch {
-      case x: SQLException if x.getSQLState.equals("42502") => // ignore
+      case x: SQLException if x.getSQLState.equals("42502")
+          || x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
     query("testRowTableRouting-2", serverHostPort, tableName,
@@ -254,10 +406,113 @@ object QueryRoutingDUnitSecurityTest {
       tableName, jdbcUser1, jdbcUser1)
   }
 
-  def netConnection(netPort: Int, user: String, pass: String): Connection = {
+  def checkMetastoreAccess(adminUser: String, nonAdminUser: String, netPort: Int): Unit = {
+    val schema = "SNAPPY_HIVE_METASTORE"
+    val adminConn = netConnection(netPort, adminUser, adminUser, routeQuery = false)
+    val adminStmt = adminConn.createStatement()
+    import org.scalatest.Assertions._
+    try {
+      adminStmt.execute(s"insert into $schema.version values (2, '1.2.1', 'dummy comment v2')")
+      adminStmt.execute(s"update $schema.version set version_comment =" +
+          s" 'comment changed' where ver_id = 2")
+      var res = adminStmt.executeQuery(s"select * from $schema.version order by ver_id")
+      res.next()
+      assert(res.getInt(1) === 1)
+      res.next()
+      assert(res.getInt(1) === 2 && res.getString(3) === "comment changed")
+
+      adminStmt.execute(s"delete from $schema.version where ver_id = 2")
+      res = adminStmt.executeQuery(s"select * from $schema.version")
+      while (res.next()) {
+        assert(res.getInt(1) === 1)
+      }
+    }
+    finally {
+      adminStmt.close()
+      adminConn.close()
+    }
+
+    val conn = netConnection(netPort, nonAdminUser, nonAdminUser, routeQuery = false)
+    val stmt = conn.createStatement()
+
+    try {
+      var thrown = intercept[SQLException] {
+        stmt.executeQuery(s"select * from $schema.version")
+      }
+      assert(thrown.getMessage.contains("User 'GEMFIRE3' does not have SELECT permission on" +
+          " column 'VER_ID' of table 'SNAPPY_HIVE_METASTORE'.'VERSION'"))
+
+      thrown = intercept[SQLException] {
+        stmt.execute(s"insert into $schema.version values (2, '1.2.1', 'dummy comm v2')")
+      }
+      assert(thrown.getMessage.contains("User 'GEMFIRE3' does not have INSERT permission on" +
+          " table 'SNAPPY_HIVE_METASTORE'.'VERSION'"))
+
+      val thrown2 = intercept[SQLException] {
+        stmt.execute(s"update $schema.version set version_comment =" +
+            s" 'comment changed ' where ver_id = 2")
+      }
+      assert(thrown2.getMessage.matches(".*User 'GEMFIRE3' does not have (UPDATE|SELECT) " +
+          "permission on column '(VERSION_COMMENT|VER_ID)' of table " +
+          "'SNAPPY_HIVE_METASTORE'.'VERSION'."))
+
+      thrown = intercept[SQLException] {
+        stmt.execute(s"delete from $schema.version where ver_id = 2")
+      }
+      assert(thrown.getMessage.matches(".*User 'GEMFIRE3' does not have (DELETE|SELECT) " +
+          "permission on( column 'VER_ID' of)? table 'SNAPPY_HIVE_METASTORE'.'VERSION'."))
+    }
+    finally {
+      stmt.close()
+      conn.close()
+    }
+
+    val conn2 = netConnection(netPort, nonAdminUser, nonAdminUser)
+    val stmt2 = conn2.createStatement()
+    try {
+      var thrown = intercept[SQLException] {
+        stmt2.executeQuery(s"select * from $schema.version")
+      }
+      assert(thrown.getMessage.contains("Invalid input \"SNAPPY_HIVE_METASTORE.v\"," +
+          " expected ws, test or relations"))
+
+      thrown = intercept[SQLException] {
+        stmt2.execute(s"insert into $schema.version values (2, '1.2.1', 'dummy comm v2')")
+      }
+      assert(thrown.getMessage.contains("User 'GEMFIRE3' does not have INSERT permission on" +
+          " table 'SNAPPY_HIVE_METASTORE'.'VERSION'"))
+
+      thrown = intercept[SQLException] {
+        stmt2.execute(s"update $schema.version set version_comment =" +
+            s" 'comment changed ' where ver_id = 2")
+      }
+      assert(thrown.getMessage.matches(".*User 'GEMFIRE3' does not have (UPDATE|SELECT) " +
+          "permission on column '(VERSION_COMMENT|VER_ID)' of table " +
+          "'SNAPPY_HIVE_METASTORE'.'VERSION'."))
+
+      thrown = intercept[SQLException] {
+        stmt2.execute(s"delete from $schema.version where ver_id = 2")
+      }
+      assert(thrown.getMessage.matches(".*User 'GEMFIRE3' does not have (DELETE|SELECT) " +
+          "permission on( column 'VER_ID' of)? table 'SNAPPY_HIVE_METASTORE'.'VERSION'."))
+    }
+    finally {
+      stmt2.close()
+      conn2.close()
+    }
+  }
+
+  def netConnection(netPort: Int, user: String, pass: String,
+      routeQuery: Boolean = true): Connection = {
     val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
-    val url: String = "jdbc:snappydata://localhost:" + netPort + "/"
+    var url: String = null
+    if (routeQuery) {
+      url = "jdbc:snappydata://localhost:" + netPort + "/"
+    }
+    else {
+      url = "jdbc:snappydata://localhost:" + netPort + "/route-query=false"
+    }
     DriverManager.getConnection(url, user, pass)
   }
 

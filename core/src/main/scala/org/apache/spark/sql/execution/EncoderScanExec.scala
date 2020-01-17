@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -49,7 +49,11 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
     ctx.addMutableState("scala.collection.Iterator", iterator,
       s"$iterator = inputs[0];")
 
-    val javaTypeName = encoder.clsTag.runtimeClass.getName
+    val javaClass = encoder.clsTag.runtimeClass
+    val javaTypeName =
+      if (javaClass.isPrimitive) ctx.boxedType(javaClass.getTypeName)
+      else javaClass.getTypeName
+
     val objVar = ctx.freshName("object")
 
     val expressions = encoder.serializer.map(
@@ -133,7 +137,6 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
       // null ints
       // Hence the below code was erronous and after fixing null handing in above date field
       // it works for all cases.
-      
       /* if (ctx.isPrimitiveType(dataType)) {
         ev.copy(isNull = "false")
       } else {

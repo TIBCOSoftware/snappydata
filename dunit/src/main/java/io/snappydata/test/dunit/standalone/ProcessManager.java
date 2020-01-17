@@ -18,7 +18,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -50,6 +50,7 @@ import java.rmi.registry.Registry;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.gemstone.gemfire.internal.FileUtil;
 import com.gemstone.gemfire.internal.shared.NativeCalls;
@@ -269,9 +270,19 @@ public class ProcessManager {
     }
 
     public void kill() {
-      this.killed = true;
+      this.killed = false;
       process.destroy();
-      
+      try {
+        this.killed = process.waitFor(2, TimeUnit.SECONDS);
+      } catch (Exception ignored) {
+      }
+      if (!this.killed) {
+        process.destroyForcibly();
+        try {
+          this.killed = process.waitFor(30, TimeUnit.SECONDS);
+        } catch (Exception ignored) {
+        }
+      }
     }
 
     public Process getProcess() {

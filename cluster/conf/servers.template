@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -39,6 +39,10 @@
 #
 #     <private hostname/IP> -client-bind-address=<private hostname/IP> -client-port=1555 -hostname-for-clients=<public hostname/IP for clients>
 # 
+# NOTE: For AWS environment, the cluster launch script (snappy-start-all.sh) automatically appends above two properties
+# viz. -client-bind-address and -hostname-for-clients with appropriate values to the server's configuration, so that
+# users do not have to specify them here explicitly.
+#
 # For more configuration options,
 # see http://snappydatainc.github.io/snappydata/configuration/#configuration
 localhost

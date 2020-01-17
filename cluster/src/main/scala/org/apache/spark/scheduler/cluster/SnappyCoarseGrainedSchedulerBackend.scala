@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -76,11 +76,12 @@ class BlockManagerIdListener(sc: SparkContext)
     val executorCores = msg.executorInfo.totalCores
     val profile = Misc.getMemStore.getDistributionAdvisor
         .getProfile(msg.executorId)
-    val numProcessors = if (profile != null) profile.getNumProcessors
-    else executorCores
+    val (numProcessors, usableHeap) =
+      if (profile != null) profile.getNumProcessors -> profile.getUsableHeap
+      else executorCores -> 0L
     SnappyContext.getBlockId(msg.executorId) match {
       case None => SnappyContext.addBlockId(msg.executorId,
-        new BlockAndExecutorId(null, executorCores, numProcessors))
+        new BlockAndExecutorId(null, executorCores, numProcessors, usableHeap))
       case Some(b) => b._executorCores = executorCores
         b._numProcessors = numProcessors
     }
@@ -97,7 +98,7 @@ class BlockManagerIdListener(sc: SparkContext)
       case None =>
         val numCores = sc.schedulerBackend.defaultParallelism()
         SnappyContext.addBlockId(executorId, new BlockAndExecutorId(
-          msg.blockManagerId, numCores, numCores))
+          msg.blockManagerId, numCores, numCores, 0L))
       case Some(b) => b._blockId = msg.blockManagerId
     }
   }

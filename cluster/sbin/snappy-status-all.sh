@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -19,6 +19,11 @@
 
 # Start all snappy daemons - locator, lead and server on the nodes specified in the
 # conf/locators, conf/leads and conf/servers files repsectively
+
+if [ "$#" -gt 0 ]; then
+  echo "Usage: Run this script without any arguments."
+  exit
+fi
 
 function absPath() {
   perl -MCwd -le 'print Cwd::abs_path(shift)' "$1"

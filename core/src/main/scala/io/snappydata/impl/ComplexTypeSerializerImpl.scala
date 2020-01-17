@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -323,7 +323,7 @@ final class StructValidatingConverter(struct: StructType,
     new GenericInternalRowWithSchema(values, struct)
   }
 
-  private[this] def checkStruct(len: Int, dataType: StructType) = {
+  private[this] def checkStruct(len: Int, dataType: StructType): Unit = {
     if (len != dataType.length) {
       throw new IllegalArgumentException("Incompatible value collection with" +
           s" $len fields for $table($column). Expected schema=$dataType")
@@ -341,7 +341,7 @@ final class IdentityValidatingConverter(dataType: DataType,
     if (!validate || v == null || v.getClass == expectedClass) v
     else {
       throw new IllegalArgumentException("Cannot convert value of " +
-          s"${v.getClass} to ${Utils.toUpperCase(dataType.typeName)} for " +
+          s"${v.getClass} to ${dataType.typeName} for " +
           s"$table($column). Supported type: ${expectedClass.getSimpleName}")
     }
   }
@@ -371,10 +371,10 @@ final class GenericValidatingConverter(dataType: DataType,
     } catch {
       case _: MatchError =>
         throw new IllegalArgumentException("Cannot convert value of " +
-            s"${v.getClass} to ${Utils.toUpperCase(dataType.typeName)} for " +
+            s"${v.getClass} to ${dataType.typeName} for " +
             s"$table($column). Supported types: ${ValidatingConverter
-            .objectCompatibilityMap(dataType.getClass).map(_.getName)
-            .mkString(", ")}")
+                .objectCompatibilityMap(dataType.getClass).map(_.getName)
+                .mkString(", ")}")
     }
   }
 }

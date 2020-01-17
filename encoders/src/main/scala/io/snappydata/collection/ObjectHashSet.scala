@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -65,7 +65,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     loadFactor: Double, numColumns: Int, longLived: Boolean = false)
     extends java.lang.Iterable[T] with Serializable {
 
-  private[this] val taskContext = TaskContext.get()
+  val taskContext: TaskContext = TaskContext.get()
 
   private[this] val consumer = if (taskContext ne null) {
     new ObjectHashSetMemoryConsumer(SharedUtils.taskMemoryManager(taskContext))
@@ -75,18 +75,21 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     freeMemoryOnTaskCompletion()
   }
 
-  private[this] var objectSize = -1L
-  private[this] var totalSize = 0L
+  private[this] var objectSize: Long = -1L
+  private[this] var _maxMemory: Long = _
 
-  private[this] var _capacity = SharedUtils.nextPowerOf2(initialCapacity)
-  private[this] var _size = 0
-  private[this] var _growThreshold = (loadFactor * _capacity).toInt
+  private[this] var _capacity: Int = SharedUtils.nextPowerOf2(initialCapacity)
+  private[this] var _size: Int = 0
+  private[this] var _growThreshold: Int = (loadFactor * _capacity).toInt
 
-  private[this] var _mask = _capacity - 1
+  private[this] var _mask: Int = _capacity - 1
   private[this] var _data: Array[T] = newArray(_capacity)
   private[this] var _keyIsUnique: Boolean = true
   private[this] var _minValues: Array[Long] = _
   private[this] var _maxValues: Array[Long] = _
+
+  // acquire initial memory
+  acquireMemoryForMap(_capacity.toLong)
 
   private[this] def newArray(capacity: Int): Array[T] =
     implicitly[ClassTag[T]].newArray(capacity)
@@ -98,6 +101,8 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   def data: Array[T] = _data
 
   def keyIsUnique: Boolean = _keyIsUnique
+
+  def maxMemory: Long = _maxMemory
 
   def addLong(key: Long, default: Long => T): T = {
     val hash = ClientResolverUtils.fastHashLong(key)
@@ -213,6 +218,8 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
   def handleNewInsert(pos: Int): Boolean = {
     if (objectSize == -1) {
       entrySize(pos)
+      // adjust memory requirements after first insert
+      acquireMemoryForMap(_capacity.toLong, onlyValues = true)
     }
     _size += 1
     // check and trigger a rehash if load factor exceeded
@@ -228,6 +235,22 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     objectSize = ReflectionSingleObjectSizer.INSTANCE.sizeof(data(pos))
   }
 
+  private def acquireMemoryForMap(capacity: Long, onlyValues: Boolean = false): Unit = {
+    // Probably overestimating as some of the array cell might be empty
+    if (!onlyValues) {
+      val refSize = capacity * ReflectionSingleObjectSizer.REFERENCE_SIZE
+      acquireMemory(refSize)
+      _maxMemory += refSize
+    }
+
+    // Also add potential memory usage by objects
+    if (objectSize > 0L) {
+      val valSize = capacity * objectSize
+      acquireMemory(valSize)
+      _maxMemory += valSize
+    }
+  }
+
   /**
    * Double the table's size and re-hash everything.
    * Caller must check for overloaded set before triggering a rehash.
@@ -236,15 +259,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     val capacity = _capacity
     val data = _data
 
-    // Probably overestimating as some of the array cell might be empty
-    val refSize = capacity.toLong * ReflectionSingleObjectSizer.REFERENCE_SIZE
-    acquireMemory(refSize)
-    totalSize += refSize
-
-    // Also add potential memory usage by objects
-    val valSize = capacity.toLong * objectSize
-    acquireMemory(valSize)
-    totalSize += valSize
+    acquireMemoryForMap(capacity.toLong)
 
     val newCapacity = SharedUtils.checkCapacity(capacity << 1)
     val newData = newArray(newCapacity)
@@ -279,7 +294,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     _growThreshold = (loadFactor * newCapacity).toInt
   }
 
-  private def acquireMemory(required: Long) = {
+  private def acquireMemory(required: Long): Unit = {
     if (longLived) {
       val blockId = TaskResultBlockId(taskContext.taskAttemptId())
       SparkEnv.get.memoryManager.acquireStorageMemory(blockId, required, MemoryMode.ON_HEAP)
@@ -290,7 +305,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
 
   private def freeMemoryOnTaskCompletion(): Unit = {
     taskContext.addTaskCompletionListener { _ =>
-      consumer.freeMemory(totalSize)
+      consumer.freeMemory(_maxMemory)
     }
   }
 
@@ -298,7 +313,7 @@ final class ObjectHashSet[T <: AnyRef : ClassTag](initialCapacity: Int,
     assert(longLived, "Method valid for only long lived hashsets")
     val sparkEnv = SparkEnv.get
     if (sparkEnv ne null) {
-      sparkEnv.memoryManager.releaseStorageMemory(totalSize, MemoryMode.ON_HEAP)
+      sparkEnv.memoryManager.releaseStorageMemory(_maxMemory, MemoryMode.ON_HEAP)
     }
   }
 }

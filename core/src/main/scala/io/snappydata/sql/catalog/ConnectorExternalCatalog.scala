@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -203,6 +203,24 @@ object ConnectorExternalCatalog extends Logging {
     val resourceType = FunctionResourceType.fromString(fullName.substring(0, sepIndex))
     FunctionResource(resourceType, fullName.substring(sepIndex + 1))
   }
+
+  private[snappydata] def convertToCatalogDatabase(catalogSchemaObject: CatalogSchemaObject):
+  CatalogDatabase = {
+    import collection.JavaConverters._
+    import scala.collection.Map
+    CatalogDatabase(catalogSchemaObject.getName, catalogSchemaObject.getDescription,
+      catalogSchemaObject.getLocationUri,
+      catalogSchemaObject.getProperties.asScala.toMap)
+  }
+
+  // temp method for testing... can be removed later
+  private[snappydata] def convertFromCatalogDatabase(catalogDatabase: CatalogDatabase):
+  CatalogSchemaObject = {
+   val cso = new CatalogSchemaObject(catalogDatabase.name, catalogDatabase.description,
+      catalogDatabase.locationUri, catalogDatabase.properties.asJava)
+    cso
+  }
+
 
   private[snappydata] def convertToCatalogFunction(
       functionObj: CatalogFunctionObject): CatalogFunction = {

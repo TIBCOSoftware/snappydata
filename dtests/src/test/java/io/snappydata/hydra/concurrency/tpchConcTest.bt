@@ -8,7 +8,7 @@ io/snappydata/hydra/concurrency/tpchMixedConcTest.conf
   buckets_Order_Lineitem=128
   buckets_Cust_Part_PartSupp=128
   buckets_Nation_Region_Supp=128
-  Nation_Region_Supp_col=false
+  Nation_Region_Supp_col=true
   Redundancy=0
   Persistence=true
   Persistence_Type=SYNCHRONOUS
