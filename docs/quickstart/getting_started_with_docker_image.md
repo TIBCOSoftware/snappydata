@@ -44,7 +44,7 @@ $ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] . --build-a
 For example:
 
 ```
-$ docker build -t myrepo/computedb . --build-arg TARFILE_LOC=computedb-1.1.1-bin.tar.gz
+$ docker build -t myrepo/computedb . --build-arg TARFILE_LOC=computedb-1.2.0-bin.tar.gz
 ```
 
 

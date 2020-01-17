@@ -60,28 +60,28 @@ If you would like to deploy Kubernetes on-premises, you can use any of the follo
 **To deploy TIBCO ComputeDB on Kubernetes:**
 
 1.	Clone the **spark-on-k8s** repository and change to **charts** directory.</br>
-`git clone https://github.com/SnappyDataInc/spark-on-k8s`</br>
-`cd spark-on-k8s/charts`
+
+            git clone https://github.com/SnappyDataInc/spark-on-k8s
+            cd spark-on-k8s/charts
 
 2.	Edit the **TIBCO ComputeDB > values.yaml**  file to configure in the SnappyData Chart. Specify the details of your TIBCO ComputeDB Docker image as mentioned in the example below. Replace values for image and tag appropriatly with your Dockerhub registry name, image name and tag .
            
-```
-image: your-dockerhub-registry/snappydata-docker-image
-imageTag: 1.2
-imagePullPolicy: IfNotPresent
-```
-       To pull a Docker image from a private registry, create a secret by following steps as mentioned [here](#https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials) and specify the name of the secret in values.yaml as shown below. Note that, the secret must be created in the namespace in which TIBCO ComputeDB will be deployed (namespace "snappy" in this case)
+            image: your-dockerhub-registry/snappydata-docker-image
+            imageTag: 1.2
+            imagePullPolicy: IfNotPresent
+    
+	To pull a Docker image from a private registry, create a secret by following steps as mentioned [here](#https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials) and specify the name of the secret in values.yaml as shown below. Note that, the secret must be created in the namespace in which TIBCO ComputeDB will be deployed (namespace "snappy" in this case)
 
-```
-imagePullSecrets: secretName
-``` 
+			imagePullSecrets: secretName
+ 
 
 3.	Optionally, you can edit the **TIBCO ComputeDB > values.yaml**  file to change the default configurations in the SnappyData Chart. Configurations can be specified in the respective attributes for locators, leaders, and servers in this file. Refer [List of Configuration Parameters for SnappyData Chart](#chartparameters)
 
 4.	Install the **TIBCO ComputeDB** chart using the following command:</br>
-`helm install --name snappydata --namespace snappy ./snappydata/`
 
-	The above command installs the SnappyData chart in a namespace called *snappy* and displays the Kubernetes objects (service, statefulsets etc.) created by the chart on the console.</br>
+		helm install --name snappydata --namespace snappy ./snappydata/
+
+	The above command installs the SnappyData chart in a namespace called *snappy* and displays the Kubernetes objects (service, statefulsets etc.) created by the chart on the console.
     By default, **SnappyData Helm **chart deploys a TIBCO ComputeDB cluster which consists of one locator, one lead, two servers and services to access TIBCO ComputeDB endpoints.
 
 You can monitor the Kubernetes UI dashboard to check the status of the components as it takes few minutes for all the servers to be online. To access the Kubernetes UI refer to the instructions [here](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/#accessing-the-dashboard-ui). 
@@ -367,9 +367,9 @@ When SnappyData chart is installed, the **log4.properties** file  will be used t
 
 <a id= configmaps> </a>
 ## Mounting ConfigMaps
-Files created in `charts/snappydata/conf/` are mounted on TIBCO ComputeDB server, lead, and locator pods as configmaps and copied into the product's `conf' directory. This is useful to make configuration files (such as spark-env.sh,
+Files created in **charts/snappydata/conf/** are mounted on TIBCO ComputeDB server, lead, and locator pods as configmaps and copied into the product's **conf** directory. This is useful to make configuration files (such as spark-env.sh,
 metrics.properties etc.) available to the product. Template files are provided in the
-`charts/snappydata/conf/`. These template files can be renamed and edited to provide configuration.
+**charts/snappydata/conf/**. These template files can be renamed and edited to provide configuration.
 
 For example:
 

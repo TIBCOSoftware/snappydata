@@ -32,7 +32,7 @@ snappy> create external table table1Parquet using parquet options (path '<path-t
 snappy> drop table table1;
 snappy> drop table table1Parquet;
 
-# Creating tables from parquet files in Tibco ComputeDB 1.1.1
+# Creating tables from parquet files in TIBCO ComputeDB 1.1.1
 snappy> create external table table1_parquet using parquet options (path '<path-to-parquet-file>') ;
 snappy> create table table1(...);
 snappy> insert into table1 select * from table1_parquet;
