@@ -63,6 +63,7 @@ object TableCreationJob extends SnappySQLJob {
     snc.dropTable("LINEITEM", ifExists = true)
     snc.dropTable("ORDERS", ifExists = true)
 
+    // cacheTables = false for SnappyData since SnappyData doesn't use Spark caching
     TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath, isSnappy,
       loadPerfPrintStream, trace = false, cacheTables = false)
     TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath, isSnappy,

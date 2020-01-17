@@ -289,27 +289,15 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
         "}" +
         "}"
 
-    val udfText1: String = "public class DoubleUDF1 implements" +
-      " org.apache.spark.sql.api.java.UDF1<Double, Double> {" +
-        " @Override public Double call(Double s){ " +
-        "               return s; " +
-        "}" +
-        "}"
     val file1 = createUDFClass("FloatUDF", udfText)
-    val file2 = createUDFClass("DoubleUDF1", udfText1)
-    val jar = createJarFile(Seq(file1, file2))
-
+    val jar = createJarFile(Seq(file1))
     snc.sql(s"CREATE FUNCTION APP.floatudf AS FloatUDF " +
         s"RETURNS Float USING JAR " +
         s"'$jar'")
-
-    snc.sql(s"CREATE FUNCTION APP.doubleudf1 AS DoubleUDF1 " +
-        s"RETURNS Double USING JAR " +
-        s"'$jar'")
     snc.sql("select floatudf(surcharge) from col_table").collect()
-    snc.sql("select doubleudf1(surcharge) from rr_table").collect()
+    snc.sql("select floatudf(surcharge) from rr_table").collect()
     dropUdf("floatudf")
-    dropUdf("doubleudf1")
+
   }
 
 

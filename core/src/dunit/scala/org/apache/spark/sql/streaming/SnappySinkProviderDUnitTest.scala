@@ -36,12 +36,14 @@ import io.snappydata.cluster.SplitClusterDUnitTest
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
+import org.junit.Assert
 
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.kafka010.KafkaTestUtils
 import org.apache.spark.sql.streaming.SnappySinkProviderDUnitTest.{adminUser, getConn, ldapGroup, locatorNetPort}
+import org.apache.spark.sql.streaming.SnappyStoreSinkProvider.TEST_FAILBATCH_OPTION
 import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
-import org.apache.spark.sql.{Dataset, Row, SnappyContext, SnappySession, ThinClientConnectorMode}
+import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappyContext, SnappySession, ThinClientConnectorMode}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -125,8 +127,8 @@ class SnappySinkProviderDUnitTest(s: String)
     try {
       connection = getConn(adminUser)
       val statement = connection.createStatement()
-      statement.execute(s"CREATE SCHEMA ${ldapGroup}" +
-          s" AUTHORIZATION ldapgroup:${ldapGroup};")
+      statement.execute(s"CREATE SCHEMA $ldapGroup" +
+          s" AUTHORIZATION ldapgroup:$ldapGroup;")
       statement.close()
     } finally {
       if (connection ne null) connection.close()
@@ -174,6 +176,11 @@ class SnappySinkProviderDUnitTest(s: String)
 
   def testStateTableSchemaNotProvided(): Unit = {
     vm.invoke(getClass, "doTestStateTableSchemaNotProvided",
+      Int.box(locatorNetPort))
+  }
+
+  def testAllowOnlyOneSnappySinkQueryPerSession(): Unit = {
+    vm.invoke(getClass, "doTestAllowOnlyOneSnappySinkQueryPerSession",
       Int.box(locatorNetPort))
   }
 
@@ -241,7 +248,7 @@ object SnappySinkProviderDUnitTest extends Logging {
     SplitClusterDUnitTest.getConnection(locatorNetPort, props)
   }
 
-  private def teardown() = {
+  private def teardown(): Unit = {
     Path(checkpointDirectory).deleteRecursively()
 
     kafkaTestUtils.teardown()
@@ -278,7 +285,7 @@ object SnappySinkProviderDUnitTest extends Logging {
       kafkaTestUtils.sendMessages(testId, dataBatch1.map(r => r.mkString(",")).toArray)
 
       val streamingQuery: StreamingQuery = createAndStartStreamingQuery(testId)
-      snc.sql(s"select * from ${ldapGroup}.${SnappyStoreSinkProvider.SINK_STATE_TABLE}").show()
+      snc.sql(s"select * from $ldapGroup.${SnappyStoreSinkProvider.SINK_STATE_TABLE}").show()
       waitTillTheBatchIsPickedForProcessing(0, testId)
 
       val dataBatch2 = Seq(Seq(1, "name11", 30, 1), Seq(2, "name2", 10, 2), Seq(3, "name3", 30, 0))
@@ -304,7 +311,7 @@ object SnappySinkProviderDUnitTest extends Logging {
       waitTillTheBatchIsPickedForProcessing(0, testId)
       streamingQuery.stop()
 
-      val streamingQuery1 = createAndStartStreamingQuery(testId, true, true)
+      val streamingQuery1 = createAndStartStreamingQuery(testId, failBatch = true)
       kafkaTestUtils.sendMessages(testId, (11 to 20).map(i => s"$i,name$i,$i,0").toArray)
       try {
         streamingQuery1.processAllAvailable()
@@ -373,6 +380,46 @@ object SnappySinkProviderDUnitTest extends Logging {
     }
   }
 
+  def doTestAllowOnlyOneSnappySinkQueryPerSession(locatorClientPort: Int): Unit = {
+    try {
+      val testId = s"test_${testIdGenerator.getAndIncrement()}"
+      setup(locatorClientPort)
+      kafkaTestUtils.createTopic(testId, partitions = 3)
+
+      val memorySinkQuery = snc
+          .readStream
+          .format("kafka")
+          .option("kafka.bootstrap.servers", kafkaTestUtils.brokerAddress)
+          .option("subscribe", testId)
+          .option("startingOffsets", "earliest")
+          .load().writeStream
+          .queryName("memorysink")
+          .option("checkpointLocation", checkpointDirectory + "/memorysink")
+          .format("memory")
+          .start()
+
+      try {
+        // This query should start successfully as earlier started query is using memory sink
+        val streamingQuery1 = createAndStartStreamingQuery(testId)
+        try {
+          val streamingQuery2 = createAndStartStreamingQuery(testId)
+          Assert.fail("StreamingQueryException expected.")
+        } catch {
+          case x: AnalysisException =>
+            val expectedMessage = "A streaming query with snappy sink is already running with" +
+                " current session. Please start query with new SnappySession.;"
+            Assert.assertEquals(expectedMessage, x.getMessage)
+        } finally {
+          streamingQuery1.stop()
+        }
+      } finally {
+        memorySinkQuery.stop()
+      }
+    } finally {
+      teardown()
+    }
+  }
+
   private def createAndStartStreamingQuery(testId: String,
       withEventTypeColumn: Boolean = true, failBatch: Boolean = false,
       withCustomCallback: Boolean = false, provideStateTableSchema: Boolean = true) = {
@@ -386,8 +433,8 @@ object SnappySinkProviderDUnitTest extends Logging {
 
     def structFields() = {
       StructField("id", LongType, nullable = false) ::
-          StructField("name", StringType, nullable = true) ::
-          StructField("age", IntegerType, nullable = true) ::
+          StructField("name", StringType) ::
+          StructField("age", IntegerType) ::
           (if (withEventTypeColumn) {
             StructField("_eventType", IntegerType, nullable = false) :: Nil
           }
@@ -398,7 +445,7 @@ object SnappySinkProviderDUnitTest extends Logging {
 
     val schema = StructType(structFields())
 
-    implicit val encoder = RowEncoder(schema)
+    implicit val encoder: ExpressionEncoder[Row] = RowEncoder(schema)
     val session = snc.sparkSession
     import session.implicits._
     val streamWriter = streamingDF.selectExpr("CAST(value AS STRING)")
@@ -421,7 +468,7 @@ object SnappySinkProviderDUnitTest extends Logging {
       streamWriter.option("stateTableSchema", ldapGroup)
     }
     if (failBatch) {
-      streamWriter.option("internal___failBatch", "true")
+      streamWriter.option(TEST_FAILBATCH_OPTION, "true")
     }
     if (withCustomCallback) {
       streamWriter.option("sinkCallback", classOf[TestSinkCallback].getName)
@@ -430,14 +477,14 @@ object SnappySinkProviderDUnitTest extends Logging {
   }
 
   private def createTable() = {
-    snc.sql(s"drop table if exists ${ldapGroup}.$tableName")
+    snc.sql(s"drop table if exists $ldapGroup.$tableName")
     snc.sql(
-      s"""create table ${ldapGroup}.$tableName
+      s"""create table $ldapGroup.$tableName
        (id long , name varchar(40), age int) using column options(key_columns 'id')""")
   }
 
   private def assertData(expectedData: Array[Row]): Unit = {
-    val actualData = snc.sql(s"select * from ${ldapGroup}.$tableName" +
+    val actualData = snc.sql(s"select * from $ldapGroup.$tableName" +
         s" order by id, name, age")
         .collect()
 
@@ -450,7 +497,7 @@ object SnappySinkProviderDUnitTest extends Logging {
     if (retries == 0) {
       throw new RuntimeException(s"Batch id $batchId not found in sink status table")
     }
-    val sql = s"select batch_id from ${ldapGroup}.${SnappyStoreSinkProvider.SINK_STATE_TABLE} " +
+    val sql = s"select batch_id from $ldapGroup.${SnappyStoreSinkProvider.SINK_STATE_TABLE} " +
         s"where stream_query_id = '$testId'"
     val batchIdFromTable = snc.sql(sql).collect()
 

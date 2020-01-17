@@ -41,8 +41,11 @@ object QueryExecutionJob extends SnappySQLJob with Logging {
     }
 
     val avgFileStream: FileOutputStream = new FileOutputStream(
-      new File(s"Snappy_Average.out"))
+      new File(s"Snappy_Average.csv"))
     val avgPrintStream: PrintStream = new PrintStream(avgFileStream)
+    var queryPrintStream: PrintStream = null
+
+    avgPrintStream.println(s"Query,Iteration,ExecutionTime")
 
     queries.foreach { name =>
       try {
@@ -53,7 +56,7 @@ object QueryExecutionJob extends SnappySQLJob with Logging {
         val queryFileName = s"$name.out"
 
         val queryFileStream: FileOutputStream = new FileOutputStream(new File(queryFileName))
-        val queryPrintStream: PrintStream = new PrintStream(queryFileStream)
+        queryPrintStream = new PrintStream(queryFileStream)
 
         var totalTime: Long = 0
 
@@ -89,6 +92,7 @@ object QueryExecutionJob extends SnappySQLJob with Logging {
             }
             val endTime = System.currentTimeMillis()
             val iterationTime = endTime - startTime
+            avgPrintStream.println(s"$name,$i,$iterationTime")
             // scalastyle:off println
             queryPrintStream.println(s"$iterationTime")
 
@@ -103,15 +107,24 @@ object QueryExecutionJob extends SnappySQLJob with Logging {
         // println(s"${totalTime / runsForAverage}")
         println("-----------------------------------------------")
         queryPrintStream.println(s"${totalTime / runsForAverage}")
-        avgPrintStream.println(s"$name, executionTime = ${totalTime / runsForAverage}")
+        avgPrintStream.println(s"$name,mean,${totalTime / runsForAverage}")
         println("-----------------------------------------------")
 
       }
       catch {
-        case e: Exception => println(s"Failed $name")
-          logError("Exception in job", e)
+        case e: java.io.FileNotFoundException =>
+          val message = s"Query file ${name} does not exist."
+          logError(message, e)
+          queryPrintStream.println(message)
+        case e: Exception =>
+          val message = s"Query $name failed"
+          println(message)
+          logError(message)
+          logError("Exception in job: " + System.lineSeparator(), e)
       }
     }
+
+    // cleanup
     avgPrintStream.close()
     avgFileStream.close()
     QueryExecutor.close

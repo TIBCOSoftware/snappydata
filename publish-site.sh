@@ -31,7 +31,7 @@ do
 done
 
 ## Remove the lines till toc and then copy that as index.md
-index_start_line=`grep -n '## Introduction' ./docs/GettingStarted.md | cut -d':' -f1`
+index_start_line=`grep -n '# Introduction' ./docs/GettingStarted.md | cut -d':' -f1`
 echo LINE START $index_start_line
 
 if [ ! -z ${index_start_line} ]; then

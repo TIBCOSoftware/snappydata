@@ -73,8 +73,14 @@ object ServiceUtils {
     if (!forLocator) {
       // set default recovery delay to 2 minutes (SNAP-1541)
       storeProps.putIfAbsent(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
-      // try hard to maintain executor and node locality
-      storeProps.putIfAbsent("spark.locality.wait.process", "20s")
+      val isRecoveryMode = props.getProperty(GfxdConstants.SNAPPY_PREFIX + "recover")
+      if(isRecoveryMode != null) {
+        // It is crucial to enforce process locality in case of recovery mode
+        storeProps.putIfAbsent("spark.locality.wait.process", "1800s")
+      } else {
+        // try hard to maintain executor and node locality
+        storeProps.putIfAbsent("spark.locality.wait.process", "20s")
+      }
       storeProps.putIfAbsent("spark.locality.wait", "10s")
       // default value for spark.sql.files.maxPartitionBytes in snappy is 32mb
       storeProps.putIfAbsent("spark.sql.files.maxPartitionBytes", "33554432")
@@ -170,5 +176,40 @@ object ServiceUtils {
           case _: Throwable => false
         }
     }
+  }
+
+  /**
+   * We capture table ddl string and add it to table properties before adding to catalog.
+   * This will also contain passwords in the string such as jdbc connection string or
+   * s3 location etc. This method masks passwords
+   * @param str DDL string that might contain jdbc/s3 passwords
+   * @return similar string with masked passwords
+   */
+  def maskPasswordsInString(str: String): String = {
+    val jdbcPattern1 = ".*jdbc.*(?i)\\bpassword\\b=([^);&']*).*".r
+    val jdbcPattern2 = ".*jdbc.*:(.*)@.*".r
+    val s3Pattern1 = "s3[an]?://([^:]*):([^@]*)@.*".r
+    val optionPattern1 = ".*(?i)\\bpassword\\b '([^']*)'.*".r
+    var maskedStr = str.replace("\n", " ")
+    val mask = "xxxxx"
+
+    maskedStr match {
+      case jdbcPattern1(passwd) => maskedStr = maskedStr.replace(passwd, mask)
+      case _ =>
+    }
+    maskedStr match {
+      case jdbcPattern2(passwd) => maskedStr = maskedStr.replace(passwd, mask)
+      case _ =>
+    }
+    maskedStr match {
+      case s3Pattern1(passwd3, passwd4) => maskedStr = maskedStr.replace(passwd3, mask)
+          .replace(passwd4, mask)
+      case _ =>
+    }
+    maskedStr match {
+      case optionPattern1(passwd) => maskedStr = maskedStr.replace(passwd, mask)
+      case _ =>
+    }
+    maskedStr
   }
 }
