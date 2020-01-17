@@ -15,9 +15,11 @@ The following sections are included in this topic:
 
 *	[List of Configuration Parameters for SnappyData Chart](#chartparameters)
 
-*	[Kubernetes Obects Used in SnappyData Chart](#kubernetesobjects)
+*	[Kubernetes Objects Used in SnappyData Chart](#kubernetesobjects)
 
-*	[Accesing Logs and Configuring Log Level](#accesslogs)
+*	[Accessing Logs and Configuring Log Level](#accesslogs)
+
+*   [Mounting ConfigMaps](#configmaps)
 
 
 <a id= prerequisites> </a>
@@ -27,9 +29,9 @@ The following prerequisites must be met to deploy TIBCO ComputeDB on Kubernetes:
 
 *	**Kubernetes cluster**</br> A running Kubernetes cluster of version 1.9 or higher. TIBCO ComputeDB has been tested on Google Container Engine(GKE) as well as on Pivotal Container Service (PKS). If Kubernetes cluster is not available, you can set it up as mentioned [here](#pksaccess).
 
-*	**Helm tool**</br> Helm tool must be deployed in the Kubernetes environment. Helm comprises of two parts, that is a client and a Tiller (Server portion of Helm) inside the kube-system namespace. Tiller runs inside the Kubernetes cluster and manages the deployment of charts or packages. You can follow the instructions [here](https://docs.pivotal.io/runtimes/pks/1-1/configure-tiller-helm.html) to deploy Helm in your Kubernetes enviroment.
+*	**Helm tool**</br> Helm tool must be deployed in the Kubernetes environment. You can follow the instructions [here](https://helm.sh/docs/intro/install/) to deploy Helm in your Kubernetes enviroment.
+*	**Docker image**</br> Helm charts use Docker image to launch the TIBCO ComputeDB cluster on Kubernetes. [You can refer to these steps](quickstart/getting_started_with_docker_image.md) to build and publish your Docker image for TIBCO ComputeDB. TIBCO does not provide a Docker image for TIBCO ComputeDB.
 
-*	**Docker image**</br> Helm charts use the Docker images to launch the container on Kubernetes. [You can refer to these steps](quickstart/getting_started_with_docker_image.md#build-your-docker) to build your Docker image for TIBCO ComputeDB, provided you have its tarball with you. TIBCO does not provide a Docker image for TIBCO ComputeDB.
 
 <a id= pksaccess> </a>
 ## Getting Access to Kubernetes Cluster
@@ -53,7 +55,7 @@ If you would like to deploy Kubernetes on-premises, you can use any of the follo
 <a id= deploykubernetes> </a>
 ## Deploying TIBCO ComputeDB on Kubernetes 
 
-**SnappyData Helm** chart is used to deploy TIBCO ComputeDB on Kubernetes.  It uses Kubernetes [statefulsets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to launch the locator, lead, and server members. 
+**SnappyData Helm **chart is used to deploy TIBCO ComputeDB on Kubernetes.  It uses Kubernetes [statefulsets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to launch the locator, lead, and server members. 
 
 **To deploy TIBCO ComputeDB on Kubernetes:**
 
@@ -61,17 +63,30 @@ If you would like to deploy Kubernetes on-premises, you can use any of the follo
 `git clone https://github.com/SnappyDataInc/spark-on-k8s`</br>
 `cd spark-on-k8s/charts`
 
-3.	Optionally, you can edit the **snappydata > values.yaml**  file to change the default configurations in the TIBCO ComputeDB chart. Configurations can be specified in the respective attributes for locators, leaders, and servers in this file. Refer [List of Configuration Parameters for TIBCO ComputeDB Chart](#chartparameters)
+2.	Edit the **TIBCO ComputeDB > values.yaml**  file to configure in the SnappyData Chart. Specify the details of your TIBCO ComputeDB Docker image as mentioned in the example below. Replace values for image and tag appropriatly with your Dockerhub registry name, image name and tag .
+           
+```
+image: your-dockerhub-registry/snappydata-docker-image
+imageTag: 1.2
+imagePullPolicy: IfNotPresent
+```
+       To pull a Docker image from a private registry, create a secret by following steps as mentioned [here](#https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials) and specify the name of the secret in values.yaml as shown below. Note that, the secret must be created in the namespace in which TIBCO ComputeDB will be deployed (namespace "snappy" in this case)
 
-4.	Install the **snappydata** chart using the following command:</br>
+```
+imagePullSecrets: secretName
+``` 
+
+3.	Optionally, you can edit the **TIBCO ComputeDB > values.yaml**  file to change the default configurations in the SnappyData Chart. Configurations can be specified in the respective attributes for locators, leaders, and servers in this file. Refer [List of Configuration Parameters for SnappyData Chart](#chartparameters)
+
+4.	Install the **TIBCO ComputeDB** chart using the following command:</br>
 `helm install --name snappydata --namespace snappy ./snappydata/`
 
-	The above command installs the **SnappyData** chart in a namespace called *snappy* and displays the Kubernetes objects (service, statefulsets etc.) created by the chart on the console.</br>
-    By default, **SnappyData Helm** chart deploys a TIBCO ComputeDB cluster which consists of one locator, one lead, two servers and services to access TIBCO ComputeDB endpoints.
+	The above command installs the SnappyData chart in a namespace called *snappy* and displays the Kubernetes objects (service, statefulsets etc.) created by the chart on the console.</br>
+    By default, **SnappyData Helm **chart deploys a TIBCO ComputeDB cluster which consists of one locator, one lead, two servers and services to access TIBCO ComputeDB endpoints.
 
 You can monitor the Kubernetes UI dashboard to check the status of the components as it takes few minutes for all the servers to be online. To access the Kubernetes UI refer to the instructions [here](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/#accessing-the-dashboard-ui). 
 
-**SnappyData chart** dynamically provisions volumes for servers, locators, and leads. These volumes and the data in it are retained even after the chart deployment is deleted.
+SnappyData chart dynamically provisions volumes for servers, locators, and leads. These volumes and the data in it are retained even after the chart deployment is deleted.
 
 <a id= interactkubernetes> </a>
 ## Interacting with TIBCO ComputeDB Cluster on Kubernetes
@@ -82,7 +97,7 @@ To find the IP addresses and port numbers of the TIBCO ComputeDB processes, use 
 In the [output](#output), three services namely **snappydata-leader-public**, **snappydata-locator-public** and 
 **snappydata-server-public**  of type **LoadBalancer** are seen which expose the endpoints for locator, lead, and server respectively. These services have external IP addresses assigned and therefore can be accessed from outside Kubernetes. The remaining services that do not have external IP addresses are those that are created for internal use.
 
-**snappydata-leader-public** service exposes port **5050** for TIBCO ComputeDB Monitoring Console and port **8090** to accept [Snappy jobs](#jobkubernetes).</br>
+**snappydata-leader-public** service exposes port **5050** for TIBCO ComputeDB Monitoring Console, port **10000** for Hive Thrift server and port **8090** to accept [TIBCO ComputeDB jobs](#jobkubernetes).</br>
 **snappydata-locator-public** service exposes port **1527** to accept [JDBC/ODBC connections](#jdbckubernetes).
 
 You can do the following on the TIBCO ComputeDB cluster that is deployed on Kubernetes:
@@ -123,12 +138,12 @@ The output displays the external IP address  of the *snappydata-locator-public* 
 
 2.	Use the external IP address and port of the **snappydata-locator-public** services to connect to TIBCO ComputeDB cluster using JDBC connections. For example, based on the above output, the JDBC URL to be used will be [jdbc:snappydata://104.198.47.162:1527/]()
 
-You can refer to the [documentation](http://snappydatainc.github.io/snappydata/howto/connect_using_jdbc_driver/) for an example of JDBC program and for instructions on how to obtain JDBC driver using Maven/SBT co-ordinates.
+You can refer to [TIBCO ComputeDB documentation](http://snappydatainc.github.io/snappydata/howto/connect_using_jdbc_driver/) for an example of JDBC program and for instructions on how to obtain JDBC driver using Maven/SBT co-ordinates.
 
 <a id= querykubernetes> </a>
 ### Executing Queries Using Snappy Shell
 
-You  can use Snappy shell to connect to TIBCO ComputeDB and execute your queries. You can simply connect to one of the pods in the cluster and use the Snappy Shell. Alternatively, you can download the TIBCO ComputeDB distribution from TIBCO eDelivery releases. Snappy shell need not run within the Kubernetes cluster.
+You  can use Snappy shell to connect to TIBCO ComputeDB and execute your queries. You can simply connect to one of the pods in the cluster and use the Snappy Shell. Alternatively, you can download the TIBCO ComputeDB distribution from [github releases](https://github.com/SnappyDataInc/snappydata/releases). Snappy shell need not run within the Kubernetes cluster.
 
 **To execute queries in Kubernetes deployment:**
 
@@ -136,10 +151,10 @@ You  can use Snappy shell to connect to TIBCO ComputeDB and execute your queries
 `kubectl get svc --namespace=snappy`</br>
 The output displays the external IP address of the **snappydata-locator-public** services  and the port number for external connections as shown in the following image:![Snappy-Leader-Service](./Images/services_Locator_Public.png)
 
-2.	Launch Snappy Shell and then create tables and execute queries. </br>Following is an example of executing queries using Snappy Shell.
+2.	Launch Snappy shell and then create tables and execute queries. </br>Following is an example of executing queries using Snappy shell.
 
 ```
-# Connect to Snappy Shell
+# Connect to snappy-shell
  bin/snappy
  snappy> connect client '104.198.47.162:1527';
 
@@ -152,16 +167,16 @@ The output displays the external IP address of the **snappydata-locator-public**
 <a id= jobkubernetes> </a>
 ### Submitting a TIBCO ComputeDB Job
 
-Refer to the How Tos section in the product documentation to understand how to submit Snappy jobs.
-However, for submitting a Snappy job in Kubernetes deployment, you need to use the **snappydata-leader-public** service that exposes port **8090** to run the jobs.
+Refer to the [How Tos section](http://snappydatainc.github.io/snappydata/howto/run_spark_job_inside_cluster/) in TIBCO ComputeDB documentation to understand how to submit TIBCO ComputeDB jobs.
+However, for submitting a TIBCO ComputeDB job in Kubernetes deployment, you need to use the **snappydata-leader-public** service that exposes port **8090** to run the jobs.
 
-**To submit a Snappy job in Kubernetes deployment:**
+**To submit a TIBCO ComputeDB job in Kubernetes deployment:**
 
 1.	Check the TIBCO ComputeDB services running in Kubernetes cluster.</br>
 `kubectl get svc --namespace=snappy`</br>
 The output displays the external IP address of **snappydata-leader-public** service which must be noted. ![Snappy-Leader-Service](./Images/services_Leader_Public.png)
 
-3.	Change to TIBCO ComputeDB product directory.</br>
+2.	Change to TIBCO ComputeDB product directory.</br>
 `cd $SNAPPY_HOME`
 
 3.	Submit the job using the external IP of the **snappydata-leader-public** service and the port number **8090** in the **--lead** option.</br> Following is an example of submitting a Snappy Job:
@@ -176,7 +191,7 @@ bin/snappy-job.sh submit
 
 ## Stopping the TIBCO ComputeDB Cluster on Kubernetes
 
-To stop the TIBCO ComputeDB cluster on Kubernetes, you must delete the **SnappyData Helm** chart using the `helm delete` command.
+To stop the TIBCO ComputeDB cluster on Kubernetes, you must delete the **SnappyData Helm **chart using the `helm delete` command.
 
 ```
 $ helm delete --purge snappydata
@@ -197,6 +212,7 @@ You can modify the **values.yaml**  file to configure the SnappyData chart. The 
 | `image` |  Docker repo from which the TIBCO ComputeDB Docker image is pulled.    |  `snappydatainc/snappydata`   |
 | `imageTag` |  Tag of the TIBCO ComputeDB Docker image that is pulled. |   |
 | `imagePullPolicy` | Pull policy for the image.  | `IfNotPresent` |
+| `imagePullSecrets` | Secret name to be used to pull image from a private registry | |
 | `locators.conf` | List of the configuration options that is passed to the locators. | |
 | `locators.resources` | Resource configuration for the locator Pods. User can configure CPU/memory requests and limit the usage. | `locators.requests.memory` is set to `1024Mi`. |
 | `locators.persistence.storageClass` | Storage class that is used while dynamically provisioning a volume. | Default value is not defined so `default` storage class for the cluster is chosen.  |
@@ -224,7 +240,7 @@ servers:
   conf: "-heap-size=2048m"
 ```
 
-You can specify TIBCO ComputeDB configuration parameters in the **servers.conf**, **locators.conf**, and **leaders.conf** attributes for servers, locators, and leaders respectively.
+You can specify TIBCO ComputeDB [configuration parameters](https://snappydatainc.github.io/snappydata/configuring_cluster/configuring_cluster/#configuration-files) in the **servers.conf**, **locators.conf**, and **leaders.conf** attributes for servers, locators, and leaders respectively.
 
 <a id= kubernetesobjects> </a>
 ## Kubernetes Obects Used in SnappyData Chart
@@ -241,7 +257,7 @@ This section provides details about the following Kubernetes objects that are us
 ### Statefulsets for Servers, Leaders, and Locators
 
 [Kubernetes statefulsets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) are used to manage stateful applications. Statefulsets provide many benefits such as stable and unique network identifiers, stable persistent storage, ordered deployment and scaling, graceful deletion, and rolling updates.
-SnappyData Helm chart deploys statefulsets for servers, leaders, and locators. By default the chart deploys two data servers, one locator, and one leader. Upon deletion of the Helm deployment, each pod gracefully terminates the SnappyData process that is running on it.
+SnappyData Helm chart deploys statefulsets for servers, leaders, and locators. By default the chart deploys two data servers, one locator, and one leader. Upon deletion of the Helm deployment, each pod gracefully terminates the process that is running on it.
 
 <a id= services> </a>
 ### Services that Expose External Endpoints
@@ -349,3 +365,16 @@ When SnappyData chart is installed, the **log4.properties** file  will be used t
 
 <a id= deletehelm> </a>
 
+<a id= configmaps> </a>
+## Mounting ConfigMaps
+Files created in `charts/snappydata/conf/` are mounted on TIBCO ComputeDB server, lead, and locator pods as configmaps and copied into the product's `conf' directory. This is useful to make configuration files (such as spark-env.sh,
+metrics.properties etc.) available to the product. Template files are provided in the
+`charts/snappydata/conf/`. These template files can be renamed and edited to provide configuration.
+
+For example:
+
+```
+$ cd snappydata/conf/
+$ cp spark-env.sh.template spark-env.sh
+# now modify the spark-env.sh to specify configuration 
+```  
