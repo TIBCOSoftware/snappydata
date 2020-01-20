@@ -121,3 +121,5 @@ TASK  taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest taskMe
     io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNames = query_snappyTemp_table.sql
     threadGroups = snappyStoreThreads
     maxThreads = 1;
+
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-isAggregate=true;
