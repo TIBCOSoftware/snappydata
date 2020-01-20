@@ -1,9 +1,8 @@
 # PIVOT
 
-## Syntax
 ## Description 
 
-TIBCO ComputeDB parser support for PIVOT clause. It deviates from Spark 2.4 support in that it
+SnappyData parser support for PIVOT clause. It deviates from Spark 2.4 support in that it
 only allows literals in the value IN list rather than named expressions. On the contrary, it supports
 explicit GROUP BY columns with PIVOT instead of always doing implicit detection (which may
 be different from what user needs in some cases).

@@ -61,3 +61,4 @@ The following instructions describe how to configure SSL in a DSN:
 	*	Enter the **ciphers** that you want to use. This is an optional input. If left empty then default ciphers are `"ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH"`
 	
 For information about connecting Tableau using TIBCO ComputeDB ODBC Driver, refer to [Connect Tableau using ODBC Driver](./howto/tableauconnect.md#odbcdritab)
+
