@@ -21,6 +21,8 @@ The following topics are covered in this section:
 
 * [Jobs](#jobs)
 
+* [Structured Streaming](#structuredstream)
+
 * [Stages](#stages)
 
 * [Spark Cache](#spark_cache)
@@ -283,7 +285,7 @@ The following details are shown on the **Structured Streaming** tab:
 |**Uptime**| Total time that has passed since the streaming has started.|
 |**Trigger** **Interval**| Time interval on which successive batch is expected to start it’s execution. Each event is fired on this interval but each event may or may not have batches to process.|
 |**Batches Processed**| Total number of batches processed since streaming query has been started.|  
-|**Status**| Status can be **Active** or **Inactive**.</br> *	**Active**: Query is running </br> *	**Inactive**: Query has stopped or failed|
+|**Status**| Status can be **Active** or **Inactive**.</br> *	**Active**: Query is running. </br> *	**Inactive**: Query has stopped or failed.|
 |**Total Input Records**| Total count of records received from the sources and processed since the streaming query has been started.|
 |**Current Input Rate**| Number of input records per second in a batch, which has been received in the current event trigger. This value is the number of records received between the start time of previous event and start time of current event and divided by the number of seconds between these two events.|
 |**Current Processing Rate**|Average input records processed per second. This value is number of input records processed per second between the start time and the end time of the current event.|
