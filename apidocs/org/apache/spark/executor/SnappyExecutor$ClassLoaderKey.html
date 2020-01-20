@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ClassLoaderKey - snappydata_2.11 1.1.1 API - org.apache.spark.executor.SnappyExecutor.ClassLoaderKey</title>
-          <meta name="description" content="ClassLoaderKey - snappydata 2.11 1.1.1 API - org.apache.spark.executor.SnappyExecutor.ClassLoaderKey" />
-          <meta name="keywords" content="ClassLoaderKey snappydata 2.11 1.1.1 API org.apache.spark.executor.SnappyExecutor.ClassLoaderKey" />
+          <title>ClassLoaderKey - snappydata_2.11 1.2.0 API - org.apache.spark.executor.SnappyExecutor.ClassLoaderKey</title>
+          <meta name="description" content="ClassLoaderKey - snappydata 2.11 1.2.0 API - org.apache.spark.executor.SnappyExecutor.ClassLoaderKey" />
+          <meta name="keywords" content="ClassLoaderKey snappydata 2.11 1.2.0 API org.apache.spark.executor.SnappyExecutor.ClassLoaderKey" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.executor.SnappyExecutor.ClassLoaderKey#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(appName:String,appTime:String,appNameAndJars:Array[String]):SnappyExecutor.this.ClassLoaderKey"></a>
+      <a id="&lt;init&gt;(appName:String,appTime:String,appNameAndJars:Array[String],isReplPath:Boolean):SnappyExecutor.this.ClassLoaderKey"></a>
       <a id="&lt;init&gt;:ClassLoaderKey"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ClassLoaderKey</span><span class="params">(<span name="appName">appName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="appTime">appTime: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="appNameAndJars">appNameAndJars: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span>
+        <span class="name">ClassLoaderKey</span><span class="params">(<span name="appName">appName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="appTime">appTime: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="appNameAndJars">appNameAndJars: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="isReplPath">isReplPath: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor$ClassLoaderKey@&lt;init&gt;(appName:String,appTime:String,appNameAndJars:Array[String]):SnappyExecutor.this.ClassLoaderKey" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor$ClassLoaderKey@&lt;init&gt;(appName:String,appTime:String,appNameAndJars:Array[String],isReplPath:Boolean):SnappyExecutor.this.ClassLoaderKey" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -364,6 +364,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyExecutor.ClassLoaderKey#isReplPath" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="isReplPath:Boolean"></a>
+      <a id="isReplPath:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isReplPath</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor$ClassLoaderKey@isReplPath:Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -415,6 +432,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyExecutor.ClassLoaderKey#setUserClassPathFirst" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setUserClassPathFirst(userClassPathFirst:Boolean):Unit"></a>
+      <a id="setUserClassPathFirst(Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setUserClassPathFirst</span><span class="params">(<span name="userClassPathFirst">userClassPathFirst: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor$ClassLoaderKey@setUserClassPathFirst(userClassPathFirst:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -449,6 +483,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyExecutor.ClassLoaderKey#userClasspathFirst" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="userClasspathFirst:Boolean"></a>
+      <a id="userClasspathFirst:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">userClasspathFirst</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.SnappyExecutor$ClassLoaderKey@userClasspathFirst:Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

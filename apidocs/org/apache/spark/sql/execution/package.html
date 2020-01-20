@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>execution - snappydata_2.11 1.1.1 API - org.apache.spark.sql.execution</title>
-          <meta name="description" content="execution - snappydata 2.11 1.1.1 API - org.apache.spark.sql.execution" />
-          <meta name="keywords" content="execution snappydata 2.11 1.1.1 API org.apache.spark.sql.execution" />
+          <title>execution - snappydata_2.11 1.2.0 API - org.apache.spark.sql.execution</title>
+          <meta name="description" content="execution - snappydata 2.11 1.2.0 API - org.apache.spark.sql.execution" />
+          <meta name="keywords" content="execution snappydata 2.11 1.2.0 API org.apache.spark.sql.execution" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -211,45 +211,6 @@ on deserialized object directly.</p>
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.Approximate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ApproximateextendsComparable[org.apache.spark.sql.execution.Approximate]withOrdered[org.apache.spark.sql.execution.Approximate]withSerializable"></a>
-      <a id="Approximate:Approximate"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="Approximate.html"><span class="name">Approximate</span></a><span class="result"> extends <span class="extype" name="java.lang.Comparable">Comparable</span>[<a href="Approximate.html" class="extype" name="org.apache.spark.sql.execution.Approximate">Approximate</a>] with <a href="../../../../../scala/package.html#Ordered[T]=scala.math.Ordered[T]" class="extmbr" name="scala.Ordered">Ordered</a>[<a href="Approximate.html" class="extype" name="org.apache.spark.sql.execution.Approximate">Approximate</a>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ApproximateextendsComparable[org.apache.spark.sql.execution.Approximate]withOrdered[org.apache.spark.sql.execution.Approximate]withSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">True count is &gt; lower Bound &amp; less than Max , with the given probability
-</p><div class="fullcomment"><div class="comment cmt"><p>True count is &gt; lower Bound &amp; less than Max , with the given probability
-</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
-                <span class="name">@<a href="../types/SQLUserDefinedType.html" class="extype" name="org.apache.spark.sql.types.SQLUserDefinedType">SQLUserDefinedType</a></span><span class="args">()</span>
-              
-        </dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.ApproximateType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ApproximateTypeextendsUserDefinedType[org.apache.spark.sql.execution.Approximate]"></a>
-      <a id="ApproximateType:ApproximateType"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="ApproximateType.html"><span class="name">ApproximateType</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.sql.types.UserDefinedType">UserDefinedType</span>[<a href="Approximate.html" class="extype" name="org.apache.spark.sql.execution.Approximate">Approximate</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ApproximateTypeextendsUserDefinedType[org.apache.spark.sql.execution.Approximate]" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.BaseLimitExec" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="BaseLimitExecextendsSparkPlanwithUnaryExecNodewithCodegenSupport"></a>
       <a id="BaseLimitExec:BaseLimitExec"></a>
@@ -315,23 +276,6 @@ on deserialized object directly.</p>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@BufferedRowIteratorextendsObject" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.CMSParams" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="CMSParamsextendsSerializable"></a>
-      <a id="CMSParams:CMSParams"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="CMSParams.html"><span class="name">CMSParams</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@CMSParamsextendsSerializable" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1086,6 +1030,23 @@ their output.</p></div><dl class="paramcmts block"><dt class="param">generator</
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.GrantRevokeOnExternalTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GrantRevokeOnExternalTableextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
+      <a id="GrantRevokeOnExternalTable:GrantRevokeOnExternalTable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="GrantRevokeOnExternalTable.html"><span class="name">GrantRevokeOnExternalTable</span></a><span class="params">(<span name="isGrant">isGrant: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="table">table: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="users">users: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@GrantRevokeOnExternalTableextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.GroupedIterator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="GroupedIteratorextendsIterator[(org.apache.spark.sql.catalyst.InternalRow,Iterator[org.apache.spark.sql.catalyst.InternalRow])]"></a>
       <a id="GroupedIterator:GroupedIterator"></a>
@@ -1110,47 +1071,6 @@ Grouping: x#<span class="num">1</span>
 InputSchema: x#<span class="num">1</span>, y#<span class="num">2</span></pre><p>Result:</p><pre>First call to next():  ([a], Iterator([a, <span class="num">1</span>])
 Second call to next(): ([b], Iterator([b, <span class="num">2</span>], [b, <span class="num">3</span>])</pre><p>Note, the class does not handle the case of an empty input for simplicity of implementation.
 Use the factory to construct a new instance.
-</p></div></div>
-    </li><li name="org.apache.spark.sql.execution.Hokusai" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="Hokusai[T]extendsAnyRef"></a>
-      <a id="Hokusai[T]:Hokusai[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="Hokusai.html"><span class="name">Hokusai</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@Hokusai[T]extendsAnyRef" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Implements the algorithms and data structures from &quot;Hokusai -- Sketching
-Streams in Real Time&quot;, by Sergiy Matusevych, Alexander Smola, Amr Ahmed.</p><div class="fullcomment"><div class="comment cmt"><p>Implements the algorithms and data structures from &quot;Hokusai -- Sketching
-Streams in Real Time&quot;, by Sergiy Matusevych, Alexander Smola, Amr Ahmed.
-http://www.auai.org/uai2012/papers/231.pdf</p><p>Aggregates state, so this is a mutable class.</p><p>Since we are all still learning scala, I thought I'd explain the use of
-implicits in this file.   TimeAggregation takes an implicit constructor
-parameter:
-   TimeAggregation[T]()(implicit val cmsMonoid: CMSMonoid[T])
-The purpose for that is:
-+ In Algebird, a CMSMonoid[T] is a factory for creating instances of CMS[T]
-+ TimeAggregation needs to occasionally make new CMS instances, so it will
-  use the factory
-+ By making it an implicit (and in the curried param), the outer context of
-  the TimeAggregation can create/ensure that the factory is there.
-+ Hokusai[T] will be the &quot;outer context&quot; so it can handle that for
-  TimeAggregation</p><p>TODO
-1. Decide if the underlying CMS should be mutable (save memory) or
-   functional (algebird) I'm afraid that with the functional approach,
-   and having so many, every time we merge two CMS, we create a third
-   and that is wasteful of memory or may take too much memory. If we go
-   with a mutable CMS, we have to either make stream-lib's serializable,
-   or make our own.</p><p>2. Clean up intrusion of algebird shenanigans in the code (implicit
-   factories etc)</p><p>3. Decide on API for managing data and time.  Do we increment time in a
-   separate operation or add a time parameter to addData()?</p><p>4. Decide if we want to be mutable or functional in this datastruct.
-   Current version is mutable.
 </p></div></div>
     </li><li name="org.apache.spark.sql.execution.InSubquery" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="InSubqueryextendsExecSubqueryExpressionwithProductwithSerializable"></a>
@@ -1197,7 +1117,7 @@ that consumes an RDD iterator of InternalRow.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="InterpretCodeCommand.html"><span class="name">InterpretCodeCommand</span></a><span class="params">(<span name="code">code: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="InterpretCodeCommand.html"><span class="name">InterpretCodeCommand</span></a><span class="params">(<span name="code">code: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="snappySession">snappySession: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Map.empty</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@InterpretCodeCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
@@ -1211,40 +1131,6 @@ interpreter. Allowing any variables (e.g. dataframe) to be preserved across invo
 State will not be preserved during Lead node failover.</p><p> Application is injected (1) The SnappySession in variable called 'session' and
 (2) The Options in a variable called 'intp_options'.</p><p> To return values set a variable called 'intp_return' - a Seq[Row].
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.IntervalTracker" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="IntervalTrackerextendsAnyRef"></a>
-      <a id="IntervalTracker:IntervalTracker"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="IntervalTracker.html"><span class="name">IntervalTracker</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@IntervalTrackerextendsAnyRef" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.KeyFrequencyWithTimestamp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="KeyFrequencyWithTimestamp[T]extendsAnyRef"></a>
-      <a id="KeyFrequencyWithTimestamp[T]:KeyFrequencyWithTimestamp[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="KeyFrequencyWithTimestamp.html"><span class="name">KeyFrequencyWithTimestamp</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@KeyFrequencyWithTimestamp[T]extendsAnyRef" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.LeafExecNode" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="LeafExecNodeextendsSparkPlan"></a>
       <a id="LeafExecNode:LeafExecNode"></a>
@@ -1717,23 +1603,6 @@ changing them, because a lot of developers use the feature for debugging.
       </a>
     </span>
       <p class="shortcomment cmt">Physical plan for range (generating a range of 64 bit numbers).</p>
-    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ReservoirRegionSegmentMap[V]extendsReentrantReadWriteLockwithSegmentMap[org.apache.spark.sql.Row,V]withSerializable"></a>
-      <a id="ReservoirRegionSegmentMap[V]:ReservoirRegionSegmentMap[V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="ReservoirRegionSegmentMap.html"><span class="name">ReservoirRegionSegmentMap</span></a><span class="tparams">[<span name="V">V</span>]</span><span class="result"> extends <span class="extype" name="java.util.concurrent.locks.ReentrantReadWriteLock">ReentrantReadWriteLock</span> with <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.V">V</span>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ReservoirRegionSegmentMap[V]extendsReentrantReadWriteLockwithSegmentMap[org.apache.spark.sql.Row,V]withSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Created by vivekb on 21/10/16.</p>
     </li><li name="org.apache.spark.sql.execution.ReuseSubquery" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="ReuseSubqueryextendsRule[org.apache.spark.sql.execution.SparkPlan]withProductwithSerializable"></a>
       <a id="ReuseSubquery:ReuseSubquery"></a>
@@ -1828,40 +1697,6 @@ iterator to consume the next row, whereas RowIterator combines these calls into 
       <p class="shortcomment cmt">Physical plan for sampling the dataset.</p><div class="fullcomment"><div class="comment cmt"><p>Physical plan for sampling the dataset.
 </p></div><dl class="paramcmts block"><dt class="param">lowerBound</dt><dd class="cmt"><p>Lower-bound of the sampling probability (usually 0.0)</p></dd><dt class="param">upperBound</dt><dd class="cmt"><p>Upper-bound of the sampling probability. The expected fraction sampled
                   will be ub - lb.</p></dd><dt class="param">withReplacement</dt><dd class="cmt"><p>Whether to sample with replacement.</p></dd><dt class="param">seed</dt><dd class="cmt"><p>the random seed</p></dd><dt class="param">child</dt><dd class="cmt"><p>the SparkPlan</p></dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.SampleOptions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SampleOptionsextendsSerializablewithProduct"></a>
-      <a id="SampleOptions:SampleOptions"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="SampleOptions.html"><span class="name">SampleOptions</span></a><span class="params">(<span name="qcs">qcs: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="fraction">fraction: <span class="extype" name="scala.Double">Double</span></span>, <span name="stratumSize">stratumSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="errorLimitColumn">errorLimitColumn: <span class="extype" name="scala.Int">Int</span></span>, <span name="errorLimitPercent">errorLimitPercent: <span class="extype" name="scala.Double">Double</span></span>, <span name="memBatchSize">memBatchSize: <span class="extype" name="scala.Int">Int</span></span>, <span name="timeSeriesColumn">timeSeriesColumn: <span class="extype" name="scala.Int">Int</span></span>, <span name="timeInterval">timeInterval: <span class="extype" name="scala.Long">Long</span></span>, <span name="concurrency">concurrency: <span class="extype" name="scala.Int">Int</span></span>, <span name="schema">schema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="bypassSampling">bypassSampling: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="qcsPlan">qcsPlan: <span class="extype" name="scala.Option">Option</span>[(<a href="../catalyst/expressions/codegen/CodeAndComment.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment">CodeAndComment</a>, <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="scala.Any">Any</span>], <span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Array">Array</span>[<a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>])]</span>)</span><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="scala.Product">Product</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@SampleOptionsextendsSerializablewithProduct" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.SamplePartition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SamplePartitionextendsPartitionwithSerializablewithLogging"></a>
-      <a id="SamplePartition:SamplePartition"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="SamplePartition.html"><span class="name">SamplePartition</span></a><span class="result"> extends <a href="../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a> with <span class="extype" name="scala.Serializable">Serializable</span> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@SamplePartitionextendsPartitionwithSerializablewithLogging" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.ScalarSubquery" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ScalarSubqueryextendsExecSubqueryExpressionwithProductwithSerializable"></a>
       <a id="ScalarSubquery:ScalarSubquery"></a>
@@ -2023,23 +1858,6 @@ a post-shuffle partition is created for every pre-shuffle partition.
     </span>
       <p class="shortcomment cmt">Alternative to Spark's CacheTableCommand that shows the plan being cached
 in the GUI rather than count() plan for InMemoryRelation.</p>
-    </li><li name="org.apache.spark.sql.execution.SnappyContextAQPFunctions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SnappyContextAQPFunctionsextendsSnappyContextFunctionswithLogging"></a>
-      <a id="SnappyContextAQPFunctions:SnappyContextAQPFunctions"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="SnappyContextAQPFunctions.html"><span class="name">SnappyContextAQPFunctions</span></a><span class="result"> extends <a href="../SnappyContextFunctions.html" class="extype" name="org.apache.spark.sql.SnappyContextFunctions">SnappyContextFunctions</a> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@SnappyContextAQPFunctionsextendsSnappyContextFunctionswithLogging" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.SnappySortExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SnappySortExecextendsSparkPlanwithUnaryExecNodewithCodegenSupportwithProductwithSerializable"></a>
       <a id="SnappySortExec:SnappySortExec"></a>
@@ -2245,186 +2063,6 @@ with the query planner and is not designed to be stable across spark releases.  
 writing libraries should instead consider using the stable APIs provided in
 <a href="../sources/package.html" class="extype" name="org.apache.spark.sql.sources">org.apache.spark.sql.sources</a>
 </p></div></div>
-    </li><li name="org.apache.spark.sql.execution.StratifiedSample" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="StratifiedSampleextendsUnaryNodewithProductwithSerializable"></a>
-      <a id="StratifiedSample:StratifiedSample"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="StratifiedSample.html"><span class="name">StratifiedSample</span></a><span class="params">(<span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Any">Any</span>]</span>, <span name="child">child: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="baseTable">baseTable: <span class="extype" name="scala.Option">Option</span>[<a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a>] = <span class="symbol"><span class="name"><a href="../../../../../scala/package.html">None</a></span></span></span>)</span><span class="params">(<span name="qcs">qcs: (<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>], <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]) = <span class="defval" name='<span class="name"><a href="../catalyst/plans/QueryPlan.html#schema:org.apache.spark.sql.types.StructType">resolveQCS(options, child.schema
-        .fieldNames, &quot;StratifiedSample&quot;)</a></span>'>...</span></span>, <span name="weightedColumn">weightedColumn: <a href="../catalyst/expressions/AttributeReference.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeReference">AttributeReference</a> = <span class="defval" name='<span class="name"><a href="../../../../package.html">AttributeReference(WEIGHTAGE_COLUMN_NAME, LongType, nullable = false)()</a></span>'>...</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratifiedSampleextendsUnaryNodewithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.StratifiedSampleExecute" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="StratifiedSampleExecuteextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
-      <a id="StratifiedSampleExecute:StratifiedSampleExecute"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="StratifiedSampleExecute.html"><span class="name">StratifiedSampleExecute</span></a><span class="params">(<span name="child">child: <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Any">Any</span>]</span>, <span name="qcs">qcs: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>)</span><span class="result"> extends <a href="SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratifiedSampleExecuteextendsSparkPlanwithUnaryExecNodewithProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Perform stratified sampling given a Query-Column-Set (QCS).</p><div class="fullcomment"><div class="comment cmt"><p>Perform stratified sampling given a Query-Column-Set (QCS). This variant
-can also use a fixed fraction to be sampled instead of fixed number of
-total samples since it is also designed to be used with streaming data.
-</p></div></div>
-    </li><li name="org.apache.spark.sql.execution.StratifiedSampledRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="StratifiedSampledRDDextendsRDD[org.apache.spark.sql.catalyst.InternalRow]withSerializable"></a>
-      <a id="StratifiedSampledRDD:StratifiedSampledRDD"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="StratifiedSampledRDD.html"><span class="name">StratifiedSampledRDD</span></a><span class="result"> extends <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratifiedSampledRDDextendsRDD[org.apache.spark.sql.catalyst.InternalRow]withSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.StratifiedSampler" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="StratifiedSamplerextendsSerializablewithCloneablewithLogging"></a>
-      <a id="StratifiedSampler:StratifiedSampler"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="StratifiedSampler.html"><span class="name">StratifiedSampler</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="scala.Cloneable">Cloneable</span> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratifiedSamplerextendsSerializablewithCloneablewithLogging" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.StratifiedSamplerCached" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="StratifiedSamplerCachedextendsStratifiedSamplerwithCastLongTime"></a>
-      <a id="StratifiedSamplerCached:StratifiedSamplerCached"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="StratifiedSamplerCached.html"><span class="name">StratifiedSamplerCached</span></a><span class="result"> extends <a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a> with <a href="../sources/CastLongTime.html" class="extype" name="org.apache.spark.sql.sources.CastLongTime">CastLongTime</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratifiedSamplerCachedextendsStratifiedSamplerwithCastLongTime" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">A stratified sampling implementation that uses a fraction and initial
-cache size.</p><div class="fullcomment"><div class="comment cmt"><p>A stratified sampling implementation that uses a fraction and initial
-cache size. Latter is used as the initial reservoir size per stratum
-for reservoir sampling. It primarily tries to satisfy the fraction of
-the total data repeatedly filling up the cache as required (and expanding
-the cache size for bigger reservoir if required in next rounds).
-The fraction is attempted to be satisfied while ensuring that the selected
-rows are equally divided among the current stratum (for those that received
-any rows, that is).
-</p></div></div>
-    </li><li name="org.apache.spark.sql.execution.StratifiedSamplerCachedInRegion" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="StratifiedSamplerCachedInRegionextendsStratifiedSamplerCached"></a>
-      <a id="StratifiedSamplerCachedInRegion:StratifiedSamplerCachedInRegion"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="StratifiedSamplerCachedInRegion.html"><span class="name">StratifiedSamplerCachedInRegion</span></a><span class="result"> extends <a href="StratifiedSamplerCached.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSamplerCached">StratifiedSamplerCached</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratifiedSamplerCachedInRegionextendsStratifiedSamplerCached" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">Created by vivekb on 14/10/16.</p><div class="fullcomment"><div class="comment cmt"><p>Created by vivekb on 14/10/16.
-</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.StratifiedSamplerErrorLimit" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="StratifiedSamplerErrorLimitextendsStratifiedSamplerwithCastLongTime"></a>
-      <a id="StratifiedSamplerErrorLimit:StratifiedSamplerErrorLimit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="StratifiedSamplerErrorLimit.html"><span class="name">StratifiedSamplerErrorLimit</span></a><span class="result"> extends <a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a> with <a href="../sources/CastLongTime.html" class="extype" name="org.apache.spark.sql.sources.CastLongTime">CastLongTime</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratifiedSamplerErrorLimitextendsStratifiedSamplerwithCastLongTime" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">A stratified sampling implementation that uses an error limit with confidence
-on a numerical column to sample as much as required to maintaining the
-expected error within the limit.</p><div class="fullcomment"><div class="comment cmt"><p>A stratified sampling implementation that uses an error limit with confidence
-on a numerical column to sample as much as required to maintaining the
-expected error within the limit. An optional initial cache size can
-be specified that is used as the initial reservoir size per stratum
-for reservoir sampling. The error limit is attempted to be honoured for
-each of the stratum independently and the sampling rate increased or
-decreased accordingly. It uses standard closed form estimation of the
-sampling error increasing or decreasing the sampling as required (and
-expanding the cache size for bigger reservoir if required in next rounds).
-</p></div></div>
-    </li><li name="org.apache.spark.sql.execution.StratifiedSamplerReservoir" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="StratifiedSamplerReservoirextendsStratifiedSampler"></a>
-      <a id="StratifiedSamplerReservoir:StratifiedSamplerReservoir"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="StratifiedSamplerReservoir.html"><span class="name">StratifiedSamplerReservoir</span></a><span class="result"> extends <a href="StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratifiedSamplerReservoirextendsStratifiedSampler" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">A simple reservoir based stratified sampler that will use the provided
-reservoir size for every stratum present in the incoming rows.</p>
-    </li><li name="org.apache.spark.sql.execution.StratumCache" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="StratumCacheextendsStratumReservoir"></a>
-      <a id="StratumCache:StratumCache"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="StratumCache.html"><span class="name">StratumCache</span></a><span class="result"> extends <a href="StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratumCacheextendsStratumReservoir" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">An extension to StratumReservoir to also track total samples seen since
-last time slot and short fall from previous rounds.</p>
     </li><li name="org.apache.spark.sql.execution.StratumInternalRow" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="StratumInternalRowextendsInternalRow"></a>
       <a id="StratumInternalRow:StratumInternalRow"></a>
@@ -2442,26 +2080,6 @@ last time slot and short fall from previous rounds.</p>
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.StratumReservoir" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="StratumReservoirextendsDataSerializablewithSizeablewithSerializable"></a>
-      <a id="StratumReservoir:StratumReservoir"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="StratumReservoir.html"><span class="name">StratumReservoir</span></a><span class="result"> extends <span class="extype" name="com.gemstone.gemfire.DataSerializable">DataSerializable</span> with <span class="extype" name="com.gemstone.gemfire.internal.cache.lru.Sizeable">Sizeable</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratumReservoirextendsDataSerializablewithSizeablewithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">For each stratum (i.e.</p><div class="fullcomment"><div class="comment cmt"><p>For each stratum (i.e. a unique set of values for QCS), keep a set of
-meta-data including number of samples collected, total number of rows
-in the stratum seen so far, the QCS key, reservoir of samples etc.
-</p></div></div>
     </li><li name="org.apache.spark.sql.execution.SubqueryExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SubqueryExecextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
       <a id="SubqueryExec:SubqueryExec"></a>
@@ -2554,23 +2172,6 @@ generated code re-use.</p>
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.TopKHokusai" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="TopKHokusai[T]extendsHokusai[T]withTopK"></a>
-      <a id="TopKHokusai[T]:TopKHokusai[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="TopKHokusai.html"><span class="name">TopKHokusai</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="Hokusai.html" class="extype" name="org.apache.spark.sql.execution.Hokusai">Hokusai</a>[<span class="extype" name="org.apache.spark.sql.execution.TopKHokusai.T">T</span>] with <a href="TopK.html" class="extype" name="org.apache.spark.sql.execution.TopK">TopK</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@TopKHokusai[T]extendsHokusai[T]withTopK" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.TopKStub" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TopKStubextendsTopKwithSerializable"></a>
       <a id="TopKStub:TopKStub"></a>
@@ -2588,23 +2189,6 @@ generated code re-use.</p>
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.TopKWrapper" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="TopKWrapperextendsLockUtils.ReadWriteLockwithCastLongTimewithSerializable"></a>
-      <a id="TopKWrapper:TopKWrapper"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="TopKWrapper.html"><span class="name">TopKWrapper</span></a><span class="result"> extends <a href="../LockUtils$$ReadWriteLock.html" class="extype" name="org.apache.spark.sql.LockUtils.ReadWriteLock">ReadWriteLock</a> with <a href="../sources/CastLongTime.html" class="extype" name="org.apache.spark.sql.sources.CastLongTime">CastLongTime</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@TopKWrapperextendsLockUtils.ReadWriteLockwithCastLongTimewithSerializable" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.TruncateManagedTableCommand" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TruncateManagedTableCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
       <a id="TruncateManagedTableCommand:TruncateManagedTableCommand"></a>
@@ -2821,58 +2405,7 @@ used to generated code for BoundReference.
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.Approximate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="Approximate"></a>
-      <a id="Approximate:Approximate"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="Approximate$.html"><span class="name">Approximate</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@Approximate" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.ApproximateType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ApproximateType"></a>
-      <a id="ApproximateType:ApproximateType"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="ApproximateType$.html"><span class="name">ApproximateType</span></a><span class="result"> extends <a href="ApproximateType.html" class="extype" name="org.apache.spark.sql.execution.ApproximateType">ApproximateType</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@ApproximateType" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.CMSParams" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="CMSParams"></a>
-      <a id="CMSParams:CMSParams"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="CMSParams$.html"><span class="name">CMSParams</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@CMSParams" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.DictionaryOptimizedMapAccessor" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.DictionaryOptimizedMapAccessor" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="DictionaryOptimizedMapAccessor"></a>
       <a id="DictionaryOptimizedMapAccessor:DictionaryOptimizedMapAccessor"></a>
       <h4 class="signature">
@@ -2939,6 +2472,23 @@ cases), hence this optimization is currently only for string type.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.execution.GrantRevokeOnExternalTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GrantRevokeOnExternalTable"></a>
+      <a id="GrantRevokeOnExternalTable:GrantRevokeOnExternalTable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GrantRevokeOnExternalTable$.html"><span class="name">GrantRevokeOnExternalTable</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@GrantRevokeOnExternalTable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.execution.GroupedIterator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="GroupedIterator"></a>
       <a id="GroupedIterator:GroupedIterator"></a>
@@ -2952,40 +2502,6 @@ cases), hence this optimization is currently only for string type.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@GroupedIterator" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.Hokusai" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="Hokusai"></a>
-      <a id="Hokusai:Hokusai"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="Hokusai$.html"><span class="name">Hokusai</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@Hokusai" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.IntervalTracker" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="IntervalTracker"></a>
-      <a id="IntervalTracker:IntervalTracker"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="IntervalTracker$.html"><span class="name">IntervalTracker</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@IntervalTracker" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -3129,40 +2645,6 @@ cases), hence this optimization is currently only for string type.
       </a>
     </span>
       <p class="shortcomment cmt">Common security related calls.</p>
-    </li><li name="org.apache.spark.sql.execution.SnappyContextAQPFunctions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SnappyContextAQPFunctions"></a>
-      <a id="SnappyContextAQPFunctions:SnappyContextAQPFunctions"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="SnappyContextAQPFunctions$.html"><span class="name">SnappyContextAQPFunctions</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@SnappyContextAQPFunctions" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.SnappyQueryExecution" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SnappyQueryExecution"></a>
-      <a id="SnappyQueryExecution:SnappyQueryExecution"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="SnappyQueryExecution$.html"><span class="name">SnappyQueryExecution</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@SnappyQueryExecution" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.SortPrefixUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SortPrefixUtils"></a>
       <a id="SortPrefixUtils:SortPrefixUtils"></a>
@@ -3197,23 +2679,6 @@ cases), hence this optimization is currently only for string type.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.StratifiedSampler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="StratifiedSampler"></a>
-      <a id="StratifiedSampler:StratifiedSampler"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="StratifiedSampler$.html"><span class="name">StratifiedSampler</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@StratifiedSampler" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.SubqueryExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SubqueryExec"></a>
       <a id="SubqueryExec:SubqueryExec"></a>
@@ -3227,40 +2692,6 @@ cases), hence this optimization is currently only for string type.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@SubqueryExec" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.TopKHokusai" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="TopKHokusai"></a>
-      <a id="TopKHokusai:TopKHokusai"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="TopKHokusai$.html"><span class="name">TopKHokusai</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@TopKHokusai" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.TopKWrapper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="TopKWrapper"></a>
-      <a id="TopKWrapper:TopKWrapper"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="TopKWrapper$.html"><span class="name">TopKWrapper</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@TopKWrapper" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -3333,57 +2764,6 @@ cases), hence this optimization is currently only for string type.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.bootstrap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="bootstrap"></a>
-      <a id="bootstrap:bootstrap"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">package</span>
-      </span>
-      <span class="symbol">
-        <a href="bootstrap/package.html"><span class="name">bootstrap</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@bootstrap" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.closedform" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="closedform"></a>
-      <a id="closedform:closedform"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">package</span>
-      </span>
-      <span class="symbol">
-        <a href="closedform/package.html"><span class="name">closedform</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@closedform" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.cms" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="cms"></a>
-      <a id="cms:cms"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">package</span>
-      </span>
-      <span class="symbol">
-        <a href="cms/package.html"><span class="name">cms</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@cms" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.columnar" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="columnar"></a>
       <a id="columnar:columnar"></a>
@@ -3414,23 +2794,6 @@ cases), hence this optimization is currently only for string type.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@command" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.common" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="common"></a>
-      <a id="common:common"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">package</span>
-      </span>
-      <span class="symbol">
-        <a href="common/package.html"><span class="name">common</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@common" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -3571,23 +2934,6 @@ cases), hence this optimization is currently only for string type.
       </a>
     </span>
       
-    </li><li name="org.apache.spark.sql.execution.serializer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="serializer"></a>
-      <a id="serializer:serializer"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">package</span>
-      </span>
-      <span class="symbol">
-        <a href="serializer/package.html"><span class="name">serializer</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@serializer" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.execution.sources" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="sources"></a>
       <a id="sources:sources"></a>
@@ -3635,23 +2981,6 @@ cases), hence this optimization is currently only for string type.
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.execution.package@streaming" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.execution.streamsummary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="streamsummary"></a>
-      <a id="streamsummary:streamsummary"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">package</span>
-      </span>
-      <span class="symbol">
-        <a href="streamsummary/package.html"><span class="name">streamsummary</span></a>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.package@streamsummary" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

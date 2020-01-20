@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>TestHiveSparkSession - snappydata_2.11 1.1.1 API - org.apache.spark.sql.hive.test.TestHiveSparkSession</title>
-          <meta name="description" content="TestHiveSparkSession - snappydata 2.11 1.1.1 API - org.apache.spark.sql.hive.test.TestHiveSparkSession" />
-          <meta name="keywords" content="TestHiveSparkSession snappydata 2.11 1.1.1 API org.apache.spark.sql.hive.test.TestHiveSparkSession" />
+          <title>TestHiveSparkSession - snappydata_2.11 1.2.0 API - org.apache.spark.sql.hive.test.TestHiveSparkSession</title>
+          <meta name="description" content="TestHiveSparkSession - snappydata 2.11 1.2.0 API - org.apache.spark.sql.hive.test.TestHiveSparkSession" />
+          <meta name="keywords" content="TestHiveSparkSession snappydata 2.11 1.2.0 API org.apache.spark.sql.hive.test.TestHiveSparkSession" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -843,7 +843,7 @@ the query planner for advanced functionality.
                 <span class="name">@Unstable</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
-    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.SparkSession#finalize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
       <h4 class="signature">
@@ -859,13 +859,7 @@ the query planner for advanced functionality.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
-                <span class="name">@throws</span><span class="args">(<span>
-      
-      <span class="symbol">classOf[java.lang.Throwable]</span>
-    </span>)</span>
-              
-        </dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a> → AnyRef</dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -1870,6 +1864,25 @@ available in Scala only and is used primarily for interactive testing and debugg
     DataTypes.StringType);</pre></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The user-defined functions must be deterministic. Due to optimization,
 duplicate invocations may be eliminated or the function may even be invoked more times than
 it is present in the query.</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.sql.SparkSession#updateUIWithStructuredStreamingTab" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="updateUIWithStructuredStreamingTab():Unit"></a>
+      <a id="updateUIWithStructuredStreamingTab():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">updateUIWithStructuredStreamingTab</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.test.TestHiveSparkSession@updateUIWithStructuredStreamingTab():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Adds or updates structured streaming UI tab.</p><div class="fullcomment"><div class="comment cmt"><p>Adds or updates structured streaming UI tab.
+All session instances have their own SnappyStreamingQueryListener but shares same UI tab.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.SparkSession#version" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="version:String"></a>
       <a id="version:String"></a>

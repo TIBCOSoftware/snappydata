@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>DataFrameReader - snappydata_2.11 1.1.1 API - org.apache.spark.sql.DataFrameReader</title>
-          <meta name="description" content="DataFrameReader - snappydata 2.11 1.1.1 API - org.apache.spark.sql.DataFrameReader" />
-          <meta name="keywords" content="DataFrameReader snappydata 2.11 1.1.1 API org.apache.spark.sql.DataFrameReader" />
+          <title>DataFrameReader - snappydata_2.11 1.2.0 API - org.apache.spark.sql.DataFrameReader</title>
+          <meta name="description" content="DataFrameReader - snappydata 2.11 1.2.0 API - org.apache.spark.sql.DataFrameReader" />
+          <meta name="keywords" content="DataFrameReader snappydata 2.11 1.2.0 API org.apache.spark.sql.DataFrameReader" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -550,9 +550,8 @@ input once to determine the input schema.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Loads a JSON file (<a href="http://jsonlines.org/">JSON Lines text format or
-newline-delimited JSON</a>) and returns the result as a <code>DataFrame</code>.</a></p><div class="fullcomment"><div class="comment cmt"><p>Loads a JSON file (<a href="http://jsonlines.org/">JSON Lines text format or
-newline-delimited JSON</a>) and returns the result as a <code>DataFrame</code>.</p><p>This function goes through the input once to determine the input schema. If you know the
+      <p class="shortcomment cmt">Loads a JSON file and returns the results as a <code>DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Loads a JSON file and returns the results as a <code>DataFrame</code>.</p><p>Both JSON (one record per file) and <a href="http://jsonlines.org/">JSON Lines</a>
+(newline-delimited JSON) are supported and can be selected with the <code>wholeFile</code> option.</p><p>This function goes through the input once to determine the input schema. If you know the
 schema in advance, use the version that specifies the schema to avoid the extra scan.</p><p>You can set the following JSON-specific options to deal with non-standard JSON files:</p><ul><li><code>primitivesAsString</code> (default <code>false</code>): infers all primitive values as a string type</li><li><code>prefersDecimal</code> (default <code>false</code>): infers all floating-point values as a decimal
 type. If the values do not fit in decimal, then it infers them as doubles.</li><li><code>allowComments</code> (default <code>false</code>): ignores Java/C++ style comment in JSON records</li><li><code>allowUnquotedFieldNames</code> (default <code>false</code>): allows unquoted JSON field names</li><li><code>allowSingleQuotes</code> (default <code>true</code>): allows single quotes in addition to double quotes</li><li><code>allowNumericLeadingZeros</code> (default <code>false</code>): allows leading zeros in numbers
 (e.g. 00012)</li><li><code>allowBackslashEscapingAnyCharacter</code> (default <code>false</code>): allows accepting quoting of all
@@ -565,7 +564,9 @@ created by <code>PERMISSIVE</code> mode. This overrides <code>spark.sql.columnNa
 Custom date formats follow the formats at <code>java.text.SimpleDateFormat</code>. This applies to
 date type.</li><li><code>timestampFormat</code> (default <code>yyyy-MM-dd'T'HH:mm:ss.SSSZZ</code>): sets the string that
 indicates a timestamp format. Custom date formats follow the formats at
-<code>java.text.SimpleDateFormat</code>. This applies to timestamp type.</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+<code>java.text.SimpleDateFormat</code>. This applies to timestamp type.</li><li><code>timeZone</code> (default session local timezone): sets the string that indicates a timezone
+to be used to parse timestamps.</li><li><code>wholeFile</code> (default <code>false</code>): parse one record, which may span multiple lines,
+per file</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
                 <span class="name">@varargs</span><span class="args">()</span>
               
         </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>

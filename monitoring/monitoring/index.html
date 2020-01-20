@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>SnappyData Monitoring UI - SnappyData™ 1.1.1</title>
+  <title>SnappyData Monitoring UI - SnappyData™ 1.2.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.1.1</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -163,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../quickstart/getting_started_with_your_spark_distribution/">Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/use_apache_zeppelin_with_snappydata/">Using Apache Zeppelin with SnappyData</a>
         
     </li>
 
@@ -425,13 +432,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/store_and_query_json_objects/">How to Store and Query JSON Objects</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../howto/store_and_query_objects/">How to Store and Query Objects</a>
         
     </li>
@@ -453,7 +453,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Approximate Query Processing (AQP) to Run Approximate Queries</a>
         
     </li>
 
@@ -574,6 +574,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_the_spark_shell_and_spark-submit/">Using the Spark Shell and spark-submit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/using_pyspark_shell/">Using pyspark Shell</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/scala_interpreter/">Executing Spark Scala Code using SQL</a>
         
     </li>
 
@@ -789,19 +803,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
+        <a class="" href="../../connectors/connector/">Working with Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Working with External Data Sources</span></li>
+    <li><span>Working with Data Sources</span></li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        <a class="" href="../../Data/data_formats/">Supported Data Formats</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/access_cloud_data/">Accessing Cloud Storages</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../Data/external_hive_support/">Connecting to External Hive Metastores</a>
         
     </li>
 
@@ -816,6 +844,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
         
     </li>
 
@@ -859,6 +894,10 @@
                 
                     <li><a class="toctree-l4" href="#stages">Stages</a></li>
                 
+                    <li><a class="toctree-l4" href="#structured-streaming">Structured Streaming</a></li>
+                
+                    <li><a class="toctree-l4" href="#sql_1">SQL</a></li>
+                
                     <li><a class="toctree-l4" href="#spark-history-server">Spark History Server</a></li>
                 
             
@@ -883,7 +922,21 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../metrics/">Monitoring with Metrics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../monitor-manage/">Getting Information from SnappyData System Tables</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../recoveringdata/">Recovering Data During Cluster Failures</a>
         
     </li>
 
@@ -1280,7 +1333,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/exec-scala/">exec scala</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/explain/">EXPLAIN</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/grant/">GRANT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/grant-all/">GRANT ALL</a>
         
     </li>
 
@@ -1301,6 +1375,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/list/">LIST</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/pivot/">PIVOT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/put-into/">PUT INTO</a>
         
     </li>
@@ -1309,6 +1397,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/revoke/">REVOKE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/revoke_all/">REVOKE ALL</a>
         
     </li>
 
@@ -1408,6 +1503,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/inbuilt_system_procedures/dsid/">DSID</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/export_ddl/">SYS.EXPORT_DDLS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/export_data/">SYS.EXPORT_DATA</a>
         
     </li>
 
@@ -1522,6 +1631,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/scala-cli/">scala CLI</a>
         
     </li>
 
@@ -2019,6 +2135,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../experimental/">Experimental Features</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
@@ -2090,6 +2213,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../unsupported/">Unsupported Third-Party Modules</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
@@ -2147,7 +2277,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.1.1</a>
+        <a href="../..">SnappyData™ 1.2.0</a>
       </nav>
 
       
@@ -2196,6 +2326,9 @@ All the usage details are automatically refreshed after every five seconds.</p>
 </li>
 <li>
 <p><a href="#jobs">Jobs</a></p>
+</li>
+<li>
+<p><a href="#structuredstream">Structured Streaming</a></p>
 </li>
 <li>
 <p><a href="#stages">Stages</a></p>
@@ -2609,10 +2742,189 @@ The usage trends and the statistics of a specific member are auto updated period
 <p><strong>GC time</strong>: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory, especially when you have row tables.</p>
 </li>
 </ul>
+<p><a id="structuredstream"></a></p>
+<h2 id="structured-streaming">Structured Streaming</h2>
+<p><img alt="Structured Streaming" src="../../Images/MonitoringUI/snappy_structuredstreamingtab.png" /></p>
+<p><strong>Structured Streaming</strong> tab provides a real-time view into all the running structured streaming queries in the cluster. You can navigate, visualize, and monitor all the structured streaming queries from a single location. Further, you can also track various statistics of these queries as listed <a href="#querystats">here</a>. All these statistics are automatically refreshed after every five seconds.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<ul>
+<li>The <strong>Structured Streaming</strong> tab is available in the Embedded mode as well as in the Smart Connector mode. However, in the Smart Connector mode, this tab is visible only if you use the Snappy-Spark distribution. In case you use the upstream or stock spark distribution, then the <strong>Structured Streaming</strong> tab will not be visible. </li>
+<li>Only those streaming queries that are started using SnappySession will be available for monitoring on the UI. Queries that are started using SparkSession won't be available for monitoring on the UI.</li>
+</ul>
+</div>
+<p>You can view the <strong>Structured Streaming</strong> tab only for the monitoring console of the corresponding cluster. For example, if you submit a streaming query on the embedded cluster using <a href="../../programming_guide/snappydata_jobs/">snappy-job</a>, then the <strong>Structured Streaming</strong> tab is available on the monitoring console of the embedded cluster. If you submit a streaming query as a Smart Connector job, on a separate spark cluster, then the <strong>Structured Streaming</strong> tab is available on the monitoring console of the Spark cluster where the Smart Connector job is submitted.</p>
+<p>The following details are shown on the <strong>Structured Streaming</strong> tab:</p>
+<p><a id="querystats"></a></p>
+<h3 id="query-statistics-information">Query Statistics Information</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Query Names</strong></td>
+<td>A list of the active and inactive streaming queries in the cluster, which also acts as the query navigation panel. You can select a query and monitor the status of that query. The relevant statistics of the query  are displayed on right side. </br> You can configure the maximum number of queries to be displayed on the UI by using the property  <strong>spark.sql.streaming.uiRunningQueriesDisplayLimit</strong>. The default value is <strong>20</strong>. When the maximum limit is reached, then the newly created streaming queries gets added only after replacing the oldest inactive query. If there are no inactive queries present in the existing query list then the newly created streaming queries are not displayed.</br>Click the list header to sort the list.</td>
+</tr>
+<tr>
+<td><strong>Query Name</strong></td>
+<td>A unique name given to structured streaming query. Queries are distinguished based on the query ID that is generated by Spark internally. Therefore, if multiple streaming queries have different query IDs but the same name, then all the queries get listed under the same name. To avoid this, you must ensure to maintain unique query names.</td>
+</tr>
+<tr>
+<td><strong>Start Date &amp; Time</strong></td>
+<td>Calendar date and clock time when the structured streaming query was started or restarted.</td>
+</tr>
+<tr>
+<td><strong>Uptime</strong></td>
+<td>Total time that has passed since the streaming has started.</td>
+</tr>
+<tr>
+<td><strong>Trigger</strong> <strong>Interval</strong></td>
+<td>Time interval on which successive batch is expected to start it’s execution. Each event is fired on this interval but each event may or may not have batches to process.</td>
+</tr>
+<tr>
+<td><strong>Batches Processed</strong></td>
+<td>Total number of batches processed since streaming query has been started.</td>
+</tr>
+<tr>
+<td><strong>Status</strong></td>
+<td>Status can be <strong>Active</strong> or <strong>Inactive</strong>.</br> *   <strong>Active</strong>: Query is running. </br> *   <strong>Inactive</strong>: Query has stopped or failed.</td>
+</tr>
+<tr>
+<td><strong>Total Input Records</strong></td>
+<td>Total count of records received from the sources and processed since the streaming query has been started.</td>
+</tr>
+<tr>
+<td><strong>Current Input Rate</strong></td>
+<td>Number of input records per second in a batch, which has been received in the current event trigger. This value is the number of records received between the start time of previous event and start time of current event and divided by the number of seconds between these two events.</td>
+</tr>
+<tr>
+<td><strong>Current Processing Rate</strong></td>
+<td>Average input records processed per second. This value is number of input records processed per second between the start time and the end time of the current event.</td>
+</tr>
+<tr>
+<td><strong>Total Batch Processing Time</strong></td>
+<td>Total time taken to process all the batches received from the start time of the streaming query until now.</td>
+</tr>
+<tr>
+<td><strong>Avg. Batch Processing Time</strong></td>
+<td>Average processing time per batch. This value is the total batch processing time, which is divided by the number of batches processed since the streaming query has started.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="structured-streaming-queries-sources">Structured Streaming Queries Sources</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>Source Type can be one of the following:</br> * FileStream</br> * Kafka</br> * Memory</br> * Socket</br> * JDBC (only available with enterprise version)</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>Description is a string representation of the source object. In general, it is a concise but informative representation. </br>For example: <strong>KafkaSource[Subscribe[adImpressionTopic]] </strong></td>
+</tr>
+<tr>
+<td><strong>Input Records</strong></td>
+<td>Number of input records received in current trigger event.</td>
+</tr>
+<tr>
+<td><strong>Input Rate</strong></td>
+<td>Input records per second for current trigger.</td>
+</tr>
+<tr>
+<td><strong>Processing Rate</strong></td>
+<td>Records processed per second for current trigger.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="structured-streaming-queries-sink">Structured Streaming Queries Sink</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Type</strong></td>
+<td>Any of the following sink type for the structured streaming queries: </br> * Snappy Store</br> * File Stream </br> * Foreach</br> * Kafka </br></td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>Description is a string representation of the sink object. In general, it is a concise but informative representation. For example:</br><code>SnappyStoreSink[queryname -&gt; log_stream, tablename -&gt; aggrAdImpressions, checkpointlocation -&gt;/home/xyz/tmp/io.snappydata.adanalytics.SnappyAPILogAggreg ator1$, sinkcallback -&gt; org.apache.spark.sql.streaming.DefaultSnappySinkCallback]</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="graphical-charts">Graphical Charts</h3>
+<p>The <strong>Structured Streaming</strong> tab presents four types of graphical charts. All these charts display historical trends or behavior of respective parameters for a given number of data points or sample size. You can customize the data points sample size by setting the configuration parameter <strong>spark.sql.streaming.uiTrendsMaxSampleSize</strong>. The default value is <strong>60</strong> data points, which indicates that all the graphical charts display data of the last 60 events.</p>
+<h4 id="input-records">Input Records</h4>
+<p><img alt="Input Records" src="../../Images/MonitoringUI/inputrecords_chart.png" />
+This line chart displays the number of input records received for each of the batches in the last n trigger events.</p>
+<h4 id="input-rate-vs-processing-rate">Input Rate Vs. Processing Rate</h4>
+<p><img alt="Input Rate Vs. Processing Rate" src="../../Images/MonitoringUI/inputrate_vs_processingrate_chart.png" /></p>
+<p>This line chart displays the behavior of two parameters, for the last <strong>n</strong> triggers, in two curve lines. <strong>n</strong> refers to value configured for <strong>spark.sql.streaming.uiTrendsMaxSampleSize</strong>, which defaults to <strong>60</strong>. One line represents the input rate that is the number of input records per second in the given triggers. The other line represents the processing rate, which is the number of records processed per second in the given triggers. Processing rate should ideally remain higher than Input rate. If it is below the input rate, then that indicates that the streaming query is falling behind the input data and you may need to add more resources to the cluster to keep up the processing speed.</p>
+<h4 id="processing-time-in-milliseconds">Processing Time (in Milliseconds)</h4>
+<p><img alt="Processing Time" src="../../Images/MonitoringUI/processing_time_chart.png" /></p>
+<p>This line chart displays the time taken to process all the input records received in each of the batches for the last n triggers. This chart also displays the processing threshold line, which is the expected maximum time limit in milliseconds for processing a batch. This chart allows you to supervise whether the processing is happening within the time limit specified for Event Trigger Interval. 
+In case the trend line for the Processing Time trend line is continuously below the Processing Threshold, then that indicates that there are enough resources to handle the streaming query operations. However, if the Processing Time trend line is often above the Processing Threshold, then that indicates that resources are insufficient to handle the streaming query operations, and you must add resources to manage the streaming input load. The Processing Threshold line will be always at zero if the trigger interval is not specified while defining the query.</p>
+<h4 id="aggregation-state">Aggregation State</h4>
+<p><img alt="Aggregation State" src="../../Images/MonitoringUI/aggregatestate_chart.png" /></p>
+<p>This line chart is displayed only if the streaming query is using one or more aggregate functions.</p>
+<p><a id="sql"></a></p>
+<h2 id="sql_1">SQL</h2>
+<p>The SQL section shows all the queries and their corresponding details along with their execution plans and stagewise breakups.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Colocated</strong></td>
+<td>When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions.</td>
+</tr>
+<tr>
+<td><strong>Whole-Stage Code Generation</strong></td>
+<td>A whole stage code generation node compiles a sub-tree of plans that support code generation together into a single Java function, which helps improve execution performance.</td>
+</tr>
+<tr>
+<td><strong>Per node execution timing</strong></td>
+<td>Displays the time required for the execution of each node. If there are too many rows that are not getting filtered or exchanged.</td>
+</tr>
+<tr>
+<td><strong>Pool Name</strong></td>
+<td>Default/Low Latency. Applications can explicitly configure the use of this pool using a SQL command <code>set snappydata.scheduler.pool=lowlatency</code>.</td>
+</tr>
+<tr>
+<td><strong>Query Node Details</strong></td>
+<td>Hover over a component to view its details.</td>
+</tr>
+<tr>
+<td><strong>Filter</strong></td>
+<td>Displays the number of rows that are filtered for each node.</td>
+</tr>
+<tr>
+<td><strong>Joins</strong></td>
+<td>If HashJoin puts pressure on memory, you can change the HashJoin size to use SortMergeJoin to avoid on-heap memory pressure.</td>
+</tr>
+</tbody>
+</table>
 <p><a id="historyserver"></a></p>
 <h2 id="spark-history-server">Spark History Server</h2>
 <p>The Spark History server is a Spark UI extension. It is a web application that lets you analyze the running as well as completed SQL queries and the associated Spark jobs. The metadata collected in the form of event logs by the Spark History server can be shipped from a SnappyData cluster to another SnappyData cluster for further analysis.</p>
-<p>The first step in tuning query performance in SnappyData is to understand the query physical plan that is available through the SQL tab on the SnappyData Monitoring console. The detailed execution plan requires one to understand the jobs and tasks associated with the query. This is available in the Jobs/Tasks tab. However, if the SnappyData Monitoring console is not accessible to the investigator, it becomes a difficult exercise. To overcome this, TIBCO recommends to turn on the History server for production applications.</p>
+<p>The first step in tuning query performance in SnappyData is to understand the query physical plan that is available through the SQL tab on the SnappyData Monitoring console. The detailed execution plan requires one to understand the jobs and tasks associated with the query. This is available in the Jobs/Tasks tab. However, if the SnappyData Monitoring console is not accessible to the investigator, it becomes a difficult exercise. To overcome this, it is recommended to turn on the History server for production applications.</p>
 <p>To turn on the History server, do the following:</p>
 <ol>
 <li>Ensure to provide a shared disk that can be accessed from all the SnappyData nodes. If you do not have the NFS access, use HDFS. Provide the necessary permissions to access a shared folder when you start SnappyData.</li>
@@ -2655,7 +2967,7 @@ For more details about History server, refer to <a href="https://spark.apache.or
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright © 2017-2019 TIBCO Software Inc. All rights reserved.</p>
+      <p>Copyright © 2017-2020 TIBCO Software Inc. All rights reserved.</p>
     
   </div>
 

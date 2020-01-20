@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Built-in System Procedures and Built-in Functions - SnappyData™ 1.1.1</title>
+  <title>Built-in System Procedures and Built-in Functions - SnappyData™ 1.2.0</title>
   
 
   <link rel="shortcut icon" href="../../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../../.." class="icon icon-home"> SnappyData™ 1.1.1</a>
+        <a href="../../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -163,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../quickstart/getting_started_with_your_spark_distribution/">Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../howto/use_apache_zeppelin_with_snappydata/">Using Apache Zeppelin with SnappyData</a>
         
     </li>
 
@@ -425,13 +432,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../howto/store_and_query_json_objects/">How to Store and Query JSON Objects</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../../howto/store_and_query_objects/">How to Store and Query Objects</a>
         
     </li>
@@ -453,7 +453,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Approximate Query Processing (AQP) to Run Approximate Queries</a>
         
     </li>
 
@@ -574,6 +574,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../programming_guide/using_the_spark_shell_and_spark-submit/">Using the Spark Shell and spark-submit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../programming_guide/using_pyspark_shell/">Using pyspark Shell</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../programming_guide/scala_interpreter/">Executing Spark Scala Code using SQL</a>
         
     </li>
 
@@ -789,19 +803,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../../connectors/connector/">Working with External Data Sources</a>
+        <a class="" href="../../../connectors/connector/">Working with Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Working with External Data Sources</span></li>
+    <li><span>Working with Data Sources</span></li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        <a class="" href="../../../Data/data_formats/">Supported Data Formats</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/access_cloud_data/">Accessing Cloud Storages</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../Data/external_hive_support/">Connecting to External Hive Metastores</a>
         
     </li>
 
@@ -816,6 +844,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
         
     </li>
 
@@ -858,7 +893,21 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../../monitoring/metrics/">Monitoring with Metrics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../../monitoring/recoveringdata/">Recovering Data During Cluster Failures</a>
         
     </li>
 
@@ -1255,7 +1304,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/exec-scala/">exec scala</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/explain/">EXPLAIN</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../sql_reference/grant/">GRANT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/grant-all/">GRANT ALL</a>
         
     </li>
 
@@ -1276,6 +1346,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/list/">LIST</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/pivot/">PIVOT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../sql_reference/put-into/">PUT INTO</a>
         
     </li>
@@ -1284,6 +1368,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../sql_reference/revoke/">REVOKE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../sql_reference/revoke_all/">REVOKE ALL</a>
         
     </li>
 
@@ -1390,6 +1481,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../dsid/">DSID</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../export_ddl/">SYS.EXPORT_DDLS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../export_data/">SYS.EXPORT_DATA</a>
         
     </li>
 
@@ -1504,6 +1609,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../command_line_utilities/store-run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../command_line_utilities/scala-cli/">scala CLI</a>
         
     </li>
 
@@ -2001,6 +2113,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../experimental/">Experimental Features</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
@@ -2072,6 +2191,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../../unsupported/">Unsupported Third-Party Modules</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
@@ -2129,7 +2255,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../../..">SnappyData™ 1.1.1</a>
+        <a href="../../..">SnappyData™ 1.2.0</a>
       </nav>
 
       
@@ -2192,7 +2318,7 @@
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright © 2017-2019 TIBCO Software Inc. All rights reserved.</p>
+      <p>Copyright © 2017-2020 TIBCO Software Inc. All rights reserved.</p>
     
   </div>
 

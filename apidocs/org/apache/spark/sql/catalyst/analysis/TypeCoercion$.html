@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>TypeCoercion - snappydata_2.11 1.1.1 API - org.apache.spark.sql.catalyst.analysis.TypeCoercion</title>
-          <meta name="description" content="TypeCoercion - snappydata 2.11 1.1.1 API - org.apache.spark.sql.catalyst.analysis.TypeCoercion" />
-          <meta name="keywords" content="TypeCoercion snappydata 2.11 1.1.1 API org.apache.spark.sql.catalyst.analysis.TypeCoercion" />
+          <title>TypeCoercion - snappydata_2.11 1.2.0 API - org.apache.spark.sql.catalyst.analysis.TypeCoercion</title>
+          <meta name="description" content="TypeCoercion - snappydata 2.11 1.2.0 API - org.apache.spark.sql.catalyst.analysis.TypeCoercion" />
+          <meta name="keywords" content="TypeCoercion snappydata 2.11 1.2.0 API org.apache.spark.sql.catalyst.analysis.TypeCoercion" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -457,6 +457,24 @@ Other string conversions are handled by PromoteStrings.</p><p>Widening types mig
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.TypeCoercion#findTightestCommonType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="findTightestCommonType(types:Seq[org.apache.spark.sql.types.DataType]):Option[org.apache.spark.sql.types.DataType]"></a>
+      <a id="findTightestCommonType(Seq[DataType]):Option[DataType]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">findTightestCommonType</span><span class="params">(<span name="types">types: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.TypeCoercion$@findTightestCommonType(types:Seq[org.apache.spark.sql.types.DataType]):Option[org.apache.spark.sql.types.DataType]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Find the tightest common type of a set of types by continuously applying
+<code>findTightestCommonTypeOfTwo</code> on these types.</p>
     </li><li name="org.apache.spark.sql.catalyst.analysis.TypeCoercion#findTightestCommonTypeOfTwo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="findTightestCommonTypeOfTwo:(org.apache.spark.sql.types.DataType,org.apache.spark.sql.types.DataType)=&gt;Option[org.apache.spark.sql.types.DataType]"></a>
       <a id="findTightestCommonTypeOfTwo:(DataType,DataType)⇒Option[DataType]"></a>
@@ -494,7 +512,7 @@ the operation. Those rules are implemented in <a href="DecimalPrecision$.html" c
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Similar to <span class="extype" name="findTightestCommonType">findTightestCommonType</span>, but can promote all the way to StringType.</p>
+      <p class="shortcomment cmt">Similar to <a href="#findTightestCommonType(types:Seq[org.apache.spark.sql.types.DataType]):Option[org.apache.spark.sql.types.DataType]" class="extmbr" name="org.apache.spark.sql.catalyst.analysis.TypeCoercion#findTightestCommonType">findTightestCommonType</a>, but can promote all the way to StringType.</p>
     </li><li name="org.apache.spark.sql.catalyst.analysis.TypeCoercion#findWiderTypeWithoutStringPromotion" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="findWiderTypeWithoutStringPromotion(types:Seq[org.apache.spark.sql.types.DataType]):Option[org.apache.spark.sql.types.DataType]"></a>
       <a id="findWiderTypeWithoutStringPromotion(Seq[DataType]):Option[DataType]"></a>
@@ -512,7 +530,7 @@ the operation. Those rules are implemented in <a href="DecimalPrecision$.html" c
       </a>
     </span>
       <p class="shortcomment cmt">Similar to <span class="extype" name="findWiderCommonType">findWiderCommonType</span>, but can't promote to string.</p><div class="fullcomment"><div class="comment cmt"><p>Similar to <span class="extype" name="findWiderCommonType">findWiderCommonType</span>, but can't promote to string. This is also similar to
-<span class="extype" name="findTightestCommonType">findTightestCommonType</span>, but can handle decimal types. If the wider decimal type exceeds
+<a href="#findTightestCommonType(types:Seq[org.apache.spark.sql.types.DataType]):Option[org.apache.spark.sql.types.DataType]" class="extmbr" name="org.apache.spark.sql.catalyst.analysis.TypeCoercion#findTightestCommonType">findTightestCommonType</a>, but can handle decimal types. If the wider decimal type exceeds
 system limitation, this rule will truncate the decimal type before return it.
 </p></div></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>OpLogRdd - snappydata_2.11 1.1.1 API - org.apache.spark.sql.execution.oplog.impl.OpLogRdd</title>
-          <meta name="description" content="OpLogRdd - snappydata 2.11 1.1.1 API - org.apache.spark.sql.execution.oplog.impl.OpLogRdd" />
-          <meta name="keywords" content="OpLogRdd snappydata 2.11 1.1.1 API org.apache.spark.sql.execution.oplog.impl.OpLogRdd" />
+          <title>OpLogRdd - snappydata_2.11 1.2.0 API - org.apache.spark.sql.execution.oplog.impl.OpLogRdd</title>
+          <meta name="description" content="OpLogRdd - snappydata 2.11 1.2.0 API - org.apache.spark.sql.execution.oplog.impl.OpLogRdd" />
+          <meta name="keywords" content="OpLogRdd snappydata 2.11 1.2.0 API org.apache.spark.sql.execution.oplog.impl.OpLogRdd" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.oplog.impl.OpLogRdd#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,fqtn:String,internalFQTN:String,schema:org.apache.spark.sql.types.StructType,partitioningColumns:Seq[String],provider:String,projection:Array[Int],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression],fullScan:Boolean,partitionPruner:()=&gt;Int,tableSchemas:scala.collection.mutable.Map[String,org.apache.spark.sql.types.StructType],versionMap:scala.collection.mutable.Map[String,Int],tableColIdsMap:scala.collection.mutable.Map[String,Array[Int]],primaryKeysString:String,keyColumnsString:String):org.apache.spark.sql.execution.oplog.impl.OpLogRdd"></a>
+      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,fqtn:String,internalFQTN:String,schema:org.apache.spark.sql.types.StructType,partitioningColumns:Seq[String],provider:String,projection:Array[Int],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression],fullScan:Boolean,partitionPruner:()=&gt;Int,tableSchemas:scala.collection.mutable.Map[String,org.apache.spark.sql.types.StructType],versionMap:scala.collection.mutable.Map[String,Int],tableColIdsMap:scala.collection.mutable.Map[String,Array[Int]],bucketHostMap:scala.collection.mutable.Map[Int,String],primaryKeysString:String,keyColumnsString:String):org.apache.spark.sql.execution.oplog.impl.OpLogRdd"></a>
       <a id="&lt;init&gt;:OpLogRdd"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">OpLogRdd</span><span class="params">(<span name="session">session: <a href="../../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="fqtn">fqtn: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="internalFQTN">internalFQTN: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="partitioningColumns">partitioningColumns: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="projection">projection: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="fullScan">fullScan: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="partitionPruner">partitionPruner: () ⇒ <span class="extype" name="scala.Int">Int</span></span>, <span name="tableSchemas">tableSchemas: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="versionMap">versionMap: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Int">Int</span>]</span>, <span name="tableColIdsMap">tableColIdsMap: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]]</span>, <span name="primaryKeysString">primaryKeysString: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyColumnsString">keyColumnsString: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
+        <span class="name">OpLogRdd</span><span class="params">(<span name="session">session: <a href="../../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="fqtn">fqtn: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="internalFQTN">internalFQTN: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="partitioningColumns">partitioningColumns: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="provider">provider: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="projection">projection: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="filters">filters: <span class="extype" name="scala.Array">Array</span>[<a href="../../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="fullScan">fullScan: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="partitionPruner">partitionPruner: () ⇒ <span class="extype" name="scala.Int">Int</span></span>, <span name="tableSchemas">tableSchemas: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>]</span>, <span name="versionMap">versionMap: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Int">Int</span>]</span>, <span name="tableColIdsMap">tableColIdsMap: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]]</span>, <span name="bucketHostMap">bucketHostMap: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="primaryKeysString">primaryKeysString: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="keyColumnsString">keyColumnsString: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.oplog.impl.OpLogRdd@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,fqtn:String,internalFQTN:String,schema:org.apache.spark.sql.types.StructType,partitioningColumns:Seq[String],provider:String,projection:Array[Int],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression],fullScan:Boolean,partitionPruner:()=&gt;Int,tableSchemas:scala.collection.mutable.Map[String,org.apache.spark.sql.types.StructType],versionMap:scala.collection.mutable.Map[String,Int],tableColIdsMap:scala.collection.mutable.Map[String,Array[Int]],primaryKeysString:String,keyColumnsString:String):org.apache.spark.sql.execution.oplog.impl.OpLogRdd" title="Permalink" target="_top">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.oplog.impl.OpLogRdd@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,fqtn:String,internalFQTN:String,schema:org.apache.spark.sql.types.StructType,partitioningColumns:Seq[String],provider:String,projection:Array[Int],filters:Array[org.apache.spark.sql.catalyst.expressions.Expression],fullScan:Boolean,partitionPruner:()=&gt;Int,tableSchemas:scala.collection.mutable.Map[String,org.apache.spark.sql.types.StructType],versionMap:scala.collection.mutable.Map[String,Int],tableColIdsMap:scala.collection.mutable.Map[String,Array[Int]],bucketHostMap:scala.collection.mutable.Map[Int,String],primaryKeysString:String,keyColumnsString:String):org.apache.spark.sql.execution.oplog.impl.OpLogRdd" title="Permalink" target="_top">
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -245,6 +245,23 @@ allocation.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.oplog.impl.OpLogRdd#bucketHostMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="bucketHostMap:scala.collection.mutable.Map[Int,String]"></a>
+      <a id="bucketHostMap:Map[Int,String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bucketHostMap</span><span class="result">: <span class="extype" name="scala.collection.mutable.Map">Map</span>[<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.oplog.impl.OpLogRdd@bucketHostMap:scala.collection.mutable.Map[Int,String]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.rdd.RDD#cache" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="cache():RDD.this.type"></a>
       <a id="cache():OpLogRdd.this.type"></a>

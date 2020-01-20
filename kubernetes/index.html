@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Setting-up SnappyData Cluster on Kubernetes - SnappyData™ 1.1.1</title>
+  <title>Setting-up SnappyData Cluster on Kubernetes - SnappyData™ 1.2.0</title>
   
 
   <link rel="shortcut icon" href="../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> SnappyData™ 1.1.1</a>
+        <a href=".." class="icon icon-home"> SnappyData™ 1.2.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -123,11 +123,13 @@
                 
                     <li><a class="toctree-l4" href="#list-of-configuration-parameters-for-snappydata-chart">List of Configuration Parameters for SnappyData Chart</a></li>
                 
-                    <li><a class="toctree-l4" href="#kubernetes-obects-used-in-snappydata-chart">Kubernetes Obects Used in SnappyData Chart</a></li>
+                    <li><a class="toctree-l4" href="#kubernetes-objects-used-in-snappydata-chart">Kubernetes Objects Used in SnappyData Chart</a></li>
                 
                     <li><a class="toctree-l4" href="#accessing-logs">Accessing Logs</a></li>
                 
                     <li><a class="toctree-l4" href="#configuring-the-log-level">Configuring the Log Level</a></li>
+                
+                    <li><a class="toctree-l4" href="#mounting-configmaps">Mounting ConfigMaps</a></li>
                 
             
             </ul>
@@ -188,6 +190,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../quickstart/getting_started_with_your_spark_distribution/">Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../howto/use_apache_zeppelin_with_snappydata/">Using Apache Zeppelin with SnappyData</a>
         
     </li>
 
@@ -450,13 +459,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../howto/store_and_query_json_objects/">How to Store and Query JSON Objects</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../howto/store_and_query_objects/">How to Store and Query Objects</a>
         
     </li>
@@ -478,7 +480,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Approximate Query Processing (AQP) to Run Approximate Queries</a>
         
     </li>
 
@@ -599,6 +601,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../programming_guide/using_the_spark_shell_and_spark-submit/">Using the Spark Shell and spark-submit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../programming_guide/using_pyspark_shell/">Using pyspark Shell</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../programming_guide/scala_interpreter/">Executing Spark Scala Code using SQL</a>
         
     </li>
 
@@ -814,19 +830,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../connectors/connector/">Working with External Data Sources</a>
+        <a class="" href="../connectors/connector/">Working with Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Working with External Data Sources</span></li>
+    <li><span>Working with Data Sources</span></li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        <a class="" href="../Data/data_formats/">Supported Data Formats</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../connectors/access_cloud_data/">Accessing Cloud Storages</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../Data/external_hive_support/">Connecting to External Hive Metastores</a>
         
     </li>
 
@@ -841,6 +871,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
         
     </li>
 
@@ -883,7 +920,21 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../monitoring/metrics/">Monitoring with Metrics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../monitoring/recoveringdata/">Recovering Data During Cluster Failures</a>
         
     </li>
 
@@ -1280,7 +1331,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/exec-scala/">exec scala</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/explain/">EXPLAIN</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../reference/sql_reference/grant/">GRANT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/grant-all/">GRANT ALL</a>
         
     </li>
 
@@ -1301,6 +1373,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/list/">LIST</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/pivot/">PIVOT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../reference/sql_reference/put-into/">PUT INTO</a>
         
     </li>
@@ -1309,6 +1395,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../reference/sql_reference/revoke/">REVOKE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/revoke_all/">REVOKE ALL</a>
         
     </li>
 
@@ -1408,6 +1501,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../reference/inbuilt_system_procedures/dsid/">DSID</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/inbuilt_system_procedures/export_ddl/">SYS.EXPORT_DDLS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/inbuilt_system_procedures/export_data/">SYS.EXPORT_DATA</a>
         
     </li>
 
@@ -1522,6 +1629,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../reference/command_line_utilities/store-run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/command_line_utilities/scala-cli/">scala CLI</a>
         
     </li>
 
@@ -2019,6 +2133,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../experimental/">Experimental Features</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
@@ -2090,6 +2211,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../unsupported/">Unsupported Third-Party Modules</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
@@ -2147,7 +2275,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">SnappyData™ 1.1.1</a>
+        <a href="..">SnappyData™ 1.2.0</a>
       </nav>
 
       
@@ -2196,10 +2324,13 @@
 <p><a href="#chartparameters">List of Configuration Parameters for SnappyData Chart</a></p>
 </li>
 <li>
-<p><a href="#kubernetesobjects">Kubernetes Obects Used in SnappyData Chart</a></p>
+<p><a href="#kubernetesobjects">Kubernetes Objects Used in SnappyData Chart</a></p>
 </li>
 <li>
-<p><a href="#accesslogs">Accesing Logs and Configuring Log Level</a></p>
+<p><a href="#accesslogs">Accessing Logs and Configuring Log Level</a></p>
+</li>
+<li>
+<p><a href="#configmaps">Mounting ConfigMaps</a></p>
 </li>
 </ul>
 <p><a id= prerequisites> </a></p>
@@ -2210,9 +2341,9 @@
 <p><strong>Kubernetes cluster</strong></br> A running Kubernetes cluster of version 1.9 or higher. SnappyData has been tested on Google Container Engine(GKE) as well as on Pivotal Container Service (PKS). If Kubernetes cluster is not available, you can set it up as mentioned <a href="#pksaccess">here</a>.</p>
 </li>
 <li>
-<p><strong>Helm tool</strong></br> Helm tool must be deployed in the Kubernetes environment. Helm comprises of two parts, that is a client and a Tiller (Server portion of Helm) inside the kube-system namespace. Tiller runs inside the Kubernetes cluster and manages the deployment of charts or packages. You can follow the instructions <a href="https://docs.pivotal.io/runtimes/pks/1-1/configure-tiller-helm.html">here</a> to deploy Helm in your Kubernetes enviroment.</p>
+<p><strong>Helm tool</strong></br> Helm tool must be deployed in the Kubernetes environment. You can follow the instructions <a href="https://helm.sh/docs/intro/install/">here</a> to deploy Helm in your Kubernetes enviroment.</p>
 </li>
-<li><strong>Docker image</strong></br> Helm charts use the Docker images to launch the container on Kubernetes. <a href="../quickstart/getting_started_with_docker_image/#build-your-docker">You can refer to these steps</a> to build your Docker image for SnappyData, provided you have its tarball with you. TIBCO does not provide a Docker image for SnappyData.</li>
+<li><strong>Docker image</strong></br> Helm charts use Docker image to launch the SnappyData cluster on Kubernetes. <a href="../quickstart/getting_started_with_docker_image/">You can refer to these steps</a> to build and publish your Docker image for SnappyData. TIBCO does not provide a Docker image for SnappyData.</li>
 </ul>
 <p><a id= pksaccess> </a></p>
 <h2 id="getting-access-to-kubernetes-cluster">Getting Access to Kubernetes Cluster</h2>
@@ -2244,6 +2375,21 @@
 <code>cd spark-on-k8s/charts</code></p>
 </li>
 <li>
+<p>Edit the <strong>snappydata &gt; values.yaml</strong>  file to configure in the SnappyData chart. Specify the details of your SnappyData Docker image as mentioned in the example below. Replace values for image and tag appropriatly with your Dockerhub registry name, image name and tag .</p>
+</li>
+</ol>
+<pre><code>image: your-dockerhub-registry/snappydata-docker-image
+imageTag: 1.2
+imagePullPolicy: IfNotPresent
+</code></pre>
+
+<pre><code>   To pull a Docker image from a private registry, create a secret by following steps as mentioned [here](#https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials) and specify the name of the secret in values.yaml as shown below. Note that, secret must be created in the namespace in which SnappyData will be deployed (namespace "snappy" in this case)
+</code></pre>
+<pre><code>imagePullSecrets: secretName
+</code></pre>
+
+<ol>
+<li>
 <p>Optionally, you can edit the <strong>snappydata &gt; values.yaml</strong>  file to change the default configurations in the SnappyData chart. Configurations can be specified in the respective attributes for locators, leaders, and servers in this file. Refer <a href="#chartparameters">List of Configuration Parameters for SnappyData Chart</a></p>
 </li>
 <li>
@@ -2261,7 +2407,7 @@ By default, <strong>SnappyData Helm </strong>chart deploys a SnappyData cluster 
 <p>To find the IP addresses and port numbers of the SnappyData processes, use command <code>kubectl get svc --namespace=snappy</code>. 
 In the <a href="#output">output</a>, three services namely <strong>snappydata-leader-public</strong>, <strong>snappydata-locator-public</strong> and 
 <strong>snappydata-server-public</strong>  of type <strong>LoadBalancer</strong> are seen which expose the endpoints for locator, lead, and server respectively. These services have external IP addresses assigned and therefore can be accessed from outside Kubernetes. The remaining services that do not have external IP addresses are those that are created for internal use.</p>
-<p><strong>snappydata-leader-public</strong> service exposes port <strong>5050</strong> for SnappyData Monitoring Console and port <strong>8090</strong> to accept <a href="#jobkubernetes">SnappyData jobs</a>.</br>
+<p><strong>snappydata-leader-public</strong> service exposes port <strong>5050</strong> for SnappyData Monitoring Console, port <strong>10000</strong> for Hive Thrift server and port <strong>8090</strong> to accept <a href="#jobkubernetes">SnappyData jobs</a>.</br>
 <strong>snappydata-locator-public</strong> service exposes port <strong>1527</strong> to accept <a href="#jdbckubernetes">JDBC/ODBC connections</a>.</p>
 <p>You can do the following on the SnappyData cluster that is deployed on Kubernetes:</p>
 <ul>
@@ -2361,7 +2507,7 @@ The output displays the external IP address of <strong>snappydata-leader-public<
 </code></pre>
 
 <h2 id="stopping-the-snappydata-cluster-on-kubernetes">Stopping the SnappyData Cluster on Kubernetes</h2>
-<p>To stop the SnappyData cluster on Kubernetes, you must delete the <strong>SnappyData Helm </strong>chart using the <code>helm delete</code> command.</p>
+<p>To stop the SnappyData cluster on Kubernetes, you must delete the <strong>SnappyData Helm</strong> chart using the <code>helm delete</code> command.</p>
 <pre><code>$ helm delete --purge snappydata
 </code></pre>
 
@@ -2396,6 +2542,11 @@ The output displays the external IP address of <strong>snappydata-leader-public<
 <td><code>imagePullPolicy</code></td>
 <td>Pull policy for the image.</td>
 <td><code>IfNotPresent</code></td>
+</tr>
+<tr>
+<td><code>imagePullSecrets</code></td>
+<td>Secret name to be used to pull image from a private registry</td>
+<td></td>
 </tr>
 <tr>
 <td><code>locators.conf</code></td>
@@ -2488,7 +2639,7 @@ The output displays the external IP address of <strong>snappydata-leader-public<
 
 <p>You can specify SnappyData <a href="https://snappydatainc.github.io/snappydata/configuring_cluster/configuring_cluster/#configuration-files">configuration parameters</a> in the <strong>servers.conf</strong>, <strong>locators.conf</strong>, and <strong>leaders.conf</strong> attributes for servers, locators, and leaders respectively.</p>
 <p><a id= kubernetesobjects> </a></p>
-<h2 id="kubernetes-obects-used-in-snappydata-chart">Kubernetes Obects Used in SnappyData Chart</h2>
+<h2 id="kubernetes-objects-used-in-snappydata-chart">Kubernetes Objects Used in SnappyData Chart</h2>
 <p>This section provides details about the following Kubernetes objects that are used in SnappyData Chart:</p>
 <ul>
 <li>
@@ -2591,6 +2742,16 @@ $ cp log4j.properties.template log4j.properties
 
 <p>When SnappyData chart is installed, the <strong>log4.properties</strong> file  will be used to configure the log level.</p>
 <p><a id= deletehelm> </a></p>
+<p><a id= configmaps> </a></p>
+<h2 id="mounting-configmaps">Mounting ConfigMaps</h2>
+<p>Files created in <strong>charts/snappydata/conf/</strong> are mounted on SnappyData server, lead, and locator pods as configmaps and copied into the product's <strong>conf</strong> directory. This is useful to make configuration files (such as spark-env.sh,
+metrics.properties etc.) available to the product. Template files are provided in the
+<strong>charts/snappydata/conf/</strong>. These template files can be renamed and edited to provide configuration.</p>
+<p>For example:</p>
+<pre><code>$ cd snappydata/conf/
+$ cp spark-env.sh.template spark-env.sh
+# now modify the spark-env.sh to specify configuration 
+</code></pre>
               
             </div>
           </div>
@@ -2601,7 +2762,7 @@ $ cp log4j.properties.template log4j.properties
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright © 2017-2019 TIBCO Software Inc. All rights reserved.</p>
+      <p>Copyright © 2017-2020 TIBCO Software Inc. All rights reserved.</p>
     
   </div>
 

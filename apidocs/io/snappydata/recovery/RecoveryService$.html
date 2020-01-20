@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>RecoveryService - snappydata_2.11 1.1.1 API - io.snappydata.recovery.RecoveryService</title>
-          <meta name="description" content="RecoveryService - snappydata 2.11 1.1.1 API - io.snappydata.recovery.RecoveryService" />
-          <meta name="keywords" content="RecoveryService snappydata 2.11 1.1.1 API io.snappydata.recovery.RecoveryService" />
+          <title>RecoveryService - snappydata_2.11 1.2.0 API - io.snappydata.recovery.RecoveryService</title>
+          <meta name="description" content="RecoveryService - snappydata 2.11 1.2.0 API - io.snappydata.recovery.RecoveryService" />
+          <meta name="keywords" content="RecoveryService snappydata 2.11 1.2.0 API io.snappydata.recovery.RecoveryService" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -88,27 +88,7 @@
         <div id="allMembers">
         
 
-        <div id="types" class="types members">
-              <h3>Type Members</h3>
-              <ol><li name="io.snappydata.recovery.RecoveryService.ExportDataArgs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="ExportDataArgsextendsProductwithSerializable"></a>
-      <a id="ExportDataArgs:ExportDataArgs"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="RecoveryService$$ExportDataArgs.html"><span class="name">ExportDataArgs</span></a><span class="params">(<span name="formatType">formatType: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tables">tables: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="outputDir">outputDir: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ignoreError">ignoreError: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.recovery.RecoveryService$@ExportDataArgsextendsProductwithSerializable" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li></ol>
-            </div>
+        
 
         
 
@@ -182,27 +162,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="io.snappydata.recovery.RecoveryService#captureArguments" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="captureArguments(formatType:String,tables:Seq[String],outputDir:String,ignoreError:Boolean):Unit"></a>
-      <a id="captureArguments(String,Seq[String],String,Boolean):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">captureArguments</span><span class="params">(<span name="formatType">formatType: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tables">tables: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="outputDir">outputDir: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ignoreError">ignoreError: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.recovery.RecoveryService$@captureArguments(formatType:String,tables:Seq[String],outputDir:String,ignoreError:Boolean):Unit" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <p class="shortcomment cmt">capture the arguments used by the procedure EXPORT_DATA and cache them for later generating
-helper scripts to load all this data back into new cluster
-</p><div class="fullcomment"><div class="comment cmt"><p>capture the arguments used by the procedure EXPORT_DATA and cache them for later generating
-helper scripts to load all this data back into new cluster
-</p></div><dl class="paramcmts block"><dt class="param">formatType</dt><dd class="cmt"><p>spark output format</p></dd><dt class="param">tables</dt><dd class="cmt"><p>comma separated qualified names of tables</p></dd><dt class="param">outputDir</dt><dd class="cmt"><p>base output path for one call of EXPORT_DATA procedure</p></dd><dt class="param">ignoreError</dt><dd class="cmt"><p>whether to move on to next table in case of failure</p></dd></dl></div>
     </li><li name="io.snappydata.recovery.RecoveryService#catalogTableCount" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="catalogTableCount:Int"></a>
       <a id="catalogTableCount:Int"></a>
@@ -244,18 +203,18 @@ helper scripts to load all this data back into new cluster
               
         </dd></dl></div>
     </li><li name="io.snappydata.recovery.RecoveryService#collectViewsAndPrepareCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="collectViewsAndPrepareCatalog():Unit"></a>
-      <a id="collectViewsAndPrepareCatalog():Unit"></a>
+      <a id="collectViewsAndPrepareCatalog(enableTableCountInUI:Boolean):Unit"></a>
+      <a id="collectViewsAndPrepareCatalog(Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">collectViewsAndPrepareCatalog</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">collectViewsAndPrepareCatalog</span><span class="params">(<span name="enableTableCountInUI">enableTableCountInUI: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.recovery.RecoveryService$@collectViewsAndPrepareCatalog():Unit" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.recovery.RecoveryService$@collectViewsAndPrepareCatalog(enableTableCountInUI:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -311,6 +270,23 @@ helper scripts to load all this data back into new cluster
       </a>
     </span>
       
+    </li><li name="io.snappydata.recovery.RecoveryService#enableTableCountInUI" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="enableTableCountInUI:Boolean"></a>
+      <a id="enableTableCountInUI:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">enableTableCountInUI</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.recovery.RecoveryService$@enableTableCountInUI:Boolean" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -345,23 +321,6 @@ helper scripts to load all this data back into new cluster
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="io.snappydata.recovery.RecoveryService#exportDataArgsList" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="exportDataArgsList:scala.collection.mutable.MutableList[io.snappydata.recovery.RecoveryService.ExportDataArgs]"></a>
-      <a id="exportDataArgsList:MutableList[ExportDataArgs]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">exportDataArgsList</span><span class="result">: <span class="extype" name="scala.collection.mutable.MutableList">MutableList</span>[<a href="RecoveryService$$ExportDataArgs.html" class="extype" name="io.snappydata.recovery.RecoveryService.ExportDataArgs">ExportDataArgs</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.recovery.RecoveryService$@exportDataArgsList:scala.collection.mutable.MutableList[io.snappydata.recovery.RecoveryService.ExportDataArgs]" title="Permalink" target="_top">
-        <img src="../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>

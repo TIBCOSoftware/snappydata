@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>JacksonParser - snappydata_2.11 1.1.1 API - org.apache.spark.sql.catalyst.json.JacksonParser</title>
-          <meta name="description" content="JacksonParser - snappydata 2.11 1.1.1 API - org.apache.spark.sql.catalyst.json.JacksonParser" />
-          <meta name="keywords" content="JacksonParser snappydata 2.11 1.1.1 API org.apache.spark.sql.catalyst.json.JacksonParser" />
+          <title>JacksonParser - snappydata_2.11 1.2.0 API - org.apache.spark.sql.catalyst.json.JacksonParser</title>
+          <meta name="description" content="JacksonParser - snappydata 2.11 1.2.0 API - org.apache.spark.sql.catalyst.json.JacksonParser" />
+          <meta name="keywords" content="JacksonParser snappydata 2.11 1.2.0 API org.apache.spark.sql.catalyst.json.JacksonParser" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -90,7 +90,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.catalyst.json.JacksonParser#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(schema:org.apache.spark.sql.types.StructType,columnNameOfCorruptRecord:String,options:org.apache.spark.sql.catalyst.json.JSONOptions):org.apache.spark.sql.catalyst.json.JacksonParser"></a>
+      <a id="&lt;init&gt;(schema:org.apache.spark.sql.types.StructType,options:org.apache.spark.sql.catalyst.json.JSONOptions):org.apache.spark.sql.catalyst.json.JacksonParser"></a>
       <a id="&lt;init&gt;:JacksonParser"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -98,10 +98,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">JacksonParser</span><span class="params">(<span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="columnNameOfCorruptRecord">columnNameOfCorruptRecord: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="options">options: <span class="extype" name="org.apache.spark.sql.catalyst.json.JSONOptions">JSONOptions</span></span>)</span>
+        <span class="name">JacksonParser</span><span class="params">(<span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="options">options: <span class="extype" name="org.apache.spark.sql.catalyst.json.JSONOptions">JSONOptions</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.json.JacksonParser@&lt;init&gt;(schema:org.apache.spark.sql.types.StructType,columnNameOfCorruptRecord:String,options:org.apache.spark.sql.catalyst.json.JSONOptions):org.apache.spark.sql.catalyst.json.JacksonParser" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.json.JacksonParser@&lt;init&gt;(schema:org.apache.spark.sql.types.StructType,options:org.apache.spark.sql.catalyst.json.JSONOptions):org.apache.spark.sql.catalyst.json.JacksonParser" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -552,19 +552,37 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.json.JacksonParser#makeRootConverter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="makeRootConverter(dataType:org.apache.spark.sql.types.DataType):JacksonParser.this.ValueConverter"></a>
-      <a id="makeRootConverter(DataType):ValueConverter"></a>
+    </li><li name="org.apache.spark.sql.catalyst.json.JacksonParser#makeConverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="makeConverter(dataType:org.apache.spark.sql.types.DataType):JacksonParser.this.ValueConverter"></a>
+      <a id="makeConverter(DataType):ValueConverter"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">makeRootConverter</span><span class="params">(<span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.json.JacksonParser.ValueConverter">ValueConverter</span></span>
+        <span class="name">makeConverter</span><span class="params">(<span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.json.JacksonParser.ValueConverter">ValueConverter</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.json.JacksonParser@makeRootConverter(dataType:org.apache.spark.sql.types.DataType):JacksonParser.this.ValueConverter" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.json.JacksonParser@makeConverter(dataType:org.apache.spark.sql.types.DataType):JacksonParser.this.ValueConverter" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Create a converter which converts the JSON documents held by the <code>JsonParser</code>
+to a value according to a desired schema.</p>
+    </li><li name="org.apache.spark.sql.catalyst.json.JacksonParser#makeRootConverter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="makeRootConverter(st:org.apache.spark.sql.types.StructType):com.fasterxml.jackson.core.JsonParser=&gt;Seq[org.apache.spark.sql.catalyst.InternalRow]"></a>
+      <a id="makeRootConverter(StructType):(JsonParser)⇒Seq[InternalRow]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">makeRootConverter</span><span class="params">(<span name="st">st: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result">: (<span class="extype" name="com.fasterxml.jackson.core.JsonParser">JsonParser</span>) ⇒ <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.json.JacksonParser@makeRootConverter(st:org.apache.spark.sql.types.StructType):com.fasterxml.jackson.core.JsonParser=&gt;Seq[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -624,23 +642,25 @@ to a value according to a desired schema. This is a wrapper for the method
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.json.JacksonParser#parse" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="parse(input:String):Seq[org.apache.spark.sql.catalyst.InternalRow]"></a>
-      <a id="parse(String):Seq[InternalRow]"></a>
+    </li><li name="org.apache.spark.sql.catalyst.json.JacksonParser#parse" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parse[T](record:T,createParser:(com.fasterxml.jackson.core.JsonFactory,T)=&gt;com.fasterxml.jackson.core.JsonParser,recordLiteral:T=&gt;org.apache.spark.unsafe.types.UTF8String):Seq[org.apache.spark.sql.catalyst.InternalRow]"></a>
+      <a id="parse[T](T,(JsonFactory,T)⇒JsonParser,(T)⇒UTF8String):Seq[InternalRow]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">parse</span><span class="params">(<span name="input">input: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
+        <span class="name">parse</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="record">record: <span class="extype" name="org.apache.spark.sql.catalyst.json.JacksonParser.parse.T">T</span></span>, <span name="createParser">createParser: (<span class="extype" name="com.fasterxml.jackson.core.JsonFactory">JsonFactory</span>, <span class="extype" name="org.apache.spark.sql.catalyst.json.JacksonParser.parse.T">T</span>) ⇒ <span class="extype" name="com.fasterxml.jackson.core.JsonParser">JsonParser</span></span>, <span name="recordLiteral">recordLiteral: (<span class="extype" name="org.apache.spark.sql.catalyst.json.JacksonParser.parse.T">T</span>) ⇒ <a href="../../../unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.json.JacksonParser@parse(input:String):Seq[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.json.JacksonParser@parse[T](record:T,createParser:(com.fasterxml.jackson.core.JsonFactory,T)=&gt;com.fasterxml.jackson.core.JsonParser,recordLiteral:T=&gt;org.apache.spark.unsafe.types.UTF8String):Seq[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Parse the string JSON input to the set of <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>s.</p>
+      <p class="shortcomment cmt">Parse the JSON input to the set of <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>s.</p><div class="fullcomment"><div class="comment cmt"><p>Parse the JSON input to the set of <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>s.
+</p></div><dl class="paramcmts block"><dt class="param">recordLiteral</dt><dd class="cmt"><p>an optional function that will be used to generate
+  the corrupt record text instead of record.toString</p></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

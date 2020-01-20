@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>json - snappydata_2.11 1.1.1 API - org.apache.spark.sql.execution.datasources.json</title>
-          <meta name="description" content="json - snappydata 2.11 1.1.1 API - org.apache.spark.sql.execution.datasources.json" />
-          <meta name="keywords" content="json snappydata 2.11 1.1.1 API org.apache.spark.sql.execution.datasources.json" />
+          <title>json - snappydata_2.11 1.2.0 API - org.apache.spark.sql.execution.datasources.json</title>
+          <meta name="description" content="json - snappydata 2.11 1.2.0 API - org.apache.spark.sql.execution.datasources.json" />
+          <meta name="keywords" content="json snappydata 2.11 1.2.0 API org.apache.spark.sql.execution.datasources.json" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -66,7 +66,24 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.datasources.json.JsonFileFormat" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.datasources.json.JsonDataSource" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="JsonDataSource[T]extendsSerializable"></a>
+      <a id="JsonDataSource[T]:JsonDataSource[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="JsonDataSource.html"><span class="name">JsonDataSource</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.json.package@JsonDataSource[T]extendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Common functions for parsing JSON files</p><div class="fullcomment"><div class="comment cmt"><p>Common functions for parsing JSON files</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>A datatype containing the unparsed JSON, such as <span class="extype" name="Text">Text</span> or <span class="extype" name="String">String</span></p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.datasources.json.JsonFileFormat" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="JsonFileFormatextendsTextBasedFileFormatwithDataSourceRegister"></a>
       <a id="JsonFileFormat:JsonFileFormat"></a>
       <h4 class="signature">
@@ -88,7 +105,61 @@
 
         
 
-        
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.datasources.json.JsonDataSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="JsonDataSource"></a>
+      <a id="JsonDataSource:JsonDataSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="JsonDataSource$.html"><span class="name">JsonDataSource</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.json.package@JsonDataSource" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.datasources.json.TextInputJsonDataSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TextInputJsonDataSource"></a>
+      <a id="TextInputJsonDataSource:TextInputJsonDataSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TextInputJsonDataSource$.html"><span class="name">TextInputJsonDataSource</span></a><span class="result"> extends <a href="JsonDataSource.html" class="extype" name="org.apache.spark.sql.execution.datasources.json.JsonDataSource">JsonDataSource</a>[<span class="extype" name="org.apache.hadoop.io.Text">Text</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.json.package@TextInputJsonDataSource" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.datasources.json.WholeFileJsonDataSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WholeFileJsonDataSource"></a>
+      <a id="WholeFileJsonDataSource:WholeFileJsonDataSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="WholeFileJsonDataSource$.html"><span class="name">WholeFileJsonDataSource</span></a><span class="result"> extends <a href="JsonDataSource.html" class="extype" name="org.apache.spark.sql.execution.datasources.json.JsonDataSource">JsonDataSource</a>[<a href="../../../../input/PortableDataStream.html" class="extype" name="org.apache.spark.input.PortableDataStream">PortableDataStream</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.json.package@WholeFileJsonDataSource" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
 
         
 

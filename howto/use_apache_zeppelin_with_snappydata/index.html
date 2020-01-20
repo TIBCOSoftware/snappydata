@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>How to Use Apache Zeppelin with SnappyData - SnappyData™ 1.1.1</title>
+  <title>How to Use Apache Zeppelin with SnappyData - SnappyData™ 1.2.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.1.1</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -163,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../quickstart/getting_started_with_your_spark_distribution/">Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="./">Using Apache Zeppelin with SnappyData</a>
         
     </li>
 
@@ -425,13 +432,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../store_and_query_json_objects/">How to Store and Query JSON Objects</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../store_and_query_objects/">How to Store and Query Objects</a>
         
     </li>
@@ -453,7 +453,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../use_synopsis_data_engine_to_run_approximate_queries/">How to use Approximate Query Processing (AQP) to Run Approximate Queries</a>
         
     </li>
 
@@ -520,13 +520,9 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#how-to-use-apache-zeppelin-with-snappydata">How to Use Apache Zeppelin with SnappyData</a></li>
+                <li class="toctree-l3"><a href="#using-apache-zeppelin-with-snappydata">Using Apache Zeppelin with SnappyData</a></li>
                 
-                    <li><a class="toctree-l4" href="#step-1-download-install-and-configure-snappydata">Step 1: Download, Install and Configure SnappyData</a></li>
-                
-                    <li><a class="toctree-l4" href="#step-2-configure-interpreter-settings">Step 2: Configure Interpreter Settings</a></li>
-                
-                    <li><a class="toctree-l4" href="#additional-settings">Additional Settings</a></li>
+                    <li><a class="toctree-l4" href="#faqs">FAQs</a></li>
                 
             
             </ul>
@@ -587,6 +583,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_the_spark_shell_and_spark-submit/">Using the Spark Shell and spark-submit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/using_pyspark_shell/">Using pyspark Shell</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/scala_interpreter/">Executing Spark Scala Code using SQL</a>
         
     </li>
 
@@ -802,19 +812,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
+        <a class="" href="../../connectors/connector/">Working with Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Working with External Data Sources</span></li>
+    <li><span>Working with Data Sources</span></li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        <a class="" href="../../Data/data_formats/">Supported Data Formats</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/access_cloud_data/">Accessing Cloud Storages</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../Data/external_hive_support/">Connecting to External Hive Metastores</a>
         
     </li>
 
@@ -829,6 +853,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
         
     </li>
 
@@ -871,7 +902,21 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/metrics/">Monitoring with Metrics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/recoveringdata/">Recovering Data During Cluster Failures</a>
         
     </li>
 
@@ -1268,7 +1313,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/exec-scala/">exec scala</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/explain/">EXPLAIN</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/grant/">GRANT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/grant-all/">GRANT ALL</a>
         
     </li>
 
@@ -1289,6 +1355,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/list/">LIST</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/pivot/">PIVOT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/put-into/">PUT INTO</a>
         
     </li>
@@ -1297,6 +1377,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/revoke/">REVOKE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/revoke_all/">REVOKE ALL</a>
         
     </li>
 
@@ -1396,6 +1483,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/inbuilt_system_procedures/dsid/">DSID</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/export_ddl/">SYS.EXPORT_DDLS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/export_data/">SYS.EXPORT_DATA</a>
         
     </li>
 
@@ -1510,6 +1611,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/scala-cli/">scala CLI</a>
         
     </li>
 
@@ -2007,6 +2115,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../experimental/">Experimental Features</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
@@ -2078,6 +2193,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../unsupported/">Unsupported Third-Party Modules</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
@@ -2135,7 +2257,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.1.1</a>
+        <a href="../..">SnappyData™ 1.2.0</a>
       </nav>
 
       
@@ -2162,229 +2284,169 @@
             <div class="section">
               
                 <p><a id="howto-zeppelin"></a></p>
-<h1 id="how-to-use-apache-zeppelin-with-snappydata">How to Use Apache Zeppelin with SnappyData</h1>
-<h2 id="step-1-download-install-and-configure-snappydata">Step 1: Download, Install and Configure SnappyData</h2>
+<h1 id="using-apache-zeppelin-with-snappydata">Using Apache Zeppelin with SnappyData</h1>
+<p>Do the following to use Apache Zeppelin with SnappyData:</p>
 <ol>
-<li>
-<p><a href="../../install/install_on_premise/#download-snappydata">Download and Install SnappyData</a> </br>
- The table below lists the version of the SnappyData Zeppelin Interpreter and Apache Zeppelin Installer for the supported SnappyData Releases.</p>
-<table>
-<thead>
-<tr>
-<th>SnappyData Zeppelin Interpreter</th>
-<th>Apache Zeppelin Binary Package</th>
-<th>SnappyData Release</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.6">Version 0.7.3.6</a></td>
-<td><a href="http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz">Version 0.7.3</a></td>
-<td><a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v1.1.1">Release 1.1.1</a></td>
-</tr>
-<tr>
-<td><a href="https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.6">Version 0.7.3.6</a></td>
-<td><a href="http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz">Version 0.7.3</a></td>
-<td><a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v1.1.0">Release 1.1.0</a></td>
-</tr>
-<tr>
-<td><a href="https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.4">Version 0.7.3.4</a></td>
-<td><a href="http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz">Version 0.7.3</a></td>
-<td><a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.2.1">Release 1.0.2.1</a></td>
-</tr>
-<tr>
-<td><a href="https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.2">Version 0.7.3.2</a></td>
-<td><a href="http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz">Version 0.7.3</a></td>
-<td><a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.2">Release 1.0.2</a></td>
-</tr>
-<tr>
-<td><a href="https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3">Version 0.7.3</a></td>
-<td><a href="http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz">Version 0.7.3</a></td>
-<td><a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.1">Release 1.0.1</a></td>
-</tr>
-<tr>
-<td><a href="https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.2">Version 0.7.2</a></td>
-<td><a href="http://archive.apache.org/dist/zeppelin/zeppelin-0.7.2/zeppelin-0.7.2-bin-netinst.tgz">Version 0.7.2</a></td>
-<td><a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.0">Release 1.0.0</a></td>
-</tr>
-</tbody>
-</table>
-</li>
-<li>
-<p><a href="../../configuring_cluster/configuring_cluster/">Configure the SnappyData Cluster</a>.</p>
-</li>
-<li>
-<p>In <a href="../../configuring_cluster/configuring_cluster/#configuring-leads">lead node configuration</a> set the following properties:</p>
+<li><a href="../../install/install_on_premise/">Download and Install SnappyData</a>. The install zip for computeDB contains the Apache Zeppelin zip folder. </li>
+<li><a href="../../configuring_cluster/configuring_cluster/">Configure the SnappyData Cluster</a>.</li>
+<li>Unzip the Apache Zeppelin artifact<name>.</li>
+<li>Change to <strong>Zeppelin</strong> directory and start Zeppelin.
+            cd Zeppelin directory
+            ./bin/zeppelin-daemon.sh start</li>
+<li>Go to localhost:8080 or (AWS-AMI_PublicIP):8080.</li>
+</ol>
+<p><img alt="homepage" src="../../Images/zeppelin.png" /></p>
+<p>Refer <a href="../concurrent_apache_zeppelin_access_to_secure_snappydata/">here</a> for instructions to configure Apache Zeppelin for securely accessing SnappyData Cluster.</p>
+<h2 id="faqs">FAQs</h2>
 <ul>
 <li>
-<p>Enable the SnappyData Zeppelin interpreter by adding <code>-zeppelin.interpreter.enable=true</code> </p>
-</li>
-<li>
-<p>In the classpath option, define the location where the SnappyData Interpreter is downloaded by adding</br>
-<code>-classpath=/&lt;download_location&gt;/snappydata-zeppelin-&lt;version_number&gt;.jar</code></p>
-</li>
-<li>
-<p>In the <strong>conf/spark-env.sh</strong> file, set the <code>SPARK_PUBLIC_DNS</code> property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing the <a href="../../monitoring/monitoring/">SnappyData Monitoring Console</a> from outside the network.</p>
-</li>
+<p><strong>I am on the homepage, what should I do next?</strong></p>
+<ul>
+<li>If you are using SnappyData for the first time, you can start with the QuickStart notebooks to start exploring the capabilities of the product. </li>
+<li>If you have used SnappyData earlier and just want to explore the new interface, you can download data from external sources using the notebooks in the External Data Sources section.</li>
 </ul>
 </li>
 <li>
-<p><a href="../start_snappy_cluster/">Start the SnappyData cluster</a>.</p>
-</li>
-<li>
-<p>Extract the contents of the Zeppelin binary package. </br> </p>
-</li>
-<li>
-<p>Install the SnappyData Zeppelin interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br></p>
-<pre><code>./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:&lt;snappydata_interpreter_version_number&gt;
-</code></pre>
-<p>Zeppelin interpreter allows the SnappyData interpreter to be plugged into Zeppelin using which, you can run queries.</p>
-</li>
-<li>
-<p>Rename the <strong>zeppelin-site.xml.template</strong> file (located in zeppelin-&lt;<em>version_number</em>&gt;-bin-all/conf directory) to <strong>zeppelin-site.xml</strong>.</p>
-</li>
-<li>
-<p>Edit the <strong>zeppelin-site.xml</strong> file: </p>
-<p>In the <code>zeppelin.interpreters</code> property, add the following interpreter class names:             <code>org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter</code></p>
-</li>
-<li>
-<p>Download the predefined SnappyData notebooks <a href="https://github.com/SnappyDataInc/zeppelin-interpreter/blob/notes/examples/notebook/notebook.tar.gz">notebook.tar.gz</a>. </br> Extract and copy the contents of the notebook.tar.gz  compressed file to the <strong>notebook</strong> folder in the Zeppelin installation on your local machine.</p>
-</li>
-<li>
-<p>Start the Zeppelin daemon using the command: </br> <code>bin/zeppelin-daemon.sh start</code></p>
-</li>
-<li>
-<p>To ensure that the installation is successful, log into the Zeppelin UI (<strong>http://localhost:8080</strong>) from your web browser.</p>
-</li>
-</ol>
-<h2 id="step-2-configure-interpreter-settings">Step 2: Configure Interpreter Settings</h2>
-<ol>
-<li>
-<p>Log on to Zeppelin from your web browser and select <strong>Interpreter</strong> from the <strong>Settings</strong> option.</p>
-</li>
-<li>
-<p>Click <strong>Create</strong> to add an interpreter.</br> <img alt="Create" src="../../Images/create_interpreter.png" />  </p>
-</li>
-<li>
-<p>From the <strong>Interpreter group</strong> drop-down select <strong>snappydata</strong>.
-     <img alt="Configure Interpreter" src="../../Images/snappydata_interpreter_properties.png" /></p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If <strong>snappydata</strong> is not displayed in the <strong>Interpreter group</strong> drop-down list, try the following options, and then restart Zeppelin daemon: </p>
+<p><strong>I get an error when I run a paragraph?</strong></p>
 <ul>
-<li>
-<p>Delete the <strong>interpreter.json</strong> file located in the <strong>conf</strong> directory (in the Zeppelin home directory).</p>
+<li>By design, the anonymous user is not allowed to execute notebooks.</li>
+<li>You may clone the notebook and proceed in the cloned notebook.</li>
+</ul>
 </li>
 <li>
-<p>Delete the <strong>zeppelin-spark_&lt;<em>version_number</em>&gt;.jar</strong> file located in the <strong>interpreter/snappydata</strong> directory (in the Zeppelin home directory).</p>
+<p><strong>Do I need to change any setting in Zeppelin to work with the multi-node cluster?</strong></p>
+<ul>
+<li>Yes, but this requires Zeppelin’s admin user access. By default, you access the Zeppelin notebooks as an anonymous user. For admin user access, click the <strong>Interpreter</strong> tab and enter your credentials in the <strong>Login</strong> box. You can find the admin credentials in the <strong>zeppelin-dir/conf/shiro.ini</strong> file.
+<img alt="homepage" src="../../Images/zeppelin_3.png" /></li>
+<li>Update the appropriate IP of a server node in the jdbc URL (highlighted in the following image).
+<img alt="homepage" src="../../Images/zeppelin_2.png" /></li>
+</ul>
+</li>
+<li>
+<p><strong>I already have a Zeppelin installation, do I still need to install SnappyData’s Zeppelin separately?</strong></p>
+<ul>
+<li>No. You may download the notebooks from <a href="https://github.com/SnappyDataInc/zeppelin-interpreter/tree/master/examples/notebook">here</a> and import them into your Zeppelin.</li>
+<li>Additionally, you must set up the JDBC interpreter to connect to SnappyData. <a href="../concurrent_apache_zeppelin_access_to_secure_snappydata/#configinterpreter">Configure JDBC Interpreter</a>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Do these notebooks depend on specific Zeppelin version?</strong>
+    Yes, these notebooks were developed on Zeppelin version 0.8.2.</p>
+</li>
+<li>
+<p><strong>Are there any configuration files of Zeppelin that I need to be aware of?</strong>
+    For advanced multi-user settings, refer to the <strong>zeppelin-site.xml</strong> and <strong>shiro.ini</strong>. For more details and options,  refer to the Apache Zeppelin documentation.</p>
+</li>
+<li>
+<p><strong>Is Zeppelin the only interface to interact with SnappyData?</strong>
+    No, if you prefer a command-line interface, then the product provides two command-line interfaces. The SQL interface, which can be accessed using <strong>./bin/snappy</strong> and the experimental scala interpreter can be invoked using <strong>./bin/snappy-scala</strong>. </p>
+</li>
+<li>
+<p><strong>How to configure Apache Zeppelin to securely and concurrently access the SnappyData Cluster?</strong>
+    Refer to <a href="../concurrent_apache_zeppelin_access_to_secure_snappydata/">How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster</a>.</p>
 </li>
 </ul>
-</div>
-</li>
-<li>
-<p>Click the <strong>Connect to existing process</strong> option. The fields <strong>Host</strong> and <strong>Port</strong> are displayed.</p>
-</li>
-<li>
-<p>Specify the host on which the SnappyData lead node is executing, and the SnappyData Zeppelin Port (Default is 3768).</p>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Default Values</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Host</td>
-<td>localhost</td>
-<td>Specify host on which the SnappyData lead node is executing</td>
-</tr>
-<tr>
-<td>Port</td>
-<td>3768</td>
-<td>Specify the Zeppelin server port</td>
-</tr>
-</tbody>
-</table>
-</li>
-<li>
-<p>Configure the interpreter properties. </br>The table lists the properties required for SnappyData.</p>
-<table>
-<thead>
-<tr>
-<th>Property</th>
-<th>Value</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>default.url</td>
-<td>jdbc:snappydata://localhost:1527/</td>
-<td>Specify the JDBC URL for SnappyData cluster in the format <code>jdbc:snappydata://&lt;locator_hostname&gt;:1527</code></td>
-</tr>
-<tr>
-<td>default.driver</td>
-<td>io.snappydata.jdbc.ClientDriver</td>
-<td>Specify the JDBC driver for SnappyData</td>
-</tr>
-<tr>
-<td>snappydata.connection</td>
-<td>localhost:1527</td>
-<td>Specify the <code>host:clientPort</code> combination of the locator for the JDBC connection</td>
-</tr>
-<tr>
-<td>master</td>
-<td>local[*]</td>
-<td>Specify the URI of the spark master (only local/split mode)</td>
-</tr>
-<tr>
-<td>zeppelin.jdbc.concurrent.use</td>
-<td>true</td>
-<td>Specify the Zeppelin scheduler to be used. </br>Select <strong>True</strong> for Fair and <strong>False</strong> for FIFO</td>
-</tr>
-</tbody>
-</table>
-</li>
-<li>
-<p>If required, edit other properties, and then click <strong>Save</strong> to apply your changes.</br></p>
-</li>
-</ol>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>You can modify the default port number of the Zeppelin interpreter by setting the property:</br>
-<code>-zeppelin.interpreter.port=&lt;port_number&gt;</code> in <a href="../../configuring_cluster/configuring_cluster/#configuring-leads">lead node configuration</a>. </p>
-</div>
-<h2 id="additional-settings">Additional Settings</h2>
-<ol>
-<li>
-<p>Create a note and bind the interpreter by setting SnappyData as the default interpreter.</br> SnappyData Zeppelin Interpreter group consist of two interpreters. Click and drag <em>&lt;<em>Interpreter_Name</em>&gt;</em> to the top of the list to set it as the default interpreter.</p>
-<table>
-<thead>
-<tr>
-<th>Interpreter Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>%snappydata.snappydata or </br> %snappydata.spark</td>
-<td>This interpreter is used to write Scala code in the paragraph. SnappyContext is injected in this interpreter and can be accessed using variable <strong>snc</strong></td>
-</tr>
-<tr>
-<td>%snappydata.sql</td>
-<td>This interpreter is used to execute SQL queries on the SnappyData cluster. It also has features of executing approximate queries on the SnappyData cluster.</td>
-</tr>
-</tbody>
-</table>
-</li>
-<li>
-<p>Click <strong>Save</strong> to apply your changes.</p>
-</li>
-</ol>
-<p><heading2> Known Issue</heading2></p>
-<p>If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData 0.8 or future releases, the approximate result does not work on the sample table, when you execute a paragraph with the <code>%sql show-instant-results-first</code> directive.</p>
+<!--- 
+## Step 1: Download, Install and Configure SnappyData
+1. [Download and Install SnappyData](../install/install_on_premise.md#download-snappydata) </br>
+ The table below lists the version of the SnappyData Zeppelin Interpreter and Apache Zeppelin Installer for the supported SnappyData Releases.
+
+    | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
+    |--------|--------|--------|
+    |[Version 0.7.3.6](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.6) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.1.1](https://edelivery.tibco.com)|
+
+2. [Configure the SnappyData Cluster](../configuring_cluster/configuring_cluster.md).
+
+3. In [lead node configuration](../configuring_cluster/configuring_cluster.md#configuring-leads) set the following properties:
+
+    - Enable the SnappyData Zeppelin interpreter by adding `-zeppelin.interpreter.enable=true` 
+
+    - In the classpath option, define the location where the SnappyData Interpreter is downloaded by adding</br>
+    `-classpath=/<download_location>/snappydata-zeppelin-<version_number>.jar`
+
+    - In the **conf/spark-env.sh** file, set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing the [SnappyData Monitoring Console](../monitoring/monitoring.md) from outside the network.
+
+4. [Start the SnappyData cluster](start_snappy_cluster.md).
+
+5. Extract the contents of the Zeppelin binary package. </br> 
+
+6. Install the SnappyData Zeppelin interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
+
+        ./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:<interpreter_version_number> 
+
+    Zeppelin interpreter allows the SnappyData interpreter to be plugged into Zeppelin using which, you can run queries.
+
+7. Rename the **zeppelin-site.xml.template** file (located in zeppelin-<_version_number_>-bin-all/conf directory) to **zeppelin-site.xml**.
+
+8. Edit the **zeppelin-site.xml** file: 
+
+    In the `zeppelin.interpreters` property, add the following interpreter class names: `org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter`
+
+9. Download the predefined SnappyData notebooks [notebook.tar.gz](https://github.com/SnappyDataInc/zeppelin-interpreter/blob/notes/examples/notebook/notebook.tar.gz). </br> Extract and copy the contents of the notebook.tar.gz  compressed file to the **notebook** folder in the Zeppelin installation on your local machine.
+
+10. Start the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`
+
+11. To ensure that the installation is successful, log into the Zeppelin UI (**http://localhost:8080**) from your web browser.
+
+## Step 2: Configure Interpreter Settings
+
+1. Log on to Zeppelin from your web browser and select **Interpreter** from the **Settings** option.
+
+2. Click **Create** to add an interpreter.</br> ![Create](../Images/create_interpreter.png)  
+
+3. From the **Interpreter group** drop-down select **SnappyData**.
+     ![Configure Interpreter](../Images/snappydata_interpreter_properties.png)
+
+    !!! Note
+        If **SnappyData** is not displayed in the **Interpreter group** drop-down list, try the following options, and then restart Zeppelin daemon: 
+
+        * Delete the **interpreter.json** file located in the **conf** directory (in the Zeppelin home directory).
+
+        * Delete the **zeppelin-spark_<_version_number_>.jar** file located in the **interpreter/SnappyData** directory (in the Zeppelin home directory).
+
+
+4. Click the **Connect to existing process** option. The fields **Host** and **Port** are displayed.
+
+5. Specify the host on which the SnappyData lead node is executing, and the SnappyData Zeppelin Port (Default is 3768).
+
+    | Property | Default Values | Description |
+    |--------|--------| -------- |
+    |Host|localhost        |Specify host on which the SnappyData lead node is executing  |
+    |Port        |3768        |Specify the Zeppelin server port  |
+
+6. Configure the interpreter properties. </br>The table lists the properties required for SnappyData.
+
+    | Property | Value | Description |
+    |--------|--------| -------- |
+    |default.url|jdbc:snappydata://localhost:1527/  | Specify the JDBC URL for SnappyData cluster in the format `jdbc:snappydata://<locator_hostname>:1527` |
+    |default.driver|io.snappydata.jdbc.ClientDriver| Specify the JDBC driver for SnappyData|
+    |snappydata.connection|localhost:1527| Specify the `host:clientPort` combination of the locator for the JDBC connection |
+    |master|local[*]| Specify the URI of the spark master (only local/split mode) |
+    |zeppelin.jdbc.concurrent.use|true| Specify the Zeppelin scheduler to be used. </br>Select **True** for Fair and **False** for FIFO | 
+
+7. If required, edit other properties, and then click **Save** to apply your changes.</br>
+
+
+!!! Note
+    You can modify the default port number of the Zeppelin interpreter by setting the property:</br>
+    `-zeppelin.interpreter.port=<port_number>` in [lead node configuration](../configuring_cluster/configuring_cluster.md#configuring-leads). 
+
+## Additional Settings
+
+1. Create a note and bind the interpreter by setting SnappyData as the default interpreter.</br> SnappyData Zeppelin Interpreter group consist of two interpreters. Click and drag *<_Interpreter_Name_>* to the top of the list to set it as the default interpreter.
+
+    | Interpreter Name | Description |
+    |--------|--------|
+    | %snappydata.snappydata or </br> %snappydata.spark | This interpreter is used to write Scala code in the paragraph. SnappyContext is injected in this interpreter and can be accessed using variable **snc** |
+    |%snappydata.sql | This interpreter is used to execute SQL queries on the SnappyData cluster. It also has features of executing approximate queries on the SnappyData cluster.|
+
+2. Click **Save** to apply your changes.
+
+<heading2> Known Issue</heading2>
+
+If you are using SnappyData Zeppelin Interpreter 0.7.1 and Zeppelin Installer 0.7 with SnappyData or future releases, the approximate result does not work on the sample table, when you execute a paragraph with the `%sql show-instant-results-first` directive.
+
+--->
               
             </div>
           </div>
@@ -2395,7 +2457,7 @@
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright © 2017-2019 TIBCO Software Inc. All rights reserved.</p>
+      <p>Copyright © 2017-2020 TIBCO Software Inc. All rights reserved.</p>
     
   </div>
 

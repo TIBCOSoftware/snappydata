@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SparkSQLExecuteImpl - snappydata_2.11 1.1.1 API - io.snappydata.gemxd.SparkSQLExecuteImpl</title>
-          <meta name="description" content="SparkSQLExecuteImpl - snappydata 2.11 1.1.1 API - io.snappydata.gemxd.SparkSQLExecuteImpl" />
-          <meta name="keywords" content="SparkSQLExecuteImpl snappydata 2.11 1.1.1 API io.snappydata.gemxd.SparkSQLExecuteImpl" />
+          <title>SparkSQLExecuteImpl - snappydata_2.11 1.2.0 API - io.snappydata.gemxd.SparkSQLExecuteImpl</title>
+          <meta name="description" content="SparkSQLExecuteImpl - snappydata 2.11 1.2.0 API - io.snappydata.gemxd.SparkSQLExecuteImpl" />
+          <meta name="keywords" content="SparkSQLExecuteImpl snappydata 2.11 1.2.0 API io.snappydata.gemxd.SparkSQLExecuteImpl" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -92,7 +92,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="io.snappydata.gemxd.SparkSQLExecuteImpl#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(sql:String,schema:String,ctx:com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext,senderVersion:com.gemstone.gemfire.internal.shared.Version,pvs:Option[com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet]):io.snappydata.gemxd.SparkSQLExecuteImpl"></a>
+      <a id="&lt;init&gt;(dfObject:AnyRef,sql:String,schema:String,ctx:com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext,senderVersion:com.gemstone.gemfire.internal.shared.Version,pvs:Option[com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet]):io.snappydata.gemxd.SparkSQLExecuteImpl"></a>
       <a id="&lt;init&gt;:SparkSQLExecuteImpl"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -100,10 +100,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SparkSQLExecuteImpl</span><span class="params">(<span name="sql">sql: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ctx">ctx: <span class="extype" name="com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext">LeadNodeExecutionContext</span></span>, <span name="senderVersion">senderVersion: <span class="extype" name="com.gemstone.gemfire.internal.shared.Version">Version</span></span>, <span name="pvs">pvs: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet">ParameterValueSet</span>]</span>)</span>
+        <span class="name">SparkSQLExecuteImpl</span><span class="params">(<span name="dfObject">dfObject: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="sql">sql: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ctx">ctx: <span class="extype" name="com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext">LeadNodeExecutionContext</span></span>, <span name="senderVersion">senderVersion: <span class="extype" name="com.gemstone.gemfire.internal.shared.Version">Version</span></span>, <span name="pvs">pvs: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet">ParameterValueSet</span>]</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.gemxd.SparkSQLExecuteImpl@&lt;init&gt;(sql:String,schema:String,ctx:com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext,senderVersion:com.gemstone.gemfire.internal.shared.Version,pvs:Option[com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet]):io.snappydata.gemxd.SparkSQLExecuteImpl" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.gemxd.SparkSQLExecuteImpl@&lt;init&gt;(dfObject:AnyRef,sql:String,schema:String,ctx:com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext,senderVersion:com.gemstone.gemfire.internal.shared.Version,pvs:Option[com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet]):io.snappydata.gemxd.SparkSQLExecuteImpl" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -221,6 +221,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#io.snappydata.gemxd.SparkSQLExecuteImpl@ctx:com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.gemxd.SparkSQLExecuteImpl#dfObject" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="dfObject:AnyRef"></a>
+      <a id="dfObject:AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dfObject</span><span class="result">: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.gemxd.SparkSQLExecuteImpl@dfObject:AnyRef" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

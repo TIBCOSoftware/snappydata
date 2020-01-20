@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>How to Import Data from Hive Table into SnappyData Table - SnappyData™ 1.1.1</title>
+  <title>How to Import Data from Hive Table into SnappyData Table - SnappyData™ 1.2.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.1.1</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -163,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../quickstart/getting_started_with_your_spark_distribution/">Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../use_apache_zeppelin_with_snappydata/">Using Apache Zeppelin with SnappyData</a>
         
     </li>
 
@@ -425,13 +432,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../store_and_query_json_objects/">How to Store and Query JSON Objects</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../store_and_query_objects/">How to Store and Query Objects</a>
         
     </li>
@@ -453,7 +453,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../use_synopsis_data_engine_to_run_approximate_queries/">How to use Approximate Query Processing (AQP) to Run Approximate Queries</a>
         
     </li>
 
@@ -485,7 +485,7 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#how-to-import-data-from-hive-table-into-snappydata-table">How to Import Data from Hive Table into SnappyData Table</a></li>
+                <li class="toctree-l3"><a href="#how-to-import-data-from-hive-table-into-tibco-computedb-table">How to Import Data from Hive Table into TIBCO ComputeDB Table</a></li>
                 
             
             </ul>
@@ -581,6 +581,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_the_spark_shell_and_spark-submit/">Using the Spark Shell and spark-submit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/using_pyspark_shell/">Using pyspark Shell</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/scala_interpreter/">Executing Spark Scala Code using SQL</a>
         
     </li>
 
@@ -796,19 +810,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
+        <a class="" href="../../connectors/connector/">Working with Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Working with External Data Sources</span></li>
+    <li><span>Working with Data Sources</span></li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        <a class="" href="../../Data/data_formats/">Supported Data Formats</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/access_cloud_data/">Accessing Cloud Storages</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../Data/external_hive_support/">Connecting to External Hive Metastores</a>
         
     </li>
 
@@ -823,6 +851,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
         
     </li>
 
@@ -865,7 +900,21 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/metrics/">Monitoring with Metrics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/recoveringdata/">Recovering Data During Cluster Failures</a>
         
     </li>
 
@@ -1262,7 +1311,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/exec-scala/">exec scala</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/explain/">EXPLAIN</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/grant/">GRANT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/grant-all/">GRANT ALL</a>
         
     </li>
 
@@ -1283,6 +1353,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/list/">LIST</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/pivot/">PIVOT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/put-into/">PUT INTO</a>
         
     </li>
@@ -1291,6 +1375,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/revoke/">REVOKE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/revoke_all/">REVOKE ALL</a>
         
     </li>
 
@@ -1390,6 +1481,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/inbuilt_system_procedures/dsid/">DSID</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/export_ddl/">SYS.EXPORT_DDLS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/export_data/">SYS.EXPORT_DATA</a>
         
     </li>
 
@@ -1504,6 +1609,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/scala-cli/">scala CLI</a>
         
     </li>
 
@@ -2001,6 +2113,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../experimental/">Experimental Features</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
@@ -2072,6 +2191,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../unsupported/">Unsupported Third-Party Modules</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
@@ -2129,7 +2255,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.1.1</a>
+        <a href="../..">SnappyData™ 1.2.0</a>
       </nav>
 
       
@@ -2155,8 +2281,8 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="how-to-import-data-from-hive-table-into-snappydata-table">How to Import Data from Hive Table into SnappyData Table</h1>
-<p>Using a Snappy session, you can read an existing hive tables that are defined in an external hive catalog, use hive tables as external tables from SnappySession for queries, including joins with tables defined in SnappyData catalog,  and also define new Hive table or view to be stored in external hive catalog. Using a SnappySession, you can also define a new hive table or view to be stored in an external hive catalog.</p>
+                <h1 id="how-to-import-data-from-hive-table-into-tibco-computedb-table">How to Import Data from Hive Table into TIBCO ComputeDB Table</h1>
+<p>Using a Snappy session, you can read an existing hive tables that are defined in an external hive catalog, use hive tables as external tables from SnappySession for queries, including joins with tables defined in TIBCO ComputeDB catalog,  and also define new Hive table or view to be stored in external hive catalog. Using a SnappySession, you can also define a new hive table or view to be stored in an external hive catalog.</p>
 <p>When working with Hive, one must instantiate Snappy session with Hive support, including connectivity to a persistent Hive metastore, support for Hive serdes, and Hive user-defined functions.</p>
 <p>If the underlying storage for Hive is HDFS, you can configure Hive with Snappy session. For this, you must place <strong>hive-site.xml</strong>, <strong>core-site.xml</strong> (for security configuration) and <strong>hdfs-site.xml</strong>(for HDFS configuration) files in the <strong>conf/</strong> folder of Snappy. In addition to this, you must configure <strong>spark-env.sh</strong> file into the <strong>conf/</strong> folder.</p>
 <p>The content in the <strong>hadoop_spark-env.sh</strong> file should be as follows:  </p>
@@ -2219,7 +2345,7 @@ snappy-sql&gt; insert into default.t1 select id, concat(id) from range(100);
 </code></pre>
 </li>
 </ol>
-<p>If you have not configure any of the configuration files mentioned above( hive-site.xml, core-site.xml, hdfs-site.xml) and started the Hadoop and Hive daemons, you will see the following error in SnappyData:</p>
+<p>If you have not configure any of the configuration files mentioned above( hive-site.xml, core-site.xml, hdfs-site.xml) and started the Hadoop and Hive daemons, you will see the following error in TIBCO ComputeDB:</p>
 <pre><code>No Datastore found in the Distributed System for 'execution on remote node null'.
 </code></pre>
 
@@ -2240,7 +2366,7 @@ snappy-sql&gt; insert into default.t1 select id, concat(id) from range(100);
 <!---
 **Option 1**
 
-If Hive tables have data stored in Apache Parquet format or Optimized Row Columnar (ORC) format the data can be copied directly into SnappyData tables.
+If Hive tables have data stored in Apache Parquet format or Optimized Row Columnar (ORC) format the data can be copied directly into TIBCO ComputeDB tables.
 
 For example,
 
@@ -2269,7 +2395,7 @@ In above example, 'spark' is of type SparkSession and 'snappy' is of type Snappy
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright © 2017-2019 TIBCO Software Inc. All rights reserved.</p>
+      <p>Copyright © 2017-2020 TIBCO Software Inc. All rights reserved.</p>
     
   </div>
 

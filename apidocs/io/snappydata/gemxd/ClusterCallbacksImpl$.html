@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ClusterCallbacksImpl - snappydata_2.11 1.1.1 API - io.snappydata.gemxd.ClusterCallbacksImpl</title>
-          <meta name="description" content="ClusterCallbacksImpl - snappydata 2.11 1.1.1 API - io.snappydata.gemxd.ClusterCallbacksImpl" />
-          <meta name="keywords" content="ClusterCallbacksImpl snappydata 2.11 1.1.1 API io.snappydata.gemxd.ClusterCallbacksImpl" />
+          <title>ClusterCallbacksImpl - snappydata_2.11 1.2.0 API - io.snappydata.gemxd.ClusterCallbacksImpl</title>
+          <meta name="description" content="ClusterCallbacksImpl - snappydata 2.11 1.2.0 API - io.snappydata.gemxd.ClusterCallbacksImpl" />
+          <meta name="keywords" content="ClusterCallbacksImpl snappydata 2.11 1.2.0 API io.snappydata.gemxd.ClusterCallbacksImpl" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -294,23 +294,25 @@
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="io.snappydata.gemxd.ClusterCallbacksImpl#generateLoadScripts" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="generateLoadScripts(connId:Long):Unit"></a>
-      <a id="generateLoadScripts(Long):Unit"></a>
+    </li><li name="io.snappydata.gemxd.ClusterCallbacksImpl#generateLoadScripts" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="generateLoadScripts(connId:Long,exportPath:String,formatType:String,tablesArr:Seq[String]):Unit"></a>
+      <a id="generateLoadScripts(Long,String,String,Seq[String]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">generateLoadScripts</span><span class="params">(<span name="connId">connId: <span class="extype" name="java.lang.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">generateLoadScripts</span><span class="params">(<span name="connId">connId: <span class="extype" name="java.lang.Long">Long</span></span>, <span name="exportPath">exportPath: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="formatType">formatType: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tablesArr">tablesArr: <a href="../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.gemxd.ClusterCallbacksImpl$@generateLoadScripts(connId:Long):Unit" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.gemxd.ClusterCallbacksImpl$@generateLoadScripts(connId:Long,exportPath:String,formatType:String,tablesArr:Seq[String]):Unit" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">generates spark-shell code which helps user to reload data exported through EXPORT_DATA procedure</p><div class="fullcomment"><div class="comment cmt"><p>generates spark-shell code which helps user to reload data exported through EXPORT_DATA procedure</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="io.snappydata.gemxd.ClusterCallbacksImpl">ClusterCallbacksImpl</a> → ClusterCallbacks</dd></dl></div>
+      <p class="shortcomment cmt">generates spark-shell code which helps user to reload
+data exported through EXPORT_DATA procedure
+</p>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -414,18 +416,18 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="io.snappydata.gemxd.ClusterCallbacksImpl">ClusterCallbacksImpl</a> → ClusterCallbacks</dd></dl></div>
     </li><li name="io.snappydata.gemxd.ClusterCallbacksImpl#getSQLExecute" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getSQLExecute(sql:String,schema:String,ctx:com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext,v:com.gemstone.gemfire.internal.shared.Version,isPreparedStatement:Boolean,isPreparedPhase:Boolean,pvs:com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet):com.pivotal.gemfirexd.internal.snappy.SparkSQLExecute"></a>
-      <a id="getSQLExecute(String,String,LeadNodeExecutionContext,Version,Boolean,Boolean,ParameterValueSet):SparkSQLExecute"></a>
+      <a id="getSQLExecute(df:AnyRef,sql:String,schema:String,ctx:com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext,v:com.gemstone.gemfire.internal.shared.Version,isPreparedStatement:Boolean,isPreparedPhase:Boolean,pvs:com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet):com.pivotal.gemfirexd.internal.snappy.SparkSQLExecute"></a>
+      <a id="getSQLExecute(AnyRef,String,String,LeadNodeExecutionContext,Version,Boolean,Boolean,ParameterValueSet):SparkSQLExecute"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getSQLExecute</span><span class="params">(<span name="sql">sql: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ctx">ctx: <span class="extype" name="com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext">LeadNodeExecutionContext</span></span>, <span name="v">v: <span class="extype" name="com.gemstone.gemfire.internal.shared.Version">Version</span></span>, <span name="isPreparedStatement">isPreparedStatement: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="isPreparedPhase">isPreparedPhase: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="pvs">pvs: <span class="extype" name="com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet">ParameterValueSet</span></span>)</span><span class="result">: <span class="extype" name="com.pivotal.gemfirexd.internal.snappy.SparkSQLExecute">SparkSQLExecute</span></span>
+        <span class="name">getSQLExecute</span><span class="params">(<span name="df">df: <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="sql">sql: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ctx">ctx: <span class="extype" name="com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext">LeadNodeExecutionContext</span></span>, <span name="v">v: <span class="extype" name="com.gemstone.gemfire.internal.shared.Version">Version</span></span>, <span name="isPreparedStatement">isPreparedStatement: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="isPreparedPhase">isPreparedPhase: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="pvs">pvs: <span class="extype" name="com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet">ParameterValueSet</span></span>)</span><span class="result">: <span class="extype" name="com.pivotal.gemfirexd.internal.snappy.SparkSQLExecute">SparkSQLExecute</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../index.html#io.snappydata.gemxd.ClusterCallbacksImpl$@getSQLExecute(sql:String,schema:String,ctx:com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext,v:com.gemstone.gemfire.internal.shared.Version,isPreparedStatement:Boolean,isPreparedPhase:Boolean,pvs:com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet):com.pivotal.gemfirexd.internal.snappy.SparkSQLExecute" title="Permalink" target="_top">
+      <a href="../../../index.html#io.snappydata.gemxd.ClusterCallbacksImpl$@getSQLExecute(df:AnyRef,sql:String,schema:String,ctx:com.pivotal.gemfirexd.internal.snappy.LeadNodeExecutionContext,v:com.gemstone.gemfire.internal.shared.Version,isPreparedStatement:Boolean,isPreparedPhase:Boolean,pvs:com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet):com.pivotal.gemfirexd.internal.snappy.SparkSQLExecute" title="Permalink" target="_top">
         <img src="../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -549,6 +551,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../../org/apache/spark/Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="io.snappydata.gemxd.ClusterCallbacksImpl#isUserAuthorizedForExternalTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isUserAuthorizedForExternalTable(user:String,table:String):Boolean"></a>
+      <a id="isUserAuthorizedForExternalTable(String,String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isUserAuthorizedForExternalTable</span><span class="params">(<span name="user">user: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.gemxd.ClusterCallbacksImpl$@isUserAuthorizedForExternalTable(user:String,table:String):Boolean" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="io.snappydata.gemxd.ClusterCallbacksImpl">ClusterCallbacksImpl</a> → ClusterCallbacks</dd></dl></div>
     </li><li name="io.snappydata.gemxd.ClusterCallbacksImpl#launchExecutor" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="launchExecutor(driverUrl:String,driverDM:com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember):Unit"></a>
       <a id="launchExecutor(String,InternalDistributedMember):Unit"></a>

@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>ServiceUtils - snappydata_2.11 1.1.1 API - io.snappydata.util.ServiceUtils</title>
-          <meta name="description" content="ServiceUtils - snappydata 2.11 1.1.1 API - io.snappydata.util.ServiceUtils" />
-          <meta name="keywords" content="ServiceUtils snappydata 2.11 1.1.1 API io.snappydata.util.ServiceUtils" />
+          <title>ServiceUtils - snappydata_2.11 1.2.0 API - io.snappydata.util.ServiceUtils</title>
+          <meta name="description" content="ServiceUtils - snappydata 2.11 1.2.0 API - io.snappydata.util.ServiceUtils" />
+          <meta name="keywords" content="ServiceUtils snappydata 2.11 1.2.0 API io.snappydata.util.ServiceUtils" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -413,6 +413,25 @@
       </a>
     </span>
       
+    </li><li name="io.snappydata.util.ServiceUtils#maskPasswordsInString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="maskPasswordsInString(str:String):String"></a>
+      <a id="maskPasswordsInString(String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">maskPasswordsInString</span><span class="params">(<span name="str">str: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.util.ServiceUtils$@maskPasswordsInString(str:String):String" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">We capture table ddl string and add it to table properties before adding to catalog.</p><div class="fullcomment"><div class="comment cmt"><p>We capture table ddl string and add it to table properties before adding to catalog.
+This will also contain passwords in the string such as jdbc connection string or
+s3 location etc. This method masks passwords</p></div><dl class="paramcmts block"><dt class="param">str</dt><dd class="cmt"><p>DDL string that might contain jdbc/s3 passwords</p></dd><dt>returns</dt><dd class="cmt"><p>similar string with masked passwords</p></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>

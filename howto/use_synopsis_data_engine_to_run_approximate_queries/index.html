@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>How to use Synopsis Data Engine to Run Approximate Queries - SnappyData™ 1.1.1</title>
+  <title>How to use Approximate Query Processing (AQP) to Run Approximate Queries - SnappyData™ 1.2.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -30,7 +30,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "How to use Synopsis Data Engine to Run Approximate Queries";
+    var mkdocs_page_name = "How to use Approximate Query Processing (AQP) to Run Approximate Queries";
     var mkdocs_page_input_path = "howto/use_synopsis_data_engine_to_run_approximate_queries.md";
     var mkdocs_page_url = "/howto/use_synopsis_data_engine_to_run_approximate_queries/";
   </script>
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.1.1</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -163,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../quickstart/getting_started_with_your_spark_distribution/">Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../use_apache_zeppelin_with_snappydata/">Using Apache Zeppelin with SnappyData</a>
         
     </li>
 
@@ -425,13 +432,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../store_and_query_json_objects/">How to Store and Query JSON Objects</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../store_and_query_objects/">How to Store and Query Objects</a>
         
     </li>
@@ -453,11 +453,11 @@
         
             
     <li class="toctree-l1 current">
-        <a class="current" href="./">How to use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="current" href="./">How to use Approximate Query Processing (AQP) to Run Approximate Queries</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#how-to-use-synopsis-data-engine-to-run-approximate-queries">How to use Synopsis Data Engine to Run Approximate Queries</a></li>
+                <li class="toctree-l3"><a href="#how-to-use-approximate-query-processing-to-run-approximate-queries">How to use Approximate Query Processing to Run Approximate Queries</a></li>
                 
             
             </ul>
@@ -581,6 +581,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_the_spark_shell_and_spark-submit/">Using the Spark Shell and spark-submit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/using_pyspark_shell/">Using pyspark Shell</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/scala_interpreter/">Executing Spark Scala Code using SQL</a>
         
     </li>
 
@@ -796,19 +810,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
+        <a class="" href="../../connectors/connector/">Working with Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Working with External Data Sources</span></li>
+    <li><span>Working with Data Sources</span></li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        <a class="" href="../../Data/data_formats/">Supported Data Formats</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/access_cloud_data/">Accessing Cloud Storages</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../Data/external_hive_support/">Connecting to External Hive Metastores</a>
         
     </li>
 
@@ -823,6 +851,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
         
     </li>
 
@@ -865,7 +900,21 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/metrics/">Monitoring with Metrics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/recoveringdata/">Recovering Data During Cluster Failures</a>
         
     </li>
 
@@ -1262,7 +1311,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/exec-scala/">exec scala</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/explain/">EXPLAIN</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/grant/">GRANT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/grant-all/">GRANT ALL</a>
         
     </li>
 
@@ -1283,6 +1353,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/list/">LIST</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/pivot/">PIVOT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/put-into/">PUT INTO</a>
         
     </li>
@@ -1291,6 +1375,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/revoke/">REVOKE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/revoke_all/">REVOKE ALL</a>
         
     </li>
 
@@ -1390,6 +1481,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/inbuilt_system_procedures/dsid/">DSID</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/export_ddl/">SYS.EXPORT_DDLS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/export_data/">SYS.EXPORT_DATA</a>
         
     </li>
 
@@ -1504,6 +1609,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/scala-cli/">scala CLI</a>
         
     </li>
 
@@ -2001,6 +2113,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../experimental/">Experimental Features</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
@@ -2072,6 +2191,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../unsupported/">Unsupported Third-Party Modules</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
@@ -2129,7 +2255,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.1.1</a>
+        <a href="../..">SnappyData™ 1.2.0</a>
       </nav>
 
       
@@ -2156,11 +2282,11 @@
             <div class="section">
               
                 <p><a id="howto-sde"></a></p>
-<h1 id="how-to-use-synopsis-data-engine-to-run-approximate-queries">How to use Synopsis Data Engine to Run Approximate Queries</h1>
-<p>Synopsis Data Engine (SDE) uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire dataset. The approach trades off query accuracy for fast response time.
-For more information on  SDE, refer to <a href="../../aqp/">SDE documentation</a>.</p>
+<h1 id="how-to-use-approximate-query-processing-to-run-approximate-queries">How to use Approximate Query Processing to Run Approximate Queries</h1>
+<p>Approximate Query Processing (AQP) uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire dataset. The approach trades off query accuracy for fast response time.
+For more information on  AQP, refer to <a href="../../aqp/">AQP documentation</a>.</p>
 <p><strong>Code Example</strong>:
-The complete code example for SDE is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala">SynopsisDataExample.scala</a>. The code below creates a sample table and executes queries that run on the sample table.</p>
+The complete code example for AQP is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala">SynopsisDataExample.scala</a>. The code below creates a sample table and executes queries that run on the sample table.</p>
 <p><strong>Get a SnappySession</strong>:</p>
 <pre><code class="pre">val spark: SparkSession = SparkSession
     .builder
@@ -2187,7 +2313,7 @@ snSession.sql(&quot;CREATE TABLE AIRLINE USING column AS (SELECT Year AS Year_, 
 </code></pre>
 
 <p><strong>Create a sample table for the above base table</strong>:
-Attribute 'qcs' in the statement below specifies the columns used for stratification and attribute 'fraction' specifies how big the sample needs to be (3% of the base table AIRLINE in this case). For more information on Synopsis Data Engine, refer to the <a href="../../aqp/#working-with-stratified-samples">SDE documentation</a>.</p>
+Attribute 'qcs' in the statement below specifies the columns used for stratification and attribute 'fraction' specifies how big the sample needs to be (3% of the base table AIRLINE in this case). For more information on Approximate Query Processing, refer to the <a href="../../aqp/#working-with-stratified-samples">AQP documentation</a>.</p>
 <pre><code class="pre">snSession.sql(&quot;CREATE SAMPLE TABLE AIRLINE_SAMPLE ON AIRLINE OPTIONS&quot; +
     &quot;(qcs 'UniqueCarrier, Year_, Month_', fraction '0.03')  &quot; +
     &quot;AS (SELECT Year_, Month_ , DayOfMonth, &quot; +
@@ -2236,7 +2362,7 @@ snSession.sql(&quot;CREATE TABLE AIRLINEREF USING row AS (SELECT CODE, &quot; +
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright © 2017-2019 TIBCO Software Inc. All rights reserved.</p>
+      <p>Copyright © 2017-2020 TIBCO Software Inc. All rights reserved.</p>
     
   </div>
 

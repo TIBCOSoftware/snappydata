@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>InterpretCodeCommand - snappydata_2.11 1.1.1 API - org.apache.spark.sql.execution.InterpretCodeCommand</title>
-          <meta name="description" content="InterpretCodeCommand - snappydata 2.11 1.1.1 API - org.apache.spark.sql.execution.InterpretCodeCommand" />
-          <meta name="keywords" content="InterpretCodeCommand snappydata 2.11 1.1.1 API org.apache.spark.sql.execution.InterpretCodeCommand" />
+          <title>InterpretCodeCommand - snappydata_2.11 1.2.0 API - org.apache.spark.sql.execution.InterpretCodeCommand</title>
+          <meta name="description" content="InterpretCodeCommand - snappydata 2.11 1.2.0 API - org.apache.spark.sql.execution.InterpretCodeCommand" />
+          <meta name="keywords" content="InterpretCodeCommand snappydata 2.11 1.2.0 API org.apache.spark.sql.execution.InterpretCodeCommand" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">InterpretCodeCommand</span><span class="params">(<span name="code">code: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">InterpretCodeCommand</span><span class="params">(<span name="code">code: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="snappySession">snappySession: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Map.empty</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -95,7 +95,7 @@ State will not be preserved during Lead node failover.</p><p> Application is inj
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.InterpretCodeCommand#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(code:String,options:Map[String,String]):org.apache.spark.sql.execution.InterpretCodeCommand"></a>
+      <a id="&lt;init&gt;(code:String,snappySession:org.apache.spark.sql.SnappySession,options:Map[String,String]):org.apache.spark.sql.execution.InterpretCodeCommand"></a>
       <a id="&lt;init&gt;:InterpretCodeCommand"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -103,10 +103,10 @@ State will not be preserved during Lead node failover.</p><p> Application is inj
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">InterpretCodeCommand</span><span class="params">(<span name="code">code: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span>
+        <span class="name">InterpretCodeCommand</span><span class="params">(<span name="code">code: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="snappySession">snappySession: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Map.empty</span></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.execution.InterpretCodeCommand@&lt;init&gt;(code:String,options:Map[String,String]):org.apache.spark.sql.execution.InterpretCodeCommand" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.InterpretCodeCommand@&lt;init&gt;(code:String,snappySession:org.apache.spark.sql.SnappySession,options:Map[String,String]):org.apache.spark.sql.execution.InterpretCodeCommand" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -510,6 +510,23 @@ evaluate to <code>true</code> for all rows produced.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.InterpretCodeCommand#df" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="df:org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]"></a>
+      <a id="df:Dataset[Row]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">df</span><span class="result">: <a href="../Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.InterpretCodeCommand@df:org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -1335,7 +1352,7 @@ before children).
     </span>
       <p class="shortcomment cmt">Args to the constructor that should be copied, but not transformed.</p><div class="fullcomment"><div class="comment cmt"><p>Args to the constructor that should be copied, but not transformed.
 These are appended to the transformed args automatically by makeCopy</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.plans.logical.Command#output" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.InterpretCodeCommand#output" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]"></a>
       <a id="output:Seq[Attribute]"></a>
       <h4 class="signature">
@@ -1351,7 +1368,7 @@ These are appended to the transformed args automatically by makeCopy</p></div><d
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> → <a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.InterpretCodeCommand">InterpretCodeCommand</a> → <a href="../catalyst/plans/logical/Command.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Command">Command</a> → <a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#outputSet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="outputSet:org.apache.spark.sql.catalyst.expressions.AttributeSet"></a>
       <a id="outputSet:AttributeSet"></a>
@@ -1736,6 +1753,23 @@ can do better should override this function.
       </a>
     </span>
       <p class="shortcomment cmt">ONE line description of this node.</p><div class="fullcomment"><div class="comment cmt"><p>ONE line description of this node.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/plans/QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a> → <a href="../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.InterpretCodeCommand#snappySession" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="snappySession:org.apache.spark.sql.SnappySession"></a>
+      <a id="snappySession:SnappySession"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">snappySession</span><span class="result">: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.InterpretCodeCommand@snappySession:org.apache.spark.sql.SnappySession" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan#statePrefix" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="statePrefix:String"></a>
       <a id="statePrefix:String"></a>

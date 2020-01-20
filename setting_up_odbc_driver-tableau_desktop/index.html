@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Setting Up SnappyData ODBC Driver - SnappyData™ 1.1.1</title>
+  <title>Setting Up SnappyData ODBC Driver - SnappyData™ 1.2.0</title>
   
 
   <link rel="shortcut icon" href="../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> SnappyData™ 1.1.1</a>
+        <a href=".." class="icon icon-home"> SnappyData™ 1.2.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -163,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../quickstart/getting_started_with_your_spark_distribution/">Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../howto/use_apache_zeppelin_with_snappydata/">Using Apache Zeppelin with SnappyData</a>
         
     </li>
 
@@ -425,13 +432,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../howto/store_and_query_json_objects/">How to Store and Query JSON Objects</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../howto/store_and_query_objects/">How to Store and Query Objects</a>
         
     </li>
@@ -453,7 +453,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Approximate Query Processing (AQP) to Run Approximate Queries</a>
         
     </li>
 
@@ -574,6 +574,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../programming_guide/using_the_spark_shell_and_spark-submit/">Using the Spark Shell and spark-submit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../programming_guide/using_pyspark_shell/">Using pyspark Shell</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../programming_guide/scala_interpreter/">Executing Spark Scala Code using SQL</a>
         
     </li>
 
@@ -789,19 +803,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../connectors/connector/">Working with External Data Sources</a>
+        <a class="" href="../connectors/connector/">Working with Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Working with External Data Sources</span></li>
+    <li><span>Working with Data Sources</span></li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        <a class="" href="../Data/data_formats/">Supported Data Formats</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../connectors/access_cloud_data/">Accessing Cloud Storages</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../Data/external_hive_support/">Connecting to External Hive Metastores</a>
         
     </li>
 
@@ -816,6 +844,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
         
     </li>
 
@@ -858,7 +893,21 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../monitoring/metrics/">Monitoring with Metrics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../monitoring/recoveringdata/">Recovering Data During Cluster Failures</a>
         
     </li>
 
@@ -1255,7 +1304,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/exec-scala/">exec scala</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/explain/">EXPLAIN</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../reference/sql_reference/grant/">GRANT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/grant-all/">GRANT ALL</a>
         
     </li>
 
@@ -1276,6 +1346,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/list/">LIST</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/pivot/">PIVOT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../reference/sql_reference/put-into/">PUT INTO</a>
         
     </li>
@@ -1284,6 +1368,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../reference/sql_reference/revoke/">REVOKE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/sql_reference/revoke_all/">REVOKE ALL</a>
         
     </li>
 
@@ -1383,6 +1474,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../reference/inbuilt_system_procedures/dsid/">DSID</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/inbuilt_system_procedures/export_ddl/">SYS.EXPORT_DDLS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/inbuilt_system_procedures/export_data/">SYS.EXPORT_DATA</a>
         
     </li>
 
@@ -1497,6 +1602,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../reference/command_line_utilities/store-run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../reference/command_line_utilities/scala-cli/">scala CLI</a>
         
     </li>
 
@@ -2005,6 +2117,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../experimental/">Experimental Features</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
@@ -2076,6 +2195,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../unsupported/">Unsupported Third-Party Modules</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
@@ -2133,7 +2259,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">SnappyData™ 1.1.1</a>
+        <a href="..">SnappyData™ 1.2.0</a>
       </nav>
 
       
@@ -2160,7 +2286,6 @@
             <div class="section">
               
                 <h1 id="setting-up-tibco-computedb-odbc-driver">Setting Up TIBCO ComputeDB ODBC Driver</h1>
-<p><ent>This feature is available only in the Enterprise version of SnappyData, which is called TIBCO ComputeDB Enterprise Edition. </br></ent></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <ul>
@@ -2175,10 +2300,10 @@
 <h2 id="step-1-install-the-tibco-computedb-odbc-driver">Step 1: Install the TIBCO ComputeDB ODBC Driver</h2>
 <ol>
 <li>
-<p><a href="../install/#download-snappydata">Download the TIBCO ComputeDB 1.1.1 Enterprise Edition</a>.</p>
+<p><a href="../install/#download-snappydata">Download the TIBCO ComputeDB 1.2.0 Enterprise Edition</a>.</p>
 </li>
 <li>
-<p>Click <strong>ODBC INSTALLERS</strong> to download the <strong>TIB_compute-odbc_1.1.1_win.zip</strong> file.</p>
+<p>Click <strong>ODBC INSTALLERS</strong> to download the <strong>TIB_compute-odbc_1.2.0_win.zip</strong> file.</p>
 </li>
 <li>
 <p>Follow <a href="../howto/connect_using_odbc_driver/">steps 1 and 2</a> to install the TIBCO ComputeDB ODBC driver.</p>
@@ -2190,7 +2315,7 @@
 <li>
 <p>Open the <strong>ODBC Data Source Administrator</strong> window:</p>
 <p>a. On the <strong>Start</strong> page, type ODBC Data Sources, and select <strong>Set up ODBC data sources</strong> from the list or select <strong>ODBC Data Sources</strong> in the <strong>Administrative Tools</strong>.</p>
-<p>b. Based on your Windows installation, open <strong>ODBC Data Sources (64-bit)</strong> or <strong>ODBC Data Sources (32-bit)</strong></p>
+<p>b.  Based on your Windows installation, open ODBC Data Sources (64-bit) or ODBC Data Sources (32-bit).</p>
 </li>
 <li>
 <p>In the <strong>ODBC Data Source Administrator</strong> window, select either the <strong>User DSN</strong> or <strong>System DSN</strong> tab. </p>
@@ -2203,35 +2328,66 @@
 </li>
 <li>
 <p>The <strong>TIBCO ComputeDB ODBC Configuration</strong> dialog is displayed. </br>Enter the following details to create a DSN:</p>
-<ul>
-<li>
-<p><strong>Data Source Name</strong>: Name of the Data Source. For example, <em>snappydsn</em>.  </p>
-</li>
-<li>
-<p><strong>Server (Hostname or IP)</strong>: IP address of the data server which is running in the TIBCO ComputeDB cluster.</p>
-</li>
-<li>
-<p><strong>Port</strong>: Port number of the server. By default, it is <strong>1528</strong> for the first data server in the cluster, if all the nodes in the cluster are started on the same machine.</p>
-</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>ODBC driver cannot connect to the locator and must connect directly to one of the servers. Therefore, in cases where you start a cluster with multiple nodes on different machines and if the server and locator are collocated on a specific machine, then the port number of the server would be higher than that of the locator port which will be 1528. In case the locator is not collocated with the server on a machine then the server port will be 1527.</p>
-</div>
-<ul>
-<li>
-<p><strong>Login ID</strong>: The login ID required to connect to the server. For example, <em>app</em></p>
-</li>
-<li>
-<p><strong>Password</strong>: The password required to connect to the server. For example, <em>app</em></p>
-</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Data Source Name</strong></td>
+<td>Name of the Data Source. For example, <em>snappydsn</em>.</td>
+</tr>
+<tr>
+<td><strong>Server (Hostname or IP)</strong></td>
+<td>IP address of the data server which is running in the TIBCO ComputeDB cluster.</td>
+</tr>
+<tr>
+<td><strong>Port</strong></td>
+<td>Port number of the server. By default, it is <strong>1528</strong> for the first data server in the cluster, if all the nodes in the cluster are started on the same machine.</td>
+</tr>
+<tr>
+<td><strong>Login ID</strong></td>
+<td>The login ID required to connect to the server. For example, <em>app</em></td>
+</tr>
+<tr>
+<td><strong>Password</strong></td>
+<td>The password required to connect to the server. For example, <em>app</em></td>
+</tr>
+<tr>
+<td><strong>AQP</strong></td>
+<td>Checks the AQP checkbox for aqp queries:</br> <strong>Error</strong>: Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1.</br> <strong>Confidence</strong>: Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br><strong>Behavior</strong>: The action to be taken if the error computed goes outside the error tolerance limit.</td>
+</tr>
+<tr>
+<td><a href="#enabssl"><strong>Enable SSL</strong></a></td>
+<td>If you are connecting to a TIBCO ComputeDB cluster that has Secure Sockets Layer (SSL) enabled, you can configure the driver for connecting.</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="ODBC DSN UI" src="../Images/odbc_dsnUI.png" /></p>
 </li>
 </ol>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Ensure that you provide the IP Address/Host Name and Port number of the data server. If you provide the details of the locator, the connection fails. </p>
+<p>ODBC driver cannot connect to the locator and must connect directly to one of the servers. Therefore, in cases where you start a cluster with multiple nodes on different machines and if the server and locator are collocated on a specific machine, then the port number of the server would be higher than that of the locator port which will be 1528. In case the locator is not collocated with the server on a machine then the server port will be 1527. </br></br>Ensure that you provide the IP Address/Host Name and Port number of the data server. If you provide the details of the locator, the connection fails. </p>
 </div>
+<p><a id="enabssl"></a></p>
+<h3 id="enabling-ssl">Enabling SSL</h3>
+<p>The following instructions describe how to configure SSL in a DSN:</p>
+<ol>
+<li>Select the <strong>Enable SSL</strong> checkbox.</li>
+<li>To allow authentication using self-signed trusted certificates, specify the full path of the PEM file containing the self trusted certificate. For a self-signed trusted certificate, a common host name should match.</li>
+<li>To configure two-way SSL verification, select the Two Way SSL checkbox and then do the following:<ul>
+<li>In the <strong>Trusted Certificate file</strong> field, specify the full path of the PEM file containing the CA-certificate.</li>
+<li>In the <strong>Client Certificate File</strong> field, specify the full path of the PEM file containing the client's certificate.</li>
+<li>In the <strong>Client Private Key File</strong> field, specify the full path of the file containing the client's private key.</li>
+<li>In the <strong>Client Private key password </strong>field, provide the private key password.</li>
+<li>Enter the <strong>ciphers</strong> that you want to use. This is an optional input. If left empty then default ciphers are <code>"ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH"</code></li>
+</ul>
+</li>
+</ol>
 <p>For information about connecting Tableau using TIBCO ComputeDB ODBC Driver, refer to <a href="../howto/tableauconnect/#odbcdritab">Connect Tableau using ODBC Driver</a></p>
               
             </div>
@@ -2243,7 +2399,7 @@
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright © 2017-2019 TIBCO Software Inc. All rights reserved.</p>
+      <p>Copyright © 2017-2020 TIBCO Software Inc. All rights reserved.</p>
     
   </div>
 

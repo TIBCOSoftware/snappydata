@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Working with Stratified Samples - SnappyData™ 1.1.1</title>
+  <title>Working with Stratified Samples - SnappyData™ 1.2.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.1.1</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -163,6 +163,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../quickstart/getting_started_with_your_spark_distribution/">Spark Distribution</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../howto/use_apache_zeppelin_with_snappydata/">Using Apache Zeppelin with SnappyData</a>
         
     </li>
 
@@ -425,13 +432,6 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/store_and_query_json_objects/">How to Store and Query JSON Objects</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
         <a class="" href="../../howto/store_and_query_objects/">How to Store and Query Objects</a>
         
     </li>
@@ -453,7 +453,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Synopsis Data Engine to Run Approximate Queries</a>
+        <a class="" href="../../howto/use_synopsis_data_engine_to_run_approximate_queries/">How to use Approximate Query Processing (AQP) to Run Approximate Queries</a>
         
     </li>
 
@@ -574,6 +574,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../programming_guide/using_the_spark_shell_and_spark-submit/">Using the Spark Shell and spark-submit</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/using_pyspark_shell/">Using pyspark Shell</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../programming_guide/scala_interpreter/">Executing Spark Scala Code using SQL</a>
         
     </li>
 
@@ -800,19 +814,33 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/connector/">Working with External Data Sources</a>
+        <a class="" href="../../connectors/connector/">Working with Data Sources</a>
         
     </li>
 <li>
           
             <li>
     <ul class="subnav">
-    <li><span>Working with External Data Sources</span></li>
+    <li><span>Working with Data Sources</span></li>
 
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
+        <a class="" href="../../Data/data_formats/">Supported Data Formats</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/access_cloud_data/">Accessing Cloud Storages</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../Data/external_hive_support/">Connecting to External Hive Metastores</a>
         
     </li>
 
@@ -827,6 +855,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../connectors/cdc_connector/">Using the SnappyData CDC (Change Data Capture) Connector</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../connectors/deployment_dependency_jar/">Deploying Third Party Connectors</a>
         
     </li>
 
@@ -869,7 +904,21 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/metrics/">Monitoring with Metrics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../monitoring/monitor-manage/">Getting Information from SnappyData System Tables</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../monitoring/recoveringdata/">Recovering Data During Cluster Failures</a>
         
     </li>
 
@@ -1266,7 +1315,28 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/exec-scala/">exec scala</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/explain/">EXPLAIN</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/grant/">GRANT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/grant-all/">GRANT ALL</a>
         
     </li>
 
@@ -1287,6 +1357,20 @@
         
             
     <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/list/">LIST</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/pivot/">PIVOT</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/put-into/">PUT INTO</a>
         
     </li>
@@ -1295,6 +1379,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/sql_reference/revoke/">REVOKE</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/sql_reference/revoke_all/">REVOKE ALL</a>
         
     </li>
 
@@ -1394,6 +1485,20 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/inbuilt_system_procedures/dsid/">DSID</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/export_ddl/">SYS.EXPORT_DDLS</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/inbuilt_system_procedures/export_data/">SYS.EXPORT_DATA</a>
         
     </li>
 
@@ -1508,6 +1613,13 @@
             
     <li class="toctree-l1 ">
         <a class="" href="../../reference/command_line_utilities/store-run/">run</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/command_line_utilities/scala-cli/">scala CLI</a>
         
     </li>
 
@@ -2005,6 +2117,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../experimental/">Experimental Features</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../troubleshooting/troubleshooting/">Troubleshooting Common Problems</a>
         
     </li>
@@ -2076,6 +2195,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../unsupported/">Unsupported Third-Party Modules</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../additional_files/open_source_components/">Community Edition/ Enterprise Edition Features</a>
         
     </li>
@@ -2133,7 +2259,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.1.1</a>
+        <a href="../..">SnappyData™ 1.2.0</a>
       </nav>
 
       
@@ -2160,55 +2286,58 @@
             <div class="section">
               
                 <h1 id="working-with-stratified-samples">Working with Stratified Samples</h1>
-<p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> </p>
+<p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
 <h2 id="create-sample-tables">Create Sample Tables</h2>
-<p>You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark DataFrames, or sourced from an external data source such as S3 or HDFS. </p>
-<p>Here is an SQL based example to create a sample on tables locally available in the SnappyData cluster. </p>
+<p>You can create sample tables on datasets that can be sourced from any source supported in Spark/TIBCO ComputeDB. For instance, these can be TIBCO ComputeDB in-memory tables, Spark DataFrames, or sourced from an external data source such as S3 or HDFS.
+Creation of sample table will implicitly sample the data from the base table.</p>
+<p>Here is an SQL based example to create a sample on tables locally available in the TIBCO ComputeDB cluster. </p>
 <pre><code class="pre">CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI 
-  OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') 
-  AS (SELECT * FROM NYCTAXI);
+  OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01'); 
+
 
 CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE 
-  OPTIONS (qcs 'hack_license', fraction '0.01') 
-  AS (SELECT * FROM TAXIFARE);
+  OPTIONS (qcs 'hack_license', fraction '0.01');
 </code></pre>
 
 <p>Often your data set is too large to also fit in available cluster memory. If so, you can create an external table pointing to the source. 
 In this example below, a sample table is created for an S3 (external) dataset:</p>
 <pre><code class="pre">CREATE EXTERNAL TABLE TAXIFARE USING parquet 
-  OPTIONS(path 's3a://&lt;AWS_SECRET_ACCESS_KEY&gt;:&lt;AWS_ACCESS_KEY_ID&gt;@zeppelindemo/nyctaxifaredata_cleaned');
+  OPTIONS(path 's3a://&lt;AWS_SECRET_ACCESS_KEY&gt;:&lt;AWS_ACCESS_KEY_ID&gt;@computedb-test-data/nyctaxifaredata_cleaned');
 //Next, create the sample sourced from this table ..
 CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE 
-  options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
+  options  (qcs 'hack_license', fraction '0.01');
 </code></pre>
 
-<p>When creating a base table, if you have applied the <strong>partition by</strong> clause, the clause is also applied to the sample table. The sample table also inherits the <strong>number of buckets</strong>, <strong>redundancy</strong> and <strong>persistence</strong> properties from the base table.</p>
+<p>When creating a base table, if you have applied the <strong>partition by</strong> clause, the clause is also applied to the sample table.</p>
 <p>For sample tables, the <strong>overflow</strong> property is set to <strong>False</strong> by default. (For row and column tables the default value is  <strong>True</strong>). </p>
 <p>For example:</p>
 <pre><code class="pre">CREATE TABLE BASETABLENAME &lt;column details&gt; 
-USING COLUMN OPTIONS (partition_by '&lt;column_name_a&gt;', Buckets '8', Redundancy '1')
+USING COLUMN OPTIONS (partition_by '&lt;column_name_a&gt;', Buckets '7', Redundancy '1')
 
 CREATE TABLE SAMPLETABLENAME &lt;column details&gt; 
 USING COLUMN_SAMPLE OPTIONS (qcs '&lt;column_name_b&gt;',fraction '0.05', 
 strataReservoirSize '50', baseTable 'baseTableName')
-// In this case, sample table 'sampleTableName' is partitioned by column 'column_name_a', has 7 buckets and 1 redundancy.
+
 </code></pre>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <ul>
-<li>
-<p>After a sample table is created from a base table, any changes to the base table (for example update and delete operations) is not automatically applied to the sample table.</p>
+<li>After a sample table is created from a base table, any changes to the base table, (for example update and delete operations) is not automatically applied to the sample table.</li>
+<li>Howerver, if the data is populated in the main table using any of the following ways:<ul>
+<li>dataFrame.write</li>
+<li>Using JDBC API batch insert</li>
+<li>Insert into table values select * from x
+Then the data is also sampled and put into sample table(s) if exists.</li>
+</ul>
 </li>
-<li>
-<p>For successful creation of sample tables, the number of buckets in the sample table should be more than the number of nodes in the cluster. </p>
-</li>
+<li>For successful creation of sample tables, the number of buckets in the sample table should be more than the number of nodes in the cluster. </li>
 </ul>
 </div>
 <h2 id="qcs-query-column-set-and-sample-selection">QCS (Query Column Set) and Sample Selection</h2>
 <p>For stratified samples, you are required to specify the columns used for stratification(QCS) and how big the sample needs to be (fraction). </p>
 <p>QCS, which stands for Query Column Set is typically the most commonly used dimensions in your query GroupBy/Where and Having clauses. A QCS can also be constructed using SQL expressions - for instance, using a function like <code>hour (pickup_datetime)</code>.</p>
-<p>The parameter <em>fraction</em> represents the fraction of the full population that is managed in the sample. Intuition tells us that higher the fraction, more accurate the answers. But, interestingly, with large data volumes, you can get pretty accurate answers with a very small fraction. With most data sets that follow a normal distribution, the error rate for aggregations exponentially drops with the fraction. So, at some point, doubling the fraction does not drop the error rate. SDE always attempts to adjust its sampling rate for each stratum so that there is enough representation for all sub-groups. 
+<p>The parameter <em>fraction</em> represents the fraction of the full population that is managed in the sample. Intuition tells us that higher the fraction, more accurate the answers. But, interestingly, with large data volumes, you can get pretty accurate answers with a very small fraction. With most data sets that follow a normal distribution, the error rate for aggregations exponentially drops with the fraction. So, at some point, doubling the fraction does not drop the error rate. AQP always attempts to adjust its sampling rate for each stratum so that there is enough representation for all sub-groups. 
 For instance, in the above example, taxi drivers that have very few records may actually be sampled at a rate much higher than 1% while very active drivers (a lot of records) is automatically sampled at a lower rate. The algorithm always attempts to maintain the overall 1% fraction specified in the 'create sample' statement. </p>
 <p>One can create multiple sample tables using different sample QCS and sample fraction for a given base table. </p>
 <p>Here are some general guidelines to use when creating samples:</p>
@@ -2243,7 +2372,7 @@ For instance, in the above example, taxi drivers that have very few records may 
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright © 2017-2019 TIBCO Software Inc. All rights reserved.</p>
+      <p>Copyright © 2017-2020 TIBCO Software Inc. All rights reserved.</p>
     
   </div>
 
