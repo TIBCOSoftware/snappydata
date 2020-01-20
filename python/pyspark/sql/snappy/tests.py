@@ -132,6 +132,15 @@ class SnappyContextTests(ReusedPySparkTestCase):
         sparkSession.read.csv(csvPath).write.insertInto(tableName = SnappyContextTests.tablename)
         self.drop_table()
 
+    def test_create_table_without_schema(self):
+        self.drop_table(True)
+        snappy = SnappySession(self.sc)
+        #should use default provider which is parquet and schema will be picked from parquet file
+        parquetPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../test_support/kv.parquet")
+        snappy.createTable(SnappyContextTests.tablename, path = parquetPath)
+        self.verify_table_rows(3)
+        self.drop_table()
+
     def put_table(self):
         sparkSession = SnappySession(self.sc)
         newrow = ((1, 2, 3), (2, 3, 4))
