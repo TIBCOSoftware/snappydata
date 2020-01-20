@@ -1,5 +1,5 @@
 <a id="getting-started-with-docker-image"></a>
-# Getting Started with Docker Image
+# Building a Docker Image with SnappyData Binaries
 
 The following instructions outline how to build a Docker image if you have the binaries of SnappyData.</br>
 
@@ -26,6 +26,9 @@ $ docker run hello-world
 ## Building Docker Image of SnappyData</br>
 
 You can use the Dockerfile that is provided and create your own Docker image of SnappyData. Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) script and place it into a directory. The Dockerfile contains a link to the latest SnappyData OSS version to build the image.
+
+!!!Note
+	To download the Dockerfile on Linux or MAC, use the wget command. </br>` wget https://raw.githubusercontent.com/SnappyDataInc/snappy-cloud-tools/master/docker/Dockerfile`
 
 Move into the directory containing the downloaded Dockerfile and then run the Docker build command with the required details to build the Docker image. You can create an image using any one of the following options:
 
@@ -54,10 +57,10 @@ The following command builds an image with tag `latest`:
 $ docker build -t myrepo/snappydata .
 ```
 
-The following command builds an image with tag `1.1.1 `:
+The following command builds an image with tag `1.2.0 `:
 
 ```
-$ docker build -t myrepo/snappydata:1.1.1 .
+$ docker build -t myrepo/snappydata:1.2.0 .
 ```
 
 <a id="builddockerurl"></a>
@@ -74,7 +77,7 @@ $ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] . --build-a
 For example:
 
 ```
-$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.1/snappydata-1.1.1-bin.tar.gz
+$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=https://github.com/SnappyDataInc/snappydata/releases/download/v1.2.0/snappydata-1.2.0-bin.tar.gz
 ```
 
 <a id="builddockerimageslocal"></a>
@@ -92,7 +95,7 @@ $ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] . --build-a
 For example:
 
 ```
-$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=snappydata-1.1.1-bin.tar.gz
+$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=snappydata-1.2.0-bin.tar.gz
 ```
 
 
