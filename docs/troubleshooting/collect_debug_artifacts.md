@@ -1,4 +1,4 @@
-# Collecting logs, stats and dumps using the collect-debug-artifacts script
+# Collecting Logs, Stats, and Dumps using the collect-debug-artifacts script
 
 This section uses the term 'node' frequently. A node denotes a server or a locator member when a purely SnappyData system is there. In a SnappyData distributed system a node can mean server, locator or lead member.
 
@@ -66,3 +66,5 @@ Options:
 
            Timestamp format: YYYY-MM-DD HH:MM[:SS]
 
+
+For offline analysis, as the production logs can be pretty huge and not easily sharable, you can provide a list of patterns which can be excluded for collection. A list of patterns can be specified in the **conf** > **debug.conf** file. Before doing this, you must rename the **debug.conf.template** file to **debug.conf**. The lines matching those patterns will be ignored by the script and excluded for collection.
