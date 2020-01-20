@@ -166,7 +166,7 @@ object SmartConnectorUDAFValidation {
         snc.sql(UDAFUtils.dropUDAF)
 
         try {
-          pw.println("Testing : Multiple UDF in select statement")
+          pw.println("Testing : Multiple UDAF in select statement")
           snc.sql(UDAFUtils.dropUDAF)
           snc.sql(UDAFUtils.dropCleverUDAF)
           snc.sql(UDAFUtils.dropDullUDAF)
