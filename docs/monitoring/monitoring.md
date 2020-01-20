@@ -21,6 +21,8 @@ The following topics are covered in this section:
 
 * [Jobs](#jobs)
 
+* [Structured Streaming](#structuredstream)
+
 * [Stages](#stages)
 
 * [Spark Cache](#spark_cache)
@@ -268,7 +270,7 @@ On this page, you can view the total time required for all the tasks in a job to
 	*	The **Structured Streaming** tab is available in the Embedded mode as well as in the Smart Connector mode. However, in the Smart Connector mode, this tab is visible only if you use the Snappy-Spark distribution. In case you use the upstream or stock spark distribution, then the **Structured Streaming** tab will not be visible. 
 	*	Only those streaming queries that are started using SnappySession will be available for monitoring on the UI. Queries that are started using SparkSession won't be available for monitoring on the UI.
 
-You can view the **Structured Streaming** tab only for the monitoring console of the corresponding cluster. For example, if you submit a streaming query on the embedded cluster using snappy-job, then the **Structured Streaming** tab is available on the monitoring console of the embedded cluster. If you submit a streaming query as a Smart Connector job, on a separate spark cluster, then the **Structured Streaming** tab is available on the monitoring console of the Spark cluster where the Smart Connector job is submitted.
+You can view the **Structured Streaming** tab only for the monitoring console of the corresponding cluster. For example, if you submit a streaming query on the embedded cluster using [snappy-job](/programming_guide/snappydata_jobs.md), then the **Structured Streaming** tab is available on the monitoring console of the embedded cluster. If you submit a streaming query as a Smart Connector job, on a separate spark cluster, then the **Structured Streaming** tab is available on the monitoring console of the Spark cluster where the Smart Connector job is submitted.
 
 The following details are shown on the **Structured Streaming** tab:
 
@@ -283,7 +285,7 @@ The following details are shown on the **Structured Streaming** tab:
 |**Uptime**| Total time that has passed since the streaming has started.|
 |**Trigger** **Interval**| Time interval on which successive batch is expected to start it’s execution. Each event is fired on this interval but each event may or may not have batches to process.|
 |**Batches Processed**| Total number of batches processed since streaming query has been started.|  
-|**Status**| Status can be **Active** or **Inactive**.</br> *	**Active**: Query is running </br> *	**Inactive**: Query has stopped or failed|
+|**Status**| Status can be **Active** or **Inactive**.</br> *	**Active**: Query is running. </br> *	**Inactive**: Query has stopped or failed.|
 |**Total Input Records**| Total count of records received from the sources and processed since the streaming query has been started.|
 |**Current Input Rate**| Number of input records per second in a batch, which has been received in the current event trigger. This value is the number of records received between the start time of previous event and start time of current event and divided by the number of seconds between these two events.|
 |**Current Processing Rate**|Average input records processed per second. This value is number of input records processed per second between the start time and the end time of the current event.|
