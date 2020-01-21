@@ -42,6 +42,7 @@ class MapType extends SnappySQLJob{
     val dataLocation = jobConfig.getString("dataFilesLocation")
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
     val printContent : Boolean = false
+    val isExecute : Boolean = false
 
     snc.sql("DROP TABLE IF EXISTS TempStRecord")
     snc.sql("DROP TABLE IF EXISTS StudentMarksRecord")
@@ -53,12 +54,18 @@ class MapType extends SnappySQLJob{
     snc.sql("CREATE TABLE IF NOT EXISTS StudentMarksRecord USING COLUMN " +
       "AS (SELECT * FROM TempStRecord)")
 
+   /**
+     * No need to execute below queries because validation routine runs it.
+     * Keep it here for ready reference.
+     */
+    if(isExecute) {
     snc.sql(ComplexTypeUtils.Map_Q1)
     snc.sql(ComplexTypeUtils.Map_Q2)
     snc.sql(ComplexTypeUtils.Map_Q3)
     snc.sql(ComplexTypeUtils.Map_Q4)
     snc.sql(ComplexTypeUtils.Map_Q5)
     snc.sql(ComplexTypeUtils.Map_Q6)
+    }
 
     if(printContent) {
       println("snc Map_Q1:" + snc.sql(ComplexTypeUtils.Map_Q1).show)

@@ -44,6 +44,9 @@ object SmartConnectorArraysOfStructType {
         "_" + "column" + System.currentTimeMillis())
       , false))
     val printContent : Boolean = true
+    //  Keep the isExecute value true because in validation
+    // routine there is a Hydra Exception which needs to be fixed.
+    val isExecute : Boolean = true
 
     /* --- Snappy Job --- */
     snc.sql("DROP TABLE IF EXISTS TwoWheeler")
@@ -54,11 +57,13 @@ object SmartConnectorArraysOfStructType {
     snc.sql("CREATE TABLE IF NOT EXISTS TwoWheeler USING COLUMN " +
       "AS (SELECT * FROM TempBike)")
 
+    if(isExecute) {
     snc.sql(ComplexTypeUtils.ArraysOfStruct_Q1)
     snc.sql(ComplexTypeUtils.ArraysOfStruct_Q2)
     snc.sql(ComplexTypeUtils.ArraysOfStruct_Q3)
     snc.sql(ComplexTypeUtils.ArraysOfStruct_Q4)
     snc.sql(ComplexTypeUtils.ArraysOfStruct_Q5)
+    }
 
     if(printContent) {
       println("snc : ArraysOfStruct_Q1  " + (snc.sql(ComplexTypeUtils.ArraysOfStruct_Q1).show()))

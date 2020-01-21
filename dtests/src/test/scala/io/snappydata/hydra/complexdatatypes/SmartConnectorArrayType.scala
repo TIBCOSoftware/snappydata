@@ -44,6 +44,7 @@ object SmartConnectorArrayType {
       new File("ValidateSmartConnectorArrayType" + "_" + "column" + System.currentTimeMillis())
       , false))
     val printContent : Boolean = false
+    val isExecute : Boolean = false
 
     /* --- Snappy Job --- */
     snc.sql("DROP TABLE IF EXISTS Student")
@@ -54,12 +55,18 @@ object SmartConnectorArrayType {
       "OPTIONS(path  '" + dataLocation + "')")
     snc.sql("CREATE TABLE Student USING COLUMN AS (SELECT * FROM TempArray)")
 
+    /**
+      * No need to execute below queries because validation routine runs it.
+      * Keep it here for ready reference.
+      */
+    if(isExecute) {
     snc.sql(ComplexTypeUtils.Array_Q1)
     snc.sql(ComplexTypeUtils.Array_Q2)
     snc.sql(ComplexTypeUtils.Array_Q3)
     snc.sql(ComplexTypeUtils.Array_View)
     snc.sql(ComplexTypeUtils.Array_Q4)
     snc.sql(ComplexTypeUtils.Array_Q5)
+    }
 
     if(printContent) {
       println(snc.sql(ComplexTypeUtils.Array_Q1).show())
