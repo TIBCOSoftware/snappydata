@@ -44,6 +44,7 @@ object SmartConnectorArraysOfStringInMapAsValue {
         "_" + "column" + System.currentTimeMillis())
       , false))
     val printContent : Boolean = false
+    val isExecute : Boolean = false
 
     /* --- Snappy Job --- */
     snc.sql("DROP TABLE IF EXISTS TempFamousPeople")
@@ -56,10 +57,16 @@ object SmartConnectorArraysOfStringInMapAsValue {
     val fp = snc.sql(  "CREATE TABLE IF NOT EXISTS FamousPeople " +
       "USING COLUMN AS (SELECT * FROM TempFamousPeople)")
 
+    /**
+      * No need to execute below queries because validation routine runs it.
+      * Keep it here for ready reference.
+      */
+    if(isExecute) {
     snc.sql(ComplexTypeUtils.Array_Map_TempView)
     snc.sql(ComplexTypeUtils.Array_Map_Q1)
     snc.sql(ComplexTypeUtils.Array_Map_Q2)
     snc.sql(ComplexTypeUtils.Array_Map_Q3)
+    }
 
     if(printContent) {
       println("snc : Array_Map_Q1 " + snc.sql(ComplexTypeUtils.Array_Map_Q1).show)

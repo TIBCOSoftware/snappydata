@@ -37,6 +37,7 @@ class AllMixedTypes extends SnappySQLJob{
     val sc : SparkContext = SparkContext.getOrCreate()
     val sqlContext : SQLContext = SQLContext.getOrCreate(sc)
     val printContent : Boolean = false
+    val isExecute : Boolean = false
 
     def getCurrentDirectory : String = new File(".").getCanonicalPath
     val outputFile : String = "ValidateAllMixedTypes" + "_" + "column" +
@@ -53,11 +54,17 @@ class AllMixedTypes extends SnappySQLJob{
     snc.sql("CREATE TABLE IF NOT EXISTS TwentyTwenty USING COLUMN " +
       "AS (SELECT * FROM TempTwenty)")
 
+    /**
+      * No need to execute below queries because validation routine runs it.
+      * Keep it here for ready reference.
+      */
+    if(isExecute) {
     snc.sql(ComplexTypeUtils.Mixed_Q1)
     snc.sql(ComplexTypeUtils.Mixed_Q2)
     snc.sql(ComplexTypeUtils.Mixed_Q3)
     snc.sql(ComplexTypeUtils.Mixed_Q4)
     snc.sql(ComplexTypeUtils.Mixed_Q5)
+    }
 
     if(printContent) {
       println("snc : Mixed_Q1 " + (snc.sql(ComplexTypeUtils.Mixed_Q1).show))

@@ -43,6 +43,7 @@ object SmartConnectorAllMixedType {
       new File("ValidateSmartConnectorAllMixedType" + "_" + "column" + System.currentTimeMillis())
       , false))
     val printContent : Boolean = false
+    val isExecute : Boolean = false
 
     /* --- Snappy Job --- */
     snc.sql("DROP TABLE IF EXISTS TwentyTwenty")
@@ -53,11 +54,17 @@ object SmartConnectorAllMixedType {
     snc.sql("CREATE TABLE IF NOT EXISTS TwentyTwenty USING COLUMN " +
       "AS (SELECT * FROM TempTwenty)")
 
+    /**
+      * No need to execute below queries because validation routine runs it.
+      * Keep it here for ready reference.
+      */
+    if(isExecute) {
     snc.sql(ComplexTypeUtils.Mixed_Q1)
     snc.sql(ComplexTypeUtils.Mixed_Q2)
     snc.sql(ComplexTypeUtils.Mixed_Q3)
     snc.sql(ComplexTypeUtils.Mixed_Q4)
     snc.sql(ComplexTypeUtils.Mixed_Q5)
+    }
 
     if(printContent) {
       println("snc : Mixed_Q1 " + (snc.sql(ComplexTypeUtils.Mixed_Q1).show))
