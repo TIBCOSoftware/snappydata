@@ -134,6 +134,37 @@ object ComplexTypeUtils {
     "SELECT name,History['history'] AS marks FROM StudentMarksRecord) " +
     "GROUP BY name"
 
+  /* -----   Map Type NULL Value Queries   ----- */
+  val createTableLastColumnMapType = "create table if not exists st.MapTypeLast" +
+    "(rollno int,name String, test Map<String,String>) using column"
+  val createTableMiddleColumnMapType = "create table if not exists st.MapTypeMiddle" +
+    "(rollno int, test Map<Int,Double>, name String, class int) using column"
+  val createTableFirstColumnMapType = "create table if not exists st.MapTypeFirst" +
+    "(Record Map<String,String>, avg double, match int) using column"
+  val createTableInSparkMapTypeLastColumn = "create table if not exists st.MapTypeLast" +
+    "(rollno int,name String, test Map<String,String>)"
+  val createTableInSparkMapTypeMiddleColumn = "create table if not exists st.MapTypeMiddle" +
+    "(rollno int, test Map<Int,Double>, name String, class int)"
+  val createTableInSparkMapTypeFirstColumn = "create table if not exists st.MapTypeFirst" +
+    "(Record Map<String,String>, avg double, match int)"
+
+  val insertNULLMapTypeLast = "insert into st.MapTypeLast select 1, 'XXD', null"
+  val insertNULLMapTypeMiddle = "insert into st.MapTypeMiddle select 1, null, 'ABB', 5"
+  val insertNULLMapTypeFirst = "insert into st.MapTypeFirst select null, 62.7d, 112"
+  val insertNormalDataMapTypeLast = "insert into st.MapTypeLast select 1, 'MNO', MAP('HJ','KL')"
+  val insertNormalDataMapTypeMiddle = "insert into st.MapTypeMiddle " +
+    "select 2, MAP(10,55.55d), 'TTT', 9"
+  val insertNormalDataMapTypeFirst = "insert into st.MapTypeFirst " +
+    "select MAP('Sachin', 'RightHand'), 54.6d, 400"
+
+  val selectMapLast = "select * from st.MapTypeLast"
+  val selectMapMiddle = "select * from st.MapTypeMiddle"
+  val selectMapFirst = "select * from st.MapTypeFirst"
+
+  val dropTableMapLast = "drop table st.MapTypeLast"
+  val dropTableMapMiddle = "drop table st.MapTypeMiddle"
+  val dropTableMapFirst = "drop table st.MapTypeFirst"
+
   /* -----                     Struct Type                   ----- */
   /* -----         Snappy Struct Type Queries         ----- */
   val Struct_Q1 : String = "SELECT name, TestRecord.Runs, TestRecord.Avg FROM CricketRecord " +
