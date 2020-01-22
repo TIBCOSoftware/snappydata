@@ -361,31 +361,22 @@ public class SnappyCDCTest extends SnappyTest {
     Map<String, Long> tableCntMap = (Map<String, Long>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
     Log.getLogWriter().info("tableCntMap size = " + tableCntMap.size() );
     try {
-<<<<<<< HEAD
       Connection con = null;
       boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
       if (isSecurityEnabled)
         con = getSecuredLocatorConnection("gemfire1","gemfire1");
       else
         con = SnappyTest.getLocatorConnection();
-      for (Map.Entry<String, Integer> val : tableCntMap.entrySet()) {
-        int snappyCnt = 0;
-||||||| merged common ancestors
-      Connection con = SnappyTest.getLocatorConnection();
-      for (Map.Entry<String, Integer> val : tableCntMap.entrySet()) {
-        int snappyCnt = 0;
-=======
-      Connection con = SnappyTest.getLocatorConnection();
       for (Map.Entry<String, Long> val : tableCntMap.entrySet()) {
-        long snappyCnt = 0;
->>>>>>> master
+        int snappyCnt = 0;
+
         String tableName = val.getKey();
         long BBCnt = val.getValue();
         String cntQry = "SELECT COUNT(*) FROM " + tableName;
         Log.getLogWriter().info("The query to be executed is " + cntQry);
         ResultSet rs3 = con.createStatement().executeQuery(cntQry);
         while (rs3.next())
-          snappyCnt = rs3.getLong(1);
+          snappyCnt = rs3.getInt(1);
         rs3.close();
         if (snappyCnt == BBCnt)
           Log.getLogWriter().info("SUCCESS : The cnt for table " + tableName + " = " + snappyCnt + " is EQUAL to the BB count = " + BBCnt);
@@ -414,14 +405,8 @@ public class SnappyCDCTest extends SnappyTest {
         } else
           outputFile = logFile + File.separator + "afterRestartResultSet_query_" +System.currentTimeMillis() + "_" + i + ".out";
         String qStr = queryList.get(i);
-<<<<<<< HEAD
-        ResultSet snappyRS = con.createStatement().executeQuery(qStr);
-||||||| merged common ancestors
-        ResultSet snappyRS = conn.createStatement().executeQuery(qStr);
-=======
         Log.getLogWriter().info("The query for validation is " + qStr);
-        ResultSet snappyRS = conn.createStatement().executeQuery(qStr);
->>>>>>> master
+        ResultSet snappyRS = con.createStatement().executeQuery(qStr);
         StructTypeImpl snappySti = ResultSetHelper.getStructType(snappyRS);
         List<Struct> snappyList = ResultSetHelper.asList(snappyRS, snappySti, false);
         snappyRS.close();

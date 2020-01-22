@@ -1,10 +1,15 @@
-  io/snappydata/hydra/security/rls/rlsTestWithClusterRestart.conf
-    A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-    B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
-    C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
-    D=client clientHosts=1 clientVMsPerHost=1 clientThreadsPerVM=1
-    dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
-    dataLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlRowColQuery.sql"
+io/snappydata/hydra/security/startLdapServer.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  ldapScriptPath="$GEMFIRE/../../../store/ldap-test-server"
+  ldapLogPath="$GEMFIRE/secureBootProp.log"
+
+io/snappydata/hydra/security/rls/rlsTestWithClusterRestart.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=client clientHosts=1 clientVMsPerHost=1 clientThreadsPerVM=1
+  dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
+  dataLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlRowColQuery.sql"
 
 io/snappydata/hydra/security/rls/basicRLSTest.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -13,7 +18,7 @@ io/snappydata/hydra/security/rls/basicRLSTest.conf
   D=client clientHosts=1 clientVMsPerHost=1 clientThreadsPerVM=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
   dataLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlRowColQuery.sql"
-
+  
 io/snappydata/hydra/security/rls/basicRLSWithSnappyJob.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1

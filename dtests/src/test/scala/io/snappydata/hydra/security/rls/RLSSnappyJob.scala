@@ -34,6 +34,7 @@ object RLSSnappyJob extends SnappySQLJob {
    // val dataFilesLocation = jobConfig.getString("dataFilesLocation")
     val schema1: String = jobConfig.getString("schema1")
     val schema2: String = jobConfig.getString("schema2")
+    val user2: String = jobConfig.getString("gemfire2")
     val user3: String = jobConfig.getString("user3")
     val user4: String = jobConfig.getString("user4")
     val userSchema = new Array[String](2)
@@ -42,6 +43,10 @@ object RLSSnappyJob extends SnappySQLJob {
     val userNames = new Array[String](2)
     userNames(0) = user3;
     userNames(1) = user4;
+
+    val snc2 = snc.newSession()
+    snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, user2)
+    snc2.snappySession.conf.set(Attribute.PASSWORD_ATTR, user2)
 
     val snc3 = snc.newSession()
     snc3.snappySession.conf.set(Attribute.USERNAME_ATTR, user3)
@@ -56,11 +61,11 @@ object RLSSnappyJob extends SnappySQLJob {
     // scalastyle:off println
     val pw = new PrintWriter("RLSSnappyJob.out")
     Try {
-      SecurityTestUtil.createPolicy(snc, userSchema, userNames)
-      SecurityTestUtil.enableRLS(snc, userSchema)
+      SecurityTestUtil.createPolicy(snc2, userSchema, userNames)
+      SecurityTestUtil.enableRLS(snc2, userSchema)
       SecurityTestUtil.validateRLS(snc3, false)
       SecurityTestUtil.validateRLS(snc4, false)
-      SecurityTestUtil.dropPolicy(snc)
+      SecurityTestUtil.dropPolicy(snc2)
       SecurityTestUtil.validateRLS(snc3, true)
       SecurityTestUtil.validateRLS(snc4, true)
     }
