@@ -27,17 +27,16 @@ class ArrayTypeNULLValue extends SnappySQLJob {
 
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
     // scalastyle:off println
-    println("ArraysTypeNULLValue Job started...")
+    println("Validation for NULL Value in ArraysType column Job started...")
     val snc : SnappyContext = snappySession.sqlContext
     val spark : SparkSession = SparkSession.builder().enableHiveSupport().getOrCreate()
-    val sqlContext = SQLContext.getOrCreate(spark.sparkContext)
-    //  def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
+    val sqlContext = spark.sqlContext
     val outputFile = "ValidateArrayTypeNULLValue" + "_"  +
       System.currentTimeMillis() + jobConfig.getString("logFileName")
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
 
     /**
-      *  Test : NULL value in Complex Type column.
+      *  Test : NULL value in Array Type column.
       */
     snc.sql(ComplexTypeUtils.createSchemaST)
     spark.sql(ComplexTypeUtils.createSchemaST)
