@@ -13,4 +13,4 @@ You can execute Scala code using a new CLI script **snappy-scala** that is built
 The Scala code can use any valid/supported Spark API for example, to carry out custom data loading/transformations or to launch a structured streaming job. Since the code is submitted as an SQL command, you can now also use any SQL tool (based on JDBC/ODBC), including Notebook environments, to execute ad-hoc code blocks directly. Prior to this feature, apps were required to use the smart connector or use the TIBCO ComputeDB specific native Zeppelin interpreter. 
 **exec scala** command can be secured using the SQL GRANT/REVOKE permissions. System admin (DB owner) can grant or revoke permissions for Scala interpreter privilege.
 
-For more information refer to [Using Scala Interpreter](/programming_guide/scala_interpreter.md)
+For more information refer to [Executing Spark Scala Code using SQL](/programming_guide/scala_interpreter.md)
