@@ -17,9 +17,8 @@ To download and install the Visual C++ Redistributable for Visual Studio 2013:
 
 To download and install the ODBC driver:
 
-1. [Download TIBCO  ComputeDB™ - Enterprise Edition](https://edelivery.tibco.com/storefront/index.ep). The downloaded file contains the TIBCO ComputeDB ODBC driver installers.
-
-2. Depending on your Windows installation, extract the contents of the 32-bit or 64-bit version of the TIBCO ComputeDB ODBC Driver.
+1. Download the drivers zip file **TIB_compute_drivers_1.2.0_linux.zip** using the steps provided [here](/quickstart/getting_started_by_installing_snappydata_on-premise.md). After this file is  extracted, you will find that it contains the ODBC installers in another file **TIB_compute-odbc_1.2.0_win.zip**. 
+2. Extract **TIB_compute-odbc_1.2.0_win.zip**. Depending on your Windows installation, extract the contents of the 32-bit or 64-bit version of the TIBCO ComputeDB ODBC Driver.
 
     | Version | ODBC Driver |
     |--------|--------|
@@ -36,20 +35,10 @@ Once you have installed the TIBCO ComputeDB ODBC Driver, you can connect to TIBC
 
 * Use the TIBCO ComputeDB Driver Connection URL:
 
-		Driver=TIBCO ComputeDB ODBC Driver;server=<locator address>;port=<LocatorPort>;user=<userName>;password=<password>;load-balance=true 
-
-	In case you want to connect with a specific server:
-
-    		Driver=TIBCO ComputeDB ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>;load-balance=false
-	!!! Note
-    	On the AWS instance, there are issues when you connect with the locator port and address. Therefore,on the AWS instance, it is necessary to provide the **load-balance=false** property, while connecting to the server.
-        
+		Driver=TIBCO ComputeDB ODBC Driver;server=<ServerIP>;port=<ServerPort>;user=<userName>;password=<password> 
+	        
 * Create a TIBCO ComputeDB DSN (Data Source Name) using the installed TIBCO ComputeDB ODBC Driver. Refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>
 When prompted, select the TIBCO ComputeDB ODBC Driver from the list of drivers and enter a Data Source name, TIBCO ComputeDB Server Host, Port, User Name and Password.
-Refer to the documentation for detailed information on [Setting Up TIBCO ComputeDB ODBC Driver](../setting_up_odbc_driver-tableau_desktop.md).  
-
-*	Create a TIBCO ComputeDB DSN (Data Source Name) using the installed TIBCO ComputeDB ODBC Driver. Refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>
-When prompted, select the TIBCO ComputeDB ODBC Driver from the list of drivers and enter a Data Source name. You can then enter either TIBCO ComputeDB Server Host, Port, User Name, and Password or TIBCO ComputeDB Locator Host, Port, User Name and Password.
 Refer to the documentation for detailed information on [Setting Up TIBCO ComputeDB ODBC Driver](../setting_up_odbc_driver-tableau_desktop.md).  
 
 ## Connecting Spotfire® Desktop to TIBCO ComputeDB
