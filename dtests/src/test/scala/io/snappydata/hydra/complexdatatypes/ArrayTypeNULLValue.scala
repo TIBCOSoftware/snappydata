@@ -19,6 +19,7 @@ package io.snappydata.hydra.complexdatatypes
 import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
+import io.snappydata.hydra.SnappyTestUtils
 import org.apache.spark.sql._
 
 class ArrayTypeNULLValue extends SnappySQLJob {
@@ -28,6 +29,8 @@ class ArrayTypeNULLValue extends SnappySQLJob {
     // scalastyle:off println
     println("ArraysTypeNULLValue Job started...")
     val snc : SnappyContext = snappySession.sqlContext
+    val spark : SparkSession = SparkSession.builder().enableHiveSupport().getOrCreate()
+    val sqlContext = SQLContext.getOrCreate(spark.sparkContext)
     //  def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
     val outputFile = "ValidateArrayTypeNULLValue" + "_"  +
       System.currentTimeMillis() + jobConfig.getString("logFileName")
@@ -36,49 +39,61 @@ class ArrayTypeNULLValue extends SnappySQLJob {
     /**
       *  Test : NULL value in Complex Type column.
       */
+    snc.sql(ComplexTypeUtils.createSchemaST)
+    spark.sql(ComplexTypeUtils.createSchemaST)
 
     /**
       * Test Case 1 : ArrayType Column is last column in the table.
       */
-    snc.sql("create schema st")
-    snc.sql("create table if not exists st.Student" +
-      "(rollno int,name String, adminDate Array<Date>) using column")
-    snc.sql("insert into st.Student select 1, 'ABC', null")
-    snc.sql("insert into st.Student select 2,'XYZ',Array('2020-01-21')")
-    val resultDF1 = snc.sql("select * from st.Student")
-    val resultSet1 = resultDF1.collectAsList()
-    pw.println("ResultSet1 where ArrayType column is last : ")
-    pw.println(resultSet1)
-    snc.sql("drop table st.Student")
+    snc.sql(ComplexTypeUtils.createTableLastColumnArrayType)
+    spark.sql(ComplexTypeUtils.createTableInSparkArrTypeLastColumn)
+    snc.sql(ComplexTypeUtils.insertNullInLastColumn)
+    spark.sql(ComplexTypeUtils.insertNullInLastColumn)
+    snc.sql(ComplexTypeUtils.insertNormalDataLastColumn)
+    spark.sql(ComplexTypeUtils.insertNormalDataLastColumn)
 
     /**
       *  Test Case 2 : ArrayType Column is between (say middle)  the other data types in the table.
       */
-    snc.sql("create table if not exists st.Student" +
-      "(rollno int,adminDate Array<Date>,time TimeStamp, class int) using column")
-    snc.sql("insert into st.Student select 1,Array('2020-01-21'), current_timestamp(),5")
-    snc.sql("insert into st.Student select 1,null,null,6")
-    val resultDF2 = snc.sql("select * from st.Student")
-    val resultSet2 = resultDF2.collectAsList()
-    pw.println("ResultSet2 where ArrayType column is in middle : ")
-    pw.println(resultSet2)
-    snc.sql("drop table st.Student")
+    snc.sql(ComplexTypeUtils.createTableMiddleColumnArrayType)
+    spark.sql(ComplexTypeUtils.createTableInSparkArrayTypeMiddleColumn)
+    snc.sql(ComplexTypeUtils.insertNullInMiddleColumn)
+    spark.sql(ComplexTypeUtils.insertNullInMiddleColumn)
+    snc.sql(ComplexTypeUtils.insertNormalDataMiddleColumn)
+    spark.sql(ComplexTypeUtils.insertNormalDataMiddleColumn)
 
     /**
       *  Test Case 3: ArrayType Column is the first column in the table.
      */
-    snc.sql("create table if not exists st.Student" +
-      "(Total Array<Double>,name String, rollno int) using column")
-    snc.sql("insert into st.Student select Array(25.6),'AAA',10")
-    snc.sql("insert into st.Student select null,'BBB',20")
-    val resultDF3 = snc.sql("select * from st.Student")
-    val resultSet3 = resultDF3.collectAsList()
-    pw.println("ResultSet3 where ArrayType column is First :")
-    pw.println(resultSet3)
-    snc.sql("drop table st.Student")
-    snc.sql("drop schema st")
-    pw.println("Inserting NULL value in ArrayType column  check OK")
+    snc.sql(ComplexTypeUtils.createTableFirstColumnArrayType)
+    spark.sql(ComplexTypeUtils.createTableInSparkArrayTypeFirstColumn)
+    snc.sql(ComplexTypeUtils.insertNullInFirstColumn)
+    spark.sql(ComplexTypeUtils.insertNullInFirstColumn)
+    snc.sql(ComplexTypeUtils.insertNormalDataFirstColumn)
+    spark.sql(ComplexTypeUtils.insertNormalDataFirstColumn)
+
+    /**
+      * Validation Routine
+      */
+    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.selectLastColumn,
+      "Q1", "column", pw, sqlContext)
+    pw.println("-- Insertion of NULL value in ArrayType last column OK --")
+    pw.flush()
+    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.selectMiddleColumn,
+      "Q2", "column", pw, sqlContext)
+    pw.println("-- Insertion of NULL value in ArrayType middle column OK --")
+    pw.flush()
+    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.selectFirstColumn,
+      "Q3", "column", pw, sqlContext)
+    pw.println("-- Insertion of NULL value in ArrayType first column OK --")
     pw.flush()
     pw.close()
+
+    snc.sql(ComplexTypeUtils.dropTableStudentLast)
+    spark.sql(ComplexTypeUtils.dropTableStudentLast)
+    snc.sql(ComplexTypeUtils.dropTableStudentMiddle)
+    snc.sql(ComplexTypeUtils.dropTableStudentMiddle)
+    snc.sql(ComplexTypeUtils.dropDatabaseST)
+    spark.sql(ComplexTypeUtils.dropDatabaseST)
   }
 }
