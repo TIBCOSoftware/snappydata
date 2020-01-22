@@ -38,13 +38,6 @@ object CreateAndLoadTablesSparkApp {
 
     val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadNWTablesSparkApp.out"),
       true));
-   val dataFilesLocation = args(0)
-    snc.setConf("dataFilesLocation", dataFilesLocation)
-    NWQueries.snc = snc
-    NWQueries.dataFilesLocation = dataFilesLocation
-    pw.println(s"dataFilesLocation : ${dataFilesLocation}")
-    NWTestUtil.dropTables(snc)
-   // SecurityTestUtil.createColRowTables(snc)
     println("Getting users arguments")
     val queryFile = args(1)
     val queryArray = scala.io.Source.fromFile(queryFile).getLines().mkString.split(";")

@@ -77,8 +77,8 @@ public class SnappySecurityTest extends SnappyTest {
     }
     try {
       String dest = getCurrentDirPath() + File.separator + "ldapServerStart.log";
-//      String propFile = getCurrentDirPath() + File.separator + "../../../secureBootProp.log";
-      String propFile = "/export/shared/QA_DATA/secureBootProp.log";
+      String propFile = getCurrentDirPath() + File.separator + "../../../secureBootProp.log";
+   //   String propFile = "/export/shared/QA_DATA/secureBootProp.log";
       File ldapServerFile = new File(dest);
       File secureBootPropFile = new File(propFile);
       if(secureBootPropFile.exists())
@@ -108,8 +108,8 @@ public class SnappySecurityTest extends SnappyTest {
   public static String getSecureBootProp() {
     try {
       File log = new File(".");
-//      String propFile = log.getCanonicalPath() + File.separator + "../../../secureBootProp.log";
-      String propFile = "/export/shared/QA_DATA/secureBootProp.log";
+      String propFile = log.getCanonicalPath() + File.separator + "../../../secureBootProp.log";
+//      String propFile = "/export/shared/QA_DATA/secureBootProp.log";
       File secureBootPropFile = new File(propFile);
       FileInputStream fis = new FileInputStream(secureBootPropFile);
       BufferedReader br = new BufferedReader(new InputStreamReader(fis));
@@ -156,20 +156,23 @@ public class SnappySecurityTest extends SnappyTest {
 
   public static void grantSchemaPermisson(Boolean isGrant){
     Vector userVector = SnappySecurityPrms.getUserName();
-    String user = userVector.elementAt(0).toString();
+
     String query= " ";
     String msg = "";
     Connection conn = null;
-    if (isGrant) {
-      query = "CREATE SCHEMA " + user + " AUTHORIZATION " + user;
-      msg = "Create scheam query is  ";
-    }
-    Log.getLogWriter().info(msg + query);
-    try {
-      conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
-      conn.createStatement().execute(query);
-    } catch (SQLException e) {
-      Log.getLogWriter().info(" Caught Exception " + e.getMessage());
+    for(int i=0 ;i<userVector.size();i++) {
+      String user = userVector.elementAt(i).toString();
+      if (isGrant) {
+        query = "CREATE SCHEMA " + user + " AUTHORIZATION " + user;
+        msg = "Create scheam query is  ";
+      }
+      Log.getLogWriter().info(msg + query);
+      try {
+        conn = getSecuredLocatorConnection("gemfire1", "gemfire1");
+        conn.createStatement().execute(query);
+      } catch (SQLException e) {
+        Log.getLogWriter().info(" Caught Exception " + e.getMessage());
+      }
     }
   }
 
