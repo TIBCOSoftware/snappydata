@@ -47,6 +47,37 @@ object ComplexTypeUtils {
   val Array_Q5 : String =
     "SELECT name,MAX(Marks),MIN(Marks) FROM StudentMark GROUP BY name"
 
+  /* -----   Array Type NULL Value Queries   ----- */
+    val createSchemaST = "create schema st"
+    val dropDatabaseST = "drop database st"
+    val createTableLastColumnArrayType = "create table if not exists st.StudentLast" +
+      "(rollno int,name String, adminDate Array<Date>) using column"
+    val createTableMiddleColumnArrayType = "create table if not exists st.StudentMiddle" +
+      "(rollno int,adminDate Array<Date>,time TimeStamp, class int) using column"
+    val createTableFirstColumnArrayType = "create table if not exists st.StudentFirst" +
+      "(Total Array<Double>,name String, rollno int) using column"
+    val createTableInSparkArrTypeLastColumn = "create table if not exists st.StudentLast" +
+      "(rollno int,name String, adminDate Array<Date>)"
+      val createTableInSparkArrayTypeMiddleColumn = "create table if not exists st.StudentMiddle" +
+      "(rollno int,adminDate Array<Date>,time TimeStamp, class int)"
+    val createTableInSparkArrayTypeFirstColumn = "create table if not exists st.StudentFirst" +
+      "(Total Array<Double>,name String, rollno int)"
+
+    val insertNullInLastColumn = "insert into st.StudentLast select 1, 'ABC', null"
+    val insertNullInMiddleColumn = "insert into st.StudentMiddle select 1,null,null,6"
+    val insertNullInFirstColumn = "insert into st.StudentFirst select null,'BBB',20"
+    val insertNormalDataLastColumn = "insert into st.StudentLast select 2,'XYZ',Array('2020-01-21')"
+    val insertNormalDataMiddleColumn = "insert into st.StudentMiddle select " +
+      "1,Array('2020-01-21'), '2020-01-22 12:16:52.598', 5"
+    val insertNormalDataFirstColumn = "insert into st.StudentFirst select Array(25.6),'AAA',10"
+
+    val selectLastColumn = "select * from st.StudentLast"
+    val selectMiddleColumn = "select * from st.StudentMiddle"
+    val selectFirstColumn = "select * from st.StudentFirst"
+
+    val dropTableStudentLast = "drop table st.StudentLast"
+    val dropTableStudentMiddle = "drop table st.StudentMiddle"
+    val dropTableStudentFirst = "drop table st.StudentFirst"
 
   /* -----                     Map Type                   ----- */
   /* -----         Snappy Map Type Queries         ----- */
