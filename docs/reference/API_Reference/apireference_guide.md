@@ -226,7 +226,8 @@ snappySession.dropTable(“t1”, true)
 
 Creates a stratified sample table.
 
-!!! Note This API is not supported in the Smart Connector mode. 
+!!! Note 
+	This API is not supported in the Smart Connector mode. 
 
 **Syntax**
 
@@ -261,7 +262,8 @@ snappySession.createSampleTable("airline_sample",   Some("airline"), Map("qcs" -
 
 Creates an approximate structure to query top-K with time series support.
 
-!!! Note This API is not supported in the Smart Connector mode.
+!!! Note 
+	This API is not supported in the Smart Connector mode.
 
 **Syntax**
 
@@ -276,9 +278,9 @@ createApproxTSTopK(topKName: String, baseTable: Option[String],  keyColumnName: 
 |--------|--------|
 | topKName       | The qualified name of the top-K structure. | 
 |baseTable |The base table of the top-K structure, if any.|
-| keyColumnName ||
-|inputDataSchema| |
-|topkOptions| |
+| keyColumnName | Top-k key column for aggregation|
+|inputDataSchema|Schema of input data |
+|topkOptions|  Extra options including the following:</br>**frequencyCol**: column to use for top-k frequency count.</br>**epoch, timeInterval**: start and interval for collecting samples.</br>**timeSeriesColumn**: A column that accurately records timestamps for better handling of time range queries|
 |allowExisting |When set to **true**,  tables with the same name are ignored, else a **table exist** exception is shown.|
 |Returns |Dataframe |
 
@@ -297,7 +299,7 @@ Sets the current database/schema.
 **Syntax**
 
 ```
-schema
+setCurrentSchema(schema: String)
 
 ```
 
@@ -305,13 +307,13 @@ schema
 
 |Parameter	 | Description |
 |--------|--------|
-| schemaName| schema name which goes into the catalog. | 
+| schema| schema name which goes into the catalog. | 
 |Returns|Unit|
 
 **Example **
 
 ```pre
-snappySession.setSchema(“APP”)
+ snappySession.setCurrentSchema("APP")
 ```
 
 <a id= getcurrentschemaapi> </a>
@@ -449,7 +451,8 @@ snappySession.delete(“t1”, s"col1=$i"))
 
 Fetches the topK entries in the** Approx TopK** synopsis for the specified time interval. The time interval specified here should not be less than the minimum time interval used when creating the TopK synopsis.
 
-!!! Note This API is not supported in the Smart Connector mode.
+!!! Note
+	This API is not supported in the Smart Connector mode.
 
 **Syntax**
 

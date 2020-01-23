@@ -42,8 +42,6 @@ The following topics are covered in this section:
 
 * [How to Connect using JDBC Driver](howto/connect_using_jdbc_driver.md)<a id="howto-jdbc"></a>
 
-* [How to Store and Query JSON Objects](howto/store_and_query_json_objects.md)<a id="howto-JSON"></a>
-
 * [How to Store and Query Objects](howto/store_and_query_objects.md)<a id="howto-objects"></a>
 
 * [How to use Stream Processing with SnappyData](howto/use_stream_processing_with_snappydata.md)<a id="howto-streams"></a>

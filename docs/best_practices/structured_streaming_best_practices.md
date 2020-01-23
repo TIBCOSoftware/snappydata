@@ -6,6 +6,7 @@ The following best practices for Structured Streaming are explained in this sect
 *	[Limiting Batch Size](#limitbatchsize)
 *	[Limiting Default Incoming Data Frame Size](#limitdefaultincoming)
 *	[Running a Structured Streaming Query with Dedicated SnappySession Instance](#dedicatedsnappysession)
+*   [SnappySession used for Streaming Query should not be used by other Operations](#otherops)
 
 <a id= sharefilesys> </a>
 ## Using Shared File System as Checkpoint Directory Location
@@ -93,5 +94,10 @@ val newSession = snappySession.newSession()
 The newSession instance has a similar session level config as snappySession.
 
 !!!Note
-	For embedded snappy jobs, it is recommended to use a new snappy-job for each streaming query.
+	For embedded snappy jobs, it is recommended to use a new [snappy-job](/programming_guide/snappydata_jobs.md)for each streaming query.
 
+
+<a id= otherops> </a>
+## SnappySession used for Streaming Query should not be used by other Operations
+
+When running a structured streaming query, Snappy hash aggregate is disabled for that entire session. This is done because SnappyData's hash aggregate does not work along with stateful aggregation required for streaming query aggregation. A best practice is to avoid using the same SnappySession instance for other operations since the Snappy hash aggregation is disabled for the entire session.
