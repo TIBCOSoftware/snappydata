@@ -19,7 +19,6 @@ package io.snappydata.hydra.complexdatatypes
 import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
-import io.snappydata.hydra.SnappyTestUtils
 import org.apache.spark.sql._
 
 class MapTypeNULLValue extends SnappySQLJob{
