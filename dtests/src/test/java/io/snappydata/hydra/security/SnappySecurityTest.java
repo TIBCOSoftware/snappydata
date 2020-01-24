@@ -77,8 +77,8 @@ public class SnappySecurityTest extends SnappyTest {
     }
     try {
       String dest = getCurrentDirPath() + File.separator + "ldapServerStart.log";
-      String propFile = getCurrentDirPath() + File.separator + "../../../secureBootProp.log";
-   //   String propFile = "/export/shared/QA_DATA/secureBootProp.log";
+  //    String propFile = getCurrentDirPath() + File.separator + "../../../secureBootProp.log";
+      String propFile = "/export/shared/QA_DATA/secureBootProp.log";
       File ldapServerFile = new File(dest);
       File secureBootPropFile = new File(propFile);
       if(secureBootPropFile.exists())
@@ -108,8 +108,8 @@ public class SnappySecurityTest extends SnappyTest {
   public static String getSecureBootProp() {
     try {
       File log = new File(".");
-      String propFile = log.getCanonicalPath() + File.separator + "../../../secureBootProp.log";
-//      String propFile = "/export/shared/QA_DATA/secureBootProp.log";
+   //   String propFile = log.getCanonicalPath() + File.separator + "../../../secureBootProp.log";
+      String propFile = "/export/shared/QA_DATA/secureBootProp.log";
       File secureBootPropFile = new File(propFile);
       FileInputStream fis = new FileInputStream(secureBootPropFile);
       BufferedReader br = new BufferedReader(new InputStreamReader(fis));
