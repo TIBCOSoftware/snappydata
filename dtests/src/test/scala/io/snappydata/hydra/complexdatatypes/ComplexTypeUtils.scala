@@ -48,36 +48,36 @@ object ComplexTypeUtils {
     "SELECT name,MAX(Marks),MIN(Marks) FROM StudentMark GROUP BY name"
 
   /* -----   Array Type NULL Value Queries   ----- */
-    val createSchemaST = "create schema st"
-    val dropDatabaseST = "drop database st"
-    val createTableLastColumnArrayType = "create table if not exists st.StudentLast" +
-      "(rollno int,name String, adminDate Array<Date>) using column"
-    val createTableMiddleColumnArrayType = "create table if not exists st.StudentMiddle" +
-      "(rollno int,adminDate Array<Date>,time TimeStamp, class int) using column"
-    val createTableFirstColumnArrayType = "create table if not exists st.StudentFirst" +
-      "(Total Array<Double>,name String, rollno int) using column"
-    val createTableInSparkArrTypeLastColumn = "create table if not exists st.StudentLast" +
+    val createSchemaST = "CREATE SCHEMA ST"
+    val dropDatabaseST = "DROP DATABASE ST"
+    val createTableLastColumnArrayType = "CREATE TABLE IF NOT EXISTS ST.StudentLast" +
+      "(rollno int,name String, adminDate Array<Date>) USING COLUMN"
+    val createTableMiddleColumnArrayType = "CREATE TABLE IF NOT EXISTS ST.StudentMiddle" +
+      "(rollno int,adminDate Array<Date>,time TimeStamp, class int) USING COLUMN"
+    val createTableFirstColumnArrayType = "CREATE TABLE IF NOT EXISTS ST.StudentFirst" +
+      "(Total Array<Double>,name String, rollno int) USING COLUMN"
+    val createTableInSparkArrTypeLastColumn = "CREATE TABLE IF NOT EXISTS ST.StudentLast" +
       "(rollno int,name String, adminDate Array<Date>)"
-      val createTableInSparkArrayTypeMiddleColumn = "create table if not exists st.StudentMiddle" +
+      val createTableInSparkArrayTypeMiddleColumn = "CREATE TABLE IF NOT EXISTS ST.StudentMiddle" +
       "(rollno int,adminDate Array<Date>,time TimeStamp, class int)"
-    val createTableInSparkArrayTypeFirstColumn = "create table if not exists st.StudentFirst" +
+    val createTableInSparkArrayTypeFirstColumn = "CREATE TABLE IF NOT EXISTS ST.StudentFirst" +
       "(Total Array<Double>,name String, rollno int)"
 
-    val insertNullInLastColumn = "insert into st.StudentLast select 1, 'ABC', null"
-    val insertNullInMiddleColumn = "insert into st.StudentMiddle select 1,null,null,6"
-    val insertNullInFirstColumn = "insert into st.StudentFirst select null,'BBB',20"
-    val insertNormalDataLastColumn = "insert into st.StudentLast select 2,'XYZ',Array('2020-01-21')"
-    val insertNormalDataMiddleColumn = "insert into st.StudentMiddle select " +
+    val insertNullInLastColumn = "INSERT INTO ST.StudentLast SELECT 1, 'ABC', null"
+    val insertNullInMiddleColumn = "INSERT INTO ST.StudentMiddle SELECT 1,null,null,6"
+    val insertNullInFirstColumn = "INSERT INTO ST.StudentFirst SELECT null,'BBB',20"
+    val insertNormalDataLastColumn = "INSERT INTO ST.StudentLast SELECT 2,'XYZ',Array('2020-01-21')"
+    val insertNormalDataMiddleColumn = "INSERT INTO ST.StudentMiddle SELECT " +
       "1,Array('2020-01-21'), '2020-01-22 12:16:52.598', 5"
-    val insertNormalDataFirstColumn = "insert into st.StudentFirst select Array(25.6),'AAA',10"
+    val insertNormalDataFirstColumn = "INSERT INTO ST.StudentFirst SELECT Array(25.6),'AAA',10"
 
-    val selectLastColumn = "select * from st.StudentLast"
-    val selectMiddleColumn = "select * from st.StudentMiddle"
-    val selectFirstColumn = "select * from st.StudentFirst"
+    val selectLastColumn = "SELECT * FROM ST.StudentLast"
+    val selectMiddleColumn = "SELECT * FROM ST.StudentMiddle"
+    val selectFirstColumn = "SELECT * FROM ST.StudentFirst"
 
-    val dropTableStudentLast = "drop table st.StudentLast"
-    val dropTableStudentMiddle = "drop table st.StudentMiddle"
-    val dropTableStudentFirst = "drop table st.StudentFirst"
+    val dropTableStudentLast = "DROP TABLE ST.StudentLast"
+    val dropTableStudentMiddle = "DROP TABLE ST.StudentMiddle"
+    val dropTableStudentFirst = "DROP TABLE ST.StudentFirst"
 
   /* -----                     Map Type                   ----- */
   /* -----         Snappy Map Type Queries         ----- */
@@ -135,35 +135,35 @@ object ComplexTypeUtils {
     "GROUP BY name"
 
   /* -----   Map Type NULL Value Queries   ----- */
-  val createTableLastColumnMapType = "create table if not exists st.MapTypeLast" +
-    "(rollno int,name String, test Map<String,String>) using column"
-  val createTableMiddleColumnMapType = "create table if not exists st.MapTypeMiddle" +
-    "(rollno int, test Map<Int,Double>, name String, class int) using column"
-  val createTableFirstColumnMapType = "create table if not exists st.MapTypeFirst" +
-    "(Record Map<String,String>, avg double, match int) using column"
-  val createTableInSparkMapTypeLastColumn = "create table if not exists st.MapTypeLast" +
+  val createTableLastColumnMapType = "CREATE TABLE IF NOT EXISTS st.MapTypeLast" +
+    "(rollno int,name String, test Map<String,String>) USING COLUMN"
+  val createTableMiddleColumnMapType = "CREATE TABLE IF NOT EXISTS st.MapTypeMiddle" +
+    "(rollno int, test Map<Int,Double>, name String, class int) USING COLUMN"
+  val createTableFirstColumnMapType = "CREATE TABLE IF NOT EXISTS st.MapTypeFirst" +
+    "(Record Map<String,String>, avg double, match int) USING COLUMN"
+  val createTableInSparkMapTypeLastColumn = "CREATE TABLE IF NOT EXISTS st.MapTypeLast" +
     "(rollno int,name String, test Map<String,String>)"
-  val createTableInSparkMapTypeMiddleColumn = "create table if not exists st.MapTypeMiddle" +
+  val createTableInSparkMapTypeMiddleColumn = "CREATE TABLE IF NOT EXISTS st.MapTypeMiddle" +
     "(rollno int, test Map<Int,Double>, name String, class int)"
-  val createTableInSparkMapTypeFirstColumn = "create table if not exists st.MapTypeFirst" +
+  val createTableInSparkMapTypeFirstColumn = "CREATE TABLE IF NOT EXISTS st.MapTypeFirst" +
     "(Record Map<String,String>, avg double, match int)"
 
-  val insertNULLMapTypeLast = "insert into st.MapTypeLast select 1, 'XXD', null"
-  val insertNULLMapTypeMiddle = "insert into st.MapTypeMiddle select 1, null, 'ABB', 5"
-  val insertNULLMapTypeFirst = "insert into st.MapTypeFirst select null, 62.7d, 112"
-  val insertNormalDataMapTypeLast = "insert into st.MapTypeLast select 2, 'MNO', MAP('HJ','KL')"
-  val insertNormalDataMapTypeMiddle = "insert into st.MapTypeMiddle " +
-    "select 2, MAP(10,55.55d), 'TTT', 9"
-  val insertNormalDataMapTypeFirst = "insert into st.MapTypeFirst " +
-    "select MAP('Sachin', 'RightHand'), 54.6d, 400"
+  val insertNULLMapTypeLast = "INSERT INTO ST.MapTypeLast SELECT 1, 'XXD', null"
+  val insertNULLMapTypeMiddle = "INSERT INTO ST.MapTypeMiddle SELECT 1, null, 'ABB', 5"
+  val insertNULLMapTypeFirst = "INSERT INTO ST.MapTypeFirst SELECT null, 62.7d, 112"
+  val insertNormalDataMapTypeLast = "INSERT INTO ST.MapTypeLast SELECT 2, 'MNO', MAP('HJ','KL')"
+  val insertNormalDataMapTypeMiddle = "INSERT INTO ST.MapTypeMiddle " +
+    "SELECT 2, MAP(10,55.55d), 'TTT', 9"
+  val insertNormalDataMapTypeFirst = "INSERT INTO ST.MapTypeFirst " +
+    "SELECT MAP('Sachin', 'RightHand'), 54.6d, 400"
 
-  val selectMapLast = "select * from st.MapTypeLast"
-  val selectMapMiddle = "select * from st.MapTypeMiddle"
-  val selectMapFirst = "select * from st.MapTypeFirst"
+  val selectMapLast = "SELECT * FROM ST.MapTypeLast"
+  val selectMapMiddle = "SELECT * FROM ST.MapTypeMiddle"
+  val selectMapFirst = "SELECT * FROM ST.MapTypeFirst"
 
-  val dropTableMapLast = "drop table st.MapTypeLast"
-  val dropTableMapMiddle = "drop table st.MapTypeMiddle"
-  val dropTableMapFirst = "drop table st.MapTypeFirst"
+  val dropTableMapLast = "DROP TABLE ST.MapTypeLast"
+  val dropTableMapMiddle = "DROP TABLE ST.MapTypeMiddle"
+  val dropTableMapFirst = "DROP TABLE ST.MapTypeFirst"
 
   /* -----                     Struct Type                   ----- */
   /* -----         Snappy Struct Type Queries         ----- */
@@ -175,6 +175,47 @@ object ComplexTypeUtils {
     "TestRecord.Runs,TestRecord.Avg " +
     "FROM CricketRecord " +
     "ORDER BY TestRecord.Matches DESC"
+
+  /* -----   Struct Type NULL Value Queries   ----- */
+  val createTableLastColumnStructType = "CREATE TABLE IF NOT EXISTS ST.CricketRecordLast(name String,allRounder boolean," +
+    "TestRecord STRUCT<batStyle:String,Matches:Long,Runs:Int,Avg:Double>) USING COLUMN"
+  val createTableMiddleColumnStructType = "CREATE TABLE IF NOT EXISTS " +
+    "ST.CricketRecordMiddle(name String," +
+    "TestRecord STRUCT<batStyle:String,Matches:Long,Runs:Int,Avg:Double>," +
+    "allRounder boolean) USING COLUMN"
+  val createTableFirstColumnStructType = "CREATE TABLE IF NOT EXISTS " +
+    "ST.CricketRecordFirst(TestRecord STRUCT<batStyle:String,Matches:Long,Runs:Int,Avg:Double>," +
+    "name String,allRounder boolean) USING COLUMN"
+  val createTableInSparkStructTypeLastColumn = "CREATE TABLE IF NOT EXISTS " +
+    "st.CricketRecordLast(name String,allRounder boolean," +
+  "TestRecord STRUCT<batStyle:String,Matches:Long,Runs:Int,Avg:Double>)"
+  val createTableInSparkStructTypeMiddleColumn = "CREATE TABLE IF NOT EXISTS " +
+    "ST.CricketRecordMiddle(name String," +
+    "TestRecord STRUCT<batStyle:String,Matches:Long,Runs:Int,Avg:Double>," +
+    "allRounder boolean)"
+  val createTableInSparkStructTypeFirstColumn = "CREATE TABLE IF NOT EXISTS " +
+    "ST.CricketRecordFirst(TestRecord STRUCT<batStyle:String,Matches:Long,Runs:Int,Avg:Double>," +
+    "name String,allRounder boolean)"
+
+  val insertNULLStructTypeLast = "INSERT INTO ST.CricketRecordLast SELECT " +
+    "'Sachin Tendulkar', true, null"
+  val insertNULLStructTypeMiddle = "INSERT INTO ST.CricketRecordMiddle " +
+    "SELECT 'Rahul Drvaid',null,false"
+  val insertNULLStructTypeFirst = "INSERT INTO ST.CricketRecordFirst SELECT null, 'Kapil Dev', true"
+  val insertNormalDataStructTypeLast = "INSERT INTO ST.CricketRecordLast SELECT " +
+  "'Sachin Tendulkar', true, STRUCT('Right Hand',200,15921,53.79)"
+  val insertNormalDataStructTypeMiddle = "INSERT INTO ST.CricketRecordMiddle SELECT " +
+    "'Rahul Drvaid',STRUCT('Right Hand',164,13288,52.31),false"
+  val insertNormalDataStructTypeFirst = "INSERT INTO ST.CricketRecordFirst " +
+    "SELECT STRUCT('Right Hand',131,5248,31.05), 'Kapil Dev', true"
+
+  val selectStructLast = "SELECT * FROM ST.CricketRecordLast"
+  val selectStructMiddle = "SELECT * FROM ST.CricketRecordMiddle"
+  val selectStructFirst = "SELECT * FROM ST.CricketRecordFirst"
+
+  val dropTableStructLast = "DROP TABLE ST.CricketRecordLast"
+  val dropTableStructMiddle = "DROP TABLE ST.CricketRecordMiddle"
+  val dropTableStructFirst = "DROP TABLE ST.CricketRecordFirst"
 
 
   /* -----                     ArrayOfStruct Type                   ----- */
