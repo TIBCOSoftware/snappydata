@@ -40,7 +40,6 @@ class ArrayTypeNULLValue extends SnappySQLJob {
       */
     snc.sql(ComplexTypeUtils.createSchemaST)
     spark.sql(ComplexTypeUtils.createSchemaST)
-
     /**
       * Test Case 1 : ArrayType Column is last column in the table.
       */
@@ -50,7 +49,6 @@ class ArrayTypeNULLValue extends SnappySQLJob {
     spark.sql(ComplexTypeUtils.insertNullInLastColumn)
     snc.sql(ComplexTypeUtils.insertNormalDataLastColumn)
     spark.sql(ComplexTypeUtils.insertNormalDataLastColumn)
-
     /**
       *  Test Case 2 : ArrayType Column is between (say middle)  the other data types in the table.
       */
@@ -60,7 +58,6 @@ class ArrayTypeNULLValue extends SnappySQLJob {
     spark.sql(ComplexTypeUtils.insertNullInMiddleColumn)
     snc.sql(ComplexTypeUtils.insertNormalDataMiddleColumn)
     spark.sql(ComplexTypeUtils.insertNormalDataMiddleColumn)
-
     /**
       *  Test Case 3: ArrayType Column is the first column in the table.
      */
@@ -70,28 +67,29 @@ class ArrayTypeNULLValue extends SnappySQLJob {
     spark.sql(ComplexTypeUtils.insertNullInFirstColumn)
     snc.sql(ComplexTypeUtils.insertNormalDataFirstColumn)
     spark.sql(ComplexTypeUtils.insertNormalDataFirstColumn)
-
     /**
       * Validation Routine
       */
     SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.selectLastColumn,
-      "Q1", "column", pw, sqlContext)
+      "AQ1", "column", pw, sqlContext)
     pw.println("-- Insertion of NULL value in ArrayType last column OK --")
     pw.flush()
     SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.selectMiddleColumn,
-      "Q2", "column", pw, sqlContext)
+      "AQ2", "column", pw, sqlContext)
     pw.println("-- Insertion of NULL value in ArrayType middle column OK --")
     pw.flush()
     SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.selectFirstColumn,
-      "Q3", "column", pw, sqlContext)
+      "AQ3", "column", pw, sqlContext)
     pw.println("-- Insertion of NULL value in ArrayType first column OK --")
     pw.flush()
     pw.close()
 
     snc.sql(ComplexTypeUtils.dropTableStudentLast)
+    snc.sql(ComplexTypeUtils.dropTableStudentMiddle)
+    snc.sql(ComplexTypeUtils.dropTableStudentMiddle)
     spark.sql(ComplexTypeUtils.dropTableStudentLast)
-    snc.sql(ComplexTypeUtils.dropTableStudentMiddle)
-    snc.sql(ComplexTypeUtils.dropTableStudentMiddle)
+    spark.sql(ComplexTypeUtils.dropTableStudentMiddle)
+    spark.sql(ComplexTypeUtils.dropTableStudentLast)
     snc.sql(ComplexTypeUtils.dropDatabaseST)
     spark.sql(ComplexTypeUtils.dropDatabaseST)
   }

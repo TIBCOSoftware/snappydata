@@ -151,7 +151,7 @@ object ComplexTypeUtils {
   val insertNULLMapTypeLast = "insert into st.MapTypeLast select 1, 'XXD', null"
   val insertNULLMapTypeMiddle = "insert into st.MapTypeMiddle select 1, null, 'ABB', 5"
   val insertNULLMapTypeFirst = "insert into st.MapTypeFirst select null, 62.7d, 112"
-  val insertNormalDataMapTypeLast = "insert into st.MapTypeLast select 1, 'MNO', MAP('HJ','KL')"
+  val insertNormalDataMapTypeLast = "insert into st.MapTypeLast select 2, 'MNO', MAP('HJ','KL')"
   val insertNormalDataMapTypeMiddle = "insert into st.MapTypeMiddle " +
     "select 2, MAP(10,55.55d), 'TTT', 9"
   val insertNormalDataMapTypeFirst = "insert into st.MapTypeFirst " +
