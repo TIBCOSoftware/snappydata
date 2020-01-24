@@ -10,6 +10,7 @@ pages:
 # this file may just be the [toc] tag .. not sure if that works.
 #
 - Overview: index.md
+- 'New Features': 'new_features.md'
 - 'Provisioning TIBCO ComputeDB': 'install.md'
 - 'Provisioning TIBCO ComputeDB':
     - 'System Requirements': 'install/system_requirements.md'
