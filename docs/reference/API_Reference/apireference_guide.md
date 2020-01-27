@@ -279,9 +279,9 @@ createApproxTSTopK(topKName: String, baseTable: Option[String],  keyColumnName: 
 |--------|--------|
 | topKName       | The qualified name of the top-K structure. | 
 |baseTable |The base table of the top-K structure, if any.|
-| keyColumnName ||
-|inputDataSchema| |
-|topkOptions| |
+| keyColumnName | Top-k key column for aggregation|
+|inputDataSchema|Schema of input data |
+|topkOptions|  Extra options including the following:</br>**frequencyCol**: column to use for top-k frequency count.</br>**epoch, timeInterval**: start and interval for collecting samples.</br>**timeSeriesColumn**: A column that accurately records timestamps for better handling of time range queries|
 |allowExisting |When set to **true**,  tables with the same name are ignored, else a **table exist** exception is shown.|
 |Returns |Dataframe |
 
@@ -300,7 +300,7 @@ Sets the current database/schema.
 **Syntax**
 
 ```
-schema
+setCurrentSchema(schema: String)
 
 ```
 
@@ -308,13 +308,13 @@ schema
 
 |Parameter	 | Description |
 |--------|--------|
-| schemaName| schema name which goes into the catalog. | 
+| schema| schema name which goes into the catalog. | 
 |Returns|Unit|
 
 **Example **
 
 ```pre
-snappySession.setSchema(“APP”)
+ snappySession.setCurrentSchema("APP")
 ```
 
 <a id= getcurrentschemaapi> </a>

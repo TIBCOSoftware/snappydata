@@ -118,7 +118,17 @@ In case the machines in your cluster do not share a common path as well as canno
 	*	`$SNAPPY_HOME/sbin/snappy-lead.sh`
 
 
+    **Start Examples**:
 
+    	    $SNAPPY_HOME/sbin/snappy-locator.sh start -dir=/tmp/locator
+            $SNAPPY_HOME/sbin/snappy-server.sh  start -dir=/tmp/server -locators="localhost:10334"
+            $SNAPPY_HOME/sbin/snappy-lead.sh      start -dir=/tmp/lead      -locators="localhost:10334"
+
+    **Stop Examples**:
+
+    	    $SNAPPY_HOME/sbin/snappy-locator.sh stop -dir=/tmp/locator
+			$SNAPPY_HOME/sbin/snappy-server.sh  stop -dir=/tmp/server
+			$SNAPPY_HOME/sbin/snappy-lead.sh      stop -dir=/tmp/lead
 
  
 

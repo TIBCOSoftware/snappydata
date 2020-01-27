@@ -76,12 +76,12 @@ df.write.format("column").saveAsTable("columnTable")
 ## Importing Data using JDBC from a relational DB
 
 !!! Note
-	Before you begin, you must install the corresponding JDBC driver. To do so, copy the JDBC driver jar file in **/jars** directory located in the home directory and then restart the cluster.
+	Before you begin, you must install the corresponding JDBC driver. Refer to [Deploying Third Party Connectors](/connectors/deployment_dependency_jar.md).
 
 <!--**TODO: This is a problem- restart the cluster ? Must confirm package installation or at least get install_jar tested for this case. -- Jags**
 -->
 
-The example below demonstrates how to connect to any SQL database using JDBC:
+The following example demonstrates how to connect to any SQL database using JDBC:
 
 
 1. Verify and load the SQL Driver:
@@ -135,8 +135,7 @@ Refer to the [Spark SQL JDBC source access for how to parallelize access when de
 The example below demonstrates how you can load data from a NoSQL store:
 
 !!! Note
-	Before you begin, you must install the corresponding Spark-Cassandra connector jar. To do so, you can execute the 
-    `deploy jar <unique-alias-name> '<Cassandra Connector jar>';` command.
+	Before you begin, you must install the corresponding Spark-Cassandra connector jar. Refer to [Deploying Third Party Connectors](/connectors/deployment_dependency_jar.md).
 
 <!--**TODO** This isn't a single JAR from what I know. The above step needs testing and clarity. -- Jags
 -->
