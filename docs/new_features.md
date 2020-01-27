@@ -5,10 +5,10 @@
 TIBCO ComputeDB 1.2.0 includes the following new features:
 
 ### Support for Cloud Storage and New Data Formats
-Added support for external data sources such as Azure Blob Storage (WASB, not ADLS) and GCS. Also, tested and certified support for file formats like CSV, Parquet, XML, JSON, Avro, ORC, text. 
+Added support for external data sources such as  HDFS, S3, Azure Blob Storage (WASB, not ADLS), and GCS. Also, tested and certified support for file formats like CSV, Parquet, XML, JSON, Avro, ORC, text. 
 Apache Zeppelin that is embedded with the product, is the easiest way to explore external data sources. Refer to the notebooks under the section **External Data Sources** and **Demos with Big Datasets** for configuring and demonstrations. 
 
-### Structured Streaming User Interface 
+### Structured Streaming User Interface
 Introducing a new UI tab to monitor Structured Streaming applications statistics and progress.
 
 ### TIBCO ComputeDB Metrics now Fully Compatible with Apache Spark 

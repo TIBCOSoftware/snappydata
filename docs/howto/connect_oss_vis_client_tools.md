@@ -38,6 +38,8 @@ To connect TIBCO ComputeDB from DbVisualizer, do the following:
 !!! Note
 	The steps provided here are specific to DbVisualizer 10.0.20 version. The steps can slightly vary in other versions.
 
+For secure connections, refer [Creating a Secure Connection from JDBC Client Tools](#secureconnectJDBC)
+
 <a id= sqlworkbenchj> </a>
 ## SQL Workbench/J
 
@@ -68,6 +70,8 @@ To connect TIBCO ComputeDB from SQL Workbench/J, do the following:
 	* Enter username and password.
 8. Click the **Test** button and then click **OK**. <br> After you get a successful connection, you run queries in TIBCO ComputeDB from SQL WorkBench/J.
 
+For secure connections, refer [Creating a Secure Connection from JDBC Client Tools](#secureconnectJDBC)
+
 <a id= dbeaver> </a>
 ## DBeaver
 DBeaver is a graphical database management tool. You can access TIBCO ComputeDB from DBeaver. Download and install DBeaver, start the LDAP server and print the LDAP conf, and then connect to TIBCO ComputeDB from DBeaver.
@@ -80,16 +84,6 @@ To download and install DBeaver, do the following:
 2.	Choose an appropriate installer for the corresponding operating system. For example, for Linux Debian package, download from [this link](https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb).
 3.	Run the corresponding commands that are specified in the **Install** section on the Download page.
 
-### Starting the LDAP Server
-
-To start the LDAP server, do the following:
-
-1.	From the terminal, go to the location of ldap-test-server: <br> `cd $SNAPPY_HOME/store/ldap-test-server`
-2.	Run the following command to build: <br>`./gradlew build`
-3.	Run the script: <br>`./start-ldap-server.sh auth.ldif`<br>
-	This starts the LDAP server and prints the LDAP conf. The printed LDAP conf contains the username and password of LDAP that should be used to connect from DBeaver. Copy this into all the conf files of TIBCO ComputeDB.
-4.	Start the TIBCO ComputeDB cluster.
-
 ### Connecting to TIBCO ComputeDB from DBeaver
 4.	Launch DBeaver and click **New database connection**. 
 5.	Select **Hadoop / Big Data** section from the left. 
@@ -98,6 +92,8 @@ To start the LDAP server, do the following:
 	*	Port
 	*	Username / Password
 7.	Test the connection and finish the setup of the database source.
+
+For secure connections, refer [Creating a Secure Connection from JDBC Client Tools](#secureconnectJDBC)
 
 <a id= squirrel> </a>
 ## SQuirreL SQL Client
@@ -113,17 +109,6 @@ To download and install SQuirrel, do the following:
 	`java -jar <downloaded squirrel jar>`
 3.	Go to the SQuirreL SQL Client installation folder and run the following command:<br> 
 	`./squirrel-sql.sh`
-    
-### Starting the LDAP Server
-
-To start the LDAP server, do the following:
-
-1.	From the terminal, go to the location of ldap-test-server: <br> `cd $SNAPPY_HOME/store/ldap-test-server`
-2.	Run the following command: <br>`./gradlew build`
-3.	Run the following script: <br>`./start-ldap-server.sh auth.ldif`
-	This starts the LDAP server and prints the LDAP conf. The printed LDAP conf contains username and password of LDAP that should be used to connect from SQuirreL SQL Client. Copy this into all the conf files of TIBCO ComputeDB.
-4.	Start TIBCO ComputeDB cluster.
-
 
 ### Connecting to TIBCO ComputeDB from SQuirreL SQL Client	
 
@@ -164,7 +149,21 @@ jdbc jar: https://mvnrepository.com/artifact/io.snappydata/snappydata-jdbc_2.11/
             drop table if exists colTable;
             show tables;
 
+For secure connections, refer [Creating a Secure Connection from JDBC Client Tools](#secureconnectJDBC)
+
 !!!Note
-	When connecting to SnappyData, if a SQL client tool sets JDBC autocommit to false and transaction isolation level such as read committed or repeatable read is used,  the unsupported operations such as those on column table will produce an error - **Operations on column tables are not supported when query routing is disabled or autocommit is false.**   In such cases, connection property **allow-explicit-commit=true** can be used in the connection URL to avoid this error. Refer to configuration parameters section <add a link to the section> for details on this property. For example,  JDBC URL: **jdbc:snappydata://locatoHostName:1527/allow-explicit-commit=true** 
+	When connecting to TIBCO ComputeDB, if a SQL client tool sets JDBC autocommit to false and transaction isolation level such as read committed or repeatable read is used,  the unsupported operations such as those on column table will produce an error - **Operations on column tables are not supported when query routing is disabled or autocommit is false.**   In such cases, connection property **allow-explicit-commit=true** can be used in the connection URL to avoid this error. Refer to configuration parameters section <add a link to the section> for details on this property. For example,  JDBC URL: **jdbc:snappydata://locatoHostName:1527/allow-explicit-commit=true** 
 
+<a id= secureconnectJDBC> </a>
+## Creating a Secure Connection from JDBC Client Tools
 
+If you already have an LDAP server,  you can use the same to connect to TIBCO ComputeDB cluster or you can use the LDAP server that comes pre-configured with TIBCO ComputeDB. 
+
+To start the pre-configured LDAP server of TIBCO ComputeDB, do the following:
+
+1.	From the terminal, go to the location of ldap-test-server: <br> `cd $SNAPPY_HOME/store/ldap-test-server`
+2.	Run the following command to build: <br>`./gradlew build`
+3.	Run the script: <br>`./start-ldap-server.sh auth.ldif`<br>
+	This starts the LDAP server and prints the LDAP conf. The printed LDAP conf contains the username and password of LDAP that should be used to connect from JDBC clients. Copy this into the leads/servers/locators conf files of TIBCO ComputeDB.
+4.	Start the TIBCO ComputeDB cluster.
+5.	When you are connecting from a JDBC client, ensure to provide the user name and password printed in step 3.
