@@ -35,9 +35,6 @@ object SmartConnectorArrayTypeNULL {
     val spark : SparkSession = SparkSession.builder().enableHiveSupport().config(conf).getOrCreate()
     val sqlContext = spark.sqlContext
 
-//    def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
-//    val dataLocation = args(0)
-//    println("DataLocation : " + dataLocation)
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(
       new File("ValidateSmartConnectorArrayTypeNULL" + "_" + "column" + System.currentTimeMillis())
       , false))
