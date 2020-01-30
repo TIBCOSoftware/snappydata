@@ -44,12 +44,12 @@ class SQLFunctions extends SnappySQLJob {
       *  4. date_diff,
       *  5. date_format
       */
+    //  CREATE TABLE IN SPARK / SNAPPY.
     spark.sql(SQLFunctionsUtils.createColTypeTblInSpark)
     spark.sql(SQLFunctionsUtils.createRowTypeTblInSpark)
-
     snc.sql(SQLFunctionsUtils.createColumnTbl_DateFunctions_1)
     snc.sql(SQLFunctionsUtils.createRowTbl_DateFunctions_1)
-
+    //  INSERT RECORDS IN SPARK / SNAPPY.
     spark.sql(SQLFunctionsUtils.insertInto +
       SQLFunctionsUtils.columnTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet1)
     spark.sql(SQLFunctionsUtils.insertInto +
@@ -62,7 +62,6 @@ class SQLFunctions extends SnappySQLJob {
       SQLFunctionsUtils.rowTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet2)
     spark.sql(SQLFunctionsUtils.insertInto +
       SQLFunctionsUtils.rowTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet3)
-
     snc.sql(SQLFunctionsUtils.insertInto +
       SQLFunctionsUtils.columnTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet1)
     snc.sql(SQLFunctionsUtils.insertInto +
@@ -75,9 +74,7 @@ class SQLFunctions extends SnappySQLJob {
       SQLFunctionsUtils.rowTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet2)
     snc.sql(SQLFunctionsUtils.insertInto +
       SQLFunctionsUtils.rowTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet3)
-    pw.println("Table creation and data ingestion is ok for date functions")
-    pw.flush()
-
+    //  SELECT QUERY / VALIDATION ROUTINE.
     SnappyTestUtils.assertQueryFullResultSet(snc,
       SQLFunctionsUtils.selectQueryOnColTbl_DateFunctions_1,
       "Q1_ColumnTbl_DateFunc", "column", pw, sqlContext)
@@ -90,8 +87,43 @@ class SQLFunctions extends SnappySQLJob {
     SnappyTestUtils.assertQueryFullResultSet(snc,
       SQLFunctionsUtils.selectDay_DateFormatFunc,
       "Q4_SelectDay_DateFormat", "column", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
     snc.sql(SQLFunctionsUtils.dropColumnTbl_DateFunctions_1)
     snc.sql(SQLFunctionsUtils.dropRowTbl_DateFunctions_1)
+    spark.sql(SQLFunctionsUtils.dropColumnTbl_DateFunctions_1)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_DateFunctions_1)
+
+    /**
+      *  Below queries test the fuctions :
+      *  6. repeat
+      *  7. reverse
+      *  (NOTE : reverse logic for arrays is available since  Spark 2.4.0,
+      *  test to be added after spark 2.4.0 merge
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_RseRpt_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_rserpt_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_RseRpt)
+    snc.sql(SQLFunctionsUtils.createRowTbl_RseRpt)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet2)
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_RseRpt,
+      "Q5_Select_RevRpt", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_RseRpt,
+      "Q6_Select_RevRpt", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_RseRpt)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_RseRpt)
+    spark.sql(SQLFunctionsUtils.dropColTbl_RseRpt)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_RseRpt)
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
