@@ -471,8 +471,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       try {
         PreparedStatement ps = dConn.prepareStatement(
             "CALL SYSCS_UTIL.SYSCS_IMPORT_TABLE(?,?,?,null,null,null,0)");
-        ps.setString(1, table[0]);
-        ps.setString(2, table[1]);
+        ps.setString(1, "APP");
+        ps.setString(2, table[0]);
         ps.setString(3, csvFilePath);
         //ps.setString(4, ",");
         ps.execute();
