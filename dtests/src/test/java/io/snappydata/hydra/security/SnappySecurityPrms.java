@@ -40,6 +40,8 @@ public class SnappySecurityPrms extends SnappyPrms{
 
   public static Long isGrant;
 
+  public static Long isExtTblSecurity;
+
   public static Long isRevoke;
 
   public static Long isJoinQuery;
@@ -108,7 +110,12 @@ public class SnappySecurityPrms extends SnappyPrms{
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
 
-    public static boolean getIsGrant() {
+  public static boolean getIsExtTblSecurity() {
+    Long key = isExtTblSecurity;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsGrant() {
     Long key = isGrant;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }

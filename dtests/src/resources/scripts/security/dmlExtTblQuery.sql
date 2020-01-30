@@ -1,0 +1,10 @@
+SELECT count(*) FROM gemfire2.staging_employees;
+SELECT * FROM gemfire2.staging_employees limit 5;
+SELECT count(*) FROM gemfire2.staging_categories;
+SELECT * FROM gemfire2.staging_categories;
+SELECT City, COUNT(EmployeeID) AS NumEmployees FROM gemfire2.staging_employees WHERE Title = 'Sales Representative' GROUP BY City HAVING COUNT(EmployeeID) > 1 ORDER BY NumEmployees;
+SELECT * FROM gemfire2.staging_customers;
+SELECT * from gemfire2.staging_suppliers;
+SELECT * FROM gemfire2.staging_orders limit 5;
+SELECT count(*) FROM gemfire2.staging_orders;
+SELECT ProductID, AVG(UnitPrice) AS AveragePrice FROM gemfire2.staging_products GROUP BY ProductID HAVING AVG(UnitPrice) > 70 ORDER BY AveragePrice;
