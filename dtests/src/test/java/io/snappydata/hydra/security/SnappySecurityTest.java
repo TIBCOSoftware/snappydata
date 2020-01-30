@@ -176,7 +176,7 @@ public class SnappySecurityTest extends SnappyTest {
     }
   }
 
-  public static void grantRevokeOps(Boolean isGrant, Boolean isRevoke, Boolean isPublic) {
+  public static void grantRevokeOps(Boolean isGrant, Boolean isRevoke, Boolean isPublic, Boolean isExtTblSecurity) {
     Vector userVector = SnappySecurityPrms.getUserName();
     Vector onSchema = SnappySecurityPrms.getSchema();
     Vector dmlOps = SnappySecurityPrms.getDmlOps();
@@ -209,11 +209,17 @@ public class SnappySecurityTest extends SnappyTest {
         for (int s = 0; s < onSchema.size(); s++) {
           for (int o = 0; o < dmlOps.size(); o++) {
             if (isGrant) {
-              query = "GRANT " + dmlOps.elementAt(o) + " on " + onSchema.elementAt(s) + " TO ";//grantQuery;
+              if(isExtTblSecurity)
+                query = "GRANT ALL on " + onSchema.elementAt(s) + " TO ";//external table grantQuery
+              else
+                query = "GRANT " + dmlOps.elementAt(o) + " on " + onSchema.elementAt(s) + " TO ";//grantQuery
               msg = "The GRANT Query is ";
             }
             if (isRevoke) {
-              query = "REVOKE " + dmlOps.elementAt(o) + " on " + onSchema.elementAt(s) + " FROM ";//revokeQuery;
+              if(isExtTblSecurity)
+                query = "REVOKE ALL on " + onSchema.elementAt(s) + " FROM ";//external table revokeQuery
+              else
+                query = "REVOKE " + dmlOps.elementAt(o) + " on " + onSchema.elementAt(s) + " FROM ";//revokeQuery
               msg = "The REVOKE query is ";
             }
             String priviligedQ = query + user;
@@ -235,7 +241,8 @@ public class SnappySecurityTest extends SnappyTest {
     Boolean isGrant = SnappySecurityPrms.getIsGrant();
     Boolean isRevoke = SnappySecurityPrms.getIsRevoke();
     Boolean isPublic = SnappySecurityPrms.getIsPublic();
-    grantRevokeOps(isGrant, isRevoke, isPublic);
+    Boolean isExtTblSecurity = SnappySecurityPrms.getIsExtTblSecurity();
+    grantRevokeOps(isGrant, isRevoke, isPublic, isExtTblSecurity);
   }
 
   public static void HydraTask_GrantSchemaPermisson() {
