@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2020 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -14,6 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+
 package org.apache.spark.sql.internal
 
 import scala.reflect.ClassTag
@@ -35,7 +36,7 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, GeneratedClass}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, ExprCode, GeneratedClass}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameBoundary, FrameType, Generator, Literal, NamedExpression, NullOrdering, PredicateSubquery, SortDirection, SortOrder, SpecifiedWindowFrame, UnboundedFollowing, UnboundedPreceding, ValueFollowing, ValuePreceding}
 import org.apache.spark.sql.catalyst.json.JSONOptions
 import org.apache.spark.sql.catalyst.optimizer.Optimizer
@@ -55,7 +56,7 @@ import org.apache.spark.sql.hive.{HiveConditionalRule, HiveConditionalStrategy, 
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources.{BaseRelation, Filter, JdbcExtendedUtils, ResolveQueryHints}
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
-import org.apache.spark.sql.types.{DataType, Metadata, StructType}
+import org.apache.spark.sql.types.{DataType, Metadata, StructField, StructType}
 import org.apache.spark.status.api.v1.RDDStorageInfo
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
@@ -542,6 +543,11 @@ class Spark210Internals extends SparkInternals {
       numDP, holdDDLTime)
   }
 
+  override def alterTableSchema(externalCatalog: ExternalCatalog, schemaName: String,
+      table: String, newSchema: StructType): Unit = {
+    throw new ParseException(s"ALTER TABLE schema not supported in Spark $version")
+  }
+
   override def alterTableStats(externalCatalog: ExternalCatalog, schema: String, table: String,
       stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])]): Unit = {
     throw new ParseException(s"ALTER TABLE STATS not supported in Spark $version")
@@ -552,8 +558,15 @@ class Spark210Internals extends SparkInternals {
     throw new ParseException(s"ALTER FUNCTION not supported in Spark $version")
   }
 
-  override def columnStatToMap(stat: ColumnStat, colName: String,
-      dataType: DataType): Map[String, String] = stat.toMap
+  override def columnStatToMap(stat: Any, colName: String,
+      dataType: DataType): Map[String, String] = {
+    stat.asInstanceOf[ColumnStat].toMap
+  }
+
+  override def columnStatFromMap(table: String, field: StructField,
+      map: Map[String, String]): Option[ColumnStat] = {
+    ColumnStat.fromMap(table, field, map)
+  }
 
   override def newEmbeddedHiveCatalog(conf: SparkConf, hadoopConf: Configuration,
       createTime: Long): SnappyHiveExternalCatalog = {
@@ -623,6 +636,60 @@ class Spark210Internals extends SparkInternals {
     context.ui.get.storageListener.rddInfoList.map(info => new RDDStorageInfo(info.id, info.name,
       info.numPartitions, info.numCachedPartitions, info.storageLevel.description,
       info.memSize, info.diskSize, dataDistribution = None, partitions = None))
+  }
+
+  override def newExprCode(code: String, isNull: String,
+      value: String, javaClass: Class[_]): ExprCode = {
+    ExprCode(code = code, isNull = isNull, value = value)
+  }
+
+  override def copyExprCode(ev: ExprCode, code: String, isNull: String,
+      value: String, javaClass: Class[_]): ExprCode = {
+    ev.copy(code = if (code ne null) code else ev.code,
+      isNull = if (isNull ne null) isNull else ev.isNull,
+      value = if (value ne null) value else ev.value)
+  }
+
+  override def resetCode(ev: ExprCode): Unit = {
+    ev.code = ""
+  }
+
+  override def exprCodeIsNull(ev: ExprCode): String = ev.isNull
+
+  override def exprCodeValue(ev: ExprCode): String = ev.value
+
+  override def javaType(dt: DataType, ctx: CodegenContext): String = ctx.javaType(dt)
+
+  override def boxedType(javaType: String, ctx: CodegenContext): String = {
+    ctx.boxedType(javaType)
+  }
+
+  override def defaultValue(dt: DataType, ctx: CodegenContext): String = ctx.defaultValue(dt)
+
+  override def isPrimitiveType(javaType: String, ctx: CodegenContext): Boolean = {
+    ctx.isPrimitiveType(javaType)
+  }
+
+  override def primitiveTypeName(javaType: String, ctx: CodegenContext): String = {
+    ctx.primitiveTypeName(javaType)
+  }
+
+  override def getValue(input: String, dataType: DataType, ordinal: String,
+      ctx: CodegenContext): String = {
+    ctx.getValue(input, dataType, ordinal)
+  }
+
+  override def optionalQueryPreparations(session: SparkSession): Seq[Rule[SparkPlan]] = {
+    python.ExtractPythonUDFs :: Nil
+  }
+
+  override def newPivot(groupByExprs: Seq[NamedExpression], pivotColumn: Expression,
+      pivotValues: Seq[Expression], aggregates: Seq[Expression], child: LogicalPlan): Pivot = {
+    if (!pivotValues.forall(_.isInstanceOf[Literal])) {
+      throw new AnalysisException(
+        s"Literal expressions required for pivot values, found: ${pivotValues.mkString("; ")}")
+    }
+    Pivot(groupByExprs, pivotColumn, pivotValues.map(_.asInstanceOf[Literal]), aggregates, child)
   }
 }
 
@@ -741,7 +808,9 @@ class SmartConnectorExternalCatalog210(override val session: SparkSession)
 
   override def alterTable(table: CatalogTable): Unit = alterTableImpl(table)
 
-  def alterTableSchema(db: String, table: String, schema: StructType): Unit = {}
+  def alterTableSchema(db: String, table: String, schema: StructType): Unit = {
+    throw new UnsupportedOperationException("not expected to be invoked")
+  }
 
   override def loadDynamicPartitions(schema: String, table: String, loadPath: String,
       partition: TablePartitionSpec, replace: Boolean, numDP: Int, holdDDLTime: Boolean): Unit = {

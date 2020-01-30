@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2020 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -14,6 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+
 package org.apache.spark.sql.internal
 
 import java.lang.reflect.Field
@@ -37,7 +38,7 @@ import org.apache.spark.sql.catalyst.analysis.{Analyzer, FunctionRegistry, Unres
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, GeneratedClass}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, ExprCode, GeneratedClass}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame, UnaryMinus, UnboundedFollowing, UnboundedPreceding}
 import org.apache.spark.sql.catalyst.json.JSONOptions
 import org.apache.spark.sql.catalyst.optimizer.Optimizer
@@ -52,11 +53,11 @@ import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.ui.{SQLAppStatusListener, SQLAppStatusStore, SnappySQLAppListener}
-import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, PartitionedDataSourceScan, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.hive._
 import org.apache.spark.sql.sources.{BaseRelation, Filter, JdbcExtendedUtils, ResolveQueryHints}
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
-import org.apache.spark.sql.types.{DataType, Metadata, StructType}
+import org.apache.spark.sql.types.{DataType, Metadata, StructField, StructType}
 import org.apache.spark.status.api.v1.RDDStorageInfo
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.SnappyStreamingContext
@@ -67,7 +68,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 /**
  * Implementation of [[SparkInternals]] for Spark 2.3.2.
  */
-class Spark232Internals extends SparkInternals {
+class Spark232Internals extends Spark211Internals with SparkInternals {
 
   private val codegenContextClassFunctions: Field = {
     val f = classOf[CodegenContext].getDeclaredField("classFunctions")
@@ -76,14 +77,6 @@ class Spark232Internals extends SparkInternals {
   }
 
   override def version: String = "2.3.2"
-
-  override def uncacheQuery(spark: SparkSession, plan: LogicalPlan, blocking: Boolean): Unit = {
-    spark.sharedState.cacheManager.uncacheQuery(spark, plan, blocking)
-  }
-
-  override def mapExpressions(plan: LogicalPlan, f: Expression => Expression): LogicalPlan = {
-    plan.mapExpressions(f)
-  }
 
   override def registerFunction(session: SparkSession, name: FunctionIdentifier,
       info: ExpressionInfo, function: Seq[Expression] => Expression): Unit = {
@@ -433,9 +426,6 @@ class Spark232Internals extends SparkInternals {
 
   override def catalogTableViewOriginalText(catalogTable: CatalogTable): Option[String] = None
 
-  override def catalogTableSchemaPreservesCase(catalogTable: CatalogTable): Boolean =
-    catalogTable.schemaPreservesCase
-
   override def catalogTableIgnoredProperties(catalogTable: CatalogTable): Map[String, String] =
     catalogTable.ignoredProperties
 
@@ -474,6 +464,11 @@ class Spark232Internals extends SparkInternals {
     externalCatalog.loadDynamicPartitions(schema, table, loadPath, partition, replace, numDP)
   }
 
+  override def alterTableSchema(externalCatalog: ExternalCatalog, schemaName: String,
+      table: String, newSchema: StructType): Unit = {
+    externalCatalog.alterTableDataSchema(schemaName, table, newSchema)
+  }
+
   override def alterTableStats(externalCatalog: ExternalCatalog, schema: String, table: String,
       stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])]): Unit = {
     val catalogStats = stats match {
@@ -486,8 +481,10 @@ class Spark232Internals extends SparkInternals {
   override def alterFunction(externalCatalog: ExternalCatalog, schema: String,
       function: CatalogFunction): Unit = externalCatalog.alterFunction(schema, function)
 
-  override def columnStatToMap(stat: ColumnStat, colName: String,
-      dataType: DataType): Map[String, String] = stat.toMap(colName, dataType)
+  override def columnStatToMap(stat: Any, colName: String,
+      dataType: DataType): Map[String, String] = {
+    stat.asInstanceOf[ColumnStat].toMap(colName, dataType)
+  }
 
   override def newEmbeddedHiveCatalog(conf: SparkConf, hadoopConf: Configuration,
       createTime: Long): SnappyHiveExternalCatalog = {
@@ -557,7 +554,6 @@ class Spark232Internals extends SparkInternals {
     context.ui.get.store.rddList()
   }
 }
-
 
 /**
  * Simple extension to CacheManager to enable clearing cached plan on cache create/drop.
@@ -646,9 +642,6 @@ final class SnappyEmbeddedHiveCatalog23(override val conf: SparkConf,
     renameTableImpl(schema, oldName, newName)
 
   override def doAlterTable(table: CatalogTable): Unit = alterTableImpl(table)
-
-  override def doAlterTableDataSchema(schemaName: String, table: String,
-      newSchema: StructType): Unit = alterTableSchemaImpl(schemaName, table, newSchema)
 
   override def doAlterTableStats(schema: String, table: String,
       stats: Option[CatalogStatistics]): Unit = {

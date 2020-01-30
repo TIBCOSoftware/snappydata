@@ -1316,6 +1316,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       allowExisting)
   }
 
+  // scalastyle:off
   /**
    * Create a table with given name, provider, optional schema DDL string, optional schema.
    * and other options.
@@ -1330,7 +1331,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       isExternal: Boolean,
       partitionColumns: Array[String] = Utils.EMPTY_STRING_ARRAY,
       bucketSpec: Option[BucketSpec] = None,
-      query: Option[LogicalPlan] = None): DataFrame = {
+      query: Option[LogicalPlan] = None,
+      comment: Option[String] = None,
+      location: Option[String] = None): DataFrame = {
+    // scalastyle:on
+
     val providerIsBuiltIn = SnappyContext.isBuiltInProvider(provider)
     if (providerIsBuiltIn) {
       if (isExternal) {
@@ -1386,7 +1391,17 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       }
     }
     // if there is no path option for external DataSources, then mark as MANAGED except for JDBC
-    val storage = DataSource.buildStorageFormatFromOptions(fullOptions)
+    var storage = DataSource.buildStorageFormatFromOptions(fullOptions)
+    // check for both LOCATION and 'path' in OPTIONS
+    if (location.isDefined) {
+      if (storage.locationUri.isDefined) {
+        throw new ParseException(
+          "LOCATION and 'path' in OPTIONS are both used to indicate the custom table path, " +
+              "you can only specify one of them.")
+      } else {
+        storage = storage.copy(locationUri = location)
+      }
+    }
     val tableType = if (!providerIsBuiltIn && storage.locationUri.isEmpty &&
         !Utils.toLowerCase(provider).contains("jdbc")) {
       CatalogTableType.MANAGED
@@ -1398,7 +1413,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       schema = schema,
       provider = Some(provider),
       partitionColumnNames = partitionColumns.toSeq,
-      bucketSpec = bucketSpec)
+      bucketSpec = bucketSpec,
+      comment = comment)
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
     sessionState.executePlan(plan).toRdd
     val df = table(resolvedName)

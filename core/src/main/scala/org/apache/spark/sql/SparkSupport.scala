@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2020 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -14,6 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+
 package org.apache.spark.sql
 
 import scala.util.control.NonFatal
@@ -89,6 +90,7 @@ object SparkSupport extends Logging {
           case "2.1.0" => s"$INTERNAL_PACKAGE.Spark210Internals"
           case "2.1.1" => s"$INTERNAL_PACKAGE.Spark211Internals"
           case "2.3.2" => s"$INTERNAL_PACKAGE.Spark232Internals"
+          case "2.4.4" => s"$INTERNAL_PACKAGE.Spark244Internals"
           case v => throw new SparkException(s"Unsupported Spark version $v")
         }
         val implClass: Class[_] = Utils.classForName(implClassName)

@@ -158,7 +158,7 @@ abstract case class RowTableScan(
   private def genCodeCompactRowColumn(ctx: CodegenContext, rowVar: String,
       holder: String, ordinal: Int, dataType: DataType,
       nullable: Boolean): ExprCode = {
-    val javaType = ctx.javaType(dataType)
+    val javaType = internals.javaType(dataType, ctx)
     val col = ctx.freshName("col")
     val pos = ordinal + 1
     var useHolder = true
@@ -261,21 +261,21 @@ abstract case class RowTableScan(
     if (nullable) {
       val isNullVar = ctx.freshName("isNull")
       if (useHolder) {
-        ExprCode(s"$code\nfinal boolean $isNullVar = $holder.wasNullAndClear();",
+        internals.newExprCode(s"$code\nfinal boolean $isNullVar = $holder.wasNullAndClear();",
           isNullVar, col)
       } else {
-        ExprCode(s"$code\nfinal boolean $isNullVar = $col == null;",
+        internals.newExprCode(s"$code\nfinal boolean $isNullVar = $col == null;",
           isNullVar, col)
       }
     } else {
-      ExprCode(code, "false", col)
+      internals.newExprCode(code, "false", col)
     }
   }
 
   private def genCodeResultSetColumn(ctx: CodegenContext, rsVar: String,
       holder: String, ordinal: Int, dataType: DataType,
       nullable: Boolean): ExprCode = {
-    val javaType = ctx.javaType(dataType)
+    val javaType = internals.javaType(dataType, ctx)
     val col = ctx.freshName("col")
     val pos = ordinal + 1
     val code = dataType match {
@@ -380,10 +380,10 @@ abstract case class RowTableScan(
     }
     if (nullable) {
       val isNullVar = ctx.freshName("isNull")
-      ExprCode(code + s"\nfinal boolean $isNullVar = $rsVar.wasNull();",
+      internals.newExprCode(code + s"\nfinal boolean $isNullVar = $rsVar.wasNull();",
         isNullVar, col)
     } else {
-      ExprCode(code, "false", col)
+      internals.newExprCode(code, "false", col)
     }
   }
 }

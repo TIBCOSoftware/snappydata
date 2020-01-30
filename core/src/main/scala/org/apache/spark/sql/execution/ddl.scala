@@ -64,13 +64,15 @@ case class CreateTableUsingCommand(
     partitionColumns: Array[String],
     bucketSpec: Option[BucketSpec],
     query: Option[LogicalPlan],
-    isExternal: Boolean) extends RunnableCommand {
+    isExternal: Boolean,
+    comment: Option[String] = None,
+    location: Option[String] = None) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val session = sparkSession.asInstanceOf[SnappySession]
     val allOptions = session.addBaseTableOption(baseTable, options)
-    session.createTableInternal(tableIdent, provider, userSpecifiedSchema,
-      schemaDDL, mode, allOptions, isExternal, partitionColumns, bucketSpec, query)
+    session.createTableInternal(tableIdent, provider, userSpecifiedSchema, schemaDDL, mode,
+      allOptions, isExternal, partitionColumns, bucketSpec, query, comment, location)
     Nil
   }
 }

@@ -23,7 +23,7 @@ import org.eclipse.collections.impl.set.mutable.UnifiedSet
 
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{SnappySession, SparkSupport}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
@@ -250,7 +250,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |$closeForNoContext
        |${if (numInsertedRowsMetric eq null) ""
         else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
-       |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
+       |${consume(ctx, Seq(internals.newExprCode("", "false", numInsertions, classOf[Long])))}
        |success = true;
        |}
        |finally {
@@ -393,7 +393,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |$closeForNoContext
        |${if (numInsertedRowsMetric eq null) ""
           else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
-       |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
+       |${consume(ctx, Seq(internals.newExprCode("", "false", numInsertions, classOf[Long])))}
        |success = true;
        |}
        |finally {
@@ -470,10 +470,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
    */
   private def setColumn(ctx: CodegenContext, row: String, dataType: DataType,
       ordinal: Int, value: String): String = {
-    val jt = ctx.javaType(dataType)
+    val jt = internals.javaType(dataType, ctx)
     dataType match {
-      case _ if ctx.isPrimitiveType(jt) =>
-        s"$row.set${ctx.primitiveTypeName(jt)}($ordinal, $value)"
+      case _ if internals.isPrimitiveType(jt, ctx) =>
+        s"$row.set${internals.primitiveTypeName(jt, ctx)}($ordinal, $value)"
       case t: DecimalType => s"$row.setDecimal($ordinal, $value, ${t.precision})"
       case udt: UserDefinedType[_] => setColumn(ctx, row, udt.sqlType, ordinal, value)
       case _ => s"$row.update($ordinal, $value)"
@@ -495,12 +495,12 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       val field = schema(i)
       val dataType = field.dataType
       val evaluationCode = input(i)
-      evaluationCode.code +
+      evaluationCode.code.toString +
         s"""
-         if (${evaluationCode.isNull}) {
+         if (${internals.exprCodeIsNull(evaluationCode)}) {
            $mutableRow.setNullAt($i);
          } else {
-           ${setColumn(ctx, mutableRow, dataType, i, evaluationCode.value)};
+           ${setColumn(ctx, mutableRow, dataType, i, internals.exprCodeValue(evaluationCode))};
          }
       """
     }
@@ -508,8 +508,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     ctx.INPUT_ROW = mutableRow
 
     val rowReadExprs = schema.zipWithIndex.map { case (field, ordinal) =>
-      ExprCode("", s"${ctx.INPUT_ROW}.isNullAt($ordinal)",
-        ctx.getValue(ctx.INPUT_ROW, field.dataType, ordinal.toString))
+      internals.newExprCode("", s"${ctx.INPUT_ROW}.isNullAt($ordinal)",
+        internals.getValue(ctx.INPUT_ROW, field.dataType, ordinal.toString, ctx), classOf[Int])
     }
 
     val columnWrite = schema.indices.map { i =>
@@ -555,7 +555,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
     val (statsSchema, stats) = columnStats.unzip
     val statsEv = ColumnWriter.genStatsRow(ctx, batchSizeTerm, stats, statsSchema)
-    val statsRow = statsEv.value
+    val statsRow = internals.exprCodeValue(statsEv)
 
     storeColumnBatch = ctx.freshName("storeColumnBatch")
     ctx.addNewFunction(storeColumnBatch,
@@ -563,7 +563,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |private final void $storeColumnBatch(int $maxDeltaRowsTerm,
          |    int $batchSizeTerm, long[] $cursorArrayTerm, scala.Option $conn) {
          |  // create statistics row
-         |  ${statsEv.code.trim}
+         |  ${statsEv.code.toString.trim}
          |  // create ColumnBatch and insert
          |  final java.nio.ByteBuffer[] $buffers =
          |      new java.nio.ByteBuffer[${schema.length}];
@@ -709,7 +709,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       "java.lang.String")
     val (statsSchema, stats) = columnStats.unzip
     val statsEv = ColumnWriter.genStatsRow(ctx, batchSizeTerm, stats, statsSchema)
-    val statsRow = statsEv.value
+    val statsRow = internals.exprCodeValue(statsEv)
     storeColumnBatch = ctx.freshName("storeColumnBatch")
     ctx.addNewFunction(storeColumnBatch,
       s"""
@@ -717,7 +717,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |    int $batchSizeTerm, ${batchFunctionDeclarations.toString()}, scala.Some $conn) {
          |  $encoderCursorDeclarations
          |  // create statistics row
-         |  ${statsEv.code.trim}
+         |  ${statsEv.code.toString.trim}
          |  // create ColumnBatch and insert
          |  final java.nio.ByteBuffer[] $buffers =
          |      new java.nio.ByteBuffer[${schema.length}];
@@ -799,7 +799,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       s"batchSize=$columnBatchSize maxDeltaRows=$columnMaxDeltaRows compression=$compressionCodec"
 }
 
-object ColumnWriter {
+object ColumnWriter extends SparkSupport {
 
   /**
    * Supported types for which column statistics are maintained and can be used
@@ -818,7 +818,7 @@ object ColumnWriter {
     var canBeNull = false
     val nullCount = ctx.freshName("nullCount")
     val sqlType = Utils.getSQLDataType(field.dataType)
-    val jt = ctx.javaType(sqlType)
+    val jt = internals.javaType(sqlType, ctx)
     val (lCode, uCode) = sqlType match {
       case BooleanType =>
         (s"final boolean $lower = $encoder.lowerLong() > 0;",
@@ -854,19 +854,21 @@ object ColumnWriter {
     } else (lCode, uCode)
 
     (ColumnStatsSchema(field.name, field.dataType, nullCountNullable).schema, Seq(
-      ExprCode(lowerCode, lowerIsNull, lower),
-      ExprCode(upperCode, upperIsNull, upper),
-      ExprCode(s"final int $nullCount = $encoder.nullCount();", "false", nullCount)))
+      internals.newExprCode(lowerCode, lowerIsNull, lower),
+      internals.newExprCode(upperCode, upperIsNull, upper),
+      internals.newExprCode(s"final int $nullCount = $encoder.nullCount();", "false",
+        nullCount, classOf[Int])))
   }
 
   def genStatsRow(ctx: CodegenContext, batchSizeTerm: String,
       stats: Seq[Seq[ExprCode]], statsSchema: Seq[Seq[Attribute]]): ExprCode = {
-    val statsVars = ExprCode("", "false", batchSizeTerm) +: stats.flatten
+    val statsVars = internals.newExprCode(code = "", isNull = "false", batchSizeTerm,
+      classOf[Int]) +: stats.flatten
     val statsExprs = (ColumnStatsSchema.COUNT_ATTRIBUTE +: statsSchema.flatten)
         .zipWithIndex.map { case (a, i) =>
       a.dataType match {
         // some types will always be null so avoid unnecessary generated code
-        case _ if statsVars(i).isNull == "true" => Literal(null, NullType)
+        case _ if internals.exprCodeIsNull(statsVars(i)) == "true" => Literal(null, NullType)
         case _ => BoundReference(i, a.dataType, a.nullable)
       }
     }
@@ -880,12 +882,12 @@ object ColumnWriter {
       ev: ExprCode, batchSizeTerm: String, offsetTerm: String = null,
       baseOffsetTerm: String = null): String = {
     val sqlType = Utils.getSQLDataType(dataType)
-    val jt = ctx.javaType(sqlType)
-    var isNull = ev.isNull
-    val input = ev.value
+    val jt = internals.javaType(sqlType, ctx)
+    var isNull = internals.exprCodeIsNull(ev)
+    val input = internals.exprCodeValue(ev)
     val writeValue = sqlType match {
-      case _ if ctx.isPrimitiveType(jt) =>
-        val typeName = ctx.primitiveTypeName(jt)
+      case _ if internals.isPrimitiveType(jt, ctx) =>
+        val typeName = internals.primitiveTypeName(jt, ctx)
         if (offsetTerm eq null) {
           s"$cursorTerm = $encoder.write$typeName($cursorTerm, $input);"
         } else {
@@ -1109,7 +1111,7 @@ object ColumnWriter {
       baseDataOffset: String, skipBytes: Int): String = {
     // scalastyle:on
 
-    val getter = ctx.getValue(input, dt, index)
+    val getter = internals.getValue(input, dt, index, ctx)
     val bitSetClass = BitSet.getClass.getName
     val fieldOffset = ctx.freshName("fieldOffset")
     val value = ctx.freshName("value")
@@ -1118,7 +1120,7 @@ object ColumnWriter {
       s"""
          |final long $fieldOffset = $baseDataOffset + ($index << 3);
          |${genCodeColumnWrite(ctx, dt, nullable = false, encoder, encoder,
-            cursorTerm, ExprCode("", "false", value), batchSizeTerm,
+            cursorTerm, internals.newExprCode("", "false", value, classOf[Int]), batchSizeTerm,
             fieldOffset, baseOffset)}
       """.stripMargin
     val (checkNull, assignValue) = dt match {
@@ -1133,14 +1135,14 @@ object ColumnWriter {
     }
     if (canBeNull) {
       s"""
-         |final ${ctx.javaType(dt)} $value;
+         |final ${internals.javaType(dt, ctx)} $value;
          |if ($checkNull) {
          |  $bitSetClass.MODULE$$.set($encoder.buffer(),
          |      $encoder.baseOffset() + $baseOffset, $index + ${skipBytes << 3});
          |} else {$assignValue$serializeValue}
         """.stripMargin
     } else {
-      s"final ${ctx.javaType(dt)} $value = $getter;$serializeValue"
+      s"final ${internals.javaType(dt, ctx)} $value = $getter;$serializeValue"
     }
   }
 }

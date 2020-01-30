@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2020 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -14,21 +14,20 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+
 package org.apache.spark.sql.internal
 
 import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
-import org.apache.hadoop.conf.Configuration
 
+import org.apache.spark.SparkException
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogStorageFormat, CatalogTable, CatalogTableType}
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogStorageFormat, CatalogTable, CatalogTableType, ExternalCatalog}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, LogicalPlan, Statistics}
 import org.apache.spark.sql.execution.CacheManager
-import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.{SparkConf, SparkException}
 
 /**
  * Implementation of [[SparkInternals]] for Spark 2.1.1.
@@ -73,9 +72,9 @@ class Spark211Internals extends Spark210Internals {
   override def catalogTableSchemaPreservesCase(catalogTable: CatalogTable): Boolean =
     catalogTable.schemaPreservesCase
 
-  override def newEmbeddedHiveCatalog(conf: SparkConf, hadoopConf: Configuration,
-      createTime: Long): SnappyHiveExternalCatalog = {
-    new SnappyEmbeddedHiveCatalog211(conf, hadoopConf, createTime)
+  override def alterTableSchema(externalCatalog: ExternalCatalog, schemaName: String,
+      table: String, newSchema: StructType): Unit = {
+    externalCatalog.alterTableSchema(schemaName, table, newSchema)
   }
 
   override def newSmartConnectorExternalCatalog(
@@ -112,14 +111,6 @@ final class SnappyCacheManager211 extends CacheManager {
     super.recacheByPath(session, resourcePath)
     session.asInstanceOf[SnappySession].clearPlanCache()
   }
-}
-
-final class SnappyEmbeddedHiveCatalog211(conf: SparkConf,
-    hadoopConf: Configuration, createTime: Long)
-    extends SnappyEmbeddedHiveCatalog210(conf, hadoopConf, createTime) {
-
-  override def alterTableSchema(schemaName: String, table: String, newSchema: StructType): Unit =
-    alterTableSchemaImpl(schemaName, table, newSchema)
 }
 
 final class SmartConnectorExternalCatalog211(session: SparkSession)

@@ -180,10 +180,10 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     ctx.currentVars = null
 
     val keyVars = updateInput.takeRight(4)
-    val ordinalIdVar = keyVars.head.value
-    val batchIdVar = keyVars(1).value
-    val bucketVar = keyVars(2).value
-    val numRowsVar = keyVars(3).value
+    val ordinalIdVar = internals.exprCodeValue(keyVars.head)
+    val batchIdVar = internals.exprCodeValue(keyVars(1))
+    val bucketVar = internals.exprCodeValue(keyVars(2))
+    val numRowsVar = internals.exprCodeValue(keyVars(3))
 
     val updateVarsCode = evaluateVariables(updateInput)
     // row buffer needs to select the rowId and partitioning columns so drop last three
@@ -216,16 +216,17 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       ctx.addNewFunction(function,
         s"""
            |private void $function(int $ordinal, int $ordinalIdVar,
-           |    boolean $isNull, ${ctx.javaType(dataType)} $field) {
+           |    boolean $isNull, ${internals.javaType(dataType, ctx)} $field) {
            |  final $deltaEncoderClass $encoderTerm = $deltaEncoders[$i];
            |  final $encoderClass $realEncoderTerm = $encoderTerm.getRealEncoder();
            |  $encoderTerm.setUpdatePosition($ordinalIdVar);
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, realEncoderTerm,
-                encoderTerm, cursorTerm, ev.copy(isNull = isNull, value = field), ordinal)}
+                encoderTerm, cursorTerm, internals.copyExprCode(ev, isNull, field), ordinal)}
            |}
         """.stripMargin)
       // code for invoking the function
-      s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
+      s"$function($batchOrdinal, (int)$ordinalIdVar, ${internals.exprCodeIsNull(ev)}, " +
+          s"${internals.exprCodeValue(ev)});"
     }.mkString("\n")
     // Old code(Keeping the comment for better understanding)
     // Write the delta stats row for all table columns at the end of a batch.
@@ -248,8 +249,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     // equals to 1 i.e LZ4 compression codec id ).
     // Hence setting each 3rd bit( null count stats) with not null flag. This will never cause
     // the word to be read as negative number.
-    val allNullsExprs = Seq(ExprCode("", "true", ""),
-      ExprCode("", "true", ""), ExprCode("", "false", "-1"))
+    val allNullsExprs = Seq(internals.newExprCode("", "true", ""),
+      internals.newExprCode("", "true", ""), internals.newExprCode("", "false", "-1"))
     val (statsSchema, stats) = tableSchema.indices.map { i =>
       val field = tableSchema(i)
       tableToUpdateIndex.get(i) match {
@@ -284,8 +285,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |    // create delta statistics row
          |    ${statsEv.code}
          |    // store the delta column batch
-         |    final $columnBatchClass columnBatch = $columnBatchClass.apply(
-         |        $batchOrdinal, buffers, ${statsEv.value}.getBytes(), $deltaIndexes);
+         |    final $columnBatchClass columnBatch = $columnBatchClass.apply($batchOrdinal,
+         |        buffers, ${internals.exprCodeValue(statsEv)}.getBytes(), $deltaIndexes);
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
          |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch, $lastBucketId,
          |        $lastColumnBatchId, -1, ${compressionCodec.id}, new scala.Some($connTerm));

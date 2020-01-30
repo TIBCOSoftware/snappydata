@@ -112,6 +112,7 @@ allprojects {
     spark210Version = '2.1.0'
     spark211Version = '2.1.1'
     spark232Version = '2.3.2'
+    spark244Version = '2.4.4'
 
     sparkVersion = spark211Version
     sparkConnectorVersion = System.getProperty('spark.connector.version', sparkVersion)

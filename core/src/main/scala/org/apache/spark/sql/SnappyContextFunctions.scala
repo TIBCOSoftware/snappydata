@@ -29,7 +29,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
-import org.apache.spark.sql.execution.{CollapseCodegenStages, PlanLater, QueryExecution, SparkPlan, TopK, python}
+import org.apache.spark.sql.execution.{CollapseCodegenStages, PlanLater, QueryExecution, SparkPlan, TopK}
 import org.apache.spark.sql.hive.{OptimizeSortAndFilePlans, SnappyAnalyzer}
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect}
 import org.apache.spark.sql.sources.BaseRelation
@@ -147,15 +147,15 @@ class SnappyContextFunctions(val session: SnappySession) extends SparkSupport {
   def getPostHocResolutionRules: List[Rule[LogicalPlan]] = Nil
 
   protected def createQueryPreparations(
-      topLevel: Boolean): Seq[Rule[SparkPlan]] = Seq[Rule[SparkPlan]](
-    python.ExtractPythonUDFs,
-    TokenizeSubqueries(session),
-    EnsureRequirements(session.sessionState.conf),
-    OptimizeSortAndFilePlans(session.sessionState.snappyConf),
-    CollapseCollocatedPlans(session),
-    CollapseCodegenStages(session.sessionState.conf),
-    InsertCachedPlanFallback(session, topLevel),
-    ReuseExchange(session.sessionState.conf))
+      topLevel: Boolean): Seq[Rule[SparkPlan]] = internals.optionalQueryPreparations(session) ++
+      Seq[Rule[SparkPlan]](
+        TokenizeSubqueries(session),
+        EnsureRequirements(session.sessionState.conf),
+        OptimizeSortAndFilePlans(session.sessionState.snappyConf),
+        CollapseCollocatedPlans(session),
+        CollapseCodegenStages(session.sessionState.conf),
+        InsertCachedPlanFallback(session, topLevel),
+        ReuseExchange(session.sessionState.conf))
 
   def queryPreparations(topLevel: Boolean): Seq[Rule[SparkPlan]] =
     if (topLevel) queryPreparationsTopLevel else queryPreparationsNode

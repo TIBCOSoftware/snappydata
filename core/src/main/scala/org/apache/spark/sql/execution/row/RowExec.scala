@@ -151,7 +151,7 @@ trait RowExec extends TableExec {
        |  $stmt = $connTerm.prepareStatement("$pstmtStr");
        |  $result = 0L;
        |  $mutateTable();
-       |  ${consume(ctx, Seq(ExprCode("", "false", result)))}
+       |  ${consume(ctx, Seq(internals.newExprCode("", "false", result, classOf[Long])))}
        |} catch (java.sql.SQLException sqle) {
        |  throw new java.io.IOException(sqle.toString(), sqle);
        |}$commitCode
@@ -189,10 +189,10 @@ trait RowExec extends TableExec {
       val isNull = ctx.freshName("isNull")
       val field = ctx.freshName("field")
       val ev = input(col)
-      val dataType = ctx.javaType(f.dataType)
+      val dataType = internals.javaType(f.dataType, ctx)
       val columnSetterFunction = ctx.freshName("setColumnOfRow")
       val columnSetterCode = CodeGeneration.getColumnSetterFragment(col, f.dataType,
-        connProps.dialect, ev.copy(isNull = isNull, value = field), stmt, schemaFields, ctx)
+        connProps.dialect, internals.copyExprCode(ev, isNull, field), stmt, schemaFields, ctx)
       ctx.addNewFunction(columnSetterFunction,
         s"""
            |private void $columnSetterFunction(final boolean $isNull,
@@ -200,7 +200,7 @@ trait RowExec extends TableExec {
            |  $columnSetterCode
            |}
         """.stripMargin)
-      s"$columnSetterFunction(${ev.isNull}, ${ev.value});"
+      s"$columnSetterFunction(${internals.exprCodeIsNull(ev)}, ${internals.exprCodeValue(ev)});"
     }.mkString("\n")
     s"""
        |$inputCode

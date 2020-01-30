@@ -667,6 +667,16 @@ class StoreHiveCatalog extends ExternalCatalog with Logging with SparkSupport {
       assert(request.isSetCatalogTable, "ALTER TABLE: expected catalogTable to be set")
       externalCatalog.alterTable(getCatalogTableForWrite(request, user))
 
+    case snappydataConstants.CATALOG_ALTER_TABLE_SCHEMA =>
+      assert(request.getNamesSize == 2,
+        "ALTER TABLE schema: unexpected names = " + request.getNames)
+      assert(request.isSetNewSchema, "ALTER TABLE schema: expected newSchema to be set")
+      val schemaName = request.getNames.get(0)
+      val table = request.getNames.get(1)
+      checkSchemaPermission(schemaName, table, user)
+      internals.alterTableSchema(externalCatalog, schemaName, table,
+        ExternalStoreUtils.getTableSchema(request.getNewSchema))
+
     case snappydataConstants.CATALOG_ALTER_TABLE_STATS =>
       assert(request.isSetCatalogStats, "ALTER TABLE STATS: expected catalogStats to be set")
       val schema = request.getNames.get(0)

@@ -34,6 +34,7 @@ include ':snappy-encoders_' + scalaBinaryVersion
 include ":snappy-core_${scalaBinaryVersion}:compat-spark2.1.0"
 include ":snappy-core_${scalaBinaryVersion}:compat-spark2.1.1"
 include ":snappy-core_${scalaBinaryVersion}:compat-spark2.3.2"
+include ":snappy-core_${scalaBinaryVersion}:compat-spark2.4.4"
 
 project(':snappy-jdbc_' + scalaBinaryVersion).projectDir = "$rootDir/jdbc" as File
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
@@ -47,6 +48,7 @@ project(':snappy-encoders_' + scalaBinaryVersion).projectDir = "$rootDir/encoder
 project(":snappy-core_${scalaBinaryVersion}:compat-spark2.1.0").projectDir = "$rootDir/core/compatibility/spark-2.1.0" as File
 project(":snappy-core_${scalaBinaryVersion}:compat-spark2.1.1").projectDir = "$rootDir/core/compatibility/spark-2.1.1" as File
 project(":snappy-core_${scalaBinaryVersion}:compat-spark2.3.2").projectDir = "$rootDir/core/compatibility/spark-2.3.2" as File
+project(":snappy-core_${scalaBinaryVersion}:compat-spark2.4.4").projectDir = "$rootDir/core/compatibility/spark-2.4.4" as File
 
 if (sparkConnectorVersion != sparkVersion) {
   include ':snappy-core-product_' + scalaBinaryVersion

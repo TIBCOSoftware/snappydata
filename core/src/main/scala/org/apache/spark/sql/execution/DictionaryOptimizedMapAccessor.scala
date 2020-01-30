@@ -18,11 +18,12 @@ package org.apache.spark.sql.execution
 
 import io.snappydata.collection.ObjectHashSet
 
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{SnappySession, SparkSupport}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.types.StringType
+import org.apache.spark.unsafe.types.UTF8String
 
 /**
  * Makes use of dictionary indexes for strings if any.
@@ -67,7 +68,7 @@ import org.apache.spark.sql.types.StringType
  * the effort (and could possibly even reduce overall performance in some
  * cases), hence this optimization is currently only for string type.
  */
-object DictionaryOptimizedMapAccessor {
+object DictionaryOptimizedMapAccessor extends SparkSupport {
 
   def canHaveSingleKeyCase(keyExpressions: Seq[Expression]): Boolean = {
     keyExpressions.length == 1 &&
@@ -88,8 +89,10 @@ object DictionaryOptimizedMapAccessor {
       accessor: ObjectHashMapAccessor): String = {
     val key = ctx.freshName("dictionaryKey")
     val keyIndex = keyDictVar.dictionaryIndex.value
-    val keyNull = keyVar.isNull != "false"
-    val keyEv = ExprCode("", if (keyNull) s"($key == null)" else "false", key)
+    val keyNull = internals.exprCodeIsNull(keyVar) != "false"
+    val keyValue = internals.exprCodeValue(keyVar)
+    val keyEv = internals.copyExprCode(keyVar, code = "",
+      isNull = if (keyNull) s"($key == null)" else "false", key, classOf[UTF8String])
     val className = accessor.getClassName
 
     // for the case when there is no entry in map (hash join), insert a token
@@ -115,7 +118,7 @@ object DictionaryOptimizedMapAccessor {
     val hashExprCode = if (keyNull) s"$key != null ? $key.hashCode() : -1"
     else s"$key.hashCode()"
     // if hash has already been calculated then use it
-    val hashExpr = accessor.session.getHashVar(ctx, keyVar.value :: Nil) match {
+    val hashExpr = accessor.session.getHashVar(ctx, keyValue :: Nil) match {
       case Some(h) =>
         hash = h
         s"if ($h == 0) $h = $hashExprCode;"
@@ -123,7 +126,7 @@ object DictionaryOptimizedMapAccessor {
     }
 
     // if keyVar code has not been consumed, then use dictionary
-    val keyAssign = if (keyVar.code.isEmpty) s"final UTF8String $key = ${keyVar.value};"
+    val keyAssign = if (keyVar.code.isEmpty) s"final UTF8String $key = $keyValue;"
     else {
       val dictionaryVar = keyDictVar.dictionary.value
       val stringAssignCode = ColumnEncoding.stringFromDictionaryCode(

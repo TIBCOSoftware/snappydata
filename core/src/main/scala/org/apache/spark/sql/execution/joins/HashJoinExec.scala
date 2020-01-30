@@ -40,7 +40,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.streaming.PhysicalDStreamPlan
 import org.apache.spark.sql.types.TypeUtilities
-import org.apache.spark.sql.{DelegateRDD, SnappySession}
+import org.apache.spark.sql.{DelegateRDD, SnappySession, SparkSupport}
 
 /**
  * :: DeveloperApi ::
@@ -62,7 +62,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     rightSizeInBytes: BigInt,
     replicatedTableJoin: Boolean)
     extends NonRecursivePlans with BinaryExecNode with HashJoin
-        with SnappyJoinLike with BatchConsumer {
+        with SnappyJoinLike with BatchConsumer with SparkSupport {
 
   override def nodeName: String = "SnappyHashJoin"
 
@@ -524,7 +524,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       val eval = evaluateRequiredVariables(buildPlan.output, buildVars,
         expr.references)
       // filter the output via condition
-      ctx.currentVars = input.map(_.copy(code = "")) ++ buildVars
+      ctx.currentVars = input.map(internals.copyExprCode(_, code = "")) ++ buildVars
       val ev = BindReferences.bindReference(expr,
         streamedPlan.output ++ buildPlan.output).genCode(ctx)
       (Some(ev), eval, condition)

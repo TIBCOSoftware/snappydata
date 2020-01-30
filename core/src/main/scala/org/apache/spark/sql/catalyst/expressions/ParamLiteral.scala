@@ -87,10 +87,10 @@ trait DynamicReplacableConstant extends Expression with SparkSupport {
     // temporary variable for storing value() result for cases where it can be
     // potentially expensive (e.g. for DynamicFoldableExpression)
     val valueResult = ctx.freshName("valueResult")
-    val isNullLocal = ev.isNull
-    val valueLocal = ev.value
+    val isNullLocal = internals.exprCodeIsNull(ev)
+    val valueLocal = internals.exprCodeValue(ev)
     val dataType = Utils.getSQLDataType(this.dataType)
-    val javaType = ctx.javaType(dataType)
+    val javaType = internals.javaType(dataType, ctx)
     // get values from map
     val isNull = termValues.isNull
     val valueTerm = termValues.valueTerm
@@ -103,10 +103,11 @@ trait DynamicReplacableConstant extends Expression with SparkSupport {
 
     if (!addMutableState) {
       // use the already added fields
-      return ev.copy(initCode, isNullLocal, valueLocal)
+      return internals.copyExprCode(ev, initCode, isNullLocal, valueLocal)
     }
     val valueRef = literalValueRef
-    val box = ctx.boxedType(javaType)
+    val box = internals.boxedType(javaType, ctx)
+    val defValue = internals.defaultValue(dataType, ctx)
 
     val unbox = dataType match {
       case BooleanType =>
@@ -142,7 +143,7 @@ trait DynamicReplacableConstant extends Expression with SparkSupport {
           s"""
              |Object $valueResult = $valueRef.value();
              |if (($isNull = ($valueResult == null))) {
-             |  $valueTerm = ${ctx.defaultValue(dataType)};
+             |  $valueTerm = $defValue;
              |} else {
              |  $valueTerm = ($box)$valueResult;
              |  if (com.gemstone.gemfire.internal.cache.GemFireCacheImpl.hasNewOffHeap() &&
@@ -166,10 +167,10 @@ trait DynamicReplacableConstant extends Expression with SparkSupport {
         s"""
            |Object $valueResult = $valueRef.value();
            |$isNull = $valueResult == null;
-           |$valueTerm = $isNull ? ${ctx.defaultValue(dataType)} : (($box)$valueResult)$unbox;
+           |$valueTerm = $isNull ? $defValue : (($box)$valueResult)$unbox;
         """.stripMargin, forceInline = true, useFreshName = false)
     }
-    ev.copy(initCode, isNullLocal, valueLocal)
+    internals.copyExprCode(ev, initCode, isNullLocal, valueLocal)
   }
 }
 
@@ -206,6 +207,8 @@ trait TokenizedLiteral extends LeafExpression with DynamicReplacableConstant {
  */
 final class TokenLiteral(_value: Any, _dataType: DataType)
     extends Literal(_value, _dataType) with TokenizedLiteral with KryoSerializable {
+
+  _foldable = true
 
   override def valueString: String = toString()
 

@@ -172,7 +172,9 @@ def taskGetApacheSparkDist(String ver, String distName, String prodDir) {
 
 task getApacheSparkDist {
   dependsOn taskGetApacheSparkDist(sparkConnectorVersion, sparkConnectorDistName, sparkConnectorProductDir)
-  dependsOn taskGetApacheSparkDist(sparkCurrentVersion, sparkCurrentDistName, sparkCurrentProductDir)
+  if (sparkConnectorVersion != sparkCurrentVersion) {
+    dependsOn taskGetApacheSparkDist(sparkCurrentVersion, sparkCurrentDistName, sparkCurrentProductDir)
+  }
 }
 
 test.dependsOn ':cleanJUnit'

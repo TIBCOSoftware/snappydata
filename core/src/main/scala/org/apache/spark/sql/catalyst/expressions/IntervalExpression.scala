@@ -17,6 +17,7 @@
 
 package org.apache.spark.sql.catalyst.expressions
 
+import org.apache.spark.sql.SparkSupport
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
@@ -24,7 +25,7 @@ import org.apache.spark.sql.types.{AbstractDataType, CalendarIntervalType, DataT
 import org.apache.spark.unsafe.types.CalendarInterval
 
 case class IntervalExpression(children: Seq[Expression], units: Seq[Long])
-    extends Expression with ImplicitCastInputTypes {
+    extends Expression with ImplicitCastInputTypes with SparkSupport {
 
   override def inputTypes: Seq[AbstractDataType] =
     if (children.length == 1) LongType :: Nil else Seq.fill(children.length)(LongType)
@@ -92,20 +93,22 @@ case class IntervalExpression(children: Seq[Expression], units: Seq[Long])
     val micros = ctx.freshName("micros")
     val intervalClass = classOf[CalendarInterval].getName
     val nullable = this.nullable
+    val evIsNull = internals.exprCodeIsNull(ev)
+    val evValue = internals.exprCodeValue(ev)
     if (children.length == 1) {
       val childGen = children.head.genCode(ctx)
-      val childIsNull = if (nullable) childGen.isNull else "false"
+      val childIsNull = if (nullable) internals.exprCodeIsNull(childGen) else "false"
       val code =
         s"""
-           |${childGen.code}
-           |$intervalClass ${ev.value};
-           |${doGenCodeSingle(childGen.value, childIsNull, ev.value,
+           |${childGen.code.toString}
+           |$intervalClass $evValue;
+           |${doGenCodeSingle(internals.exprCodeValue(childGen), childIsNull, evValue,
               units.head.toString, months, micros, intervalClass)}
         """.stripMargin
       if (childIsNull == "false") {
-        ev.copy(code = code, isNull = "false")
+        internals.copyExprCode(ev, code = code, isNull = "false")
       } else {
-        ev.copy(code = code + s"boolean ${ev.isNull} = ${ev.value} == null;\n")
+        internals.copyExprCode(ev, code = code + s"boolean $evIsNull = $evValue == null;\n")
       }
     } else {
       val index = ctx.freshName("i")
@@ -117,31 +120,33 @@ case class IntervalExpression(children: Seq[Expression], units: Seq[Long])
       val size = childGens.length
       val initArr = childGens.indices.map { i =>
         s"""
-           |$childValueArr[$i] = ${childGens(i).value};
-           |${if (nullable) s"$childIsNullArr[$i] = ${childGens(i).isNull};" else ""}
+           |$childValueArr[$i] = ${internals.exprCodeValue(childGens(i))};
+           |${if (nullable) s"$childIsNullArr[$i] = ${internals.exprCodeIsNull(childGens(i))};"
+              else ""}
         """.stripMargin
       }.mkString("")
       val childIsNull = if (nullable) s"$childIsNullArr[$index]" else "false"
       val code =
         s"""
-           |${childGens.map(_.code).mkString("\n")}
+           |${childGens.map(_.code.toString).mkString("\n")}
            |long[] $childValueArr = new long[$size];
            |${if (nullable) s"boolean[] $childIsNullArr = new boolean[$size];" else ""}
-           |$intervalClass ${ev.value} = null;
+           |$intervalClass $evValue = null;
            |$initArr
            |for (int $index = 0; $index < $size; $index++) {
            |  $intervalClass $result;
            |  ${doGenCodeSingle(s"$childValueArr[$index]", childIsNull, result,
                 s"$unitsArr[$index]", months, micros, intervalClass)}
            |  if ($result == null) {
-           |    ${ev.value} = null;
+           |    $evValue = null;
            |    break;
            |  }
-           |  ${ev.value} = ${ev.value} != null ? ${ev.value}.add($result) : $result;
+           |  $evValue = $evValue != null ? $evValue.add($result) : $result;
            |}
         """.stripMargin
-      if (nullable) ev.copy(code = code + s"boolean ${ev.isNull} = ${ev.value} == null;\n")
-      else ev.copy(code = code, isNull = "false")
+      if (nullable) {
+        internals.copyExprCode(ev, code = code + s"boolean $evIsNull = $evValue == null;\n")
+      } else internals.copyExprCode(ev, code = code, isNull = "false")
     }
   }
 

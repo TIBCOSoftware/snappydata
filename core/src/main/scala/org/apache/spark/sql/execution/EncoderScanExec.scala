@@ -50,7 +50,7 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
 
     val javaClass = encoder.clsTag.runtimeClass
     val javaTypeName =
-      if (javaClass.isPrimitive) ctx.boxedType(javaClass.getTypeName)
+      if (javaClass.isPrimitive) internals.boxedType(javaClass.getTypeName, ctx)
       else javaClass.getTypeName
 
     val objVar = ctx.freshName("object")
@@ -70,7 +70,7 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
              |  throw new RuntimeException("top level null input object");
              |}""")
     }
-    ctx.currentVars = Seq(ExprCode("", nullVar, objVar))
+    ctx.currentVars = internals.newExprCode(code = "", nullVar, objVar, javaClass) :: Nil
     val declarations = new StringBuilder
 
     def optimizeDate(expr: Expression): ExprCode = expr match {
@@ -116,7 +116,7 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
              |}
           """.stripMargin
         }
-        ev.copy(code = code)
+        internals.copyExprCode(ev, code = code)
 
       case Alias(child, _) => optimizeDate(child)
 

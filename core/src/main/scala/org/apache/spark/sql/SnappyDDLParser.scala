@@ -172,7 +172,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def NULLS: Rule0 = rule { keyword(Consts.NULLS) }
   final def OF: Rule0 = rule { keyword(Consts.OF) }
   final def ONLY: Rule0 = rule { keyword(Consts.ONLY) }
-  final def OPTIONS: Rule0 = rule { keyword(Consts.OPTIONS) }
+  final def OPTIONS: Rule0 = rule { keyword(Consts.OPTIONS) | keyword(Consts.TBLPROPERTIES) }
   final def OUT: Rule0 = rule { keyword(Consts.OUT) }
   final def OVERWRITE: Rule0 = rule { keyword(Consts.OVERWRITE) }
   final def PACKAGE: Rule0 = rule { keyword(Consts.PACKAGE) }
@@ -268,7 +268,7 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   final type ColumnDirectionMap = Seq[(String, Option[SortDirection])]
   final type TableEnd = (Option[String], Option[Map[String, String]],
-      Array[String], Option[BucketSpec], Option[LogicalPlan])
+      Option[String], Array[String], Option[BucketSpec], Option[String], Option[LogicalPlan])
 
   protected final def ifNotExists: Rule1[Boolean] = rule {
     (IF ~ NOT ~ EXISTS ~ push(true)).? ~> ((o: Any) => o != None)
@@ -285,10 +285,10 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected def createHiveTable: Rule1[LogicalPlan] = rule {
     test(session.enableHiveSupport) ~ capture(CREATE ~ TABLE ~ ifNotExists ~
-        tableIdentifier ~ tableSchema.?) ~ (COMMENT ~ stringLiteral).? ~
+        tableIdentifier ~ tableSchema.? ~ (COMMENT ~ stringLiteral).?) ~
         capture(USING ~ ignoreCase("hive") ~ ws | PARTITIONED ~ BY | CLUSTERED ~ BY |
             SKEWED ~ BY | ROW ~ FORMAT | STORED | LOCATION | TBLPROPERTIES) ~ capture(ANY.*) ~>
-        ((_: Boolean, _: TableIdentifier, _: Any, head: String, _: Any, k: String, tail: String) =>
+        ((_: Boolean, _: TableIdentifier, _: Any, _: Any, head: String, k: String, tail: String) =>
           if (Utils.toLowerCase(k).startsWith("using")) sparkParser.parsePlan(head + tail)
           else sparkParser.parsePlan(head + k + tail))
   }
@@ -336,7 +336,8 @@ abstract class SnappyDDLParser(session: SnappySession)
         // the save mode will be ignore.
         val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
         CreateTableUsingCommand(tableIdent, None, userSpecifiedSchema, schemaDDL,
-          provider, mode, options, remaining._3, remaining._4, remaining._5, external != None)
+          provider, mode, options, remaining._4, remaining._5, remaining._7, external != None,
+          comment = remaining._3, location = remaining._6)
       }
     }
   }
@@ -438,15 +439,22 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected final def ddlEnd: Rule1[TableEnd] = rule {
-    ws ~ (USING ~ qualifiedName).? ~ (OPTIONS ~ options).? ~
-        (PARTITIONED ~ BY ~ identifierList).? ~
-        bucketSpec.? ~ (AS ~ query).? ~ ws ~ &((';' ~ ws).* ~ EOI) ~>
-        ((provider: Any, options: Any, parts: Any, buckets: Any, asQuery: Any) => {
-          val partitions = parts match {
-            case None => Utils.EMPTY_STRING_ARRAY
-            case Some(p) => p.asInstanceOf[Seq[String]].toArray
+    ws ~ (USING ~ qualifiedName).? ~ (OPTIONS ~ options |
+        COMMENT ~ stringLiteral ~> ((s: String) => Some(s)) |
+        PARTITIONED ~ BY ~ identifierList | bucketSpec | LOCATION ~ stringLiteral).* ~
+        (AS ~ query).? ~ ws ~ &((';' ~ ws).* ~ EOI) ~>
+        ((provider: Any, optionals: Any, asQuery: Any) => {
+          val tableOpts = new Array[Any](5) // options, comment, partitions, buckets, location
+          optionals.asInstanceOf[Seq[Any]].foreach {
+            case opts: Map[_, _] => tableOpts(0) = opts
+            case comment: Some[_] => tableOpts(1) = comment.get
+            case parts: Seq[_] => tableOpts(2) = parts
+            case buckets: BucketSpec => tableOpts(3) = buckets
+            case location: String => tableOpts(4) = location
+            case v => throw new ParseException(s"Unknown table option: $v")
           }
-          (provider, options, partitions, buckets, asQuery).asInstanceOf[TableEnd]
+          (provider, tableOpts(0), tableOpts(1), tableOpts(2), tableOpts(3), tableOpts(4),
+              asQuery).asInstanceOf[TableEnd]
         })
   }
 
@@ -493,7 +501,7 @@ abstract class SnappyDDLParser(session: SnappySession)
     CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ (globalOrTemporary.? ~ VIEW |
         globalOrTemporary ~ TABLE) ~ ifNotExists ~ tableIdentifier ~
         ('(' ~ ws ~ (identifierWithComment + commaSep) ~ ')' ~ ws).? ~
-        (COMMENT ~ stringLiteral).? ~ (TBLPROPERTIES ~ options).? ~
+        (COMMENT ~ stringLiteral).? ~ (OPTIONS ~ options).? ~
         AS ~ capture(query) ~> { (replace: Any, gt: Any,
         allowExisting: Boolean, table: TableIdentifier, cols: Any, comment: Any,
         opts: Any, plan: LogicalPlan, queryStr: String) =>

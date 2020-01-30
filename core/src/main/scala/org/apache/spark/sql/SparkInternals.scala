@@ -26,11 +26,12 @@ import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation, UnresolvedTab
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodegenContext, GeneratedClass}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodegenContext, ExprCode, GeneratedClass}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame}
 import org.apache.spark.sql.catalyst.json.JSONOptions
-import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, InsertIntoTable, LogicalPlan, RepartitionByExpression, Sample, Statistics, SubqueryAlias}
+import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
+import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, TableIdentifier}
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.command.RunnableCommand
@@ -42,7 +43,7 @@ import org.apache.spark.sql.hive.{SnappyHiveExternalCatalog, SnappySessionState}
 import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SharedState}
 import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.streaming.LogicalDStreamPlan
-import org.apache.spark.sql.types.{DataType, Metadata, StructType}
+import org.apache.spark.sql.types.{DataType, Metadata, StructField, StructType}
 import org.apache.spark.status.api.v1.RDDStorageInfo
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
@@ -492,6 +493,10 @@ trait SparkInternals extends Logging {
       table: String, loadPath: String, partition: TablePartitionSpec, replace: Boolean,
       numDP: Int, holdDDLTime: Boolean): Unit
 
+  /** Alter table schema in the ExternalCatalog if possible else throw an exception */
+  def alterTableSchema(externalCatalog: ExternalCatalog, schemaName: String,
+      table: String, newSchema: StructType): Unit
+
   /** Alter table statistics in the ExternalCatalog if possible else throw an exception */
   def alterTableStats(externalCatalog: ExternalCatalog, schema: String, table: String,
       stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])]): Unit
@@ -500,8 +505,12 @@ trait SparkInternals extends Logging {
   def alterFunction(externalCatalog: ExternalCatalog, schema: String,
       function: CatalogFunction): Unit
 
-  /** Convert a ColumnStat to a map. */
-  def columnStatToMap(stat: ColumnStat, colName: String, dataType: DataType): Map[String, String]
+  /** Convert a ColumnStat (or CatalogColumnStat for Spark >= 2.4) to a map. */
+  def columnStatToMap(stat: Any, colName: String, dataType: DataType): Map[String, String]
+
+  /** Convert a map created by [[columnStatToMap]] to ColumnStat. */
+  def columnStatFromMap(table: String, field: StructField,
+      map: Map[String, String]): Option[ColumnStat]
 
   /**
    * Create a new instance of SnappyHiveExternalCatalog. The method overrides in
@@ -592,6 +601,74 @@ trait SparkInternals extends Logging {
    * Get the global list of cached RDDs (as list of [[RDDStorageInfo]]).
    */
   def getCachedRDDInfos(context: SparkContext): Seq[RDDStorageInfo]
+
+  /**
+   * Create a new ExprCode with given arguments.
+   */
+  def newExprCode(code: String, isNull: String,
+      value: String, javaClass: Class[_] = classOf[Object]): ExprCode
+
+  /**
+   * Make a copy of ExprCode with given new arguments.
+   */
+  def copyExprCode(ev: ExprCode, code: String = null, isNull: String = null,
+      value: String = null, javaClass: Class[_] = classOf[Object]): ExprCode
+
+  /**
+   * Reset the code field of [[ExprCode]] to empty code block.
+   */
+  def resetCode(ev: ExprCode): Unit
+
+  /**
+   * Get the string for isNull field of [[ExprCode]].
+   */
+  def exprCodeIsNull(ev: ExprCode): String
+
+  /**
+   * Get the string for value field of [[ExprCode]].
+   */
+  def exprCodeValue(ev: ExprCode): String
+
+  /**
+   * Get the string for java type for given [[DataType]].
+   */
+  def javaType(dt: DataType, ctx: CodegenContext): String
+
+  /**
+   * Get the java type of boxed type for given type.
+   */
+  def boxedType(javaType: String, ctx: CodegenContext): String
+
+  /**
+   * Get the string form of default value for given [[DataType]].
+   */
+  def defaultValue(dt: DataType, ctx: CodegenContext): String
+
+  /**
+   * Returns true if the Java type has a special accessor and setter in [[InternalRow]].
+   */
+  def isPrimitiveType(javaType: String, ctx: CodegenContext): Boolean
+
+  /**
+   * Returns the name used in accessor and setter for a Java primitive type.
+   */
+  def primitiveTypeName(javaType: String, ctx: CodegenContext): String
+
+  /**
+   * Returns the specialized code to access a value from `inputRow` at `ordinal`.
+   */
+  def getValue(input: String, dataType: DataType, ordinal: String, ctx: CodegenContext): String
+
+  /**
+   * List of any optional plans to be executed in the QueryExecution.preparations phase.
+   */
+  def optionalQueryPreparations(session: SparkSession): Seq[Rule[SparkPlan]]
+
+  /**
+   * Create a new instance of [[Pivot]] plan.
+   */
+  def newPivot(groupByExprs: Seq[NamedExpression], pivotColumn: Expression,
+      pivotValues: Seq[Expression], aggregates: Seq[Expression], child: LogicalPlan): Pivot
 }
 
 /**

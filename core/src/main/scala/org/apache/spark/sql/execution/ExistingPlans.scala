@@ -38,8 +38,6 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession, SparkSupport}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
-
-
 /**
  * Physical plan node for scanning data from an DataSource scan RDD.
  * If user knows that the data is partitioned or replicated across
@@ -373,16 +371,18 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
     val columnsInputEval = otherPlan.output.zipWithIndex.map { case (ref, ordinal) =>
       val baseIndex = ordinal
       val ev = consumedVars(ordinal)
+      val evIsNull = internals.exprCodeIsNull(ev)
+      val evValue = internals.exprCodeValue(ev)
       val dataType = ref.dataType
-      val javaType = ctx.javaType(dataType)
-      val value = ctx.getValue(row, dataType, baseIndex.toString)
+      val javaType = internals.javaType(dataType, ctx)
+      val value = internals.getValue(row, dataType, baseIndex.toString, ctx)
       if (ref.nullable) {
         s"""
-            boolean ${ev.isNull} = $row.isNullAt($ordinal);
-            $javaType ${ev.value} = ${ev.isNull} ? ${ctx.defaultValue(dataType)} : ($value);
+            boolean $evIsNull = $row.isNullAt($ordinal);
+            $javaType $evValue = $evIsNull ? ${internals.defaultValue(dataType, ctx)} : ($value);
             """
       } else {
-        s"""$javaType ${ev.value} = $value;"""
+        s"""$javaType $evValue = $value;"""
       }
     }.mkString("\n")
 
@@ -514,13 +514,14 @@ trait BatchConsumer extends CodegenSupport {
  * Extended information for ExprCode variable to also hold the variable having
  * dictionary reference and its index when dictionary encoding is being used.
  */
-case class DictionaryCode(dictionary: ExprCode, bufferVar: String, dictionaryIndex: ExprCode) {
+case class DictionaryCode(dictionary: ExprCode, bufferVar: String,
+    dictionaryIndex: ExprCode) extends SparkSupport {
 
   private def evaluate(ev: ExprCode): String = {
-    if (ev.code.isEmpty) ""
+    val code = ev.code.toString
+    if (code.isEmpty) ""
     else {
-      val code = ev.code
-      ev.code = ""
+      internals.resetCode(ev)
       code
     }
   }

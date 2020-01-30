@@ -41,7 +41,7 @@ import scala.reflect.ClassTag
 import io.snappydata.ResultSetWithNull
 
 import org.apache.spark.rdd.{RDD, UnionPartition}
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{SnappySession, SparkSupport}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
@@ -159,14 +159,14 @@ abstract case class ColumnTableScan(
     val retValName = ctx.freshName(s"col$index")
     val nullVarForCol = internals.addClassField(ctx, "boolean", s"nullVarForCol$index")
     val sqlType = Utils.getSQLDataType(attr.dataType)
-    val jt = ctx.javaType(sqlType)
+    val jt = internals.javaType(sqlType, ctx)
     val name = s"readValue_$index"
     val code =
       s"""
          |private $jt $name(int $batchOrdinal) {
-         |  ${expr.code}
-         |  $nullVarForCol = ${expr.isNull};
-         |  return ${expr.value};
+         |  ${expr.code.toString}
+         |  $nullVarForCol = ${internals.exprCodeIsNull(expr)};
+         |  return ${internals.exprCodeValue(expr)};
          |}
          """.stripMargin
     ctx.addNewFunction(name, code)
@@ -174,7 +174,7 @@ abstract case class ColumnTableScan(
       s"""
          |$jt $retValName = $name($batchOrdinal);
        """.stripMargin
-    ExprCode(exprCode, s"$nullVarForCol", s"$retValName")
+    internals.newExprCode(exprCode, nullVarForCol, retValName)
   }
 
   override def doProduce(ctx: CodegenContext): String = {
@@ -436,14 +436,14 @@ abstract case class ColumnTableScan(
         ColumnDelta.mutableKeyNames.indexOf(attr.name) match {
           case 0 =>
             ordinalIdTerm = ctx.freshName("ordinalId")
-            ExprCode("", "false", ordinalIdTerm)
+            internals.newExprCode("", "false", ordinalIdTerm, classOf[Long])
           case 1 =>
             columnBatchIdTerm = ctx.freshName("columnBatchId")
-            ExprCode("", "false", columnBatchIdTerm)
+            internals.newExprCode("", "false", columnBatchIdTerm, classOf[Long])
           case 2 =>
             bucketIdTerm = ctx.freshName("bucketId")
-            ExprCode("", "false", bucketIdTerm)
-          case 3 => ExprCode("", "false", numBatchRows)
+            internals.newExprCode("", "false", bucketIdTerm, classOf[Int])
+          case 3 => internals.newExprCode("", "false", numBatchRows, classOf[Int])
           case _ => throw new IllegalStateException(s"Unexpected internal attribute $attr")
         }
       case (attr, index) => rsIndex += 1; columnsInputMapper(attr, index, rsIndex)
@@ -676,24 +676,24 @@ abstract case class ColumnTableScan(
     val nonNullPosition = if (attr.nullable) s"$batchOrdinal - $numNullsVar" else batchOrdinal
     val col = ctx.freshName("col")
     val sqlType = Utils.getSQLDataType(attr.dataType)
-    val jt = ctx.javaType(sqlType)
+    val jt = internals.javaType(sqlType, ctx)
     var colAssign = ""
     var updatedAssign = ""
     val typeName = sqlType match {
       case DateType => "Date"
       case TimestampType => "Timestamp"
-      case _ if ctx.isPrimitiveType(jt) => ctx.primitiveTypeName(jt)
+      case _ if internals.isPrimitiveType(jt, ctx) => internals.primitiveTypeName(jt, ctx)
       case StringType =>
         val dictionaryVar = ctx.freshName("dictionary")
         val dictionaryIndexVar = ctx.freshName("dictionaryIndex")
-        val dictionary = ExprCode(
+        val dictionary = internals.newExprCode(
           s"""
              |$dictionaryVar = $mutableDecoderGlobal == null
              |    ? $decoderGlobal.getStringDictionary()
              |    : $mutableDecoderGlobal.getStringDictionary();
-          """.stripMargin, s"($dictionaryVar == null)", dictionaryVar)
+          """.stripMargin, s"($dictionaryVar == null)", dictionaryVar, classOf[StringDictionary])
         val dictionaryIndex = if (attr.nullable) {
-          ExprCode(
+          internals.newExprCode(
             s"""
                |${genIfNonNullCode(ctx, decoder, buffer, batchOrdinal, numNullsVar)} {
                |  $dictionaryIndexVar = $updateDecoder == null
@@ -702,14 +702,14 @@ abstract case class ColumnTableScan(
                |} else {
                |  $dictionaryIndexVar = $dictionaryVar.size();
                |}
-               """.stripMargin, "false", dictionaryIndexVar)
+               """.stripMargin, "false", dictionaryIndexVar, classOf[Int])
         } else {
-          ExprCode(
+          internals.newExprCode(
             s"""
                |$dictionaryIndexVar = $updateDecoder == null
                |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
                |    : $updateDecoder.readDictionaryIndex();
-          """.stripMargin, "false", dictionaryIndexVar)
+          """.stripMargin, "false", dictionaryIndexVar, classOf[Int])
         }
         session.foreach(_.addDictionaryCode(ctx, col,
           DictionaryCode(dictionary, buffer, dictionaryIndex)))
@@ -746,7 +746,7 @@ abstract case class ColumnTableScan(
     val unchangedCode = s"$updateDecoder == null || $updateDecoder.unchanged($batchOrdinal)"
     if (attr.nullable) {
       val isNullVar = ctx.freshName("isNull")
-      val defaultValue = ctx.defaultValue(jt)
+      val defaultValue = internals.defaultValue(sqlType, ctx)
       val code =
         s"""
            |final $jt $col;
@@ -765,7 +765,7 @@ abstract case class ColumnTableScan(
            |  $isNullVar = true;
            |}
         """.stripMargin
-      ExprCode(code, isNullVar, col)
+      internals.newExprCode(code, isNullVar, col)
     } else {
       var code =
         s"""
@@ -776,7 +776,7 @@ abstract case class ColumnTableScan(
       if (weightVar != null && attr.name.equalsIgnoreCase(Utils.WEIGHTAGE_COLUMN_NAME)) {
         code += s"if ($col == 1) $col = $weightVar;\n"
       }
-      ExprCode(code, "false", col)
+      internals.newExprCode(code, "false", col)
     }
   }
 
@@ -804,7 +804,7 @@ abstract case class ColumnTableScan(
   }
 }
 
-object ColumnTableScan extends Logging {
+object ColumnTableScan extends Logging with SparkSupport {
 
   def generateStatPredicate(ctx: CodegenContext, isColumnTable: Boolean,
       schemaAttrs: Seq[AttributeReference], allFilters: Seq[Expression], numRowsTerm: String,
@@ -923,9 +923,11 @@ object ColumnTableScan extends Logging {
     ctx.INPUT_ROW = statsRow
     ctx.currentVars = null
     val predicateEval = predicate.genCode(ctx)
+    val predicateIsNull = internals.exprCodeIsNull(predicateEval)
+    val predicateVal = internals.exprCodeValue(predicateEval)
 
     // skip filtering if nothing is to be applied
-    if (predicateEval.value == "true" && predicateEval.isNull == "false") {
+    if (predicateVal == "true" && predicateIsNull == "false") {
       return ""
     }
     val columnBatchesSkipped = if (metricTerm ne null) {
@@ -940,10 +942,10 @@ object ColumnTableScan extends Logging {
          |private boolean $filterFunction(UnsafeRow $statsRow, int $numRowsTerm,
          |    boolean isLastStatsRow, boolean isDelta) {
          |  // Skip the column batches based on the predicate
-         |  ${predicateEval.code}
-         |  if (isDelta && (${predicateEval.isNull} || ${predicateEval.value})) {
+         |  ${predicateEval.code.toString}
+         |  if (isDelta && ($predicateIsNull|| $predicateVal)) {
          |    return true;
-         |  } else if (!${predicateEval.isNull} && ${predicateEval.value}) {
+         |  } else if (!$predicateIsNull && $predicateVal) {
          |    return true;
          |  } else {
          |    // add to skipped metric only if both stats say so
@@ -1003,14 +1005,14 @@ private[sql] final class UnionScanRDD[T: ClassTag](
   }
 }
 
-case class NumBatchRows(varName: String) extends LeafExpression {
+case class NumBatchRows(varName: String) extends LeafExpression with SparkSupport {
 
   override def nullable: Boolean = false
 
   override def dataType: DataType = IntegerType
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    ExprCode("", "false", varName)
+    internals.newExprCode("", "false", varName)
   }
 
   override def eval(input: InternalRow): Any =
@@ -1021,7 +1023,7 @@ case class NumBatchRows(varName: String) extends LeafExpression {
 }
 
 case class StartsWithForStats(upper: Expression, lower: Expression,
-    pattern: Expression) extends Expression {
+    pattern: Expression) extends Expression with SparkSupport {
 
   // pattern must be a string constant for stats row evaluation
   assert(TokenLiteral.isConstant(pattern))
@@ -1037,49 +1039,53 @@ case class StartsWithForStats(upper: Expression, lower: Expression,
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val upperExpr = upper.genCode(ctx)
+    val upperIsNull = internals.exprCodeIsNull(upperExpr)
+    val upperVal = internals.exprCodeValue(upperExpr)
     val lowerExpr = lower.genCode(ctx)
     val patternExpr = pattern.genCode(ctx)
+    val patternIsNull = internals.exprCodeIsNull(patternExpr)
+    val patternVal = internals.exprCodeValue(patternExpr)
     val str = ctx.freshName("str")
     val len = str + "Len"
     val lastCharPos = str + "LastPos"
     val upperBytes = str + "Upper"
     val upperStr = str + "UpperUTF8"
-    val result = ev.value
+    val result = internals.exprCodeValue(ev)
     val code =
       s"""
-         |${patternExpr.code}
+         |${patternExpr.code.toString}
          |boolean $result = true;
-         |if (!${patternExpr.isNull}) {
-         |  ${lowerExpr.code}
-         |  ${upperExpr.code}
+         |if (!$patternIsNull) {
+         |  ${lowerExpr.code.toString}
+         |  ${upperExpr.code.toString}
          |  // upper bound for column (i.e. LessThan) can be found by going to
          |  // next value of the last character of literal
-         |  int $len = ${patternExpr.value}.numBytes();
+         |  int $len = $patternVal.numBytes();
          |  byte[] $upperBytes = new byte[$len];
-         |  ${patternExpr.value}.writeToMemory($upperBytes, Platform.BYTE_ARRAY_OFFSET);
+         |  $patternVal.writeToMemory($upperBytes, Platform.BYTE_ARRAY_OFFSET);
          |  int $lastCharPos = $len - 1;
          |  // check for maximum unsigned value 0xff
          |  while ($lastCharPos >= 0 && $upperBytes[$lastCharPos] == (byte)-1) {
          |    $lastCharPos--;
          |  }
-         |  if ($lastCharPos < 0 || (${lowerExpr.isNull})) { // all bytes are 0xff
+         |  if ($lastCharPos < 0 || (${internals.exprCodeIsNull(lowerExpr)})) { // all bytes 0xff
          |    // a >= startsWithPREFIX
-         |    if (!${upperExpr.isNull}) {
-         |      $result = ${patternExpr.value}.compareTo(${upperExpr.value}) <= 0;
+         |    if (!$upperIsNull) {
+         |      $result = $patternVal.compareTo($upperVal) <= 0;
          |    }
          |  } else {
          |    $upperBytes[$lastCharPos] = (byte)($upperBytes[$lastCharPos] + 1);
          |    UTF8String $upperStr = UTF8String.fromAddress($upperBytes,
          |      Platform.BYTE_ARRAY_OFFSET, $len);
          |    // a >= startsWithPREFIX && a < startsWithPREFIX+1
-         |    $result = ((${upperExpr.isNull}) ||
-         |        ${patternExpr.value}.compareTo(${upperExpr.value}) <= 0) &&
-         |      ${lowerExpr.value}.compareTo($upperStr) < 0;
+         |    $result = (($upperIsNull) ||
+         |        $patternVal.compareTo($upperVal) <= 0) &&
+         |      ${internals.exprCodeValue(lowerExpr)}.compareTo($upperStr) < 0;
          |  }
          |}
          |
       """.stripMargin
-    ev.copy(code, "false", result)
+    internals.copyExprCode(ev, code = code, isNull = "false", value = result, classOf[Boolean])
   }
 
   override def eval(input: InternalRow): Any =

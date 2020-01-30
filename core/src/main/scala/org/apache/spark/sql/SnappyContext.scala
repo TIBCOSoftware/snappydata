@@ -54,7 +54,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.joins.HashedObjectCache
 import org.apache.spark.sql.execution.{ConnectionPool, DeployCommand, DeployJarCommand, RefreshMetadata}
-import org.apache.spark.sql.hive.{HiveExternalCatalog, SnappyHiveExternalCatalog, SnappySessionState}
+import org.apache.spark.sql.hive.{HiveSessionCatalog, SnappyHiveExternalCatalog, SnappySessionState}
 import org.apache.spark.sql.internal.{ContextJarUtils, SharedState, SnappySharedState, StaticSQLConf}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
@@ -1179,8 +1179,7 @@ object SnappyContext extends Logging {
     if (this.hiveSession ne null) this.hiveSession.newSession()
     else {
       val session = SparkSession.builder().enableHiveSupport().getOrCreate()
-      if (session.sharedState.externalCatalog.isInstanceOf[HiveExternalCatalog] &&
-          session.sessionState.getClass.getName.contains("HiveSessionState")) {
+      if (session.sessionState.catalog.isInstanceOf[HiveSessionCatalog]) {
         this.hiveSession = session
         // this session can be shared via Builder.getOrCreate() so create a new one
         session.newSession()

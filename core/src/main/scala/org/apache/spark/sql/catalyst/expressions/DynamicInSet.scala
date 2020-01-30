@@ -97,18 +97,18 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
          |}
       """.stripMargin)
 
-    ev.copy(code =
+    internals.copyExprCode(ev, code =
         s"""
-      ${childGen.code}
-      boolean ${ev.isNull} = ${childGen.isNull};
-      boolean ${ev.value} = false;
-      if (!${ev.isNull}) {
-        ${ev.value} = $hsetTerm.containsKey(${childGen.value});
-        if (!${ev.value} && $hasNullTerm) {
-          ${ev.isNull} = true;
-        }
-      }
-     """)
+          ${childGen.code}
+          boolean ${ev.isNull} = ${childGen.isNull};
+          boolean ${ev.value} = false;
+          if (!${ev.isNull}) {
+            ${ev.value} = $hsetTerm.containsKey(${childGen.value});
+            if (!${ev.value} && $hasNullTerm) {
+              ${ev.isNull} = true;
+            }
+          }
+        """)
   }
 
   override def sql: String = {

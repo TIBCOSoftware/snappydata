@@ -115,7 +115,7 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
       val f = schema(i)
       val colStatsMap = catalogStats.colStats.get(i)
       if (colStatsMap.isEmpty) None
-      else ColumnStat.fromMap(fullTableName, f, colStatsMap.asScala.toMap) match {
+      else internals.columnStatFromMap(fullTableName, f, colStatsMap.asScala.toMap) match {
         case None => None
         case Some(s) => Some(f.name -> s)
       }
@@ -235,7 +235,7 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
   }
 
   private[snappydata] def convertFromCatalogStatistics(schema: StructType, sizeInBytes: BigInt,
-      rowCount: Option[BigInt], stats: Map[String, ColumnStat]): CatalogStats = {
+      rowCount: Option[BigInt], stats: Map[String, Any]): CatalogStats = {
     val colStats = schema.map { f =>
       stats.get(f.name) match {
         case None => Collections.emptyMap[String, String]()

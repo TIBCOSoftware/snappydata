@@ -21,10 +21,10 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow}
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{CurrentDatabase, Expression, ExpressionDescription, ExpressionInfo, LeafExpression, Nondeterministic}
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.policy.{CurrentUser, LdapGroupsOfCurrentUser}
@@ -144,6 +144,7 @@ case class DSID() extends LeafExpression with Nondeterministic with SparkSupport
     val dsidVar = internals.addClassField(ctx, "UTF8String", "dsid",
       varName => s"$varName = UTF8String.fromString(" +
           s"io.snappydata.SnappyDataFunctions.getDSID($connPropsRef));")
-    ev.copy(code = "", isNull = "false", value = dsidVar)
+    internals.copyExprCode(ev, code = "", isNull = "false", value = dsidVar,
+      javaClass = classOf[UTF8String])
   }
 }

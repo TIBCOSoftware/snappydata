@@ -29,9 +29,9 @@ import org.apache.spark.sql.catalyst.analysis.{NoSuchPartitionException, NoSuchP
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogTable, CatalogTablePartition}
 import org.apache.spark.sql.catalyst.expressions.{And, AttributeReference, BoundReference, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.ColumnStat
 import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.RefreshMetadata
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyContext, TableNotFoundException, ThinClientConnectorMode}
 
 /**
@@ -162,8 +162,19 @@ trait SmartConnectorExternalCatalog extends SnappyExternalCatalog with Connector
     invalidateCaches(Nil)
   }
 
+  protected def alterTableSchemaImpl(schemaName: String, table: String,
+      newSchema: StructType): Unit = {
+    val request = new CatalogMetadataDetails()
+    request.setNames((schemaName :: table :: Nil).asJava).setNewSchema(newSchema.json)
+    withExceptionHandling(connectorHelper.updateCatalogMetadata(
+      snappydataConstants.CATALOG_ALTER_TABLE_SCHEMA, request))
+
+    // version stored in RelationInfo will be out-of-date now for all tables so clear everything
+    invalidateCaches(Nil)
+  }
+
   protected def alterTableStatsImpl(schema: String, table: String,
-      stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])]): Unit = {
+      stats: Option[(BigInt, Option[BigInt], Map[String, Any])]): Unit = {
     val request = new CatalogMetadataDetails()
     request.setNames((schema :: table :: Nil).asJava)
     stats match {

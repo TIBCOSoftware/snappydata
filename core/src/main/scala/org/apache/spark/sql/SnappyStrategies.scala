@@ -453,10 +453,14 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
 
   def applyAggregation(plan: LogicalPlan,
       isRootPlan: Boolean): Seq[SparkPlan] = plan match {
-    case PhysicalAggregation(groupingExpressions, aggregateExpressions,
-    resultExpressions, child) if maxAggregateInputSize == 0 ||
-        internals.getStatistics(child).sizeInBytes <= maxAggregateInputSize =>
+    case PhysicalAggregation(groupingExpressions, aggExpressions,
+    resultExpressions, child) if (maxAggregateInputSize == 0 ||
+        internals.getStatistics(child).sizeInBytes <= maxAggregateInputSize) &&
+        aggExpressions.forall(expr => expr.isInstanceOf[AggregateExpression]) =>
 
+      // noinspection ScalaRedundantCast
+      val aggregateExpressions = aggExpressions.map(expr =>
+        expr.asInstanceOf[AggregateExpression])
       val (functionsWithDistinct, functionsWithoutDistinct) =
         aggregateExpressions.partition(_.isDistinct)
       if (functionsWithDistinct.map(_.aggregateFunction.children)

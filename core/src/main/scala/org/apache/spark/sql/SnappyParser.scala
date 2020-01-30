@@ -59,6 +59,9 @@ class SnappyParser(session: SnappySession)
   // type info for parameters of a prepared statement
   protected final var _preparedParamsTypesInfo: Option[Array[Int]] = None
 
+  protected final def legacySetOpsPrecedence: Boolean = session.sessionState.conf.getConfString(
+    "spark.sql.legacy.setopsPrecedence.enabled", "false").toBoolean
+
   override final def input: ParserInput = _input
 
   final def questionMarkCounter: Int = _questionMarkCounter
@@ -254,11 +257,13 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def newTokenizedLiteral(v: Any, dataType: DataType): Expression = {
-    if (tokenize) addTokenizedLiteral(v, dataType) else Literal(v, dataType)
+    if (tokenize) {
+      if (canTokenize) addTokenizedLiteral(v, dataType) else new TokenLiteral(v, dataType)
+    } else Literal(v, dataType)
   }
 
   protected final def newLiteral(v: Any, dataType: DataType): Expression = {
-    if (tokenize) new TokenLiteral(v, dataType).markFoldable(true) else Literal(v, dataType)
+    if (tokenize) new TokenLiteral(v, dataType) else Literal(v, dataType)
   }
 
   protected final def intervalType: Rule1[DataType] = rule {
@@ -1179,16 +1184,16 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def pivot: Rule1[LogicalPlan => LogicalPlan] = rule {
-    PIVOT ~ '(' ~ ws ~ namedExpressionSeq ~ FOR ~ (identifierList | identifier) ~ IN ~
-        '(' ~ ws ~ push(tokenize) ~ TOKENIZE_END ~ (literal + commaSep) ~ ')' ~ ws ~ ')' ~ ws ~>
-        ((aggregates: Seq[Expression], ids: Any, tokenized: Boolean,
+    PIVOT ~ '(' ~ ws ~ namedExpressionSeq ~ FOR ~ (identifierList | identifier) ~ IN ~ '(' ~ ws ~
+        push(canTokenize) ~ DISABLE_TOKENIZE ~ namedExpressionSeq ~ ')' ~ ws ~ ')' ~ ws ~>
+        ((aggregates: Seq[Expression], ids: Any, hasTokenized: Boolean,
             values: Seq[Expression]) => (child: LogicalPlan) => {
-          tokenize = tokenized
+          canTokenize = hasTokenized
           val pivotColumn = ids match {
             case id: String => UnresolvedAttribute.quoted(id)
             case _ => CreateStruct(ids.asInstanceOf[Seq[String]].map(UnresolvedAttribute.quoted))
           }
-          Pivot(Nil, pivotColumn, values.map(_.asInstanceOf[Literal]), aggregates, child)
+          internals.newPivot(Nil, pivotColumn, values, aggregates, child)
         })
   }
 

@@ -55,7 +55,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{SnappySession, collection}
+import org.apache.spark.sql.{SnappySession, SparkSupport, collection}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.Utils
@@ -77,7 +77,7 @@ case class SnappyHashAggregateExec(
     __resultExpressions: Seq[NamedExpression],
     child: SparkPlan,
     hasDistinct: Boolean)
-    extends NonRecursivePlans with UnaryExecNode with BatchConsumer {
+    extends NonRecursivePlans with UnaryExecNode with BatchConsumer with SparkSupport {
 
   val useByteBufferMapBasedAggregation: Boolean = {
     val conf = sqlContext.sparkSession.sessionState.conf
@@ -283,10 +283,12 @@ case class SnappyHashAggregateExec(
     else {
       bufVarUpdates = bufVars.indices.map { i =>
         val ev = bufVars(i)
+        val evIsNull = internals.exprCodeIsNull(ev)
+        val evValue = internals.exprCodeValue(ev)
         s"""
            |// update the member result variables from local variables
-           |this.${ev.isNull} = ${ev.isNull};
-           |this.${ev.value} = ${ev.value};
+           |this.$evIsNull = $evIsNull;
+           |this.$evValue = $evValue;
         """.stripMargin
       }.mkString("\n").trim
       bufVarUpdates
@@ -309,15 +311,15 @@ case class SnappyHashAggregateExec(
     ctx.currentVars = null
     bufVars = initExpr.map { e =>
       val isNull = internals.addClassField(ctx, "boolean", "bufIsNull")
-      val value = internals.addClassField(ctx, ctx.javaType(e.dataType), "bufValue")
+      val value = internals.addClassField(ctx, internals.javaType(e.dataType, ctx), "bufValue")
       // The initial expression should not access any column
       val ev = e.genCode(ctx)
       val initVars =
         s"""
-           | $isNull = ${ev.isNull};
-           | $value = ${ev.value};
+           | $isNull = ${internals.exprCodeIsNull(ev)};
+           | $value = ${internals.exprCodeValue(ev)};
         """.stripMargin
-      ExprCode(ev.code + initVars, isNull, value)
+      internals.newExprCode(ev.code.toString + initVars, isNull, value)
     }
     var initBufVar = evaluateVariables(bufVars)
 
@@ -356,9 +358,11 @@ case class SnappyHashAggregateExec(
       // use local variables while member variables are updated at the end
       initBufVar = bufVars.indices.map { i =>
         val ev = bufVars(i)
+        val evIsNull = internals.exprCodeIsNull(ev)
+        val evValue = internals.exprCodeValue(ev)
         s"""
-           |boolean ${ev.isNull} = this.${ev.isNull};
-           |${ctx.javaType(initExpr(i).dataType)} ${ev.value} = this.${ev.value};
+           |boolean $evIsNull = this.$evIsNull;
+           |${internals.javaType(initExpr(i).dataType, ctx)} $evValue = this.$evValue;
         """.stripMargin
       }.mkString("", "\n", initBufVar).trim
       produceOutput = s"$produceOutput\n$bufVarUpdates"
@@ -394,18 +398,20 @@ case class SnappyHashAggregateExec(
 
   protected def genAssignCodeForWithoutKeys(ctx: CodegenContext, ev: ExprCode, i: Int,
       doCopy: Boolean, inputAttrs: Seq[Attribute]): String = {
+    val evValue = internals.exprCodeValue(ev)
+    val bufValue = internals.exprCodeValue(bufVars(i))
     if (doCopy) {
       inputAttrs(i).dataType match {
         case StringType =>
-          ObjectHashMapAccessor.cloneStringIfRequired(ev.value, bufVars(i).value, doCopy = true)
+          ObjectHashMapAccessor.cloneStringIfRequired(evValue, bufValue, doCopy = true)
         case d@(_: ArrayType | _: MapType | _: StructType) =>
-          val javaType = ctx.javaType(d)
-          s"${bufVars(i).value} = ($javaType)(${ev.value} != null ? ${ev.value}.copy() : null);"
+          val javaType = internals.javaType(d, ctx)
+          s"$bufValue = ($javaType)($evValue != null ? $evValue.copy() : null);"
         case _: BinaryType =>
-          s"${bufVars(i).value} = (byte[])(${ev.value} != null ? ${ev.value}.clone() : null);"
-        case _ => s"${bufVars(i).value} = ${ev.value};"
+          s"$bufValue = (byte[])($evValue != null ? $evValue.clone() : null);"
+        case _ => s"$bufValue = $evValue;"
       }
-    } else s"${bufVars(i).value} = ${ev.value};"
+    } else s"$bufValue = $evValue;"
   }
 
   private def doConsumeWithoutKeys(ctx: CodegenContext,
@@ -436,7 +442,7 @@ case class SnappyHashAggregateExec(
     val doCopy = !ObjectHashMapAccessor.providesImmutableObjects(child)
     val updates = aggVals.zipWithIndex.map { case (ev, i) =>
       s"""
-         | ${bufVars(i).isNull} = ${ev.isNull};
+         | ${internals.exprCodeIsNull(bufVars(i))} = ${internals.exprCodeIsNull(ev)};
          | ${genAssignCodeForWithoutKeys(ctx, ev, i, doCopy, inputAttrs)}
       """.stripMargin
     }
@@ -1161,11 +1167,11 @@ case class SnappyHashAggregateExec(
       skipNullBitsCode = false)
     val bufferEval = evaluateVariables(bufferVars)
     val bufferVarsFromInitVars = byteBufferAccessor.aggregateBufferVars.zip(initVars).map {
-      case (bufferVarName, initExpr) => ExprCode(
-        s"""
-          |$bufferVarName${SHAMapAccessor.nullVarSuffix} = ${initExpr.isNull};
-          |$bufferVarName = ${initExpr.value};""".stripMargin,
-        s"$bufferVarName${SHAMapAccessor.nullVarSuffix}", bufferVarName)
+      case (bufferVarName, initEv) => internals.newExprCode(code =
+          s"""
+             |$bufferVarName${SHAMapAccessor.nullVarSuffix} = ${internals.exprCodeIsNull(initEv)};
+             |$bufferVarName = ${internals.exprCodeValue(initEv)};""".stripMargin,
+        isNull = s"$bufferVarName${SHAMapAccessor.nullVarSuffix}", value = bufferVarName)
     }
     val bufferEvalFromInitVars = evaluateVariables(bufferVarsFromInitVars)
     ctx.currentVars = bufferVars ++ input
