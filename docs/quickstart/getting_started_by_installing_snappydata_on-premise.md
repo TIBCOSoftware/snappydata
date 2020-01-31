@@ -5,7 +5,7 @@
 2. Click **Download** and then enter your credentials. 
 3. In the Download page, select the version number and then select **Linux**.
 4. Read and accept the **END USER LICENSE AGREEMENT**.
-5. Choose an installation option and then click **Individual file download**.
+5. From the Installation options, choose **Individual file download**.
 6. Click **TIB_compute_cluster_1.2.0_linux.zip** to download the cluster distribution which includes product tarball and Apache Zeppelin zip. Additionally, you can also click **TIB_compute_drivers_1.2.0_linux.zip** to download the client drivers. After **TIB_compute_cluster_1.2.0_linux.zip** is downloaded, run the following commands:
 
 		$ unzip TIB_compute_cluster_1.2.0_linux.zip && rm TIB_compute_cluster_1.2.0_linux.zip
