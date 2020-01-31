@@ -1,5 +1,70 @@
 # Provisioning TIBCO ComputeDB
 
+## Getting Started
+Multiple options are provided to get started with TIBCO ComputeDB. Easiest way to get going with ComputeDB is on your laptop. You can also use any of the following options:
+
+*	On-premise clusters
+
+*	AWS
+
+*	Docker
+*	Kubernetes
+
+You can download and install the latest version of TIBCO ComputeDB from [here](https://edelivery.tibco.com/storefront/index.ep). Refer to the [documentation](/install.md) for installation steps.
+
+If you would like to build TIBCO ComputeDB from source, refer to the [documentation on building from source](/install/building_from_source.md).
+
+You can find more information on options for running TIBCO ComputeDB [here](/quickstart.md).
+
+
+### Procuring TIBCO ComputeDB Artifacts
+
+#### Maven Dependency
+
+TIBCO ComputeDB artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
+
+```
+groupId: io.snappydata
+artifactId: snappydata-cluster_2.11
+version: 1.2.0
+```
+
+#### SBT Dependency
+
+If you are using SBT, add this line to your **build.sbt** for core TIBCO ComputeDB artifacts:
+
+```
+libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.2.0"
+```
+
+For additions related to TIBCO ComputeDB cluster, use:
+
+```
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.2.0"
+```
+
+You can find more specific TIBCO ComputeDB artifacts [here](http://mvnrepository.com/artifact/io.snappydata)
+
+!!!Note
+	If your project fails when resolving the above dependency (that is, it fails to download `javax.ws.rs#javax.ws.rs-api;2.1`), it may be due an issue with its pom file. </br> As a workaround, you can add the below code to your **build.sbt**:
+
+```
+val workaround = {
+  sys.props += "packaging.type" -> "jar"
+  ()
+}
+```
+
+For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
+
+#### Quick Test to Measure Performance of TIBCO ComputeDB vs Apache Apache Spark
+If you are already using Apache Spark, experience upto 20x speedup for your query performance with TIBCO ComputeDB. Try out this [test](https://github.com/SnappyDataInc/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala) using the Apache Spark Shell. 
+
+
+#### Streaming Example - Ad Analytics
+Here is a stream + Transactions + Analytics use case example to illustrate the SQL as well as the Apache Spark programming approaches in TIBCO ComputeDB - [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc). Here is a [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of TIBCO ComputeDB. The example also goes through a benchmark comparing TIBCO ComputeDB to a Hybrid in-memory database and Cassandra.
+
+
 TIBCO ComputeDB offers two editions of the product, SnappyData Community Edition, and TIBCO ComputeDB Enterprise Edition.
 
 The SnappyData Community Edition is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
