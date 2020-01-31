@@ -94,7 +94,7 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_DateFunctions_1)
 
     /**
-      *  Below queries test the fuctions :
+      *  Below queries test the functions :
       *  6. repeat
       *  7. reverse
       *  (NOTE : reverse logic for arrays is available since  Spark 2.4.0,
@@ -108,9 +108,17 @@ class SQLFunctions extends SnappySQLJob {
     //  INSERT RECORDS IN SPARK / SNAPPY.
     spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
       SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet2)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet1)
     spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
       SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet2)
     snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
       SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet1)
     snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
       SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet2)
@@ -124,6 +132,66 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.dropRowTbl_RseRpt)
     spark.sql(SQLFunctionsUtils.dropColTbl_RseRpt)
     spark.sql(SQLFunctionsUtils.dropRowTbl_RseRpt)
+
+    /**
+      * Below queries test the functions :
+      * 8. !(Logical Not)
+      * (Logical NOT is not working in Snappy Cluster)
+      * Add the boolean column and data once issue resolved.
+      * 9. & (Bitwise AND)
+      * 10. ^ (Bitwise exclusiveOR/ExOR)
+      * val NOT_AND_ExOR_Set1 : String="(1,7,3,true)"
+      * val createColTypeTbl_NOT_AND_ExOR_Spark : String= createTbl + columnTbl +
+      * "(id int,n1 int,n2 int,b boolean)"
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_NOT_AND_ExOR_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_NOT_AND_ExOR_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_NOT_AND_ExOR)
+    snc.sql(SQLFunctionsUtils.createRowTbl_NOT_AND_ExOR)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set2)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set3)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set4)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set2)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set3)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set4)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set3)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set4)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set3)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set4)
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_NOT_AND_ExOR,
+      "Q7_NOT_AND_ExOR", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_NOT_AND_ExOR,
+      "Q8_NOT_AND_ExOR", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_NOT_AND_ExOR)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_NOT_AND_ExOR)
+    spark.sql(SQLFunctionsUtils.dropColTbl_NOT_AND_ExOR)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_NOT_AND_ExOR)
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()

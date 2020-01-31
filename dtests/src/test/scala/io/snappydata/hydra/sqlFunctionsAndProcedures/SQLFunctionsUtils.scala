@@ -62,7 +62,7 @@ object SQLFunctionsUtils {
   val dropRowTbl_DateFunctions_1 : String = dropTbl + rowTbl
 
   /**
-    *  Below queries test the fuctions :
+    *  Below queries test the functions :
     *  6. repeat
     *  7. reverse
     *  (NOTE : reverse logic for arrays is available since  Spark 2.4.0,
@@ -84,4 +84,34 @@ object SQLFunctionsUtils {
     "repeat(repeatname, 3) FROM " + rowTbl +  " ORDER BY id"
   val dropColTbl_RseRpt : String = dropTbl  + columnTbl
   val dropRowTbl_RseRpt : String = dropTbl + rowTbl
+
+  /**
+    * Below queries test the functions :
+    * 8. !(Logical Not)
+    * (Logical NOT is not working in Snappy Cluster)
+    * Add the boolean column and data once issue resolved.
+    * 9. & (Bitwise AND)
+    * 10. ^ (Bitwise exclusiveOR/ExOR)
+    * val NOT_AND_ExOR_Set1 : String="(1,7,3,true)"
+    * val createColTypeTbl_NOT_AND_ExOR_Spark : String= createTbl + columnTbl +
+    * "(id int,n1 int,n2 int,b boolean)"
+    */
+  val NOT_AND_ExOR_Set1 : String = "(1,7,3)"
+  val NOT_AND_ExOR_Set2 : String = "(2,3,5)"
+  val NOT_AND_ExOR_Set3 : String = "(3,5,6)"
+  val NOT_AND_ExOR_Set4 : String = "(4,1,8)"
+  val createColTypeTbl_NOT_AND_ExOR_Spark : String = createTbl + columnTbl +
+  "(id int,n1 int,n2 int)"
+  val createRowTypeTbl_NOT_AND_ExOR_Spark : String = createTbl + rowTbl +
+    "(id int,n1 int,n2 int)"
+  val createColumnTbl_NOT_AND_ExOR : String = createTbl + columnTbl +
+    "(id int,n1 int,n2 int) " + usingCol
+  val createRowTbl_NOT_AND_ExOR : String = createTbl + rowTbl +
+    "(id int,n1 int,n2 int) " + usingRow
+  val select_ColTbl_NOT_AND_ExOR : String = "SELECT id, (n1 & n2) as BitwiseAND, " +
+    "(n1 ^ n2) as BitwiseExOR FROM " + columnTbl + " ORDER BY id"
+  val select_RowTbl_NOT_AND_ExOR : String = "SELECT id, (n1 & n2) as BitwiseAND, " +
+    "(n1 ^ n2) as BitwiseExOR FROM " + rowTbl + " ORDER BY id"
+  val dropColTbl_NOT_AND_ExOR : String = dropTbl + columnTbl
+  val dropRowTbl_NOT_AND_ExOR : String = dropTbl + rowTbl
 }
