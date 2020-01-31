@@ -28,7 +28,6 @@ object SQLFunctionsUtils {
   val values : String = " VALUES "
   val dropTbl : String = "DROP TABLE IF EXISTS "
 
-
   /**
     *  Below queries test the functions :
     *  1. date,
@@ -60,7 +59,6 @@ object SQLFunctionsUtils {
   val selectDay_DateFormatFunc : String = "SELECT date_format(current_date, 'd')"
   val dropColumnTbl_DateFunctions_1 : String = dropTbl + columnTbl
   val dropRowTbl_DateFunctions_1 : String = dropTbl + rowTbl
-
   /**
     *  Below queries test the functions :
     *  6. repeat
@@ -84,7 +82,6 @@ object SQLFunctionsUtils {
     "repeat(repeatname, 3) FROM " + rowTbl +  " ORDER BY id"
   val dropColTbl_RseRpt : String = dropTbl  + columnTbl
   val dropRowTbl_RseRpt : String = dropTbl + rowTbl
-
   /**
     * Below queries test the functions :
     * 8. !(Logical Not)
@@ -118,4 +115,26 @@ object SQLFunctionsUtils {
     "FROM " + rowTbl + " ORDER BY id"
   val dropColTbl_NOT_AND_ExOR : String = dropTbl + columnTbl
   val dropRowTbl_NOT_AND_ExOR : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  13. day ,14. dayofmonth, 15. dayofyear, 16. last_day,
+    *  17. month, 18. next_day, 19. weekofyear
+    *   20 year
+    */
+  val day_Month_Year_Set1 : String = "(1,current_date)"
+  val day_Month_Year_Set2 : String = "(2,'2014-04-05')"
+  val createColTypeTbl_Day_Month_Year_Spark : String = createTbl + columnTbl + " (id int,dt date)"
+  val createRowTypeTbl_Day_Month_Year_Spark : String = createTbl + rowTbl + " (id int,dt date)"
+  val createColumnTbl_Day_Month_Year : String = createTbl + columnTbl +
+    "(id int,dt date) " + usingCol
+  val createRowTbl_Day_Month_Year : String = createTbl + rowTbl +
+    "(id int,dt date) " + usingRow
+  val select_ColTbl_Day_Month_Year : String = "SELECT id,day(dt),dayofmonth(dt)," +
+    "dayofyear(dt),last_day(dt),month(dt),next_day(dt,'FR'),weekofyear(dt)," +
+    "year(dt) FROM " + columnTbl + " ORDER BY id"
+  val select_RowTbl_Day_Month_Year : String = "SELECT id,day(dt),dayofmonth(dt)," +
+    "dayofyear(dt),last_day(dt),month(dt),next_day(dt,'FR'),weekofyear(dt)," +
+    "year(dt) FROM " + rowTbl + " ORDER BY id"
+  val dropColTbl_Day_Month_Year : String = dropTbl  + columnTbl
+  val dropRowTbl_Day_Month_Year : String = dropTbl + rowTbl
 }

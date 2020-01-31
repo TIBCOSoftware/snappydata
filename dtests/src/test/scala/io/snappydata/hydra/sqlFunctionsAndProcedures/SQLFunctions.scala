@@ -92,7 +92,8 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.dropRowTbl_DateFunctions_1)
     spark.sql(SQLFunctionsUtils.dropColumnTbl_DateFunctions_1)
     spark.sql(SQLFunctionsUtils.dropRowTbl_DateFunctions_1)
-
+    pw.println()
+    pw.flush()
     /**
       *  Below queries test the functions :
       *  6. repeat
@@ -132,13 +133,14 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.dropRowTbl_RseRpt)
     spark.sql(SQLFunctionsUtils.dropColTbl_RseRpt)
     spark.sql(SQLFunctionsUtils.dropRowTbl_RseRpt)
-
+    pw.println()
+    pw.flush()
     /**
       * Below queries test the functions :
       * 8. !(Logical Not)
       * (Logical NOT is not working in Snappy Cluster)
       * Add the boolean column and data once issue resolved.
-      * 9. & (Bitwise AND)
+      * 9. & (Bitwise AND
       * 10. ^ (Bitwise exclusiveOR/ExOR)
       * val NOT_AND_ExOR_Set1 : String="(1,7,3,true)"
       * val createColTypeTbl_NOT_AND_ExOR_Spark : String= createTbl + columnTbl +
@@ -194,6 +196,52 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.dropRowTbl_NOT_AND_ExOR)
     spark.sql(SQLFunctionsUtils.dropColTbl_NOT_AND_ExOR)
     spark.sql(SQLFunctionsUtils.dropRowTbl_NOT_AND_ExOR)
+    pw.println()
+    pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  13. day ,14. dayofmonth, 15. dayofyear, 16. last_day,
+      *  17. month, 18. next_day, 19. weekofyear
+      *   20 year
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_Day_Month_Year_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_Day_Month_Year_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_Day_Month_Year)
+    snc.sql(SQLFunctionsUtils.createRowTbl_Day_Month_Year)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set2)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set2)
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    val snappyDF1 : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_Day_Month_Year)
+    val sparkDF1 : DataFrame = spark.sql(SQLFunctionsUtils.select_ColTbl_Day_Month_Year)
+    SnappyTestUtils.assertQueryFullResultSet(snc, snappyDF1, sparkDF1,
+      "Q9_Day_Mnth_Yr", "column", pw, sqlContext, true)
+    val snappyDF2 : DataFrame = snc.sql(SQLFunctionsUtils.select_RowTbl_Day_Month_Year)
+    val sparkDF2 : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_Day_Month_Year)
+    SnappyTestUtils.assertQueryFullResultSet(snc, snappyDF2, sparkDF2,
+      "Q10_Day_Mnth_Yr", "row", pw, sqlContext, true)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_Day_Month_Year)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_Day_Month_Year)
+    spark.sql(SQLFunctionsUtils.dropColTbl_Day_Month_Year)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_Day_Month_Year)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
