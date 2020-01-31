@@ -160,6 +160,7 @@ The scripts are available on GitHub in the [snappy-cloud-tools repository](https
 	The EC2 scripts are provided on an experimental basis. Feel free to try it out and provide your feedback as via GitHub issues.
 
 This section covers the following:
+
 *	[Prerequisites](#EC2prereq)
 *	[Deploying TIBCO ComputeDB Cluster with EC2 Scripts](#launchclusterec2script)
 *	[Cluster Management](#clusermanagementec2script)
@@ -178,10 +179,10 @@ If you already have set up the AWS Command Line Interface on your local machine,
 
     For example:
     
-        ```pre
-        export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112
-        export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
-        ```
+    ```pre
+    export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112
+    export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
+    ```
 
 * Ensure Python v 2.7 or later is installed on your local computer.
 
