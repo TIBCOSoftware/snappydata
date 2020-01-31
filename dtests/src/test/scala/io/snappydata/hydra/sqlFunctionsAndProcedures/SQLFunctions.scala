@@ -143,6 +143,8 @@ class SQLFunctions extends SnappySQLJob {
       * val NOT_AND_ExOR_Set1 : String="(1,7,3,true)"
       * val createColTypeTbl_NOT_AND_ExOR_Spark : String= createTbl + columnTbl +
       * "(id int,n1 int,n2 int,b boolean)"
+      *  11. | (Bitwise OR)
+      *  12. ~ (Bitwise NOT)
       */
     //  CREATE TABLE IN SPARK / SNAPPY.
     spark.sql(SQLFunctionsUtils.createColTypeTbl_NOT_AND_ExOR_Spark)

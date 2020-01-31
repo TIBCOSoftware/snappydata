@@ -95,23 +95,27 @@ object SQLFunctionsUtils {
     * val NOT_AND_ExOR_Set1 : String="(1,7,3,true)"
     * val createColTypeTbl_NOT_AND_ExOR_Spark : String= createTbl + columnTbl +
     * "(id int,n1 int,n2 int,b boolean)"
+    *  11. | (Bitwise OR)
+    *  12. ~ (Bitwise NOT)
     */
-  val NOT_AND_ExOR_Set1 : String = "(1,7,3)"
-  val NOT_AND_ExOR_Set2 : String = "(2,3,5)"
-  val NOT_AND_ExOR_Set3 : String = "(3,5,6)"
-  val NOT_AND_ExOR_Set4 : String = "(4,1,8)"
+  val NOT_AND_ExOR_Set1 : String = "(1,7,3,333)"
+  val NOT_AND_ExOR_Set2 : String = "(2,3,5,7)"
+  val NOT_AND_ExOR_Set3 : String = "(3,5,6,1098)"
+  val NOT_AND_ExOR_Set4 : String = "(4,1,8,1234567)"
   val createColTypeTbl_NOT_AND_ExOR_Spark : String = createTbl + columnTbl +
-  "(id int,n1 int,n2 int)"
+  "(id int,n1 int,n2 int,n3 int)"
   val createRowTypeTbl_NOT_AND_ExOR_Spark : String = createTbl + rowTbl +
-    "(id int,n1 int,n2 int)"
+    "(id int,n1 int,n2 int,n3 int)"
   val createColumnTbl_NOT_AND_ExOR : String = createTbl + columnTbl +
-    "(id int,n1 int,n2 int) " + usingCol
+    "(id int,n1 int,n2 int,n3 int) " + usingCol
   val createRowTbl_NOT_AND_ExOR : String = createTbl + rowTbl +
-    "(id int,n1 int,n2 int) " + usingRow
+    "(id int,n1 int,n2 int,n3 int) " + usingRow
   val select_ColTbl_NOT_AND_ExOR : String = "SELECT id, (n1 & n2) as BitwiseAND, " +
-    "(n1 ^ n2) as BitwiseExOR FROM " + columnTbl + " ORDER BY id"
+    "(n1 ^ n2) as BitwiseExOR, (n1 | n2) as BitwiseOR,~(n3) as BitwiseNOT " +
+    "FROM " + columnTbl + " ORDER BY id"
   val select_RowTbl_NOT_AND_ExOR : String = "SELECT id, (n1 & n2) as BitwiseAND, " +
-    "(n1 ^ n2) as BitwiseExOR FROM " + rowTbl + " ORDER BY id"
+    "(n1 ^ n2) as BitwiseExOR, (n1 | n2) as BitwiseOR,~n3 as BitwiseNOT " +
+    "FROM " + rowTbl + " ORDER BY id"
   val dropColTbl_NOT_AND_ExOR : String = dropTbl + columnTbl
   val dropRowTbl_NOT_AND_ExOR : String = dropTbl + rowTbl
 }
