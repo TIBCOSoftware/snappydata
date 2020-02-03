@@ -137,4 +137,17 @@ object SQLFunctionsUtils {
     "year(dt) FROM " + rowTbl + " ORDER BY id"
   val dropColTbl_Day_Month_Year : String = dropTbl  + columnTbl
   val dropRowTbl_Day_Month_Year : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  21. map , 22. map_keys, 23. map_values
+    */
+  val map_Keys_Values_Set1 : String = "1,MAP('Maths',14,'Science',18,'Hindi',15)"
+  val map_Keys_Values_Set2 : String = "2,MAP('Maths',19,'Science',19,'Hindi',19)"
+  val createColTypeTbl_map_Keys_Values_Spark : String = createTbl + columnTbl +
+    " (id int,marks map<string,int>)"
+  val createColumnTbl_map_Keys_Values : String = createTbl + columnTbl +
+    "(id int,marks map<string,int>) " + usingCol
+  val select_ColTbl_map_Keys_Values : String = "SELECT id,map_keys(marks)," +
+    "map_values(marks),marks FROM " + columnTbl + " ORDER BY ID"
+  val dropColTbl_map_Keys_Values : String = dropTbl  + columnTbl
 }

@@ -242,6 +242,33 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_Day_Month_Year)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  21. map , 22. map_keys, 23. map_values
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_map_Keys_Values_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_map_Keys_Values)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + "(" + SQLFunctionsUtils.map_Keys_Values_Set1 + ")")
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + "("  + SQLFunctionsUtils.map_Keys_Values_Set2 + ")")
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.map_Keys_Values_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.map_Keys_Values_Set2)
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    val snappyDF_map_Keys_Values : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_map_Keys_Values)
+    val sparkDF_map_Keys_Values : DataFrame =
+      spark.sql(SQLFunctionsUtils.select_ColTbl_map_Keys_Values)
+    SnappyTestUtils.assertQueryFullResultSet(snc, snappyDF_map_Keys_Values, sparkDF_map_Keys_Values,
+      "Q11_map_Keys_Values", "column", pw, sqlContext, true)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_map_Keys_Values)
+    spark.sql(SQLFunctionsUtils.dropColTbl_map_Keys_Values)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
