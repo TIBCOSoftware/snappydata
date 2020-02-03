@@ -269,6 +269,30 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropColTbl_map_Keys_Values)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  24. array , 25. array_contains
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_array_Contains_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_array_Contains_Values)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.array_Contains_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.array_Contains_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.array_Contains_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.array_Contains_Set2)
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_array_Contains,
+      "Q12_array_Contains", "column", pw, sqlContext, true)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_array_Contains)
+    spark.sql(SQLFunctionsUtils.dropColTbl_array_Contains)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()

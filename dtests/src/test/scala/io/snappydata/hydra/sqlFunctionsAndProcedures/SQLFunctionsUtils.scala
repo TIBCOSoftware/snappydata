@@ -150,4 +150,17 @@ object SQLFunctionsUtils {
   val select_ColTbl_map_Keys_Values : String = "SELECT id,map_keys(marks)," +
     "map_values(marks),marks FROM " + columnTbl + " ORDER BY ID"
   val dropColTbl_map_Keys_Values : String = dropTbl  + columnTbl
+  /**
+    *  Below queries test the functions :
+    *  24. array , 25. array_contains
+    */
+  val array_Contains_Set1 : String = "1,Array(3,5,6,8,1)"
+  val array_Contains_Set2 : String = "2,Array(13,45,66,98,101)"
+  val createColTypeTbl_array_Contains_Spark : String = createTbl + columnTbl +
+    " (id int,arr Array<Int>)"
+  val createColumnTbl_array_Contains_Values : String = createTbl + columnTbl +
+    "(id int,arr Array<Int>) " + usingCol
+  val select_ColTbl_array_Contains : String = "SELECT id,arr as Array,array_contains(arr,8) " +
+    "FROM " + columnTbl + " ORDER BY ID"
+  val dropColTbl_array_Contains : String = dropTbl  + columnTbl
 }
