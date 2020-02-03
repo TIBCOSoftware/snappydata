@@ -20,6 +20,7 @@ apply plugin: 'scala'
 compileScala.options.encoding = 'UTF-8'
 
 sourceSets.main.scala.srcDir 'specific/scala'
+sourceSets.main.scala.srcDir 'src/main/java'
 sourceSets.main.java.srcDirs = []
 
 dependencies {

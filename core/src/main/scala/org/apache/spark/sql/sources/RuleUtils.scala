@@ -191,7 +191,7 @@ object RuleUtils extends PredicateHelper with SparkSupport {
   (Seq[Expression], Seq[Expression]) = expressions.partition(e =>
     e.references.subsetOf(allColumns) && !SubqueryExpression.hasCorrelatedSubquery(e))
 
-  private[sql] def returnPlan(partial: PartialPlan) = {
+  private[sql] def returnPlan(partial: PartialPlan): CompletePlan = {
     val input = if (partial.curPlan == null) partial.input
     else Seq(partial.curPlan) ++ partial.input
     CompletePlan(ReorderJoin.createOrderedJoin(input.map((_, Inner)),
@@ -199,7 +199,7 @@ object RuleUtils extends PredicateHelper with SparkSupport {
   }
 
   private[sql] def chooseIndexForFilter(child: LogicalPlan, conditions: Seq[Expression])
-      (implicit snappySession: SnappySession) = {
+      (implicit snappySession: SnappySession): Option[Replacement] = {
 
     val columnGroups = conditions.collect {
       case expressions.EqualTo(l, r) => l.collectFirst { case a: AttributeReference => a }.orElse {
@@ -211,7 +211,7 @@ object RuleUtils extends PredicateHelper with SparkSupport {
           }
     }.groupBy(_.map(_.qualifier)).collect { case (table, cols)
       if table.nonEmpty && table.get.nonEmpty => (
-        table.get.get,
+        table.get.head,
         cols.collect { case a if a.nonEmpty => a.get })
     }
 

@@ -22,6 +22,7 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.sql.ClusterMode;
 import org.apache.spark.sql.SnappyContext;
 import org.apache.spark.sql.SnappySession;
+import org.apache.spark.sql.SparkInternals;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSupport$;
 import org.apache.spark.sql.ThinClientConnectorMode;
@@ -36,7 +37,7 @@ import org.apache.spark.sql.hive.SnappyHiveExternalCatalog;
  * class object but as a function rather than a "val" allowing to return
  * super.externalCatalog temporarily when it gets invoked in super's constructor.
  */
-public final class SnappySharedState extends SharedState {
+public abstract class SnappySharedState extends SharedState {
 
   /**
    * Instance of SnappyData extended {@link CacheManager} to enable clearing cached plans.
@@ -46,12 +47,12 @@ public final class SnappySharedState extends SharedState {
   /**
    * The ExternalCatalog implementation used for SnappyData in embedded mode.
    */
-  private final SnappyHiveExternalCatalog embedCatalog;
+  final SnappyHiveExternalCatalog embedCatalog;
 
   /**
    * Used to skip initializing meta-store in super's constructor.
    */
-  private final boolean initialized;
+  protected final boolean initialized;
 
   private static final String CATALOG_IMPLEMENTATION =
       StaticSQLConf.CATALOG_IMPLEMENTATION().key();
@@ -59,21 +60,7 @@ public final class SnappySharedState extends SharedState {
   private static final String WAREHOUSE_DIR =
       StaticSQLConf.WAREHOUSE_PATH().key();
 
-  /**
-   * Create Snappy's SQL Listener instead of SQLListener (before SharedState creation).
-   */
-  private static void createListenerAndUI(SparkContext sc) {
-    SparkSupport$.MODULE$.internals(sc).createAndAttachSQLListener(sc);
-  }
-
-  /**
-   * Create Snappy's SQL Listener instead of SQLListener (post SharedState creation).
-   */
-  private void createListenerAndUI() {
-    SparkSupport$.MODULE$.internals(sparkContext()).createAndAttachSQLListener(this);
-  }
-
-  private SnappySharedState(SparkContext sparkContext) {
+  SnappySharedState(SparkContext sparkContext) {
     super(sparkContext);
 
     // avoid inheritance of activeSession
@@ -104,11 +91,11 @@ public final class SnappySharedState extends SharedState {
     // always use default local path for warehouse dir (not used by SD but required by hive client)
     sparkContext.conf().set(WAREHOUSE_DIR, StaticSQLConf.WAREHOUSE_PATH().defaultValueString());
 
-    createListenerAndUI(sparkContext);
+    SparkInternals internals = SparkSupport$.MODULE$.internals(sparkContext);
+    // create Snappy's SQL Listener instead of SQLListener (before SharedState creation)
+    internals.createAndAttachSQLListener(sparkContext);
 
-    final SnappySharedState sharedState = new SnappySharedState(sparkContext);
-    // new Spark versions initialize the UI listener in constructor which is updated next
-    sharedState.createListenerAndUI();
+    final SnappySharedState sharedState = internals.newSharedState(sparkContext);
 
     // reset the temporary confs to original
     if (catalogImpl != null) {
@@ -154,8 +141,7 @@ public final class SnappySharedState extends SharedState {
     }
   }
 
-  @Override
-  public ExternalCatalog externalCatalog() {
+  protected ExternalCatalog getExternalCatalog() {
     if (this.initialized) {
       // noinspection RedundantCast
       return (ExternalCatalog)this.embedCatalog;

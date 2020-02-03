@@ -82,37 +82,39 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
         declarations.append(s"java.sql.Date $prevJavaDate = null;\n")
         declarations.append(s"int $prevDate = 0;\n")
         val inputDate = s.arguments.head.genCode(ctx)
-        val javaDate = inputDate.value
+        val javaDate = internals.exprCodeValue(inputDate)
         val ev = s.genCode(ctx)
-        val code = if (ev.isNull == "false") {
+        val evIsNull = internals.exprCodeIsNull(ev)
+        val evValue = internals.exprCodeValue(ev)
+        val code = if (evIsNull == "false") {
           s"""
-             |${inputDate.code}
-             |int ${ev.value} = -1;
+             |${inputDate.code.toString}
+             |int $evValue = -1;
              |if ($prevJavaDate != null &&
              |    $prevJavaDate.getTime() == $javaDate.getTime()) {
-             |  ${ev.value} = $prevDate;
+             |  $evValue = $prevDate;
              |} else {
              |  $prevJavaDate = $javaDate;
              |  $prevDate = $dateTimeClass.fromJavaDate($javaDate);
-             |  ${ev.value} = $prevDate;
+             |  $evValue = $prevDate;
              |}
           """.stripMargin
         } else {
           s"""
-             |${inputDate.code}
-             |boolean ${ev.isNull};
-             |int ${ev.value} = -1;
-             |if (${inputDate.isNull}) {
-             |  ${ev.isNull} = true;
+             |${inputDate.code.toString}
+             |boolean $evIsNull;
+             |int $evValue = -1;
+             |if (${internals.exprCodeIsNull(inputDate)}) {
+             |  $evIsNull = true;
              |} else if ($prevJavaDate != null &&
              |    $prevJavaDate.getTime() == $javaDate.getTime()) {
-             |  ${ev.value} = $prevDate;
-             |  ${ev.isNull} = false;
+             |  $evValue = $prevDate;
+             |  $evIsNull = false;
              |} else {
              |  $prevJavaDate = $javaDate;
              |  $prevDate = $dateTimeClass.fromJavaDate($javaDate);
-             |  ${ev.value} = $prevDate;
-             |  ${ev.isNull} = false;
+             |  $evValue = $prevDate;
+             |  $evIsNull = false;
              |}
           """.stripMargin
         }
@@ -137,7 +139,7 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
       // Hence the below code was erronous and after fixing null handing in above date field
       // it works for all cases.
       /* if (ctx.isPrimitiveType(dataType)) {
-        ev.copy(isNull = "false")
+        internals.copyExprCode(ev, isNull = "false")
       } else {
         ev
       } */

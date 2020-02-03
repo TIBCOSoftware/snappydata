@@ -124,10 +124,10 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     ctx.currentVars = null
 
     val keyVars = keysInput.takeRight(4)
-    val ordinalIdVar = keyVars.head.value
-    val batchIdVar = keyVars(1).value
-    val bucketVar = keyVars(2).value
-    val numRowsVar = keyVars(3).value
+    val ordinalIdVar = internals.exprCodeValue(keyVars.head)
+    val batchIdVar = internals.exprCodeValue(keyVars(1))
+    val bucketVar = internals.exprCodeValue(keyVars(2))
+    val numRowsVar = internals.exprCodeValue(keyVars(3))
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val keyVarsCode = evaluateVariables(keysInput)
     // row buffer needs to select the rowId and partitioning columns so drop last three

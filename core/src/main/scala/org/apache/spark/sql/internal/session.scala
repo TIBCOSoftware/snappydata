@@ -559,7 +559,7 @@ trait DefaultOptimizer extends SparkOptimizer {
 
   def state: SnappySessionState
 
-  override def batches: Seq[Batch] = {
+  def batchesImpl: Seq[Batch] = {
     implicit val ss: SnappySession = state.snappySession
     var insertedSnappyOpts = 0
     val modified = super.batches.map {

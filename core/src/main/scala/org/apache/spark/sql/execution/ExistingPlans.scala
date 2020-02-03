@@ -268,13 +268,13 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
         val (queryStringShortForm, queryStr, queryExecStr, planInfo) = if (key eq null) {
           val callSite = sqlContext.sparkContext.getCallSite()
           (callSite.shortForm, callSite.longForm, treeString(verbose = true),
-            PartitionedPhysicalScan.getSparkPlanInfo(this))
+              PartitionedPhysicalScan.getSparkPlanInfo(this))
         } else {
           val paramLiterals = key.currentLiterals
           val paramsId = key.currentParamsId
           (key.sqlText, key.sqlText, SnappySession.replaceParamLiterals(
             treeString(verbose = true), paramLiterals, paramsId), PartitionedPhysicalScan
-            .getSparkPlanInfo(this, paramLiterals, paramsId))
+              .getSparkPlanInfo(this, paramLiterals, paramsId))
         }
         CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
           queryStr, queryExecStr, planInfo) {
@@ -299,7 +299,7 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
     }
     finally {
       logDebug(s" Unlocking the table in execute of ExecutePlan:" +
-        s" ${child.treeString(false)}")
+          s" ${child.treeString(false)}")
       session.clearWriteLockOnTable()
     }
   }

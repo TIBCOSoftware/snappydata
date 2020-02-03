@@ -79,7 +79,7 @@ object DictionaryOptimizedMapAccessor extends SparkSupport {
       keyVars: => Seq[ExprCode], ctx: CodegenContext,
       session: SnappySession): Option[DictionaryCode] = {
     if (canHaveSingleKeyCase(keyExpressions)) {
-      session.getDictionaryCode(ctx, keyVars.head.value)
+      session.getDictionaryCode(ctx, internals.exprCodeValue(keyVars.head))
     } else None
   }
 
@@ -88,7 +88,7 @@ object DictionaryOptimizedMapAccessor extends SparkSupport {
       resultVar: String, valueInit: String, continueOnNull: Boolean,
       accessor: ObjectHashMapAccessor): String = {
     val key = ctx.freshName("dictionaryKey")
-    val keyIndex = keyDictVar.dictionaryIndex.value
+    val keyIndex = internals.exprCodeValue(keyDictVar.dictionaryIndex)
     val keyNull = internals.exprCodeIsNull(keyVar) != "false"
     val keyValue = internals.exprCodeValue(keyVar)
     val keyEv = internals.copyExprCode(keyVar, code = "",
@@ -128,7 +128,7 @@ object DictionaryOptimizedMapAccessor extends SparkSupport {
     // if keyVar code has not been consumed, then use dictionary
     val keyAssign = if (keyVar.code.isEmpty) s"final UTF8String $key = $keyValue;"
     else {
-      val dictionaryVar = keyDictVar.dictionary.value
+      val dictionaryVar = internals.exprCodeValue(keyDictVar.dictionary)
       val stringAssignCode = ColumnEncoding.stringFromDictionaryCode(
         dictionaryVar, keyDictVar.bufferVar, keyIndex)
       s"final UTF8String $key = $stringAssignCode;"
@@ -136,7 +136,7 @@ object DictionaryOptimizedMapAccessor extends SparkSupport {
 
     val indexCode = keyDictVar.evaluateIndexCode()
     val dictionaryIndexInit = if (indexCode.isEmpty) "" else {
-      s"int ${keyDictVar.dictionaryIndex.value} = -1;"
+      s"int $keyIndex = -1;"
     }
 
     s"""

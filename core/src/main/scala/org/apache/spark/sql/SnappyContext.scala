@@ -1091,7 +1091,10 @@ object SnappyContext extends Logging {
       contextLock.synchronized {
         if (!_globalSNContextInitialized) {
           initGlobalSparkContext(sc)
-          _sharedState = SnappySharedState.create(sc)
+          val state = _sharedState
+          if ((state eq null) || (state.sparkContext ne sc)) {
+            _sharedState = SnappySharedState.create(sc)
+          }
           _globalClear = session.contextFunctions.clearStatic()
           // replay global sql commands
           if (ToolsCallbackInit.toolsCallback ne null) {
@@ -1171,6 +1174,10 @@ object SnappyContext extends Logging {
         _sharedState
       }
     }
+  }
+
+  private[sql] def getExistingSharedState: SnappySharedState = {
+    contextLock.synchronized(_sharedState)
   }
 
   def newHiveSession(): SparkSession = contextLock.synchronized {

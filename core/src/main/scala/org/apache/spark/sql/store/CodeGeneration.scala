@@ -145,22 +145,23 @@ object CodeGeneration extends Logging with SparkSupport {
     val serArrayClass = classOf[SerializedArray].getName
     val serMapClass = classOf[SerializedMap].getName
     val serRowClass = classOf[SerializedRow].getName
+    val evValue = internals.exprCodeValue(ev)
     val nonNullCode = Utils.getSQLDataType(dataType) match {
-      case IntegerType => s"$stmt.setInt(${col + 1}, ${ev.value});"
-      case LongType => s"$stmt.setLong(${col + 1}, ${ev.value});"
-      case DoubleType => s"$stmt.setDouble(${col + 1}, ${ev.value});"
-      case FloatType => s"$stmt.setFloat(${col + 1}, ${ev.value});"
-      case ShortType => s"$stmt.setInt(${col + 1}, ${ev.value});"
-      case ByteType => s"$stmt.setInt(${col + 1}, ${ev.value});"
-      case BooleanType => s"$stmt.setBoolean(${col + 1}, ${ev.value});"
-      case StringType => s"$stmt.setString(${col + 1}, ${ev.value}.toString());"
-      case BinaryType => s"$stmt.setBytes(${col + 1}, ${ev.value});"
+      case IntegerType => s"$stmt.setInt(${col + 1}, $evValue);"
+      case LongType => s"$stmt.setLong(${col + 1}, $evValue);"
+      case DoubleType => s"$stmt.setDouble(${col + 1}, $evValue);"
+      case FloatType => s"$stmt.setFloat(${col + 1}, $evValue);"
+      case ShortType => s"$stmt.setInt(${col + 1}, $evValue);"
+      case ByteType => s"$stmt.setInt(${col + 1}, $evValue);"
+      case BooleanType => s"$stmt.setBoolean(${col + 1}, $evValue);"
+      case StringType => s"$stmt.setString(${col + 1}, $evValue.toString());"
+      case BinaryType => s"$stmt.setBytes(${col + 1}, $evValue);"
       case TimestampType =>
-        s"$stmt.setTimestamp(${col + 1}, $timeUtilsClass.toJavaTimestamp(${ev.value}));"
+        s"$stmt.setTimestamp(${col + 1}, $timeUtilsClass.toJavaTimestamp($evValue));"
       case DateType =>
-        s"$stmt.setDate(${col + 1}, $timeUtilsClass.toJavaDate(${ev.value}));"
+        s"$stmt.setDate(${col + 1}, $timeUtilsClass.toJavaDate($evValue));"
       case _: DecimalType =>
-        s"$stmt.setBigDecimal(${col + 1}, ${ev.value}.toJavaBigDecimal());"
+        s"$stmt.setBigDecimal(${col + 1}, $evValue.toJavaBigDecimal());"
       case a: ArrayType =>
         val arr = ctx.freshName("arr")
         val encoder = ctx.freshName("encoder")
@@ -168,7 +169,7 @@ object CodeGeneration extends Logging with SparkSupport {
         val encoderVar = internals.addClassField(ctx, encoderClass, "encoderObj",
           v => s"$v = new $encoderClass();", forceInline = true)
         s"""
-           |final ArrayData $arr = ${ev.value};
+           |final ArrayData $arr = $evValue;
            |if ($arr instanceof $serArrayClass) {
            |  $stmt.setBytes(${col + 1}, (($serArrayClass)$arr).toBytes());
            |} else {
@@ -187,7 +188,7 @@ object CodeGeneration extends Logging with SparkSupport {
         val encoderVar = internals.addClassField(ctx, encoderClass, "encoderObj",
           v => s"$v = new $encoderClass();", forceInline = true)
         s"""
-           |final MapData $map = ${ev.value};
+           |final MapData $map = $evValue;
            |if ($map instanceof $serMapClass) {
            |  $stmt.setBytes(${col + 1}, (($serMapClass)$map).toBytes());
            |} else {
@@ -205,7 +206,7 @@ object CodeGeneration extends Logging with SparkSupport {
         val encoderVar = internals.addClassField(ctx, encoderClass, "encoderObj",
           v => s"$v = new $encoderClass();", forceInline = true)
         s"""
-           |final InternalRow $struct = ${ev.value};
+           |final InternalRow $struct = $evValue;
            |if ($struct instanceof $serRowClass) {
            |  $stmt.setBytes(${col + 1}, (($serRowClass)$struct).toBytes());
            |} else {
@@ -218,17 +219,18 @@ object CodeGeneration extends Logging with SparkSupport {
            |}
         """.stripMargin
       case _ =>
-        s"$stmt.setObject(${col + 1}, ${ev.value});"
+        s"$stmt.setObject(${col + 1}, $evValue);"
     }
-    val code = if (ev.code == "") ""
+    val evCode = ev.code.toString
+    val code = if (evCode.isEmpty) ""
     else {
-      val c = s"${ev.code}\n"
-      ev.code = ""
+      val c = s"$evCode\n"
+      internals.resetCode(ev)
       c
     }
     val jdbcType = JdbcExtendedUtils.getJdbcType(NullType, null, dialect).jdbcNullType
     s"""
-       |${code}if (${ev.isNull}) {
+       |${code}if (${internals.exprCodeIsNull(ev)}) {
        |  $stmt.setNull(${col + 1}, $jdbcType);
        |} else {
        |  $nonNullCode
@@ -248,8 +250,8 @@ object CodeGeneration extends Logging with SparkSupport {
   def getRowSetterFragment(schema: Array[StructField],
       dialect: JdbcDialect, row: String, stmt: String,
       schemaTerm: String, ctx: CodegenContext): String = {
-    val rowInput = (col: Int) => ExprCode("", s"$row.isNullAt($col)",
-      ctx.getValue(row, schema(col).dataType, Integer.toString(col)))
+    val rowInput = (col: Int) => internals.newExprCode(code = "", isNull = s"$row.isNullAt($col)",
+      value = internals.getValue(row, schema(col).dataType, Integer.toString(col), ctx))
     genStmtSetters(schema, dialect, rowInput, stmt, schemaTerm, ctx)
   }
 
@@ -278,7 +280,7 @@ object CodeGeneration extends Logging with SparkSupport {
     val evaluator = new CompilerFactory().newScriptEvaluator()
     evaluator.setClassName("io.snappydata.execute.GeneratedEvaluation")
     evaluator.setParentClassLoader(getClass.getClassLoader)
-    evaluator.setDefaultImports(defaultImports)
+    evaluator.setDefaultImports(defaultImports: _*)
     val separator = "\n      "
     val mutableStates = internals.getInlinedClassFields(ctx)
     val varDeclarations = mutableStates._1.map { case (javaType, name) =>
@@ -331,7 +333,7 @@ object CodeGeneration extends Logging with SparkSupport {
     val evaluator = new CompilerFactory().newScriptEvaluator()
     evaluator.setClassName("io.snappydata.execute.GeneratedIndexEvaluation")
     evaluator.setParentClassLoader(getClass.getClassLoader)
-    evaluator.setDefaultImports(defaultImports)
+    evaluator.setDefaultImports(defaultImports: _*)
     val separator = "\n      "
     val mutableStates = internals.getInlinedClassFields(ctx)
     val varDeclarations = mutableStates._1.map { case (javaType, name) =>
@@ -428,14 +430,14 @@ object CodeGeneration extends Logging with SparkSupport {
     val evaluator = new CompilerFactory().newScriptEvaluator()
     evaluator.setClassName("io.snappydata.execute.GeneratedSerialization")
     evaluator.setParentClassLoader(getClass.getClassLoader)
-    evaluator.setDefaultImports(Array(classOf[Platform].getName,
+    evaluator.setDefaultImports(classOf[Platform].getName,
       classOf[InternalRow].getName,
       classOf[UTF8String].getName,
       classOf[Decimal].getName,
       classOf[CalendarInterval].getName,
       classOf[ArrayData].getName,
       classOf[MapData].getName,
-      classOf[InternalDataSerializer].getName))
+      classOf[InternalDataSerializer].getName)
     val separator = "\n      "
     val mutableStates = internals.getInlinedClassFields(ctx)
     val varDeclarations = mutableStates._1.map { case (javaType, name) =>

@@ -31,9 +31,10 @@ import org.apache.spark.internal.config.ConfigBuilder
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
+import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, FunctionRegistry, UnresolvedRelation, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.catalyst.catalog._
+import org.apache.spark.sql.catalyst.catalog.{ExternalCatalog, _}
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, ExprCode, GeneratedClass}
@@ -46,8 +47,9 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, SQLBuilder, TableIdentifier}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.columnar.ColumnTableScan
-import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, CreateTableLikeCommand, DescribeTableCommand, RunnableCommand}
+import org.apache.spark.sql.execution.columnar.{ColumnTableScan, InMemoryRelation}
+import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, CreateTableLikeCommand, DescribeTableCommand, ExplainCommand, RunnableCommand}
+import org.apache.spark.sql.execution.common.ErrorEstimateAttribute
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.row.RowTableScan
@@ -70,7 +72,8 @@ class Spark210Internals extends SparkInternals {
 
   override def version: String = "2.1.0"
 
-  override def uncacheQuery(spark: SparkSession, plan: LogicalPlan, blocking: Boolean): Unit = {
+  override def uncacheQuery(spark: SparkSession, plan: LogicalPlan,
+      cascade: Boolean, blocking: Boolean): Unit = {
     implicit val encoder: ExpressionEncoder[Row] = RowEncoder(plan.schema)
     spark.sharedState.cacheManager.uncacheQuery(Dataset(spark, plan), blocking)
   }
@@ -227,13 +230,8 @@ class Spark210Internals extends SparkInternals {
     }
   }
 
-  def createAndAttachSQLListener(state: SharedState): Unit = {
-    // check that SparkSession.sqlListener should be set correctly
-    SparkSession.sqlListener.get() match {
-      case _: SnappySQLListener =>
-      case l =>
-        throw new IllegalStateException(s"expected SnappySQLListener to be set but was $l")
-    }
+  override def newSharedState(sparkContext: SparkContext): SnappySharedState = {
+    new SnappySharedState21(sparkContext)
   }
 
   def clearSQLListener(): Unit = {
@@ -296,11 +294,24 @@ class Spark210Internals extends SparkInternals {
     SparkSubmitUtils.resolveMavenCoordinates(coordinates, remoteRepos, ivyPath, exclusions)
   }
 
-  override def copyAttribute(attr: Attribute)(name: String,
+  override def toAttributeReference(attr: Attribute)(name: String,
       dataType: DataType, nullable: Boolean, metadata: Metadata,
       exprId: ExprId): AttributeReference = {
     AttributeReference(name = name, dataType = dataType, nullable = nullable, metadata = metadata)(
       exprId, qualifier = attr.qualifier, isGenerated = attr.isGenerated)
+  }
+
+  override def newAttributeReference(name: String, dataType: DataType, nullable: Boolean,
+      metadata: Metadata, exprId: ExprId, qualifier: Option[String],
+      isGenerated: Boolean): AttributeReference = {
+    AttributeReference(name, dataType, nullable, metadata)(exprId, qualifier, isGenerated)
+  }
+
+  override def newErrorEstimateAttribute(name: String, dataType: DataType,
+      nullable: Boolean, metadata: Metadata, exprId: ExprId, realExprId: ExprId,
+      qualifier: Seq[String]): ErrorEstimateAttribute = {
+    ErrorEstimateAttribute21(name, dataType, nullable, metadata, exprId, realExprId)(
+      qualifier.headOption)
   }
 
   override def withNewChild(insert: InsertIntoTable, newChild: LogicalPlan): InsertIntoTable = {
@@ -344,10 +355,10 @@ class Spark210Internals extends SparkInternals {
 
   override def getViewFromAlias(q: SubqueryAlias): Option[TableIdentifier] = q.view
 
-  override def newAlias(child: Expression, name: String,
-      copyAlias: Option[NamedExpression]): Alias = {
+  override def newAlias(child: Expression, name: String, copyAlias: Option[NamedExpression],
+      exprId: ExprId, qualifier: Option[String]): Alias = {
     copyAlias match {
-      case None => Alias(child, name)()
+      case None => Alias(child, name)(exprId, qualifier)
       case Some(a: Alias) =>
         Alias(child, name)(a.exprId, a.qualifier, a.explicitMetadata, a.isGenerated)
       case Some(a) => Alias(child, name)(a.exprId, a.qualifier, isGenerated = a.isGenerated)
@@ -656,6 +667,10 @@ class Spark210Internals extends SparkInternals {
 
   override def exprCodeIsNull(ev: ExprCode): String = ev.isNull
 
+  override def setExprCodeIsNull(ev: ExprCode, isNull: String): Unit = {
+    ev.isNull = isNull
+  }
+
   override def exprCodeValue(ev: ExprCode): String = ev.value
 
   override def javaType(dt: DataType, ctx: CodegenContext): String = ctx.javaType(dt)
@@ -690,6 +705,46 @@ class Spark210Internals extends SparkInternals {
         s"Literal expressions required for pivot values, found: ${pivotValues.mkString("; ")}")
     }
     Pivot(groupByExprs, pivotColumn, pivotValues.map(_.asInstanceOf[Literal]), aggregates, child)
+  }
+
+  override def copyPivot(pivot: Pivot, groupByExprs: Seq[NamedExpression]): Pivot = {
+    pivot.copy(groupByExprs = groupByExprs)
+  }
+
+  override def newIntersect(left: LogicalPlan, right: LogicalPlan, isAll: Boolean): Intersect = {
+    if (isAll) {
+      throw new ParseException(s"INTERSECT ALL not supported in spark $version")
+    }
+    Intersect(left, right)
+  }
+
+  override def newExcept(left: LogicalPlan, right: LogicalPlan, isAll: Boolean): Except = {
+    if (isAll) {
+      throw new ParseException(s"EXCEPT ALL not supported in spark $version")
+    }
+    Except(left, right)
+  }
+
+  override def newExplainCommand(logicalPlan: LogicalPlan, extended: Boolean,
+      codegen: Boolean, cost: Boolean): LogicalPlan = {
+    if (cost) {
+      throw new ParseException(s"EXPLAIN COST not supported in spark $version")
+    }
+    ExplainCommand(logicalPlan, extended, codegen)
+  }
+
+  override def cachedColumnBuffers(relation: InMemoryRelation): RDD[_] = {
+    relation.cachedColumnBuffers
+  }
+
+  override def addStringPromotionRules(rules: Seq[Rule[LogicalPlan]],
+      analyzer: SnappyAnalyzer, conf: SQLConf): Seq[Rule[LogicalPlan]] = {
+    rules.flatMap {
+      case PromoteStrings =>
+        (analyzer.StringPromotionCheckForUpdate :: analyzer.SnappyPromoteStrings ::
+            PromoteStrings :: Nil).asInstanceOf[Seq[Rule[LogicalPlan]]]
+      case r => r :: Nil
+    }
   }
 }
 
@@ -846,6 +901,13 @@ class SnappySessionCatalog21(override val snappySession: SnappySession,
     super.failFunctionLookup(name)
   }
 
+  override protected def baseCreateTable(table: CatalogTable, ignoreIfExists: Boolean,
+      validateTableLocation: Boolean): Unit = super.createTable(table, ignoreIfExists)
+
+  override def createTable(table: CatalogTable, ignoreIfExists: Boolean): Unit = {
+    createTableImpl(table, ignoreIfExists, validateTableLocation = true)
+  }
+
   override def getTableMetadataOption(name: TableIdentifier): Option[CatalogTable] = {
     super.getTableMetadataOption(name) match {
       case None => None
@@ -919,6 +981,7 @@ class SnappySessionState21(override val snappySession: SnappySession)
   override def optimizerBuilder(): Optimizer = {
     new SparkOptimizer(catalog, conf, experimentalMethods) with DefaultOptimizer {
       override def state: SnappySessionState = self
+      override def batches: Seq[Batch] = batchesImpl
     }
   }
 
@@ -953,4 +1016,20 @@ class LogicalDStreamPlan21(output: Seq[Attribute],
   @transient override lazy val statistics: Statistics = Statistics(
     sizeInBytes = BigInt(streamingSnappy.snappySession.sessionState.conf.defaultSizeInBytes)
   )
+}
+
+case class ErrorEstimateAttribute21(name: String, dataType: DataType, nullable: Boolean,
+    override val metadata: Metadata, exprId: ExprId, realExprId: ExprId)(
+    val qualifier: Option[String]) extends ErrorEstimateAttribute {
+
+  override def singleQualifier: Option[String] = qualifier
+
+  override def withQualifier(newQualifier: Option[String]): Attribute = {
+    if (newQualifier == qualifier) {
+      this
+    } else {
+      ErrorEstimateAttribute21(name, dataType, nullable, metadata, exprId,
+        realExprId)(newQualifier)
+    }
+  }
 }

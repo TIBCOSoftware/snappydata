@@ -228,7 +228,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
         queryLR.get.output.map(_.exprId)).toMap
       filter.transformAllExpressions {
         case ar: AttributeReference if mappingInfo.contains(ar.exprId) =>
-          internals.copyAttribute(ar)(exprId = mappingInfo(ar.exprId))
+          internals.toAttributeReference(ar)(exprId = mappingInfo(ar.exprId))
       }
     }
   }
@@ -551,7 +551,11 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
     } else super.listDatabases(pattern).distinct.sorted
   }
 
-  override def createTable(table: CatalogTable, ignoreIfExists: Boolean): Unit = {
+  protected def baseCreateTable(table: CatalogTable, ignoreIfExists: Boolean,
+      validateTableLocation: Boolean): Unit
+
+  protected final def createTableImpl(table: CatalogTable, ignoreIfExists: Boolean,
+      validateTableLocation: Boolean): Unit = {
     // first check required permission to create objects in a schema
     val schemaName = getSchemaName(table.identifier)
     val tableName = formatTableName(table.identifier.table)
@@ -573,7 +577,8 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
           }
 
           // resolve table fully as per current schema in this session
-          hiveSessionCatalog.createTable(resolveCatalogTable(table, schemaName), ignoreIfExists)
+          internals.createTable(hiveSessionCatalog, resolveCatalogTable(table, schemaName),
+            ignoreIfExists, validateTableLocation)
         } else {
           throw Utils.analysisException(
             s"External hive support (${StaticSQLConf.CATALOG_IMPLEMENTATION.key} = hive) " +
@@ -582,7 +587,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
         }
       case _ =>
         createSchema(schemaName, ignoreIfExists = true)
-        super.createTable(table, ignoreIfExists)
+        baseCreateTable(table, ignoreIfExists, validateTableLocation)
     }
 
     contextFunctions.postCreateTable(table)
@@ -605,7 +610,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
     val catalogTable = CatalogTable(new TableIdentifier(tableName, Some(schemaName)),
       CatalogTableType.EXTERNAL, DataSource.buildStorageFormatFromOptions(
         options + (DBTABLE_PROPERTY -> fullTableName)), schema, Some(provider))
-    createTable(catalogTable, ignoreIfExists)
+    createTableImpl(catalogTable, ignoreIfExists, validateTableLocation = false)
   }
 
   protected def convertCharTypes(table: CatalogTable): CatalogTable = {

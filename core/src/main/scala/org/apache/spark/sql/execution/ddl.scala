@@ -132,7 +132,7 @@ case class DropPolicyCommand(ifExists: Boolean,
 }
 
 case class TruncateManagedTableCommand(ifExists: Boolean,
-    table: TableIdentifier) extends RunnableCommand {
+    table: TableIdentifier) extends RunnableCommand with SparkSupport {
 
   override def run(session: SparkSession): Seq[Row] = {
     val catalog = session.asInstanceOf[SnappySession].sessionCatalog
@@ -144,7 +144,8 @@ case class TruncateManagedTableCommand(ifExists: Boolean,
         case plan => throw new AnalysisException(
           s"Table '$table' must be a DestroyRelation for truncate. Found plan: $plan")
       }
-      session.sharedState.cacheManager.uncacheQuery(session.table(table))
+      internals.uncacheQuery(session, session.table(table).logicalPlan,
+        cascade = true, blocking = true)
     }
     Nil
   }
@@ -290,7 +291,7 @@ case class SnappyStreamingActionsCommand(action: Int,
  * in the GUI rather than count() plan for InMemoryRelation.
  */
 case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: String,
-    plan: Option[LogicalPlan], isLazy: Boolean) extends RunnableCommand {
+    plan: Option[LogicalPlan], isLazy: Boolean) extends RunnableCommand with SparkSupport {
 
   require(plan.isEmpty || tableIdent.database.isEmpty,
     "Schema name is not allowed in CACHE TABLE AS SELECT")
@@ -345,7 +346,7 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
             // Dummy op to materialize the cache. This does the minimal job of count on
             // the actual cached data (RDD[CachedBatch]) to force materialization of cache
             // while avoiding creation of any new SparkPlan.
-            val count = memoryPlan.cachedColumnBuffers.count()
+            val count = internals.cachedColumnBuffers(memoryPlan).count()
             (count, System.nanoTime() - start)
           }))._1) :: Nil
       } finally {

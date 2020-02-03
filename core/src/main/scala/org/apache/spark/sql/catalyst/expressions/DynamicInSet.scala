@@ -97,15 +97,17 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
          |}
       """.stripMargin)
 
+    val evIsNull = internals.exprCodeIsNull(ev)
+    val evValue = internals.exprCodeValue(ev)
     internals.copyExprCode(ev, code =
         s"""
-          ${childGen.code}
-          boolean ${ev.isNull} = ${childGen.isNull};
-          boolean ${ev.value} = false;
-          if (!${ev.isNull}) {
-            ${ev.value} = $hsetTerm.containsKey(${childGen.value});
-            if (!${ev.value} && $hasNullTerm) {
-              ${ev.isNull} = true;
+          ${childGen.code.toString}
+          boolean $evIsNull = ${internals.exprCodeValue(childGen)};
+          boolean $evValue = false;
+          if (!$evIsNull) {
+            $evValue = $hsetTerm.containsKey(${internals.exprCodeValue(childGen)});
+            if (!$evValue && $hasNullTerm) {
+              $evIsNull = true;
             }
           }
         """)

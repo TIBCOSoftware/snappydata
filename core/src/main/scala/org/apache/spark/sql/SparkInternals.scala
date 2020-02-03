@@ -33,14 +33,15 @@ import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, TableIdentifier}
-import org.apache.spark.sql.execution.columnar.ColumnTableScan
+import org.apache.spark.sql.execution.columnar.{ColumnTableScan, InMemoryRelation}
 import org.apache.spark.sql.execution.command.RunnableCommand
+import org.apache.spark.sql.execution.common.ErrorEstimateAttribute
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.Exchange
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, PartitionedDataSourceScan, RowDataSourceScanExec, SparkPlan, WholeStageCodegenExec}
-import org.apache.spark.sql.hive.{SnappyHiveExternalCatalog, SnappySessionState}
-import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SharedState}
+import org.apache.spark.sql.hive.{SnappyAnalyzer, SnappyHiveExternalCatalog, SnappySessionState}
+import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SnappySharedState}
 import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.streaming.LogicalDStreamPlan
 import org.apache.spark.sql.types.{DataType, Metadata, StructField, StructType}
@@ -76,7 +77,8 @@ trait SparkInternals extends Logging {
   /**
    * Remove any cached data of Dataset.persist for given plan.
    */
-  def uncacheQuery(spark: SparkSession, plan: LogicalPlan, blocking: Boolean): Unit
+  def uncacheQuery(spark: SparkSession, plan: LogicalPlan,
+      cascade: Boolean, blocking: Boolean): Unit
 
   /**
    * Apply a mapping function on all expressions in the given logical plan
@@ -185,26 +187,16 @@ trait SparkInternals extends Logging {
    * b) shortens the SQL string to display properly in the UI (CachedDataFrame already
    * takes care of posting the SQL string rather than method name unlike Spark).
    * <p>
-   * This variant is invoked before initialization of SharedState for Spark versions
-   * where listener is attached independently of SharedState before latter is created.
+   * This is invoked before initialization of SharedState for Spark releases
+   * where listener is attached independently of SharedState before latter is created
+   * while it is invoked after initialization of SharedState for newer Spark versions.
    */
   def createAndAttachSQLListener(sparkContext: SparkContext): Unit
 
   /**
-   * Create a new SQL listener with SnappyData extensions and attach to the SparkUI.
-   * The extension provides handling of:
-   * <p>
-   * a) combining the two part execution with CachedDataFrame where first execution
-   * does the caching ("prepare" phase) along with the actual execution while subsequent
-   * executions only do the latter
-   * <p>
-   * b) shortens the SQL string to display properly in the UI (CachedDataFrame already
-   * takes care of posting the SQL string rather than method name unlike Spark).
-   * <p>
-   * This variant is invoked after initialization of SharedState for Spark versions
-   * where listener is attached as part of SharedState creation.
+   * Create a new global instance of [[SnappySharedState]].
    */
-  def createAndAttachSQLListener(state: SharedState): Unit
+  def newSharedState(sparkContext: SparkContext): SnappySharedState
 
   /**
    * Clear any global SQL listener.
@@ -262,9 +254,23 @@ trait SparkInternals extends Logging {
   /**
    * Create a copy of [[Attribute]] as [[AttributeReference]] with given arguments.
    */
-  def copyAttribute(attr: Attribute)(name: String = attr.name,
+  def toAttributeReference(attr: Attribute)(name: String = attr.name,
       dataType: DataType = attr.dataType, nullable: Boolean = attr.nullable,
       metadata: Metadata = attr.metadata, exprId: ExprId = attr.exprId): AttributeReference
+
+  /**
+   * Create a new instance of [[AttributeReference]]
+   */
+  def newAttributeReference(name: String, dataType: DataType, nullable: Boolean,
+      metadata: Metadata, exprId: ExprId, qualifier: Option[String],
+      isGenerated: Boolean = false): AttributeReference
+
+  /**
+   * Create a new concrete instance of [[ErrorEstimateAttribute]].
+   */
+  def newErrorEstimateAttribute(name: String, dataType: DataType,
+      nullable: Boolean, metadata: Metadata, exprId: ExprId, realExprId: ExprId,
+      qualifier: Seq[String]): ErrorEstimateAttribute
 
   /**
    * Create a copy of [[InsertIntoTable]] plan with a new child.
@@ -317,7 +323,8 @@ trait SparkInternals extends Logging {
   /**
    * Create an alias with given parameters and optionally copying other fields from existing Alias.
    */
-  def newAlias(child: Expression, name: String, copyAlias: Option[NamedExpression]): Alias
+  def newAlias(child: Expression, name: String, copyAlias: Option[NamedExpression],
+      exprId: ExprId = NamedExpression.newExprId, qualifier: Option[String] = None): Alias
 
   /**
    * Create a plan for column aliases in a table/sub-query/...
@@ -625,6 +632,11 @@ trait SparkInternals extends Logging {
   def exprCodeIsNull(ev: ExprCode): String
 
   /**
+   * Set the isNull field of [[ExprCode]].
+   */
+  def setExprCodeIsNull(ev: ExprCode, isNull: String): Unit
+
+  /**
    * Get the string for value field of [[ExprCode]].
    */
   def exprCodeValue(ev: ExprCode): String
@@ -669,6 +681,43 @@ trait SparkInternals extends Logging {
    */
   def newPivot(groupByExprs: Seq[NamedExpression], pivotColumn: Expression,
       pivotValues: Seq[Expression], aggregates: Seq[Expression], child: LogicalPlan): Pivot
+
+  /**
+   * Create a copy of [[Pivot]] plan with a new set of groupBy expressions.
+   */
+  def copyPivot(pivot: Pivot, groupByExprs: Seq[NamedExpression]): Pivot
+
+  /**
+   * Create a new instance of [[Intersect]] plan.
+   */
+  def newIntersect(left: LogicalPlan, right: LogicalPlan, isAll: Boolean): Intersect
+
+  /**
+   * Create a new instance of [[Except]] plan.
+   */
+  def newExcept(left: LogicalPlan, right: LogicalPlan, isAll: Boolean): Except
+
+  /**
+   * Create a plan for explain command.
+   */
+  def newExplainCommand(logicalPlan: LogicalPlan, extended: Boolean,
+      codegen: Boolean, cost: Boolean): LogicalPlan
+
+  /**
+   * Get the internal cached RDD for an in-memory relation.
+   */
+  def cachedColumnBuffers(relation: InMemoryRelation): RDD[_]
+
+  /**
+   * Add SnappyData custom string promotion rules to deal with ParamLiterals.
+   */
+  def addStringPromotionRules(rules: Seq[Rule[LogicalPlan]],
+      analyzer: SnappyAnalyzer, conf: SQLConf): Seq[Rule[LogicalPlan]]
+
+  def createTable(catalog: SessionCatalog, tableDefinition: CatalogTable,
+      ignoreIfExists: Boolean, validateLocation: Boolean): Unit = {
+    catalog.createTable(tableDefinition, ignoreIfExists)
+  }
 }
 
 /**

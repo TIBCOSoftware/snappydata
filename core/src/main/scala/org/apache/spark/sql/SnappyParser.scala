@@ -697,7 +697,7 @@ class SnappyParser(session: SnappySession)
               WindowLogicalPlan(win._1, win._2, internals.newUnresolvedRelation(tableIdent, None))
           })
     ) |
-    '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~> { (child: LogicalPlan, w: Any) =>
+    '(' ~ ws ~ queryNoWith ~ ')' ~ ws ~ streamWindowOptions.? ~> { (child: LogicalPlan, w: Any) =>
       w.asInstanceOf[Option[(Duration, Option[Duration])]] match {
         case None => child
         case Some(win) => WindowLogicalPlan(win._1, win._2, child)
@@ -780,7 +780,7 @@ class SnappyParser(session: SnappySession)
           session.sessionState.conf.numShufflePartitions, l)))).? ~
     (WINDOW ~ ((identifier ~ AS ~ windowSpec ~>
         ((id: String, w: WindowSpec) => id -> w)) + commaSep)).? ~
-    ((LIMIT ~ expressionNoTokens) | fetchExpression).? ~> {
+    ((LIMIT ~ (capture(ALL) | expressionNoTokens)) | fetchExpression).? ~> {
       (o: Any, w: Any, e: Any) => (l: LogicalPlan) =>
       val withOrder = o.asInstanceOf[Option[LogicalPlan => LogicalPlan]]
           .map(_ (l)).getOrElse(l)
@@ -801,7 +801,10 @@ class SnappyParser(session: SnappySession)
         // Note that mapValues creates a view, so force materialization.
         WithWindowDefinition(windowMapView.map(identity), withOrder)
       }.getOrElse(withOrder)
-      e.asInstanceOf[Option[Expression]].map(Limit(_, window)).getOrElse(window)
+      e match {
+        case Some(e: Expression) => Limit(e, window)
+        case _ => window
+      }
     }
   }
 
@@ -983,17 +986,17 @@ class SnappyParser(session: SnappySession)
             }
             UnresolvedFunction(fnName, UnresolvedStar(None) :: Nil, isDistinct = false)
           }) |
-          (DISTINCT ~ push(true)).? ~ (expression * commaSep) ~ ')' ~ ws ~
-            (OVER ~ windowSpec).? ~> { (n1: String, n2: Any, d: Any, e: Any, w: Any) =>
+          setQuantifier ~ (expression * commaSep) ~ ')' ~ ws ~
+            (OVER ~ windowSpec).? ~> { (n1: String, n2: Any, d: Option[Boolean], e: Any, w: Any) =>
             val fnName = n2.asInstanceOf[Option[String]] match {
               case None => new FunctionIdentifier(n1)
               case Some(f) => new FunctionIdentifier(f, Some(n1))
             }
             val allExprs = e.asInstanceOf[Seq[Expression]].toIndexedSeq
             val exprs = foldableFunctionsExpressionHandler(allExprs, n1)
-            val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
+            val function = if (d.contains(false)) {
               UnresolvedFunction(fnName, exprs, isDistinct = false)
-            } else if (fnName.funcName.equalsIgnoreCase("COUNT")) {
+            } else if (fnName.funcName.equalsIgnoreCase("count")) {
               aggregate.Count(exprs).toAggregateExpression(isDistinct = true)
             } else {
               UnresolvedFunction(fnName, exprs, isDistinct = true)
@@ -1068,6 +1071,11 @@ class SnappyParser(session: SnappySession)
     case _ => UnresolvedAlias(e)
   }
 
+  // noinspection MutatorLikeMethodIsParameterless
+  protected final def setQuantifier: Rule1[Option[Boolean]] = rule {
+    (ALL ~ push(true) | DISTINCT ~ push(false)).? ~> ((e: Any) => e.asInstanceOf[Option[Boolean]])
+  }
+
   protected def select: Rule1[LogicalPlan] = rule {
     SELECT ~ (DISTINCT ~ push(true)).? ~
     TOKENIZE_BEGIN ~ namedExpressionSeq ~ TOKENIZE_END ~
@@ -1097,7 +1105,8 @@ class SnappyParser(session: SnappySession)
           case "GROUPINGSETS" => extractGroupingSet(withFilter(base), expressions, x._1, x._2)
           // pivot with group by cols
           case _ if base.isInstanceOf[Pivot] =>
-            val newPlan = withFilter(base.asInstanceOf[Pivot].copy(groupByExprs = x._1.map(named)))
+            val newPlan = withFilter(internals.copyPivot(base.asInstanceOf[Pivot],
+              groupByExprs = x._1.map(named)))
             if (p.length == 1 && p.head.isInstanceOf[UnresolvedStar]) newPlan
             else Project(expressions, newPlan)
           // just "group by cols"
@@ -1117,55 +1126,40 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-  protected final def select2: Rule1[LogicalPlan] = rule {
-    select | ('(' ~ ws ~ select ~ ')' ~ ws)
+  protected final def queryPrimary: Rule1[LogicalPlan] = rule {
+    select |
+    TABLE ~ tableIdentifier ~> ((r: TableIdentifier) => internals.newUnresolvedRelation(r, None)) |
+    inlineTable |
+    ('(' ~ ws ~ queryNoWith ~ ')' ~ ws)
   }
 
-  protected final def select1: Rule1[LogicalPlan] = rule {
-    select2 | inlineTable | ctes
-  }
-
-  protected final def select0: Rule1[LogicalPlan] = rule {
-    select1.named("select") ~ (
-        UNION ~ (
-            ALL ~ select1.named("select") ~>
-                ((q1: LogicalPlan, q2: LogicalPlan) => Union(q1, q2)) |
-            DISTINCT.? ~ select1.named("select") ~>
-                ((q1: LogicalPlan, q2: LogicalPlan) => Distinct(Union(q1, q2)))
-        ) |
-        INTERSECT ~ select1.named("select") ~>
-            ((q1: LogicalPlan, q2: LogicalPlan) => Intersect(q1, q2)) |
-        (EXCEPT | MINUS) ~ select1.named("select") ~>
-            ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))
-
+  protected final def queryTerm: Rule1[LogicalPlan] = rule {
+    queryPrimary.named("select") ~ (
+        UNION ~ setQuantifier ~ queryPrimary.named("select") ~>
+            ((q1: LogicalPlan, quantifier: Option[Boolean], q2: LogicalPlan) =>
+              if (quantifier.contains(true)) Union(q1, q2) else Distinct(Union(q1, q2))) |
+        INTERSECT ~ setQuantifier ~ queryPrimary.named("select") ~>
+            ((q1: LogicalPlan, quantifier: Option[Boolean], q2: LogicalPlan) =>
+              internals.newIntersect(q1, q2, quantifier.contains(true))) |
+        (EXCEPT | MINUS) ~ setQuantifier ~ queryPrimary.named("select") ~>
+            ((q1: LogicalPlan, quantifier: Option[Boolean], q2: LogicalPlan) =>
+              internals.newExcept(q1, q2, quantifier.contains(true)))
     ).*
   }
 
   // noinspection ScalaUnnecessaryParentheses
   protected final def query: Rule1[LogicalPlan] = rule {
-    select0 |
+    queryNoWith | ctes
+  }
+
+  // noinspection ScalaUnnecessaryParentheses
+  protected final def queryNoWith: Rule1[LogicalPlan] = rule {
+    queryTerm |
     FROM ~ relations ~> (_fromRelations.push(_): Unit) ~
-        (select0 | insert). + ~> { (queries: Seq[LogicalPlan]) =>
+        (queryTerm | insert). + ~> { (queries: Seq[LogicalPlan]) =>
       _fromRelations.pop()
       if (queries.length == 1) queries.head else Union(queries)
     }
-  }
-
-  // TODO: remove once planner allows for null padding for different number
-  // of columns being inserted/put either with inlineTable or subselect
-  protected final def subSelectQuery: Rule1[LogicalPlan] = rule {
-    select2.named("select") ~ (
-      UNION ~ (
-        ALL ~ select2.named("select") ~>
-          ((q1: LogicalPlan, q2: LogicalPlan) => Union(q1, q2)) |
-          DISTINCT.? ~ select2.named("select") ~>
-            ((q1: LogicalPlan, q2: LogicalPlan) => Distinct(Union(q1, q2)))
-        ) |
-        INTERSECT ~ select2.named("select") ~>
-          ((q1: LogicalPlan, q2: LogicalPlan) => Intersect(q1, q2)) |
-        (EXCEPT | MINUS) ~ select2.named("select") ~>
-          ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))
-      ).*
   }
 
   protected final def lateralView: Rule1[LogicalPlan => LogicalPlan] = rule {
@@ -1199,13 +1193,15 @@ class SnappyParser(session: SnappySession)
 
   protected final def insert: Rule1[LogicalPlan] = rule {
     INSERT ~ ((OVERWRITE ~ push(true)) | (INTO ~ push(false))) ~
-    TABLE.? ~ baseRelation ~ subSelectQuery ~> ((overwrite: Boolean, r: LogicalPlan,
+    TABLE.? ~ baseRelation ~ queryTerm ~> ((overwrite: Boolean, r: LogicalPlan,
         s: LogicalPlan) => internals.newInsertPlanWithCountOutput(
-        r, Map.empty[String, Option[String]], s, overwrite, ifNotExists = false))
+        r, Map.empty[String, Option[String]], s, overwrite, ifNotExists = false)) |
+    INSERT ~ OVERWRITE ~ LOCAL.? ~ DIRECTORY ~ ANY. + ~> (() =>
+      sparkParser.parsePlan(input.sliceString(0, input.length)))
   }
 
   protected final def put: Rule1[LogicalPlan] = rule {
-    PUT ~ INTO ~ TABLE.? ~ baseRelation ~ subSelectQuery ~> PutIntoTable
+    PUT ~ INTO ~ TABLE.? ~ baseRelation ~ queryTerm ~> PutIntoTable
   }
 
   protected final def update: Rule1[LogicalPlan] = rule {
@@ -1241,7 +1237,7 @@ class SnappyParser(session: SnappySession)
   protected final def ctes: Rule1[LogicalPlan] = rule {
     WITH ~ ((identifier ~ AS.? ~ '(' ~ ws ~ query ~ ')' ~ ws ~>
         ((id: String, p: LogicalPlan) => (id, p))) + commaSep) ~
-        (query | insert) ~> ((r: Seq[(String, LogicalPlan)], s: LogicalPlan) =>
+        queryNoWith ~> ((r: Seq[(String, LogicalPlan)], s: LogicalPlan) =>
         With(s, r.map(ns => (ns._1, internals.newSubqueryAlias(ns._1, ns._2)))))
   }
 
@@ -1276,9 +1272,10 @@ class SnappyParser(session: SnappySession)
   }
 
   // It can be the following patterns:
-  // SHOW TABLES IN schema;
+  // SHOW TABLES (FROM | IN) schema;
+  // SHOW TABLE EXTENDED (FROM | IN) schema ...;
   // SHOW DATABASES;
-  // SHOW COLUMNS IN table;
+  // SHOW COLUMNS (FROM | IN) table;
   // SHOW TBLPROPERTIES table;
   // SHOW FUNCTIONS;
   // SHOW FUNCTIONS mydb.func1;
@@ -1288,6 +1285,7 @@ class SnappyParser(session: SnappySession)
     SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
         ((id: Any, pat: Any) => new ShowSnappyTablesCommand(session,
           id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])) |
+    SHOW ~ TABLE ~ ANY. + ~> (() => sparkParser.parsePlan(input.sliceString(0, input.length))) |
     SHOW ~ VIEWS ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
         ((id: Any, pat: Any) => ShowViewsCommand(session,
           id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])) |
@@ -1330,14 +1328,15 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def explain: Rule1[LogicalPlan] = rule {
-    EXPLAIN ~ (EXTENDED ~ push(true) | CODEGEN ~ push(false)).? ~ sql ~> ((flagVal: Any,
+    EXPLAIN ~ (EXTENDED ~ push(1) | CODEGEN ~ push(2) | COST ~ push(3)).? ~ sql ~> ((flagVal: Any,
         plan: LogicalPlan) => plan match {
       case _: DescribeTableCommand => ExplainCommand(OneRowRelation.asInstanceOf[LogicalPlan])
       case _ =>
-        val flag = flagVal.asInstanceOf[Option[Boolean]]
+        val flag = flagVal.asInstanceOf[Option[Int]]
         // ensure plan is sent back as CLOB for large plans especially with CODEGEN
         queryHints.put(QueryHint.ColumnsAsClob.toString, "*")
-        ExplainCommand(plan, extended = flag.contains(true), codegen = flag.contains(false))
+        internals.newExplainCommand(plan, extended = flag.contains(1),
+          codegen = flag.contains(2), cost = flag.contains(3))
     })
   }
 
@@ -1387,7 +1386,7 @@ class SnappyParser(session: SnappySession)
   }
 
   override protected def start: Rule1[LogicalPlan] = rule {
-    (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
+    (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete)) |
         (DISABLE_TOKENIZE ~ (dmlOperation | putValuesOperation | ddl | show | set | reset | cache |
             uncache | deployPackages | explain | analyze | delegateToSpark))
   }

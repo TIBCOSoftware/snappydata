@@ -283,7 +283,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |      buffers[$index] = $deltaEncoders[$index].finish($cursors[$index], $lastNumRows);
          |    }
          |    // create delta statistics row
-         |    ${statsEv.code}
+         |    ${statsEv.code.toString}
          |    // store the delta column batch
          |    final $columnBatchClass columnBatch = $columnBatchClass.apply($batchOrdinal,
          |        buffers, ${internals.exprCodeValue(statsEv)}.getBytes(), $deltaIndexes);

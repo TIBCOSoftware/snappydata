@@ -36,7 +36,8 @@ class Spark211Internals extends Spark210Internals {
 
   override def version: String = "2.1.1"
 
-  override def uncacheQuery(spark: SparkSession, plan: LogicalPlan, blocking: Boolean): Unit = {
+  override def uncacheQuery(spark: SparkSession, plan: LogicalPlan,
+      cascade: Boolean, blocking: Boolean): Unit = {
     spark.sharedState.cacheManager.uncacheQuery(spark, plan, blocking)
   }
 

@@ -71,6 +71,17 @@ object SparkSupport extends Logging {
   }
 
   /**
+   * List all the supported Spark versions below. All implementations are required to
+   * have a public constructor having current SparkContext as the one argument.
+   */
+  private val implementations: Map[String, String] = Map(
+    "2.1.0" -> s"$INTERNAL_PACKAGE.Spark210Internals",
+    "2.1.1" -> s"$INTERNAL_PACKAGE.Spark211Internals",
+    "2.3.2" -> s"$INTERNAL_PACKAGE.Spark232Internals",
+    "2.4.4" -> s"$INTERNAL_PACKAGE.Spark244Internals"
+  )
+
+  /**
    * Get the appropriate [[SparkInternals]] for current SparkContext version.
    */
   def internals: SparkInternals = {
@@ -84,14 +95,9 @@ object SparkSupport extends Logging {
           case EXTENDED_VERSION_PATTERN(v) => v
           case v => v
         }
-        val implClassName = sparkVersion match {
-          // list all the supported versions below; all implementations are required to
-          // have a public constructor having current SparkContext as the one argument
-          case "2.1.0" => s"$INTERNAL_PACKAGE.Spark210Internals"
-          case "2.1.1" => s"$INTERNAL_PACKAGE.Spark211Internals"
-          case "2.3.2" => s"$INTERNAL_PACKAGE.Spark232Internals"
-          case "2.4.4" => s"$INTERNAL_PACKAGE.Spark244Internals"
-          case v => throw new SparkException(s"Unsupported Spark version $v")
+        val implClassName = implementations.get(sparkVersion) match {
+          case Some(v) => v
+          case None => throw new SparkException(s"Unsupported Spark version $sparkVersion")
         }
         val implClass: Class[_] = Utils.classForName(implClassName)
         internalImpl = implClass.newInstance().asInstanceOf[SparkInternals]

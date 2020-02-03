@@ -86,6 +86,6 @@ case class EmptyIteratorWithRowCount[U](rowCount : Long) extends Iterator[U] {
 object RDDs {
   def getIteratorSize[T](iterator: Iterator[T]): Long = iterator match {
     case EmptyIteratorWithRowCount(rowCount) => rowCount
-    case _ => Utils.getIteratorSize[T](iterator)
+    case _ => Utils.getIteratorSize(iterator)
   }
 }

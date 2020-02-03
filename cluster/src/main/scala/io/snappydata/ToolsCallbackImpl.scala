@@ -48,7 +48,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       // Set SnappyData authenticator SecurityHandler.
       SparkCallbacks.getAuthenticatorForJettyServer() match {
         case Some(_) =>
-          logInfo("Setting auth handler")
+          logInfo("Setting authentication handler")
           // Set JettyUtils.skipHandlerStart for adding dashboard and sql security handlers
           JettyUtils.skipHandlerStart.set(true)
           // Creating SQL and Dashboard UI tabs
@@ -66,7 +66,8 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
           }
           // Unset JettyUtils.skipHandlerStart
           JettyUtils.skipHandlerStart.set(false)
-        case None => logDebug("Not setting auth handler")
+        case None =>
+          logDebug("Not setting authentication handler")
           // Creating SQL and Dashboard UI tabs
           if (!sc.isLocal) {
             SparkSupport.internals(sc).createAndAttachSQLListener(sc)

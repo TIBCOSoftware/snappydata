@@ -68,7 +68,7 @@ case class ResolveQueryHints(snappySession: SnappySession)
       case q: LogicalPlan =>
         q transformExpressionsUp {
           case a: AttributeReference =>
-            q.resolveChildren(Seq(a.qualifier.getOrElse(""), a.name),
+            q.resolveChildren((if (a.qualifier.isEmpty) "" else a.qualifier.head) :: a.name :: Nil,
               analyzer.resolver).getOrElse(a)
         }
     }

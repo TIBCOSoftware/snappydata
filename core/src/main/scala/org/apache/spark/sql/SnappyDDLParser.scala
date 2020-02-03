@@ -114,6 +114,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
   final def CALL: Rule0 = rule{ keyword(Consts.CALL) }
   final def CASCADE: Rule0 = rule { keyword(Consts.CASCADE) }
+  final def CHANGE: Rule0 = rule { keyword(Consts.CHANGE) }
   final def CHECK: Rule0 = rule { keyword(Consts.CHECK) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
@@ -124,12 +125,14 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
   final def COMPUTE: Rule0 = rule { keyword(Consts.COMPUTE) }
   final def CONSTRAINT: Rule0 = rule { keyword(Consts.CONSTRAINT) }
+  final def COST: Rule0 = rule { keyword(Consts.COST) }
   final def CROSS: Rule0 = rule { keyword(Consts.CROSS) }
   final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
   final def DEPLOY: Rule0 = rule { keyword(Consts.DEPLOY) }
   final def DATABASE: Rule0 = rule { keyword(Consts.DATABASE) }
   final def DATABASES: Rule0 = rule { keyword(Consts.DATABASES) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
+  final def DIRECTORY: Rule0 = rule { keyword(Consts.DIRECTORY) }
   final def DISABLE: Rule0 = rule { keyword(Consts.DISABLE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
   final def DISKSTORE: Rule0 = rule { keyword(Consts.DISKSTORE) }
@@ -164,6 +167,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
   final def LIST: Rule0 = rule { keyword(Consts.LIST) }
   final def LOAD: Rule0 = rule { keyword(Consts.LOAD) }
+  final def LOCAL: Rule0 = rule { keyword(Consts.LOCAL) }
   final def LOCATION: Rule0 = rule { keyword(Consts.LOCATION) }
   final def MEMBERS: Rule0 = rule { keyword(Consts.MEMBERS) }
   final def MINUS: Rule0 = rule { keyword(Consts.MINUS) }
@@ -656,18 +660,20 @@ abstract class SnappyDDLParser(session: SnappySession)
     ALTER ~ TABLE ~ tableIdentifier ~ (
         (ADD ~ push(true) | DROP ~ push(false)) ~ (
             // other store ALTER statements which don't effect the snappydata catalog
-            capture((PRIMARY | CONSTRAINT | CHECK | FOREIGN | UNIQUE) ~ ANY. +) ~ EOI ~>
+            capture((PRIMARY | CONSTRAINT | CHECK | FOREIGN | UNIQUE) ~ ANY. +) ~>
                 ((table: TableIdentifier, isAdd: Boolean, s: String) =>
                   AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} " +
                     s"${if (isAdd) "ADD" else "DROP"} $s")) |
             COLUMNS ~ ANY. + ~> ((_: TableIdentifier, _: Boolean) =>
               sparkParser.parsePlan(input.sliceString(0, input.length)))
         ) |
-        ADD ~ COLUMN.? ~ column ~ capture(ANY.*) ~ EOI ~> AlterTableAddColumnCommand |
-        DROP ~ COLUMN.? ~ identifier ~ capture(ANY.*) ~ EOI ~> AlterTableDropColumnCommand |
+        ADD ~ COLUMN.? ~ column ~ capture(ANY.*) ~> AlterTableAddColumnCommand |
+        DROP ~ COLUMN.? ~ identifier ~ capture(ANY.*) ~> AlterTableDropColumnCommand |
         // other store ALTER statements which don't effect the snappydata catalog
-        capture((ALTER | SET) ~ ANY. +) ~ EOI ~> ((table: TableIdentifier, s: String) =>
-          AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} $s"))
+        capture((ALTER | SET) ~ ANY. +) ~> ((table: TableIdentifier, s: String) =>
+          AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} $s")) |
+        partitionSpec.? ~ CHANGE ~ ANY. + ~> ((_: TableIdentifier, _: Any) =>
+          sparkParser.parsePlan(input.sliceString(0, input.length)))
     )
   }
 
@@ -790,7 +796,7 @@ abstract class SnappyDDLParser(session: SnappySession)
     (
         ADD | ANALYZE | ALTER ~ (DATABASE | TABLE | VIEW) | CREATE ~ DATABASE |
         DESCRIBE | DESC | DROP ~ DATABASE | LIST | LOAD | MSCK | REFRESH | SHOW | TRUNCATE
-    ) ~ ANY.* ~ EOI ~>
+    ) ~ ANY.* ~>
         (() => sparkParser.parsePlan(input.sliceString(0, input.length)))
   }
 

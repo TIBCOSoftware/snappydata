@@ -1391,17 +1391,16 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       }
     }
     // if there is no path option for external DataSources, then mark as MANAGED except for JDBC
-    var storage = DataSource.buildStorageFormatFromOptions(fullOptions)
-    // check for both LOCATION and 'path' in OPTIONS
     if (location.isDefined) {
-      if (storage.locationUri.isDefined) {
+      if (parameters.contains("path")) {
         throw new ParseException(
           "LOCATION and 'path' in OPTIONS are both used to indicate the custom table path, " +
               "you can only specify one of them.")
       } else {
-        storage = storage.copy(locationUri = location)
+        fullOptions += "path" -> location.get
       }
     }
+    val storage = DataSource.buildStorageFormatFromOptions(fullOptions)
     val tableType = if (!providerIsBuiltIn && storage.locationUri.isEmpty &&
         !Utils.toLowerCase(provider).contains("jdbc")) {
       CatalogTableType.MANAGED

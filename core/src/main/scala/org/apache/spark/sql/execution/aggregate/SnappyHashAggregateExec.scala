@@ -162,24 +162,24 @@ case class SnappyHashAggregateExec(
     case g: GroupAggregate => g.aggBufferAttributesForGroup
     case sum: Sum if !sum.child.nullable =>
       val sumAttr = sum.aggBufferAttributes.head
-      internals.copyAttribute(sumAttr)(nullable = false) :: Nil
+      internals.toAttributeReference(sumAttr)(nullable = false) :: Nil
     case avg: Average if !avg.child.nullable =>
       val sumAttr = avg.aggBufferAttributes.head
-      internals.copyAttribute(sumAttr)(nullable = false) ::
+      internals.toAttributeReference(sumAttr)(nullable = false) ::
           avg.aggBufferAttributes(1) :: Nil
     case max: Max if !max.child.nullable =>
       val maxAttr = max.aggBufferAttributes.head
-      internals.copyAttribute(maxAttr)(nullable = false) :: Nil
+      internals.toAttributeReference(maxAttr)(nullable = false) :: Nil
     case min: Min if !min.child.nullable =>
       val minAttr = min.aggBufferAttributes.head
-      internals.copyAttribute(minAttr)(nullable = false) :: Nil
+      internals.toAttributeReference(minAttr)(nullable = false) :: Nil
     case last: Last if !last.child.nullable =>
       val lastAttr = last.aggBufferAttributes.head
       val tail = if (last.aggBufferAttributes.length == 2) {
         val valueSetAttr = last.aggBufferAttributes(1)
-        internals.copyAttribute(valueSetAttr)(nullable = false) :: Nil
+        internals.toAttributeReference(valueSetAttr)(nullable = false) :: Nil
       } else Nil
-      internals.copyAttribute(lastAttr)(nullable = false) :: tail
+      internals.toAttributeReference(lastAttr)(nullable = false) :: tail
     case _ => aggregate.aggBufferAttributes
   }
 

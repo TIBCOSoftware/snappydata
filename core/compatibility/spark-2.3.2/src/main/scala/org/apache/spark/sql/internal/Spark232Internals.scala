@@ -18,8 +18,6 @@
 package org.apache.spark.sql.internal
 
 import java.lang.reflect.Field
-import java.net.URI
-import java.nio.file.Paths
 
 import scala.collection.mutable
 
@@ -38,8 +36,8 @@ import org.apache.spark.sql.catalyst.analysis.{Analyzer, FunctionRegistry, Unres
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, ExprCode, GeneratedClass}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame, UnaryMinus, UnboundedFollowing, UnboundedPreceding}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, GeneratedClass}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameType, Generator, Literal, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame, UnaryMinus, UnboundedFollowing, UnboundedPreceding}
 import org.apache.spark.sql.catalyst.json.JSONOptions
 import org.apache.spark.sql.catalyst.optimizer.Optimizer
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -48,16 +46,17 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{AccessUtils, FunctionIdentifier, InternalRow, TableIdentifier}
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
-import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, CreateTableLikeCommand, DescribeTableCommand, RunnableCommand}
+import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, CreateTableLikeCommand, DescribeTableCommand, ExplainCommand, RunnableCommand}
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.ui.{SQLAppStatusListener, SQLAppStatusStore, SnappySQLAppListener}
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.common.ErrorEstimateAttribute
 import org.apache.spark.sql.hive._
 import org.apache.spark.sql.sources.{BaseRelation, Filter, JdbcExtendedUtils, ResolveQueryHints}
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
-import org.apache.spark.sql.types.{DataType, Metadata, StructField, StructType}
+import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.status.api.v1.RDDStorageInfo
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.SnappyStreamingContext
@@ -68,7 +67,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 /**
  * Implementation of [[SparkInternals]] for Spark 2.3.2.
  */
-class Spark232Internals extends Spark211Internals with SparkInternals {
+class Spark232Internals extends SparkInternals {
 
   private val codegenContextClassFunctions: Field = {
     val f = classOf[CodegenContext].getDeclaredField("classFunctions")
@@ -77,6 +76,15 @@ class Spark232Internals extends Spark211Internals with SparkInternals {
   }
 
   override def version: String = "2.3.2"
+
+  override def uncacheQuery(spark: SparkSession, plan: LogicalPlan,
+      cascade: Boolean, blocking: Boolean): Unit = {
+    spark.sharedState.cacheManager.uncacheQuery(spark, plan, blocking)
+  }
+
+  override def mapExpressions(plan: LogicalPlan, f: Expression => Expression): LogicalPlan = {
+    plan.mapExpressions(f)
+  }
 
   override def registerFunction(session: SparkSession, name: FunctionIdentifier,
       info: ExpressionInfo, function: Seq[Expression] => Expression): Unit = {
@@ -150,27 +158,32 @@ class Spark232Internals extends Spark211Internals with SparkInternals {
     CaseInsensitiveMap[String](map)
   }
 
-  // TODO: SW: inhibit SQLTab attach in SharedState.statusStore and instead do it
-  // here for embedded mode in the second call so that security policies are applied to the tab
-  def createAndAttachSQLListener(sparkContext: SparkContext): Unit = {
-    // SQLAppStatusListener is created in the constructor of SharedState that needs to be overridden
-  }
-
-  def createAndAttachSQLListener(state: SharedState): Unit = {
+  protected def createAndAttachSQLListener(state: SnappySharedState, sc: SparkContext): Unit = {
     // replace inside SQLAppStatusStore as well as change on the Spark ListenerBus
     val listenerField = classOf[SQLAppStatusStore].getDeclaredField("listener")
     listenerField.setAccessible(true)
     listenerField.get(state.statusStore).asInstanceOf[Option[SQLAppStatusListener]] match {
       case Some(_: SnappySQLAppListener) => // already changed
       case Some(_: SQLAppStatusListener) =>
-        val newListener = new SnappySQLAppListener(state.sparkContext)
+        val newListener = new SnappySQLAppListener(sc)
         // update on ListenerBus
-        state.sparkContext.listenerBus.findListenersByClass[SQLAppStatusListener]().foreach(
-          state.sparkContext.removeSparkListener)
-        state.sparkContext.listenerBus.addToStatusQueue(newListener)
+        sc.listenerBus.findListenersByClass[SQLAppStatusListener]().foreach(
+          sc.removeSparkListener)
+        sc.listenerBus.addToStatusQueue(newListener)
         listenerField.set(state.statusStore, newListener)
       case _ =>
     }
+  }
+
+  override def createAndAttachSQLListener(sparkContext: SparkContext): Unit = {
+    val state = SnappyContext.getExistingSharedState
+    if (state ne null) createAndAttachSQLListener(state, sparkContext)
+  }
+
+  override def newSharedState(sparkContext: SparkContext): SnappySharedState = {
+    val state = new SnappySharedState23(sparkContext)
+    createAndAttachSQLListener(state, sparkContext)
+    state
   }
 
   def clearSQLListener(): Unit = {
@@ -225,11 +238,24 @@ class Spark232Internals extends Spark211Internals with SparkInternals {
       SparkSubmitUtils.buildIvySettings(remoteRepos, ivyPath), exclusions)
   }
 
-  override def copyAttribute(attr: Attribute)(name: String,
+  override def toAttributeReference(attr: Attribute)(name: String,
       dataType: DataType, nullable: Boolean, metadata: Metadata,
       exprId: ExprId): AttributeReference = {
     AttributeReference(name = name, dataType = dataType, nullable = nullable, metadata = metadata)(
       exprId, qualifier = attr.qualifier)
+  }
+
+  override def newAttributeReference(name: String, dataType: DataType, nullable: Boolean,
+      metadata: Metadata, exprId: ExprId, qualifier: Option[String],
+      isGenerated: Boolean): AttributeReference = {
+    AttributeReference(name, dataType, nullable, metadata)(exprId, qualifier, isGenerated)
+  }
+
+  override def newErrorEstimateAttribute(name: String, dataType: DataType,
+      nullable: Boolean, metadata: Metadata, exprId: ExprId, realExprId: ExprId,
+      qualifier: Seq[String]): ErrorEstimateAttribute = {
+    ErrorEstimateAttribute23(name, dataType, nullable, metadata, exprId, realExprId)(
+      qualifier.headOption)
   }
 
   override def withNewChild(insert: InsertIntoTable, newChild: LogicalPlan): InsertIntoTable = {
@@ -271,10 +297,10 @@ class Spark232Internals extends Spark211Internals with SparkInternals {
 
   override def getViewFromAlias(q: SubqueryAlias): Option[TableIdentifier] = None
 
-  override def newAlias(child: Expression, name: String,
-      copyAlias: Option[NamedExpression]): Alias = {
+  override def newAlias(child: Expression, name: String, copyAlias: Option[NamedExpression],
+      exprId: ExprId, qualifier: Option[String]): Alias = {
     copyAlias match {
-      case None => Alias(child, name)()
+      case None => Alias(child, name)(exprId, qualifier)
       case Some(a: Alias) => Alias(child, name)(a.exprId, a.qualifier, a.explicitMetadata)
       case Some(a) => Alias(child, name)(a.exprId, a.qualifier)
     }
@@ -379,10 +405,6 @@ class Spark232Internals extends Spark211Internals with SparkInternals {
       rdd, relation, tableIdentifier)
   }
 
-  private def toURI(uri: String): URI = {
-    if (uri.contains("://")) new URI(uri) else new URI("file://" + Paths.get(uri).toAbsolutePath)
-  }
-
   override def newCodegenSparkFallback(child: SparkPlan,
       session: SnappySession): CodegenSparkFallback = {
     new CodegenSparkFallback23(child, session)
@@ -395,7 +417,7 @@ class Spark232Internals extends Spark211Internals with SparkInternals {
 
   override def newCatalogDatabase(name: String, description: String,
       locationUri: String, properties: Map[String, String]): CatalogDatabase = {
-    CatalogDatabase(name, description, toURI(locationUri), properties)
+    CatalogDatabase(name, description, CatalogUtils.stringToURI(locationUri), properties)
   }
 
   override def catalogDatabaseLocationURI(database: CatalogDatabase): String =
@@ -426,6 +448,9 @@ class Spark232Internals extends Spark211Internals with SparkInternals {
 
   override def catalogTableViewOriginalText(catalogTable: CatalogTable): Option[String] = None
 
+  override def catalogTableSchemaPreservesCase(catalogTable: CatalogTable): Boolean =
+    catalogTable.schemaPreservesCase
+
   override def catalogTableIgnoredProperties(catalogTable: CatalogTable): Map[String, String] =
     catalogTable.ignoredProperties
 
@@ -438,8 +463,8 @@ class Spark232Internals extends Spark211Internals with SparkInternals {
     locationUri match {
       case None => CatalogStorageFormat(None, inputFormat, outputFormat,
         serde, compressed, properties)
-      case Some(uri) => CatalogStorageFormat(Some(toURI(uri)), inputFormat, outputFormat,
-        serde, compressed, properties)
+      case Some(uri) => CatalogStorageFormat(Some(CatalogUtils.stringToURL(uri)),
+        inputFormat, outputFormat, serde, compressed, properties)
     }
   }
 
@@ -552,6 +577,38 @@ class Spark232Internals extends Spark211Internals with SparkInternals {
 
   override def getCachedRDDInfos(context: SparkContext): Seq[RDDStorageInfo] = {
     context.ui.get.store.rddList()
+  }
+
+  override def newPivot(groupByExprs: Seq[NamedExpression], pivotColumn: Expression,
+      pivotValues: Seq[Expression], aggregates: Seq[Expression], child: LogicalPlan): Pivot = {
+    if (!pivotValues.forall(_.isInstanceOf[Literal])) {
+      throw new AnalysisException(
+        s"Literal expressions required for pivot values, found: ${pivotValues.mkString("; ")}")
+    }
+    Pivot(groupByExprs, pivotColumn, pivotValues.map(_.asInstanceOf[Literal]), aggregates, child)
+  }
+
+  override def copyPivot(pivot: Pivot, groupByExprs: Seq[NamedExpression]): Pivot = {
+    pivot.copy(groupByExprs = groupByExprs)
+  }
+
+  override def newIntersect(left: LogicalPlan, right: LogicalPlan, isAll: Boolean): Intersect = {
+    if (isAll) {
+      throw new ParseException(s"INTERSECT ALL not supported in spark $version")
+    }
+    Intersect(left, right)
+  }
+
+  override def newExcept(left: LogicalPlan, right: LogicalPlan, isAll: Boolean): Except = {
+    if (isAll) {
+      throw new ParseException(s"EXCEPT ALL not supported in spark $version")
+    }
+    Except(left, right)
+  }
+
+  override def newExplainCommand(logicalPlan: LogicalPlan, extended: Boolean,
+      codegen: Boolean, cost: Boolean): LogicalPlan = {
+    ExplainCommand(logicalPlan, extended, codegen, cost)
   }
 }
 
@@ -749,6 +806,13 @@ class SnappySessionCatalog23(override val snappySession: SnappySession,
     super.failFunctionLookup(FunctionIdentifier(name, None))
   }
 
+  override protected def baseCreateTable(table: CatalogTable, ignoreIfExists: Boolean,
+      validateTableLocation: Boolean): Unit = super.createTable(table, ignoreIfExists)
+
+  override def createTable(table: CatalogTable, ignoreIfExists: Boolean): Unit = {
+    createTableImpl(table, ignoreIfExists, validateTableLocation = true)
+  }
+
   override def newView(table: CatalogTable, child: LogicalPlan): LogicalPlan =
     View(desc = table, output = table.schema.toAttributes, child)
 
@@ -797,8 +861,8 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
     case _ => new SessionResourceLoader(session)
   }
 
-  private def createCatalog(wrapped: Option[SnappySessionCatalog]): SnappySessionCatalog = {
-    val catalog = new SnappySessionCatalog23(
+  protected def newSessionCatalog(wrapped: Option[SnappySessionCatalog]): SnappySessionCatalog = {
+    new SnappySessionCatalog23(
       session,
       externalCatalog,
       session.sharedState.globalTempViewManager,
@@ -808,6 +872,10 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
       conf,
       SessionState.newHadoopConf(session.sparkContext.hadoopConfiguration, conf),
       wrapped)
+  }
+
+  private def createCatalog(wrapped: Option[SnappySessionCatalog]): SnappySessionCatalog = {
+    val catalog = newSessionCatalog(wrapped)
     parentState.foreach(_.catalog.copyStateTo(catalog))
     catalog
   }
@@ -862,6 +930,8 @@ class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[Se
     new SparkOptimizer(catalog, experimentalMethods) with DefaultOptimizer {
 
       override def state: SnappySessionState = session.sessionState
+
+      override def batches: Seq[Batch] = batchesImpl
 
       override def extendedOperatorOptimizationRules: Seq[Rule[LogicalPlan]] =
         super.extendedOperatorOptimizationRules ++ customOperatorOptimizationRules
@@ -920,4 +990,20 @@ final class LogicalDStreamPlan23(output: Seq[Attribute],
   override def stats: Statistics = Statistics(
     sizeInBytes = BigInt(streamingSnappy.snappySession.sessionState.conf.defaultSizeInBytes)
   )
+}
+
+case class ErrorEstimateAttribute23(name: String, dataType: DataType, nullable: Boolean,
+    override val metadata: Metadata, exprId: ExprId, realExprId: ExprId)(
+    val qualifier: Option[String]) extends ErrorEstimateAttribute {
+
+  override def singleQualifier: Option[String] = qualifier
+
+  override def withQualifier(newQualifier: Option[String]): Attribute = {
+    if (newQualifier == qualifier) {
+      this
+    } else {
+      ErrorEstimateAttribute23(name, dataType, nullable, metadata, exprId,
+        realExprId)(newQualifier)
+    }
+  }
 }

@@ -28,7 +28,7 @@ import io.snappydata.Property
 import org.apache.spark.Partition
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis
-import org.apache.spark.sql.catalyst.analysis.TypeCoercion.{PromoteStrings, numericPrecedence}
+import org.apache.spark.sql.catalyst.analysis.TypeCoercion.numericPrecedence
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, Star, UnresolvedAttribute}
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{And, BinaryArithmetic, EqualTo, In, _}
@@ -365,7 +365,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
         if groupBy.isEmpty && pivotColumn.resolved && aggregates.forall(_.resolved) =>
         val pivotColAndAggRefs = pivotColumn.references ++ AttributeSet(aggregates)
         val groupByExprs = child.output.filterNot(pivotColAndAggRefs.contains)
-        p.copy(groupByExprs = groupByExprs)
+        internals.copyPivot(p, groupByExprs)
 
       case o => o
     }
@@ -732,7 +732,7 @@ class HiveConditionalStrategy(strategy: HiveStrategies => Strategy, state: Snapp
 }
 
 
-trait SnappyAnalyzer extends Analyzer {
+trait SnappyAnalyzer extends Analyzer with SparkSupport {
 
   def session: SnappySession
 
@@ -740,13 +740,7 @@ trait SnappyAnalyzer extends Analyzer {
 
   override lazy val batches: Seq[Batch] = baseAnalyzerInstance.batches.map {
     case batch if batch.name.equalsIgnoreCase("Resolution") =>
-      val rules = batch.rules.flatMap {
-        case PromoteStrings =>
-          StringPromotionCheckForUpdate.asInstanceOf[Rule[LogicalPlan]] :: SnappyPromoteStrings ::
-              PromoteStrings :: Nil
-        case r => r :: Nil
-      }
-
+      val rules = internals.addStringPromotionRules(batch.rules, this, session.sessionState.conf)
       Batch(batch.name, batch.strategy.asInstanceOf[Strategy], rules: _*)
     case batch => Batch(batch.name, batch.strategy.asInstanceOf[Strategy], batch.rules: _*)
   }
@@ -760,7 +754,7 @@ trait SnappyAnalyzer extends Analyzer {
   // need to be done because by default spark performs fail safe implicit type
   // conversion when type of two operands does't match and this can lead to null values getting
   // populated in the table.
-  private object StringPromotionCheckForUpdate extends Rule[LogicalPlan] {
+  object StringPromotionCheckForUpdate extends Rule[LogicalPlan] {
 
     override def apply(plan: LogicalPlan): LogicalPlan = {
       plan match {
