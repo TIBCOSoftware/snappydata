@@ -251,7 +251,7 @@ pages:
         - 'revoke-missing-disk-store': 'reference/command_line_utilities/store-revoke-missing-disk-stores.md'
         - 'unblock-disk-store': 'reference/command_line_utilities/store-unblock-disk-stores.md'
         - 'run': 'reference/command_line_utilities/store-run.md'
-        - 'scala CLI': 'reference/command_line_utilities/scala-cli.md'
+        - 'snappy-scala CLI': 'reference/command_line_utilities/scala-cli.md'
         - 'version': 'reference/command_line_utilities/store-version.md'
 #        - 'Data Extractor': 'reference/command_line_utilities/data_extractor.md'
     - 'Snappy-SQL Shell Interactive Commands': 'reference/interactive_commands/store_command_reference.md'
