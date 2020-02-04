@@ -1,3 +1,3 @@
 # Release Notes
 
-[SnappyData 1.1.1 Release Notes](TIB_compute-ce_1.1.1_relnotes.pdf)
+[SnappyData 1.2.0 Release Notes](TIB_compute-ce_1.2.0_relnotes.pdf)
