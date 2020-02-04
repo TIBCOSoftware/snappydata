@@ -293,6 +293,60 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropColTbl_array_Contains)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  26. and, 27. or , 28. not
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_And_Or_Not_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_And_Or_Not_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_And_Or_Not)
+    snc.sql(SQLFunctionsUtils.createRowTbl_And_Or_Not)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set2)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set3)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set4)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set2)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set3)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set4)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set3)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set4)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set3)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set4)
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_And_Or_Not,
+      "Q13_And_Or_Not", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_And_Or_Not,
+      "Q14_And_Or_Not", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_And_Or_Not)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_And_Or_Not)
+    spark.sql(SQLFunctionsUtils.dropColTbl_And_Or_Not)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_And_Or_Not)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()

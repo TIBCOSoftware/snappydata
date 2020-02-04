@@ -163,4 +163,26 @@ object SQLFunctionsUtils {
   val select_ColTbl_array_Contains : String = "SELECT id,arr as Array,array_contains(arr,8) " +
     "FROM " + columnTbl + " ORDER BY ID"
   val dropColTbl_array_Contains : String = dropTbl  + columnTbl
+  /**
+    *  Below queries test the functions :
+    *  26. and, 27. or , 28. not
+    */
+  val And_Or_Not_Set1 : String = "(1,false,false,false)"
+  val And_Or_Not_Set2 : String = "(2,false,true,false)"
+  val And_Or_Not_Set3 : String = "(3,true,false,true)"
+  val And_Or_Not_Set4 : String = "(4,true,true,true)"
+  val createColTypeTbl_And_Or_Not_Spark : String = createTbl + columnTbl +
+    "(id int,b1 boolean,b2 boolean,b boolean)"
+  val createRowTypeTbl_And_Or_Not_Spark : String = createTbl + rowTbl +
+    "(id int,b1 boolean,b2 boolean,b boolean)"
+  val createColumnTbl_And_Or_Not : String = createTbl + columnTbl +
+    "(id int,b1 boolean,b2 boolean,b boolean) " + usingCol
+  val createRowTbl_And_Or_Not : String = createTbl + rowTbl +
+    "(id int,b1 boolean,b2 boolean,b boolean) " + usingRow
+  val select_ColTbl_And_Or_Not : String = "SELECT id,(b1 AND b2) as LogicalAND," +
+    "(b1 OR b2) as LogicalOR, NOT(b) as LogicalNOT FROM " + columnTbl + " ORDER BY id"
+  val select_RowTbl_And_Or_Not : String = "SELECT id,(b1 AND b2) as LogicalAND," +
+    "(b1 OR b2) as LogicalOR, NOT(b) as LogicalNOT FROM " + columnTbl + " ORDER BY id"
+  val dropColTbl_And_Or_Not : String = dropTbl  + columnTbl
+  val dropRowTbl_And_Or_Not : String = dropTbl + rowTbl
 }
