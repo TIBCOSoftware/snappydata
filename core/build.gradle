@@ -64,7 +64,9 @@ dependencies {
 
     testCompile project(path: ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion, configuration: 'testOutput')
     testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion, configuration: 'testOutput')
+    testCompile project(path: ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion, configuration: 'testOutput')
     testCompile project(path: ':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion, configuration: 'testOutput')
+    testCompile project(path: ':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion, configuration: 'testOutput')
   } else {
     compileOnly coreLibraries.spark
     testCompile coreLibraries.spark
@@ -95,9 +97,6 @@ dependencies {
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
-  testCompile(group: 'org.apache.kafka', name: 'kafka_' + scalaBinaryVersion, version: kafka010Version) {
-    exclude(group: 'net.jpountz.lz4', module: 'lz4')
-  }
 
   testCompile project(":snappy-core_${scalaBinaryVersion}:compat-spark${sparkConnectorVersion}")
 
