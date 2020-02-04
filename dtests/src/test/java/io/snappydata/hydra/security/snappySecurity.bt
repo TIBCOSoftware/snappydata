@@ -3,7 +3,6 @@ io/snappydata/hydra/security/startLdapServer.conf
   ldapScriptPath="$GEMFIRE/../../../store/ldap-test-server"
   ldapLogPath="$GEMFIRE/secureBootProp.log"
 
-/*
 io/snappydata/hydra/security/clusterAuthnOpsAuthzWithJdbcClientTest.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
@@ -21,7 +20,6 @@ io/snappydata/hydra/security/userAuthnAuthzWithSnappyJob.conf
   dataLocation="$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlRowColQuery.sql"
   dataLocationExtTbl = "$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlExtTblQuery.sql"
   passFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/security/"
-  */
 
 io/snappydata/hydra/security/clusterAuthnGrantRevokeOpsWithJdbcClientTest.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -32,7 +30,6 @@ io/snappydata/hydra/security/clusterAuthnGrantRevokeOpsWithJdbcClientTest.conf
   dataLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlRowColQuery.sql"
   dataLocationExtTbl = "$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlExtTblQuery.sql"
 
-
 io/snappydata/hydra/security/userAuthnAuthzWithSmartConnTest.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -42,7 +39,6 @@ io/snappydata/hydra/security/userAuthnAuthzWithSmartConnTest.conf
   dataLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlRowColQuery.sql"
   dataLocationExtTbl = "$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlExtTblQuery.sql"
 
-/*
 io/snappydata/hydra/security/concUserAuthzWithLeadHA.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=1
@@ -63,4 +59,3 @@ io/snappydata/hydra/security/concUserAuthnWithServerHA.conf
   dataLocation = "$GEMFIRE/../../../dtests/src/resources/scripts/security/dmlRowColQuery.sql"
   numVMsToStop=1
 
-*/
