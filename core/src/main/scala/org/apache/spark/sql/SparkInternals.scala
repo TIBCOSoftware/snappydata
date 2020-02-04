@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql
 
-import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
+import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.{HintName, QueryHint}
 import org.apache.hadoop.conf.Configuration
 
@@ -33,15 +33,17 @@ import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, TableIdentifier}
+import org.apache.spark.sql.execution.bootstrap.{ApproxColumnExtractor, Tag, TaggedAlias, TaggedAttribute, TransformableTag}
+import org.apache.spark.sql.execution.closedform.{ClosedFormColumnExtractor, ErrorAggregate, ErrorEstimateAttribute}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, InMemoryRelation}
 import org.apache.spark.sql.execution.command.RunnableCommand
-import org.apache.spark.sql.execution.common.ErrorEstimateAttribute
+import org.apache.spark.sql.execution.common.HAC
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.Exchange
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, PartitionedDataSourceScan, RowDataSourceScanExec, SparkPlan, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.{SnappyAnalyzer, SnappyHiveExternalCatalog, SnappySessionState}
-import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SnappySharedState}
+import org.apache.spark.sql.internal.{SQLConf, SnappySharedState}
 import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.streaming.LogicalDStreamPlan
 import org.apache.spark.sql.types.{DataType, Metadata, StructField, StructType}
@@ -262,15 +264,48 @@ trait SparkInternals extends Logging {
    * Create a new instance of [[AttributeReference]]
    */
   def newAttributeReference(name: String, dataType: DataType, nullable: Boolean,
-      metadata: Metadata, exprId: ExprId, qualifier: Option[String],
+      metadata: Metadata, exprId: ExprId, qualifier: Seq[String],
       isGenerated: Boolean = false): AttributeReference
 
   /**
    * Create a new concrete instance of [[ErrorEstimateAttribute]].
    */
   def newErrorEstimateAttribute(name: String, dataType: DataType,
-      nullable: Boolean, metadata: Metadata, exprId: ExprId, realExprId: ExprId,
-      qualifier: Seq[String]): ErrorEstimateAttribute
+      nullable: Boolean, metadata: Metadata, realExprId: ExprId,
+      exprId: ExprId = NamedExpression.newExprId,
+      qualifier: Seq[String] = Nil): ErrorEstimateAttribute
+
+  /**
+   * Create a new concrete instance of [[ApproxColumnExtractor]].
+   */
+  def newApproxColumnExtractor(child: Expression, name: String, ordinal: Int,
+      dataType: DataType, nullable: Boolean, exprId: ExprId = NamedExpression.newExprId,
+      qualifier: Seq[String] = Nil): ApproxColumnExtractor
+
+  /**
+   * Create a new concrete instance of [[TaggedAttribute]].
+   */
+  def newTaggedAttribute(tag: Tag, name: String, dataType: DataType, nullable: Boolean,
+      metadata: Metadata, exprId: ExprId = NamedExpression.newExprId,
+      qualifier: Seq[String] = Nil): TaggedAttribute
+
+  /**
+   * Create a new concrete instance of [[TaggedAlias]].
+   */
+  def newTaggedAlias(tag: TransformableTag, child: Expression, name: String,
+      exprId: ExprId = NamedExpression.newExprId, qualifier: Seq[String] = Nil): TaggedAlias
+
+  // scalastyle:off
+
+  /**
+   * Create a new concrete instance of [[ClosedFormColumnExtractor]].
+   */
+  def newClosedFormColumnExtractor(child: Expression, name: String, confidence: Double,
+      confFactor: Double, aggType: ErrorAggregate.Type, error: Double, dataType: DataType,
+      behavior: HAC.Type, nullable: Boolean, exprId: ExprId = NamedExpression.newExprId,
+      qualifier: Seq[String] = Nil): ClosedFormColumnExtractor
+
+  // scalastyle:on
 
   /**
    * Create a copy of [[InsertIntoTable]] plan with a new child.
@@ -324,7 +359,7 @@ trait SparkInternals extends Logging {
    * Create an alias with given parameters and optionally copying other fields from existing Alias.
    */
   def newAlias(child: Expression, name: String, copyAlias: Option[NamedExpression],
-      exprId: ExprId = NamedExpression.newExprId, qualifier: Option[String] = None): Alias
+      exprId: ExprId = NamedExpression.newExprId, qualifier: Seq[String] = Nil): Alias
 
   /**
    * Create a plan for column aliases in a table/sub-query/...
@@ -369,7 +404,7 @@ trait SparkInternals extends Logging {
    * Create a new wrapper [[LogicalPlan]] that encapsulates an arbitrary set of hints.
    */
   def newLogicalPlanWithHints(child: LogicalPlan,
-      hints: Map[QueryHint.Type, HintName.Type]): LogicalPlanWithHints
+      hints: Map[QueryHint.Type, HintName.Type]): LogicalPlan
 
   /**
    * Create a new TABLESAMPLE operator.
@@ -460,8 +495,7 @@ trait SparkInternals extends Logging {
       storage: CatalogStorageFormat, schema: StructType, provider: Option[String],
       partitionColumnNames: Seq[String], bucketSpec: Option[BucketSpec],
       owner: String, createTime: Long, lastAccessTime: Long, properties: Map[String, String],
-      stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])],
-      viewOriginalText: Option[String], viewText: Option[String],
+      stats: Option[AnyRef], viewOriginalText: Option[String], viewText: Option[String],
       comment: Option[String], unsupportedFeatures: Seq[String],
       tracksPartitionsInCatalog: Boolean, schemaPreservesCase: Boolean,
       ignoredProperties: Map[String, String]): CatalogTable
@@ -504,9 +538,12 @@ trait SparkInternals extends Logging {
   def alterTableSchema(externalCatalog: ExternalCatalog, schemaName: String,
       table: String, newSchema: StructType): Unit
 
-  /** Alter table statistics in the ExternalCatalog if possible else throw an exception */
+  /**
+   * Alter table statistics in the ExternalCatalog if possible else throw an exception.
+   * The `stats` argument is an optional Statistics (for Spark < 2.2) or CatalogStatistics object.
+   */
   def alterTableStats(externalCatalog: ExternalCatalog, schema: String, table: String,
-      stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])]): Unit
+      stats: Option[AnyRef]): Unit
 
   /** Alter function definition in the ExternalCatalog if possible else throw an exception */
   def alterFunction(externalCatalog: ExternalCatalog, schema: String,
@@ -515,9 +552,16 @@ trait SparkInternals extends Logging {
   /** Convert a ColumnStat (or CatalogColumnStat for Spark >= 2.4) to a map. */
   def columnStatToMap(stat: Any, colName: String, dataType: DataType): Map[String, String]
 
-  /** Convert a map created by [[columnStatToMap]] to ColumnStat. */
+  /** Convert a map created by [[columnStatToMap]] to ColumnStat or CatalogColumnStat. */
   def columnStatFromMap(table: String, field: StructField,
-      map: Map[String, String]): Option[ColumnStat]
+      map: Map[String, String]): Option[AnyRef]
+
+  /**
+   * Create a Statistics/CatalogStatistics object from given arguments. The `colStats` argument
+   * is a map of string to ColumnStat(Spark < 2.4)/CatalogColumnStat
+   */
+  def toCatalogStatistics(sizeInBytes: BigInt, rowCount: Option[BigInt],
+      colStats: Map[String, AnyRef]): AnyRef
 
   /**
    * Create a new instance of SnappyHiveExternalCatalog. The method overrides in
@@ -530,7 +574,7 @@ trait SparkInternals extends Logging {
    * Create a new instance of SmartConnectorExternalCatalog. The method overrides in
    * ExternalCatalog have changed across Spark versions.
    */
-  def newSmartConnectorExternalCatalog(session: SparkSession): SmartConnectorExternalCatalog
+  def newSmartConnectorExternalCatalog(session: SparkSession): SnappyExternalCatalog
 
   /** Lookup the data source for a given provider. */
   def lookupDataSource(provider: String, conf: => SQLConf): Class[_]

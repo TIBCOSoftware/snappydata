@@ -46,7 +46,7 @@ object SnappyUtils {
       classLoader: ClassLoader, addAllJars: Boolean = false): Unit = {
     assert(classOf[URLClassLoader].isAssignableFrom(classLoader.getClass))
     val dependentJars = if (addAllJars) {
-      ContextJarUtils.getDriverJarURLs()
+      ContextJarUtils.getDriverJarURLs
     } else {
       classLoader.asInstanceOf[URLClassLoader].getURLs
     }

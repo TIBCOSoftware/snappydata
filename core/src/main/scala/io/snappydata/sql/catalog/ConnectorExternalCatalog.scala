@@ -16,19 +16,16 @@
  */
 package io.snappydata.sql.catalog
 
-import java.sql.SQLException
 import java.util.Collections
-import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
 
 import com.google.common.cache.{Cache, CacheBuilder}
-import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Property
+import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
 import io.snappydata.thrift._
 
 import org.apache.spark.sql.catalyst.catalog._
-import org.apache.spark.sql.catalyst.plans.logical.ColumnStat
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils.EMPTY_STRING_ARRAY
@@ -36,53 +33,6 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SparkSession, SparkSupport, TableNotFoundException}
 import org.apache.spark.{Logging, Partition, SparkEnv}
-
-/**
- * Base class for catalog implementations for connector modes. This is either used as basis
- * for ExternalCatalog implementation (in smart connector) or as a helper class for catalog
- * queries like in connector v2 implementation.
- */
-trait ConnectorExternalCatalog {
-
-  def session: SparkSession
-
-  def jdbcUrl: String
-
-  @GuardedBy("this")
-  protected var connectorHelper: SmartConnectorHelper = new SmartConnectorHelper(session, jdbcUrl)
-
-  protected def withExceptionHandling[T](function: => T): T = synchronized {
-    try {
-      function
-    } catch {
-      case e: SQLException if isConnectionException(e) =>
-        // attempt to create a new connection
-        connectorHelper.close()
-        connectorHelper = new SmartConnectorHelper(session, jdbcUrl)
-        function
-    }
-  }
-
-  protected def isConnectionException(e: SQLException): Boolean = {
-    e.getSQLState.startsWith(SQLState.CONNECTIVITY_PREFIX) ||
-        e.getSQLState.startsWith(SQLState.LANG_DEAD_STATEMENT) ||
-        e.getSQLState.startsWith(SQLState.GFXD_NODE_SHUTDOWN_PREFIX)
-  }
-
-  def invalidateAll(): Unit = {
-    // invalidate all the RelationInfo objects inside as well as the cache itself
-    val iter = ConnectorExternalCatalog.cachedCatalogTables.asMap().values().iterator()
-    while (iter.hasNext) {
-      iter.next()._2 match {
-        case Some(info) => info.invalid = true
-        case None =>
-      }
-    }
-    ConnectorExternalCatalog.cachedCatalogTables.invalidateAll()
-  }
-
-  def close(): Unit = synchronized(connectorHelper.close())
-}
 
 object ConnectorExternalCatalog extends Logging with SparkSupport {
 
@@ -110,7 +60,7 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
   }
 
   private[snappydata] def convertToCatalogStatistics(schema: StructType, fullTableName: String,
-      catalogStats: CatalogStats): (BigInt, Option[BigInt], Map[String, ColumnStat]) = {
+      catalogStats: CatalogStats): AnyRef = {
     val colStats = schema.indices.flatMap { i =>
       val f = schema(i)
       val colStatsMap = catalogStats.colStats.get(i)
@@ -120,8 +70,8 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
         case Some(s) => Some(f.name -> s)
       }
     }.toMap
-    (BigInt(catalogStats.sizeInBytes),
-        if (catalogStats.isSetRowCount) Some(BigInt(catalogStats.getRowCount)) else None, colStats)
+    internals.toCatalogStatistics(BigInt(catalogStats.sizeInBytes),
+      if (catalogStats.isSetRowCount) Some(BigInt(catalogStats.getRowCount)) else None, colStats)
   }
 
   private[snappydata] def convertToCatalogTable(request: CatalogMetadataDetails,
@@ -294,7 +244,7 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
   }
 
   private def loadFromCache(name: (String, String),
-      catalog: ConnectorExternalCatalog): (CatalogTable, Option[RelationInfo]) = {
+      catalog: SmartConnectorExternalCatalog): (CatalogTable, Option[RelationInfo]) = {
     cachedCatalogTables.getIfPresent(name) match {
       case null => synchronized {
         cachedCatalogTables.getIfPresent(name) match {
@@ -302,7 +252,7 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
             logDebug(s"Looking up data source for $name")
             val request = new CatalogMetadataRequest()
             request.setSchemaName(name._1).setNameOrPattern(name._2)
-            val result = catalog.withExceptionHandling(catalog.connectorHelper.getCatalogMetadata(
+            val result = catalog.withExceptionHandling(catalog.helper.getCatalogMetadata(
               snappydataConstants.CATALOG_GET_TABLE, request))
             if (!result.isSetCatalogTable) throw new TableNotFoundException(name._1, name._2)
             val (table, relationInfo) = convertToCatalogTable(result, catalog.session)
@@ -317,12 +267,13 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
     }
   }
 
-  def getCatalogTable(name: (String, String), catalog: ConnectorExternalCatalog): CatalogTable = {
+  def getCatalogTable(name: (String, String),
+      catalog: SmartConnectorExternalCatalog): CatalogTable = {
     loadFromCache(name, catalog)._1
   }
 
   def getRelationInfo(name: (String, String),
-      catalog: ConnectorExternalCatalog): Option[RelationInfo] = {
+      catalog: SmartConnectorExternalCatalog): Option[RelationInfo] = {
     loadFromCache(name, catalog)._2
   }
 

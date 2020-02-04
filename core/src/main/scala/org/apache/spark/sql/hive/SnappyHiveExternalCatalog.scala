@@ -62,11 +62,9 @@ import org.apache.spark.sql.sources.JdbcExtendedUtils.normalizeSchema
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.LongType
 
-trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExternalCatalog {
-
-  val conf: SparkConf
-  val hadoopConf: Configuration
-  val createTime: Long
+abstract class SnappyHiveExternalCatalog(val conf: SparkConf,
+    val hadoopConf: Configuration, val createTime: Long)
+    extends SnappyHiveCatalogBase(conf, hadoopConf) with SnappyExternalCatalog {
 
   /** A cache of Spark SQL data source tables that have been accessed. */
   protected final val cachedCatalogTables: LoadingCache[(String, String), CatalogTable] = {

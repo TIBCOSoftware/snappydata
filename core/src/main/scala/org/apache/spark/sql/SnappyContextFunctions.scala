@@ -28,6 +28,8 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTable
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
+import org.apache.spark.sql.execution.closedform.{ClosedFormStats, ErrorAggregate}
+import org.apache.spark.sql.execution.common.HAC
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.{CollapseCodegenStages, PlanLater, QueryExecution, SparkPlan, TopK}
 import org.apache.spark.sql.hive.{OptimizeSortAndFilePlans, SnappyAnalyzer}
@@ -162,4 +164,8 @@ class SnappyContextFunctions(val session: SnappySession) extends SparkSupport {
 
   def executePlan(analyzer: SnappyAnalyzer, plan: LogicalPlan): LogicalPlan =
     analyzer.baseExecute(plan)
+
+  def finalizeEvaluation(errorStats: ClosedFormStats, confidence: Double,
+      confFactor: Double, aggType: ErrorAggregate.Type, error: Double,
+      behavior: HAC.Type): Double = throw missingAQPException()
 }

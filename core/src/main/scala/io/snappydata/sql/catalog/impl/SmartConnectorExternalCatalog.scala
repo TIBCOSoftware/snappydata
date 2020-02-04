@@ -16,13 +16,16 @@
  */
 package io.snappydata.sql.catalog.impl
 
+import java.sql.SQLException
 import java.util.Collections
+import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
-import io.snappydata.sql.catalog.{ConnectorExternalCatalog, RelationInfo, SnappyExternalCatalog}
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import io.snappydata.sql.catalog.{ConnectorExternalCatalog, RelationInfo, SmartConnectorHelper, SnappyExternalCatalog}
 import io.snappydata.thrift.{CatalogMetadataDetails, CatalogMetadataRequest, CatalogSchemaObject, snappydataConstants}
 
 import org.apache.spark.sql.catalyst.analysis.{NoSuchPartitionException, NoSuchPermanentFunctionException}
@@ -32,7 +35,7 @@ import org.apache.spark.sql.catalyst.expressions.{And, AttributeReference, Bound
 import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.RefreshMetadata
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{SnappyContext, TableNotFoundException, ThinClientConnectorMode}
+import org.apache.spark.sql.{SnappyContext, SparkSession, TableNotFoundException, ThinClientConnectorMode}
 
 /**
  * An ExternalCatalog implementation for the smart connector mode.
@@ -45,10 +48,36 @@ import org.apache.spark.sql.{SnappyContext, TableNotFoundException, ThinClientCo
  * be added later that switches the user authentication using thread-locals or similar, but as
  * of now it is used only by some hive insert paths which are not used in SnappySessionState.
  */
-trait SmartConnectorExternalCatalog extends SnappyExternalCatalog with ConnectorExternalCatalog {
+abstract class SmartConnectorExternalCatalog extends SnappyExternalCatalog {
 
-  override def jdbcUrl: String = SnappyContext.getClusterMode(session.sparkContext)
+  val session: SparkSession
+
+  def jdbcUrl: String = SnappyContext.getClusterMode(session.sparkContext)
       .asInstanceOf[ThinClientConnectorMode].url
+
+  @GuardedBy("this")
+  private[this] var connectorHelper: SmartConnectorHelper =
+    new SmartConnectorHelper(session, jdbcUrl)
+
+  protected[catalog] def helper: SmartConnectorHelper = connectorHelper
+
+  protected[catalog] def withExceptionHandling[T](function: => T): T = synchronized {
+    try {
+      function
+    } catch {
+      case e: SQLException if isConnectionException(e) =>
+        // attempt to create a new connection
+        connectorHelper.close()
+        connectorHelper = new SmartConnectorHelper(session, jdbcUrl)
+        function
+    }
+  }
+
+  protected def isConnectionException(e: SQLException): Boolean = {
+    e.getSQLState.startsWith(SQLState.CONNECTIVITY_PREFIX) ||
+        e.getSQLState.startsWith(SQLState.LANG_DEAD_STATEMENT) ||
+        e.getSQLState.startsWith(SQLState.GFXD_NODE_SHUTDOWN_PREFIX)
+  }
 
   override def invalidate(name: (String, String)): Unit = {
     // invalidation of a single table can result in all cached RelationInfo being
@@ -63,6 +92,20 @@ trait SmartConnectorExternalCatalog extends SnappyExternalCatalog with Connector
     // there is no version update in this call here, rather only the caches are cleared
     RefreshMetadata.executeLocal(RefreshMetadata.UPDATE_CATALOG_SCHEMA_VERSION, args = null)
   }
+
+  def invalidateAll(): Unit = {
+    // invalidate all the RelationInfo objects inside as well as the cache itself
+    val iter = ConnectorExternalCatalog.cachedCatalogTables.asMap().values().iterator()
+    while (iter.hasNext) {
+      iter.next()._2 match {
+        case Some(info) => info.invalid = true
+        case None =>
+      }
+    }
+    ConnectorExternalCatalog.cachedCatalogTables.invalidateAll()
+  }
+
+  def close(): Unit = synchronized(connectorHelper.close())
 
   // Using a common procedure to update catalog meta-data for create/drop/alter methods
   // and likewise a common procedure to get catalog meta-data for get/exists/list methods

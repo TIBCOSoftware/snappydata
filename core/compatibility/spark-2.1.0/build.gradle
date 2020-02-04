@@ -19,8 +19,9 @@ apply plugin: 'scala'
 
 compileScala.options.encoding = 'UTF-8'
 
-sourceSets.main.scala.srcDir 'specific/scala'
-sourceSets.main.scala.srcDir 'src/main/java'
+// directly include the base classes to ensure everything is compiled with Spark 2.1.0
+sourceSets.main.scala.srcDir "../spark-2.1.x/src/main/scala"
+sourceSets.main.scala.srcDir "../spark-2.1.x/src/main/java"
 sourceSets.main.java.srcDirs = []
 
 dependencies {

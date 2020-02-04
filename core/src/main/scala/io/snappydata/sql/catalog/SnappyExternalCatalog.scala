@@ -48,7 +48,7 @@ trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
   // Overrides for better exceptions that say "schema" instead of "database"
 
   override def requireDbExists(schema: String): Unit = {
-    if (!databaseExists(schema)) throw SnappyExternalCatalog.schemaNotFoundException(schema)
+    if (!databaseExists(schema)) throw schemaNotFoundException(schema)
   }
 
   override def requireTableExists(schema: String, table: String): Unit = {
@@ -69,6 +69,8 @@ trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
       throw Utils.analysisException(s"Function '$funcName' already exists in schema '$schema'")
     }
   }
+
+  // End overrides for exception messages
 
   protected def getTableImpl(schema: String, table: String): CatalogTable = {
     if (schema == SYS_SCHEMA) {
@@ -105,7 +107,7 @@ trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
   }
 
   def getTableIfExists(schema: String, table: String): Option[CatalogTable] =
-    SnappyExternalCatalog.getTableIfExists(this, schema, table)
+    SnappyExternalCatalog.getTableIfExists(catalog = this, schema, table)
 
   protected def getCachedCatalogTable(schema: String, table: String): CatalogTable
 
@@ -209,7 +211,7 @@ trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
    * the inbuilt SYS schema is skipped.
    */
   def getAllTables(skipSchemas: Seq[String] = SYS_SCHEMA :: Nil): Seq[CatalogTable] =
-    SnappyExternalCatalog.getAllTables(this, skipSchemas)
+    SnappyExternalCatalog.getAllTables(catalog = this, skipSchemas)
 
   /**
    * Check for baseTable in both properties and storage.properties (older releases used a mix).

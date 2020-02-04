@@ -27,7 +27,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.{Attribute => GAttr}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
-import io.snappydata.{Constant, HintName, Property, QueryHint}
+import io.snappydata.{Constant, Property}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
@@ -843,15 +843,4 @@ case class MarkerForCreateTableAsSelect(child: LogicalPlan) extends UnaryNode {
 
 case class BypassRowLevelSecurity(child: LogicalFilter) extends UnaryNode {
   override def output: Seq[Attribute] = child.output
-}
-
-/**
- * Wrap plan-specific query hints (like joinType). This extends Spark's BroadcastHint
- * so that filters/projections etc can be pushed below this by optimizer.
- */
-trait LogicalPlanWithHints extends UnaryNode {
-  def allHints: Map[QueryHint.Type, HintName.Type]
-
-  override def simpleString: String =
-    s"LogicalPlanWithHints[hints = $allHints; child = ${child.simpleString}]"
 }

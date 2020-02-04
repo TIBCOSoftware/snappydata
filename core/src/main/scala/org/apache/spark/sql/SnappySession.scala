@@ -108,11 +108,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
   override lazy val sessionState: SnappySessionState = internals.newSnappySessionState(self)
 
   @transient
-  final val contextFunctions: SnappyContextFunctions = SparkSupport.aqpOverridesClass match {
-    case None => new SnappyContextFunctions(self)
-    case Some(c) => c.getConstructor(classOf[SnappySession]).newInstance(self)
-        .asInstanceOf[SnappyContextFunctions]
-  }
+  final val contextFunctions: SnappyContextFunctions = SparkSupport.newContextFunctions(self)
 
   final def sessionCatalog: SnappySessionCatalog = sessionState.catalog
 

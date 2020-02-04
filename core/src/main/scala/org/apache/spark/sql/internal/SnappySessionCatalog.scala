@@ -31,7 +31,6 @@ import io.snappydata.sql.catalog.SnappyExternalCatalog.{DBTABLE_PROPERTY, getTab
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import org.apache.hadoop.fs.Path
 
-import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalog.Column
@@ -53,15 +52,14 @@ import org.apache.spark.sql.types._
 import org.apache.spark.util.MutableURLClassLoader
 
 /**
- * ::DeveloperApi::
- * Catalog using Hive for persistence and adding Snappy extensions like
+ * SessionCatalog implementation using Snappy store for persistence in embedded mode and
+ * using client API calls for smart connector mode, Adds Snappy extensions like
  * stream/topK tables and returning LogicalPlan to materialize these entities.
  */
-@DeveloperApi
 trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
 
   val snappyExternalCatalog: SnappyExternalCatalog
-  val globalTempViewManager: GlobalTempViewManager
+  val globalTempManager: GlobalTempViewManager
   val functionResourceLoader: FunctionResourceLoader
   val functionRegistry: FunctionRegistry
   val snappySession: SnappySession
@@ -292,8 +290,8 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
   protected def addMissingGlobalTempSchema(name: TableIdentifier): TableIdentifier = {
     if (name.database.isEmpty) {
       val tableName = formatTableName(name.table)
-      if (globalTempViewManager.get(tableName).isDefined) {
-        name.copy(table = tableName, database = Some(globalTempViewManager.database))
+      if (globalTempManager.get(tableName).isDefined) {
+        name.copy(table = tableName, database = Some(globalTempManager.database))
       } else name
     } else name
   }
@@ -305,7 +303,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
   }
 
   protected[sql] def validateSchemaName(schemaName: String, checkForDefault: Boolean): Unit = {
-    if (schemaName == globalTempViewManager.database) {
+    if (schemaName == globalTempManager.database) {
       throw new AnalysisException(s"$schemaName is a system preserved database/schema for global " +
           s"temporary tables. You cannot create, drop or set a schema with this name.")
     }
@@ -764,8 +762,8 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
   override def renameTable(old: TableIdentifier, newName: TableIdentifier): Unit = {
     val oldName = addMissingGlobalTempSchema(old)
     if (isTemporaryTable(oldName)) {
-      if (newName.database.isEmpty && oldName.database.contains(globalTempViewManager.database)) {
-        super.renameTable(oldName, newName.copy(database = Some(globalTempViewManager.database)))
+      if (newName.database.isEmpty && oldName.database.contains(globalTempManager.database)) {
+        super.renameTable(oldName, newName.copy(database = Some(globalTempManager.database)))
       } else super.renameTable(oldName, newName)
     } else {
       // first check required permission to alter objects in a schema
@@ -864,15 +862,15 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
       var view: Option[TableIdentifier] = Some(name)
       val relationPlan = (if (name.database.isEmpty) {
         getTempView(tableName) match {
-          case None => globalTempViewManager.get(tableName)
+          case None => globalTempManager.get(tableName)
           case s => s
         }
       } else None) match {
         case None =>
           val schemaName =
             if (name.database.isEmpty) currentDb else formatDatabaseName(name.database.get)
-          if (schemaName == globalTempViewManager.database) {
-            globalTempViewManager.get(tableName) match {
+          if (schemaName == globalTempManager.database) {
+            globalTempManager.get(tableName) match {
               case None => throw new TableNotFoundException(schemaName, tableName)
               case Some(p) => p
             }
@@ -913,15 +911,15 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
     if (name.database.isEmpty) synchronized {
       // check both local and global temporary tables
       val tableName = formatTableName(name.table)
-      getTempView(tableName).isDefined || globalTempViewManager.get(tableName).isDefined
-    } else if (formatDatabaseName(name.database.get) == globalTempViewManager.database) {
-      globalTempViewManager.get(formatTableName(name.table)).isDefined
+      getTempView(tableName).isDefined || globalTempManager.get(tableName).isDefined
+    } else if (formatDatabaseName(name.database.get) == globalTempManager.database) {
+      globalTempManager.get(formatTableName(name.table)).isDefined
     } else false
   }
 
   override def listTables(schema: String, pattern: String): Seq[TableIdentifier] = {
     val schemaName = formatDatabaseName(schema)
-    if (schemaName != globalTempViewManager.database && !databaseExists(schemaName)) {
+    if (schemaName != globalTempManager.database && !databaseExists(schemaName)) {
       throw SnappyExternalCatalog.schemaNotFoundException(schema)
     }
     if (snappySession.enableHiveSupport && hiveSessionCatalog.databaseExists(schema)) {

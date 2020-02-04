@@ -25,13 +25,6 @@ sourceSets.test.java.srcDirs = []
 sourceSets.test.scala.srcDir 'src/test/scala'
 
 if (!(new File(rootDir, 'cluster/build.gradle').exists())) {
-  ext {
-    scalaBinaryVersion = '2.11'
-    scalatestVersion = '3.0.8'
-    scalaVersion = scalaBinaryVersion + '.8'
-    snappyVersion = '1.1.0'
-  }
-
   repositories {
     mavenCentral()
     maven { url 'https://dl.bintray.com/big-data/maven' }
@@ -43,7 +36,7 @@ if (!(new File(rootDir, 'cluster/build.gradle').exists())) {
   dependencies {
     compile 'org.scala-lang:scala-library:' + scalaVersion
     testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
-    compile "io.snappydata:snappydata-cluster_2.11:${snappyVersion}"
+    compile "io.snappydata:snappydata-cluster_2.11:${version}"
   }
 
   archivesBaseName = 'snappydata-examples_' + '2.11'

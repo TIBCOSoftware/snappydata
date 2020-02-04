@@ -57,7 +57,7 @@ object SparkSupport extends Logging {
     GemFireVersion.isEnterpriseEdition
   }
 
-  lazy val aqpOverridesClass: Option[Class[_]] = {
+  private lazy val aqpOverridesClass: Option[Class[_]] = {
     if (isEnterpriseEdition) {
       try {
         Some(Utils.classForName("org.apache.spark.sql.execution.SnappyContextAQPFunctions"))
@@ -69,6 +69,20 @@ object SparkSupport extends Logging {
       }
     } else None
   }
+
+  private[sql] def newContextFunctions(session: SnappySession): SnappyContextFunctions = {
+    aqpOverridesClass match {
+      case None => new SnappyContextFunctions(session)
+      case Some(c) => c.getConstructor(classOf[SnappySession]).newInstance(session)
+          .asInstanceOf[SnappyContextFunctions]
+    }
+  }
+
+  /**
+   * An instance of [[SnappyContextFunctions]] with null session meaning any of the methods
+   * that require a session instance will fail with an NPE.
+   */
+  lazy val contextFunctionsStateless: SnappyContextFunctions = newContextFunctions(session = null)
 
   /**
    * List all the supported Spark versions below. All implementations are required to

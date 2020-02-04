@@ -48,7 +48,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
   /**
    * Tracks the hints that need to be applied at current plan level and will be
-   * wrapped by LogicalPlanWithHints
+   * wrapped by LogicalPlan
    */
   private[sql] final def planHints: java.util.Stack[(QueryHint.Type, HintName.Type)] = {
     val hints = _planHints
@@ -409,7 +409,7 @@ object SnappyParserConsts {
 
   /**
    * Define the hints that need to be applied at plan-level and will be
-   * wrapped by LogicalPlanWithHints
+   * wrapped by LogicalPlan
    */
   final val allowedPlanHints: Array[QueryHint.Type] = Array(QueryHint.JoinType)
 
