@@ -437,8 +437,44 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_rpad_in)
     pw.println()
     pw.flush()
-
-
+    /**
+      *  Below queries test the functions :
+      *  33. hour, 34. minute, 35. second
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_hr_min_sec_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_hr_min_sec_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_hr_min_sec)
+    snc.sql(SQLFunctionsUtils.createRowTbl_hr_min_sec)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set2)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set2)
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_hr_min_sec,
+      "Q19_hr_min_sec", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_hr_min_sec,
+      "Q20_hr_min_sec", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_hr_min_sec)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_hr_min_sec)
+    spark.sql(SQLFunctionsUtils.dropColTbl_hr_min_sec)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_hr_min_sec)
+    pw.println()
+    pw.flush()
 
 
 

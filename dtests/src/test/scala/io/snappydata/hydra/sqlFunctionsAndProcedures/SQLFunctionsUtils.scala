@@ -234,4 +234,22 @@ object SQLFunctionsUtils {
     "'Spot fire' in(testStr) FROM " + rowTbl + " ORDER BY id"
   val dropColTbl_rpad_in : String = dropTbl  + columnTbl
   val dropRowTbl_rpad_in : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  33. hour, 34. minute, 35. second
+    */
+  val hr_min_sec_Set1 : String = "(1,'2019-03-29 12:58:59')"
+  val hr_min_sec_Set2 : String = "(2,'2020-11-14 23:45:12')"
+  val createColTypeTbl_hr_min_sec_Spark : String = createTbl + columnTbl + "(id int,ts timestamp)"
+  val createRowTypeTbl_hr_min_sec_Spark : String = createTbl + rowTbl + "(id int,ts timestamp)"
+  val createColumnTbl_hr_min_sec : String = createTbl + columnTbl +
+    "(id int,ts timestamp) " + usingCol
+  val createRowTbl_hr_min_sec : String = createTbl + rowTbl +
+    "(id int,ts timestamp) " + usingRow
+  val select_ColTbl_hr_min_sec : String = "SELECT id,hour(ts),minute(ts),second(ts) FROM " +
+    columnTbl + " ORDER BY id"
+  val select_RowTbl_hr_min_sec : String = "SELECT id,hour(ts),minute(ts),second(ts) FROM " +
+    rowTbl + " ORDER BY id"
+  val dropColTbl_hr_min_sec : String = dropTbl  + columnTbl
+  val dropRowTbl_hr_min_sec : String = dropTbl + rowTbl
 }
