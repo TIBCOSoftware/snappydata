@@ -196,4 +196,22 @@ object SQLFunctionsUtils {
     "(b1 OR b2) as LogicalOR, NOT(b) as LogicalNOT FROM " + columnTbl + " ORDER BY id"
   val dropColTbl_And_Or_Not : String = dropTbl  + columnTbl
   val dropRowTbl_And_Or_Not : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  30. size.
+    *  NOTE : Following test case is Pending.
+    *  SET spark.sql.legacy.sizeOfNull is set to false, the function returns null for null input
+    *
+    */
+  val size_Set1 : String = "1,Array(10,20,30,40,50,60),Map('Rahul',40.45,'Virat',54.32,'Dhoni',56.78)"
+  val size_Set2 : String = "2,Array(80,99,65,78),null"
+  val size_Set3 : String = "3,null,Map('AAA',0.0,'BBB',6.67)"
+  val size_Set4 : String = "4,null,null"
+  val createColTypeTbl_Size_Spark : String = createTbl + columnTbl +
+    " (id int,testArr Array<Int>,testMap Map<String,Double>)"
+  val createColumnTbl_Size : String = createTbl + columnTbl +
+    "(id int,testArr Array<Int>,testMap Map<String,Double>) " + usingCol
+  val select_ColTbl_Size : String = "SELECT id,size(testArr),size(testMap) FROM " +
+    columnTbl + " ORDER BY ID"
+  val dropColTbl_Size : String = dropTbl  + columnTbl
 }

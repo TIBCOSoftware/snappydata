@@ -240,7 +240,6 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.dropRowTbl_Day_Month_Year)
     spark.sql(SQLFunctionsUtils.dropColTbl_Day_Month_Year)
     spark.sql(SQLFunctionsUtils.dropRowTbl_Day_Month_Year)
-//    pw.println()
     pw.flush()
     /**
       *  Below queries test the functions :
@@ -267,7 +266,6 @@ class SQLFunctions extends SnappySQLJob {
     // DROP SPARK / SNAPPY TABLES.
     snc.sql(SQLFunctionsUtils.dropColTbl_map_Keys_Values)
     spark.sql(SQLFunctionsUtils.dropColTbl_map_Keys_Values)
-//    pw.println()
     pw.flush()
     /**
       *  Below queries test the functions :
@@ -356,6 +354,41 @@ class SQLFunctions extends SnappySQLJob {
     val sparkDBDF : DataFrame = spark.sql("SELECT current_database() as DB")
     pw.println("Snappy SELECT current_databse() -> " + snappyDBDF.take(1).mkString)
     pw.println("Spark SELECT current_databse() -> " + sparkDBDF.take(1).mkString)
+    pw.println()
+    pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  30. size.
+      *  NOTE : Following test case is Pending.
+      *  SET spark.sql.legacy.sizeOfNull is set to false, the function returns null for null input
+      *
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_Size_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_Size)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.size_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.size_Set2)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.size_Set3)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.size_Set4)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.size_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.size_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.size_Set3)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      " SELECT " + SQLFunctionsUtils.size_Set4)
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_Size,
+      "Q16_Size", "column", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_Size)
+    spark.sql(SQLFunctionsUtils.dropColTbl_Size)
     pw.println()
     pw.flush()
 
