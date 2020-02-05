@@ -240,7 +240,7 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.dropRowTbl_Day_Month_Year)
     spark.sql(SQLFunctionsUtils.dropColTbl_Day_Month_Year)
     spark.sql(SQLFunctionsUtils.dropRowTbl_Day_Month_Year)
-    pw.println()
+//    pw.println()
     pw.flush()
     /**
       *  Below queries test the functions :
@@ -267,7 +267,7 @@ class SQLFunctions extends SnappySQLJob {
     // DROP SPARK / SNAPPY TABLES.
     snc.sql(SQLFunctionsUtils.dropColTbl_map_Keys_Values)
     spark.sql(SQLFunctionsUtils.dropColTbl_map_Keys_Values)
-    pw.println()
+//    pw.println()
     pw.flush()
     /**
       *  Below queries test the functions :
@@ -347,6 +347,79 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_And_Or_Not)
     pw.println()
     pw.flush()
+    /**
+    Below queries test the function:
+     29. current_database().
+    */
+    pw.println("Q15 : current_database(), For Snappy -> APP, For Spark -> Default")
+    val snappyDBDF : DataFrame = snc.sql("SELECT current_database() as DB")
+    val sparkDBDF : DataFrame = spark.sql("SELECT current_database() as DB")
+    pw.println("Snappy SELECT current_databse() -> " + snappyDBDF.take(1).mkString)
+    pw.println("Spark SELECT current_databse() -> " + sparkDBDF.take(1).mkString)
+    pw.println()
+    pw.flush()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //spark.sql(SQLFunctionsUtils.xmlPathQuery).show()
+    //snc.sql(SQLFunctionsUtils.xmlPathQuery).show()
+
+//    val xpathSparkDF : DataFrame = spark.sql("select xpath('<bookstore>" +
+//      "<book category=\"cooking\"><title lang=\"en\">Everyday Italian</title>" +
+//      "<author>Giada De Laurentiis</author><year>2005</year><price>30.00</price>" +
+//      "</book><book category=\"children\"><title lang=\"en\">Harry Potter</title>" +
+//      "<author>J K. Rowling</author><year>2005</year><price>29.99</price>" +
+//      "</book><book category=\"web\"><title lang=\"en\">XQuery Kick Start</title>" +
+//      "<author>James McGovern</author><author>Per Bothner</author><author>Kurt Cagle</author>" +
+//      "<author>James Linn</author><author>Vaidyanathan Nagarajan</author><year>2003</year>" +
+//      "<price>49.99</price></book><book category=\"web\"><title lang=\"en\">Learning XML</title>" +
+//      "<author>Erik T. Ray</author><year>2003</year><price>39.95</price></book></bookstore>'," +
+//      "'/bookstore/book/author/text()')")
+//
+//    val xpathSnappyDF : DataFrame = snc.sql("select xpath('<bookstore>" +
+//      "<book category=\"cooking\"><title lang=\"en\">Everyday Italian</title>" +
+//      "<author>Giada De Laurentiis</author><year>2005</year><price>30.00</price>" +
+//      "</book><book category=\"children\"><title lang=\"en\">Harry Potter</title>" +
+//      "<author>J K. Rowling</author><year>2005</year><price>29.99</price>" +
+//      "</book><book category=\"web\"><title lang=\"en\">XQuery Kick Start</title>" +
+//      "<author>James McGovern</author><author>Per Bothner</author><author>Kurt Cagle</author>" +
+//      "<author>James Linn</author><author>Vaidyanathan Nagarajan</author><year>2003</year>" +
+//      "<price>49.99</price></book><book category=\"web\"><title lang=\"en\">Learning XML</title>" +
+//      "<author>Erik T. Ray</author><year>2003</year><price>39.95</price></book></bookstore>'," +
+//      "'/bookstore/book/author/text()')")
+//
+//    println("xpath Snappy: ")
+//    xpathSnappyDF.count()
+//    xpathSnappyDF.show()
+//    println("xpath Spark:")
+//    xpathSparkDF.count()
+//    xpathSparkDF.show()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
