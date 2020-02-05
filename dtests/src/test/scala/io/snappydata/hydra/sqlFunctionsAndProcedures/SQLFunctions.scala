@@ -475,8 +475,52 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_hr_min_sec)
     pw.println()
     pw.flush()
-
-
+    /**
+      *  Below queries test the functions :
+      *  36. ascii, 37. months_between, 35. current_timestamp
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_ascii_mnthbet_ts_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_ascii_mnthbet_ts_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_ascii_mnthbet_ts)
+    snc.sql(SQLFunctionsUtils.createRowTbl_ascii_mnthbet_ts)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set2)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set3)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set2)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set3)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set3)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set3)
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_ascii_mnthbet_ts,
+      "Q21_ascii_mnthbet_ts", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_ascii_mnthbet_ts,
+      "Q22_ascii_mnthbet_ts", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_ascii_mnthbet_ts)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_ascii_mnthbet_ts)
+    spark.sql(SQLFunctionsUtils.dropColTbl_ascii_mnthbet_ts)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_ascii_mnthbet_ts)
+    pw.println()
+    pw.flush()
 
 
 

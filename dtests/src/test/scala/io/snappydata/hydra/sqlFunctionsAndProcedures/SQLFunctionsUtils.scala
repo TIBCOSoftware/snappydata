@@ -97,6 +97,7 @@ object SQLFunctionsUtils {
     * Below queries test the functions :
     * 8. !(Logical Not)
     * (Logical NOT is not working in Snappy Cluster)
+    * hence test case needs to be add.
     * Add the boolean column and data once issue resolved.
     * 9. & (Bitwise AND)
     * 10. ^ (Bitwise exclusiveOR/ExOR)
@@ -252,4 +253,25 @@ object SQLFunctionsUtils {
     rowTbl + " ORDER BY id"
   val dropColTbl_hr_min_sec : String = dropTbl  + columnTbl
   val dropRowTbl_hr_min_sec : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  36. ascii, 37. months_between, 35. current_timestamp
+    */
+  val ascii_mnthbet_ts_Set1 : String = "(1,'Spark','S','2019-09-07',current_timestamp)"
+  val ascii_mnthbet_ts_Set2 : String = "(2,'abcd','a','2018-11-15','2017-12-25 16:55:43')"
+  val ascii_mnthbet_ts_Set3 : String = "(3,'0123','0','2019-12-31','2019-12-31 11:12:13')"
+  val createColTypeTbl_ascii_mnthbet_ts_Spark : String = createTbl + columnTbl +
+    "(id int,s1 string,s2 string,dt1 date,dt2 timestamp)"
+  val createRowTypeTbl_ascii_mnthbet_ts_Spark : String = createTbl + rowTbl +
+    "(id int,s1 string,s2 string,dt1 date,dt2 timestamp)"
+  val createColumnTbl_ascii_mnthbet_ts : String = createTbl + columnTbl +
+    "(id int,s1 string,s2 string,dt1 date,dt2 timestamp) " + usingCol
+  val createRowTbl_ascii_mnthbet_ts : String = createTbl + rowTbl +
+    "(id int,s1 string,s2 string,dt1 date,dt2 timestamp) " + usingRow
+  val select_ColTbl_ascii_mnthbet_ts : String = "SELECT id,ascii(s1),ascii(s2)," +
+    "months_between(dt1,dt2) FROM " + columnTbl + " ORDER BY id"
+  val select_RowTbl_ascii_mnthbet_ts : String = "SELECT id,ascii(s1),ascii(s2)," +
+    "months_between(dt1,dt2) FROM " + rowTbl + " ORDER BY id"
+  val dropColTbl_ascii_mnthbet_ts : String = dropTbl  + columnTbl
+  val dropRowTbl_ascii_mnthbet_ts : String = dropTbl + rowTbl
 }
