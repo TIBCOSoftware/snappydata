@@ -193,7 +193,7 @@ object SQLFunctionsUtils {
   val select_ColTbl_And_Or_Not : String = "SELECT id,(b1 AND b2) as LogicalAND," +
     "(b1 OR b2) as LogicalOR, NOT(b) as LogicalNOT FROM " + columnTbl + " ORDER BY id"
   val select_RowTbl_And_Or_Not : String = "SELECT id,(b1 AND b2) as LogicalAND," +
-    "(b1 OR b2) as LogicalOR, NOT(b) as LogicalNOT FROM " + columnTbl + " ORDER BY id"
+    "(b1 OR b2) as LogicalOR, NOT(b) as LogicalNOT FROM " + rowTbl + " ORDER BY id"
   val dropColTbl_And_Or_Not : String = dropTbl  + columnTbl
   val dropRowTbl_And_Or_Not : String = dropTbl + rowTbl
   /**
@@ -201,7 +201,6 @@ object SQLFunctionsUtils {
     *  30. size.
     *  NOTE : Following test case is Pending.
     *  SET spark.sql.legacy.sizeOfNull is set to false, the function returns null for null input
-    *
     */
   val size_Set1 : String = "1,Array(10,20,30,40,50,60),Map('Rahul',40.45,'Virat',54.32,'Dhoni',56.78)"
   val size_Set2 : String = "2,Array(80,99,65,78),null"
@@ -214,4 +213,25 @@ object SQLFunctionsUtils {
   val select_ColTbl_Size : String = "SELECT id,size(testArr),size(testMap) FROM " +
     columnTbl + " ORDER BY ID"
   val dropColTbl_Size : String = dropTbl  + columnTbl
+  /**
+    *  Below queries test the functions :
+    *  31. rpad, 32. in
+    */
+  val rpad_in_Set1 : String = "(1,'TIBCO ComputeDB')"
+  val rpad_in_Set2 : String = "(2,'Spot fire')"
+  val rpad_in_Set3 : String = "(3,'DBVisualizer')"
+  val createColTypeTbl_rpad_in_Spark : String = createTbl + columnTbl +
+    "(id int,testStr string)"
+  val createRowTypeTbl_rpad_in_Spark : String = createTbl + rowTbl +
+    "(id int,testStr string)"
+  val createColumnTbl_rpad_in : String = createTbl + columnTbl +
+    "(id int,testStr string) " + usingCol
+  val createRowTbl_rpad_in : String = createTbl + rowTbl +
+    "(id int,testStr string) " + usingRow
+  val select_ColTbl_rpad_in : String = "SELECT id,rpad(testStr,50,'-The TIBCO Product')," +
+    "'Spot fire' in(testStr) FROM " + columnTbl + " ORDER BY id"
+  val select_RowTbl_rpad_in : String = "SELECT id,rpad(testStr,50,'-The TIBCO Product')," +
+    "'Spot fire' in(testStr) FROM " + rowTbl + " ORDER BY id"
+  val dropColTbl_rpad_in : String = dropTbl  + columnTbl
+  val dropRowTbl_rpad_in : String = dropTbl + rowTbl
 }

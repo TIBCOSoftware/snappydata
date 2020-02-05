@@ -391,8 +391,52 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropColTbl_Size)
     pw.println()
     pw.flush()
-
-
+    /**
+      *  Below queries test the functions :
+      *  31. rpad, 32. in
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_rpad_in_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_rpad_in_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_rpad_in)
+    snc.sql(SQLFunctionsUtils.createRowTbl_rpad_in)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set2)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set3)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set1)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set2)
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set3)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set3)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set1)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set2)
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set3)
+   //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_rpad_in,
+      "Q17_rpad_in", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_rpad_in,
+      "Q18_rpad_in", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_rpad_in)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_rpad_in)
+    spark.sql(SQLFunctionsUtils.dropColTbl_rpad_in)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_rpad_in)
+    pw.println()
+    pw.flush()
 
 
 
