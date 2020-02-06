@@ -255,7 +255,7 @@ object SQLFunctionsUtils {
   val dropRowTbl_hr_min_sec : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
-    *  36. ascii, 37. months_between, 35. current_timestamp
+    *  36. ascii, 37. months_between, 38. current_timestamp
     */
   val ascii_mnthbet_ts_Set1 : String = "(1,'Spark','S','2019-09-07',current_timestamp)"
   val ascii_mnthbet_ts_Set2 : String = "(2,'abcd','a','2018-11-15','2017-12-25 16:55:43')"
@@ -274,4 +274,27 @@ object SQLFunctionsUtils {
     "months_between(dt1,dt2) FROM " + rowTbl + " ORDER BY id"
   val dropColTbl_ascii_mnthbet_ts : String = dropTbl  + columnTbl
   val dropRowTbl_ascii_mnthbet_ts : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  39. string, 40. substr, 41. substring
+    */
+  val str_subStr = new Array[String](2)
+  str_subStr(0) = "(1,123456,43.45,'TIBCO ComputeDB')"
+  str_subStr(1) = "(2,9999,1004.56,'JDBC Driver')"
+  val createColTypeTbl_str_substr_Spark : String = createTbl + columnTbl +
+    "(id int,testNumber int,testDouble Double,testStr string)"
+  val createRowTypeTbl_str_substr_Spark : String = createTbl + rowTbl +
+    "(id int,testNumber int,testDouble Double,testStr string)"
+  val createColumnTbl_str_substr : String = createTbl + columnTbl +
+    "(id int,testNumber int,testDouble Double,testStr string) " + usingCol
+  val createRowTbl_str_substr : String = createTbl + rowTbl +
+    "(id int,testNumber int,testDouble Double,testStr string) " + usingRow
+  val select_ColTbl_str_substr : String = "SELECT id,string(testNumber),string(testDouble)," +
+    "substr(teststr,0,5),substring(teststr,0,5),substr(teststr,3),substring(teststr,3)," +
+    "substr(teststr,-5),substring(teststr,-5) FROM " + columnTbl + " ORDER BY id"
+  val select_RowTbl_str_substr : String = "SELECT id,string(testNumber),string(testDouble)," +
+    "substr(teststr,0,5),substring(teststr,0,5),substr(teststr,3),substring(teststr,3)," +
+    "substr(teststr,-5),substring(teststr,-5) FROM " + rowTbl + " ORDER BY id"
+  val dropColTbl_str_substr : String = dropTbl  + columnTbl
+  val dropRowTbl_str_substr : String = dropTbl + rowTbl
 }

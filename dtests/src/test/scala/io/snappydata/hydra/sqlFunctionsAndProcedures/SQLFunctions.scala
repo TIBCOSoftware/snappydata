@@ -521,7 +521,48 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_ascii_mnthbet_ts)
     pw.println()
     pw.flush()
-
+    /**
+      *  Below queries test the functions :
+      *  39. string, 40. substr, 41. substring
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_str_substr_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_str_substr_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_str_substr)
+    snc.sql(SQLFunctionsUtils.createRowTbl_str_substr)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.str_subStr(i))
+    }
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.str_subStr(i))
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.str_subStr(i))
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.str_subStr(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    val str_subStr_Col_SparkDF : DataFrame = spark.sql(SQLFunctionsUtils.select_ColTbl_str_substr)
+    val str_subStr_Col_SnappyDF : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_str_substr)
+    val str_subStr_Row_SparkDF : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_str_substr)
+    val str_subStr_Row_SnappyDF : DataFrame = snc.sql(SQLFunctionsUtils.select_RowTbl_str_substr)
+    SnappyTestUtils.assertQueryFullResultSet(snc, str_subStr_Col_SnappyDF, str_subStr_Col_SparkDF,
+      "Q23_str_substr", "column", pw, sqlContext,true)
+    SnappyTestUtils.assertQueryFullResultSet(snc, str_subStr_Row_SnappyDF, str_subStr_Row_SparkDF,
+      "Q24_str_substr", "row", pw, sqlContext, true)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_str_substr)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_str_substr)
+    spark.sql(SQLFunctionsUtils.dropColTbl_str_substr)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_str_substr)
+    pw.println()
+    pw.flush()
 
 
 
