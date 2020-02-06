@@ -601,8 +601,44 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_hypot_gt_lt)
     pw.println()
     pw.flush()
-
-
+    /**
+      *  Below queries test the functions :
+      *  46. space, 47. soundex
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_spc_soundex_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_spc_soundex_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_spc_soundex)
+    snc.sql(SQLFunctionsUtils.createRowTbl_spc_soundex)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 3) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.spc_soundex(i))
+    }
+    for(i <- 0 to 3) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.spc_soundex(i))
+    }
+    for(i <- 0 to 3) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.spc_soundex(i))
+    }
+    for(i <- 0 to 3) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.spc_soundex(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_spc_soundex,
+      "Q27_spc_soundex", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_spc_soundex,
+      "Q28_spc_soundex", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_spc_soundex)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_spc_soundex)
+    spark.sql(SQLFunctionsUtils.dropColTbl_spc_soundex)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_spc_soundex)
+    pw.println()
+    pw.flush()
 
 
 

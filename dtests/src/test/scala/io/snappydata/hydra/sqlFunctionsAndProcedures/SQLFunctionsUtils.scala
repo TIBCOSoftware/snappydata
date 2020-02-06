@@ -299,7 +299,9 @@ object SQLFunctionsUtils {
   val dropRowTbl_str_substr : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
-    *  42. >, 43. >=, 44. <, 45. <=, 46 hypot
+    *  42. >, 43. >=, 44. <, 45. <=, 46 hypot (hypot already done)
+    *  So 46 is duplicate number and need not to be removed.
+    *  Need to add the test case for complex data types for 42 to 45.
     */
   val hypot_gt_lt = new Array[String](9)
   hypot_gt_lt(0) = "(1,15,12)"
@@ -324,4 +326,27 @@ object SQLFunctionsUtils {
     "(n1<n2) as LT,(n1<=n2) as LTEQ,hypot(n1,n2) as HYPOT FROM " + rowTbl + " ORDER BY id"
   val dropColTbl_hypot_gt_lt : String = dropTbl  + columnTbl
   val dropRowTbl_hypot_gt_lt : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  46. space, 47. soundex
+    */
+  val spc_soundex = new Array[String](4)
+  spc_soundex(0) = "(1,'TIBCO','TIBCO')"
+  spc_soundex(1) = "(2,'Computation','Computation')"
+  spc_soundex(2) = "(3,'Spark','Spark')"
+  spc_soundex(3) = "(4,NULL,NULL)"
+  val createColTypeTbl_spc_soundex_Spark : String = createTbl + columnTbl +
+    "(id int,str1 string,str2 string)"
+  val createRowTypeTbl_spc_soundex_Spark : String = createTbl + rowTbl +
+    "(id int,str1 string,str2 string)"
+  val createColumnTbl_spc_soundex : String = createTbl + columnTbl +
+    "(id int,str1 string,str2 string) " + usingCol
+  val createRowTbl_spc_soundex : String = createTbl + rowTbl +
+    "(id int,str1 string,str2 string) " + usingRow
+  val select_ColTbl_spc_soundex : String = "SELECT id,concat(space(20),str1)," +
+    "soundex(str2) as soundex FROM " + columnTbl + " ORDER BY id"
+  val select_RowTbl_spc_soundex : String = "SELECT id,concat(space(20),str1)," +
+    "soundex(str2) as soundex FROM " + rowTbl + " ORDER BY id"
+  val dropColTbl_spc_soundex : String = dropTbl  + columnTbl
+  val dropRowTbl_spc_soundex : String = dropTbl + rowTbl
 }
