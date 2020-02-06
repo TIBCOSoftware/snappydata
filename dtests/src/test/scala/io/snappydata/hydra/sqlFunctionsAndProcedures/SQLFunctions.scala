@@ -563,8 +563,44 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_str_substr)
     pw.println()
     pw.flush()
-
-
+    /**
+      *  Below queries test the functions :
+      *  42. >, 43. >=, 44. <, 45. <=, 46 hypot
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_hypot_gt_lt_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_hypot_gt_lt_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_hypot_gt_lt)
+    snc.sql(SQLFunctionsUtils.createRowTbl_hypot_gt_lt)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 7) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.hypot_gt_lt(i))
+    }
+    for(i <- 0 to 7) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.hypot_gt_lt(i))
+    }
+    for(i <- 0 to 7) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.hypot_gt_lt(i))
+    }
+    for(i <- 0 to 7) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.hypot_gt_lt(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_hypot_gt_lt,
+      "Q25_hypot_gt_lt", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_hypot_gt_lt,
+      "Q26_hypot_gt_lt", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_hypot_gt_lt)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_hypot_gt_lt)
+    spark.sql(SQLFunctionsUtils.dropColTbl_hypot_gt_lt)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_hypot_gt_lt)
+    pw.println()
+    pw.flush()
 
 
 

@@ -297,4 +297,31 @@ object SQLFunctionsUtils {
     "substr(teststr,-5),substring(teststr,-5) FROM " + rowTbl + " ORDER BY id"
   val dropColTbl_str_substr : String = dropTbl  + columnTbl
   val dropRowTbl_str_substr : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  42. >, 43. >=, 44. <, 45. <=, 46 hypot
+    */
+  val hypot_gt_lt = new Array[String](9)
+  hypot_gt_lt(0) = "(1,15,12)"
+  hypot_gt_lt(1) = "(2,4,5)"
+  hypot_gt_lt(2) = "(3,100,20)"
+  hypot_gt_lt(3) = "(4,10,68)"
+  hypot_gt_lt(4) = "(5,NULL,NULL)"
+  hypot_gt_lt(5) = "(6,8,NULL)"
+  hypot_gt_lt(6) = "(7,NULL,225)"
+  hypot_gt_lt(7) = "(8,4,4)"
+  val createColTypeTbl_hypot_gt_lt_Spark : String = createTbl + columnTbl +
+    "(id int,n1 int,n2 int)"
+  val createRowTypeTbl_hypot_gt_lt_Spark : String = createTbl + rowTbl +
+    "(id int,n1 int,n2 int)"
+  val createColumnTbl_hypot_gt_lt : String = createTbl + columnTbl +
+    "(id int,n1 int,n2 int) " + usingCol
+  val createRowTbl_hypot_gt_lt : String = createTbl + rowTbl +
+    "(id int,n1 int,n2 int) " + usingRow
+  val select_ColTbl_hypot_gt_lt : String = "SELECT id,(n1>n2) as GT,(n1>=n2) as GTEQ," +
+    "(n1<n2) as LT,(n1<=n2) as LTEQ,hypot(n1,n2) as HYPOT FROM " + columnTbl + " ORDER BY id"
+  val select_RowTbl_hypot_gt_lt : String = "SELECT id,(n1>n2) as GT,(n1>=n2) as GTEQ," +
+    "(n1<n2) as LT,(n1<=n2) as LTEQ,hypot(n1,n2) as HYPOT FROM " + rowTbl + " ORDER BY id"
+  val dropColTbl_hypot_gt_lt : String = dropTbl  + columnTbl
+  val dropRowTbl_hypot_gt_lt : String = dropTbl + rowTbl
 }
