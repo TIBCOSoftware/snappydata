@@ -49,7 +49,7 @@ ResultSet rs = conn.createStatement().executeSQL(prepDataCommand)
 ### Syntax
 
 ```
-exec scala [options (returnDF ‘dfName’)] `<Scala_code>`k 
+exec scala [options (returnDF ‘dfName’)] `<Scala_code>`; 
 ```
 
 *	**exec** and **scala** are the keywords to identify this SQL type. 
