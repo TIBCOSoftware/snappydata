@@ -639,58 +639,30 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_spc_soundex)
     pw.println()
     pw.flush()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //spark.sql(SQLFunctionsUtils.xmlPathQuery).show()
-    //snc.sql(SQLFunctionsUtils.xmlPathQuery).show()
-
-//    val xpathSparkDF : DataFrame = spark.sql("select xpath('<bookstore>" +
-//      "<book category=\"cooking\"><title lang=\"en\">Everyday Italian</title>" +
-//      "<author>Giada De Laurentiis</author><year>2005</year><price>30.00</price>" +
-//      "</book><book category=\"children\"><title lang=\"en\">Harry Potter</title>" +
-//      "<author>J K. Rowling</author><year>2005</year><price>29.99</price>" +
-//      "</book><book category=\"web\"><title lang=\"en\">XQuery Kick Start</title>" +
-//      "<author>James McGovern</author><author>Per Bothner</author><author>Kurt Cagle</author>" +
-//      "<author>James Linn</author><author>Vaidyanathan Nagarajan</author><year>2003</year>" +
-//      "<price>49.99</price></book><book category=\"web\"><title lang=\"en\">Learning XML</title>" +
-//      "<author>Erik T. Ray</author><year>2003</year><price>39.95</price></book></bookstore>'," +
-//      "'/bookstore/book/author/text()')")
-//
-//    val xpathSnappyDF : DataFrame = snc.sql("select xpath('<bookstore>" +
-//      "<book category=\"cooking\"><title lang=\"en\">Everyday Italian</title>" +
-//      "<author>Giada De Laurentiis</author><year>2005</year><price>30.00</price>" +
-//      "</book><book category=\"children\"><title lang=\"en\">Harry Potter</title>" +
-//      "<author>J K. Rowling</author><year>2005</year><price>29.99</price>" +
-//      "</book><book category=\"web\"><title lang=\"en\">XQuery Kick Start</title>" +
-//      "<author>James McGovern</author><author>Per Bothner</author><author>Kurt Cagle</author>" +
-//      "<author>James Linn</author><author>Vaidyanathan Nagarajan</author><year>2003</year>" +
-//      "<price>49.99</price></book><book category=\"web\"><title lang=\"en\">Learning XML</title>" +
-//      "<author>Erik T. Ray</author><year>2003</year><price>39.95</price></book></bookstore>'," +
-//      "'/bookstore/book/author/text()')")
-//
-//    println("xpath Snappy: ")
-//    xpathSnappyDF.count()
-//    xpathSnappyDF.show()
-//    println("xpath Spark:")
-//    xpathSparkDF.count()
-//    xpathSparkDF.show()
-
+    /**
+      *  Below queries test the functions :
+      *  48. xpath, 49. xpath_boolean, 50. xpath_double, 51. xpath_float
+      */
+    val xPath_SnappyDF : DataFrame = snc.sql(SQLFunctionsUtils.xPath)
+    val xPath_SparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath)
+    SnappyTestUtils.assertQueryFullResultSet(snc, xPath_SnappyDF, xPath_SparkDF,
+      "Q29_xpath", "column", pw, sqlContext, true)
+    val xPath_bool_true_sncDF : DataFrame = snc.sql(SQLFunctionsUtils.xPath_Boolean_true)
+    val xPath_bool_true_sparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath_Boolean_true)
+    SnappyTestUtils.assertQueryFullResultSet(snc, xPath_bool_true_sncDF, xPath_bool_true_sparkDF,
+    "Q30_xpath_boolean_true", "column", pw, sqlContext, true)
+    val xPath_bool_false_sncDF : DataFrame = snc.sql(SQLFunctionsUtils.xPath_Boolean_false)
+    val xPath_bool_false_sparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath_Boolean_false)
+    SnappyTestUtils.assertQueryFullResultSet(snc, xPath_bool_false_sncDF, xPath_bool_false_sparkDF,
+      "Q31_xpath_boolean_false", "column", pw, sqlContext, true)
+    val xPath_double_sncDF : DataFrame = snc.sql(SQLFunctionsUtils.xPath_double)
+    val xPath_double_sparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath_double)
+    SnappyTestUtils.assertQueryFullResultSet(snc, xPath_double_sncDF, xPath_double_sparkDF,
+      "Q32_xpath_double", "column", pw, sqlContext, true)
+    val xPath_float_sncDF : DataFrame = snc.sql(SQLFunctionsUtils.xPath_float)
+    val xPath_float_sparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath_float)
+    SnappyTestUtils.assertQueryFullResultSet(snc, xPath_float_sncDF, xPath_float_sparkDF,
+      "Q33_xpath_float", "column", pw, sqlContext, true)
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
   }

@@ -27,18 +27,6 @@ object SQLFunctionsUtils {
   val insertInto : String = "INSERT INTO "
   val values : String = " VALUES "
   val dropTbl : String = "DROP TABLE IF EXISTS "
-  val xmlPathQuery : String = "SELECT xpath('<bookstore>" +
-    "<book category=\"cooking\"><title lang=\"en\">Everyday Italian</title>" +
-    "<author>Giada De Laurentiis</author><year>2005</year><price>30.00</price>" +
-    "</book><book category=\"children\"><title lang=\"en\">Harry Potter</title>" +
-    "<author>J K. Rowling</author><year>2005</year><price>29.99</price>" +
-    "</book><book category=\"web\"><title lang=\"en\">XQuery Kick Start</title>" +
-    "<author>James McGovern</author><author>Per Bothner</author><author>Kurt Cagle</author>" +
-    "<author>James Linn</author><author>Vaidyanathan Nagarajan</author><year>2003</year>" +
-    "<price>49.99</price></book><book category=\"web\"><title lang=\"en\">Learning XML</title>" +
-    "<author>Erik T. Ray</author><year>2003</year><price>39.95</price></book></bookstore>'," +
-    "'/bookstore/book/author/text()')"
-
   /**
     *  Below queries test the functions :
     *  1. date,
@@ -349,4 +337,27 @@ object SQLFunctionsUtils {
     "soundex(str2) as soundex FROM " + rowTbl + " ORDER BY id"
   val dropColTbl_spc_soundex : String = dropTbl  + columnTbl
   val dropRowTbl_spc_soundex : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  48. xpath, 49. xpath_boolean, 50. xpath_double, 51. xpath_float
+    */
+  val xml : String = "<bookstore>" +
+    "<book category=\"cooking\"><title lang=\"en\">Everyday Italian</title>" +
+      "<author>Giada De Laurentiis</author><year>2005</year><price>30.00</price>" +
+      "</book><book category=\"children\"><title lang=\"en\">Harry Potter</title>" +
+      "<author>J K. Rowling</author><year>2005</year><price>29.99</price>" +
+      "</book><book category=\"web\"><title lang=\"en\">XQuery Kick Start</title>" +
+      "<author>James McGovern</author><author>Per Bothner</author><author>Kurt Cagle</author>" +
+      "<author>James Linn</author><author>Vaidyanathan Nagarajan</author><year>2003</year>" +
+      "<price>49.99</price></book><book category=\"web\"><title lang=\"en\">Learning XML</title>" +
+      "<author>Erik T. Ray</author><year>2003</year><price>39.95</price></book></bookstore>"
+  val xPath : String = "SELECT xpath(" + "'" + xml + "'," + "'/bookstore/book/author/text()')"
+  val xPath_Boolean_true : String = "SELECT xpath_boolean(" + "'" + xml + "'," +
+    "'/bookstore/book/price')"
+  val xPath_Boolean_false : String = "SELECT xpath_boolean(" + "'" + xml + "'," +
+    "'/bookstore/book/publisher')"
+  val xPath_double : String = "SELECT xpath_double(" + "'" + xml + "'," +
+    "'sum(/bookstore/book/price)')"
+  val xPath_float : String = "SELECT xpath_double(" + "'" + xml + "'," +
+    "'sum(/bookstore/book/oldprice)')"
 }
