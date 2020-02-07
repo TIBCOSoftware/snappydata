@@ -663,6 +663,22 @@ class SQLFunctions extends SnappySQLJob {
     val xPath_float_sparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath_float)
     SnappyTestUtils.assertQueryFullResultSet(snc, xPath_float_sncDF, xPath_float_sparkDF,
       "Q33_xpath_float", "column", pw, sqlContext, true)
+    val xPath_int_sncDF : DataFrame = snc.sql(SQLFunctionsUtils.xPath_int)
+    val xPath_int_sparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath_int)
+    SnappyTestUtils.assertQueryFullResultSet(snc, xPath_int_sncDF, xPath_int_sparkDF,
+      "Q34_xpath_int", "column", pw, sqlContext, true)
+    val xPath_long_sncDF : DataFrame = snc.sql(SQLFunctionsUtils.xPath_long)
+    val xPath_long_sparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath_long)
+    SnappyTestUtils.assertQueryFullResultSet(snc, xPath_long_sncDF, xPath_long_sparkDF,
+      "Q35_xpath_long", "column", pw, sqlContext, true)
+    val xPath_number_sncDF : DataFrame = snc.sql(SQLFunctionsUtils.xPath_number)
+    val xPath_number_sparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath_number)
+    SnappyTestUtils.assertQueryFullResultSet(snc, xPath_number_sncDF, xPath_number_sparkDF,
+      "Q36_xpath_number", "column", pw, sqlContext, true)
+    val xPath_short_sncDF : DataFrame = snc.sql(SQLFunctionsUtils.xPath_short)
+    val xPath_short_sparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath_short)
+    SnappyTestUtils.assertQueryFullResultSet(snc, xPath_short_sncDF, xPath_short_sparkDF,
+      "Q37_xpath_short", "column", pw, sqlContext, true)
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
   }

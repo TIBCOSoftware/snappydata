@@ -360,4 +360,12 @@ object SQLFunctionsUtils {
     "'sum(/bookstore/book/price)')"
   val xPath_float : String = "SELECT xpath_double(" + "'" + xml + "'," +
     "'sum(/bookstore/book/oldprice)')"
+  val xPath_int : String = "SELECT xpath_int(" + "'" + xml + "'," +
+    "'sum(/bookstore/book/year)')"
+  val xPath_long : String = "SELECT xpath_long(" + "'" + xml + "'," +
+    "'sum(/bookstore/book/year)')"
+  val xPath_number : String = "SELECT xpath_number(" + "'" + xml + "'," +
+    "'sum(/bookstore/book/price)')"
+  val xPath_short : String = "SELECT xpath_short(" + "'" + xml + "'," +
+    "'sum(/bookstore/book/newprice)')"
 }
