@@ -339,7 +339,9 @@ object SQLFunctionsUtils {
   val dropRowTbl_spc_soundex : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
-    *  48. xpath, 49. xpath_boolean, 50. xpath_double, 51. xpath_float
+    *  48. xpath, 49. xpath_boolean, 50. xpath_double, 51. xpath_float,
+    *  52. xpath_int, 53. xpath_long, 54. xpath_number, 55. xpath_short,
+    *  56. xpath_string.
     */
   val xml : String = "<bookstore>" +
     "<book category=\"cooking\"><title lang=\"en\">Everyday Italian</title>" +
@@ -368,4 +370,6 @@ object SQLFunctionsUtils {
     "'sum(/bookstore/book/price)')"
   val xPath_short : String = "SELECT xpath_short(" + "'" + xml + "'," +
     "'sum(/bookstore/book/newprice)')"
+  val xPath_string : String = "SELECT xpath_string(" + "'" + xml + "'," +
+    "'/bookstore/book/title')"
 }

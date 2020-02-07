@@ -641,7 +641,9 @@ class SQLFunctions extends SnappySQLJob {
     pw.flush()
     /**
       *  Below queries test the functions :
-      *  48. xpath, 49. xpath_boolean, 50. xpath_double, 51. xpath_float
+      *  48. xpath, 49. xpath_boolean, 50. xpath_double, 51. xpath_float,
+      *  52. xpath_int, 53. xpath_long, 54. xpath_number, 55. xpath_short,
+      *  56. xpath_string.
       */
     val xPath_SnappyDF : DataFrame = snc.sql(SQLFunctionsUtils.xPath)
     val xPath_SparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath)
@@ -679,6 +681,10 @@ class SQLFunctions extends SnappySQLJob {
     val xPath_short_sparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath_short)
     SnappyTestUtils.assertQueryFullResultSet(snc, xPath_short_sncDF, xPath_short_sparkDF,
       "Q37_xpath_short", "column", pw, sqlContext, true)
+    val xPath_string_sncDF : DataFrame = snc.sql(SQLFunctionsUtils.xPath_string)
+    val xPath_string_sparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath_string)
+    SnappyTestUtils.assertQueryFullResultSet(snc, xPath_string_sncDF, xPath_string_sparkDF,
+      "Q38_xpath_string", "column", pw, sqlContext, true)
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
   }
