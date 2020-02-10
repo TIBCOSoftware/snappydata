@@ -763,6 +763,43 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.dropRowTbl_operators)
     spark.sql(SQLFunctionsUtils.dropColTbl_operators)
     spark.sql(SQLFunctionsUtils.dropRowTbl_operators)
+    pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  64. row_number(), 65. rank(), 66. dense_rank()
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_rownumber_rank_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_rownumber_rank_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_rownumber_rank)
+    snc.sql(SQLFunctionsUtils.createRowTbl_rownumber_rank)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 12) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rownumber_rank(i))
+    }
+    for(i <- 0 to 12) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rownumber_rank(i))
+    }
+    for(i <- 0 to 12) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rownumber_rank(i))
+    }
+    for(i <- 0 to 12) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rownumber_rank(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_rownumber_rank,
+      "Q43_rowno_rank", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_rownumber_rank,
+      "Q44_rowno_rank", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_rownumber_rank)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_rownumber_rank)
+    spark.sql(SQLFunctionsUtils.dropColTbl_rownumber_rank)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_rownumber_rank)
     pw.println()
     pw.flush()
 

@@ -418,4 +418,42 @@ object SQLFunctionsUtils {
     "n1<=>s1,n2<=>s2 FROM " + rowTbl + " ORDER BY id"
   val dropColTbl_operators : String = dropTbl  + columnTbl
   val dropRowTbl_operators : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  64. row_number(), 65. rank(), 66. dense_rank()
+    */
+  val rownumber_rank = new Array[String](13)
+  rownumber_rank(0) = "('Suresh','First',98.6)"
+  rownumber_rank(1) = "('Suresh','First',98.4)"
+  rownumber_rank(2) = "('Mahesh','First',99.4)"
+  rownumber_rank(3) = "('Giri','Second',96.7)"
+  rownumber_rank(4) = "('Neel','Third',80.8)"
+  rownumber_rank(5) = "('Suresh','First',98.6)"
+  rownumber_rank(6) = "('Viru','Second',91.3)"
+  rownumber_rank(7) = "('Mahi','Second',99.9)"
+  rownumber_rank(8) = "('Sachin','Third',97.4)"
+  rownumber_rank(9) = "('Anu','Second',76.7)"
+  rownumber_rank(10) = "('Harish','Third',67.4)"
+  rownumber_rank(11) = "('Kapil','Third',88.9)"
+  rownumber_rank(12) = "('Rahul','Fifth',60.3)"
+  val createColTypeTbl_rownumber_rank_Spark : String = createTbl + columnTbl +
+    "(name string,class string,total double)"
+  val createRowTypeTbl_rownumber_rank_Spark : String = createTbl + rowTbl +
+    "(name string,class string,total double)"
+  val createColumnTbl_rownumber_rank : String = createTbl + columnTbl +
+    "(name string,class string,total double) " + usingCol
+  val createRowTbl_rownumber_rank : String = createTbl + rowTbl +
+    "(name string,class string,total double) " + usingRow
+  val select_ColTbl_rownumber_rank : String = "SELECT *," +
+    "row_number() over (partition by class order by total) row_number," +
+    "rank() over (partition by class order by total) rank," +
+    " dense_rank() over (partition by class order by total) dense_rank " +
+    "FROM " + columnTbl
+  val select_RowTbl_rownumber_rank : String = "SELECT *," +
+    "row_number() over (partition by class order by total) row_number," +
+    "rank() over (partition by class order by total) rank," +
+    " dense_rank() over (partition by class order by total) dense_rank " +
+    "FROM " + rowTbl
+  val dropColTbl_rownumber_rank : String = dropTbl  + columnTbl
+  val dropRowTbl_rownumber_rank : String = dropTbl + rowTbl
 }
