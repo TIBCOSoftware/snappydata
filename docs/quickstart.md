@@ -10,7 +10,7 @@ Depending on your preference, you can try any of the following options:
 * [TIBCO ComputeDB with Docker image](quickstart/getting_started_with_docker_image.md)
 
 * [TIBCO ComputeDB on Kubernetes](quickstart/getting_started_on_kubernetes.md)
-* [TIBCO ComputeDB with Spark distribution](quickstart/getting_started_with_your_spark_distribution.md)
+* [TIBCO ComputeDB with third party Spark distribution](quickstart/getting_started_with_your_spark_distribution.md)
 
 Then you can use the following instructions and examples to try out TIBCO ComputeDB in 5 minutes or less:
 
