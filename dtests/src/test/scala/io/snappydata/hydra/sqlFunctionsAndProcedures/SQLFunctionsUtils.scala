@@ -394,4 +394,28 @@ object SQLFunctionsUtils {
     "isnotnull(s4) FROM " + rowTbl + " ORDER BY id"
   val dropColTbl_trim_isnotnull : String = dropTbl  + columnTbl
   val dropRowTbl_trim_isnotnull : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  61. =, 62. ==, 63. <=>
+    */
+  val operators = new Array[String](6)
+  operators(0) = "(1,100,250,'100','abc')"
+  operators(1) = "(2,10,23,'10','xyz')"
+  operators(2) = "(3,5,9,'5','9')"
+  operators(3) = "(4,44,56,null,null)"
+  operators(4) = "(5,34,78,'76','98')"
+  val createColTypeTbl_operators_Spark : String = createTbl + columnTbl +
+    "(id int,n1 int,n2 int,s1 string,s2 string)"
+  val createRowTypeTbl_operators_Spark : String = createTbl + rowTbl +
+    "(id int,n1 int,n2 int,s1 string,s2 string)"
+  val createColumnTbl_operators : String = createTbl + columnTbl +
+    "(id int,n1 int,n2 int,s1 string,s2 string) " + usingCol
+  val createRowTbl_operators : String = createTbl + rowTbl +
+    "(id int,n1 int,n2 int,s1 string,s2 string) " + usingRow
+  val select_ColTbl_operators : String = "SELECT id,n1=s1,n2=s2,n1==s1,n2==s2," +
+    "n1<=>s1,n2<=>s2 FROM " + columnTbl + " ORDER BY id"
+  val select_RowTbl_operators : String = "SELECT id,n1=s1,n2=s2,n1==s1,n2==s2," +
+    "n1<=>s1,n2<=>s2 FROM " + rowTbl + " ORDER BY id"
+  val dropColTbl_operators : String = dropTbl  + columnTbl
+  val dropRowTbl_operators : String = dropTbl + rowTbl
 }

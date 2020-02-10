@@ -723,6 +723,48 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_trim_isnotnull)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  61. =, 62. ==, 63. <=>
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_operators_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_operators_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_operators)
+    snc.sql(SQLFunctionsUtils.createRowTbl_operators)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 4) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.operators(i))
+    }
+    for(i <- 0 to 4) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.operators(i))
+    }
+    for(i <- 0 to 4) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.operators(i))
+    }
+    for(i <- 0 to 4) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.operators(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    val operators_sncDF_Col : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_operators)
+    val operators_sparkDF_Col : DataFrame = spark.sql(SQLFunctionsUtils.select_ColTbl_operators)
+    SnappyTestUtils.assertQueryFullResultSet(snc, operators_sncDF_Col, operators_sparkDF_Col,
+      "Q41_operators", "column", pw, sqlContext, true)
+    val operators_sncDF_Row : DataFrame = snc.sql(SQLFunctionsUtils.select_RowTbl_operators)
+    val operators_sparkDF_Row : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_operators)
+    SnappyTestUtils.assertQueryFullResultSet(snc, operators_sncDF_Row, operators_sparkDF_Row,
+      "Q42_operators", "row", pw, sqlContext, true)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_operators)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_operators)
+    spark.sql(SQLFunctionsUtils.dropColTbl_operators)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_operators)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
