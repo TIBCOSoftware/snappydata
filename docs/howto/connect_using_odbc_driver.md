@@ -25,7 +25,7 @@ To download and install the ODBC driver:
     |32-bit for 32-bit platform|TIB_compute-odbc_1.2.0_win_x86.zip|
     |64-bit for 64-bit platform|TIB_compute-odbc_1.2.0_win_x64.zip|
 
-4. Double-click on the **SnappyDataODBCDriverInstaller.msi** file, and follow the steps to complete the installation.
+4. Double-click on the corresponding **msi** file, and follow the steps to complete the installation.
 
 	!!! Note
 		Ensure that [TIBCO ComputeDB is installed](../install.md) and the [TIBCO ComputeDB cluster is running](start_snappy_cluster.md).
