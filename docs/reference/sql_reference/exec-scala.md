@@ -40,9 +40,10 @@ The functioning of the interpreter is same as that of the interactive [Spark-she
 *	**options** is an optional part of the syntax. If it is present, then after the keyword **options**, you can specify the allowed options inside parentheses. Currently, only one optional parameter, that is **returnDF**, can be specified with the execution. For this option, you can provide the name of any actual symbol in the Scala code, which is of type DataFrame. 
 Through the **returnDF** option, you can request the system to return the result of the specific dataframe, which got created as the result of the Scala code execution. By default, the **exec scala** just returns the output of each interpreted line, which the interpreter prints on the Console after executing each line. 
 
+<a id= examplesofexec> </a>
 ## Examples
 
-### Examples 1
+### Examples I
 
 Following are some examples to demonstrate the usage of **exec scala**. You can run these examples using [Snappy shell](../howto/use_snappy_shell.md).
 
@@ -50,10 +51,10 @@ Following are some examples to demonstrate the usage of **exec scala**. You can 
 *	A simple Scala code to define a value **x** and print it.
 
             exec scala val x = 5
-             /* This is a test
-             program */
-             // Just see the value of x
-             println(x);
+            /* This is a test
+            program */
+            // Just see the value of x
+            println(x);
             C0                                                                                                                              
             ------------------------------------------------------------------------------------------------------
             x: Int = 5
@@ -63,33 +64,31 @@ Following are some examples to demonstrate the usage of **exec scala**. You can 
 
 *	Create table using the available snappy session, which can be accessed through the variable ‘snappysession’. It then inserts a couple of rows, obtains a dataframe object, and then uses the **df.show** command.
 
-                snappy> exec scala snappysession.sql("create table t1(c1 int not null)")
-                  /* This is a data frame test */
-                  // Check the collect output
-                  snappysession.sql("insert into t1 values (1), (2)")
-                 val df = snappysession.table("t1")
-                 val cnt = df.count
-                 df.show;
-                C0                                                                                                                              
-                --------------------------------------------------------------------------------------------------
-                res4: org.apache.spark.sql.DataFrame = []                                                                                       
+			snappy> exec scala snappysession.sql("create table t1(c1 int not null)")
+            /* This is a data frame test */
+            // Check the collect output
+            snappysession.sql("insert into t1 values (1), (2)")
+            val df = snappysession.table("t1")
+            val cnt = df.count
+            df.show;
+            C0                                                                                                                              
+            --------------------------------------------------------------------------------------------------
+            res4: org.apache.spark.sql.DataFrame = []                                                                                       
 
-                res7: org.apache.spark.sql.DataFrame = [count: int]                                                                             
-                df: org.apache.spark.sql.DataFrame = [c1: int]                                                                                  
-                cnt: Long = 2                                                                                                                   
-                +---+                                                                                                                           
-                | c1|                                                                                                                           
-                +---+                                                                                                                           
-                |  2|                                                                                                                           
-                |  1|                                                                                                                           
-                +---+  
+            res7: org.apache.spark.sql.DataFrame = [count: int]                                                                             
+            df: org.apache.spark.sql.DataFrame = [c1: int]                                                                                  
+            cnt: Long = 2                                                                                                                   
+            +---+                                                                                                                           
+            | c1|                                                                                                                           
+            +---+                                                                                                                           
+            |  2|                                                                                                                           
+            |  1|                                                                                                                           
+            +---+  
 
-
-
-!!!Note
-	The variable **snappysession** is not declared anywhere; however, the above code uses it. The **snappysession** symbol name is for the object **SnappySession**, which represents this database connection. Similarly, **sc** is there to access the singleton SparkContext present on the lead node.
+    !!!Note
+        The variable **snappysession** is not declared anywhere; however, the above code uses it. The **snappysession** symbol name is for the object **SnappySession**, which represents this database connection. Similarly, **sc** is there to access the singleton SparkContext present on the lead node.
     
-### Examples 2
+### Examples II
 
 *	Executing scala code snippet via JDBC or ODBC connection on to the TIBCO ComputeDB cluster.
 
@@ -98,17 +97,14 @@ Following are some examples to demonstrate the usage of **exec scala**. You can 
             val prepDataCommand = 
               """ exec scala 
                  val dataDF = snappysession.read.option("header", "true").csv("../path/to/customers.csv")
-
-                // Variable 'snappysession' is injected to your program automatically. Refers to a SnappySession instance.
-
+                 // Variable 'snappysession' is injected to your program automatically. 
+                 // Refers to a SnappySession instance.
                  val newDF = dataDF.withColumn("promotion", "$20")
                  newDF.createOrReplaceTempView("customers")
                  //OR, store in in-memory table
                  newDF.write.format("column").saveAsTable("customers")
               """
-
             // Acquire JDBC connection and execute Spark program
-
             Class.forName("io.snappydata.jdbc.ClientDriver")
             val conn = DriverManager.getConnection("jdbc:snappydata://localhost:1527/")
             conn.createStatement().executeSQL(prepDataCommand)
@@ -120,18 +116,17 @@ Following are some examples to demonstrate the usage of **exec scala**. You can 
                    val someDF = snappysession.table("customers").filter(..... )
              """
             ResultSet rs = conn.createStatement().executeSQL(getDataFromCDB)
-            
             //Use JDBC ResultSet API to fetch result. Data types will be mapped automatically
 
 *	Declaring a case class and then creating a dataset using it. Also creating another dataset and then getting a dataframe on it. Note the use of the option **returnDF** here. Through this option, you can request the system to return the result of the specific dataframe you want, which got created as the result of the Scala code execution. 
 Here both **ds1** and **ds2** are created. However, the caller wants the output of the **ds2** and hence specified the symbol **ds2** in the options. By default, the **exec scala** returns the output of each interpreted line, which the interpreter prints on the console after executing each line.
 
             exec scala options(returnDF 'ds2') case class ClassData(a: String, b: Int)
-                  val sqlContext= new org.apache.spark.sql.SQLContext(sc)
-                  import sqlContext.implicits._
-                  val ds1 = Seq(("a", 1), ("b", 2), ("c", 3)).toDF("a", "b").as[ClassData]
-                  var rdd = sc.parallelize(Seq(("a", 1), ("b", 2), ("c", 3)), 1)
-                  val ds2 = rdd.toDF("a", "b").as[ClassData];
+            val sqlContext= new org.apache.spark.sql.SQLContext(sc)
+            import sqlContext.implicits._
+            val ds1 = Seq(("a", 1), ("b", 2), ("c", 3)).toDF("a", "b").as[ClassData]
+            var rdd = sc.parallelize(Seq(("a", 1), ("b", 2), ("c", 3)), 1)
+            val ds2 = rdd.toDF("a", "b").as[ClassData];
             a                                                          |b          
             ---------------------------------------------------------------------------
             a                                                          |1          
@@ -141,8 +136,8 @@ Here both **ds1** and **ds2** are created. However, the caller wants the output 
             3 rows selected
 
 
-!!!Note
-	The use of the **sc** symbol here in this example. This is the global SparkContext present in the lead node.
+    !!!Note
+        The use of the **sc** symbol here in this example. This is the global SparkContext present in the lead node.
 
 
 <a id= secureexscala> </a>
