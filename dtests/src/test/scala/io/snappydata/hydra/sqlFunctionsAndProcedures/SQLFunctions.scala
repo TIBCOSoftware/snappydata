@@ -685,6 +685,45 @@ class SQLFunctions extends SnappySQLJob {
     val xPath_string_sparkDF : DataFrame = spark.sql(SQLFunctionsUtils.xPath_string)
     SnappyTestUtils.assertQueryFullResultSet(snc, xPath_string_sncDF, xPath_string_sparkDF,
       "Q38_xpath_string", "column", pw, sqlContext, true)
+    /**
+      *  Below queries test the functions :
+      *  57. trim, 58. ltrim, 59. rtrim, 60. isnotnull
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_trim_isnotnull_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_trim_isnotnull_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_trim_isnotnull)
+    snc.sql(SQLFunctionsUtils.createRowTbl_trim_isnotnull)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.trim_isnotnull(i))
+    }
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.trim_isnotnull(i))
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.trim_isnotnull(i))
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.trim_isnotnull(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_trim_isnotnull,
+      "Q39_trim_isnotnull", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_trim_isnotnull,
+      "Q40_trim_isnotnull", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_trim_isnotnull)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_trim_isnotnull)
+    spark.sql(SQLFunctionsUtils.dropColTbl_trim_isnotnull)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_trim_isnotnull)
+    pw.println()
+    pw.flush()
+
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
   }

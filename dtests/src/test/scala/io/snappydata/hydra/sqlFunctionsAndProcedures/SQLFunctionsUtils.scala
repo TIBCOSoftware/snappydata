@@ -372,4 +372,26 @@ object SQLFunctionsUtils {
     "'sum(/bookstore/book/newprice)')"
   val xPath_string : String = "SELECT xpath_string(" + "'" + xml + "'," +
     "'/bookstore/book/title')"
+  /**
+    *  Below queries test the functions :
+    *  57. trim, 58. ltrim, 59. rtrim, 60. isnotnull
+    */
+  val trim_isnotnull = new Array[String](2)
+  trim_isnotnull(0) = "(1,' TIBCO-ComputeDB ','       TIBCO-ComputeDB'," +
+    "'TIBCO-ComputeDB       ','JDBC Client')"
+  trim_isnotnull(1) = "(2,' DB Visualizer    ','     DB Visualizer','DB Visualizer         ',null)"
+  val createColTypeTbl_trim_isnotnull_Spark : String = createTbl + columnTbl +
+    "(id int,s1 string,s2 string,s3 string,s4 string)"
+  val createRowTypeTbl_trim_isnotnull_Spark : String = createTbl + rowTbl +
+    "(id int,s1 string,s2 string,s3 string,s4 string)"
+  val createColumnTbl_trim_isnotnull : String = createTbl + columnTbl +
+    "(id int,s1 string,s2 string,s3 string,s4 string) " + usingCol
+  val createRowTbl_trim_isnotnull : String = createTbl + rowTbl +
+    "(id int,s1 string,s2 string,s3 string,s4 string) " + usingRow
+  val select_ColTbl_trim_isnotnull : String = "SELECT id,trim(s1),ltrim(s2),rtrim(s3)," +
+    "isnotnull(s4) FROM " + columnTbl + " ORDER BY id"
+  val select_RowTbl_trim_isnotnull : String = "SELECT id,trim(s1),ltrim(s2),rtrim(s3)," +
+    "isnotnull(s4) FROM " + rowTbl + " ORDER BY id"
+  val dropColTbl_trim_isnotnull : String = dropTbl  + columnTbl
+  val dropRowTbl_trim_isnotnull : String = dropTbl + rowTbl
 }
