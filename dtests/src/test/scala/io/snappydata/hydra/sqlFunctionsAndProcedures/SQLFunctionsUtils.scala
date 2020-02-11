@@ -481,4 +481,32 @@ object SQLFunctionsUtils {
     "decode(encode(testStr,'us-ascii'),'utf-16') FROM " + rowTbl
   val dropColTbl_encode_decode : String = dropTbl  + columnTbl
   val dropRowTbl_encode_decode : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  69. bigint, 70. binary, 71. boolean, 72. decimal,
+    *  73. double, 74. float, 75. int, 76. smallint,
+    *  77. tinyint
+    */
+  val dataTypes = new Array[String](1)
+  dataTypes(0) = "(1,'45',56.7,121)"
+  val createColTypeTbl_dataTypes_Spark : String = createTbl + columnTbl +
+    "(id int,testStr string,testDouble double,testInt int)"
+  val createRowTypeTbl_dataTypes_Spark : String = createTbl + rowTbl +
+    "(id int,testStr string,testDouble double,testInt int)"
+  val createColumnTbl_dataTypes : String = createTbl + columnTbl +
+    "(id int,testStr string,testDouble double,testInt int) " + usingCol
+  val createRowTbl_dataTypes : String = createTbl + rowTbl +
+    "(id int,testStr string,testDouble double,testInt int) " + usingRow
+  val select_ColTbl_dataTypes : String = "SELECT id,bigint(testStr) as bigint," +
+    "binary(testStr) as binary,boolean(testStr) as boolean,decimal(testStr) as decimal," +
+    "double(testStr) as double,float(testStr) as float,int(testStr) as int," +
+    "smallint(testStr) as smallint,tinyint(testStr) as tinyint,decimal(testDouble) as decimal," +
+    "float(testDouble) as float,boolean(0),boolean(1) FROM " + columnTbl
+  val select_RowTbl_dataTypes : String = "SELECT id,bigint(testStr) as bigint," +
+    "binary(testStr) as binary,boolean(testStr) as boolean,decimal(testStr) as decimal," +
+    "double(testStr) as double,float(testStr) as float,int(testStr) as int," +
+    "smallint(testStr) as smallint,tinyint(testStr) as tinyint,decimal(testDouble) as decimal," +
+    "float(testDouble) as float,boolean(0),boolean(1) FROM " + rowTbl
+  val dropColTbl_dataTypes : String = dropTbl  + columnTbl
+  val dropRowTbl_dataTypes : String = dropTbl + rowTbl
 }

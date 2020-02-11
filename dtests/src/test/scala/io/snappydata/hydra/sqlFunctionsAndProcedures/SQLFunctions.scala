@@ -840,6 +840,41 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_encode_decode)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  69. bigint, 70. binary, 71. boolean, 72. decimal,
+      *  73. double, 74. float, 75. int, 76. smallint,
+      *  77. tinyint
+      */
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_dataTypes_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_dataTypes_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_dataTypes)
+    snc.sql(SQLFunctionsUtils.createRowTbl_dataTypes)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.dataTypes(0))
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.dataTypes(0))
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.dataTypes(0))
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.dataTypes(0))
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    val sncDataType_column : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_dataTypes)
+    val sparkDataType_column : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_dataTypes)
+    SnappyTestUtils.assertQueryFullResultSet(snc, sncDataType_column, sparkDataType_column,
+      "Q47_datatypes", "column", pw, sqlContext, true)
+    val sncDataType_Row : DataFrame = snc.sql(SQLFunctionsUtils.select_RowTbl_dataTypes)
+    val sparkDataType_Row : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_dataTypes)
+    SnappyTestUtils.assertQueryFullResultSet(snc, sncDataType_Row, sparkDataType_Row,
+      "Q48_datatypes", "row", pw, sqlContext, true)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_dataTypes)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_dataTypes)
+    spark.sql(SQLFunctionsUtils.dropColTbl_dataTypes)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_dataTypes)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
