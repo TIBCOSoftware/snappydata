@@ -802,6 +802,44 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_rownumber_rank)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  67. encode, 68. decode
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_encode_decode_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_encode_decode_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_encode_decode)
+    snc.sql(SQLFunctionsUtils.createRowTbl_encode_decode)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 3) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.encode_decode(i))
+    }
+    for(i <- 0 to 3) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.encode_decode(i))
+    }
+    for(i <- 0 to 3) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.encode_decode(i))
+    }
+    for(i <- 0 to 3) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.encode_decode(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_encode_decode,
+      "Q45_encode_decode", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_encode_decode,
+      "Q46_encode_decode", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_encode_decode)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_encode_decode)
+    spark.sql(SQLFunctionsUtils.dropColTbl_encode_decode)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_encode_decode)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()

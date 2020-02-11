@@ -456,4 +456,29 @@ object SQLFunctionsUtils {
     "FROM " + rowTbl
   val dropColTbl_rownumber_rank : String = dropTbl  + columnTbl
   val dropRowTbl_rownumber_rank : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  67. encode, 68. decode
+    */
+  val encode_decode = new Array[String](4)
+  encode_decode(0) = "(1,'TIBCO')"
+  encode_decode(1) = "(2,'ComputeDB')"
+  encode_decode(2) = "(3,'Spark')"
+  encode_decode(3) = "(4,'Docker')"
+  val createColTypeTbl_encode_decode_Spark : String = createTbl + columnTbl +
+    "(id int,testStr String)"
+  val createRowTypeTbl_encode_decode_Spark : String = createTbl + rowTbl +
+    "(id int,testStr String)"
+  val createColumnTbl_encode_decode : String = createTbl + columnTbl +
+    "(id int,testStr String) " + usingCol
+  val createRowTbl_encode_decode : String = createTbl + rowTbl +
+    "(id int,testStr String) " + usingRow
+  val select_ColTbl_encode_decode : String = "SELECT id,decode(encode(testStr,'utf-16'),'utf-8')," +
+    "decode(encode(testStr,'utf-8'),'us-ascii')," +
+    "decode(encode(testStr,'us-ascii'),'utf-16') FROM " + columnTbl
+  val select_RowTbl_encode_decode : String = "SELECT id,decode(encode(testStr,'utf-16'),'utf-8')," +
+    "decode(encode(testStr,'utf-8'),'us-ascii')," +
+    "decode(encode(testStr,'us-ascii'),'utf-16') FROM " + rowTbl
+  val dropColTbl_encode_decode : String = dropTbl  + columnTbl
+  val dropRowTbl_encode_decode : String = dropTbl + rowTbl
 }
