@@ -39,6 +39,10 @@
 #
 #     <private hostname/IP> -client-bind-address=<private hostname/IP> -client-port=1555 -hostname-for-clients=<public hostname/IP for clients>
 # 
+# NOTE: For AWS environment, the cluster launch script (snappy-start-all.sh) automatically appends above two properties
+# viz. -client-bind-address and -hostname-for-clients with appropriate values to the server's configuration, so that
+# users do not have to specify them here explicitly.
+#
 # For more configuration options,
 # see http://snappydatainc.github.io/snappydata/configuration/#configuration
 localhost

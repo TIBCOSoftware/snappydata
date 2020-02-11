@@ -34,6 +34,7 @@ object ClusterDetails {
     coresInfo += ("totalCores" -> csInstance.getTotalCPUCores)
 
     val clusterInfo = mutable.HashMap.empty[String, Any]
+    clusterInfo += ("startDateTime" -> csInstance.getStartTime);
     clusterInfo += ("coresInfo" -> coresInfo);
     clusterInfo += ("timeLine" ->
         csInstance.getUsageTrends(ClusterStatistics.TREND_TIMELINE));

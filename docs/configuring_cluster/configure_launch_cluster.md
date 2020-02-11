@@ -105,7 +105,6 @@ The following core properties must be set in the **conf/leads** file:
 |   heap-size     |  Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, `-heap-size=8g` </br> It is recommended to allocate minimum **6-8 GB** of heap size per lead node. If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the `eviction-heap-percentage` to 85.5% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if the JVM supports them.       |   |
 |  dir      |   Working directory of the member that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth.   | <product_home>/work  |
 |   classpath     |  Location of user classes required by the SnappyData Server. This path is appended to the current classpath   | Appended to the current classpath |
-|  zeppelin.interpreter.enable=true    |Enable the SnappyData Zeppelin interpreter. Refer [How to use Apache Zeppelin with SnappyData](/howto/use_apache_zeppelin_with_snappydata.md) |   |
 |   spark.executor.cores     | The number of cores to use on each server.    |   |
 |    spark.jars    |        |   |
 
@@ -118,10 +117,10 @@ localhost   -dir=/opt/snappydata/data/lead -heap-size=6g
 ```
 You can add a line for each of the Lead members that you want to launch. Typically only one. In production, you may launch two.
 
-In the following configuration, you are specifying the [number of cores to use on each server](/best_practices/setup_cluster.md#computenoscores) as well as enabling the SnappyData Zeppelin interpreter:
+In the following configuration, you are specifying the [number of cores to use on each server](/best_practices/setup_cluster.md#computenoscores):
 
 ```
-localhost -spark.executor.cores=16 -zeppelin.interpreter.enable=true
+localhost -spark.executor.cores=16
 ```
 
 !!!Tip

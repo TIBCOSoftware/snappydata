@@ -1,21 +1,21 @@
 # Working with Stratified Samples
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 ## Create Sample Tables
 
-You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark DataFrames, or sourced from an external data source such as S3 or HDFS. 
+You can create sample tables on datasets that can be sourced from any source supported in Spark/TIBCO ComputeDB. For instance, these can be TIBCO ComputeDB in-memory tables, Spark DataFrames, or sourced from an external data source such as S3 or HDFS.
+Creation of sample table will implicitly sample the data from the base table.
 
-Here is an SQL based example to create a sample on tables locally available in the SnappyData cluster. 
+Here is an SQL based example to create a sample on tables locally available in the TIBCO ComputeDB cluster. 
 
 ```pre
 CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI 
-  OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01') 
-  AS (SELECT * FROM NYCTAXI);
+  OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01'); 
+
 
 CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE 
-  OPTIONS (qcs 'hack_license', fraction '0.01') 
-  AS (SELECT * FROM TAXIFARE);
+  OPTIONS (qcs 'hack_license', fraction '0.01');
 ```
 
 Often your data set is too large to also fit in available cluster memory. If so, you can create an external table pointing to the source. 
@@ -23,13 +23,13 @@ In this example below, a sample table is created for an S3 (external) dataset:
 
 ```pre
 CREATE EXTERNAL TABLE TAXIFARE USING parquet 
-  OPTIONS(path 's3a://<AWS_SECRET_ACCESS_KEY>:<AWS_ACCESS_KEY_ID>@zeppelindemo/nyctaxifaredata_cleaned');
+  OPTIONS(path 's3a://<AWS_SECRET_ACCESS_KEY>:<AWS_ACCESS_KEY_ID>@computedb-test-data/nyctaxifaredata_cleaned');
 //Next, create the sample sourced from this table ..
 CREATE SAMPLE TABLE TAXIFARE_HACK_LICENSE_SAMPLE on TAXIFARE 
-  options  (qcs 'hack_license', fraction '0.01') AS (SELECT * FROM TAXIFARE);
+  options  (qcs 'hack_license', fraction '0.01');
 ```
 
-When creating a base table, if you have applied the **partition by** clause, the clause is also applied to the sample table. The sample table also inherits the **number of buckets**, **redundancy** and **persistence** properties from the base table.
+When creating a base table, if you have applied the **partition by** clause, the clause is also applied to the sample table.
 
 For sample tables, the **overflow** property is set to **False** by default. (For row and column tables the default value is  **True**). 
 
@@ -37,17 +37,22 @@ For example:
 
 ```pre
 CREATE TABLE BASETABLENAME <column details> 
-USING COLUMN OPTIONS (partition_by '<column_name_a>', Buckets '8', Redundancy '1')
+USING COLUMN OPTIONS (partition_by '<column_name_a>', Buckets '7', Redundancy '1')
 
 CREATE TABLE SAMPLETABLENAME <column details> 
 USING COLUMN_SAMPLE OPTIONS (qcs '<column_name_b>',fraction '0.05', 
 strataReservoirSize '50', baseTable 'baseTableName')
-// In this case, sample table 'sampleTableName' is partitioned by column 'column_name_a', has 7 buckets and 1 redundancy.
+
 ```
 
+
 !!! Note
-	* After a sample table is created from a base table, any changes to the base table (for example update and delete operations) is not automatically applied to the sample table.
-    
+	* After a sample table is created from a base table, any changes to the base table, (for example update and delete operations) is not automatically applied to the sample table.
+	* Howerver, if the data is populated in the main table using any of the following ways:
+		*	dataFrame.write
+		*	Using JDBC API batch insert
+		*	Insert into table values select * from x
+    Then the data is also sampled and put into sample table(s) if exists.
     * For successful creation of sample tables, the number of buckets in the sample table should be more than the number of nodes in the cluster. 
 
 ## QCS (Query Column Set) and Sample Selection
@@ -55,7 +60,7 @@ For stratified samples, you are required to specify the columns used for stratif
 
 QCS, which stands for Query Column Set is typically the most commonly used dimensions in your query GroupBy/Where and Having clauses. A QCS can also be constructed using SQL expressions - for instance, using a function like `hour (pickup_datetime)`.
 
-The parameter *fraction* represents the fraction of the full population that is managed in the sample. Intuition tells us that higher the fraction, more accurate the answers. But, interestingly, with large data volumes, you can get pretty accurate answers with a very small fraction. With most data sets that follow a normal distribution, the error rate for aggregations exponentially drops with the fraction. So, at some point, doubling the fraction does not drop the error rate. SDE always attempts to adjust its sampling rate for each stratum so that there is enough representation for all sub-groups. 
+The parameter *fraction* represents the fraction of the full population that is managed in the sample. Intuition tells us that higher the fraction, more accurate the answers. But, interestingly, with large data volumes, you can get pretty accurate answers with a very small fraction. With most data sets that follow a normal distribution, the error rate for aggregations exponentially drops with the fraction. So, at some point, doubling the fraction does not drop the error rate. AQP always attempts to adjust its sampling rate for each stratum so that there is enough representation for all sub-groups. 
 For instance, in the above example, taxi drivers that have very few records may actually be sampled at a rate much higher than 1% while very active drivers (a lot of records) is automatically sampled at a lower rate. The algorithm always attempts to maintain the overall 1% fraction specified in the 'create sample' statement. 
 
 One can create multiple sample tables using different sample QCS and sample fraction for a given base table. 

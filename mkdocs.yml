@@ -1,4 +1,4 @@
-site_name: SnappyData™ 1.1.1
+site_name: SnappyData™ 1.2.0
 site_url: http://www.snappydata.io
 site_description: Project documentation for SnappyData
 site_author: SnappyData Team
@@ -14,8 +14,8 @@ pages:
 - 'Provisioning SnappyData':
     - 'System Requirements': 'install/system_requirements.md'
     - 'Installing SnappyData On-Premise': 'install/install_on_premise.md'
-    - 'Setup SnappyData Cluster on AWS': 'install/setting_up_cluster_on_amazon_web_services.md'
-    - 'Setup SnappyData Cluster on Kubernetes': 'kubernetes.md'
+    - 'Setting-up SnappyData Cluster on AWS': 'install/setting_up_cluster_on_amazon_web_services.md'
+    - 'Setting-up SnappyData Cluster on Kubernetes': 'kubernetes.md'
     - 'Building a Docker Image with SnappyData Binaries': 'quickstart/getting_started_with_docker_image.md'
     - 'Building SnappyData from Source files': 'install/building_from_source.md'
     - 'Upgrading SnappyData': 'install/upgrade.md'
@@ -23,8 +23,9 @@ pages:
 - 'Getting Started': 
     - 'On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
     - 'Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
-    - 'Docker Image': 'quickstart/getting_started_with_docker_image.md'
+#    - 'Docker Image': 'quickstart/getting_started_with_docker_image.md'
     - 'Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
+    - 'Using Apache Zeppelin with SnappyData': 'howto/use_apache_zeppelin_with_snappydata.md'
     - 'SnappyData Quickstart Guide': 'quickstart/snappydataquick_start.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
     - 'Benchmark 16-20x Faster Performance than Apache Spark': 'quickstart/performance_apache_spark.md'
@@ -73,11 +74,11 @@ pages:
     - 'How to Connect using JDBC Driver': 'howto/connect_using_jdbc_driver.md'
     - 'How to use SnappyData for any Spark Distribution': 'howto/using_snappydata_for_any_spark_dist.md'
     - 'How to Store and Retrieve Complex Data Types in JDBC Programs': 'howto/store_retrieve_complex_datatypes_JDBC.md'
-    - 'How to Store and Query JSON Objects': 'howto/store_and_query_json_objects.md'
+#    - 'How to Store and Query JSON Objects': 'howto/store_and_query_json_objects.md'
     - 'How to Store and Query Objects': 'howto/store_and_query_objects.md'
     - 'How to use Stream Processing with SnappyData': 'howto/use_stream_processing_with_snappydata.md'
     - 'How to use Transactions Isolation Levels': 'howto/use_transactions_isolation_levels.md'
-    - 'How to use Synopsis Data Engine to Run Approximate Queries': 'howto/use_synopsis_data_engine_to_run_approximate_queries.md'
+    - 'How to use Approximate Query Processing (AQP) to Run Approximate Queries': 'howto/use_synopsis_data_engine_to_run_approximate_queries.md'
     - 'How to use Python to Create Tables and Run Queries': 'howto/use_python_to_create_tables_and_run_queries.md'
     - 'How to Connect using ODBC Driver': 'howto/connect_using_odbc_driver.md'
     - 'How to Connect to the Cluster from External Network': 'howto/connect_to_the_cluster_from_external_clients.md'
@@ -95,6 +96,8 @@ pages:
     - 'Managing JAR Files': 'programming_guide/managing_jar_files.md'
     - 'Using Snappy Shell': 'programming_guide/using_snappydata_shell.md'
     - 'Using the Spark Shell and spark-submit': 'programming_guide/using_the_spark_shell_and_spark-submit.md'
+    - 'Using pyspark Shell': 'programming_guide/using_pyspark_shell.md'
+    - 'Executing Spark Scala Code using SQL': 'programming_guide/scala_interpreter.md'
     - 'Working with Hadoop YARN cluster Manager': 'programming_guide/working_with_hadoop_yarn_cluster_manager.md'
     - 'Using JDBC with SnappyData': 'programming_guide/using_jdbc_with_snappydata.md'
     - 'Accessing SnappyData Tables from any Spark (2.1+) Cluster': 'programming_guide/spark_jdbc_connector.md'
@@ -124,17 +127,22 @@ pages:
     - 'Sample Selection': 'sde/sample_selection.md'
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
-- 'Working with External Data Sources': 'connectors/connector.md'
-- 'Working with External Data Sources':
-    - 'Deploying Third Party Connectors': 'connectors/deployment_dependency_jar.md'  
+- 'Working with Data Sources': 'connectors/connector.md'  
+- 'Working with Data Sources':
+    - 'Supported Data Formats': 'Data/data_formats.md'
+    - 'Accessing Cloud Storages': 'connectors/access_cloud_data.md'
+    - 'Connecting to External Hive Metastores': 'Data/external_hive_support.md' 
     - 'Using the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
     - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
+    - 'Deploying Third Party Connectors': 'connectors/deployment_dependency_jar.md'
 - 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
 - 'Managing and Monitoring':
     - 'SnappyData Monitoring UI': 'monitoring/monitoring.md'
     - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
     - 'Configuring Logging': 'monitoring/configure_logging.md'
-    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'    
+    - 'Monitoring with Metrics': 'monitoring/metrics.md'
+    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'  
+    - 'Recovering Data During Cluster Failures': 'monitoring/recoveringdata.md'  
 # -- Topic - Reference Guide
 - 'Managing Security': 'security/security.md'
 - 'Managing Security': 
@@ -193,11 +201,17 @@ pages:
             - 'DEPLOY PACKAGE': 'reference/sql_reference/deploy_package.md'
             - 'DEPLOY JAR': 'reference/sql_reference/deploy_jar.md'
             - 'UNDEPLOY': 'reference/sql_reference/undeploy.md'
+        - 'exec scala': 'reference/sql_reference/exec-scala.md' 
+        - 'EXPLAIN': 'reference/sql_reference/explain.md'
         - 'GRANT': 'reference/sql_reference/grant.md'
+        - 'GRANT ALL': 'reference/sql_reference/grant-all.md'
         - 'INSERT': 'reference/sql_reference/insert.md'
         - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
+        - 'LIST': 'reference/sql_reference/list.md'
+        - 'PIVOT': 'reference/sql_reference/pivot.md'
         - 'PUT INTO': 'reference/sql_reference/put-into.md'
         - 'REVOKE': 'reference/sql_reference/revoke.md'
+        - 'REVOKE ALL': 'reference/sql_reference/revoke_all.md'
         - 'SELECT': 'reference/sql_reference/select.md'
         - 'SET ISOLATION': 'reference/sql_reference/set-isolation.md'
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
@@ -212,6 +226,8 @@ pages:
         - 'SET_TRACE_FLAG': 'reference/inbuilt_system_procedures/set-trace-flag.md'
         - 'SYS.REMOVE_METASTORE_ENTRY': 'reference/inbuilt_system_procedures/sys_remove_metastore_entry.md'
         - 'DSID': 'reference/inbuilt_system_procedures/dsid.md'
+        - 'SYS.EXPORT_DDLS': 'reference/inbuilt_system_procedures/export_ddl.md'
+        - 'SYS.EXPORT_DATA': 'reference/inbuilt_system_procedures/export_data.md'
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 
         - 'MEMBERS': 'reference/system_tables/members.md'
@@ -228,6 +244,7 @@ pages:
         - 'revoke-missing-disk-store': 'reference/command_line_utilities/store-revoke-missing-disk-stores.md'
         - 'unblock-disk-store': 'reference/command_line_utilities/store-unblock-disk-stores.md'
         - 'run': 'reference/command_line_utilities/store-run.md'
+        - 'scala CLI': 'reference/command_line_utilities/scala-cli.md'
         - 'version': 'reference/command_line_utilities/store-version.md'
     - 'Snappy-SQL Shell Interactive Commands': 'reference/interactive_commands/store_command_reference.md'
     - 'Snappy-SQL Shell Interactive Commands':
@@ -307,6 +324,7 @@ pages:
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver': 'setting_up_odbc_driver-tableau_desktop.md'
     - 'Setting Up SnappyData JDBC Client and QlikView': 'setting_up_jdbc_driver_qlikview.md'
+- 'Experimental Features': 'experimental.md'
 - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting Common Problems':
     - 'Member Startup Problems': 'troubleshooting/member_startup_problems.md'
@@ -317,6 +335,7 @@ pages:
     - 'Troubleshooting Out-of-Memory (OOM) Error': 'troubleshooting/oom.md'
     - 'Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script': 'troubleshooting/collect_debug_artifacts.md'
     - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'  
+- 'Unsupported Third-Party Modules': 'unsupported.md'
 #- Additional Information: additional_files/additional_docs.md
 #- About:
 #   - Contributing: about/contributing.md
@@ -346,5 +365,5 @@ extra_css:
 markdown_extensions:
     - admonition 
     
-copyright: Copyright © 2017-2019 TIBCO Software Inc. All rights reserved. 
+copyright: Copyright © 2017-2020 TIBCO Software Inc. All rights reserved. 
 
