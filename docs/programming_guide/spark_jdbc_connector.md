@@ -3,6 +3,7 @@
 Spark applications can be run embedded inside the SnappyData cluster by submitting Jobs using **Snappy-Job.sh** or it can be run using the native [Smart Connector](/howto/spark_installation_using_smart_connector.md). However, from SnappyData 1.0.2 release the connector can only be used from a Spark 2.1 compatible cluster.
 If you are using a Spark version or distribution that is based on a version higher than 2.1 then, you can use the **SnappyData JDBC Extension Connector** as described below. 
 
+<a id="howto-sparkjdbc"></a>
 ## How can Spark Applications Connect to SnappyData using Spark JDBC? 
 
 Spark SQL supports reading and writing to databases using a built-in **JDBC data source**. Applications can configure and use JDBC like any other Spark data source queries return data frames and can be efficiently processed in Spark SQL or joined with other data sources. The JDBC data source is also easy to use from Java or Python.
@@ -36,13 +37,13 @@ The SnappyData connector internally figures out the structure of the result set 
 ### Connecting to SnappyData using the JDBC Extension Connector
 Following is a sample of Spark JDBC Extension setup and usage:
 
-1.	Include the **snappydata-jdbc** package in the Spark job with spark-submit or spark-shell. You can download the same from [here](https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.1/snappydata-jdbc_2.11-1.1.1.jar):
+1.	Include the **snappydata-jdbc** package in the Spark job with spark-submit or spark-shell. You can download the same from [here](https://github.com/SnappyDataInc/snappydata/releases/download/v1.2.0/snappydata-jdbc_2.11-1.2.0.jar):
 
-			$SPARK_HOME/bin/spark-shell --jars snappydata-jdbc-2.11_1.1.1.jar
+			$SPARK_HOME/bin/spark-shell --jars snappydata-jdbc-2.11_1.2.0.jar
   
 2.	Set the session properties.</br> The SnappyData connection properties (to enable auto-configuration of JDBC URL) and credentials can be provided in Spark configuration itself, or set later in SparkSession to avoid passing them in all the method calls. These properties can also be provided in **spark-defaults.conf** along with all the other Spark properties.  You can also set any of these properties in your app code. </br>Overloads of the above methods accepting **user+password** and **host+port **is also provided in case those properties are not set in the session or needs to be overridden. You can optionally pass additional connection properties similarly as in the **DataFrameReader.jdbc **method.</br> Following is a sample code of configuring the properties in **SparkConf**:
 
-			$SPARK_HOME/bin/spark-shell --jars snappydata-jdbc-2.11_1.1.1.jar --conf spark.snappydata.connection=localhost:1527 --conf spark.snappydata.user=<user> --conf spark.snappydata.password=<password>
+			$SPARK_HOME/bin/spark-shell --jars snappydata-jdbc-2.11_1.2.0.jar --conf spark.snappydata.connection=localhost:1527 --conf spark.snappydata.user=<user> --conf spark.snappydata.password=<password>
 
 3.	Import the required implicits in the job/shell code as follows:
 

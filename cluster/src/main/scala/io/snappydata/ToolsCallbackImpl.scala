@@ -19,19 +19,25 @@ package io.snappydata
 import java.io.{File, RandomAccessFile}
 import java.lang.reflect.InvocationTargetException
 import java.net.{URI, URLClassLoader}
+import java.util.Properties
 
 import scala.collection.JavaConverters._
-
 import com.gemstone.gemfire.cache.EntryExistsException
+import com.pivotal.gemfirexd.{Attribute, Constants}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.{ExtendibleURLClassLoader, LeadImpl}
-
+import io.snappydata.remote.interpreter.SnappyInterpreterExecute
+import io.snappydata.remote.interpreter.SnappyInterpreterExecute.PermissionChecker
 import org.apache.spark.executor.SnappyExecutor
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.catalog.CatalogTable
+import org.apache.spark.sql.execution.GrantRevokeOnExternalTable
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.execution.ui.SQLTab
@@ -40,6 +46,9 @@ import org.apache.spark.sql.internal.ContextJarUtils
 import org.apache.spark.ui.{JettyUtils, SnappyDashboardTab}
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkCallbacks, SparkContext, SparkFiles}
+
+import scala.collection.immutable.HashSet
+import scala.collection.mutable.ArrayBuffer
 
 object ToolsCallbackImpl extends ToolsCallback with Logging {
 
@@ -140,7 +149,8 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       if (!args(0).isEmpty) { // args(0) = appname-filename
         val appName = args(0).split('-')(0)
         // This url points to the jar on the file server
-        val url = Misc.getMemStore.getMetadataCmdRgn.get(ContextJarUtils.functionKeyPrefix + appName)
+        val urlObj = Misc.getMemStore.getMetadataCmdRgn.get(ContextJarUtils.functionKeyPrefix + appName)
+        val url: String = if (urlObj != null) urlObj.toString else null
         if (url != null && !url.isEmpty) {
           val executor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
           val cachedFileName = s"${url.hashCode}-1_cache"
@@ -183,6 +193,15 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     })
   }
 
+  override def invalidateReplClassLoader(replDir: String): Unit = {
+    try {
+      val snappyexecutor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
+      snappyexecutor.invalidateReplLoader(replDir)
+    } catch {
+      case npe: NullPointerException => // ignore
+    }
+  }
+
   override def getAllGlobalCmnds: Array[String] = {
     GemFireXDUtils.waitForNodeInitialization()
     val r = Misc.getMemStore.getMetadataCmdRgn
@@ -190,10 +209,11 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       !(p.startsWith(ContextJarUtils.functionKeyPrefix) ||
           p.equals(Constant.CLUSTER_ID) ||
           p.startsWith(Constant.MEMBER_ID_PREFIX)))
-    r.getAll(keys.asJava).values().toArray.map(_.asInstanceOf[String])
+    r.getAll(keys.asJava).values().toArray.filter(
+      _.isInstanceOf[String]).map(_.asInstanceOf[String])
   }
 
-  override def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]] = {
+  override def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, Object]] = {
     GemFireXDUtils.waitForNodeInitialization()
     Misc.getMemStore.getMetadataCmdRgn.entrySet()
   }
@@ -247,5 +267,73 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     lead.urlclassloader = new ExtendibleURLClassLoader(lead.urlclassloader.getParent)
     updatedURLs.foreach(url => lead.urlclassloader.addURL(url))
     Thread.currentThread().setContextClassLoader(lead.urlclassloader)
+  }
+
+  override def updateIntpGrantRevoke(grantor: String, isGrant: Boolean, users: String): Unit = {
+    SnappyInterpreterExecute.handleNewPermissions(grantor, isGrant, users)
+  }
+
+  def updateGrantRevokeOnExternalTable(grantor: String, isGrant: Boolean,
+    td: TableIdentifier, users: String, catalogTable: CatalogTable): Unit = {
+
+    // this can be issued by only dbOwner or table owner
+    val tableOwner = catalogTable.database  // catalogTable.owner returns an OS user
+    val dbOwner = SnappyInterpreterExecute.dbOwner
+    if (!(grantor.equalsIgnoreCase(tableOwner) || grantor.equalsIgnoreCase(dbOwner))) {
+      throw StandardException.newException(
+        SQLState.AUTH_NO_OBJECT_PERMISSION, grantor,
+        "grant/revoke permission on ", "external table", td)
+    }
+
+    val fqtn: String = if (td.identifier.indexOf('.') > 0) td.identifier
+    else tableOwner + "." + td.identifier
+    val key = GrantRevokeOnExternalTable.getMetaRegionKey(fqtn)
+    PermissionChecker.addRemoveUserForKey(key, isGrant, users)
+  }
+
+
+  override def isUserAuthorizedForExtTable(currentUser: String,
+    metastoreTableIdentifier: Option[TableIdentifier]): Exception = {
+    if (!Misc.isSecurityEnabled) return null
+    if (metastoreTableIdentifier.isDefined) {
+      val identifier = metastoreTableIdentifier.get.identifier
+      val database = metastoreTableIdentifier.get.database.getOrElse(null)
+      val schema = if (identifier.indexOf('.') > 0) identifier.substring(0, identifier.indexOf('.'))
+      else if (database != null) {
+        database
+      } else {
+        currentUser
+      }
+      val table = metastoreTableIdentifier.get.table
+      val fqtn = if (table.indexOf('.') > 0) table
+      else schema + "." + table
+      val key = GrantRevokeOnExternalTable.getMetaRegionKey(fqtn)
+      if (!PermissionChecker.isAllowed(key, currentUser, schema)) {
+        logDebug(s"current user $currentUser not authorized to access $fqtn")
+        return StandardException.newException(
+          SQLState.AUTH_NO_EXECUTE_PERMISSION, currentUser, "external table", "", schema, table)
+      } else {
+        logDebug(s"current user $currentUser is authorized to access $fqtn")
+      }
+    }
+    null
+  }
+
+  override def refreshLdapGroupCallback(group: String): Unit = {
+    SnappyInterpreterExecute.refreshOnLdapGroupRefresh(group)
+  }
+
+  override def getIntpClassLoader(taskProps: Properties): ClassLoader = {
+    val prop = taskProps.getProperty(Constant.REPL_OUTPUT_DIR)
+    SnappyInterpreterExecute.getLoader(prop)
+  }
+
+  override def getScalaCodeDF(code: String,
+    session: SnappySession, options: Map[String, String]): Dataset[Row] = {
+    SnappyInterpreterExecute.getScalaCodeDF(code, session, options)
+  }
+
+  override def closeAndClearScalaInterpreter(uniqueId: Long): Unit = {
+    SnappyInterpreterExecute.closeRemoteInterpreter(uniqueId)
   }
 }

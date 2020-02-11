@@ -72,7 +72,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.1.1'
+  version = '1.2.0'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -108,7 +108,7 @@ allprojects {
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.1.1'
-    snappySparkVersion = '2.1.1.7'
+    snappySparkVersion = '2.1.1.8'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     sparkCurrentVersion = '2.3.2'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
@@ -117,6 +117,10 @@ allprojects {
     junitVersion = '4.12'
     mockitoVersion = '1.10.19'
     hadoopVersion = '2.7.7'
+    gcsHadoop2ConnectorVersion = 'hadoop2-2.0.0'
+    gcsHadoop3ConnectorVersion = 'hadoop3-2.0.0'
+    sparkAvroVersion = '4.0.0'
+    sparkXmlVersion = '0.4.1'
     scalatestVersion = '2.2.6'
     jettyVersion = '9.2.26.v20180806'
     guavaVersion = '14.0.1'
@@ -151,7 +155,7 @@ allprojects {
     antlr2Version = '2.7.7'
 
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.4'
+    snappyStoreVersion = '1.6.5'
     snappydataVersion = version
     pulseVersion = '1.5.1'
     zeppelinInterpreterVersion = '0.7.3.6'
@@ -163,12 +167,20 @@ allprojects {
     osFamilyName = osName.getFamilyName().replace(' ', '').toLowerCase()
     osVersion = System.getProperty('os.version')
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
+    buildDateShort = ''
+    if (rootProject.hasProperty('withDate')) {
+      buildDateShort = "${new Date().format('yyyyMMdd')}_"
+    }
+    devEdition = ''
+    if (rootProject.hasProperty('dev')) {
+      devEdition = "-dev"
+    }
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
-    sparkJobServerVersion = '0.6.2.10'
+    sparkJobServerVersion = '0.6.2.11'
     eclipseCollectionsVersion = '9.2.0'
     fastutilVersion = '8.2.2'
-    sparkMetricsLibVersion = '2.0.0'
+    snappySparkMetricsLibVersion = '2.0.0.1'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
@@ -568,7 +580,7 @@ subprojects {
 
   // apply default manifest
   if (rootProject.hasProperty('enablePublish')) {
-    createdBy = 'TIBCO Software Inc.'
+    createdBy = vendorName
   }
   jar {
     manifest {
@@ -914,6 +926,7 @@ task product(type: Zip) {
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:sparkProduct"
   dependsOn ':snappy-launcher:jar'
   dependsOn ':jdbcJar'
+  dependsOn ':copyShadowJars'
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def launcherProject = project(':snappy-launcher')
@@ -1074,6 +1087,11 @@ task product(type: Zip) {
           into "${snappyProductDir}/connectors"
           include "*.jar"
         }
+        copy {
+          from "${jdbcConnectorProject.projectDir}/../tdv-connector/lib"
+          into "${snappyProductDir}/connectors"
+          include "csjdbc8.jar"
+        }
       }
       if (hasGemFireConnectorProject) {
         copy {
@@ -1200,7 +1218,6 @@ ospackage {
 }
 
 buildRpm {
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
@@ -1216,7 +1233,6 @@ buildRpm {
 }
 
 buildDeb {
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
@@ -1235,13 +1251,11 @@ buildDeb {
 distTar {
   // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.tar.gz'
   if (isEnterpriseProduct) {
-    archiveName = 'TIB_compute_' + version + '_' + osFamilyName + '.tar.gz'
+    archiveName = 'TIB_compute' + devEdition + '_' + version + '_' + buildDateShort + osFamilyName + '.tar.gz'
   } else {
     classifier 'bin'
   }
   dependsOn product
-  // also package VSD
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
@@ -1255,13 +1269,11 @@ distTar {
 distZip {
   // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.zip'
   if (isEnterpriseProduct) {
-    archiveName = 'TIB_compute_' + version + '_' + osFamilyName + '.zip'
+    archiveName = 'TIB_compute' + devEdition + '_' + version + '_' + buildDateShort + osFamilyName + '.zip'
   } else {
     classifier 'bin'
   }
   dependsOn product
-  // also package VSD
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
@@ -1332,7 +1344,6 @@ task distInstallers {
 task distProduct {
   dependsOn product, distTar, distZip
   dependsOn distInstallers
-  dependsOn copyShadowJars
 }
 
 task generateSources {
@@ -1372,6 +1383,7 @@ task buildAll {
   dependsOn getTasksByName('assemble', true).collect { it.path }
   dependsOn getTasksByName('product', true).collect { it.path }
   dependsOn getTasksByName('testClasses', true).collect { it.path }
+  dependsOn copyShadowJars
   mustRunAfter cleanAll
 }
 task buildDtests {
@@ -1386,7 +1398,9 @@ task checkAll {
   if (rootProject.hasProperty('spark')) {
     dependsOn ':snappy-spark:check'
   }
-  dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
+  if (!rootProject.hasProperty('cluster.skip')) {
+    dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
+  }
   dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
   if (!rootProject.hasProperty('aqp.skip') && hasAqpProject && isEnterpriseProduct) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
@@ -1489,37 +1503,11 @@ task packagePulse { doLast {
   }
 } }
 
-task packageVSD { doLast {
-  String thirdparty = System.env.THIRDPARTYDIR
-  String vsdDir = ''
-
-  if (thirdparty == null || thirdparty.length() == 0) {
-    vsdDir = "${projectDir}/../thirdparty/vsd"
-  } else {
-    vsdDir = "${thirdparty}/vsd"
-  }
-
-  String vsdDistDir = "${vsdDir}/70/vsd"
-  if (file(vsdDistDir).canWrite()) {
-    println ''
-    println "Copying VSD from ${vsdDistDir} to ${snappyProductDir}/vsd"
-    println ''
-    delete "${snappyProductDir}/vsd"
-    copy {
-      from vsdDistDir
-      into "${snappyProductDir}/vsd"
-    }
-  } else {
-    println "Skipping VSD due to unwritable ${vsdDistDir}"
-  }
-} }
-
 task sparkPackage {
   dependsOn ":snappy-core_${scalaBinaryVersion}:sparkPackage"
 }
 
 packagePulse.mustRunAfter product
-packageVSD.mustRunAfter product
 packageZeppelinInterpreter.mustRunAfter product
 
 distTar.mustRunAfter clean, cleanAll, product
