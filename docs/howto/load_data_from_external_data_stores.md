@@ -1,7 +1,7 @@
 <a id="howto-external-source"></a>
 # How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc) 
 
-SnappyData comes bundled with the libraries to access HDFS (Apache compatible). You can load your data using SQL or DataFrame API.
+SnappyData comes bundled with the libraries to access HDFS (Apache compatible). You can load your data using SQL or DataFrame API. 
 
 ## Example - Loading data from CSV file using SQL
 
@@ -76,7 +76,7 @@ df.write.format("column").saveAsTable("columnTable")
 ## Importing Data using JDBC from a relational DB
 
 !!! Note
-	Before you begin, you must install the corresponding JDBC driver. To do so, copy the JDBC driver jar file in **/jars** directory located in the home directory and then restart the cluster.
+	Before you begin, you must install the corresponding JDBC driver. Refer to [Deploying Third Party Connectors](/connectors/deployment_dependency_jar.md).
 
 <!--**TODO: This is a problem- restart the cluster ? Must confirm package installation or at least get install_jar tested for this case. -- Jags**
 -->
@@ -135,7 +135,7 @@ Refer to the [Spark SQL JDBC source access for how to parallelize access when de
 The example below demonstrates how you can load data from a NoSQL store:
 
 !!! Note
-	Before you begin, you must install the corresponding Spark-Cassandra connector jar. To do so, copy the Spark-Cassandra connector jar file to the **/jars** directory located in the home directory and then restart the cluster.
+	Before you begin, you must install the corresponding Spark-Cassandra connector jar. Refer to [Deploying Third Party Connectors](/connectors/deployment_dependency_jar.md).
 
 <!--**TODO** This isn't a single JAR from what I know. The above step needs testing and clarity. -- Jags
 -->

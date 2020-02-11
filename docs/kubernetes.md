@@ -19,6 +19,8 @@ The following sections are included in this topic:
 
 *	[Accessing Logs and Configuring Log Level](#accesslogs)
 
+*	[Mounting ConfigMaps](#configmaps)
+
 
 <a id= prerequisites> </a>
 ## Prerequisites
@@ -189,7 +191,7 @@ bin/snappy-job.sh submit
 
 ## Stopping the SnappyData Cluster on Kubernetes
 
-To stop the SnappyData cluster on Kubernetes, you must delete the **SnappyData Helm **chart using the `helm delete` command.
+To stop the SnappyData cluster on Kubernetes, you must delete the **SnappyData Helm** chart using the `helm delete` command.
 
 ```
 $ helm delete --purge snappydata
@@ -241,7 +243,7 @@ servers:
 You can specify SnappyData [configuration parameters](https://snappydatainc.github.io/snappydata/configuring_cluster/configuring_cluster/#configuration-files) in the **servers.conf**, **locators.conf**, and **leaders.conf** attributes for servers, locators, and leaders respectively.
 
 <a id= kubernetesobjects> </a>
-## Kubernetes Obects Used in SnappyData Chart
+## Kubernetes Objects Used in SnappyData Chart
 
 This section provides details about the following Kubernetes objects that are used in SnappyData Chart:
 
@@ -362,4 +364,18 @@ $ cp log4j.properties.template log4j.properties
 When SnappyData chart is installed, the **log4.properties** file  will be used to configure the log level.
 
 <a id= deletehelm> </a>
+
+<a id= configmaps> </a>
+## Mounting ConfigMaps
+Files created in **charts/snappydata/conf/** are mounted on SnappyData server, lead, and locator pods as configmaps and copied into the product's **conf** directory. This is useful to make configuration files (such as spark-env.sh,
+metrics.properties etc.) available to the product. Template files are provided in the
+**charts/snappydata/conf/**. These template files can be renamed and edited to provide configuration.
+
+For example:
+
+```
+$ cd snappydata/conf/
+$ cp spark-env.sh.template spark-env.sh
+# now modify the spark-env.sh to specify configuration 
+```  
 
