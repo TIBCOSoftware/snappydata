@@ -875,6 +875,48 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_dataTypes)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  78. hash, 79. sha, 81. sha1, 82. sha2.
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_hash_sha_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_hash_sha_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_hash_sha)
+    snc.sql(SQLFunctionsUtils.createRowTbl_hash_sha)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.hash_sha(i))
+    }
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.hash_sha(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.hash_sha(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.hash_sha(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    val sncDF_hash_sha_column : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_hash_sha)
+    val sparkDF_hash_sha_column : DataFrame = spark.sql(SQLFunctionsUtils.select_ColTbl_hash_sha)
+    SnappyTestUtils.assertQueryFullResultSet(snc, sncDF_hash_sha_column, sparkDF_hash_sha_column,
+      "Q49_hash_sha", "column", pw, sqlContext, true)
+    val sncDF_hash_sha_row : DataFrame = snc.sql(SQLFunctionsUtils.select_RowTbl_hash_sha)
+    val sparkDF_hash_sha_row : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_hash_sha)
+    SnappyTestUtils.assertQueryFullResultSet(snc, sncDF_hash_sha_row, sparkDF_hash_sha_row,
+      "Q50_hash_sha", "row", pw, sqlContext, true)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_hash_sha)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_hash_sha)
+    spark.sql(SQLFunctionsUtils.dropColTbl_hash_sha)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_hash_sha)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()

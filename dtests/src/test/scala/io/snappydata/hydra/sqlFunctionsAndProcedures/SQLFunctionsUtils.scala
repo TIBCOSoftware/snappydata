@@ -509,4 +509,29 @@ object SQLFunctionsUtils {
     "float(testDouble) as float,boolean(0),boolean(1) FROM " + rowTbl
   val dropColTbl_dataTypes : String = dropTbl  + columnTbl
   val dropRowTbl_dataTypes : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  78. hash, 79. sha, 81. sha1, 82. sha2.
+    *   In this row table query has result mismatch, need to look.
+    */
+  val hash_sha = new Array[String](3)
+  hash_sha(0) = "(1,'ComputeDB')"
+  hash_sha(1) = "(2,'SnappyData')"
+  hash_sha(2) = "(3,'TDV')"
+  val createColTypeTbl_hash_sha_Spark : String = createTbl + columnTbl +
+    "(id int,testStr string)"
+  val createRowTypeTbl_hash_sha_Spark : String = createTbl + rowTbl +
+    "(id int,testStr string)"
+  val createColumnTbl_hash_sha : String = createTbl + columnTbl +
+    "(id int,testStr string) " + usingCol
+  val createRowTbl_hash_sha : String = createTbl + rowTbl +
+    "(id int,testStr string) " + usingRow
+  val select_ColTbl_hash_sha : String = "SELECT id,hash(1,testStr,Map('ABC','XYZ'))," +
+    "sha(testStr),sha1(testStr),sha2(testStr,224),sha2(testStr,256)," +
+    "sha2(testStr,384),sha2(testStr,512) FROM " + columnTbl
+  val select_RowTbl_hash_sha : String = "SELECT id,hash(1,testStr)," +
+    "sha(testStr),sha1(testStr),sha2(testStr,224),sha2(testStr,256)," +
+    "sha2(testStr,384),sha2(testStr,512) FROM " + rowTbl
+  val dropColTbl_hash_sha : String = dropTbl  + columnTbl
+  val dropRowTbl_hash_sha : String = dropTbl + rowTbl
 }
