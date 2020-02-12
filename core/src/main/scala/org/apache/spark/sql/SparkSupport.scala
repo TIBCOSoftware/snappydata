@@ -91,7 +91,9 @@ object SparkSupport extends Logging {
   private val implementations: Map[String, String] = Map(
     "2.4.5" -> s"$INTERNAL_PACKAGE.Spark245Internals",
     "2.4.4" -> s"$INTERNAL_PACKAGE.Spark244Internals",
+    "2.3.4" -> s"$INTERNAL_PACKAGE.Spark234Internals",
     "2.3.2" -> s"$INTERNAL_PACKAGE.Spark232Internals",
+    "2.1.3" -> s"$INTERNAL_PACKAGE.Spark213Internals",
     "2.1.1" -> s"$INTERNAL_PACKAGE.Spark211Internals",
     "2.1.0" -> s"$INTERNAL_PACKAGE.Spark210Internals"
   )

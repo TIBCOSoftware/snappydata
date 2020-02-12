@@ -31,11 +31,11 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 
 /**
- * Implementation of [[SparkInternals]] for Spark 2.1.1.
+ * Implementation of [[SparkInternals]] for Spark 2.1.3.
  */
-class Spark211Internals extends Spark21Internals {
+class Spark213Internals extends Spark21Internals {
 
-  override def version: String = "2.1.1"
+  override def version: String = "2.1.3"
 
   override def uncacheQuery(spark: SparkSession, plan: LogicalPlan,
       cascade: Boolean, blocking: Boolean): Unit = {
@@ -47,7 +47,7 @@ class Spark211Internals extends Spark21Internals {
   }
 
   override def newCaseInsensitiveMap(map: Map[String, String]): Map[String, String] = {
-    new CaseInsensitiveMap(map)
+    CaseInsensitiveMap[String](map)
   }
 
   // scalastyle:off
@@ -80,16 +80,16 @@ class Spark211Internals extends Spark21Internals {
   }
 
   override def newSmartConnectorExternalCatalog(session: SparkSession): SnappyExternalCatalog = {
-    new SmartConnectorExternalCatalog211(session)
+    new SmartConnectorExternalCatalog213(session)
   }
 
-  override def newCacheManager(): CacheManager = new SnappyCacheManager211
+  override def newCacheManager(): CacheManager = new SnappyCacheManager213
 }
 
 /**
  * Simple extension to CacheManager to enable clearing cached plans on cache create/drop.
  */
-final class SnappyCacheManager211 extends CacheManager {
+final class SnappyCacheManager213 extends CacheManager {
 
   override def cacheQuery(query: Dataset[_], tableName: Option[String],
       storageLevel: StorageLevel): Unit = {
@@ -114,7 +114,7 @@ final class SnappyCacheManager211 extends CacheManager {
   }
 }
 
-final class SmartConnectorExternalCatalog211(session: SparkSession)
+final class SmartConnectorExternalCatalog213(session: SparkSession)
     extends SmartConnectorExternalCatalog21(session) {
 
   override def alterTableSchema(schemaName: String, table: String, newSchema: StructType): Unit =

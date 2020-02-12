@@ -22,6 +22,7 @@ import org.apache.spark.SparkException
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogStorageFormat, CatalogTable, CatalogTableType}
 import org.apache.spark.sql.catalyst.plans.logical.Statistics
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.execution.CacheManager
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SparkInternals, SparkSession}
@@ -32,6 +33,10 @@ import org.apache.spark.sql.{SparkInternals, SparkSession}
 class Spark210Internals extends Spark21Internals {
 
   override def version: String = "2.1.0"
+
+  override def newCaseInsensitiveMap(map: Map[String, String]): Map[String, String] = {
+    new CaseInsensitiveMap(map)
+  }
 
   // scalastyle:off
 

@@ -193,10 +193,6 @@ abstract class Spark21Internals extends SparkInternals {
     WholeStageCodegenExec(plan)
   }
 
-  override def newCaseInsensitiveMap(map: Map[String, String]): Map[String, String] = {
-    new CaseInsensitiveMap(map)
-  }
-
   def createAndAttachSQLListener(sparkContext: SparkContext): Unit = {
     // if the call is done the second time, then attach in embedded mode
     // too since this is coming from ToolsCallbackImpl
