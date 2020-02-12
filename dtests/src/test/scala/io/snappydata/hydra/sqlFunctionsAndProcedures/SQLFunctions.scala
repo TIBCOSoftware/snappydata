@@ -877,7 +877,7 @@ class SQLFunctions extends SnappySQLJob {
     pw.flush()
     /**
       *  Below queries test the functions :
-      *  78. hash, 79. sha, 81. sha1, 82. sha2.
+      *  78. hash, 79. sha, 80. sha1, 81. sha2.
       */
     //  CREATE TABLE IN SPARK / SNAPPY.
     spark.sql(SQLFunctionsUtils.createColTypeTbl_hash_sha_Spark)
@@ -915,6 +915,46 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.dropRowTbl_hash_sha)
     spark.sql(SQLFunctionsUtils.dropColTbl_hash_sha)
     spark.sql(SQLFunctionsUtils.dropRowTbl_hash_sha)
+    pw.println()
+    pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  82. translate, 83. substring_index,
+      *  84. split, 85. sentences.
+      *   In this row table query has result mismatch, need to look.
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_translate_split_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_translate_split_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_translate_split)
+    snc.sql(SQLFunctionsUtils.createRowTbl_translate_split)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.translate_split(i))
+    }
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.translate_split(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.translate_split(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.translate_split(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_translate_split,
+      "Q51_translate_split", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_translate_split,
+      "Q52_translate_split", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_translate_split)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_translate_split)
+    spark.sql(SQLFunctionsUtils.dropColTbl_translate_split)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_translate_split)
     pw.println()
     pw.flush()
 

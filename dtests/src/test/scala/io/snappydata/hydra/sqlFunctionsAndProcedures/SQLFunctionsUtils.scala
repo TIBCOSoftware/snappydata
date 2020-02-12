@@ -511,7 +511,7 @@ object SQLFunctionsUtils {
   val dropRowTbl_dataTypes : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
-    *  78. hash, 79. sha, 81. sha1, 82. sha2.
+    *  78. hash, 79. sha, 80. sha1, 81. sha2.
     *   In this row table query has result mismatch, need to look.
     */
   val hash_sha = new Array[String](3)
@@ -534,4 +534,33 @@ object SQLFunctionsUtils {
     "sha2(testStr,384),sha2(testStr,512) FROM " + rowTbl
   val dropColTbl_hash_sha : String = dropTbl  + columnTbl
   val dropRowTbl_hash_sha : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  82. translate, 83. substring_index,
+    *  84. split, 85. sentences.
+    *   In this row table query has result mismatch, need to look.
+    */
+  val translate_split = new Array[String](3)
+  translate_split(0) = "(1,'CDB','TIBCO-ComputeDB-The InmemoryDatabase'," +
+    "'Spark SQL','TIBCO ComputeDB is a in-memory database and efficient compute engine')"
+  translate_split(1) = "(2,null,null,null,null)"
+  translate_split(2) = "(3,'','','','')"
+  val createColTypeTbl_translate_split_Spark : String = createTbl + columnTbl +
+    "(id int,str1 string,str2 string,str3 string,str4 string)"
+  val createRowTypeTbl_translate_split_Spark : String = createTbl + rowTbl +
+    "(id int,str1 string,str2 string,str3 string,str4 string)"
+  val createColumnTbl_translate_split : String = createTbl + columnTbl +
+    "(id int,str1 string,str2 string,str3 string,str4 string) " + usingCol
+  val createRowTbl_translate_split : String = createTbl + rowTbl +
+    "(id int,str1 string,str2 string,str3 string,str4 string) " + usingRow
+  val select_ColTbl_translate_split : String = "SELECT id,translate(str1,'CB','TV')," +
+    "substring_index(str2,'-',2),substring_index(str2,'-',1)," +
+    "substring_index(str2,'-',-1),substring_index(str2,'-',-2)," +
+    "substring_index(str2,'-',-3),split(str3,'S+'),sentences(str4) FROM " + columnTbl
+  val select_RowTbl_translate_split : String = "SELECT id,translate(str1,'CB','TV')," +
+    "substring_index(str2,'-',2),substring_index(str2,'-',1),substring_index(str2,'-',-1)," +
+    "substring_index(str2,'-',-2),substring_index(str2,'-',-3)," +
+    "split(str3,'S+'),sentences(str4) FROM " + rowTbl
+  val dropColTbl_translate_split : String = dropTbl  + columnTbl
+  val dropRowTbl_translate_split : String = dropTbl + rowTbl
 }
