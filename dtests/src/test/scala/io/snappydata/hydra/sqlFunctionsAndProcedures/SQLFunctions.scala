@@ -957,6 +957,42 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_translate_split)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  86. monotonically_increasing_id
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    snc.sql(SQLFunctionsUtils.createColumnTbl_monotonically_increasing_id)
+    snc.sql(SQLFunctionsUtils.createRowTbl_monotonically_increasing_id)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 36) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.monotonically_increasing_id(i))
+    }
+    for(i <- 0 to 36) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.monotonically_increasing_id(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    val sncDF_mono_Col : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_monotonically_increasing_id)
+    val sncDF_mono_Row : DataFrame =
+      snc.sql(SQLFunctionsUtils.select_RowTbl_monotonically_increasing_id)
+    pw.println("Column table -> monotonically_increasing_id : ")
+    val sncColResult = sncDF_mono_Col.collect()
+    for(i <- 0 to 36) {
+      pw.println(sncColResult(i).mkString(","))
+    }
+    pw.println()
+    pw.println("Row table -> monotonically_increasing_id : ")
+    val sncRowResult = sncDF_mono_Row.collect()
+    for(i <- 0 to 36) {
+      pw.println(sncRowResult(i).mkString(","))
+    }
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_monotonically_increasing_id)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_monotonically_increasing_id)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()

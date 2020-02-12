@@ -538,7 +538,6 @@ object SQLFunctionsUtils {
     *  Below queries test the functions :
     *  82. translate, 83. substring_index,
     *  84. split, 85. sentences.
-    *   In this row table query has result mismatch, need to look.
     */
   val translate_split = new Array[String](3)
   translate_split(0) = "(1,'CDB','TIBCO-ComputeDB-The InmemoryDatabase'," +
@@ -563,4 +562,56 @@ object SQLFunctionsUtils {
     "split(str3,'S+'),sentences(str4) FROM " + rowTbl
   val dropColTbl_translate_split : String = dropTbl  + columnTbl
   val dropRowTbl_translate_split : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  86. monotonically_increasing_id
+    */
+  val monotonically_increasing_id = new Array[String](38)
+  monotonically_increasing_id(0) = "('Andhra Pradesh','Hyderabad')"
+  monotonically_increasing_id(1) = "('Arunachal Pradesh','Itanagar')"
+  monotonically_increasing_id(2) = "('Assam','Dispur')"
+  monotonically_increasing_id(3) = "('Bihar','Patna')"
+  monotonically_increasing_id(4) = "('Chhattisgarh','Raipur')"
+  monotonically_increasing_id(5) = "('Goa','Panaji')"
+  monotonically_increasing_id(6) = "('Gujarat','Gandhinagar')"
+  monotonically_increasing_id(7) = "('Haryana','Chandigarh')"
+  monotonically_increasing_id(8) = "('Himachal Pradesh','Shimla')"
+  monotonically_increasing_id(9) = "('Jammu and Kashmir','Jammu/Srinagar')"
+  monotonically_increasing_id(10) = "('Jharkhand','Ranchi')"
+  monotonically_increasing_id(11) = "('Karnataka','Bengaluru')"
+  monotonically_increasing_id(12) = "('Kerala','Thiruvananthapuram')"
+  monotonically_increasing_id(13) = "('Madhya Pradesh','Bhopal')"
+  monotonically_increasing_id(14) = "('Maharashtra','Mumbai')"
+  monotonically_increasing_id(15) = "('Manipur','Imphal')"
+  monotonically_increasing_id(16) = "('Meghalaya','Shillong')"
+  monotonically_increasing_id(17) = "('Mizoram','Aizawl')"
+  monotonically_increasing_id(18) = "('Nagaland','Kohima')"
+  monotonically_increasing_id(19) = "('Odisha','Bhubaneswar')"
+  monotonically_increasing_id(20) = "('Punjab','Chandigarh')"
+  monotonically_increasing_id(21) = "('Rajasthan','Jaipur')"
+  monotonically_increasing_id(22) = "('Sikkim','Gangtok')"
+  monotonically_increasing_id(23) = "('Tamil Nadu','Chennai')"
+  monotonically_increasing_id(24) = "('Telangana','Hyderabad')"
+  monotonically_increasing_id(25) = "('Tripura','Agartala')"
+  monotonically_increasing_id(26) = "('Uttar Pradesh','Lucknow')"
+  monotonically_increasing_id(27) = "('Uttarakhand','Dehradun')"
+  monotonically_increasing_id(28) = "('West Bengal','Kolkata')"
+  monotonically_increasing_id(29) = "('Andaman and Nicobar Islands','Port Blair')"
+  monotonically_increasing_id(30) = "('Chandigarh','Chandigarh')"
+  monotonically_increasing_id(31) = "('Dadar and Nagar Haveli','Silvassa')"
+  monotonically_increasing_id(32) = "('Daman and Diu','Daman')"
+  monotonically_increasing_id(33) = "('Delhi','Delhi')"
+  monotonically_increasing_id(34) = "('Lakshadweep','Kavaratti')"
+  monotonically_increasing_id(35) = "('Puducherry','Pondicherry')"
+  monotonically_increasing_id(36) = "('Ladakh','Leh/Kargil')"
+  val createColumnTbl_monotonically_increasing_id : String = createTbl + columnTbl +
+    "(state string,capital string) " + usingCol
+  val createRowTbl_monotonically_increasing_id : String = createTbl + rowTbl +
+    "(state string,capital string) " + usingRow
+  val select_ColTbl_monotonically_increasing_id : String = "SELECT " +
+    "monotonically_increasing_id() + 1 as id,state,capital FROM " + columnTbl + " ORDER BY state"
+  val select_RowTbl_monotonically_increasing_id : String = "SELECT " +
+    "monotonically_increasing_id() + 1 as id,state,capital FROM " + rowTbl + " ORDER BY id"
+  val dropColTbl_monotonically_increasing_id : String = dropTbl  + columnTbl
+  val dropRowTbl_monotonically_increasing_id : String = dropTbl + rowTbl
 }
