@@ -1081,6 +1081,60 @@ here for backward compatibility.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.SampleDataFrameContractImpl" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SampleDataFrameContractImplextendsSampleDataFrameContractwithProductwithSerializable"></a>
+      <a id="SampleDataFrameContractImpl:SampleDataFrameContractImpl"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SampleDataFrameContractImpl.html"><span class="name">SampleDataFrameContractImpl</span></a><span class="params">(<span name="session">session: <a href="SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="frame">frame: <a href="SampleDataFrame.html" class="extype" name="org.apache.spark.sql.SampleDataFrame">SampleDataFrame</a></span>, <span name="logicalPlan">logicalPlan: <a href="execution/StratifiedSample.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSample">StratifiedSample</a></span>)</span><span class="result"> extends <a href="SampleDataFrameContract.html" class="extype" name="org.apache.spark.sql.SampleDataFrameContract">SampleDataFrameContract</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@SampleDataFrameContractImplextendsSampleDataFrameContractwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Encapsulates a DataFrame created after stratified sampling.</p>
+    </li><li name="org.apache.spark.sql.SamplePartition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SamplePartitionextendsPartition"></a>
+      <a id="SamplePartition:SamplePartition"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SamplePartition.html"><span class="name">SamplePartition</span></a><span class="result"> extends <a href="../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@SamplePartitionextendsPartition" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.SampledCachedRDD" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SampledCachedRDDextendsRDD[org.apache.spark.sql.catalyst.InternalRow]"></a>
+      <a id="SampledCachedRDD:SampledCachedRDD"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SampledCachedRDD.html"><span class="name">SampledCachedRDD</span></a><span class="result"> extends <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@SampledCachedRDDextendsRDD[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Encapsulates an RDD over all the cached samples for a sampled table.</p><div class="fullcomment"><div class="comment cmt"><p>Encapsulates an RDD over all the cached samples for a sampled table.
+Parallelizes execution using the hashmap segment configuration on the nodes
+with each partition handling one or more segments of the hashmap on a node.
+</p></div></div>
     </li><li name="org.apache.spark.sql.SaveMode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SaveModeextendsEnum[org.apache.spark.sql.SaveMode]"></a>
       <a id="SaveMode:SaveMode"></a>
@@ -1094,6 +1148,43 @@ here for backward compatibility.
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.package@SaveModeextendsEnum[org.apache.spark.sql.SaveMode]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.SnappyAQPParser" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SnappyAQPParserextendsSnappyParser"></a>
+      <a id="SnappyAQPParser:SnappyAQPParser"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyAQPParser.html"><span class="name">SnappyAQPParser</span></a><span class="result"> extends <a href="SnappyParser.html" class="extype" name="org.apache.spark.sql.SnappyParser">SnappyParser</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@SnappyAQPParserextendsSnappyParser" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Snappy SQL extensions.</p><div class="fullcomment"><div class="comment cmt"><p>Snappy SQL extensions. Includes:</p><p>Stratified sample tables:
+1) ERROR ESTIMATE AVG: error estimate for mean of a column/expression
+2) ERROR ESTIMATE SUM: error estimate for sum of a column/expression
+</p></div></div>
+    </li><li name="org.apache.spark.sql.SnappyAQPSqlParser" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyAQPSqlParserextendsSnappySqlParser"></a>
+      <a id="SnappyAQPSqlParser:SnappyAQPSqlParser"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyAQPSqlParser.html"><span class="name">SnappyAQPSqlParser</span></a><span class="result"> extends <a href="SnappySqlParser.html" class="extype" name="org.apache.spark.sql.SnappySqlParser">SnappySqlParser</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@SnappyAQPSqlParserextendsSnappySqlParser" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1859,6 +1950,40 @@ getOrCreate instead of the global one.
     </span>
       <p class="shortcomment cmt">Contains API classes that are specific to a single language (i.e.</p><div class="fullcomment"><div class="comment cmt"><p>Contains API classes that are specific to a single language (i.e. Java).
 </p></div></div>
+    </li><li name="org.apache.spark.sql.approximate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="approximate"></a>
+      <a id="approximate:approximate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="approximate/package.html"><span class="name">approximate</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@approximate" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.aqp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="aqp"></a>
+      <a id="aqp:aqp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="aqp/package.html"><span class="name">aqp</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@aqp" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.catalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="catalog"></a>
       <a id="catalog:catalog"></a>
@@ -1895,6 +2020,23 @@ getOrCreate instead of the global one.
       <p class="shortcomment cmt">Catalyst is a library for manipulating relational query plans.</p><div class="fullcomment"><div class="comment cmt"><p>Catalyst is a library for manipulating relational query plans.  All classes in catalyst are
 considered an internal API to Spark SQL and are subject to change between minor releases.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.catalysts" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="catalysts"></a>
+      <a id="catalysts:catalysts"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="catalysts/package.html"><span class="name">catalysts</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@catalysts" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.collection" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="collection"></a>
       <a id="collection:collection"></a>
@@ -2060,6 +2202,23 @@ are subject to change between minor releases.</p>
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.sampling" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sampling"></a>
+      <a id="sampling:sampling"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="sampling/package.html"><span class="name">sampling</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@sampling" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.snappy" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="snappy"></a>
       <a id="snappy:snappy"></a>
@@ -2124,6 +2283,23 @@ are subject to change between minor releases.</p>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.package@streaming" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.topk" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="topk"></a>
+      <a id="topk:topk"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="topk/package.html"><span class="name">topk</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@topk" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

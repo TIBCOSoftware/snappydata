@@ -1012,70 +1012,6 @@
     </li>
 
         
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
-    <ul class="subnav">
-    <li><span>Using VSD to Analyze Statistics</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../vsd/running_vsd/">Installing and Running VSD</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../vsd/vsd_transactions/">Transaction Performance</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../vsd/vsd_tables/">Table Performance</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../vsd/vsd_statements/">SQL Statement Performance</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../vsd/vsd_memory/">Memory Usage</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../vsd/vsd-connection-stats/">Client Connections</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../../vsd/vsd_cpu/">CPU Usage</a>
-        
-    </li>
-
-        
-    </ul>
-
-        
     </ul>
 <li>
           
@@ -2286,23 +2222,166 @@
             <div class="section">
               
                 <h1 id="snappy-scala-cli">snappy-scala CLI</h1>
-<p>The snappy-scala CLI, which is similar to spark-shell in its capabilities, is introduced as an experimental feature in this release. snappy-scala CLI is built on top of the <strong>exec scala</strong> feature and the already existing snappy CLI utility. This is not a true Scala interpreter but mimics a scala or a spark-shell kind of interpreter. Here, each line of code is shipped to the lead node. The code is interpreted on the lead node. The result is brought back to the snappy-scala shell.</p>
-<p>Features such as auto-complete and full-fledged colon command of a scala shell are not as stable as in the spark-shell. This is because in Apache Spark, the spark-shell is itself the Application driver VM whereas in SnappyData, the driver is the lead node, which is a remote process from the command-line utility point of view. The snappy-scala CLI utility connects like a client utility and therefore has the limitation mentioned above. Those limitations can be overcome and will be considered in a future release.</p>
+<p>The snappy-scala CLI is introduced as an experimental feature in the SnappyData 1.2.0 release. This is similar to the Spark shell in its capabilities. The <a href="https://spark.apache.org/docs/2.1.1/quick-start.html">Spark documentation</a> defines the Spark shell as follows: </p>
+<p><strong><em>Spark’s shell provides a simple way to learn the API, as well as a powerful tool to analyze data interactively. It is available in either Scala (which runs on the Java VM and is thus a good way to use existing Java libraries) or Python.</em></strong></p>
+<p>A developer who is learning the Spark APIs of SparkContext, SparkSession, RDD, DataSet, DataSources, ML, etc. , can use the following utilities:</p>
+<ul>
+<li><strong>Spark shell</strong> to quickly bring up an interactive shell and start learning and experimenting with the APIs. </li>
+<li><strong>PySpark</strong>, provided by spark, for interactive Python where you can interactively learn the Python APIs that are provided by Spark.</li>
+</ul>
+<p>Spark shell is a spark application that is built on Scala’s REPL (Read-Evaluate-Print loop). It accepts Scala code as input, executes the instructions as per the code, and returns the output of those instructions. After this utility is invoked, the spark driver comes into life, in which a SparkContext, a SparkSession, and a REPL object are initialized, and an interactive shell is provided to the users on the driver VM itself for interactive learning.
+The high cost, in terms of time and efforts, for each change warranting code compilation and then adding into a jar can be entirely avoided by using the Spark shell. A developer who wants to develop a Spark job can start by writing the code in a Spark shell and improve the job in interactive iterations. After the developer is satisfied with the quality of the code, it can be converted into a Spark Job.</p>
+<p>The idea of snappy-scala CLI is similar to that of Spark shell with few differences. With the snappy-scala CLI, you can interactively learn all the Spark APIs, the additional SnappyData APIs and also have the same experience of a Scala REPL or a Spark shell REPL app. You can still use the Spark shell and connect to a SnappyData cluster in Smart Connector mode, but you will require a separate Spark cluster for that. Moreover, that will be a different experience wherein the SnappyData cluster is used mostly as a DataSource by the Spark application.</p>
+<p>snappy-scala CLI is built on top of the <a href="../../sql_reference/exec-scala/">exec scala</a> feature and the already existing snappy CLI utility, which connects to the SnappyData cluster using the JDBC driver. snappy-scala CLI is not a true scala interpreter but mimics a scala or a Spark shell type of interpreter. Each line of the code is shipped to the Lead node of the SnappyData cluster. The code is interpreted there, and the result of the interpretation is then brought back to the snappy-scala CLI. It is displayed in the same fashion as that of a Scala REPL.</p>
+<p>Although the experience of the snappy-scala CLI is similar to that of a Scala or a Spark shell, yet a couple of important features are either missing or are thinly supported. This is because it is currently an experimental feature. The following are a couple of notable differences between the Spark shell and snappy-scala CLI:</p>
+<ul>
+<li>The auto completion feature, which is rich in a true Scala or Scala based interpreter. It is almost as rich as an IDE, where it can prompt possible completions, method signature, word completion, syntaxes, etc.  </li>
+<li>Support for the list of commands which can be executed on the shell.</li>
+</ul>
+<p>The following image shows a simple SnappyData cluster, which is started, and then the snappy-scala is launched to connect.</p>
+<p><img alt="Snappyscala" src="../../../Images/snappy-scala_api.png" /></p>
 <h3 id="command-line-options">Command-line options</h3>
 <pre><code>$ ./bin/snappy-scala -h
+
 Usage:
+
 snappy-scala [OPTIONS]
+
 OPTIONS and Default values
+
    -c LOCATOR_OR_SERVER_ENDPOINT  (default value is localhost:1527)
+
    -u USERNAME                    (default value is APP)
+
    -p PASSWORD                    (default value is APP)
+
    -r SCALA_FILE_PATHS            (comma separated paths if multiple)
+
    -h, --help                     (prints script usage)
+
 </code></pre>
 
-<p>As seen above there are 5</p>
+<p>The following options are only available currently:</p>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>-c</strong></td>
+<td>The endpoint of the server host port to which the tool connects. If the option is not specified, then the CLI attempts to connect to <strong>localhost:1527</strong> endpoint.</td>
+</tr>
+<tr>
+<td><strong>-u </strong></td>
+<td>The user who wants to start the shell. If the user is trying to connect to a secured SnappyData cluster, then this user will be authenticated by the server.</td>
+</tr>
+<tr>
+<td><strong>-p</strong></td>
+<td>Password of the user.</td>
+</tr>
+<tr>
+<td><strong> -r </strong></td>
+<td>A list of files that can be passed as an argument. The file should contain valid Scala code, which is interpreted line by line by the tool. If there are more than one file to be passed, then the list must be comma-separated.</td>
+</tr>
+<tr>
+<td><strong>-h  </strong></td>
+<td>prints the usage of the script.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="securing-the-usage-of-snappy-scala-cli">Securing the Usage of snappy-scala CLI</h3>
-<p>This is the same as securing the usage of <strong>exec scala</strong>. For more details refer to <a href="../../../programming_guide/scala_interpreter/#secureexscala">Securing the Usage of exec scala SQL</a>. </p>
+<p>This is the same as <a href="../../../programming_guide/scala_interpreter/#secureexscala">securing the usage of <strong>exec scala</strong></a>. In a secured system, by default, only the DB owner has the permission to secure the usage and can grant this privilege to other users as well. Apart from running the Scala code, the CLI also takes predefined commands. Each of these commands has a specific purpose. All these commands start with a colon <strong>:</strong>. With the help of this, the interpreter differentiates between the code and command.</p>
+<p>On the snappy-scala prompt, type <strong>:help</strong> for the list of supported commands. The following image shows the  list of the available commands that are displayed when you type <strong>:help</strong> command:</p>
+<p><img alt="Snappyscala" src="../../../Images/snappy-scala_api_1.png" /></p>
+<p>All the commands are listed with their corresponding description when <strong>:help</strong> is typed on the snappy-scala prompt. This is mostly a subset of what Spark shell provides. Some of the missing ones are <strong>:paste</strong>, <strong>:edit</strong>, <strong>:load</strong> etc. There are few commands which are specific to snappy-scala such as <strong>:maximumdisplaywidth</strong>, <strong>:elapsedtime on</strong> etc. The following table lists the commands that are supported by snappy-scala:</p>
+<table>
+<thead>
+<tr>
+<th>Commands</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>:help</strong></td>
+<td>Prints the list of all the available commands along with the corresponding descriptions.</td>
+</tr>
+<tr>
+<td><strong>  :implicits </strong></td>
+<td>The imported implicits in the session so far.</td>
+</tr>
+<tr>
+<td><strong> :javap</strong></td>
+<td>Decompiles a java class.</td>
+</tr>
+<tr>
+<td><strong> :sh </strong></td>
+<td>Runs a shell command.</td>
+</tr>
+<tr>
+<td><strong> :silent </strong></td>
+<td>The CLI becomes silent and does not print the output after each execution.</td>
+</tr>
+<tr>
+<td><strong>:type</strong></td>
+<td>Prints the type of the Symbol, which is passed in the argument. For example, if <strong>x</strong> is an Int then <strong>:type x</strong> prints <strong>INT</strong></td>
+</tr>
+<tr>
+<td><strong>:kind </strong></td>
+<td>Prints the kind of the expression type.</td>
+</tr>
+<tr>
+<td><strong>:warnings</strong></td>
+<td>Prints any warning in the session.</td>
+</tr>
+<tr>
+<td><strong> :replay </strong></td>
+<td>Re-runs all the code from the beginning of the session or from the last point of <strong>:reset</strong>. Commands are not replayed. The difference with Spark shell on this command is that with snappy-scala, the replay can be done only once, and the buffer containing the commands is then emptied. In case the command is replayed again without running any code, then a message <strong>Nothing to replay</strong> is displayed.</td>
+</tr>
+<tr>
+<td><strong>:reset </strong></td>
+<td>It resets all the state in the interpreter. All types, symbols, imports, etc. created in the session will be lost.</td>
+</tr>
+<tr>
+<td><strong>:history </strong></td>
+<td>Prints the Scala code that was run in the session.</td>
+</tr>
+<tr>
+<td><strong>:run </strong></td>
+<td>Passes a path to the Scala file as an argument to this command. The scala code in the file is executed one by one by the snappy-scala CLI.</td>
+</tr>
+</tbody>
+</table>
+<p>The following are additional commands provided in the snappy-scala CLI over the Spark shell commands.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>:elapsedtime on </strong></td>
+<td>Displays the elapsed time of each and every line of code or command which is executed on the interpreter.</td>
+</tr>
+<tr>
+<td><strong>:quit</strong></td>
+<td>The session is closed, and you can exit the CLI program.</td>
+</tr>
+<tr>
+<td><strong>:maximumdisplaywidth <number></strong></td>
+<td>Sets the largest display width of the CLI output to the specified value. Usually, this command is used to increase the default value to display long lines that come in the output.</td>
+</tr>
+<tr>
+<td><strong> :maximumlinewidth <number></strong></td>
+<td>Same as above. This command sets the largest display width for each line output from the interpreter to the specified value.</td>
+</tr>
+</tbody>
+</table>
               
             </div>
           </div>

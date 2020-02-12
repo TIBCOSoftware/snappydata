@@ -1021,70 +1021,6 @@
     </li>
 
         
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
-    <ul class="subnav">
-    <li><span>Using VSD to Analyze Statistics</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/running_vsd/">Installing and Running VSD</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_transactions/">Transaction Performance</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_tables/">Table Performance</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_statements/">SQL Statement Performance</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_memory/">Memory Usage</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd-connection-stats/">Client Connections</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_cpu/">CPU Usage</a>
-        
-    </li>
-
-        
-    </ul>
-
-        
     </ul>
 <li>
           
@@ -2289,11 +2225,16 @@
 <ol>
 <li><a href="../../install/install_on_premise/">Download and Install SnappyData</a>. The install zip for computeDB contains the Apache Zeppelin zip folder. </li>
 <li><a href="../../configuring_cluster/configuring_cluster/">Configure the SnappyData Cluster</a>.</li>
-<li>Unzip the Apache Zeppelin artifact<name>.</li>
-<li>Change to <strong>Zeppelin</strong> directory and start Zeppelin.
-            cd Zeppelin directory
-            ./bin/zeppelin-daemon.sh start</li>
-<li>Go to localhost:8080 or (AWS-AMI_PublicIP):8080.</li>
+<li>
+<p>Unzip the Apache Zeppelin artifact <strong>zeppelin-0.8.2-snappydata-1.2.0.zip</strong>. Change to the directory <strong>zeppelin-0.8.2-snappydata-1.2.0</strong> and start Apache Zeppelin server.</p>
+<pre><code>$ unzip zeppelin-0.8.2-snappydata-1.2.0.zip
+$ cd zeppelin-0.8.2-snappydata-1.2.0/
+$ ./bin/zeppelin-daemon.sh start
+</code></pre>
+</li>
+<li>
+<p>Enter this URL in the browser: localhost:8080 or (AWS-AMI_PublicIP):8080.</p>
+</li>
 </ol>
 <p><img alt="homepage" src="../../Images/zeppelin.png" /></p>
 <p>Refer <a href="../concurrent_apache_zeppelin_access_to_secure_snappydata/">here</a> for instructions to configure Apache Zeppelin for securely accessing SnappyData Cluster.</p>
@@ -2353,7 +2294,7 @@
 
     | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
     |--------|--------|--------|
-    |[Version 0.7.3.6](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.6) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.1.1](https://edelivery.tibco.com)|
+    |[Version 0.7.3.6](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.6) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.2.0](https://edelivery.tibco.com)|
 
 2. [Configure the SnappyData Cluster](../configuring_cluster/configuring_cluster.md).
 

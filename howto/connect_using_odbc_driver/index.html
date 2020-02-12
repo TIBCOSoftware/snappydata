@@ -1027,70 +1027,6 @@
     </li>
 
         
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
-    <ul class="subnav">
-    <li><span>Using VSD to Analyze Statistics</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/running_vsd/">Installing and Running VSD</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_transactions/">Transaction Performance</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_tables/">Table Performance</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_statements/">SQL Statement Performance</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_memory/">Memory Usage</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd-connection-stats/">Client Connections</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_cpu/">CPU Usage</a>
-        
-    </li>
-
-        
-    </ul>
-
-        
     </ul>
 <li>
           
@@ -2308,11 +2244,9 @@
 <h2 id="step-2-installing-tibco-computedb-odbc-driver">Step 2: Installing TIBCO ComputeDB ODBC Driver</h2>
 <p>To download and install the ODBC driver:</p>
 <ol>
+<li>Download the drivers zip file <strong>TIB_compute_drivers_1.2.0_linux.zip</strong> using the steps provided <a href="../../quickstart/getting_started_by_installing_snappydata_on-premise/">here</a>. After this file is  extracted, you will find that it contains the ODBC installers in another file <strong>TIB_compute-odbc_1.2.0_win.zip</strong>. </li>
 <li>
-<p><a href="https://edelivery.tibco.com/storefront/index.ep">Download the TIBCO ComputeDB 1.2.0 Enterprise Version</a>. The downloaded file contains the TIBCO ComputeDB ODBC driver installers.</p>
-</li>
-<li>
-<p>Depending on your Windows installation, extract the contents of the 32-bit or 64-bit version of the TIBCO ComputeDB ODBC Driver.</p>
+<p>Extract <strong>TIB_compute-odbc_1.2.0_win.zip</strong>. Depending on your Windows installation, extract the contents of the 32-bit or 64-bit version of the TIBCO ComputeDB ODBC Driver.</p>
 <table>
 <thead>
 <tr>
@@ -2333,7 +2267,7 @@
 </table>
 </li>
 <li>
-<p>Double-click on the extracted <strong>TIB_compute-odbc_1.2.0_win.msi</strong> file, and follow the steps to complete the installation.</p>
+<p>Double-click on the corresponding <strong>msi</strong> file, and follow the steps to complete the installation.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Ensure that <a href="../../install/">TIBCO ComputeDB is installed</a> and the <a href="../start_snappy_cluster/">TIBCO ComputeDB cluster is running</a>.</p>
@@ -2345,19 +2279,12 @@
 <ul>
 <li>
 <p>Use the TIBCO ComputeDB Driver Connection URL:</p>
-<pre><code>    Driver=TIBCO ComputeDB ODBC Driver;server=&lt;locator address&gt;;port=&lt;LocatorPort&gt;;user=&lt;userName&gt;;password=&lt;password&gt;;load-balance=true
+<pre><code>Driver=TIBCO ComputeDB ODBC Driver;server=&lt;ServerIP&gt;;port=&lt;ServerPort&gt;;user=&lt;userName&gt;;password=&lt;password&gt;
 </code></pre>
-<p>In case you want to connect with a specific server:</p>
-<pre><code>    Driver=TIBCO ComputeDB ODBC Driver;server=&lt;ServerHost&gt;;port=&lt;ServerPort&gt;;user=&lt;userName&gt;;password=&lt;password&gt;;load-balance=false
-</code></pre>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>On the AWS instance, there are issues when you connect with the locator port and address. Therefore,on the AWS instance, it is necessary to provide the load-balance=false property, while connecting to the server.</p>
-</div>
 </li>
 <li>
 <p>Create a TIBCO ComputeDB DSN (Data Source Name) using the installed TIBCO ComputeDB ODBC Driver. Refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>
-When prompted, select the TIBCO ComputeDB ODBC Driver from the list of drivers and enter a Data Source name. You can then enter either TIBCO ComputeDB Server Host, Port, User Name, and Password or TIBCO ComputeDB Locator Host, Port, User Name and Password.
+When prompted, select the TIBCO ComputeDB ODBC Driver from the list of drivers and enter a Data Source name, TIBCO ComputeDB Server Host, Port, User Name and Password.
 Refer to the documentation for detailed information on <a href="../../setting_up_odbc_driver-tableau_desktop/">Setting Up TIBCO ComputeDB ODBC Driver</a>.  </p>
 </li>
 </ul>

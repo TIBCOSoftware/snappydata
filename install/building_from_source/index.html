@@ -127,8 +127,6 @@
                 
                     <li><a class="toctree-l4" href="#build-all-components-of-snappydata">Build all Components of SnappyData</a></li>
                 
-                    <li><a class="toctree-l4" href="#build-only-the-top-level-components">Build only the Top-level Components</a></li>
-                
                     <li><a class="toctree-l4" href="#repository-layout">Repository Layout</a></li>
                 
                     <li><a class="toctree-l4" href="#building">Building</a></li>
@@ -1029,70 +1027,6 @@
         <a class="" href="../../vsd/collecting_system_stats/">Collecting System Statistics</a>
         
     </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_overview/">Using VSD to Analyze Statistics</a>
-        
-    </li>
-
-        
-            
-    <ul class="subnav">
-    <li><span>Using VSD to Analyze Statistics</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/running_vsd/">Installing and Running VSD</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_transactions/">Transaction Performance</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_tables/">Table Performance</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_statements/">SQL Statement Performance</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_memory/">Memory Usage</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd-connection-stats/">Client Connections</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../vsd/vsd_cpu/">CPU Usage</a>
-        
-    </li>
-
-        
-    </ul>
 
         
     </ul>
@@ -2301,7 +2235,7 @@
 </div>
 <h2 id="build-all-components-of-snappydata">Build all Components of SnappyData</h2>
 <p><strong>Latest release branch</strong></p>
-<pre><code class="pre">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-&lt;release-version&gt; --recursive
+<pre><code class="pre">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b v&lt;release-version&gt; --recursive
 &gt; cd snappydata
 &gt; ./gradlew product
 </code></pre>
@@ -2313,20 +2247,6 @@
 </code></pre>
 
 <p>The product is in <strong>build-artifacts/scala-2.11/snappy</strong></p>
-<h2 id="build-only-the-top-level-components">Build only the Top-level Components</h2>
-<p>Use this option if you want to build only the top-level SnappyData project and pull in jars for other projects (spark, store, spark-jobserver):</p>
-<p><strong>Latest release branch</strong></p>
-<pre><code class="pre">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b branch-&lt;release-version&gt;
-&gt; cd snappydata
-&gt; ./gradlew product
-</code></pre>
-
-<p><strong>Master</strong></p>
-<pre><code class="pre">&gt; git clone https://github.com/SnappyDataInc/snappydata.git
-&gt; cd snappydata
-&gt; ./gradlew product
-</code></pre>
-
 <h2 id="repository-layout">Repository Layout</h2>
 <ul>
 <li>
