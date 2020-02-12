@@ -656,14 +656,13 @@ trait SparkInternals extends Logging {
   /**
    * Create a new ExprCode with given arguments.
    */
-  def newExprCode(code: String, isNull: String,
-      value: String, javaClass: Class[_] = classOf[Object]): ExprCode
+  def newExprCode(code: String, isNull: String, value: String, dt: DataType): ExprCode
 
   /**
    * Make a copy of ExprCode with given new arguments.
    */
   def copyExprCode(ev: ExprCode, code: String = null, isNull: String = null,
-      value: String = null, javaClass: Class[_] = classOf[Object]): ExprCode
+      value: String = null, dt: DataType = null): ExprCode
 
   /**
    * Reset the code field of [[ExprCode]] to empty code block.

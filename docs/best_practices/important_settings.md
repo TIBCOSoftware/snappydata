@@ -169,7 +169,7 @@ Optionally when using the `-XX:+HeapDumpOnOutOfMemoryError` option, you can spec
 SnappyData uses generated code for best performance for most of the queries and internal operations. This is done for both Spark-side whole-stage code generation for queries, for example,[Technical Preview of Apache Spark 2.0 blog]( https://databricks.com/blog/2016/05/11/apache-spark-2-0-technical-preview-easier-faster-and-smarter.html), and internally by SnappyData for many operations. For example, rolling over data from row buffer to column store or merging batches among others. </br>The point key lookup queries on row tables, and JDBC inserts bypass this and perform direct operations. However, for all other operations, the product uses code generation for best performance.
 
 In many cases, the first query execution is slightly slower than subsequent query executions. This is primarily due to the overhead of compilation of generated code for the query plan and optimized machine code generation by JVM's hotspot JIT.
-Each distinct piece of generated code is a separate class which is loaded using its own ClassLoader. To reduce these overheads in multiple runs, this class is reused using a cache whose size is controlled by **spark.sql.codegen.cacheSize** property (default is 2000). Thus when the size limit of the cache is breached, the older classes that are used for a while gets removed from the cache.
+Each distinct piece of generated code is a separate class which is loaded using its own ClassLoader. To reduce these overheads in multiple runs, this class is reused using a cache whose size is controlled by **spark.sql.codegen.cache.maxEntries** property (default is 2000). Thus when the size limit of the cache is breached, the older classes that are used for a while gets removed from the cache.
 
 Further to minimize the generated plans, SnappyData performs tokenization of the values that are most constant in queries by default. Therefore the queries that differ only in constants can still create the same generated code plan.
 Thus if an application has a fixed number of query patterns that are used repeatedly, then the effect of the slack during the first execution, due to compilation and JIT, is minimized.
@@ -177,7 +177,7 @@ Thus if an application has a fixed number of query patterns that are used repeat
 !!!note
 	A single query pattern constitutes of queries that differ only in constant values that are embedded in the query string.
 
-For cases where the application has many query patterns, you can increase the value of **spark.sql.codegen.cacheSize** property from the default size of **2000**. 
+For cases where the application has many query patterns, you can increase the value of **spark.sql.codegen.cache.maxEntries** property from the default size of **2000**. 
 
 You can also increase the value for JVM's **ReservedCodeCacheSize** property and add additional RAM capacity accordingly. 
 

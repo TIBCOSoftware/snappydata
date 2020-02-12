@@ -264,11 +264,11 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         } else ("", NULL_NON_PRIM) // field itself is nullable
       } else ("", -1)
       if (index < numEntryVars) {
-        entryVars += ((dataType, javaType, internals.newExprCode(code = "", nullVar, varName),
-            nullIndex))
+        entryVars += ((dataType, javaType, internals.newExprCode(code = "", nullVar, varName,
+          dataType), nullIndex))
       } else {
-        valClassVars += ((dataType, javaType, internals.newExprCode(code = "", nullVar, varName),
-            nullIndex))
+        valClassVars += ((dataType, javaType, internals.newExprCode(code = "", nullVar, varName,
+          dataType), nullIndex))
       }
     }
     val numNullVars = if (numNulls >= 0) (numNulls / 64) + 1 else 0
@@ -496,7 +496,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       }
       declarations.append(s"long $nullValMaskVar = $nullMaskVar;\n")
       nullValMaskVars(index) = nullValMaskVar
-      nullVar -> (nullMaskVar, nullValMaskVar)
+      (nullVar, (nullMaskVar, nullValMaskVar))
     }.toMap
 
     val vars = if (onlyKeyVars) classVars.take(valueIndex)
@@ -553,7 +553,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
             else "false")
           val nullVar = ctx.freshName("isNull")
           localDeclaration.append(s"\nboolean $nullVar = $nullExpr;")
-          columnVars += internals.newExprCode(localDeclaration.toString, nullVar, localVar)
+          columnVars += internals.newExprCode(localDeclaration.toString, nullVar,
+            localVar, dataType)
       }
     }
     (declarations.toString(), columnVars, nullValMaskVars)
@@ -574,13 +575,14 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       val evIsNull = internals.exprCodeIsNull(ev)
       val evValue = internals.exprCodeValue(ev)
       if (evIsNull == "false") {
-        (s"final $javaType $newKeyVar", evValue, internals.copyExprCode(ev, value = newKeyVar))
+        (s"final $javaType $newKeyVar", evValue,
+            internals.copyExprCode(ev, value = newKeyVar, dt = expr.dataType))
       } else {
         // new variable for nullability since isNull can be an expression
         val newNullVar = ctx.freshName("keyIsNull")
         (s"final $javaType $newKeyVar, final boolean $newNullVar",
             s"$evValue, $evIsNull",
-            internals.copyExprCode(ev, isNull = newNullVar, value = newKeyVar))
+            internals.copyExprCode(ev, isNull = newNullVar, value = newKeyVar, dt = expr.dataType))
       }
     }.unzip3
     val keyDeclarations = keyDecls.mkString(", ")
@@ -969,7 +971,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         val existsVar = ctx.freshName("exists")
         genExistenceJoinCodes(entryVar, existsVar, mapKeyCodes,
           checkCondition, checkCode, numRows, getConsumeResultCode(numRows,
-            input :+ internals.newExprCode("", "false", existsVar)), keyIsUnique,
+            input :+ internals.newExprCode("", "false", existsVar, BooleanType)), keyIsUnique,
           declareLocalVars, moveNextValue, inputCodes)
 
       case _ => throw new IllegalArgumentException(

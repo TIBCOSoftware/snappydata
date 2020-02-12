@@ -26,6 +26,8 @@ sourceSets.main.scala.srcDir "../spark-2.3.x/src/main/java"
 sourceSets.main.scala.srcDir "../spark-2.3.x/specific/java"
 sourceSets.main.java.srcDirs = []
 
+String spark232Version = '2.3.2'
+
 dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion

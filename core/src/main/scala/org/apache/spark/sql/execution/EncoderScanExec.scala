@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.expressions.objects.StaticInvoke
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, BindReferences, Expression}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.types.DateType
+import org.apache.spark.sql.types.{DateType, ObjectType}
 import org.apache.spark.sql.{SparkSession, SparkSupport}
 
 /**
@@ -70,7 +70,8 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
              |  throw new RuntimeException("top level null input object");
              |}""")
     }
-    ctx.currentVars = internals.newExprCode(code = "", nullVar, objVar, javaClass) :: Nil
+    ctx.currentVars = internals.newExprCode(code = "", nullVar, objVar,
+      ObjectType(javaClass)) :: Nil
     val declarations = new StringBuilder
 
     def optimizeDate(expr: Expression): ExprCode = expr match {

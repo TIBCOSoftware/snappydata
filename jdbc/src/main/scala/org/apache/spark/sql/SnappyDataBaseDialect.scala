@@ -25,7 +25,8 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.Limits.{DB2_LOB_MA
 import io.snappydata.Constant
 
 import org.apache.spark.SparkEnv
-import org.apache.spark.sql.catalyst.parser.AbstractSqlParser
+import org.apache.spark.sql.catalyst.FunctionIdentifier
+import org.apache.spark.sql.catalyst.parser.{AbstractSqlParser, ParserInterface}
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.jdbc.JdbcType
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
@@ -79,10 +80,15 @@ abstract class SnappyDataBaseDialect extends JdbcExtendedDialect {
     case Types.ARRAY | JDBC40Translation.MAP | Types.STRUCT =>
       val sparkSession = session match {
         case Some(s) => s
-        case None => SparkSession.builder().getOrCreate()
+        case None => SparkSession.getActiveSession match {
+          case Some(s) => s
+          case None => SparkSession.builder().getOrCreate()
+        }
       }
-      Some(sparkSession.sessionState.sqlParser
-          .asInstanceOf[AbstractSqlParser].parseDataType(typeName))
+      sparkSession.sessionState.sqlParser match {
+        case parser: SQLParserInterface => Some(parser.parseDataType(typeName))
+        case p => Some(p.asInstanceOf[AbstractSqlParser].parseDataType(typeName))
+      }
     case Types.JAVA_OBJECT => // used by some system tables and VTIs
       // try to get class for the typeName else fallback to Object
       val userClass = try {
@@ -232,6 +238,29 @@ abstract class SnappyDataBaseDialect extends JdbcExtendedDialect {
 
   override def getPartitionByClause(col: String): String =
     s"partition by column($col)"
+}
+
+/**
+ * Extension to [[ParserInterface]] having methods from recent Spark releases
+ * so that methods like `parseDataType` can be used with older releaases too.
+ */
+trait SQLParserInterface extends ParserInterface {
+
+  /**
+   * Parse a string to a [[FunctionIdentifier]].
+   */
+  def parseFunctionIdentifier(sqlText: String): FunctionIdentifier
+
+  /**
+   * Parse a string to a [[StructType]]. The passed SQL string should be a comma separated list
+   * of field definitions which will preserve the correct Hive metadata.
+   */
+  def parseTableSchema(sqlText: String): StructType
+
+  /**
+   * Parse a string to a [[DataType]].
+   */
+  def parseDataType(sqlText: String): DataType
 }
 
 final class JavaObjectType(override val userClass: java.lang.Class[AnyRef])

@@ -26,9 +26,8 @@ import org.apache.hadoop.hive.ql.exec.FunctionRegistry
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.hive.client.HiveClient
 import org.apache.spark.sql.hive.test.{TestHiveContext, TestHiveSparkSession}
-import org.apache.spark.sql.internal.{SharedState, SnappySharedState}
+import org.apache.spark.sql.internal.{SessionState, SharedState, SnappySessionCatalog, SnappySharedState}
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 
 class TestHiveSnappySession(@transient protected val sc: SparkContext,
@@ -37,7 +36,10 @@ class TestHiveSnappySession(@transient protected val sc: SparkContext,
 
   assume(enableHiveSupport)
 
-  override protected def existingSharedState: Option[SharedState] = None
+  override protected def existingSharedState: Option[SharedState] =
+    Option(SnappyContext.getExistingSharedState)
+
+  override protected def parentSessionState: Option[SessionState] = None
 
   /**
    * State shared across sessions, including the [[SparkContext]], cached data, listener,
@@ -46,16 +48,17 @@ class TestHiveSnappySession(@transient protected val sc: SparkContext,
   @transient
   override lazy val sharedState: SnappySharedState = SnappyContext.sharedState(sparkContext)
 
-  override def hiveDefaultTableFilePath(name: TableIdentifier): String =
-    sessionState.catalog.hiveSessionCatalog.hiveDefaultTableFilePath(name)
-
   override def getCachedDataSourceTable(table: TableIdentifier): LogicalPlan =
-    sessionState.catalog.hiveSessionCatalog.getCachedDataSourceTable(table)
-
-  override def metadataHive: HiveClient =
-    sessionState.hiveState.asInstanceOf[HiveSessionState].metadataHive
+    sessionState.catalog.asInstanceOf[SnappySessionCatalog].hiveSessionCatalog
+        .metastoreCatalog.getCachedDataSourceTable(table)
 
   override def newSession(): SnappySession = new TestHiveSnappySession(sc, loadTestTables)
+
+  override def cloneSession(): SnappySession = {
+    val result = newSession()
+    result.sessionState // force copy of SessionState
+    result
+  }
 
   override private[sql] def overrideConfs: Map[String, String] =
     TestHiveContext.overrideConfs + (Property.HiveCompatibility.name -> "spark")

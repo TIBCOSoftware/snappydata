@@ -38,7 +38,7 @@ import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.{CacheManager, SparkOptimizer, SparkPlan}
 import org.apache.spark.sql.hive.{HiveSessionResourceLoader, SnappyAnalyzer, SnappyHiveExternalCatalog, SnappySessionState}
 import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.types.{DataType, Metadata, StructField, StructType}
+import org.apache.spark.sql.types.{BooleanType, DataType, Metadata, StructField, StructType}
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -149,28 +149,28 @@ abstract class Spark24Internals extends Spark23_4_Internals {
 
   override def newCacheManager(): CacheManager = new SnappyCacheManager24
 
-  private def exprValue(v: String, javaClass: Class[_]): ExprValue = v match {
+  private def exprValue(v: String, dt: DataType): ExprValue = v match {
     case "false" => FalseLiteral
     case "true" => TrueLiteral
-    case _ => VariableValue(v, javaClass)
+    case _ => VariableValue(v, CodeGenerator.javaClass(dt))
   }
 
   override def newExprCode(code: String, isNull: String,
-      value: String, javaClass: Class[_]): ExprCode = {
+      value: String, dt: DataType): ExprCode = {
     ExprCode(CodeBlock(code :: Nil, EmptyBlock :: Nil),
-      isNull = exprValue(isNull, java.lang.Boolean.TYPE),
-      value = exprValue(value, javaClass))
+      isNull = exprValue(isNull, BooleanType),
+      value = exprValue(value, dt))
   }
 
   override def copyExprCode(ev: ExprCode, code: String, isNull: String,
-      value: String, javaClass: Class[_]): ExprCode = {
+      value: String, dt: DataType): ExprCode = {
     val codeBlock =
       if (code eq null) ev.code
       else if (code.isEmpty) EmptyBlock
       else CodeBlock(code :: Nil, EmptyBlock :: Nil)
     ev.copy(codeBlock,
-      if (isNull ne null) VariableValue(isNull, java.lang.Boolean.TYPE) else ev.isNull,
-      if (value ne null) VariableValue(value, javaClass) else ev.value)
+      isNull = if (isNull ne null) exprValue(isNull, BooleanType) else ev.isNull,
+      value = if (value ne null) exprValue(value, dt) else ev.value)
   }
 
   override def resetCode(ev: ExprCode): Unit = {
@@ -180,7 +180,7 @@ abstract class Spark24Internals extends Spark23_4_Internals {
   override def exprCodeIsNull(ev: ExprCode): String = ev.isNull.code
 
   override def setExprCodeIsNull(ev: ExprCode, isNull: String): Unit = {
-    ev.isNull = exprValue(isNull, classOf[Boolean])
+    ev.isNull = exprValue(isNull, BooleanType)
   }
 
   override def exprCodeValue(ev: ExprCode): String = ev.value.code

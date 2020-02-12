@@ -106,7 +106,7 @@ The following list of commonly used configuration properties can be set to confi
 |-spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks. For more information, refer to [Best Practices](../best_practices/important_settings.md#spark-local-dir).|Lead</br>Server|
 |-spark.network.timeout|The default timeout for all network interactions while running queries.|Lead|
 |-spark.sql.autoBroadcastJoinThreshold|Configures the maximum size in bytes for a table that is broadcast to all server nodes when performing a join.  By setting this value to **-1** broadcasting can be disabled. |
-|-spark.sql.codegen.cacheSize<a id="codegencache"></a>|Size of the generated code cache. This effectively controls the maximum number of query plans whose generated code (Classes) is cached. The default is 2000. |Lead|
+|-spark.sql.codegen.cache.maxEntries<a id="codegencache"></a>|Size of the generated code cache. This effectively controls the maximum number of query plans whose generated code (Classes) is cached. The default is 2000. |Lead|
 |-spark.sql.aqp.numBootStrapTrials|Number of bootstrap trials to do for calculating error bounds. The default value is100. </br>This property must be set in the **conf/leads** file.|
 |-spark.sql.aqp.error|Maximum relative error tolerable in the approximate value calculation. It should be a fractional value not exceeding 1. The default value is0.2. </br>This property can be set as connection property in the Snappy SQL shell.|
 |-spark.sql.aqp.confidence|Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> The default value is0.95. </br>This property can be set as connection property in the Snappy SQL shell.|
@@ -187,7 +187,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 |-snappydata.sql.partitionPruning|Use this property to set/unset the partition pruning of queries.|
 |-snappydata.sql.tokenize|Use this property to enable/disable tokenization.|
 |-snappydata.cache.putIntoInnerJoinResultSize| Use this property with extreme limits such as 1K and 10GB. The default is 100 MB.|
-|-snappydata.scheduler.pool|Use this property to define scheduler pool to either default or low latency. You can also assign queries to different pools.|
+|-spark.scheduler.pool|Use this property to define scheduler pool to either default or low latency. You can also assign queries to different pools.|
 |-snappydata.enable-experimental-features|Use this property to enable and disable experimental features. You can call out in case some features are completely broken and need to be removed from the product.|
 |-snappydata.sql.planCaching|Use this property to enable/disable plan caching. By default it is disabled. |Lead|
 |sync-commits| See [sync-commits](/reference/configuration_parameters/sync-commits.md)||

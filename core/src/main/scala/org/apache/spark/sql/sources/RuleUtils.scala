@@ -582,7 +582,7 @@ object ExtractFiltersAndInnerJoins extends PredicateHelper {
     case j@Join(_, _, Inner, _) =>
       Some(flattenJoin(j))
     case plans.logical.Filter(filterCondition, child) =>
-      Some(Seq(child), splitConjunctivePredicates(filterCondition))
+      Some((Seq(child), splitConjunctivePredicates(filterCondition)))
     case _ => None
   }
 }
@@ -620,11 +620,10 @@ case class PartialPlan(curPlan: LogicalPlan, replaced: Seq[Replacement], outputS
         finalPlan
       case (finalPlan, replacement: Replacement) if finalPlan.replaced.contains(replacement) =>
         finalPlan
-      case (partial, table) if specializedHandling.isDefinedAt(partial, table) =>
-        specializedHandling.lift(partial, table).get
+      case (partial, table) if specializedHandling.isDefinedAt((partial, table)) =>
+        specializedHandling.lift((partial, table)).get
     }
   }
-
 }
 
 case class CompletePlan(plan: LogicalPlan, replaced: Seq[Replacement]) extends SubPlan

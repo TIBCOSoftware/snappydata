@@ -643,13 +643,12 @@ abstract class Spark21Internals extends SparkInternals {
       info.memSize, info.diskSize, dataDistribution = None, partitions = None))
   }
 
-  override def newExprCode(code: String, isNull: String,
-      value: String, javaClass: Class[_]): ExprCode = {
-    ExprCode(code = code, isNull = isNull, value = value)
+  override def newExprCode(code: String, isNull: String, value: String, dt: DataType): ExprCode = {
+    ExprCode(code, isNull, value)
   }
 
   override def copyExprCode(ev: ExprCode, code: String, isNull: String,
-      value: String, javaClass: Class[_]): ExprCode = {
+      value: String, dt: DataType): ExprCode = {
     ev.copy(code = if (code ne null) code else ev.code,
       isNull = if (isNull ne null) isNull else ev.isNull,
       value = if (value ne null) value else ev.value)

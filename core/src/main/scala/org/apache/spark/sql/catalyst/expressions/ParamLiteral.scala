@@ -103,7 +103,7 @@ trait DynamicReplacableConstant extends Expression with SparkSupport {
 
     if (!addMutableState) {
       // use the already added fields
-      return internals.copyExprCode(ev, initCode, isNullLocal, valueLocal)
+      return internals.copyExprCode(ev, initCode, isNullLocal, valueLocal, dataType)
     }
     val valueRef = literalValueRef
     val box = internals.boxedType(javaType, ctx)
@@ -170,7 +170,7 @@ trait DynamicReplacableConstant extends Expression with SparkSupport {
            |$valueTerm = $isNull ? $defValue : (($box)$valueResult)$unbox;
         """.stripMargin, forceInline = true, useFreshName = false)
     }
-    internals.copyExprCode(ev, initCode, isNullLocal, valueLocal)
+    internals.copyExprCode(ev, initCode, isNullLocal, valueLocal, dataType)
   }
 }
 

@@ -25,9 +25,9 @@ buildscript {
   }
   dependencies {
     classpath 'io.snappydata:gradle-scalatest:0.25'
-    classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.9.0'
-    classpath 'com.github.jengelman.gradle.plugins:shadow:5.1.0'
-    classpath 'de.undercouch:gradle-download-task:3.4.3'
+    classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:1.0.1'
+    classpath 'com.github.jengelman.gradle.plugins:shadow:5.2.0'
+    classpath 'de.undercouch:gradle-download-task:4.0.4'
     classpath 'net.rdrei.android.buildtimetracker:gradle-plugin:0.11.+'
     classpath 'com.netflix.nebula:gradle-ospackage-plugin:5.2.+'
   }
@@ -56,11 +56,10 @@ allprojects {
 
   repositories {
     mavenCentral()
+    maven { url 'https://repo.hortonworks.com/content/repositories/releases' }
     maven { url 'https://dl.bintray.com/big-data/maven' }
     maven { url "https://repo.spring.io/libs-release" }
-    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-    // maven { url 'http://repository.snappydata.io/repository/internal' }
-    // maven { url 'http://repository.snappydata.io/repository/snapshots' }
+    // maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
     maven { url 'https://app.camunda.com/nexus/content/repositories/public' }
   }
 
@@ -78,20 +77,20 @@ allprojects {
   tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
     options.incremental = true
-    options.compilerArgs << '-Xlint:-serial,-path,-deprecation,-unchecked,-rawtypes'
+    options.compilerArgs << '-Xlint:-serial,-path,-deprecation,-unchecked,-rawtypes,-try'
     options.compilerArgs << '-XDignore.symbol.file'
     options.fork = true
     options.forkOptions.javaHome = file(System.properties['java.home'])
     options.forkOptions.jvmArgs = [ '-J-Xmx2g', '-J-Xms2g', '-J-XX:ReservedCodeCacheSize=512m', '-J-Djava.net.preferIPv4Stack=true' ]
   }
   tasks.withType(ScalaCompile) {
+    options.encoding = 'UTF-8'
     options.fork = true
     options.forkOptions.jvmArgs = [ '-Xmx2g', '-Xms2g', '-XX:ReservedCodeCacheSize=512m', '-Djava.net.preferIPv4Stack=true' ]
     // scalaCompileOptions.optimize = true
     // scalaCompileOptions.useAnt = false
     scalaCompileOptions.deprecation = false
-    scalaCompileOptions.additionalParameters = [ '-feature' ]
-    options.encoding = 'UTF-8'
+    scalaCompileOptions.additionalParameters = [ '-feature', '-explaintypes', '-Yno-adapted-args' ]
   }
 
   jar.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -107,37 +106,32 @@ allprojects {
     aqpProductName = 'TIBCO ComputeDB AQP'
     vendorName = 'TIBCO Software Inc.'
     scalaBinaryVersion = '2.11'
-    scalaVersion = scalaBinaryVersion + '.8'
+    scalaVersion = scalaBinaryVersion + '.12'
 
-    spark210Version = '2.1.0'
-    spark211Version = '2.1.1'
-    spark232Version = '2.3.2'
-    spark244Version = '2.4.4'
-
-    sparkVersion = spark211Version
+    sparkVersion = '2.4.5'
     sparkConnectorVersion = System.getProperty('spark.connector.version', sparkVersion)
-    snappySparkVersion = '2.1.1.7'
+    snappySparkVersion = '2.4.5.1'
     coreProjectName = sparkVersion == sparkConnectorVersion
         ? ":snappy-core_${scalaBinaryVersion}" : ":snappy-core-product_${scalaBinaryVersion}"
     aqpProjectName = ":snappy-aqp_${scalaBinaryVersion}"
     sparkPackageName = "snappydata-${version}_${sparkConnectorVersion}-s_${scalaBinaryVersion}"
 
     sparkConnectorDistName = "spark-${sparkConnectorVersion}-bin-hadoop2.7"
-    sparkCurrentVersion = '2.4.4'
+    sparkCurrentVersion = '2.4.5'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
-    slf4jVersion = '1.7.25'
+    slf4jVersion = '1.7.30'
     junitVersion = '4.12'
     mockitoVersion = '1.10.19'
     hadoopVersion = '2.7.7'
     scalatestVersion = '3.0.8'
-    jettyVersion = '9.2.26.v20180806'
+    jettyVersion = '9.3.28.v20191105'
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.1'
     thriftVersion = '0.9.3'
     metricsVersion = '4.0.3'
     metrics2Version = '2.2.0'
-    janinoVersion = '3.0.15'
+    janinoVersion = '3.0.9'
     derbyVersion = '10.14.2.0'
     parboiledVersion = '2.1.5'
     tomcatJdbcVersion = '8.5.37'
@@ -153,7 +147,7 @@ allprojects {
     jodaVersion = '2.1.2'
     jodaTimeVersion = '2.10.1'
     slickVersion = '2.1.0'
-    h2Version = '1.3.176'
+    h2Version = '1.4.195'
     commonsCollectionsVersion = '3.2.2'
     commonsIoVersion = '2.6'
     commonsPoolVersion = '1.6'
@@ -163,7 +157,7 @@ allprojects {
     typesafeConfigVersion = '1.3.3'
     mssqlVersion = '7.0.0.jre8'
     antlr2Version = '2.7.7'
-    kafka010Version = '0.10.0.1'
+    kafka2Version = '2.0.1'
 
     pegdownVersion = '1.6.0'
     snappyStoreVersion = '1.6.4'
@@ -182,9 +176,9 @@ allprojects {
     jdkVersion = System.getProperty('java.version')
     clusterType = ''
 
-    sparkJobServerVersion = '0.6.2.10'
-    eclipseCollectionsVersion = '9.2.0'
-    fastutilVersion = '8.2.2'
+    sparkJobServerVersion = '0.9.0.1'
+    eclipseCollectionsVersion = '10.1.0'
+    fastutilVersion = '8.3.1'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
@@ -395,12 +389,12 @@ subprojects {
     minHeapSize '4g'
     maxHeapSize '4g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=1g',
-            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-Xss4m', '-XX:ReservedCodeCacheSize=1g'
     // for benchmarking
     // minHeapSize '12g'
     // maxHeapSize '12g'
     // jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=2g',
-    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
+    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-Xss4m', '-XX:ReservedCodeCacheSize=1g'
 
     testLogging.exceptionFormat = TestExceptionFormat.FULL
     testLogging.events = TestLogEvent.values() as Set
@@ -1354,6 +1348,7 @@ task buildAll {
   dependsOn getTasksByName('assemble', true).findAll { taskFilter(it) }.collect { it.path }
   dependsOn getTasksByName('product', true).findAll { taskFilter(it) }.collect { it.path }
   dependsOn getTasksByName('testClasses', true).findAll { taskFilter(it) }.collect { it.path }
+  dependsOn ':snappy-spark:scalaStyle'
   dependsOn ':copyShadowJars'
   mustRunAfter cleanAll
 }

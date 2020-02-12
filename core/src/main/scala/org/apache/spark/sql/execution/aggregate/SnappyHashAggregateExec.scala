@@ -319,7 +319,7 @@ case class SnappyHashAggregateExec(
            | $isNull = ${internals.exprCodeIsNull(ev)};
            | $value = ${internals.exprCodeValue(ev)};
         """.stripMargin
-      internals.newExprCode(ev.code.toString + initVars, isNull, value)
+      internals.newExprCode(ev.code.toString + initVars, isNull, value, e.dataType)
     }
     var initBufVar = evaluateVariables(bufVars)
 
@@ -1166,12 +1166,15 @@ case class SnappyHashAggregateExec(
       byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits,
       skipNullBitsCode = false)
     val bufferEval = evaluateVariables(bufferVars)
-    val bufferVarsFromInitVars = byteBufferAccessor.aggregateBufferVars.zip(initVars).map {
-      case (bufferVarName, initEv) => internals.newExprCode(code =
+    val bufferVarsFromInitVars = byteBufferAccessor.aggregateBufferVars.indices.map { i =>
+      val bufferVarName = byteBufferAccessor.aggregateBufferVars(i)
+      val initEv = initVars(i)
+      internals.newExprCode(code =
           s"""
              |$bufferVarName${SHAMapAccessor.nullVarSuffix} = ${internals.exprCodeIsNull(initEv)};
              |$bufferVarName = ${internals.exprCodeValue(initEv)};""".stripMargin,
-        isNull = s"$bufferVarName${SHAMapAccessor.nullVarSuffix}", value = bufferVarName)
+        isNull = s"$bufferVarName${SHAMapAccessor.nullVarSuffix}", value = bufferVarName,
+        aggBuffDataTypes(i))
     }
     val bufferEvalFromInitVars = evaluateVariables(bufferVarsFromInitVars)
     ctx.currentVars = bufferVars ++ input

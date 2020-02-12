@@ -17,7 +17,9 @@
 package org.apache.spark.sql
 
 import scala.util.control.NonFatal
+
 import io.snappydata.SnappyFunSuite
+
 import org.apache.spark.Logging
 import org.apache.spark.scheduler._
 
@@ -29,13 +31,13 @@ class MiscTest extends SnappyFunSuite with Logging {
   test("With Clause") {
     snc.sql("drop table if exists nulls_table")
     snc.sql(s"create table table1 (ol_1_int_id  integer," +
-      s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
-      "options( partition_by 'ol_1_int2_id', buckets '2')")
+        s" ol_1_int2_id  integer, ol_1_str_id STRING) using column " +
+        "options( partition_by 'ol_1_int2_id', buckets '2')")
 
     snc.sql("WITH temp_table AS ( SELECT ol_1_int2_id  as col1," +
-      " sum(ol_1_int_id) AS col2 FROM table1 GROUP BY ol_1_int2_id)" +
-      " SELECT ol_1_int2_id FROM temp_table ," +
-      " table1 WHERE ol_1_int2_id  = col1 LIMIT 100 ").collect()
+        " sum(ol_1_int_id) AS col2 FROM table1 GROUP BY ol_1_int2_id)" +
+        " SELECT ol_1_int2_id FROM temp_table ," +
+        " table1 WHERE ol_1_int2_id  = col1 LIMIT 100 ").collect()
   }
 
   test("Pool test") {
@@ -44,7 +46,7 @@ class MiscTest extends SnappyFunSuite with Logging {
     sc.taskScheduler.rootPool.addSchedulable(rootPool)
 
     try {
-      snc.sql("set snappydata.scheduler.pool=xyz")
+      snc.sql("set spark.scheduler.pool=xyz")
       fail("unknown spark scheduler cannot be set")
     } catch {
       case _: IllegalArgumentException => // do nothing
@@ -52,8 +54,8 @@ class MiscTest extends SnappyFunSuite with Logging {
         fail("setting unknown spark scheduler with a different error", e)
     }
 
-    snc.sql("set snappydata.scheduler.pool=lowlatency")
-    snc.sql("select 1").count
+    snc.sql("set spark.scheduler.pool=lowlatency")
+    snc.sql("select 1").count()
     assert(sc.getLocalProperty("spark.scheduler.pool") === "lowlatency")
   }
 
@@ -65,7 +67,7 @@ class MiscTest extends SnappyFunSuite with Logging {
         snc.sql(sqlstr)
         fail(s"this should have given TableNotFoundException")
       } catch {
-        case tnfe: TableNotFoundException =>
+        case _: TableNotFoundException =>
         case ae: AnalysisException => if (!ae.getMessage().contains("Table or view not found")) {
           throw ae
         }
@@ -80,10 +82,10 @@ class MiscTest extends SnappyFunSuite with Logging {
       snc.sql(s"create table test.good(dept string, sal int) using column options()")
       snc.sql(s"insert into test.good values('IT', 10000), ('HR', 9000), ('ADMIN', 4000)")
       var arr = snc.sql(s"select * from good").collect()
-      assert(arr.size === 0)
+      assert(arr.length === 0)
       snc.sql(s"set schema test")
       arr = snc.sql(s"select * from good").collect()
-      assert(arr.size === 3)
+      assert(arr.length === 3)
     } finally {
       snc.sql(s"set schema app")
     }
@@ -94,7 +96,7 @@ class MiscTest extends SnappyFunSuite with Logging {
     snc.sql("create table emp.test1(col1 int not null, col2 int not null) using column")
     snc.sql("insert into test values (1, 2), (4, 5), (6, 7)")
     snc.sql("insert into emp.test1 values (1, 2), (4, 5), (6, 7)")
-    val sz = snc.sql(s"select * from app.test").collect().length
+    assert(snc.sql(s"select * from app.test").collect().length === 3)
     val sqlstrs = Seq("select app.test.* from app.test",
       "select app.test.col1, app.test.col2 from app.test",
       "select col1, col2 from app.test",
@@ -122,7 +124,7 @@ class MiscTest extends SnappyFunSuite with Logging {
         snc.sql(sqlstr)
         fail(s"expected analysis exception for $sqlstr")
       } catch {
-        case ae: AnalysisException => // expected ... ignore
+        case _: AnalysisException => // expected ... ignore
       })
   }
 }

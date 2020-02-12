@@ -16,17 +16,13 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.parser.AbstractSqlParser
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.internal.VariableSubstitution
-import org.apache.spark.sql.types.DataType
+import org.apache.spark.sql.types.{DataType, StructType}
 
-class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
-
-  protected def astBuilder = throw new UnsupportedOperationException(
-    "SnappyData parser does not use AST")
+class SnappySqlParser(session: SnappySession) extends SQLParserInterface {
 
   @transient protected[sql] val sqlParser: SnappyParser =
     new SnappyParser(session)
@@ -55,6 +51,14 @@ class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
 
   override def parsePlan(sqlText: String): LogicalPlan = {
     sqlParser.parse(withSubstitution(sqlText), sqlParser.sql.run())
+  }
+
+  override def parseFunctionIdentifier(sqlText: String): FunctionIdentifier = {
+    sqlParser.parse(sqlText, sqlParser.parseFunctionIdentifier.run())
+  }
+
+  override def parseTableSchema(sqlText: String): StructType = {
+    StructType(sqlParser.parse(sqlText, sqlParser.parseTableSchema.run()))
   }
 
   def parsePlan(sqlText: String, clearExecutionData: Boolean): LogicalPlan = {

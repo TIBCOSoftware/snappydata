@@ -250,7 +250,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |$closeForNoContext
        |${if (numInsertedRowsMetric eq null) ""
         else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
-       |${consume(ctx, Seq(internals.newExprCode("", "false", numInsertions, classOf[Long])))}
+       |${consume(ctx, Seq(internals.newExprCode("", "false", numInsertions, LongType)))}
        |success = true;
        |}
        |finally {
@@ -393,7 +393,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |$closeForNoContext
        |${if (numInsertedRowsMetric eq null) ""
           else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
-       |${consume(ctx, Seq(internals.newExprCode("", "false", numInsertions, classOf[Long])))}
+       |${consume(ctx, Seq(internals.newExprCode("", "false", numInsertions, LongType)))}
        |success = true;
        |}
        |finally {
@@ -509,7 +509,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
     val rowReadExprs = schema.zipWithIndex.map { case (field, ordinal) =>
       internals.newExprCode("", s"${ctx.INPUT_ROW}.isNullAt($ordinal)",
-        internals.getValue(ctx.INPUT_ROW, field.dataType, ordinal.toString, ctx), classOf[Int])
+        internals.getValue(ctx.INPUT_ROW, field.dataType, ordinal.toString, ctx), IntegerType)
     }
 
     val columnWrite = schema.indices.map { i =>
@@ -854,16 +854,16 @@ object ColumnWriter extends SparkSupport {
     } else (lCode, uCode)
 
     (ColumnStatsSchema(field.name, field.dataType, nullCountNullable).schema, Seq(
-      internals.newExprCode(lowerCode, lowerIsNull, lower),
-      internals.newExprCode(upperCode, upperIsNull, upper),
+      internals.newExprCode(lowerCode, lowerIsNull, lower, field.dataType),
+      internals.newExprCode(upperCode, upperIsNull, upper, field.dataType),
       internals.newExprCode(s"final int $nullCount = $encoder.nullCount();", "false",
-        nullCount, classOf[Int])))
+        nullCount, IntegerType)))
   }
 
   def genStatsRow(ctx: CodegenContext, batchSizeTerm: String,
       stats: Seq[Seq[ExprCode]], statsSchema: Seq[Seq[Attribute]]): ExprCode = {
     val statsVars = internals.newExprCode(code = "", isNull = "false", batchSizeTerm,
-      classOf[Int]) +: stats.flatten
+      IntegerType) +: stats.flatten
     val statsExprs = (ColumnStatsSchema.COUNT_ATTRIBUTE +: statsSchema.flatten)
         .zipWithIndex.map { case (a, i) =>
       a.dataType match {
@@ -1120,8 +1120,8 @@ object ColumnWriter extends SparkSupport {
       s"""
          |final long $fieldOffset = $baseDataOffset + ($index << 3);
          |${genCodeColumnWrite(ctx, dt, nullable = false, encoder, encoder,
-            cursorTerm, internals.newExprCode("", "false", value, classOf[Int]), batchSizeTerm,
-            fieldOffset, baseOffset)}
+            cursorTerm, internals.newExprCode("", "false", value, IntegerType),
+            batchSizeTerm, fieldOffset, baseOffset)}
       """.stripMargin
     val (checkNull, assignValue) = dt match {
       case d: DecimalType => val checkNull =

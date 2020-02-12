@@ -262,13 +262,13 @@ abstract case class RowTableScan(
       val isNullVar = ctx.freshName("isNull")
       if (useHolder) {
         internals.newExprCode(s"$code\nfinal boolean $isNullVar = $holder.wasNullAndClear();",
-          isNullVar, col)
+          isNullVar, col, dataType)
       } else {
         internals.newExprCode(s"$code\nfinal boolean $isNullVar = $col == null;",
-          isNullVar, col)
+          isNullVar, col, dataType)
       }
     } else {
-      internals.newExprCode(code, "false", col)
+      internals.newExprCode(code, "false", col, dataType)
     }
   }
 
@@ -381,9 +381,9 @@ abstract case class RowTableScan(
     if (nullable) {
       val isNullVar = ctx.freshName("isNull")
       internals.newExprCode(code + s"\nfinal boolean $isNullVar = $rsVar.wasNull();",
-        isNullVar, col)
+        isNullVar, col, dataType)
     } else {
-      internals.newExprCode(code, "false", col)
+      internals.newExprCode(code, "false", col, dataType)
     }
   }
 }

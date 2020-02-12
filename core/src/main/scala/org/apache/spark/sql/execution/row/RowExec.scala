@@ -26,7 +26,7 @@ import org.apache.spark.sql.execution.TableExec
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.CodeGeneration
-import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.types.{LongType, StructField, StructType}
 
 /**
  * Base class for bulk row table insert, update, put, delete operations.
@@ -151,7 +151,7 @@ trait RowExec extends TableExec {
        |  $stmt = $connTerm.prepareStatement("$pstmtStr");
        |  $result = 0L;
        |  $mutateTable();
-       |  ${consume(ctx, Seq(internals.newExprCode("", "false", result, classOf[Long])))}
+       |  ${consume(ctx, Seq(internals.newExprCode("", "false", result, LongType)))}
        |} catch (java.sql.SQLException sqle) {
        |  throw new java.io.IOException(sqle.toString(), sqle);
        |}$commitCode
@@ -192,7 +192,8 @@ trait RowExec extends TableExec {
       val dataType = internals.javaType(f.dataType, ctx)
       val columnSetterFunction = ctx.freshName("setColumnOfRow")
       val columnSetterCode = CodeGeneration.getColumnSetterFragment(col, f.dataType,
-        connProps.dialect, internals.copyExprCode(ev, isNull, field), stmt, schemaFields, ctx)
+        connProps.dialect, internals.copyExprCode(ev, isNull, field, dataType), stmt,
+        schemaFields, ctx)
       ctx.addNewFunction(columnSetterFunction,
         s"""
            |private void $columnSetterFunction(final boolean $isNull,

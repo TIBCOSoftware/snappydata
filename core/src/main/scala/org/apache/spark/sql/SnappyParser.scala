@@ -381,6 +381,14 @@ class SnappyParser(session: SnappySession)
     ws ~ (identifier + commaSep) ~ EOI
   }
 
+  final def parseFunctionIdentifier: Rule1[FunctionIdentifier] = rule {
+    ws ~ functionIdentifier ~ EOI
+  }
+
+  final def parseTableSchema: Rule1[Seq[StructField]] = rule {
+    ws ~ (column + commaSep) ~ EOI
+  }
+
   protected final def expression: Rule1[Expression] = rule {
     andExpression ~ (OR ~ andExpression ~>
         ((e1: Expression, e2: Expression) => Or(e1, e2))).*

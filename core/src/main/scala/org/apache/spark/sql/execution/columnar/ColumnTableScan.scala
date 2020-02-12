@@ -174,7 +174,7 @@ abstract case class ColumnTableScan(
       s"""
          |$jt $retValName = $name($batchOrdinal);
        """.stripMargin
-    internals.newExprCode(exprCode, nullVarForCol, retValName)
+    internals.newExprCode(exprCode, nullVarForCol, retValName, sqlType)
   }
 
   override def doProduce(ctx: CodegenContext): String = {
@@ -436,14 +436,14 @@ abstract case class ColumnTableScan(
         ColumnDelta.mutableKeyNames.indexOf(attr.name) match {
           case 0 =>
             ordinalIdTerm = ctx.freshName("ordinalId")
-            internals.newExprCode("", "false", ordinalIdTerm, classOf[Long])
+            internals.newExprCode("", "false", ordinalIdTerm, LongType)
           case 1 =>
             columnBatchIdTerm = ctx.freshName("columnBatchId")
-            internals.newExprCode("", "false", columnBatchIdTerm, classOf[Long])
+            internals.newExprCode("", "false", columnBatchIdTerm, LongType)
           case 2 =>
             bucketIdTerm = ctx.freshName("bucketId")
-            internals.newExprCode("", "false", bucketIdTerm, classOf[Int])
-          case 3 => internals.newExprCode("", "false", numBatchRows, classOf[Int])
+            internals.newExprCode("", "false", bucketIdTerm, IntegerType)
+          case 3 => internals.newExprCode("", "false", numBatchRows, IntegerType)
           case _ => throw new IllegalStateException(s"Unexpected internal attribute $attr")
         }
       case (attr, index) => rsIndex += 1; columnsInputMapper(attr, index, rsIndex)
@@ -691,7 +691,8 @@ abstract case class ColumnTableScan(
              |$dictionaryVar = $mutableDecoderGlobal == null
              |    ? $decoderGlobal.getStringDictionary()
              |    : $mutableDecoderGlobal.getStringDictionary();
-          """.stripMargin, s"($dictionaryVar == null)", dictionaryVar, classOf[StringDictionary])
+          """.stripMargin, s"($dictionaryVar == null)", dictionaryVar,
+          ObjectType(classOf[StringDictionary]))
         val dictionaryIndex = if (attr.nullable) {
           internals.newExprCode(
             s"""
@@ -702,14 +703,14 @@ abstract case class ColumnTableScan(
                |} else {
                |  $dictionaryIndexVar = $dictionaryVar.size();
                |}
-               """.stripMargin, "false", dictionaryIndexVar, classOf[Int])
+               """.stripMargin, "false", dictionaryIndexVar, IntegerType)
         } else {
           internals.newExprCode(
             s"""
                |$dictionaryIndexVar = $updateDecoder == null
                |    ? $decoder.readDictionaryIndex($buffer, $nonNullPosition)
                |    : $updateDecoder.readDictionaryIndex();
-          """.stripMargin, "false", dictionaryIndexVar, classOf[Int])
+          """.stripMargin, "false", dictionaryIndexVar, IntegerType)
         }
         session.foreach(_.addDictionaryCode(ctx, col,
           DictionaryCode(dictionary, buffer, dictionaryIndex)))
@@ -765,7 +766,7 @@ abstract case class ColumnTableScan(
            |  $isNullVar = true;
            |}
         """.stripMargin
-      internals.newExprCode(code, isNullVar, col)
+      internals.newExprCode(code, isNullVar, col, sqlType)
     } else {
       var code =
         s"""
@@ -776,7 +777,7 @@ abstract case class ColumnTableScan(
       if (weightVar != null && attr.name.equalsIgnoreCase(Utils.WEIGHTAGE_COLUMN_NAME)) {
         code += s"if ($col == 1) $col = $weightVar;\n"
       }
-      internals.newExprCode(code, "false", col)
+      internals.newExprCode(code, "false", col, sqlType)
     }
   }
 
@@ -1012,7 +1013,7 @@ case class NumBatchRows(varName: String) extends LeafExpression with SparkSuppor
   override def dataType: DataType = IntegerType
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    internals.newExprCode("", "false", varName)
+    internals.newExprCode("", "false", varName, IntegerType)
   }
 
   override def eval(input: InternalRow): Any =
@@ -1085,7 +1086,7 @@ case class StartsWithForStats(upper: Expression, lower: Expression,
          |}
          |
       """.stripMargin
-    internals.copyExprCode(ev, code = code, isNull = "false", value = result, classOf[Boolean])
+    internals.copyExprCode(ev, code = code, isNull = "false", value = result, BooleanType)
   }
 
   override def eval(input: InternalRow): Any =

@@ -198,7 +198,7 @@ The SQL section shows all the queries and their corresponding details along with
 |  **Colocated**         |     When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions.   |
 |**Whole-Stage Code Generation** |  A whole stage code generation node compiles a sub-tree of plans that support code generation together into a single Java function, which helps improve execution performance.      |
 |    **Per node execution timing**    |   Displays the time required for the execution of each node. If there are too many rows that are not getting filtered or exchanged.     |
-|   **Pool Name**     | Default/Low Latency. Applications can explicitly configure the use of this pool using a SQL command `set snappydata.scheduler.pool=lowlatency`.       |
+|   **Pool Name**     | Default/Low Latency. Applications can explicitly configure the use of this pool using a SQL command `set spark.scheduler.pool=lowlatency`.       |
 |**Query Node Details**|   Hover over a component to view its details.     |
 |     **Filter**   |   Displays the number of rows that are filtered for each node.      |
 |    **Joins**    |   If HashJoin puts pressure on memory, you can change the HashJoin size to use SortMergeJoin to avoid on-heap memory pressure.      |

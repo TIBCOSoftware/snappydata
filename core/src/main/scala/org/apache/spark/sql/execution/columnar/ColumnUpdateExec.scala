@@ -30,7 +30,7 @@ import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
 import org.apache.spark.sql.store.{CompressionCodecId, StoreUtils}
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{IntegerType, StructType}
 
 /**
  * Generated code plan for updates into a column table.
@@ -221,7 +221,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
            |  final $encoderClass $realEncoderTerm = $encoderTerm.getRealEncoder();
            |  $encoderTerm.setUpdatePosition($ordinalIdVar);
            |  ${ColumnWriter.genCodeColumnWrite(ctx, dataType, col.nullable, realEncoderTerm,
-                encoderTerm, cursorTerm, internals.copyExprCode(ev, isNull, field), ordinal)}
+                encoderTerm, cursorTerm, internals.copyExprCode(ev, isNull = isNull,
+                value = field, dt = dataType), ordinal)}
            |}
         """.stripMargin)
       // code for invoking the function
@@ -249,14 +250,16 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     // equals to 1 i.e LZ4 compression codec id ).
     // Hence setting each 3rd bit( null count stats) with not null flag. This will never cause
     // the word to be read as negative number.
-    val allNullsExprs = Seq(internals.newExprCode("", "true", ""),
-      internals.newExprCode("", "true", ""), internals.newExprCode("", "false", "-1"))
     val (statsSchema, stats) = tableSchema.indices.map { i =>
       val field = tableSchema(i)
       tableToUpdateIndex.get(i) match {
         case null =>
+          val dataType = field.dataType
+          val allNullsExprs = Seq(internals.newExprCode("", "true", "", dataType),
+            internals.newExprCode("", "true", "", dataType),
+            internals.newExprCode("", "false", "-1", IntegerType))
           // write null for unchanged columns apart from null count field (by this update)
-          (ColumnStatsSchema(field.name, field.dataType,
+          (ColumnStatsSchema(field.name, dataType,
             nullCountNullable = false).schema, allNullsExprs)
         case u => ColumnWriter.genCodeColumnStats(ctx, field,
           s"$deltaEncoders[$u].getRealEncoder()")

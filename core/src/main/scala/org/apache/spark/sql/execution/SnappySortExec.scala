@@ -56,9 +56,9 @@ case class SnappySortExec(sortPlan: SortExec, child: SparkPlan)
 
     child.execute().mapPartitionsPreserveInternal(itr =>
 
-      new AbstractIterator[UnsafeRow] {
+      new AbstractIterator[InternalRow] {
 
-        private lazy val sortedIterator: Iterator[UnsafeRow] = {
+        private lazy val sortedIterator: Iterator[InternalRow] = {
           val sorter = sortPlan.createSorter()
           val metrics = TaskContext.get().taskMetrics()
           // Remember spill data size of this task before execute this operator so that we can
@@ -74,7 +74,7 @@ case class SnappySortExec(sortPlan: SortExec, child: SparkPlan)
 
         override def hasNext: Boolean = sortedIterator.hasNext
 
-        override def next(): UnsafeRow = sortedIterator.next()
+        override def next(): InternalRow = sortedIterator.next()
       })
   }
 

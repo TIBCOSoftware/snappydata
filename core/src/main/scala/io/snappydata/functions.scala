@@ -145,6 +145,6 @@ case class DSID() extends LeafExpression with Nondeterministic with SparkSupport
       varName => s"$varName = UTF8String.fromString(" +
           s"io.snappydata.SnappyDataFunctions.getDSID($connPropsRef));")
     internals.copyExprCode(ev, code = "", isNull = "false", value = dsidVar,
-      javaClass = classOf[UTF8String])
+      dt = StringType)
   }
 }

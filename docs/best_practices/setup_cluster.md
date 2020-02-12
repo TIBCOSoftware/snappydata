@@ -69,7 +69,7 @@ Two cores are statically assigned to the low latency pool. Also, the low latency
 If a query requires all 30 partitions and no low latency queries are running at that time, all 30 cores are assigned to the first query. However, when a low latency query is assigned, the scheduler does its best to allocate cores as soon as tasks from the earlier query finish.
 </br>
 
-Applications can explicitly configure to use a particular pool for the current session using a SQL configuration property, `snappydata.scheduler.pool`. For example, the `set snappydata.scheduler.pool=lowlatency` command sets the pool as low latency pool for the current session. 
+Applications can explicitly configure to use a particular pool for the current session using a SQL configuration property, `spark.scheduler.pool`. For example, the `set spark.scheduler.pool=lowlatency` command sets the pool as low latency pool for the current session. 
 
 New pools can be added and properties of the existing pools can be configured by modifying the **conf/fairscheduler.xml** file. We do not recommend changing the pool names (`default` and `lowlatency`).
 
@@ -80,7 +80,7 @@ The product is configured with two out-of-the-box pools, that is the **Default p
 The [**Stages**](/monitoring/monitoring.md#stages) tab on the SnappyData Monitoring Console shows the available pools.  When you track a job for an SQL query on the [**SQL**](/monitoring/monitoring.md#sql) tab, it shows the pool that is used in the **Pool Name** column. In-built tasks such as ingestion can show lower priority pools by default to give priority to foreground queries. To configure such priority, do the following: 
 
 1.	Define the pools in **conf/fairscheduler.xml** 
-2.	Set a pool for a job using Spark API  or use `set snappydata.scheduler.pool` property in a SnappySession.
+2.	Set a pool for a job using Spark API  or use `set spark.scheduler.pool` property in a SnappySession.
 
 To configure the priority based on specific requirements, you can also either permit the users to set the priority for queries or add some pool allocation logic in the application as per client requirements.
 

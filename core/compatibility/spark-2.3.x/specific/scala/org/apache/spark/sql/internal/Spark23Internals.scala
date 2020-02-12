@@ -151,14 +151,15 @@ abstract class Spark23Internals extends Spark23_4_Internals {
 
   override def newCacheManager(): CacheManager = new SnappyCacheManager23
 
-  override def newExprCode(code: String, isNull: String, value: String,
-      javaClass: Class[_]): ExprCode = {
+  override def newExprCode(code: String, isNull: String, value: String, dt: DataType): ExprCode = {
     ExprCode(code, isNull, value)
   }
 
-  override def copyExprCode(ev: ExprCode, code: String, isNull: String, value: String,
-      javaClass: Class[_]): ExprCode = {
-    ev.copy(code, isNull, value)
+  override def copyExprCode(ev: ExprCode, code: String, isNull: String,
+      value: String, dt: DataType): ExprCode = {
+    ev.copy(code = if (code ne null) code else ev.code,
+      isNull = if (isNull ne null) isNull else ev.isNull,
+      value = if (value ne null) value else ev.value)
   }
 
   override def resetCode(ev: ExprCode): Unit = {

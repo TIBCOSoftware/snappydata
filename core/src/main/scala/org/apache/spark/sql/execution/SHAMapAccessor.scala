@@ -338,7 +338,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           }
         }""".stripMargin
       }
-      internals.newExprCode(exprCode, nullVar, varName)
+      internals.newExprCode(exprCode, nullVar, varName, dt)
     }
   }
 
@@ -739,7 +739,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
               val dataType = ctx.freshName("dataType")
               val dataTypeClass = classOf[DataType].getName
               val elementWitingCode = writeKeyOrValue(baseObjectTerm, offsetTerm, Seq(elementType),
-                Seq(internals.newExprCode("", "false", arrElement)), "", -1,
+                Seq(internals.newExprCode("", "false", arrElement, elementType)), "", -1,
                 isKey = true, skipNullEvalCode = true, nestingLevel)
               val elType = internals.javaType(elementType, ctx)
               val explodeArraySnippet =
@@ -1019,7 +1019,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     nestingLevel: Int): (Seq[ExprCode], Seq[DataType]) = st.zipWithIndex.map {
     case (sf, index) => val (varName, nullVarName) =
       SHAMapAccessor.generateExplodedStructFieldVars(parentStructVarName, nestingLevel, index)
-      internals.newExprCode("", nullVarName, varName) -> sf.dataType
+      internals.newExprCode("", nullVarName, varName, sf.dataType) -> sf.dataType
   }.unzip
 
   /**

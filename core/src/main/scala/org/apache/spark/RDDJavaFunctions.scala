@@ -76,7 +76,7 @@ class RDDJavaFunctions[U](val javaRDD: JavaRDD[U]) {
       preservesPartitioning: Boolean = false): JavaRDD[R] = {
 
     def fn: (Int, Iterator[U]) => Iterator[R] = {
-      (x: Int, y: Iterator[U]) => f.call(x, y.asJava).asScala
+      (x: Int, y: Iterator[U]) => f.call((x, y.asJava)).asScala
     }
     JavaRDD.fromRDD(
       new RDDExtensions(javaRDD.rdd)(fakeClassTag[U])

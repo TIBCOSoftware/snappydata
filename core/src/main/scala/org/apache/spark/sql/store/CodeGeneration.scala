@@ -61,7 +61,7 @@ object CodeGeneration extends Logging with SparkSupport {
   lazy val (codeCacheSize, cacheSize) = {
     val env = SparkEnv.get
     val size = if (env ne null) {
-      env.conf.getInt("spark.sql.codegen.cacheSize", 2000)
+      env.conf.getInt("spark.sql.codegen.cache.maxEntries", 2000)
     } else 2000
     // don't need as big a cache for other caches
     (size, size >>> 2)
@@ -251,7 +251,8 @@ object CodeGeneration extends Logging with SparkSupport {
       dialect: JdbcDialect, row: String, stmt: String,
       schemaTerm: String, ctx: CodegenContext): String = {
     val rowInput = (col: Int) => internals.newExprCode(code = "", isNull = s"$row.isNullAt($col)",
-      value = internals.getValue(row, schema(col).dataType, Integer.toString(col), ctx))
+      value = internals.getValue(row, schema(col).dataType, Integer.toString(col), ctx),
+      schema(col).dataType)
     genStmtSetters(schema, dialect, rowInput, stmt, schemaTerm, ctx)
   }
 

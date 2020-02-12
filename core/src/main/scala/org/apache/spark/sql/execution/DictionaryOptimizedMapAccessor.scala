@@ -18,12 +18,11 @@ package org.apache.spark.sql.execution
 
 import io.snappydata.collection.ObjectHashSet
 
-import org.apache.spark.sql.{SnappySession, SparkSupport}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.types.StringType
-import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.sql.{SnappySession, SparkSupport}
 
 /**
  * Makes use of dictionary indexes for strings if any.
@@ -92,7 +91,7 @@ object DictionaryOptimizedMapAccessor extends SparkSupport {
     val keyNull = internals.exprCodeIsNull(keyVar) != "false"
     val keyValue = internals.exprCodeValue(keyVar)
     val keyEv = internals.copyExprCode(keyVar, code = "",
-      isNull = if (keyNull) s"($key == null)" else "false", key, classOf[UTF8String])
+      isNull = if (keyNull) s"($key == null)" else "false", key, StringType)
     val className = accessor.getClassName
 
     // for the case when there is no entry in map (hash join), insert a token
