@@ -1034,6 +1034,44 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_date_time)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  93. lag, 94. lead, 95. ntile,
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_lead_lag_ntile_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_lead_lag_ntile_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_lead_lag_ntile)
+    snc.sql(SQLFunctionsUtils.createRowTbl_lead_lag_ntile)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 12) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rownumber_rank(i))
+    }
+    for(i <- 0 to 12) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rownumber_rank(i))
+    }
+    for(i <- 0 to 12) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rownumber_rank(i))
+    }
+    for(i <- 0 to 12) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rownumber_rank(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_lead_lag_ntile,
+      "Q55_lead_lag_ntile", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_lead_lag_ntile,
+      "Q56_lead_lag_ntile", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_rownumber_rank)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_rownumber_rank)
+    spark.sql(SQLFunctionsUtils.dropColTbl_rownumber_rank)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_rownumber_rank)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()

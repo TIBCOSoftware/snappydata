@@ -641,4 +641,26 @@ object SQLFunctionsUtils {
     " ORDER BY id"
   val dropColTbl_date_time : String = dropTbl  + columnTbl
   val dropRowTbl_date_time : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  93. lag, 94. lead, 95. ntile,
+    */
+  val createColTypeTbl_lead_lag_ntile_Spark : String = createTbl + columnTbl +
+    "(name string,class string,total double)"
+  val createRowTypeTbl_lead_lag_ntile_Spark : String = createTbl + rowTbl +
+    "(name string,class string,total double)"
+  val createColumnTbl_lead_lag_ntile : String = createTbl + columnTbl +
+    "(name string,class string,total double) " + usingCol
+  val createRowTbl_lead_lag_ntile : String = createTbl + rowTbl +
+    "(name string,class string,total double) " + usingRow
+  val select_ColTbl_lead_lag_ntile : String = "SELECT name,class,total," +
+    "lag(total) over (partition by class order by total) as lag," +
+    "lead(total) over (partition by class order by total) as lead," +
+    "ntile(3) over (partition by class order by total) as ntile FROM " + columnTbl
+  val select_RowTbl_lead_lag_ntile : String = "SELECT name,class,total," +
+    "lag(total) over (partition by class order by total) as lag," +
+    "lead(total) over (partition by class order by total) as lead," +
+    "ntile(3) over (partition by class order by total) as ntile FROM " + rowTbl
+  val dropColTbl_lead_lag_ntile : String = dropTbl  + columnTbl
+  val dropRowTbl_lead_lag_ntile : String = dropTbl + rowTbl
 }
