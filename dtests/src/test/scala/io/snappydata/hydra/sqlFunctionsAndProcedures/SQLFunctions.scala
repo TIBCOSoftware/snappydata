@@ -347,13 +347,15 @@ class SQLFunctions extends SnappySQLJob {
     pw.flush()
     /**
     Below queries test the function:
-     29. current_database().
+     29. current_database(), 92. current_schema().
     */
     pw.println("Q15 : current_database(), For Snappy -> APP, For Spark -> Default")
     val snappyDBDF : DataFrame = snc.sql("SELECT current_database() as DB")
     val sparkDBDF : DataFrame = spark.sql("SELECT current_database() as DB")
+    val snappySchemaDF : DataFrame = snc.sql("SELECT current_schema() as DB")
     pw.println("Snappy SELECT current_databse() -> " + snappyDBDF.take(1).mkString)
     pw.println("Spark SELECT current_databse() -> " + sparkDBDF.take(1).mkString)
+    pw.println("Snappy SELECT current_schema() -> " + snappySchemaDF.take(1).mkString)
     pw.println()
     pw.flush()
     /**
@@ -995,7 +997,7 @@ class SQLFunctions extends SnappySQLJob {
     pw.flush()
     /**
       *  Below queries test the functions :
-      *  87. to_unix_timestamp, 88. to_utc_timestampe, 89. to_date,
+      *  87. to_unix_timestamp, 88. to_utc_timestamp, 89. to_date,
       *  90. from_unixtime, 91. from_utc_timestamp.
       */
     //  CREATE TABLE IN SPARK / SNAPPY.

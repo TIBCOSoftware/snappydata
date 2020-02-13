@@ -616,7 +616,7 @@ object SQLFunctionsUtils {
   val dropRowTbl_monotonically_increasing_id : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
-    *  87. to_unix_timestamp, 88. to_utc_timestampe, 89. to_date,
+    *  87. to_unix_timestamp, 88. to_utc_timestamp, 89. to_date,
     *  90. from_unixtime, 91. from_utc_timestamp.
     */
   val date_time = new Array[String](3)
