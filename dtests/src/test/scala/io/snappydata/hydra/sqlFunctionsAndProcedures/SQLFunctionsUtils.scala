@@ -614,4 +614,31 @@ object SQLFunctionsUtils {
     "monotonically_increasing_id() + 1 as id,state,capital FROM " + rowTbl + " ORDER BY id"
   val dropColTbl_monotonically_increasing_id : String = dropTbl  + columnTbl
   val dropRowTbl_monotonically_increasing_id : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  87. to_unix_timestamp, 88. to_utc_timestampe, 89. to_date,
+    *  90. from_unixtime, 91. from_utc_timestamp.
+    */
+  val date_time = new Array[String](3)
+  date_time(0) = "(1,current_date,current_timestamp,12345678)"
+  date_time(1) = "(2,'2020-01-31',current_timestamp,234598765)"
+  date_time(2) = "(3,'2000-02-02',null,0)"
+  val createColTypeTbl_date_time_Spark : String = createTbl + columnTbl +
+    "(id int,date Date,ts timestamp,number int)"
+  val createRowTypeTbl_date_time_Spark : String = createTbl + rowTbl +
+    "(id int,date Date,ts timestamp,number int)"
+  val createColumnTbl_date_time : String = createTbl + columnTbl +
+    "(id int,date Date,ts timestamp,number int) " + usingCol
+  val createRowTbl_date_time : String = createTbl + rowTbl +
+    "(id int,date Date,ts timestamp,number int) " + usingRow
+  val select_ColTbl_date_time : String = "SELECT id,to_date(ts)," +
+    "to_unix_timestamp(date,'yyyy-MM-dd'),to_utc_timestamp(date,'UTC-11')," +
+    "from_utc_timestamp(date,'UTC-8'),from_unixtime(number,'yyyy-MM-dd') FROM " + columnTbl +
+    " ORDER BY id"
+  val select_RowTbl_date_time : String = "SELECT id,to_date(ts)," +
+    "to_unix_timestamp(date,'yyyy-MM-dd'),to_utc_timestamp(date,'UTC-11')," +
+    "from_utc_timestamp(date,'UTC-8'),from_unixtime(number,'yyyy-MM-dd') FROM " + rowTbl +
+    " ORDER BY id"
+  val dropColTbl_date_time : String = dropTbl  + columnTbl
+  val dropRowTbl_date_time : String = dropTbl + rowTbl
 }

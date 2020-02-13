@@ -993,6 +993,45 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.dropRowTbl_monotonically_increasing_id)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  87. to_unix_timestamp, 88. to_utc_timestampe, 89. to_date,
+      *  90. from_unixtime, 91. from_utc_timestamp.
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_date_time_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_date_time_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_date_time)
+    snc.sql(SQLFunctionsUtils.createRowTbl_date_time)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.date_time(i))
+    }
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.date_time(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.date_time(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.date_time(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_date_time,
+      "Q53_date_time", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_date_time,
+      "Q54_date_time", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_date_time)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_date_time)
+    spark.sql(SQLFunctionsUtils.dropColTbl_date_time)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_date_time)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
