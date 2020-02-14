@@ -1112,6 +1112,49 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_base_unbase)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  101. trunc, 102. quarter, 103. parse_url, 104. java_method
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_parseurl_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_parseurl_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_parseurl)
+    snc.sql(SQLFunctionsUtils.createRowTbl_parseurl)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.parseurl(i))
+    }
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.parseurl(i))
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.parseurl(i))
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.parseurl(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    val sncurlDF : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_parseurl)
+    val sparkurlDF : DataFrame = spark.sql(SQLFunctionsUtils.select_ColTbl_parseurl)
+    SnappyTestUtils.assertQueryFullResultSet(snc, sncurlDF, sparkurlDF,
+      "Q59_parseurl", "column", pw, sqlContext, true)
+    val sncurlDF_Row : DataFrame = snc.sql(SQLFunctionsUtils.select_RowTbl_parseurl)
+    val sparkurlDF_Row : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_parseurl)
+    SnappyTestUtils.assertQueryFullResultSet(snc, sncurlDF_Row, sparkurlDF_Row,
+      "Q60_parseurl", "row", pw, sqlContext, true)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_parseurl)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_parseurl)
+    spark.sql(SQLFunctionsUtils.dropColTbl_parseurl)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_parseurl)
+    pw.println()
+    pw.flush()
+
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()

@@ -691,4 +691,33 @@ object SQLFunctionsUtils {
     "decode(unhex(testStr3),'UTF-8'),unix_timestamp(ts) FROM " + rowTbl
   val dropColTbl_base_unbase : String = dropTbl  + columnTbl
   val dropRowTbl_base_unbase : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  101. trunc, 102. quarter, 103. parse_url, 104. java_method
+    */
+  val parseurl = new Array[String](2)
+  parseurl(0) = "(1,current_date," +
+    "'https://spark.apache.org/docs/latest/api/sql/index.html#parse_url')"
+  parseurl(1) = "(2,null,null)"
+  val createColTypeTbl_parseurl_Spark : String = createTbl + columnTbl +
+    "(id int,dt date,testStr1 string)"
+  val createRowTypeTbl_parseurl_Spark : String = createTbl + rowTbl +
+    "(id int,dt date,testStr1 string)"
+  val createColumnTbl_parseurl : String = createTbl + columnTbl +
+    "(id int,dt date,testStr1 string) " + usingCol
+  val createRowTbl_parseurl : String = createTbl + rowTbl +
+    "(id int,dt date,testStr1 string) " + usingRow
+  val select_ColTbl_parseurl : String = "SELECT id,trunc(dt,'YEAR') as year," +
+    "trunc(dt,'MM') as month,trunc(dt,'DAY') as day,quarter(dt) as q1," +
+    "quarter('2019-11-26') as q2,parse_url(testStr1,'PROTOCOL') as protocol," +
+    "parse_url(testStr1,'HOST') as host,parse_url(testStr1,'PATH') as path," +
+    "parse_url(testStr1,'QUERY') as query," +
+    "java_method('java.util.UUID','randomUUID') FROM " + columnTbl
+  val select_RowTbl_parseurl : String = "SELECT id,trunc(dt,'YEAR') as year," +
+    "trunc(dt,'MM') as month,trunc(dt,'DAY') as day,quarter(dt) as q1," +
+    "quarter('2019-11-26') as q2,parse_url(testStr1,'PROTOCOL') as protocol," +
+    "parse_url(testStr1,'HOST') as host,parse_url(testStr1,'PATH') as path," +
+    "parse_url(testStr1,'QUERY') as query,java_method('java.util.UUID','randomUUID') FROM " + rowTbl
+  val dropColTbl_parseurl : String = dropTbl  + columnTbl
+  val dropRowTbl_parseurl : String = dropTbl + rowTbl
 }
