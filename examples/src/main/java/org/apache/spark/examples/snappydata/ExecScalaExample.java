@@ -19,7 +19,7 @@ import java.util.Properties;
  * <p>
  *  Run the example using following command:
  * <pre>
- *     ./bin/run-example snappydata.JDBCExample
+ *     ./bin/run-example snappydata.ExecScalaExample
  * </pre>
  *
  */
