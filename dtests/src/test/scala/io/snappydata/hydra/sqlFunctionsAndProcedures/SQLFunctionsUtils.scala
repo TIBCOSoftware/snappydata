@@ -663,4 +663,32 @@ object SQLFunctionsUtils {
     "ntile(3) over (partition by class order by total) as ntile FROM " + rowTbl
   val dropColTbl_lead_lag_ntile : String = dropTbl  + columnTbl
   val dropRowTbl_lead_lag_ntile : String = dropTbl + rowTbl
+  /**
+    *  96th function is timestamp and it is already
+    *  tested in above queries.
+    *  Below queries test the functions :
+    *  97. base64, 98. unbase64, 99. unix_timestamp, 100. unhex
+    */
+  val base_unbase = new Array[String](3)
+  base_unbase(0) = "(1,'TIBCO ComputeDB','VElCQ08gQ29tcHV0ZURC'," +
+    "'544942434f20436f6d707574654442','2019-12-26 11:22:34')"
+  base_unbase(1) = "(2,'Hive MetaStore','SGl2ZSBNZXRhU3RvcmU='," +
+    "'48697665204d65746153746f7265','2011-09-30 16:30:22')"
+  base_unbase(2) = "(3,'AWS','QVdT','415753','2017-10-16 8:30:57')"
+  val createColTypeTbl_base_unbase_Spark : String = createTbl + columnTbl +
+    "(id int,testStr1 string,testStr2 string,testStr3 string,ts timestamp)"
+  val createRowTypeTbl_base_unbase_Spark : String = createTbl + rowTbl +
+    "(id int,testStr1 string,testStr2 string,testStr3 string,ts timestamp)"
+  val createColumnTbl_base_unbase : String = createTbl + columnTbl +
+    "(id int,testStr1 string,testStr2 string,testStr3 string,ts timestamp) " + usingCol
+  val createRowTbl_base_unbase : String = createTbl + rowTbl +
+    "(id int,testStr1 string,testStr2 string,testStr3 string,ts timestamp) " + usingRow
+  val select_ColTbl_base_unbase : String = "SELECT id,base64(testStr1)," +
+    "decode(unbase64(testStr2),'UTF-8'),decode(unhex(testStr3),'UTF-8'),unix_timestamp(ts) " +
+    "FROM " + columnTbl
+  val select_RowTbl_base_unbase : String = "SELECT id,base64(testStr1)," +
+    "decode(unbase64(testStr2),'UTF-8')," +
+    "decode(unhex(testStr3),'UTF-8'),unix_timestamp(ts) FROM " + rowTbl
+  val dropColTbl_base_unbase : String = dropTbl  + columnTbl
+  val dropRowTbl_base_unbase : String = dropTbl + rowTbl
 }

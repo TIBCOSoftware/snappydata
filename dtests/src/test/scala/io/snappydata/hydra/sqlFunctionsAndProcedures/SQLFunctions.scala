@@ -1072,6 +1072,46 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_rownumber_rank)
     pw.println()
     pw.flush()
+    /**
+      *  96th function is timestamp and it is already
+      *  tested in above queries.
+      *  Below queries test the functions :
+      *  97. base64, 98. unbase64, 99. unix_timestamp, 100. unhex
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_base_unbase_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_base_unbase_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_base_unbase)
+    snc.sql(SQLFunctionsUtils.createRowTbl_base_unbase)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.base_unbase(i))
+    }
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.base_unbase(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.base_unbase(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.base_unbase(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_base_unbase,
+      "Q57_base_unbase", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_base_unbase,
+      "Q58_base_unbase", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_base_unbase)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_base_unbase)
+    spark.sql(SQLFunctionsUtils.dropColTbl_base_unbase)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_base_unbase)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
