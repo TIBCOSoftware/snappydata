@@ -168,9 +168,9 @@ class OpLogRdd(
         }
       }
     }
-    assert(index != -1, s"column id not found for $fqtn.$colName")
-    tableColIdsMap.getOrElse(s"$version#$fqtnLowerKey",
+    if (index != -1) tableColIdsMap.getOrElse(s"$version#$fqtnLowerKey",
       throw new IllegalStateException(s"column ids not found: $version#$fqtnLowerKey"))(index)
+    else -1
   }
 
   /**
