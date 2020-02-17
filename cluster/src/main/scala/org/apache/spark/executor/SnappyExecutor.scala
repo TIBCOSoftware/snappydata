@@ -141,15 +141,14 @@ class SnappyExecutor(
 
     override def equals(obj: Any): Boolean = {
       obj match {
-        case x: ClassLoaderKey =>
-          (x.appName, x.appTime).equals(appName, appTime)
+        case x: ClassLoaderKey => x.appName == appName && x.appTime == appTime
         case _ => false
       }
     }
   }
 
-  override def updateDependencies(newFiles: mutable.HashMap[String, Long],
-      newJars: mutable.HashMap[String, Long]): Unit = {
+  override def updateDependencies(newFiles: mutable.Map[String, Long],
+      newJars: mutable.Map[String, Long]): Unit = {
     super.updateDependencies(newFiles, newJars)
     synchronized {
       val taskDeserializationProps = Executor.taskDeserializationProps.get()
@@ -209,7 +208,7 @@ class SnappyExecutor(
 
   def removeJarsFromExecutorLoader(jars: Array[String]): Unit = {
     synchronized {
-      val updatedURLs = urlClassLoader.getURLs().toBuffer
+      val updatedURLs = urlClassLoader.getURLs.toBuffer
       jars.foreach(name => {
         val localName = name.split("/").last
         val jarFile = new File(SparkFiles.getRootDirectory(), localName)

@@ -14,11 +14,9 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.execution.streaming
+package org.apache.spark.sql.execution.streaming.sources
 
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyTextSocketStreamSuite extends TextSocketStreamSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil{
-
-}
+class SnappyForeachWriterSuite extends ForeachWriterSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

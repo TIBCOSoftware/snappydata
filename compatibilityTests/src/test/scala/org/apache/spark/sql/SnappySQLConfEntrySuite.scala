@@ -17,7 +17,6 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.internal.SQLConfEntrySuite
-import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
+import org.apache.spark.sql.test.SnappySparkTestUtil
 
-class SnappySQLConfEntrySuite extends SQLConfEntrySuite
-    with SharedSnappySessionContext with SnappySparkTestUtil
+class SnappySQLConfEntrySuite extends SQLConfEntrySuite with SnappySparkTestUtil

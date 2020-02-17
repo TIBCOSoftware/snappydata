@@ -32,6 +32,7 @@ import org.apache.spark.sql.catalyst.{expressions, plans}
 import org.apache.spark.sql.execution.PartitionedDataSourceScan
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.Entity.{INDEX_RELATION, TABLE}
 import org.apache.spark.sql.{SnappySession, SparkSupport}
 
@@ -42,7 +43,7 @@ import org.apache.spark.sql.{SnappySession, SparkSupport}
 case class ResolveQueryHints(snappySession: SnappySession)
     extends Rule[LogicalPlan] with SparkSupport {
 
-  private def catalog = snappySession.sessionState.catalog
+  private def catalog: SnappySessionCatalog = snappySession.snappySessionState.catalog
 
   private def analyzer = snappySession.sessionState.analyzer
 

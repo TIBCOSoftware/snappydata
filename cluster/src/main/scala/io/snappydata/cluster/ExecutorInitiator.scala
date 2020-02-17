@@ -184,7 +184,7 @@ object ExecutorInitiator extends Logging {
                       Runtime.getRuntime.availableProcessors() * 2)
 
                     env = SparkCallbacks.createExecutorEnv(driverConf,
-                      memberId, executorHost, port, cores, ioEncryptionKey, isLocal = false)
+                      memberId, executorHost, cores, ioEncryptionKey, isLocal = false)
 
                     LocalDirectoryCleanupUtil.save()
                     // This is not required with snappy

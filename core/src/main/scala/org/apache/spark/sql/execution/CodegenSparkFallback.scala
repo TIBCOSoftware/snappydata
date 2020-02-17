@@ -98,7 +98,7 @@ abstract case class CodegenSparkFallback(var child: SparkPlan,
                 }
                 logInfo(s"SnappyData code generation failed due to $msg." +
                     s" Falling back to Spark plans.")
-                session.sessionState.disableStoreOptimizations = true
+                session.snappySessionState.disableStoreOptimizations = true
               }
               try {
                 val plan = exec().executedPlan.transform {
@@ -114,7 +114,7 @@ abstract case class CodegenSparkFallback(var child: SparkPlan,
                   SnappySession.clearAllCache()
                   throw CachedDataFrame.catalogStaleFailure(t, session)
               } finally {
-                session.sessionState.disableStoreOptimizations = false
+                session.snappySessionState.disableStoreOptimizations = false
               }
             case _ => throw t
           }

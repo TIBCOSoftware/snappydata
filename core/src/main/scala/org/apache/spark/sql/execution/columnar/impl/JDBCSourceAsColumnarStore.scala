@@ -707,12 +707,12 @@ final class ColumnarStorePartitionedRDD(
       case -1 if allPartitions != null =>
         allPartitions
       case -1 =>
-        allPartitions = session.sessionState.getTablePartitions(
+        allPartitions = session.snappySessionState.getTablePartitions(
           region.asInstanceOf[PartitionedRegion])
         allPartitions
       case bucketId: Int =>
         if (!session.partitionPruning) {
-          allPartitions = session.sessionState.getTablePartitions(
+          allPartitions = session.snappySessionState.getTablePartitions(
             region.asInstanceOf[PartitionedRegion])
           allPartitions
         } else {

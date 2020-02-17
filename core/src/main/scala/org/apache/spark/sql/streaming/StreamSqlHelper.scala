@@ -46,7 +46,7 @@ object StreamSqlHelper extends SparkSupport {
   }
 
   def getSchemaDStream(ssc: SnappyStreamingContext, tableName: String): SchemaDStream = {
-    val catalog = ssc.snappySession.sessionState.catalog
+    val catalog = ssc.snappySession.snappySessionState.catalog
     catalog.resolveRelation(ssc.snappySession.tableIdentifier(tableName)) match {
       case lr: LogicalRelation if lr.relation.isInstanceOf[StreamPlan] =>
         val sr = lr.relation.asInstanceOf[StreamPlan]

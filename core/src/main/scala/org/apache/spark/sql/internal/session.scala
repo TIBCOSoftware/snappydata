@@ -183,7 +183,7 @@ class SnappyConf(@transient val session: SnappySession)
       // initialize hive session upfront
       if (newValue) {
         session.hiveInitializing = true
-        assert(session.sessionState.hiveSession ne null)
+        assert(session.snappySessionState.hiveSession ne null)
         session.hiveInitializing = false
       }
       session.enableHiveSupport = newValue
@@ -256,7 +256,7 @@ class SnappyConf(@transient val session: SnappySession)
       } else key
   }
 
-  private def hiveConf: SQLConf = session.sessionState.hiveSession.sessionState.conf
+  private def hiveConf: SQLConf = session.snappySessionState.hiveSession.sessionState.conf
 
   private[sql] def resetDefaults(): Unit = synchronized {
     if (session ne null) {

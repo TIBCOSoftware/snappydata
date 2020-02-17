@@ -103,7 +103,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   override def newSession(): SnappyContext =
     snappySession.newSession().snappyContext
 
-  override def sessionState: SnappySessionState = snappySession.sessionState
+  override def sessionState: SnappySessionState = snappySession.snappySessionState
 
   def clear(): Unit = {
     snappySession.clear()

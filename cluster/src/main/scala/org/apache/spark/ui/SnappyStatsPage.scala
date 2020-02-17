@@ -19,6 +19,7 @@
 
 package org.apache.spark.ui
 
+import java.text.NumberFormat
 import javax.servlet.http.HttpServletRequest
 
 import scala.xml.Node
@@ -32,7 +33,8 @@ import org.apache.spark.util.Utils
 /** Page showing list of tables currently stored in the cluster */
 private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
     extends WebUIPage("") with Logging {
-  val numFormatter = java.text.NumberFormat.getIntegerInstance
+
+  val numFormatter: NumberFormat = java.text.NumberFormat.getIntegerInstance
 
   def render(request: HttpServletRequest): Seq[Node] = {
     val uiDisplayInfo = SnappyTableStatsProviderService.getService
@@ -45,8 +47,7 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
       </span>
     } else Nil
 
-    UIUtils.headerSparkPage("Snappy Store", nodes, parent, Some(500))
-
+    UIUtils.headerSparkPage(request, "Snappy Store", nodes, parent, Some(500))
   }
 
   private def header = Seq("Table Name", "Table Type", "Memory Used", "Total Rows")

@@ -44,12 +44,16 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-avro_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
     if (rootProject.hasProperty('mesos')) {
       compile project(':snappy-spark:snappy-spark-mesos_' + scalaBinaryVersion)
+    }
+    if (rootProject.hasProperty('k8s')) {
+      compile project(':snappy-spark:snappy-spark-kubernetes_' + scalaBinaryVersion)
     }
 
     testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
@@ -64,12 +68,16 @@ dependencies {
     compile 'io.snappydata:snappy-spark-streaming_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-avro_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-mllib_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + snappySparkVersion
     if (rootProject.hasProperty('mesos')) {
       compile 'io.snappydata:snappy-spark-mesos_' + scalaBinaryVersion + ':' + snappySparkVersion
+    }
+    if (rootProject.hasProperty('k8s')) {
+      compile 'io.snappydata:snappy-spark-kubernetes_' + scalaBinaryVersion + ':' + snappySparkVersion
     }
 
     testCompile group: 'io.snappydata', name: 'snappy-spark-sql_' + scalaBinaryVersion,

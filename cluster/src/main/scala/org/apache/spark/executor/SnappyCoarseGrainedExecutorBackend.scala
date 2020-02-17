@@ -23,7 +23,6 @@ import com.gemstone.gemfire.CancelException
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.cluster.ExecutorInitiator
 
-import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.rpc.RpcEnv
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{SparkEnv, TaskState}
@@ -39,9 +38,9 @@ class SnappyCoarseGrainedExecutorBackend(
     extends CoarseGrainedExecutorBackend(rpcEnv, driverUrl,
       executorId, hostName, cores, userClassPath, env) {
 
-  override def onStop() {
+  override def onStop(): Unit = {
     SnappyContext.clearStaticArtifacts()
-    exitWithoutRestart()
+    exitWithoutRestart("onStop()")
   }
 
   override def onStart(): Unit = {
@@ -72,7 +71,7 @@ class SnappyCoarseGrainedExecutorBackend(
   override def exitExecutor(code: Int,
       reason: String, throwable: Throwable,
       notifyDriver: Boolean = true): Unit = {
-    exitWithoutRestart()
+    exitWithoutRestart(reason)
     // See if the VM is going down
     try {
       Misc.checkIfCacheClosing(null)
@@ -93,13 +92,13 @@ class SnappyCoarseGrainedExecutorBackend(
 
   }
 
-  def exitWithoutRestart(): Unit = {
+  def exitWithoutRestart(reason: String): Unit = {
     if (executor != null) {
       // kill all the running tasks
       // When tasks are killed, the task threads cannot be interrupted
       // as snappy may be writing to an oplog and it generates a
       // DiskAccessException. This DAE ends up closing the underlying regions.
-      executor.killAllTasks(interruptThread = false)
+      executor.killAllTasks(interruptThread = false, reason)
       executor.stop()
     }
     // stop the actor system
@@ -107,7 +106,5 @@ class SnappyCoarseGrainedExecutorBackend(
     if (rpcEnv != null) {
       rpcEnv.shutdown()
     }
-
-    SparkHadoopUtil.get.stopCredentialUpdater()
   }
 }

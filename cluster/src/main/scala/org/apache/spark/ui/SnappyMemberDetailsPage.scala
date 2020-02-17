@@ -17,8 +17,6 @@
 package org.apache.spark.ui
 
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
 import javax.servlet.http.HttpServletRequest
 
 import scala.collection.mutable
@@ -38,8 +36,8 @@ import org.apache.spark.util.Utils
 private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
     extends WebUIPage("memberDetails") with Logging {
 
-  private var workDir: File = null
-  private var logFileName: String = null
+  private var workDir: File = _
+  private var logFileName: String = _
   private val defaultBytes: Long = 1024 * 100
 
   private def createPageTitleNode(title: String): Seq[Node] = {
@@ -74,11 +72,13 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
 
     val status = memberDetails.getStatus
 
+    /*
     val statusImgUri = if (status.equalsIgnoreCase("running")) {
       "/static/snappydata/running-status-icon-70x68.png"
     } else {
       "/static/snappydata/warning-status-icon-70x68.png"
     }
+    */
 
     val memberType = {
       if (memberDetails.isLead) {
@@ -96,7 +96,7 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
       }
     }
 
-    val cpuUsage = memberDetails.getCpuActive.toDouble;
+    // val cpuUsage = memberDetails.getCpuActive.toDouble
 
     val diskStoreDiskSpace = memberDetails.getDiskStoreDiskSpace
 
@@ -275,7 +275,7 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
       var mem: MemberStatistics = null
       breakable {
         allMembers.foreach(m => {
-          if (m._2.getId().equalsIgnoreCase(memberId)) {
+          if (m._2.getId.equalsIgnoreCase(memberId)) {
             mem = m._2
             break
           }
@@ -299,10 +299,10 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
     val msg = new MemberLogsMessage(collector)
     msg.setMemberId(memberId)
     msg.setByteLength(byteLength)
-    msg.setLogDirectory(workDir);
-    msg.setLogFileName(logFileName);
+    msg.setLogDirectory(workDir)
+    msg.setLogFileName(logFileName)
 
-    if (offset == None) {
+    if (offset.isEmpty) {
       // set offset null
       msg.setOffset(null)
     } else {
@@ -313,7 +313,7 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
 
     val memStats = collector.getResult
     val itr = memStats.iterator()
-    var logData: java.util.HashMap[String, Any] = new java.util.HashMap[String, Any];
+    var logData: java.util.HashMap[String, Any] = new java.util.HashMap[String, Any]
 
     while (itr.hasNext) {
       val o = itr.next().asInstanceOf[ListResultCollectorValue]
@@ -388,14 +388,13 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
         </div>
       </div>
 
-    val jsScripts = <script src={
-                              UIUtils.prependBaseUri("/static/snappydata/snappy-memberdetails.js")
-                            }></script> ++
-                    <script>setMemberId('{Unparsed("%s".format(memberId))}');</script>
+    val jsScripts =
+      <script src={UIUtils.prependBaseUri(request, "/static/snappydata/snappy-memberdetails.js")}>
+      </script> ++ <script>setMemberId('{Unparsed("%s".format(memberId))}');</script>
 
     PageContent = jsScripts ++ pageTitleNode ++ memberStats ++ memberLogTitle ++ content
 
-    UIUtils.headerSparkPage(pageHeaderText, PageContent, parent, Some(500),
+    UIUtils.headerSparkPage(request, pageHeaderText, PageContent, parent, Some(500),
       useDataTables = true, isSnappyPage = true)
   }
 
@@ -419,7 +418,7 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
     msg.setLogDirectory(workDir)
     msg.setLogFileName(logFileName)
 
-    if (offset == None) {
+    if (offset.isEmpty) {
       // set offset null
       msg.setOffset(null)
     } else {
@@ -430,7 +429,7 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
 
     val memStats = collector.getResult
     val itr = memStats.iterator()
-    var logData: java.util.HashMap[String, Any] = new java.util.HashMap[String, Any];
+    var logData: java.util.HashMap[String, Any] = new java.util.HashMap[String, Any]
 
     while (itr.hasNext) {
       val o = itr.next().asInstanceOf[ListResultCollectorValue]

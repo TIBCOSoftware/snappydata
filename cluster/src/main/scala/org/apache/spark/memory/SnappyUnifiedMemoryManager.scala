@@ -77,7 +77,7 @@ class SnappyUnifiedMemoryManager private[memory](
    * divisor, but even the divisor used may not compensate for the skew in some
    * cases but it should be acceptable for those rare cases.
    */
-  private val maxPartResultSize = Utils.getMaxResultSize(conf) /
+  private val maxPartResultSize = conf.get(org.apache.spark.internal.config.MAX_RESULT_SIZE) /
       math.min(8, Runtime.getRuntime.availableProcessors())
 
   /**

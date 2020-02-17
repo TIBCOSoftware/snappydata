@@ -134,7 +134,7 @@ class SnappyContextFunctions(val session: SnappySession) extends SparkSupport {
 
   def aqpTablePopulator(): Unit = {
     // register blank tasks for the stream tables so that the streams start
-    session.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](
+    session.snappySessionState.catalog.getDataSourceRelations[StreamBaseRelation](
       CatalogObjectType.Stream).foreach(_.rowStream.foreachRDD(_ => Unit))
   }
 
@@ -153,7 +153,7 @@ class SnappyContextFunctions(val session: SnappySession) extends SparkSupport {
       Seq[Rule[SparkPlan]](
         TokenizeSubqueries(session),
         EnsureRequirements(session.sessionState.conf),
-        OptimizeSortAndFilePlans(session.sessionState.snappyConf),
+        OptimizeSortAndFilePlans(session.snappySessionState.snappyConf),
         CollapseCollocatedPlans(session),
         CollapseCodegenStages(session.sessionState.conf),
         InsertCachedPlanFallback(session, topLevel),

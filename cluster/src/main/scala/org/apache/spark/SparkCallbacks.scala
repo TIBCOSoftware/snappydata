@@ -34,13 +34,12 @@ object SparkCallbacks {
       driverConf: SparkConf,
       executorId: String,
       hostname: String,
-      port: Int,
       numCores: Int,
       ioEncryptionKey: Option[Array[Byte]],
       isLocal: Boolean): SparkEnv = {
 
     val env = SparkEnv.createExecutorEnv(driverConf, executorId, hostname,
-      port, numCores, ioEncryptionKey, isLocal)
+      numCores, ioEncryptionKey, isLocal)
     env.memoryManager.asInstanceOf[StoreUnifiedManager].init()
     env
   }
@@ -56,7 +55,6 @@ object SparkCallbacks {
         SparkEnv.get.memoryManager.asInstanceOf[StoreUnifiedManager].close
         env.stop()
         SparkEnv.set(null)
-        SparkHadoopUtil.get.stopCredentialUpdater()
       }
     }
   }
@@ -70,7 +68,7 @@ object SparkCallbacks {
       executorConf,
       new spark.SecurityManager(executorConf), clientMode = true)
     val driver = fetcher.setupEndpointRefByURI(url)
-    val cfg = driver.askWithRetry[SparkAppConfig](RetrieveSparkAppConfig)
+    val cfg = driver.askSync[SparkAppConfig](RetrieveSparkAppConfig)
     val ioEncryptionKey: Option[Array[Byte]] = cfg.ioEncryptionKey
     val props = cfg.sparkProperties ++
         Seq[(String, String)](("spark.app.id", appId))

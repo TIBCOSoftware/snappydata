@@ -31,8 +31,9 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
+import org.apache.spark.sql.SparkSupport
 import org.apache.spark.sql.catalyst.expressions
-import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
+import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.PutIntoValuesColumnTable
@@ -165,7 +166,8 @@ class SparkSQLPrepareImpl(val sql: String,
   }
 }
 
-object SparkSQLPrepareImpl{
+object SparkSQLPrepareImpl extends SparkSupport {
+
   def getTableNamesAndDatatype(
       output: Seq[expressions.Attribute]): (Array[String], Array[DataType]) =
     output.toArray.map(o => o.name -> o.dataType).unzip
@@ -195,32 +197,32 @@ object SparkSQLPrepareImpl{
         addParamLiteral(pos, left.dataType, left.nullable, result)
         bl
       case blc@BinaryComparison(left: Expression,
-      Cast(QuestionMark(pos), _)) =>
+      Cast(QuestionMark(pos), _, _)) =>
         addParamLiteral(pos, left.dataType, left.nullable, result)
         blc
       case ble@BinaryComparison(left: Expression, CaseWhen(branches, elseValue)) =>
         handleCase(branches, elseValue, left.dataType, left.nullable, result)
         ble
-      case blce@BinaryComparison(left: Expression, Cast(CaseWhen(branches, elseValue), _)) =>
+      case blce@BinaryComparison(left: Expression, Cast(CaseWhen(branches, elseValue), _, _)) =>
         handleCase(branches, elseValue, left.dataType, left.nullable, result)
         blce
       case br@BinaryComparison(QuestionMark(pos), right: Expression) =>
         addParamLiteral(pos, right.dataType, right.nullable, result)
         br
-      case brc@BinaryComparison(Cast(QuestionMark(pos), _),
+      case brc@BinaryComparison(Cast(QuestionMark(pos), _, _),
       right: Expression) =>
         addParamLiteral(pos, right.dataType, right.nullable, result)
         brc
       case bre@BinaryComparison(CaseWhen(branches, elseValue), right: Expression) =>
         handleCase(branches, elseValue, right.dataType, right.nullable, result)
         bre
-      case brce@BinaryComparison(Cast(CaseWhen(branches, elseValue), _), right: Expression) =>
+      case brce@BinaryComparison(Cast(CaseWhen(branches, elseValue), _, _), right: Expression) =>
         handleCase(branches, elseValue, right.dataType, right.nullable, result)
         brce
       case l@Like(left: Expression, QuestionMark(pos)) =>
         addParamLiteral(pos, left.dataType, left.nullable, result)
         l
-      case lc@Like(left: Expression, Cast(QuestionMark(pos), _)) =>
+      case lc@Like(left: Expression, Cast(QuestionMark(pos), _, _)) =>
         addParamLiteral(pos, left.dataType, left.nullable, result)
         lc
       case inlist@org.apache.spark.sql.catalyst.expressions.In(value: Expression,
@@ -228,7 +230,7 @@ object SparkSQLPrepareImpl{
         list.map {
           case QuestionMark(pos) =>
             addParamLiteral(pos, value.dataType, value.nullable, result)
-          case Cast(QuestionMark(pos), _) =>
+          case Cast(QuestionMark(pos), _, _) =>
             addParamLiteral(pos, value.dataType, value.nullable, result)
           case x => x
         }
@@ -239,10 +241,10 @@ object SparkSQLPrepareImpl{
 
   def remainingParamLiterals(plan: LogicalPlan, result: mutable.HashSet[ParamLiteral]): Unit = {
     val mapExpression: PartialFunction[Expression, Expression] = {
-      case c@Cast(QuestionMark(pos), castType: DataType) =>
+      case c@Cast(QuestionMark(pos), castType: DataType, _) =>
         addParamLiteral(pos, castType, nullable = false, result)
         c
-      case cc@Cast(CaseWhen(branches, elseValue), castType: DataType) =>
+      case cc@Cast(CaseWhen(branches, elseValue), castType: DataType, _) =>
         handleCase(branches, elseValue, castType, nullable = false, result)
         cc
     }
@@ -253,9 +255,11 @@ object SparkSQLPrepareImpl{
     f: PartialFunction[Expression, Expression]): LogicalPlan = plan transformAllExpressions {
     case e if f.isDefinedAt(e) => f(e)
     case sub: SubqueryExpression => sub match {
-      case l@ListQuery(query, x) => l.copy(handleSubQuery(query, f), x)
-      case e@Exists(query, x) => e.copy(handleSubQuery(query, f), x)
-      case p@PredicateSubquery(query, x, y, z) => p.copy(handleSubQuery(query, f), x, y, z)
+      case l@ListQuery(query, x, y, z) => l.copy(handleSubQuery(query, f), x, y, z)
+      case e@Exists(query, x, y) => e.copy(handleSubQuery(query, f), x, y)
+      case p if internals.isPredicateSubquery(p) =>
+        val query = p.asInstanceOf[SubqueryExpression]
+        internals.copyPredicateSubquery(query, handleSubQuery(query.plan, f), query.exprId)
       case s@ScalarSubquery(query, x, y) => s.copy(handleSubQuery(query, f), x, y)
     }
   }

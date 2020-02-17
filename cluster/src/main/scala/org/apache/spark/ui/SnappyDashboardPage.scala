@@ -29,7 +29,7 @@ import org.apache.spark.internal.Logging
 private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     extends WebUIPage("") with Logging {
 
-  private val startDate = Calendar.getInstance().getTime()
+  private val startDate = Calendar.getInstance().getTime
 
   override def render(request: HttpServletRequest): Seq[Node] = {
 
@@ -43,8 +43,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       val clustersStatsTitle = createTitleNode(SnappyDashboardPage.clusterStatsTitle,
                                  SnappyDashboardPage.clusterStatsTitleTooltip,
                                  "clustersStatsTitle",
-                                 true)
-      val clusterDetails = clusterStats
+                                 display = true)
+      val clusterDetails = clusterStats()
 
       clustersStatsTitle ++ clusterDetails
     }
@@ -53,8 +53,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       val membersStatsTitle = createTitleNode(SnappyDashboardPage.membersStatsTitle,
                                 SnappyDashboardPage.membersStatsTitleTooltip,
                                 "membersStatsTitle",
-                                true)
-      val membersStatsTable = memberStats
+                                display = true)
+      val membersStatsTable = memberStats()
 
       membersStatsTitle ++ membersStatsTable
     }
@@ -63,8 +63,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       val tablesStatsTitle = createTitleNode(SnappyDashboardPage.tablesStatsTitle,
                                 SnappyDashboardPage.tablesStatsTitleTooltip,
                                 "tablesStatsTitle",
-                                true)
-      val tablesStatsTable = tableStats
+                                display = true)
+      val tablesStatsTable = tableStats()
 
       tablesStatsTitle ++ tablesStatsTable
     }
@@ -73,22 +73,21 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       val extTablesStatsTitle = createTitleNode(SnappyDashboardPage.extTablesStatsTitle,
                                 SnappyDashboardPage.extTablesStatsTitleTooltip,
                                 "extTablesStatsTitle",
-                                false)
-      val extTablesStatsTable = extTableStats
+                                display = false)
+      val extTablesStatsTable = extTableStats()
 
       extTablesStatsTitle ++ extTablesStatsTable
     }
 
-    val jsScripts = <script src={
-                              UIUtils.prependBaseUri("/static/snappydata/snappy-dashboard.js")
-                            }></script>
+    val jsScripts =
+      <script src={UIUtils.prependBaseUri(request, "/static/snappydata/snappy-dashboard.js")}>
+      </script>
 
     val pageContent = jsScripts ++ dataNode ++ pageTitleNode ++ clusterStatsDetails ++
                       membersStatsDetails ++ tablesStatsDetails ++ extTablesStatsDetails
 
-    UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500),
+    UIUtils.headerSparkPage(request, pageHeaderText, pageContent, parent, Some(500),
       useDataTables = true, isSnappyPage = true)
-
   }
 
   private def createPageTitleNode(title: String): Seq[Node] = {

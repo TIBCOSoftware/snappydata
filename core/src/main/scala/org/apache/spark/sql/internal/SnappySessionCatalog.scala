@@ -112,7 +112,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
    * "snappydata.sql.hive.enabled" is set on the session.
    */
   protected[sql] final lazy val hiveSessionCatalog: HiveSessionCatalog =
-    snappySession.sessionState.hiveState.catalog.asInstanceOf[HiveSessionCatalog]
+    snappySession.snappySessionState.hiveState.catalog.asInstanceOf[HiveSessionCatalog]
 
   /**
    * Return true if the given table needs to be checked in the builtin catalog
@@ -880,7 +880,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
                 if (snappySession.enableHiveSupport) {
                   // lookupRelation uses HiveMetastoreCatalog that looks up the session state and
                   // catalog from the session every time so use withHiveState to switch the catalog
-                  val state = snappySession.sessionState
+                  val state = snappySession.snappySessionState
                   if (hiveSessionCatalog.databaseExists(schemaName)) state.withHiveSession {
                     return internals.lookupRelation(hiveSessionCatalog,
                       TableIdentifier(tableName, Some(schemaName)), alias)

@@ -696,7 +696,7 @@ class IndexColumnFormatRelation(
 
   def getBaseTableRelation: ColumnFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val catalog = session.sessionState.catalog
+    val catalog = session.snappySessionState.catalog
     catalog.resolveRelation(session.tableIdentifier(baseTableName)) match {
       case lr: LogicalRelation if lr.relation.isInstanceOf[ColumnFormatRelation] =>
         lr.relation.asInstanceOf[ColumnFormatRelation]

@@ -325,15 +325,15 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
       val previousJobDescription = localProperties.getProperty(SparkContext.SPARK_JOB_DESCRIPTION)
       localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryShortString)
       try {
-        session.sessionState.enableExecutionCache = true
+        session.snappySessionState.enableExecutionCache = true
         // Get the actual QueryExecution used by InMemoryRelation so that
         // "withNewExecutionId" runs on the same and shows proper metrics in GUI.
         val cachedExecution = try {
           if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
-          session.sessionState.getExecution(df.logicalPlan)
+          session.snappySessionState.getExecution(df.logicalPlan)
         } finally {
-          session.sessionState.enableExecutionCache = false
-          session.sessionState.clearExecutionCache()
+          session.snappySessionState.enableExecutionCache = false
+          session.snappySessionState.clearExecutionCache()
         }
         val memoryPlan = df.queryExecution.executedPlan.collectFirst {
           case plan: InMemoryTableScanExec => plan.relation

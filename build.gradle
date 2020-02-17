@@ -929,9 +929,6 @@ task product(type: Zip) {
     def targets = targetProject.configurations.runtime
     copy {
       from(targets) {
-        // exclude antlr4 explicitly (runtime is still included)
-        // that gets pulled by antlr gradle plugin
-        exclude '**antlr4-4*.jar'
         // exclude scalatest included by spark-tags
         exclude '**scalatest*.jar'
         // exclude other test jars
@@ -1097,17 +1094,33 @@ task product(type: Zip) {
       into "${snappyProductDir}/benchmark"
     }
 
+    def sparkProjectRootDir = project(":snappy-spark").projectDir
+
+    if (rootProject.hasProperty('k8s')) {
+      file("${snappyProductDir}/kubernetes").mkdirs()
+      copy {
+        from("${sparkProjectRootDir}/resource-managers/kubernetes/docker/src/main") {
+          include 'dockerfiles/**'
+        }
+        from("${sparkProjectRootDir}/resource-managers/kubernetes/integration-tests") {
+          include 'tests/**'
+        }
+        into "${snappyProductDir}/kubernetes"
+      }
+    }
+
     if (rootProject.hasProperty('R.enable')) {
       def targetRDir = "${snappyProductDir}/R"
       copy {
-        from("${project(":snappy-spark").projectDir}/R")
+        from("${sparkProjectRootDir}/R")
         into targetRDir
       }
 
       exec {
         environment "SPARK_HOME", snappyProductDir
+        environment 'R_PACKAGE_VERSION', sparkVersion
         environment "NO_TESTS", "1"
-        environment "CLEAN_INSTALL", "1"
+        environment '_R_CHECK_FORCE_SUGGESTS_', '0'
         workingDir targetRDir
         commandLine "${targetRDir}/check-cran.sh"
       }

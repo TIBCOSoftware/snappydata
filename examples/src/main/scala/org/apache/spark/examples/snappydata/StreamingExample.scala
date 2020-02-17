@@ -18,20 +18,23 @@
 package org.apache.spark.examples.snappydata
 
 import java.io.File
-import java.lang.{Integer => JInt}
 import java.net.InetSocketAddress
+import java.util.Properties
 import java.util.concurrent.TimeUnit
-import java.util.{Properties, Map => JMap}
+
+import scala.language.postfixOps
+import scala.util.Random
 
 import kafka.admin.AdminUtils
 import kafka.api.Request
 import kafka.server.{KafkaConfig, KafkaServer}
 import kafka.utils.ZkUtils
-import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord, RecordMetadata}
-import org.apache.kafka.common.TopicPartition
-import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
+import org.apache.kafka.common.network.ListenerName
+import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.log4j.{Level, Logger}
+import org.apache.zookeeper.server.{NIOServerCnxnFactory, ZooKeeperServer}
+
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.jdbc.{ConnectionConfBuilder, ConnectionUtil}
@@ -39,15 +42,6 @@ import org.apache.spark.sql.streaming.{SchemaDStream, StreamToRowsConverter}
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.streaming.{Seconds, SnappyStreamingContext}
 import org.apache.spark.util.Utils
-import org.apache.zookeeper.server.{NIOServerCnxnFactory, ZooKeeperServer}
-import org.json4s.NoTypeHints
-import org.json4s.jackson.Serialization
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable.HashMap
-import scala.language.postfixOps
-import scala.util.Random
-import scala.util.control.NonFatal
 
 /**
   * An example showing usage of streaming with SnappyData
@@ -75,7 +69,9 @@ import scala.util.control.NonFatal
   */
 object StreamingExample {
 
-  def main(args: Array[String]) {
+  // scalastyle:off println
+
+  def main(args: Array[String]): Unit = {
     // reducing the log level to minimize the messages on console
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
@@ -84,13 +80,13 @@ object StreamingExample {
 
     println("Initializing a SnappyStreamingContext")
     val spark: SparkSession = SparkSession
-      .builder
+      .builder()
       .appName(getClass.getSimpleName)
       .master("local[*]")
       // sys-disk-dir attribute specifies the directory where persistent data is saved
       .config("snappydata.store.sys-disk-dir", dataDirAbsolutePath)
       .config("snappydata.store.log-file", dataDirAbsolutePath + "/SnappyDataExample.log")
-      .getOrCreate
+      .getOrCreate()
 
     val snsc = new SnappyStreamingContext(spark.sparkContext, Seconds(1))
 
@@ -143,11 +139,11 @@ object StreamingExample {
     println()
     // Execute this query once every second. Output is a SchemaDStream.
     println("Registering a continuous query to to be executed every second on the stream table")
-    val resultStream: SchemaDStream = snsc.registerCQ("select publisher, count(bid) as bidCount from " +
-      "adImpressionStream window (duration 1 seconds, slide 1 seconds) group by publisher")
+    val resultStream: SchemaDStream = snsc.registerCQ("select publisher, count(bid) as bidCount " +
+        "from adImpressionStream window (duration 1 seconds, slide 1 seconds) group by publisher")
 
     // this conf is used to get a connection a JDBC connection
-    val conf = new ConnectionConfBuilder(snsc.snappySession).build
+    val conf = new ConnectionConfBuilder(snsc.snappySession).build()
     println()
 
     // process the stream data returned by continuous query and update publisher_bid_counts table
@@ -177,7 +173,7 @@ object StreamingExample {
       }
     })
 
-    snsc.start
+    snsc.start()
 
     println("Publishing messages on Kafka")
     publishKafkaMessages(utils, topic)
@@ -193,6 +189,8 @@ object StreamingExample {
     System.exit(0)
   }
 
+  // scalastyle:off println
+
   def createAndGetDataDir: String = {
     // creating a directory to save all persistent data
     val dataDir = "./" + "snappydata_examples_data"
@@ -206,13 +204,13 @@ object StreamingExample {
       val currentTime = System.currentTimeMillis()
 
       // bids with comma separated fields
-      //timestamp, publisher,advertiser,web,geo,bid,cookie
-      val bid1 = currentTime + ",publisher1,advt1,pb1.web,US," + scala.util.Random.nextDouble() + ",23543"
-      val bid2 = currentTime + ",publisher2,advt1,pb1.web,US," + scala.util.Random.nextDouble() + ",45445"
-      val bid3 = currentTime + ",publisher3,advt2,pb1.web,US," + scala.util.Random.nextDouble() + ",13434"
-      val bid4 = currentTime + ",publisher4,advt2,pb1.web,US," + scala.util.Random.nextDouble() + ",34324"
-      val bid5 = currentTime + ",publisher2,advt1,pb1.web,US," + scala.util.Random.nextDouble() + ",23233"
-      val bid6 = currentTime + ",publisher4,advt2,pb1.web,US," + scala.util.Random.nextDouble() + ",43545"
+      // timestamp, publisher,advertiser,web,geo,bid,cookie
+      val bid1 = currentTime + ",publisher1,advt1,pb1.web,US," + Random.nextDouble() + ",23543"
+      val bid2 = currentTime + ",publisher2,advt1,pb1.web,US," + Random.nextDouble() + ",45445"
+      val bid3 = currentTime + ",publisher3,advt2,pb1.web,US," + Random.nextDouble() + ",13434"
+      val bid4 = currentTime + ",publisher4,advt2,pb1.web,US," + Random.nextDouble() + ",34324"
+      val bid5 = currentTime + ",publisher2,advt1,pb1.web,US," + Random.nextDouble() + ",23233"
+      val bid6 = currentTime + ",publisher4,advt2,pb1.web,US," + Random.nextDouble() + ",43545"
 
       // publish the bids as a Kafka message
       utils.sendMessages(topic, Array(bid1, bid2, bid3, bid4, bid5, bid6))
@@ -309,7 +307,7 @@ class EmbeddedKafkaUtils extends Logging {
       brokerConf = new KafkaConfig(brokerConfiguration, doLog = false)
       server = new KafkaServer(brokerConf)
       server.startup()
-      brokerPort = server.boundPort()
+      brokerPort = server.boundPort(new ListenerName("PLAINTEXT"))
       (server, brokerPort)
     }, new SparkConf(), "KafkaBroker")
 
@@ -358,7 +356,8 @@ class EmbeddedKafkaUtils extends Logging {
         AdminUtils.createTopic(zkUtils, topic, partitions, 1)
         created = true
       } catch {
-        case e: kafka.common.TopicExistsException if overwrite => // deleteTopic(topic)
+        case e: Exception if overwrite && e.getClass.getSimpleName == "TopicExistsException" =>
+        // deleteTopic(topic)
       }
     }
     // wait until metadata is propagated
@@ -430,11 +429,9 @@ class EmbeddedKafkaUtils extends Logging {
   private def waitUntilMetadataIsPropagated(topic: String, partition: Int): Unit = {
     def isPropagated = server.apis.metadataCache.getPartitionInfo(topic, partition) match {
       case Some(partitionState) =>
-        val leaderAndInSyncReplicas = partitionState.leaderIsrAndControllerEpoch.leaderAndIsr
-
         zkUtils.getLeaderForPartition(topic, partition).isDefined &&
-          Request.isValidBrokerId(leaderAndInSyncReplicas.leader) &&
-          leaderAndInSyncReplicas.isr.size >= 1
+            Request.isValidBrokerId(partitionState.basePartitionState.leader) &&
+            !partitionState.basePartitionState.replicas.isEmpty
 
       case _ =>
         false

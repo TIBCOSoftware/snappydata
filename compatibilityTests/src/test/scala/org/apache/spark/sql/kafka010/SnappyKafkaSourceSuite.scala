@@ -20,7 +20,16 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil, TestSnappySession}
 
-class SnappyKafkaSourceSuite extends KafkaSourceSuite
+class SnappyKafkaContinuousSourceSuite extends KafkaContinuousSourceSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil
+
+class SnappyKafkaMicroBatchSourceSuiteBase extends KafkaMicroBatchSourceSuiteBase
+    with SharedSnappySessionContext with SnappySparkTestUtil
+
+class SnappyKafkaMicroBatchV1SourceSuite extends KafkaMicroBatchV1SourceSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil
+
+class SnappyKafkaMicroBatchV2SourceSuite extends KafkaMicroBatchV2SourceSuite
     with SharedSnappySessionContext with SnappySparkTestUtil
 
 class SnappyKafkaSourceStressSuite extends KafkaSourceStressSuite

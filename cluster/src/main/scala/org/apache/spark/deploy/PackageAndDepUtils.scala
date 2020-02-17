@@ -19,8 +19,12 @@ package org.apache.spark.deploy
 
 object GetJarsAndDependencies {
 
-  val usage = s"Usage: GetJarsAndDependencies" +
+  val usage: String = s"Usage: GetJarsAndDependencies" +
       s" [--repos repositories] [--jarcache path] coordinates"
+
+  private def isSwitch(s: String): Boolean = s(0) == '-'
+
+  // scalastyle:off println
 
   def main(args: Array[String]) {
     if (args.length == 0) println(usage)
@@ -28,7 +32,6 @@ object GetJarsAndDependencies {
     type OptionMap = Map[Symbol, String]
 
     def nextOption(map: OptionMap, list: List[String]): OptionMap = {
-      def isSwitch(s: String) = (s(0) == '-')
 
       list match {
         case Nil => map
@@ -36,10 +39,10 @@ object GetJarsAndDependencies {
           nextOption(map ++ Map('jarcache -> value), tail)
         case "--repos" :: value :: tail =>
           nextOption(map ++ Map('repos -> value), tail)
-        case string :: opt2 :: tail if isSwitch(opt2) =>
+        case string :: opt2 :: _ if isSwitch(opt2) =>
           nextOption(map ++ Map('coordinates -> string), list.tail)
         case string :: Nil => nextOption(map ++ Map('coordinates -> string), list.tail)
-        case option :: tail => println("Unknown option " + option)
+        case option :: _ => println("Unknown option " + option)
           Map.empty
       }
     }
@@ -51,11 +54,14 @@ object GetJarsAndDependencies {
     val ivyPath = options.get('jarcache)
     println(PackageAndDepUtils.resolveMavenCoordinates(coordinates, remoteRepos, ivyPath))
   }
+
+  // scalastyle:on println
 }
 
 object PackageAndDepUtils {
   def resolveMavenCoordinates(coordinates: String, remoteRepos: Option[String],
-        ivyPath: Option[String], exclusions: Seq[String] = Nil, isTest: Boolean = false): String = {
-    SparkSubmitUtils.resolveMavenCoordinates(coordinates, remoteRepos, ivyPath, exclusions, isTest)
+      ivyPath: Option[String], exclusions: Seq[String] = Nil, isTest: Boolean = false): String = {
+    SparkSubmitUtils.resolveMavenCoordinates(coordinates,
+      SparkSubmitUtils.buildIvySettings(remoteRepos, ivyPath), exclusions, isTest)
   }
 }

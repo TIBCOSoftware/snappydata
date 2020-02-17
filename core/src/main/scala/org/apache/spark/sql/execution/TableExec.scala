@@ -80,7 +80,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor
   // Only one insert plan possible in the plan tree, so no clashes.
   if (partitioned) {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    session.sessionState.snappyConf.setExecutionShufflePartitions(numBuckets)
+    session.snappySessionState.snappyConf.setExecutionShufflePartitions(numBuckets)
   }
 
   /** Specifies how data is partitioned for the table. */

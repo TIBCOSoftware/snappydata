@@ -48,7 +48,7 @@ object SnappyHiveThriftServer2 extends Logging {
     } else new SnappySession(sc)
     SparkSQLEnv.sqlContext = sparkSession.sqlContext
     SparkSQLEnv.sparkContext = sc
-    sparkSession.conf.set("spark.sql.hive.version", HiveUtils.hiveExecutionVersion)
+    sparkSession.conf.set(HiveUtils.FAKE_HIVE_VERSION.key, HiveUtils.builtinHiveVersion)
 
     // New executionHive is used to get the HiveServer2 configuration. When SnappySession
     // is being used then only the hive server2 settings are copied from it while the

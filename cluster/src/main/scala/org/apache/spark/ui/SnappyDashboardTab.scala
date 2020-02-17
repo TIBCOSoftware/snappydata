@@ -22,17 +22,17 @@ package org.apache.spark.ui
 import javax.servlet.http.HttpServletRequest
 
 import scala.collection.mutable.ArrayBuffer
+import scala.util.control.Breaks._
 
 import io.snappydata.gemxd.SnappyDataVersion
-import scala.util.control.Breaks._
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.status.api.v1.SnappyApiRootResource
 import org.apache.spark.ui.JettyUtils._
 
 class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboard") with Logging {
-  val parent = sparkUI
-  val appUIBaseAddress = parent.appUIAddress
+  val parent: SparkUI = sparkUI
+  val appUIBaseAddress: String = parent.webUrl
 
   // Attaching dashboard ui page
   val snappyDashboardPage = new SnappyDashboardPage(this)
@@ -44,8 +44,8 @@ class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboar
   parent.attachTab(this)
 
   // Move Dashboard tab to first place
-  val tabsList = parent.getTabs
-  val newTabsList = ArrayBuffer[WebUITab]()
+  val tabsList: Seq[WebUITab] = parent.getTabs
+  val newTabsList: ArrayBuffer[WebUITab] = ArrayBuffer[WebUITab]()
   // Add dashboard first
   newTabsList += tabsList.last
   // Add remaining tabs in tabs list
@@ -61,11 +61,11 @@ class SnappyDashboardTab(sparkUI: SparkUI) extends SparkUITab(sparkUI, "dashboar
   // Set SnappyData Product Version in SparkUI
   SparkUI.setProductVersion(SnappyDataVersion.getSnappyDataProductVersion)
 
-  updateRedirectionHandler
+  updateRedirectionHandler()
 
   // Replace default spark jobs page redirection handler by Snappy Dashboard page
   // redirection handler
-  def updateRedirectionHandler: Unit = {
+  def updateRedirectionHandler(): Unit = {
     val handlers = parent.getHandlers
     breakable {
       handlers.foreach(h => {
