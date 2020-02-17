@@ -465,10 +465,29 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     derbyTestUtils.closeDiscConnection(dConn, true);
   }
 
+  public static void HydraTask_populateTablesWithBatch() {
+    String[] tableNames = SnappySchemaPrms.getTableNames();
+    int numInserts = SnappySchemaPrms.getTotalInserts();
+    Long key = Prms.totalTaskTimeSec;
+    int totalTaskTimeInMilli = (TestConfig.tab().intAt(key, 300) - 20) * 1000;
+    Long startTime = System.currentTimeMillis();
+    boolean cont = true;
+    while (cont) {
+      Long currTime = System.currentTimeMillis();
+      if((currTime - startTime) >= totalTaskTimeInMilli){
+        cont = false;
+        break;
+      }
+      int i = new Random().nextInt(tableNames.length);
+      Log.getLogWriter().info("Loading data for " + tableNames[i]);
+      testInstance.performInsertUsingBatch(tableNames[i], i, numInserts, true);
+    }
+  }
+
   public static void HydraTask_populateTables() {
     String[] tableNames = SnappySchemaPrms.getTableNames();
     if (!SnappySchemaPrms.hasCsvData()) {
-      int numInserts = 1000000;
+      int numInserts = SnappySchemaPrms.getTotalInserts();
       for (int i = 0; i < tableNames.length; i++) {
         Log.getLogWriter().info("Loading data for " + tableNames[i]);
         testInstance.performInsertUsingBatch(tableNames[i], i, numInserts, true);
@@ -738,7 +757,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     return sql;
   }
 
-  public void performInsertUsingBatch(String tableName, int index, int batchSize,
+  public void performInsertUsingBatch(String tableName, int index, int totalInserts,
       boolean isPopulate) {
     Connection conn;
     String stmt;
@@ -754,7 +773,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     }
     try {
       conn = getLocatorConnection();
-      performInsertUsingBatch(conn, tableName, stmt, index, batchSize, getMyTid(), isPopulate);
+      performInsertUsingBatch(conn, tableName, stmt, index, totalInserts, getMyTid(), isPopulate);
       conn.close();
     } catch (SQLException se) {
       throw new TestException("Got exception while getting connection", se);
@@ -782,12 +801,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   }
 
   public void performInsertUsingBatch(Connection conn, String tableName,
-      String stmt, int index, int batchSize, int tid, boolean isPopulate){
-    int initCounter = getInitialCounter(index, batchSize);
+      String stmt, int index, int totalInserts, int tid, boolean isPopulate){
+    int initCounter = getInitialCounter(index, totalInserts);
     String uniqueKey = SnappySchemaPrms.getUniqueColumnName()[index];
+    int batchSize = SnappySchemaPrms.getBatchSize();
     Connection dConn = null;
-    Log.getLogWriter().info("Inserting using " + stmt + " with batchSize " + batchSize + " in " +
-        "table " + tableName + " from " + initCounter);
+    Log.getLogWriter().info("Inserting using " + stmt + " with total " + totalInserts + " rows in " +
+        "table " + tableName + " with batchSize of " + batchSize + " starting from " + initCounter);
     PreparedStatement snappyPS = null, derbyPS = null;
     try {
       snappyPS = conn.prepareStatement(stmt);
@@ -815,7 +835,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     int batchCnt = 0;
     try {
       String value;
-      for (int j = initCounter ; j < (batchSize + initCounter); j++) {
+      for (int j = initCounter ; j < (totalInserts + initCounter); j++) {
         int replaceQuestion = 1;
         for (int i = 0; i < oTypes.length; i++) {
           if (fieldNames[i].equalsIgnoreCase(uniqueKey)) value = j + "";
@@ -866,7 +886,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         snappyPS.addBatch();
         if (hasDerbyServer) derbyPS.addBatch();
         batchCnt++;
-        if (batchCnt == 65000) {
+        if (batchCnt == batchSize) {
           Log.getLogWriter().info("Executing batch statement for insert.");
           snappyPS.executeBatch();
           if (hasDerbyServer) derbyPS.executeBatch();

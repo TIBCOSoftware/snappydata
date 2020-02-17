@@ -100,9 +100,10 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static Long useCsv;
 
-  /* Comma seperated names of column with unique values */
+  /* Comma separated names of column with unique values */
   public static Long uniqueColumnName;
 
+  public static Long totalInserts;
 
   public static Long isAggregate;
 
@@ -220,6 +221,11 @@ public class SnappySchemaPrms extends SnappyPrms {
   public static int getBatchSize(){
     Long key = batchSize;
     return BasePrms.tasktab().intAt(key, BasePrms.tab().intAt(key, 1000));
+  }
+
+  public static int getTotalInserts(){
+    Long key = totalInserts;
+    return BasePrms.tasktab().intAt(key, BasePrms.tab().intAt(key, 1000000));
   }
 
   public static boolean getIsSingleBucket(){

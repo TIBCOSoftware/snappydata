@@ -26,7 +26,8 @@ INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskM
 
 //Load some data in the data, before starting any operations.
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_populateTables
-  io.snappydata.hydra.testDMLOps.SnappySchemaPrms-batchSize =5000000
+  io.snappydata.hydra.testDMLOps.SnappySchemaPrms-totalInserts = 5000000
+  io.snappydata.hydra.testDMLOps.SnappySchemaPrms-batchSize =1000
   threadGroups = snappyThreads;
 
 //task for verifying the populated data.
@@ -36,6 +37,7 @@ threadGroups = snappyThreads;
 
 //task for running dmlOps
 TASK        taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  =HydraTask_performDMLOPsAndVerifyConsistency
+  io.snappydata.hydra.testDMLOps.SnappySchemaPrms-totalInserts =1000
   io.snappydata.hydra.testDMLOps.SnappySchemaPrms-batchSize =1000
   threadGroups = dmlThreads;
 
