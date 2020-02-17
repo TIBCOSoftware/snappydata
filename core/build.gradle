@@ -92,13 +92,13 @@ dependencies {
   compile project(":snappy-jdbc_${scalaBinaryVersion}")
   compile project(":snappy-encoders_${scalaBinaryVersion}")
 
-  connector project(":snappy-core_${scalaBinaryVersion}:compat-spark${sparkConnectorVersion}")
+  connector project(compatConnectorProjectName)
 
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
-  testCompile project(":snappy-core_${scalaBinaryVersion}:compat-spark${sparkConnectorVersion}")
+  testCompile project(compatConnectorProjectName)
 
   testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"

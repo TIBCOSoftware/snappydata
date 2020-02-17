@@ -33,10 +33,8 @@ include ':snappy-encoders_' + scalaBinaryVersion
 // compatibility modules for all supported Spark releases
 include ":snappy-core_${scalaBinaryVersion}:compat-spark2.1.0"
 include ":snappy-core_${scalaBinaryVersion}:compat-spark2.1.1"
-include ":snappy-core_${scalaBinaryVersion}:compat-spark2.1.3"
-include ":snappy-core_${scalaBinaryVersion}:compat-spark2.3.2"
-include ":snappy-core_${scalaBinaryVersion}:compat-spark2.3.4"
-include ":snappy-core_${scalaBinaryVersion}:compat-spark2.4.4"
+include ":snappy-core_${scalaBinaryVersion}:compat-spark2.3"
+include ":snappy-core_${scalaBinaryVersion}:compat-spark2.4"
 include ":snappy-core_${scalaBinaryVersion}:compat-spark2.4.5"
 
 project(':snappy-jdbc_' + scalaBinaryVersion).projectDir = "$rootDir/jdbc" as File
@@ -50,10 +48,8 @@ project(':snappy-encoders_' + scalaBinaryVersion).projectDir = "$rootDir/encoder
 
 project(":snappy-core_${scalaBinaryVersion}:compat-spark2.1.0").projectDir = "$rootDir/core/compatibility/spark-2.1.0" as File
 project(":snappy-core_${scalaBinaryVersion}:compat-spark2.1.1").projectDir = "$rootDir/core/compatibility/spark-2.1.1" as File
-project(":snappy-core_${scalaBinaryVersion}:compat-spark2.1.3").projectDir = "$rootDir/core/compatibility/spark-2.1.3" as File
-project(":snappy-core_${scalaBinaryVersion}:compat-spark2.3.2").projectDir = "$rootDir/core/compatibility/spark-2.3.2" as File
-project(":snappy-core_${scalaBinaryVersion}:compat-spark2.3.4").projectDir = "$rootDir/core/compatibility/spark-2.3.4" as File
-project(":snappy-core_${scalaBinaryVersion}:compat-spark2.4.4").projectDir = "$rootDir/core/compatibility/spark-2.4.4" as File
+project(":snappy-core_${scalaBinaryVersion}:compat-spark2.3").projectDir = "$rootDir/core/compatibility/spark-2.3" as File
+project(":snappy-core_${scalaBinaryVersion}:compat-spark2.4").projectDir = "$rootDir/core/compatibility/spark-2.4" as File
 project(":snappy-core_${scalaBinaryVersion}:compat-spark2.4.5").projectDir = "$rootDir/core/compatibility/spark-2.4.5" as File
 
 if (sparkConnectorVersion != sparkVersion) {

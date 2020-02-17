@@ -78,18 +78,7 @@ dependencies {
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
-  testCompile (project(":snappy-core_${scalaBinaryVersion}:compat-spark${sparkVersion}")) {
-    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
-    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
-  }
+  testCompile project(compatProjectName)
   testCompile project(path: ':snappy-store:snappydata-store-tools', configuration: 'testOutput')
 
   testRuntime files("${projectDir}/../tests/common/src/main/resources")

@@ -27,7 +27,7 @@ class SnappySqlParser(session: SnappySession) extends SQLParserInterface {
   @transient protected[sql] val sqlParser: SnappyParser =
     new SnappyParser(session)
 
-  @transient private val substitutor =
+  @transient private lazy val substitutor: VariableSubstitution =
     new VariableSubstitution(session.sessionState.conf)
 
   private def withSubstitution(sqlText: String): String = {

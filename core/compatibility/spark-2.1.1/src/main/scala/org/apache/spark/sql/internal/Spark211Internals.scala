@@ -33,9 +33,7 @@ import org.apache.spark.storage.StorageLevel
 /**
  * Implementation of [[SparkInternals]] for Spark 2.1.1.
  */
-class Spark211Internals extends Spark21Internals {
-
-  override def version: String = "2.1.1"
+class Spark211Internals(override val version: String) extends Spark21Internals {
 
   override def uncacheQuery(spark: SparkSession, plan: LogicalPlan,
       cascade: Boolean, blocking: Boolean): Unit = {

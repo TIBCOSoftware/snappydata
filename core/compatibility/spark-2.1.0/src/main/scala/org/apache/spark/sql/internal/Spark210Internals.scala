@@ -30,9 +30,7 @@ import org.apache.spark.sql.{SparkInternals, SparkSession}
 /**
  * Implementation of [[SparkInternals]] for Spark 2.1.0.
  */
-class Spark210Internals extends Spark21Internals {
-
-  override def version: String = "2.1.0"
+class Spark210Internals(override val version: String) extends Spark21Internals {
 
   override def newCaseInsensitiveMap(map: Map[String, String]): Map[String, String] = {
     new CaseInsensitiveMap(map)

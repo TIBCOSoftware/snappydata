@@ -1410,6 +1410,7 @@ class SnappyParser(session: SnappySession)
   /** Parse SQL without any other handling like query hints */
   def parseSQLOnly[T](sqlText: String, parseRule: => Try[T]): T = {
     this.input = sqlText
+    caseSensitive = session.sessionState.conf.caseSensitiveAnalysis
     parseRule match {
       case Success(p) => p
       case Failure(e: ParseError) =>

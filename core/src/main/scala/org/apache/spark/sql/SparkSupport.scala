@@ -89,11 +89,19 @@ object SparkSupport extends Logging {
    * have a public constructor having current SparkContext as the one argument.
    */
   private val implementations: Map[String, String] = Map(
-    "2.4.5" -> s"$INTERNAL_PACKAGE.Spark245Internals",
-    "2.4.4" -> s"$INTERNAL_PACKAGE.Spark244Internals",
-    "2.3.4" -> s"$INTERNAL_PACKAGE.Spark234Internals",
-    "2.3.2" -> s"$INTERNAL_PACKAGE.Spark232Internals",
-    "2.1.3" -> s"$INTERNAL_PACKAGE.Spark213Internals",
+    "2.4.5" -> s"$INTERNAL_PACKAGE.Spark24Internals",
+    "2.4.4" -> s"$INTERNAL_PACKAGE.Spark24Internals",
+    "2.4.3" -> s"$INTERNAL_PACKAGE.Spark24Internals",
+    "2.4.2" -> s"$INTERNAL_PACKAGE.Spark24Internals",
+    "2.4.1" -> s"$INTERNAL_PACKAGE.Spark24Internals",
+    "2.4.0" -> s"$INTERNAL_PACKAGE.Spark24Internals",
+    "2.3.4" -> s"$INTERNAL_PACKAGE.Spark23Internals",
+    "2.3.3" -> s"$INTERNAL_PACKAGE.Spark23Internals",
+    "2.3.2" -> s"$INTERNAL_PACKAGE.Spark23Internals",
+    "2.3.1" -> s"$INTERNAL_PACKAGE.Spark23Internals",
+    "2.3.0" -> s"$INTERNAL_PACKAGE.Spark23Internals",
+    "2.1.3" -> s"$INTERNAL_PACKAGE.Spark211Internals",
+    "2.1.2" -> s"$INTERNAL_PACKAGE.Spark211Internals",
     "2.1.1" -> s"$INTERNAL_PACKAGE.Spark211Internals",
     "2.1.0" -> s"$INTERNAL_PACKAGE.Spark210Internals"
   )
@@ -117,7 +125,8 @@ object SparkSupport extends Logging {
           case None => throw new SparkException(s"Unsupported Spark version $sparkVersion")
         }
         val implClass: Class[_] = Utils.classForName(implClassName)
-        internalImpl = implClass.newInstance().asInstanceOf[SparkInternals]
+        internalImpl = implClass.getConstructor(classOf[String])
+            .newInstance(sparkVersion).asInstanceOf[SparkInternals]
         internalImpl
       }
     }

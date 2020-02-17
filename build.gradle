@@ -40,6 +40,12 @@ apply plugin: "nebula.ospackage"
 
 def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
 
+def compatibilityMap = [
+  '2.1.0': '2.1.0', '2.1.1': '2.1.1', '2.1.2': '2.1.1', '2.1.3': '2.1.1',
+  '2.3.0': '2.3', '2.3.1': '2.3', '2.3.2': '2.3', '2.3.3': '2.3', '2.3.4': '2.3',
+  '2.4.0': '2.4', '2.4.1': '2.4', '2.4.2': '2.4', '2.4.3': '2.4', '2.4.4': '2.4', '2.4.5': '2.4.5'
+]
+
 allprojects {
   // We want to see all test results.  This is equivalent to setting --continue
   // on the command line.
@@ -113,6 +119,8 @@ allprojects {
     snappySparkVersion = '2.4.5.1'
     coreProjectName = sparkVersion == sparkConnectorVersion
         ? ":snappy-core_${scalaBinaryVersion}" : ":snappy-core-product_${scalaBinaryVersion}"
+    compatProjectName = ":snappy-core_${scalaBinaryVersion}:compat-spark${compatibilityMap[sparkVersion]}"
+    compatConnectorProjectName = ":snappy-core_${scalaBinaryVersion}:compat-spark${compatibilityMap[sparkConnectorVersion]}"
     aqpProjectName = ":snappy-aqp_${scalaBinaryVersion}"
     sparkPackageName = "snappydata-${version}_${sparkConnectorVersion}-s_${scalaBinaryVersion}"
 
@@ -882,11 +890,11 @@ task publishMaven {
 task product(type: Zip) {
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-core_${scalaBinaryVersion}:jar"
-  dependsOn ":snappy-core_${scalaBinaryVersion}:compat-spark${sparkVersion}:jar"
+  dependsOn "${compatProjectName}:jar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:sparkProduct"
   dependsOn ':snappy-launcher:jar'
-  dependsOn ':jdbcJar'
+  dependsOn ':copyShadowJars'
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def launcherProject = project(':snappy-launcher')
@@ -1318,7 +1326,6 @@ task distInstallers {
 task distProduct {
   dependsOn product, distTar, distZip
   dependsOn distInstallers
-  dependsOn copyShadowJars
 }
 
 task generateSources {
@@ -1355,7 +1362,7 @@ task cleanAll {
   dependsOn getTasksByName('clean', true).collect { it.path }
 }
 def taskFilter(Task p) {
-  !p.path.matches('.*compat-spark.*') || p.path.matches(".*compat-spark${sparkConnectorVersion}.*")
+  !p.path.matches('.*compat-spark.*') || p.path.matches(".*${compatConnectorProjectName}.*")
 }
 task buildAll {
   dependsOn getTasksByName('assemble', true).findAll { taskFilter(it) }.collect { it.path }
