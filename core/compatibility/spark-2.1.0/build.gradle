@@ -20,8 +20,8 @@ apply plugin: 'scala'
 compileScala.options.encoding = 'UTF-8'
 
 // directly include the base classes to ensure everything is compiled with current Spark version
-sourceSets.main.scala.srcDir "../spark-2.1.x/src/main/scala"
-sourceSets.main.scala.srcDir "../spark-2.1.x/src/main/java"
+sourceSets.main.scala.srcDir '../spark-2.1/src/main/scala'
+sourceSets.main.scala.srcDir '../spark-2.1/src/main/java'
 sourceSets.main.java.srcDirs = []
 
 // keeping this as sparkConnectorVersion helps use the same for multiple Spark versions
