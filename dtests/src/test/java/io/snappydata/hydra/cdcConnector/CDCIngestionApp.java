@@ -93,39 +93,6 @@ public class CDCIngestionApp implements Runnable {
     return conn;
   }
 
-/*  public void insertData(ArrayList<String> queryArray, Connection conn) {
-    try {
-      for (int i = 0; i < queryArray.size(); i++) {
-        String qStr = queryArray.get(i);
-        System.out.println("Query = " + qStr);
-        System.out.println("The startRange = " + startRange + " the endRange = " + endRange);
-        if (qStr.contains("PUT INTO")) {
-          for (int j = startRange; j <= endRange; j++) {
-            String newStr;
-            if (qStr.contains("?"))
-              newStr = qStr.replace("?", Integer.toString(j));
-            else
-              newStr = qStr;
-            System.out.println("The new query String is " + newStr);
-            conn.createStatement().execute(newStr);
-          }
-        } else {
-          for (int j = startRange; j <= endRange; j++) {
-            PreparedStatement ps = conn.prepareStatement(qStr);
-            int KEY_ID = j;
-            ps.setInt(1, KEY_ID);
-            ps.execute();
-          }
-          System.out.println("Thread " + threadName + " finished  ingesting " + (endRange - startRange) + " rows in a table");
-        }
-      }
-      System.out.println("FINISHED: Thread " + threadName + " finished ingestion in all the tables");
-    } catch (Exception e) {
-      System.out.println("Caught exception " + e.getMessage());
-    }
-  }
-*/
-
 public void insertData(ArrayList<String> queryArray, Connection conn) {
     PreparedStatement ps = null;
   try {

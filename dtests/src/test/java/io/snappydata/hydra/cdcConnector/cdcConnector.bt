@@ -6,7 +6,7 @@ io/snappydata/hydra/cdcConnector/cdcBasicValidationTest.conf
   testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
   dataFilesLocation="/export/shared/QA_DATA/cdcData_20G"
   queryFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/scriptsForApp1/selectOps.sql"
-  deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/bulkDelete.sql"
+  deleteQFilePath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector/truncateTable.sql"
   insertQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/cdcConnector"
   dataBaseName = testdatabase
   snappyFileLoc="$GEMFIRE/../snappy"
