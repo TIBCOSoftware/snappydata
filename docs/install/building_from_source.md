@@ -8,7 +8,7 @@
  
 **Latest release branch**
 ```pre
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-<release-version> --recursive
+> git clone https://github.com/SnappyDataInc/snappydata.git -b v<release-version> --recursive
 > cd snappydata
 > ./gradlew product
 ```
@@ -21,24 +21,6 @@
 ```
 
 The product is in **build-artifacts/scala-2.11/snappy**
-
-## Build only the Top-level Components
-
-Use this option if you want to build only the top-level SnappyData project and pull in jars for other projects (spark, store, spark-jobserver):
-
-**Latest release branch**
-```pre
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-<release-version>
-> cd snappydata
-> ./gradlew product
-```
-
-**Master**
-```pre
-> git clone https://github.com/SnappyDataInc/snappydata.git
-> cd snappydata
-> ./gradlew product
-```
 
 ## Repository Layout
 
