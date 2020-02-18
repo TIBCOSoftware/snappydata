@@ -741,4 +741,37 @@ object SQLFunctionsUtils {
     " GROUP BY spark_partition_id()"
   val dropColTbl_sparkpartitionid : String = dropTbl  + columnTbl
   val dropRowTbl_sparkpartitionid : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  106. rollup, 107. cube.
+    */
+  val rollup_cube = new Array[String](10)
+  rollup_cube(0) = "(1,'Mark','Male',5000,'USA')"
+  rollup_cube(1) = "(2,'John','Male',4500,'India')"
+  rollup_cube(2) = "(3,'Pam','Female',5500,'USA')"
+  rollup_cube(3) = "(4,'Sara','Female',4000,'India')"
+  rollup_cube(4) = "(5,'Todd','Male',3500,'India')"
+  rollup_cube(5) = "(6,'Mary','Female',5000,'UK')"
+  rollup_cube(6) = "(7,'Ben','Male',6500,'UK')"
+  rollup_cube(7) = "(8,'Elizabeth','Female',7000,'USA')"
+  rollup_cube(8) = "(9,'Tom','Male',5500,'UK')"
+  rollup_cube(9) = "(10,'Rom','Male',5000,'USA')"
+  val createColTypeTbl_rollup_cube_Spark : String = createTbl + columnTbl +
+    "(id int,name string,gender string,salary int,country string)"
+  val createRowTypeTbl_rollup_cube_Spark : String = createTbl + rowTbl +
+    "(id int,name string,gender string,salary int,country string)"
+  val createColumnTbl_rollup_cube : String = createTbl + columnTbl +
+    "(id int,name string,gender string,salary int,country string) " + usingCol
+  val createRowTbl_rollup_cube : String = createTbl + rowTbl +
+    "(id int,name string,gender string,salary int,country string) " + usingRow
+  val select_ColTbl_rollup : String = "SELECT country,gender,sum(salary) AS total FROM " +
+    columnTbl + " GROUP BY ROLLUP(country,gender)"
+  val select_RowTbl_rollup: String = "SELECT country,gender,sum(salary) AS total FROM " +
+    rowTbl + " GROUP BY ROLLUP(country,gender)"
+  val select_ColTbl_cube : String = "SELECT country,gender,sum(salary) AS total FROM " +
+    columnTbl + " GROUP BY CUBE(country,gender)"
+  val select_RowTbl_cube: String = "SELECT country,gender,sum(salary) AS total FROM " +
+    rowTbl + " GROUP BY CUBE(country,gender)"
+  val dropColTbl_rollup_cube : String = dropTbl  + columnTbl
+  val dropRowTbl_rollup_cube : String = dropTbl + rowTbl
 }

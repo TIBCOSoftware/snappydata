@@ -1179,8 +1179,6 @@ class SQLFunctions extends SnappySQLJob {
       + snc_spid_col.take(1).mkString)
     pw.println("Spark Column type table count for spark_partition_id() -> " +
       spark_spid_col.take(1).mkString)
-//    SnappyTestUtils.assertQueryFullResultSet(snc, snc_spid_col, spark_spid_col,
-//      "Q61_spark_partition_id", "column", pw, sqlContext, true)
     val snc_spid_Row : DataFrame = snc.sql(SQLFunctionsUtils.select_RowTbl_cdbsparkpartitionid)
     val spark_spid_Row : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_sparkpartitionid)
     pw.println("Snappy Row Table Count for spark_partition_id() -> "
@@ -1192,6 +1190,48 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.dropRowTbl_sparkpartitionid)
     spark.sql(SQLFunctionsUtils.dropColTbl_sparkpartitionid)
     spark.sql(SQLFunctionsUtils.dropRowTbl_sparkpartitionid)
+    pw.println()
+    pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  106. rollup, 107. cube.
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_rollup_cube_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_rollup_cube_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_rollup_cube)
+    snc.sql(SQLFunctionsUtils.createRowTbl_rollup_cube)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 9) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rollup_cube(i))
+    }
+    for(i <- 0 to 9) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rollup_cube(i))
+    }
+    for(i <- 0 to 9) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rollup_cube(i))
+    }
+    for(i <- 0 to 9) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rollup_cube(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_rollup,
+      "Q61_rollup", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_rollup,
+      "Q62_rollup", "row", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_cube,
+      "Q63_cube", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_cube,
+      "Q64_cube", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_rollup_cube)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_rollup_cube)
+    spark.sql(SQLFunctionsUtils.dropColTbl_rollup_cube)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_rollup_cube)
     pw.println()
     pw.flush()
 
