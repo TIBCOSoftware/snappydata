@@ -995,14 +995,14 @@ class SnappyParser(session: SnappySession)
             UnresolvedFunction(fnName, UnresolvedStar(None) :: Nil, isDistinct = false)
           }) |
           setQuantifier ~ (expression * commaSep) ~ ')' ~ ws ~
-            (OVER ~ windowSpec).? ~> { (n1: String, n2: Any, d: Option[Boolean], e: Any, w: Any) =>
+            (OVER ~ windowSpec).? ~> { (n1: String, n2: Any, a: Option[Boolean], e: Any, w: Any) =>
             val fnName = n2.asInstanceOf[Option[String]] match {
               case None => new FunctionIdentifier(n1)
               case Some(f) => new FunctionIdentifier(f, Some(n1))
             }
             val allExprs = e.asInstanceOf[Seq[Expression]].toIndexedSeq
             val exprs = foldableFunctionsExpressionHandler(allExprs, n1)
-            val function = if (d.contains(false)) {
+            val function = if (!a.contains(false)) {
               UnresolvedFunction(fnName, exprs, isDistinct = false)
             } else if (fnName.funcName.equalsIgnoreCase("count")) {
               aggregate.Count(exprs).toAggregateExpression(isDistinct = true)

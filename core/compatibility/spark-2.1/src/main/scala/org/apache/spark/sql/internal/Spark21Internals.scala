@@ -350,6 +350,10 @@ abstract class Spark21Internals extends SparkInternals {
 
   override def getOverwriteOption(insert: InsertIntoTable): Boolean = insert.overwrite.enabled
 
+  override def getOverwriteOption(insert: InsertIntoDataSourceCommand): Boolean = {
+    insert.overwrite.enabled
+  }
+
   override def getIfNotExistsOption(insert: InsertIntoTable): Boolean = insert.ifNotExists
 
   override def newGroupingSet(groupingSets: Seq[Seq[Expression]],
@@ -927,7 +931,7 @@ class SnappySessionState21(override val snappySession: SnappySession)
 
     override def session: SnappySession = snappySession
 
-    private def state: SnappySessionState = session.sessionState
+    private def state: SnappySessionState = session.snappySessionState
 
     private def hiveCatalog(state: SessionState): HiveSessionCatalog =
       state.catalog.asInstanceOf[HiveSessionCatalog]

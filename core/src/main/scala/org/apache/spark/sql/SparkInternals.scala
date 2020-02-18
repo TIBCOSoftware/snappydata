@@ -38,7 +38,7 @@ import org.apache.spark.sql.execution.closedform.{ClosedFormColumnExtractor, Err
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, InMemoryRelation}
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.execution.common.HAC
-import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
+import org.apache.spark.sql.execution.datasources.{DataSource, InsertIntoDataSourceCommand, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.Exchange
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, PartitionedDataSourceScan, RowDataSourceScanExec, SparkPlan, WholeStageCodegenExec}
@@ -322,6 +322,11 @@ trait SparkInternals extends Logging {
    * Return true if overwrite is enabled in the insert plan else false.
    */
   def getOverwriteOption(insert: InsertIntoTable): Boolean
+
+  /**
+   * Return true if overwrite is enabled in the insert plan else false.
+   */
+  def getOverwriteOption(insert: InsertIntoDataSourceCommand): Boolean
 
   /**
    * Return true if "ifNotExists" is enabled in the insert plan else false.

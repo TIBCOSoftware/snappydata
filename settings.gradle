@@ -16,7 +16,7 @@
  */
 
 String scalaBinaryVersion = '2.11'
-String sparkVersion = '2.1.1'
+String sparkVersion = '2.4.5'
 String sparkConnectorVersion = System.getProperty('spark.connector.version', sparkVersion)
 rootProject.name = 'snappydata_' + scalaBinaryVersion
 

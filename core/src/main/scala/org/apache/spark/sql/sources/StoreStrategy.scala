@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference,
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
-import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.datasources.{InsertIntoDataSourceCommand, LogicalRelation}
 import org.apache.spark.sql.internal.PutIntoColumnTable
 import org.apache.spark.sql.types.{DataType, LongType}
 
@@ -47,13 +47,19 @@ object StoreStrategy extends Strategy with SparkSupport {
       EncoderScanExec(plan.rdd.asInstanceOf[RDD[Any]],
         plan.encoder, plan.isFlat, plan.output) :: Nil
 
-    case insert: InsertIntoTable if insert.partition.isEmpty &&
-        !internals.getIfNotExistsOption(insert) && insert.table.isInstanceOf[LogicalRelation] &&
-        insert.table.asInstanceOf[LogicalRelation].relation.isInstanceOf[PlanInsertableRelation] =>
-      val l = insert.table.asInstanceOf[LogicalRelation]
+    case i: InsertIntoTable if i.partition.isEmpty &&
+        !internals.getIfNotExistsOption(i) && i.table.isInstanceOf[LogicalRelation] &&
+        i.table.asInstanceOf[LogicalRelation].relation.isInstanceOf[PlanInsertableRelation] =>
+      val l = i.table.asInstanceOf[LogicalRelation]
       val p = l.relation.asInstanceOf[PlanInsertableRelation]
-      val preAction = if (internals.getOverwriteOption(insert)) () => p.truncate() else () => ()
-      ExecutePlan(p.getInsertPlan(l, planLater(insert.children.head)), preAction) :: Nil
+      val preAction = if (internals.getOverwriteOption(i)) () => p.truncate() else () => ()
+      ExecutePlan(p.getInsertPlan(l, planLater(i.children.head)), preAction) :: Nil
+
+    case i: InsertIntoDataSourceCommand
+      if i.logicalRelation.relation.isInstanceOf[PlanInsertableRelation] =>
+      val p = i.logicalRelation.relation.asInstanceOf[PlanInsertableRelation]
+      val preAction = if (internals.getOverwriteOption(i)) () => p.truncate() else () => ()
+      ExecutePlan(p.getInsertPlan(i.logicalRelation, planLater(i.query)), preAction) :: Nil
 
     case d@DMLExternalTable(table, cmd) => findLogicalRelation[BaseRelation](table) match {
       case Some(l) => ExecutedCommandExec(ExternalTableDMLCmd(l, cmd, d.output)) :: Nil

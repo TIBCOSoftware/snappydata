@@ -17,9 +17,11 @@
 
 package org.apache.spark.sql.execution.ui
 
+import java.util.concurrent.ConcurrentMap
+
 import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.SparkListenerEvent
-import org.apache.spark.sql.{CachedDataFrame, SparkListenerSQLPlanExecutionStart}
+import org.apache.spark.sql.{CachedDataFrame, SparkListenerSQLPlanExecutionEnd, SparkListenerSQLPlanExecutionStart}
 import org.apache.spark.status.ElementTrackingStore
 
 /**
@@ -35,6 +37,13 @@ import org.apache.spark.status.ElementTrackingStore
 class SnappySQLAppListener(context: SparkContext)
     extends SQLAppStatusListener(context.conf,
       context.statusStore.store.asInstanceOf[ElementTrackingStore], live = true) {
+
+  private[this] val baseLiveExecutions: ConcurrentMap[Long, LiveExecutionData] = {
+    val f = classOf[SQLAppStatusListener].getDeclaredFields
+        .find(_.getName.contains("liveExecutions")).get
+    f.setAccessible(true)
+    f.get(this).asInstanceOf[ConcurrentMap[Long, LiveExecutionData]]
+  }
 
   /**
    * Snappy's execution happens in two phases. First phase the plan is executed
@@ -58,13 +67,29 @@ class SnappySQLAppListener(context: SparkContext)
 
     case SparkListenerSQLExecutionStart(executionId, description, details,
     physicalPlanDescription, sparkPlanInfo, time) =>
+      // if executionId already exists (from SparkListenerSQLPlanExecutionStart) then
+      // use the submissionTime from those details
+      val submissionTime = try {
+        context.statusStore.store.read(classOf[SQLExecutionUIData], executionId) match {
+          case null => time
+          case data if data.submissionTime <= 0 => time
+          case data => data.submissionTime
+        }
+      } catch {
+        case _: NoSuchElementException => time
+      }
       // description and details strings being reference equals means
       // trim off former here
       if (description eq details) {
         val desc = CachedDataFrame.queryStringShortForm(details)
         super.onOtherEvent(SparkListenerSQLExecutionStart(executionId, desc, details,
-          physicalPlanDescription, sparkPlanInfo, time))
+          physicalPlanDescription, sparkPlanInfo, submissionTime))
+      } else if (submissionTime != time) {
+        super.onOtherEvent(SparkListenerSQLExecutionStart(executionId, description, details,
+          physicalPlanDescription, sparkPlanInfo, submissionTime))
       } else super.onOtherEvent(event)
+
+    case SparkListenerSQLPlanExecutionEnd(executionId) => baseLiveExecutions.remove(executionId)
 
     case _ => super.onOtherEvent(event)
   }

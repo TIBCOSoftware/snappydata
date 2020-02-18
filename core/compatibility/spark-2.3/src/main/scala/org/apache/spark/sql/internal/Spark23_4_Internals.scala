@@ -73,10 +73,10 @@ abstract class Spark23_4_Internals extends SparkInternals {
     f
   }
 
-  private val (listenerField, listenerFieldOffset): (Field, Long) = {
+  private val listenerFieldOffset: Long = {
     val f = classOf[SQLAppStatusStore].getDeclaredField("listener")
     f.setAccessible(true)
-    f -> UnsafeHolder.getUnsafe.objectFieldOffset(f)
+    UnsafeHolder.getUnsafe.objectFieldOffset(f)
   }
 
   override def mapExpressions(plan: LogicalPlan, f: Expression => Expression): LogicalPlan = {
@@ -157,7 +157,7 @@ abstract class Spark23_4_Internals extends SparkInternals {
 
   protected def createAndAttachSQLListener(state: SnappySharedState, sc: SparkContext): Unit = {
     // replace inside SQLAppStatusStore as well as change on the Spark ListenerBus
-    listenerField.get(state.statusStore).asInstanceOf[Option[SQLAppStatusListener]] match {
+    state.statusStore.listener match {
       case Some(_: SnappySQLAppListener) => // already changed
       case Some(_: SQLAppStatusListener) =>
         val newListener = new SnappySQLAppListener(sc)
@@ -238,6 +238,8 @@ abstract class Spark23_4_Internals extends SparkInternals {
   }
 
   override def getOverwriteOption(insert: InsertIntoTable): Boolean = insert.overwrite
+
+  override def getOverwriteOption(insert: InsertIntoDataSourceCommand): Boolean = insert.overwrite
 
   override def getIfNotExistsOption(insert: InsertIntoTable): Boolean = insert.ifPartitionNotExists
 

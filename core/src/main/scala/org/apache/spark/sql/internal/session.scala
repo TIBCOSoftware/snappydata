@@ -563,14 +563,14 @@ trait DefaultOptimizer extends SparkOptimizer {
     implicit val ss: SnappySession = state.snappySession
     var insertedSnappyOpts = 0
     val modified = super.batches.map {
-      case batch if batch.name.equalsIgnoreCase("Operator Optimizations") =>
+      case batch if batch.name.startsWith("Operator Optimization") =>
         insertedSnappyOpts += 1
         val (left, right) = batch.rules.splitAt(batch.rules.indexOf(ReorderJoin))
         Batch(batch.name, batch.strategy, (left :+ ResolveIndex()) ++ right: _*)
       case b => b
     }
 
-    if (insertedSnappyOpts != 1) {
+    if (insertedSnappyOpts == 0) {
       throw new AnalysisException("Snappy Optimizations not applied")
     }
 
@@ -587,7 +587,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState)
 
   private def conf: SQLConf = state.conf
 
-  def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+  def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
 
     // Add dbtable property for create table. While other routes can add it in
     // SnappySession.createTable, the DataFrameWriter path needs to be handled here.
@@ -831,7 +831,7 @@ object LikeEscapeSimplification {
     }
   }
 
-  def apply(plan: LogicalPlan): LogicalPlan = plan transformAllExpressions {
+  def apply(plan: LogicalPlan): LogicalPlan = plan resolveExpressions {
     case l@Like(left, Literal(pattern, StringType)) =>
       simplifyLike(null, l, left, pattern.toString)
   }

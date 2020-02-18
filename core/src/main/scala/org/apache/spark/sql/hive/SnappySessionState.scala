@@ -26,7 +26,6 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import io.snappydata.Property
 
 import org.apache.spark.Partition
-import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.numericPrecedence
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, Star, UnresolvedAttribute}
@@ -51,6 +50,7 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager, WindowLogicalPlan}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Strategy, _}
 import org.apache.spark.streaming.Duration
 
 
@@ -170,7 +170,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
         DynamicFoldableExpression(mark(e, foldable = false))
       }
 
-      plan transform {
+      plan resolveOperators {
         // transformDown for expression so that top-most node which is foldable gets
         // selected for wrapping by DynamicFoldableExpression and further sub-expressions
         // do not since foldExpression will reset inner ParamLiterals as non-foldable
@@ -216,7 +216,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
       var duration: Duration = null
       var slide: Option[Duration] = None
       var transformed: Boolean = false
-      plan transformDown {
+      plan resolveOperators {
         case win@WindowLogicalPlan(d, s, child, false) =>
           child match {
             case _: LogicalRelation | _: LogicalDStreamPlan => win
@@ -275,7 +275,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
    * Orders the join keys as per the  underlying partitioning keys ordering of the table.
    */
   object OrderJoinConditions extends Rule[LogicalPlan] with JoinQueryPlanning {
-    def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+    def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case ExtractEquiJoinKeys(joinType, leftKeys, rightKeys, otherCondition, left, right) =>
         prepareOrderedCondition(joinType, left, right, leftKeys, rightKeys, otherCondition)
     }
@@ -342,7 +342,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
   }
 
   object ResolveAliasInGroupBy extends Rule[LogicalPlan] {
-    def apply(plan: LogicalPlan): LogicalPlan = plan transformUp {
+    def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       // pivot with '*' projection messes up references for some reason
       // in older versions of Spark
       case Project(projectList, p: Pivot)
@@ -400,7 +400,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
         // is of type RunnableCommad. Later if it turns out any data operation
         // is happening via this command we need to handle it
         case _: RunnableCommand => plan
-        case _ if !alreadyPolicyApplied(plan) => plan.transformUp {
+        case _ if !alreadyPolicyApplied(plan) => plan resolveOperators {
           case lr: LogicalRelation if lr.relation.isInstanceOf[RowLevelSecurityRelation] =>
             val policyFilter = catalog.getCombinedPolicyFilterForNativeTable(
               lr.relation.asInstanceOf[RowLevelSecurityRelation], Some(lr))
@@ -521,7 +521,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
         s"Update/Delete requires a MutableRelation but got $table"))
       // resolve key columns right away
       var mutablePlan: Option[LogicalRelation] = None
-      val newChild = child.transformDown {
+      val newChild = child resolveOperators {
         case lr: LogicalRelation if lr.relation.isInstanceOf[MutableRelation] &&
             lr.relation.asInstanceOf[MutableRelation].table.equalsIgnoreCase(tableName) =>
           val mutable = lr.relation.asInstanceOf[MutableRelation]
@@ -544,7 +544,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
       }
     }
 
-    def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+    def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case u@Update(table, child, keyColumns, updateCols, updateExprs)
         if keyColumns.isEmpty && u.resolved && child.resolved =>
         // add the key columns to the plan
@@ -781,7 +781,7 @@ trait SnappyAnalyzer extends Analyzer with SparkSupport {
    */
   object SnappyPromoteStrings extends Rule[LogicalPlan] {
     override def apply(plan: LogicalPlan): LogicalPlan = {
-      plan transformAllExpressions {
+      plan resolveExpressions {
         case e if !e.childrenResolved => e
         case p@BinaryComparison(left@StringType(), right@QuestionMark(_))
           if right.dataType == NullType =>

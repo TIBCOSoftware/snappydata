@@ -444,9 +444,20 @@ class SnappySessionStateBuilder24(session: SnappySession, parentState: Option[Se
   override protected def optimizer: Optimizer = {
     new SparkOptimizer(catalog, experimentalMethods) with DefaultOptimizer {
 
+      private[this] var depth = 0
+
       override def state: SnappySessionState = session.snappySessionState
 
-      override def defaultBatches: Seq[Batch] = batchesImpl
+      override def defaultBatches: Seq[Batch] = {
+        if (depth == 0) {
+          depth += 1
+          try {
+            batchesImpl
+          } finally {
+            depth -= 1
+          }
+        } else super.defaultBatches
+      }
 
       override def extendedOperatorOptimizationRules: Seq[Rule[LogicalPlan]] =
         super.extendedOperatorOptimizationRules ++ customOperatorOptimizationRules

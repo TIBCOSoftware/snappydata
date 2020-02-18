@@ -448,13 +448,14 @@ abstract class SnappyDDLParser(session: SnappySession)
         PARTITIONED ~ BY ~ identifierList | bucketSpec | LOCATION ~ stringLiteral).* ~
         (AS ~ query).? ~ ws ~ &((';' ~ ws).* ~ EOI) ~>
         ((provider: Any, optionals: Any, asQuery: Any) => {
-          val tableOpts = new Array[Any](5) // options, comment, partitions, buckets, location
+          // options, comment, partitions, buckets, location
+          val tableOpts = Array[Any](None, None, Utils.EMPTY_STRING_ARRAY, None, None)
           optionals.asInstanceOf[Seq[Any]].foreach {
-            case opts: Map[_, _] => tableOpts(0) = opts
-            case comment: Some[_] => tableOpts(1) = comment.get
-            case parts: Seq[_] => tableOpts(2) = parts
-            case buckets: BucketSpec => tableOpts(3) = buckets
-            case location: String => tableOpts(4) = location
+            case opts: Map[_, _] => tableOpts(0) = Some(opts)
+            case comment: Some[_] => tableOpts(1) = comment
+            case parts: Seq[_] => tableOpts(2) = parts.asInstanceOf[Seq[String]].toArray
+            case buckets: BucketSpec => tableOpts(3) = Some(buckets)
+            case location: String => tableOpts(4) = Some(location)
             case v => throw new ParseException(s"Unknown table option: $v")
           }
           (provider, tableOpts(0), tableOpts(1), tableOpts(2), tableOpts(3), tableOpts(4),
