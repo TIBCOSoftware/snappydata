@@ -20,20 +20,9 @@ The Enterprise Edition includes several additional capabilities that are closed 
 3. In the Download page, select the version and the operation system as per your requirement.
 4. Read and accept the **END USER LICENSE AGREEMENT**.
 5. Choose an installation option and then click **Download**.
-6. You can also download the following additional files by clicking on the links:
-
-	* DEBIAN INSTALLER
-
-	* REDHAT INSTALLER
-
-	* JDBC JAR FILE
-
-	* ODBC INSTALLERS
 
 <a id= provisioningsnappy> </a>
 <heading2>TIBCO ComputeDB Provisioning Options</heading2>
-
-<heading3>Prerequisites</heading3>
 
 Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the *JAVA_HOME* environment variable is set on each computer.
 
@@ -49,7 +38,7 @@ The following options are available for provisioning TIBCO ComputeDB:
 
 * [Building from Source](install/building_from_source.md)<a id="building-from-source"></a>
 
-<heading3>Configuring the Limit for Open Files and Threads/Processes</heading3>
+<heading2>Configuring the Limit for Open Files and Threads/Processes</heading2>
 
 On a Linux system, you can set the limit of open files and thread processes in the **/etc/security/limits.conf** file. 
 </br>A minimum of **8192** is recommended for open file descriptors limit and **>128K** is recommended for the number of active threads. 
