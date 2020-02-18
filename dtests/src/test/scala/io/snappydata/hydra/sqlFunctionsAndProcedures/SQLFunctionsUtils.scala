@@ -712,12 +712,33 @@ object SQLFunctionsUtils {
     "quarter('2019-11-26') as q2,parse_url(testStr1,'PROTOCOL') as protocol," +
     "parse_url(testStr1,'HOST') as host,parse_url(testStr1,'PATH') as path," +
     "parse_url(testStr1,'QUERY') as query," +
-    "java_method('java.util.UUID','randomUUID') FROM " + columnTbl
+    "java_method('java.util.UUID','randomUUID') FROM " + columnTbl + " ORDER BY id"
   val select_RowTbl_parseurl : String = "SELECT id,trunc(dt,'YEAR') as year," +
     "trunc(dt,'MM') as month,trunc(dt,'DAY') as day,quarter(dt) as q1," +
     "quarter('2019-11-26') as q2,parse_url(testStr1,'PROTOCOL') as protocol," +
     "parse_url(testStr1,'HOST') as host,parse_url(testStr1,'PATH') as path," +
-    "parse_url(testStr1,'QUERY') as query,java_method('java.util.UUID','randomUUID') FROM " + rowTbl
+    "parse_url(testStr1,'QUERY') as query,java_method('java.util.UUID','randomUUID') FROM " +
+    rowTbl + " ORDER BY id"
   val dropColTbl_parseurl : String = dropTbl  + columnTbl
   val dropRowTbl_parseurl : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  105. spark_partition_id.
+    */
+  val createColTypeTbl_sparkpartitionid_Spark : String = createTbl + columnTbl +
+    "(id int,name string)"
+  val createRowTypeTbl_sparkpartitionid_Spark : String = createTbl + rowTbl +
+    "(id int,name string)"
+  val createColumnTbl_sparkpartitionid : String = createTbl + columnTbl +
+    "(id int,name string) " + usingCol + " OPTIONS(PARTITION_BY 'id');"
+  val createRowTbl_sparkpartitionid : String = createTbl + rowTbl +
+    "(id int,name string) " + usingRow
+  val select_ColTbl_sparkpartitionid : String = "SELECT SUM(total) FROM" +
+    "(SELECT COUNT(*) AS total FROM " + columnTbl + " GROUP BY spark_partition_id())"
+  val select_RowTbl_sparkpartitionid : String = "SELECT SUM(total) FROM" +
+    "(SELECT COUNT(*) AS total FROM " +  rowTbl + " GROUP BY spark_partition_id())"
+  val select_RowTbl_cdbsparkpartitionid : String = "SELECT COUNT(*) FROM " + rowTbl +
+    " GROUP BY spark_partition_id()"
+  val dropColTbl_sparkpartitionid : String = dropTbl  + columnTbl
+  val dropRowTbl_sparkpartitionid : String = dropTbl + rowTbl
 }

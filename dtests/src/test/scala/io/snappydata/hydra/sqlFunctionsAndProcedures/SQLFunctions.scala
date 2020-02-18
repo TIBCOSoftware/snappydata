@@ -1154,6 +1154,46 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_parseurl)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  105. spark_partition_id.
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_sparkpartitionid_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_sparkpartitionid_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_sparkpartitionid)
+    snc.sql(SQLFunctionsUtils.createRowTbl_sparkpartitionid)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql("INSERT INTO " + SQLFunctionsUtils.columnTbl +
+      " SELECT id,concat('TIBCO_',id) from range(1000000)")
+    spark.sql("INSERT INTO " + SQLFunctionsUtils.rowTbl +
+      " SELECT id,concat('TIBCO_',id) from range(1000000)")
+    snc.sql("INSERT INTO " + SQLFunctionsUtils.columnTbl +
+      " SELECT id,concat('TIBCO_',id) from range(1000000)")
+    snc.sql("INSERT INTO " + SQLFunctionsUtils.rowTbl +
+      " SELECT id,concat('TIBCO_',id) from range(1000000)")
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    val snc_spid_col : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_sparkpartitionid)
+    val spark_spid_col : DataFrame = spark.sql(SQLFunctionsUtils.select_ColTbl_sparkpartitionid)
+    pw.println("Snappy Column table count for spark_partition_id() -> "
+      + snc_spid_col.take(1).mkString)
+    pw.println("Spark Column type table count for spark_partition_id() -> " +
+      spark_spid_col.take(1).mkString)
+//    SnappyTestUtils.assertQueryFullResultSet(snc, snc_spid_col, spark_spid_col,
+//      "Q61_spark_partition_id", "column", pw, sqlContext, true)
+    val snc_spid_Row : DataFrame = snc.sql(SQLFunctionsUtils.select_RowTbl_cdbsparkpartitionid)
+    val spark_spid_Row : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_sparkpartitionid)
+    pw.println("Snappy Row Table Count for spark_partition_id() -> "
+      + snc_spid_Row.take(1).mkString)
+    pw.println("Spark Row type Table Count for spark_partition_id() -> " +
+      spark_spid_Row.take(1).mkString)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_sparkpartitionid)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_sparkpartitionid)
+    spark.sql(SQLFunctionsUtils.dropColTbl_sparkpartitionid)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_sparkpartitionid)
+    pw.println()
+    pw.flush()
 
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
