@@ -21,7 +21,7 @@ The following instructions can be used for on-premise installation of TIBCO Comp
             $ mkdir quickstartdatadir
             $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log
     
-	It opens the Spark shell. All TIBCO ComputeDB metadata, as well as persistent data, is stored in the directory **quickstartdatadir**.</br>	The spark-shell can now be used to work with TIBCO ComputeDB using [SQL](using_sql.md) and [Scala APIs](using_spark_scala_apis.md).
+	It opens the Spark shell. All TIBCO ComputeDB metadata, as well as persistent data, is stored in the directory **quickstartdatadir**.</br>	The spark-shell can now be used to work with TIBCO ComputeDB using [SQL](/quickstart/using_sql.md) and [Scala APIs](/quickstart/using_spark_scala_apis.md).
     
 After installing TIBCO ComputeDB, follow the instructions [here](/howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin.
 

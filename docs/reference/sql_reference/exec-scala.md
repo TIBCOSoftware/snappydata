@@ -45,7 +45,7 @@ Through the **returnDF** option, you can request the system to return the result
 
 ### Examples I
 
-Following are some examples to demonstrate the usage of **exec scala**. You can run these examples using [Snappy shell](../howto/use_snappy_shell.md).
+Following are some examples to demonstrate the usage of **exec scala**. You can run these examples using [Snappy shell](../../howto/use_snappy_shell.md).
 
 
 *	A simple Scala code to define a value **x** and print it.

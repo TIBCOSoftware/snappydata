@@ -17,7 +17,7 @@ To download and install the Visual C++ Redistributable for Visual Studio 2013:
 
 To download and install the ODBC driver:
 
-1. Download the drivers zip file **TIB_compute_drivers_1.2.0_linux.zip** using the steps provided [here](/quickstart/getting_started_by_installing_snappydata_on-premise.md). After this file is  extracted, you will find that it contains the ODBC installers in another file **TIB_compute-odbc_1.2.0_win.zip**. 
+1. Download the drivers zip file **TIB_compute_drivers_1.2.0_linux.zip** using the steps provided [here](/install/install_on_premise.md). After this file is  extracted, you will find that it contains the ODBC installers in another file **TIB_compute-odbc_1.2.0_win.zip**. 
 2. Extract **TIB_compute-odbc_1.2.0_win.zip**. Depending on your Windows installation, extract the contents of the 32-bit or 64-bit version of the TIBCO ComputeDB ODBC Driver.
 
     | Version | ODBC Driver |
