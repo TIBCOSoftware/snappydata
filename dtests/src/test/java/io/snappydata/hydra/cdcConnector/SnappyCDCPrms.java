@@ -151,6 +151,9 @@ public class SnappyCDCPrms extends SnappyPrms {
    */
   public static Long isKeepOrgConf;
 
+  public static Long isResubmitApp;
+
+
   public static String getNodeInfoForHA() {
     String nodeInfo = tasktab().stringAt(nodeInfoForHA, tab().stringAt
         (nodeInfoForHA, null));
@@ -256,6 +259,11 @@ public class SnappyCDCPrms extends SnappyPrms {
 
   public static boolean getIsNewNodeFirst() {
     Long key = isNewNodeFirst;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsResubmitApp() {
+    Long key = isResubmitApp;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
