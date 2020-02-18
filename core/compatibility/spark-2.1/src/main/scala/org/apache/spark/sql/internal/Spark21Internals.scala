@@ -225,6 +225,9 @@ abstract class Spark21Internals extends SparkInternals {
     }
   }
 
+  override def getActiveExecutionIds(sparkContext: SparkContext): Set[Long] =
+    SparkSession.sqlListener.get().getRunningExecutions.map(_.executionId).toSet
+
   override def newSharedState(sparkContext: SparkContext): SnappySharedState = {
     new SnappySharedState21(sparkContext)
   }

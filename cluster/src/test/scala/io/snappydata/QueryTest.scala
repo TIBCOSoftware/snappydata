@@ -24,7 +24,7 @@ import scala.collection.JavaConverters._
 import com.pivotal.gemfirexd.TestUtil
 
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
-import org.apache.spark.sql.execution.exchange.{BroadcastExchangeExec, ShuffleExchange}
+import org.apache.spark.sql.execution.exchange.{BroadcastExchangeExec, ShuffleExchangeExec}
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SnappySession, SparkSession}
 
@@ -177,10 +177,11 @@ class QueryTest extends SnappyFunSuite {
     snc.conf.set("spark.sql.caseSensitive", "false")
   }
 
+  def row(i: java.lang.Integer, d: java.lang.Double): (java.lang.Integer, java.lang.Double) =
+    (i, d)
+
   private def setupTestData(session: SnappySession): Unit = {
     import session.implicits._
-
-    val row = identity[(java.lang.Integer, java.lang.Double)] _
 
     val l = Seq(
       row(1, 2.0),
@@ -355,7 +356,7 @@ class QueryTest extends SnappyFunSuite {
       var plan = df.queryExecution.executedPlan
       // exactly one exchange of test1 and test2 is expected
       val exchanges = plan.collect {
-        case e: ShuffleExchange if e.outputPartitioning.numPartitions > 1 => e
+        case e: ShuffleExchangeExec if e.outputPartitioning.numPartitions > 1 => e
       }
       assert(exchanges.length === 2)
       assert(exchanges.head.treeString.toLowerCase.contains("test1"))

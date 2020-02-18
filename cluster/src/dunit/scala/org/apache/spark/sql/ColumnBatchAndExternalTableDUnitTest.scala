@@ -24,13 +24,16 @@ import io.snappydata.test.dunit.{AvailablePortHelper, SerializableCallable}
 import io.snappydata.util.TestUtils
 import org.scalatest.Assertions
 
+import org.apache.spark.SparkContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd, SparkListenerTaskStart}
 
 case class TestRecord(col1: Int, col2: Int, col3: Int)
 
 class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTestBase(s)
-    with Assertions with Logging {
+    with Assertions with Logging with SparkSupport {
+
+  def activeExecutionIds(sc: SparkContext): Set[Long] = internals.getActiveExecutionIds(sc)
 
   def _testColumnBatchSkipping(): Unit = {
 
@@ -54,7 +57,7 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     ds.write.insertInto("airline")
 
     // ***Check for the case when all the column batches are scanned ****
-    var previousExecutionIds = snc.sharedState.listener.executionIdToData.keySet
+    var previousExecutionIds = activeExecutionIds(sc)
 
     val df_allColumnBatchesScan = snc.sql(
       "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
@@ -63,8 +66,7 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
 
     df_allColumnBatchesScan.count()
 
-    var executionIds =
-      snc.sharedState.listener.executionIdToData.keySet.diff(previousExecutionIds)
+    var executionIds = activeExecutionIds(sc).diff(previousExecutionIds)
 
     var executionId = executionIds.head
 
@@ -74,7 +76,7 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     assert(scanned1 > 0, "All Column batches should have been scanned")
 
     // ***Check for the case when all the column batches are skipped****
-    previousExecutionIds = snc.sharedState.listener.executionIdToData.keySet
+    previousExecutionIds = activeExecutionIds(sc)
 
     val df_noColumnBatchesScan = snc.sql(
       "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
@@ -83,8 +85,7 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
 
     df_noColumnBatchesScan.count()
 
-    executionIds =
-        snc.sharedState.listener.executionIdToData.keySet.diff(previousExecutionIds)
+    executionIds = activeExecutionIds(sc).diff(previousExecutionIds)
 
     executionId = executionIds.head
 
@@ -94,7 +95,7 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     assert(skipped2 > 0, "No Column batches should have been scanned")
 
     // ***Check for the case when some of the column batches are scanned ****
-    previousExecutionIds = snc.sharedState.listener.executionIdToData.keySet
+    previousExecutionIds = activeExecutionIds(sc)
 
     val df_someColumnBatchesScan = snc.sql(
       "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
@@ -103,8 +104,7 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
 
     df_someColumnBatchesScan.count()
 
-    executionIds =
-        snc.sharedState.listener.executionIdToData.keySet.diff(previousExecutionIds)
+    executionIds = activeExecutionIds(sc).diff(previousExecutionIds)
 
     executionId = executionIds.head
 
@@ -117,7 +117,7 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     // check for StartsWith predicate with MAX/MIN handling
 
     // first all batches chosen
-    previousExecutionIds = snc.sharedState.listener.executionIdToData.keySet
+    previousExecutionIds = activeExecutionIds(sc)
 
     val df_allColumnBatchesLikeScan = snc.sql(
       "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
@@ -127,8 +127,7 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     var count = df_allColumnBatchesLikeScan.count()
     assert(count == 100, s"Unexpected count = $count, expected 100")
 
-    executionIds =
-        snc.sharedState.listener.executionIdToData.keySet.diff(previousExecutionIds)
+    executionIds = activeExecutionIds(sc).diff(previousExecutionIds)
 
     executionId = executionIds.head
 
@@ -139,7 +138,7 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     assert(scanned4 > 0, "All Column batches should have been scanned")
 
     // next some batches skipped
-    previousExecutionIds = snc.sharedState.listener.executionIdToData.keySet
+    previousExecutionIds = activeExecutionIds(sc)
 
     val df_someColumnBatchesLikeScan = snc.sql(
       "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
@@ -149,8 +148,7 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     count = df_someColumnBatchesLikeScan.count()
     assert(count == 12, s"Unexpected count = $count, expected 12")
 
-    executionIds =
-        snc.sharedState.listener.executionIdToData.keySet.diff(previousExecutionIds)
+    executionIds = activeExecutionIds(sc).diff(previousExecutionIds)
 
     executionId = executionIds.head
 
@@ -161,7 +159,7 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     assert(scanned5 != skipped5, "Some Column batches should have been skipped - comparison")
 
     // last all batches skipped
-    previousExecutionIds = snc.sharedState.listener.executionIdToData.keySet
+    previousExecutionIds = activeExecutionIds(sc)
 
     val df_noColumnBatchesLikeScan = snc.sql(
       "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
@@ -171,8 +169,7 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     count = df_noColumnBatchesLikeScan.count()
     assert(count == 0, s"Unexpected count = $count, expected 0")
 
-    executionIds =
-        snc.sharedState.listener.executionIdToData.keySet.diff(previousExecutionIds)
+    executionIds = activeExecutionIds(sc).diff(previousExecutionIds)
 
     executionId = executionIds.head
 
@@ -335,7 +332,7 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
         }
       }
     }
-    sc.listenerBus.addListener(listener)
+    sc.addSparkListener(listener)
 
     // ---- Check explicit spark.task.cpus setting takes effect in embedded mode -----
 

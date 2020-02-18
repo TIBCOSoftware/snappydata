@@ -67,13 +67,13 @@ import org.apache.spark.util.Utils
  */
 abstract class Spark23_4_Internals extends SparkInternals {
 
-  private val codegenContextClassFunctions: Field = {
+  private[this] val codegenContextClassFunctions: Field = {
     val f = classOf[CodegenContext].getDeclaredField("classFunctions")
     f.setAccessible(true)
     f
   }
 
-  private val listenerFieldOffset: Long = {
+  private[this] val listenerFieldOffset: Long = {
     val f = classOf[SQLAppStatusStore].getDeclaredField("listener")
     f.setAccessible(true)
     UnsafeHolder.getUnsafe.objectFieldOffset(f)
@@ -175,7 +175,11 @@ abstract class Spark23_4_Internals extends SparkInternals {
     if (state ne null) createAndAttachSQLListener(state, sparkContext)
   }
 
-  def clearSQLListener(): Unit = {
+  override def getActiveExecutionIds(sparkContext: SparkContext): Set[Long] = {
+    SnappyContext.getExistingSharedState.statusStore.executionsList().map(_.executionId).toSet
+  }
+
+  override def clearSQLListener(): Unit = {
     // no global SQLListener in Spark 2.3.x
   }
 

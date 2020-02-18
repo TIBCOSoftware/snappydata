@@ -196,6 +196,11 @@ trait SparkInternals extends Logging {
   def createAndAttachSQLListener(sparkContext: SparkContext): Unit
 
   /**
+   * Get the active execution IDs for all running jobs.
+   */
+  def getActiveExecutionIds(sparkContext: SparkContext): Set[Long]
+
+  /**
    * Create a new global instance of [[SnappySharedState]].
    */
   def newSharedState(sparkContext: SparkContext): SnappySharedState

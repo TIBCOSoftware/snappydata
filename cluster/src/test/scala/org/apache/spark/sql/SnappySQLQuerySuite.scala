@@ -153,9 +153,10 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     session.dropTable("subqueryData", ifExists = true)
   }
 
-  test("NOT EXISTS predicate subquery") {
-    val row = identity[(java.lang.Integer, java.lang.Double)] _
+  def row(i: java.lang.Integer, d: java.lang.Double): (java.lang.Integer, java.lang.Double) =
+    (i, d)
 
+  test("NOT EXISTS predicate subquery") {
     lazy val l = Seq(
       row(1, 2.0),
       row(1, 2.0),
