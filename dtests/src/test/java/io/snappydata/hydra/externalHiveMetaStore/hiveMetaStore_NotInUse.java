@@ -46,7 +46,7 @@ public class hiveMetaStore_NotInUse extends SnappyTest
             //"SELECT o.OrderID, c.CompanyName, e.FirstName, e.LastName FROM snappy_orders o JOIN snappy_employees e ON (e.EmployeeID = o.EmployeeID) JOIN snappy_customers c ON (c.CustomerID = o.CustomerID) WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > Cast('1998-01-01' as TIMESTAMP) ORDER BY c.CompanyName"
     };
 
-    static hiveMetaStore metaStore = new hiveMetaStore();
+    static hiveMetaStore_NotInUse metaStore = new hiveMetaStore_NotInUse();
 
     public hiveMetaStore_NotInUse() {
     }
