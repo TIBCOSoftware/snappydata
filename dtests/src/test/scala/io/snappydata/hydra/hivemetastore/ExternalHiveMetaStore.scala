@@ -29,15 +29,17 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     // scalastyle:off println
     println("External Hive MetaStore Embedded mode Job started...")
     val dataLocation = jobConfig.getString("dataFilesLocation")
-    val externalThriftServerHostName = jobConfig.getString("externalThriftServerHostName")
-    val externalThriftServerPort = jobConfig.getString("externalThriftServerPort")
+//    val externalThriftServerHostName = jobConfig.getString("externalThriftServerHostName")
+//    val externalThriftServerPort = jobConfig.getString("externalThriftServerPort")
+    val externalThriftServerHostNameAndPort = jobConfig.getString("thriftServerHostNameAndPort")
     val outputFile = "ValidateJoinQuery" + "_" + "column" +
       System.currentTimeMillis() + jobConfig.getString("logFileName")
     val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
     val spark: SparkSession = SparkSession.builder().getOrCreate()
     val snc: SnappyContext = snappySession.sqlContext
 
-    val beelineClientConnection: Connection = getBeelineClientConnection(externalThriftServerHostName, externalThriftServerPort)
+//    val beelineClientConnection: Connection = getBeelineClientConnection(externalThriftServerHostName, externalThriftServerPort)
+val beelineClientConnection: Connection = getBeelineClientConnection(externalThriftServerHostNameAndPort)
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
 
     dropHiveTables(snc, HiveMetaStoreUtils.dropTable)
@@ -49,7 +51,8 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
     snc.sql("drop schema if exists TIBCO_DB")
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
-    alterHiveTable_ChangeTableName(snc, pw)
+    //SNAP-3191, after resolving this issue remove the comment.
+    //  alterHiveTable_ChangeTableName(snc, pw)
     pw.flush()
     //  Test Case-2
     createAndDropHiveSchema(snc, beelineClientConnection, dataLocation, pw)
@@ -79,9 +82,16 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     println("External Hive MetaStore Embedded mode job is successful")
   }
 
-  def getBeelineClientConnection(externalThriftServerHostName : String, externalThriftServerPort : String): Connection = {
-       val beelineClientConnection: Connection = DriverManager.getConnection("jdbc:hive2://" + externalThriftServerHostName + ":" + externalThriftServerPort,
-        "hive", "Snappy!23")
+//  def getBeelineClientConnection(externalThriftServerHostName : String, externalThriftServerPort : String): Connection = {
+//       val beelineClientConnection: Connection = DriverManager.getConnection("jdbc:hive2://" + externalThriftServerHostName + ":" + externalThriftServerPort,
+//        "hive", "Snappy!23")
+//    println("Connection with Beeline established.")
+//    beelineClientConnection
+//  }
+
+  def getBeelineClientConnection(externalThriftServerHostNameAndPort : String): Connection = {
+    val beelineClientConnection: Connection = DriverManager.getConnection("jdbc:hive2://" + externalThriftServerHostNameAndPort,
+      "hive", "Snappy!23")
     println("Connection with Beeline established.")
     beelineClientConnection
   }
@@ -158,8 +168,6 @@ class ExternalHiveMetaStore extends SnappySQLJob {
       "double,Quantity smallint,Discount double)", beelineClientConnection, schema)
     loadDataToHiveTbls(dataLocation + "order_details.csv", "hive_order_details",
       beelineClientConnection, schema)
-//    loadDataToHiveTbls(dataLocation + "order-details.csv", "hive_order_details",
-//      beelineClientConnection, schema)
     createHiveTable("hive_products(ProductID int,ProductName string,SupplierID int," +
       "CategoryID int,QuantityPerUnit string,UnitPrice double,UnitsInStock smallint," +
       "UnitsOnOrder smallint,ReorderLevel smallint,Discontinued smallint)",
@@ -178,8 +186,6 @@ class ExternalHiveMetaStore extends SnappySQLJob {
       "TerritoryID string)", beelineClientConnection, schema)
     loadDataToHiveTbls(dataLocation + "employee_territories.csv",
       "hive_employee_territories", beelineClientConnection, schema)
-//    loadDataToHiveTbls(dataLocation + "employee-territories.csv",
-//      "hive_employee_territories", beelineClientConnection, schema)
   }
 
   def createSnappyTblsAndLoadData(snc: SnappyContext, dataLocation: String,
@@ -267,7 +273,7 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     snc.sql(HiveMetaStoreUtils.dropTable + "default.Table1")
     snc.sql(HiveMetaStoreUtils.dropTable + "default.Table2")
     snc.sql("create table if not exists default.Table1(id int, name String) row format delimited fields terminated by ','")
-//    snc.sql("insert into default.Table1 select id, concat('TIBCO_',id) from range(100000)")
+    snc.sql("insert into default.Table1 select id, concat('TIBCO_',id) from range(100000)")
     snc.sql("alter table default.Table1 rename to default.Table2")
     val countDF = snc.sql("select count(*) as Total from default.Table2")
     println("countDF : " + countDF.head())
