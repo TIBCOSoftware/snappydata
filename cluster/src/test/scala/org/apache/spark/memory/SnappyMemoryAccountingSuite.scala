@@ -615,7 +615,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val taskMemoryManager =
       new TaskMemoryManager(sparkSession.sparkContext.env.memoryManager, 0L)
     val taskContext =
-      new TaskContextImpl(0, 0, taskAttemptId = 1, 0, taskMemoryManager, new Properties, null)
+      new TaskContextImpl(0, 0, 0, taskAttemptId = 1, 0, taskMemoryManager, new Properties, null)
     try {
       CachedDataFrame(taskContext, Seq(unsafeRow).iterator)
       assert(false , "Should not have obtained memory")

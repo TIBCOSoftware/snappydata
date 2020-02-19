@@ -92,7 +92,7 @@ class StringBenchmark extends SnappyFunSuite {
       else num.toString
     }
 
-    val benchmark = new Benchmark(s"Sort${if (preSorted) "(pre-sorted)" else ""} " +
+    val benchmark = new BenchmarkWithCleanup(s"Sort${if (preSorted) "(pre-sorted)" else ""} " +
         s"num=${displayNumber(numElements)} distinct=${displayNumber(numDistinct)}", numElements)
 
     ColumnCacheBenchmark.addCaseWithCleanup(benchmark, "Spark", numIters, () => Unit,

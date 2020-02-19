@@ -22,7 +22,7 @@ import java.time.{ZoneId, ZonedDateTime}
 import scala.util.Random
 
 import com.typesafe.config.Config
-import io.snappydata.{Property, SnappyFunSuite}
+import io.snappydata.SnappyFunSuite
 import org.scalatest.Assertions
 
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
@@ -32,7 +32,6 @@ import org.apache.spark.sql.execution.benchmark.TAQTest.CreateOp
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.{Decimal, DecimalType, StringType, StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.util.Benchmark
 import org.apache.spark.util.random.XORShiftRandom
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -305,7 +304,7 @@ object TAQTest extends Logging with Assertions {
 
     import session.implicits._
 
-    val benchmark = new Benchmark("Cache random data", size)
+    val benchmark = new BenchmarkWithCleanup("Cache random data", size)
     val quoteRDD = sc.range(0, quoteSize).mapPartitions { itr =>
       val rnd = new XORShiftRandom
       val syms = ALL_SYMBOLS.map(UTF8String.fromString)
@@ -509,9 +508,9 @@ object TAQTest extends Logging with Assertions {
     }
 
     session.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
-    session.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+    session.conf.set(SQLConf.CODEGEN_FALLBACK.key, "false")
     spark.conf.set(SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key, "true")
-    spark.conf.set(SQLConf.WHOLESTAGE_FALLBACK.key, "false")
+    spark.conf.set(SQLConf.CODEGEN_FALLBACK.key, "false")
 
     // Benchmark cases:
     //   (1) Spark caching with column batch compression

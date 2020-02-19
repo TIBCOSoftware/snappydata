@@ -17,7 +17,6 @@
 
 package org.apache.spark.sql.internal
 
-import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 import io.snappydata.Property.HashAggregateSize
@@ -35,7 +34,6 @@ import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, FunctionRegistry, UnresolvedRelation, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog.{ExternalCatalog, _}
-import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, ExprCode, GeneratedClass}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameBoundary, FrameType, Generator, Literal, NamedExpression, NullOrdering, PredicateSubquery, SortDirection, SortOrder, SpecifiedWindowFrame, UnboundedFollowing, UnboundedPreceding, ValueFollowing, ValuePreceding}
@@ -62,6 +60,7 @@ import org.apache.spark.sql.sources.{BaseRelation, Filter, JdbcExtendedUtils, Re
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
 import org.apache.spark.sql.types.{DataType, Metadata, StructField, StructType}
 import org.apache.spark.status.api.v1.RDDStorageInfo
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{SparkConf, SparkContext, SparkException}
@@ -69,60 +68,11 @@ import org.apache.spark.{SparkConf, SparkContext, SparkException}
 /**
  * Base implementation of [[SparkInternals]] for Spark 2.1.x releases.
  */
-abstract class Spark21Internals extends SparkInternals {
+class Spark21Internals(override val version: String) extends SparkInternals {
 
   override def uncacheQuery(spark: SparkSession, plan: LogicalPlan,
       cascade: Boolean, blocking: Boolean): Unit = {
-    implicit val encoder: ExpressionEncoder[Row] = RowEncoder(plan.schema)
-    spark.sharedState.cacheManager.uncacheQuery(Dataset(spark, plan), blocking)
-  }
-
-  /**
-   * Apply a map function to each expression present in this query operator, and return a new
-   * query operator based on the mapped expressions.
-   *
-   * Taken from the mapExpressions in Spark 2.1.1 and beyond.
-   */
-  override def mapExpressions(plan: LogicalPlan, f: Expression => Expression): LogicalPlan = {
-    var changed = false
-
-    @inline def transformExpression(e: Expression): Expression = {
-      val newE = f(e)
-      if (newE.fastEquals(e)) {
-        e
-      } else {
-        changed = true
-        newE
-      }
-    }
-
-    def recursiveTransform(arg: Any): AnyRef = arg match {
-      case e: Expression => transformExpression(e)
-      case Some(e: Expression) => Some(transformExpression(e))
-      case Some(seq: Traversable[_]) => Some(seq.map(recursiveTransform))
-      case m: Map[_, _] => m
-      case d: DataType => d // Avoid unpacking Structs
-      case seq: Traversable[_] => seq.map(recursiveTransform)
-      case other: AnyRef => other
-      case null => null
-    }
-
-    /**
-     * Efficient alternative to `productIterator.map(f).toArray`.
-     */
-    def mapProductIterator[B: ClassTag](f: Any => B): Array[B] = {
-      val arr = Array.ofDim[B](plan.productArity)
-      var i = 0
-      while (i < arr.length) {
-        arr(i) = f(plan.productElement(i))
-        i += 1
-      }
-      arr
-    }
-
-    val newArgs = mapProductIterator(recursiveTransform)
-
-    if (changed) plan.makeCopy(newArgs).asInstanceOf[plan.type] else plan
+    spark.sharedState.cacheManager.uncacheQuery(spark, plan, blocking)
   }
 
   override def registerFunction(session: SparkSession, name: FunctionIdentifier,
@@ -193,6 +143,10 @@ abstract class Spark21Internals extends SparkInternals {
     WholeStageCodegenExec(plan)
   }
 
+  override def newCaseInsensitiveMap(map: Map[String, String]): Map[String, String] = {
+    new CaseInsensitiveMap(map)
+  }
+
   def createAndAttachSQLListener(sparkContext: SparkContext): Unit = {
     // if the call is done the second time, then attach in embedded mode
     // too since this is coming from ToolsCallbackImpl
@@ -224,9 +178,6 @@ abstract class Spark21Internals extends SparkInternals {
       case _ =>
     }
   }
-
-  override def getActiveExecutionIds(sparkContext: SparkContext): Set[Long] =
-    SparkSession.sqlListener.get().getRunningExecutions.map(_.executionId).toSet
 
   override def newSharedState(sparkContext: SparkContext): SnappySharedState = {
     new SnappySharedState21(sparkContext)
@@ -523,10 +474,29 @@ abstract class Spark21Internals extends SparkInternals {
 
   override def catalogDatabaseLocationURI(database: CatalogDatabase): String = database.locationUri
 
+  // scalastyle:off
+
+  override def newCatalogTable(identifier: TableIdentifier, tableType: CatalogTableType,
+      storage: CatalogStorageFormat, schema: StructType, provider: Option[String],
+      partitionColumnNames: Seq[String], bucketSpec: Option[BucketSpec],
+      owner: String, createTime: Long, lastAccessTime: Long, properties: Map[String, String],
+      stats: Option[AnyRef], viewOriginalText: Option[String], viewText: Option[String],
+      comment: Option[String], unsupportedFeatures: Seq[String],
+      tracksPartitionsInCatalog: Boolean, schemaPreservesCase: Boolean,
+      ignoredProperties: Map[String, String]): CatalogTable = {
+    if (ignoredProperties.nonEmpty) {
+      throw new SparkException(s"ignoredProperties should be always empty in Spark $version")
+    }
+    CatalogTable(identifier, tableType, storage, schema, provider, partitionColumnNames,
+      bucketSpec, owner, createTime, lastAccessTime, properties,
+      stats.asInstanceOf[Option[Statistics]], viewOriginalText, viewText, comment,
+      unsupportedFeatures, tracksPartitionsInCatalog, schemaPreservesCase)
+  }
+
+  // scalastyle:on
+
   override def catalogTableViewOriginalText(catalogTable: CatalogTable): Option[String] =
     catalogTable.viewOriginalText
-
-  override def catalogTableSchemaPreservesCase(catalogTable: CatalogTable): Boolean = true
 
   override def catalogTableIgnoredProperties(catalogTable: CatalogTable): Map[String, String] =
     Map.empty
@@ -559,7 +529,7 @@ abstract class Spark21Internals extends SparkInternals {
 
   override def alterTableSchema(externalCatalog: ExternalCatalog, schemaName: String,
       table: String, newSchema: StructType): Unit = {
-    throw new ParseException(s"ALTER TABLE schema not supported in Spark $version")
+    externalCatalog.alterTableSchema(schemaName, table, newSchema)
   }
 
   override def alterTableStats(externalCatalog: ExternalCatalog, schema: String, table: String,
@@ -590,6 +560,10 @@ abstract class Spark21Internals extends SparkInternals {
   override def newEmbeddedHiveCatalog(conf: SparkConf, hadoopConf: Configuration,
       createTime: Long): SnappyHiveExternalCatalog = {
     new SnappyEmbeddedHiveCatalog21(conf, hadoopConf, createTime)
+  }
+
+  override def newSmartConnectorExternalCatalog(session: SparkSession): SnappyExternalCatalog = {
+    new SmartConnectorExternalCatalog21(session)
   }
 
   override def lookupDataSource(provider: String, conf: => SQLConf): Class[_] =
@@ -637,6 +611,8 @@ abstract class Spark21Internals extends SparkInternals {
         new HiveConditionalStrategy(_.DataSinks, sessionState) ::
         new HiveConditionalStrategy(_.Scripts, sessionState) :: Nil
   }
+
+  override def newCacheManager(): CacheManager = new SnappyCacheManager21
 
   override def buildConf(key: String): ConfigBuilder = SQLConfigBuilder(key)
 
@@ -742,6 +718,34 @@ abstract class Spark21Internals extends SparkInternals {
   }
 }
 
+/**
+ * Simple extension to CacheManager to enable clearing cached plans on cache create/drop.
+ */
+class SnappyCacheManager21 extends CacheManager {
+
+  override def cacheQuery(query: Dataset[_], tableName: Option[String],
+      storageLevel: StorageLevel): Unit = {
+    super.cacheQuery(query, tableName, storageLevel)
+    // clear plan cache since cached representation can change existing plans
+    query.sparkSession.asInstanceOf[SnappySession].clearPlanCache()
+  }
+
+  override def uncacheQuery(session: SparkSession, plan: LogicalPlan, blocking: Boolean): Unit = {
+    super.uncacheQuery(session, plan, blocking)
+    session.asInstanceOf[SnappySession].clearPlanCache()
+  }
+
+  override def recacheByPlan(session: SparkSession, plan: LogicalPlan): Unit = {
+    super.recacheByPlan(session, plan)
+    session.asInstanceOf[SnappySession].clearPlanCache()
+  }
+
+  override def recacheByPath(session: SparkSession, resourcePath: String): Unit = {
+    super.recacheByPath(session, resourcePath)
+    session.asInstanceOf[SnappySession].clearPlanCache()
+  }
+}
+
 class SnappyEmbeddedHiveCatalog21(_conf: SparkConf, _hadoopConf: Configuration,
     _createTime: Long) extends SnappyHiveExternalCatalog(_conf, _hadoopConf, _createTime) {
 
@@ -825,7 +829,7 @@ class SnappyEmbeddedHiveCatalog21(_conf: SparkConf, _hadoopConf: Configuration,
     renameFunctionImpl(schema, oldName, newName)
 }
 
-abstract class SmartConnectorExternalCatalog21(override val session: SparkSession)
+class SmartConnectorExternalCatalog21(override val session: SparkSession)
     extends SmartConnectorExternalCatalog {
 
   override def getTable(schema: String, table: String): CatalogTable =
@@ -855,6 +859,9 @@ abstract class SmartConnectorExternalCatalog21(override val session: SparkSessio
     renameTableImpl(schema, oldName, newName)
 
   override def alterTable(table: CatalogTable): Unit = alterTableImpl(table)
+
+  override def alterTableSchema(schemaName: String, table: String, newSchema: StructType): Unit =
+    alterTableSchemaImpl(schemaName, table, newSchema)
 
   override def loadDynamicPartitions(schema: String, table: String, loadPath: String,
       partition: TablePartitionSpec, replace: Boolean, numDP: Int, holdDDLTime: Boolean): Unit = {

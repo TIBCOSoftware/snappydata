@@ -83,12 +83,6 @@ trait SparkInternals extends Logging {
       cascade: Boolean, blocking: Boolean): Unit
 
   /**
-   * Apply a mapping function on all expressions in the given logical plan
-   * and return the updated plan.
-   */
-  def mapExpressions(plan: LogicalPlan, f: Expression => Expression): LogicalPlan
-
-  /**
    * Register an inbuilt function in the session function registry.
    */
   def registerFunction(session: SparkSession, name: FunctionIdentifier,
@@ -194,11 +188,6 @@ trait SparkInternals extends Logging {
    * while it is invoked after initialization of SharedState for newer Spark versions.
    */
   def createAndAttachSQLListener(sparkContext: SparkContext): Unit
-
-  /**
-   * Get the active execution IDs for all running jobs.
-   */
-  def getActiveExecutionIds(sparkContext: SparkContext): Set[Long]
 
   /**
    * Create a new global instance of [[SnappySharedState]].
@@ -514,9 +503,6 @@ trait SparkInternals extends Logging {
 
   /** Get the viewOriginalText of CataLogTable or None if not present. */
   def catalogTableViewOriginalText(catalogTable: CatalogTable): Option[String]
-
-  /** Get the schemaPreservesCase field of CataLogTable or true if not present. */
-  def catalogTableSchemaPreservesCase(catalogTable: CatalogTable): Boolean
 
   /** Get the ignoredProperties map of CataLogTable or empty map if not present. */
   def catalogTableIgnoredProperties(catalogTable: CatalogTable): Map[String, String]

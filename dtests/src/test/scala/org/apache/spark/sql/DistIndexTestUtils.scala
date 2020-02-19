@@ -24,7 +24,8 @@ import io.snappydata.benchmark.snappy.tpch.QueryExecutor
 import io.snappydata.benchmark.snappy.{SnappyAdapter, TPCH}
 
 import org.apache.spark.sql.catalyst.plans.logical.Sort
-import org.apache.spark.util.Benchmark
+import org.apache.spark.sql.execution.benchmark.BenchmarkWithCleanup
+import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
 
 object DistIndexTestUtils {
 
@@ -40,7 +41,8 @@ object DistIndexTestUtils {
     val size = qryProvider.estimateSizes(query, tableSizes, executor)
     // scalastyle:off println
     pw.println(s"$qNum size $size")
-    val b = new Benchmark(s"JoinOrder optimization", size, minNumIters = 5, output = Some(fos))
+    val b = new BenchmarkWithCleanup(
+      s"JoinOrder optimization", size, minNumIters = 5, output = Some(fos))
 
     def case1(): Unit = snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name,
       "false")
@@ -62,14 +64,14 @@ object DistIndexTestUtils {
 
     def evalBaseTPCH = qryProvider.execute(query, executor)
 
-
-    b.addCase(s"$qNum baseTPCH index = F", numIters = 0, prepare = case3, cleanup = () => {})(
-      _ => evalBaseTPCH)
+    addCaseWithCleanup(b, s"$qNum baseTPCH index = F", numIters = 0, prepare = case3,
+      cleanup = () => {})(_ => evalBaseTPCH)
     //    b.addCase(s"$qNum baseTPCH joinOrder = T", prepare = case2)(i => evalBaseTPCH)
     //    b.addCase(s"$qNum snappyMods joinOrder = F", prepare = case1)(i => evalSnappyMods(false))
     //    b.addCase(s"$qNum snappyMods joinOrder = T", prepare = case2)(i => evalSnappyMods(false))
-    b.addCase(s"$qNum baseTPCH index = T", numIters = 0, prepare = case3, cleanup = () => {})(_ =>
-      evalBaseTPCH)
+    addCaseWithCleanup(b, s"$qNum baseTPCH index = T", numIters = 0, prepare = case3,
+      cleanup = () => {})(_ => evalBaseTPCH)
+
     b.run()
   }
 

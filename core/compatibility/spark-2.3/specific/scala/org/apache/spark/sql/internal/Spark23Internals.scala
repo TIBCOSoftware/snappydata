@@ -242,7 +242,7 @@ class Spark23Internals(override val version: String) extends Spark23_4_Internals
 /**
  * Extension of SnappyCacheManager23_4 to enable clearing cached plans on cache create/drop.
  */
-final class SnappyCacheManager23 extends SnappyCacheManager23_4 {
+class SnappyCacheManager23 extends SnappyCacheManager23_4 {
 
   override def uncacheQuery(session: SparkSession, plan: LogicalPlan, blocking: Boolean): Unit = {
     super.uncacheQuery(session, plan, blocking)
@@ -250,7 +250,7 @@ final class SnappyCacheManager23 extends SnappyCacheManager23_4 {
   }
 }
 
-final class SnappyEmbeddedHiveCatalog23(_conf: SparkConf, _hadoopConf: Configuration,
+class SnappyEmbeddedHiveCatalog23(_conf: SparkConf, _hadoopConf: Configuration,
     _createTime: Long) extends SnappyHiveExternalCatalog(_conf, _hadoopConf, _createTime) {
 
   override def getTable(schema: String, table: String): CatalogTable =
@@ -340,7 +340,7 @@ final class SnappyEmbeddedHiveCatalog23(_conf: SparkConf, _hadoopConf: Configura
     renameFunctionImpl(schema, oldName, newName)
 }
 
-final class SmartConnectorExternalCatalog23(override val session: SparkSession)
+class SmartConnectorExternalCatalog23(override val session: SparkSession)
     extends SmartConnectorExternalCatalog {
 
   override def getTable(schema: String, table: String): CatalogTable =

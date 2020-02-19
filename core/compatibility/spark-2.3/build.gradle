@@ -24,7 +24,8 @@ sourceSets.main.scala.srcDir 'specific/java'
 sourceSets.main.java.srcDirs = []
 
 // keeping this as sparkConnectorVersion helps use the same for multiple Spark versions
-String sparkCompatVersion = sparkConnectorVersion
+// for using the same gradle build across 2.3.x versions
+String sparkCompatVersion = (sparkConnectorVersion ==~ /2.3.*/) ? sparkConnectorVersion : '2.3.4'
 
 dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
@@ -43,7 +44,13 @@ dependencies {
 
   compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
 
-  compileOnly project(":snappy-core_${scalaBinaryVersion}")
+  compileOnly(project(":snappy-core_${scalaBinaryVersion}")) {
+    transitive = false
+  }
+  compileOnly(project(":snappy-jdbc_${scalaBinaryVersion}")) {
+    transitive = false
+  }
+  compileOnly project(':snappy-store:snappydata-store-core')
 }
 
 archivesBaseName = "snappydata-core-compat-spark${sparkCompatVersion}_${scalaBinaryVersion}"

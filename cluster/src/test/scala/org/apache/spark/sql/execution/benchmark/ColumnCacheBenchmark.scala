@@ -36,6 +36,10 @@
 
 package org.apache.spark.sql.execution.benchmark
 
+import java.io.OutputStream
+
+import scala.concurrent.duration._
+
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import io.snappydata.SnappyFunSuite
 
@@ -157,15 +161,17 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
         "a.val_name like 'val\\_42%' and b.role_id = 99 and c.type_id = a.type_id and " +
         "c.target_name = 'type_36' group by b.group_name, a.name"
 
-    val benchmark = new Benchmark("SNAP-2118 with random data", numElems1)
+    val benchmark = new BenchmarkWithCleanup("SNAP-2118 with random data", numElems1)
 
     var expectedResult: Array[Row] = null
-    benchmark.addCase("smj", numIters, () => snappy.sql("set snappydata.hashJoinSize=-1"),
+    addCaseWithCleanup(benchmark, "smj", numIters,
+      () => snappy.sql("set snappydata.hashJoinSize=-1"),
       () => {}) { i =>
       if (i == 1) expectedResult = snappy.sql(sql).collect()
       else snappy.sql(sql).collect()
     }
-    benchmark.addCase("hash", numIters, () => snappy.sql("set snappydata.hashJoinSize=1g"),
+    addCaseWithCleanup(benchmark, "hash", numIters,
+      () => snappy.sql("set snappydata.hashJoinSize=1g"),
       () => {}) { i =>
       if (i == 1) ColumnCacheBenchmark.collect(snappy.sql(sql), expectedResult)
       else snappy.sql(sql).collect()
@@ -230,7 +236,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   }
 
   private def benchMarkForPutIntoColumnTable(size: Int, numIters: Int = 10): Unit = {
-    val benchmark = new Benchmark("PutInto Vs Insert", size)
+    val benchmark = new BenchmarkWithCleanup("PutInto Vs Insert", size)
     val sparkSession = this.sparkSession
     val snappySession = this.snappySession
     import org.apache.spark.sql.snappy._
@@ -274,7 +280,7 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
    */
   private def benchmarkRandomizedKeys(size: Int, queryPath: Boolean,
       numIters: Int = 10, runSparkCaching: Boolean = true): Unit = {
-    val benchmark = new Benchmark("Cache random keys", size)
+    val benchmark = new BenchmarkWithCleanup("Cache random keys", size)
     val sparkSession = this.sparkSession
     val snappySession = this.snappySession
     if (GemFireCacheImpl.getCurrentBufferAllocator.isDirect) {
@@ -496,20 +502,49 @@ object ColumnCacheBenchmark {
   }
 
   def addCaseWithCleanup(
-      benchmark: Benchmark,
+      benchmark: BenchmarkWithCleanup,
       name: String,
       numIters: Int = 0,
       prepare: () => Unit,
       cleanup: () => Unit,
-      testCleanup: () => Unit,
+      testCleanup: () => Unit = () => Unit,
       testPrepare: () => Unit = () => Unit)(f: Int => Unit): Unit = {
-    val timedF = (timer: Benchmark.Timer) => {
+    val timedF = TimedFunction(prepare, cleanup, (timer: Benchmark.Timer) => {
       testPrepare()
       timer.startTiming()
       f(timer.iteration)
       timer.stopTiming()
       testCleanup()
-    }
-    benchmark.benchmarks += Benchmark.Case(name, timedF, numIters, prepare, cleanup)
+    })
+    benchmark.benchmarks += Benchmark.Case(name, timedF, numIters)
   }
+}
+
+class BenchmarkWithCleanup(
+    name: String,
+    valuesPerIteration: Long,
+    minNumIters: Int = 2,
+    warmupTime: FiniteDuration = 2.seconds,
+    minTime: FiniteDuration = 2.seconds,
+    outputPerIteration: Boolean = false,
+    output: Option[OutputStream] = None)
+    extends Benchmark(name, valuesPerIteration, minNumIters,
+      warmupTime, minTime, outputPerIteration, output) {
+
+  override def measure(num: Long, overrideNumIters: Int)(
+      f: Benchmark.Timer => Unit): Benchmark.Result = f match {
+    case TimedFunction(prepare, cleanup, _) =>
+      prepare()
+      try {
+        super.measure(num, overrideNumIters)(f)
+      } finally {
+        cleanup()
+      }
+    case _ => super.measure(num, overrideNumIters)(f)
+  }
+}
+
+case class TimedFunction(prepare: () => Unit, cleanup: () => Unit,
+    f: Benchmark.Timer => Unit) extends (Benchmark.Timer => Unit) {
+  override def apply(t: Benchmark.Timer): Unit = f(t)
 }

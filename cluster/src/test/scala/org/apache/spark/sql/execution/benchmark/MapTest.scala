@@ -25,7 +25,6 @@ import org.eclipse.collections.impl.map.mutable.UnifiedMap
 import org.eclipse.collections.impl.set.mutable.UnifiedSet
 
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark.addCaseWithCleanup
-import org.apache.spark.util.Benchmark
 import org.apache.spark.util.random.XORShiftRandom
 
 /**
@@ -72,7 +71,7 @@ class MapTest extends SnappyFunSuite {
         item
     })
 
-    var benchmark = new Benchmark("hashing mixed ops", numOperations)
+    var benchmark = new BenchmarkWithCleanup("hashing mixed ops", numOperations)
 
     val results = new mutable.ArrayBuffer[Long]()
 
@@ -165,7 +164,7 @@ class MapTest extends SnappyFunSuite {
       assert(r === expected, s"Mismatch at index = $index")
     }
 
-    benchmark = new Benchmark("hashing iteration", numEntries)
+    benchmark = new BenchmarkWithCleanup("hashing iteration", numEntries)
     results.clear()
 
     addCaseWithCleanup(benchmark, "THashSet", numIterations,
@@ -217,7 +216,7 @@ class MapTest extends SnappyFunSuite {
       assert(r === expected, s"Mismatch at index = $index")
     }
 
-    benchmark = new Benchmark("hashing gets", numEntries)
+    benchmark = new BenchmarkWithCleanup("hashing gets", numEntries)
     results.clear()
 
     addCaseWithCleanup(benchmark, "Scala Immutable HashMap", numIterations,
@@ -299,7 +298,7 @@ class MapTest extends SnappyFunSuite {
       assert(r === expected, s"Mismatch at index = $index")
     }
 
-    benchmark = new Benchmark("hashing inserts", numEntries)
+    benchmark = new BenchmarkWithCleanup("hashing inserts", numEntries)
     results.clear()
 
     addCaseWithCleanup(benchmark, "THashSet", numIterations,
@@ -354,7 +353,7 @@ class MapTest extends SnappyFunSuite {
         item
     })
 
-    var benchmark = new Benchmark("hashing mixed ops", numOperations)
+    var benchmark = new BenchmarkWithCleanup("hashing mixed ops", numOperations)
 
     val results = new mutable.ArrayBuffer[Long]()
 
@@ -467,7 +466,7 @@ class MapTest extends SnappyFunSuite {
       assert(r === expected, s"Mismatch at index = $index")
     }
 
-    benchmark = new Benchmark("hashing iteration", numEntries)
+    benchmark = new BenchmarkWithCleanup("hashing iteration", numEntries)
     results.clear()
 
     addCaseWithCleanup(benchmark, "THashMap", numIterations,
@@ -524,7 +523,7 @@ class MapTest extends SnappyFunSuite {
       assert(r === expected, s"Mismatch at index = $index")
     }
 
-    benchmark = new Benchmark("hashing gets", numEntries)
+    benchmark = new BenchmarkWithCleanup("hashing gets", numEntries)
     results.clear()
 
     addCaseWithCleanup(benchmark, "Scala Immutable HashMap", numIterations,
@@ -606,7 +605,7 @@ class MapTest extends SnappyFunSuite {
       assert(r === expected, s"Mismatch at index = $index")
     }
 
-    benchmark = new Benchmark("hashing inserts", numEntries)
+    benchmark = new BenchmarkWithCleanup("hashing inserts", numEntries)
     results.clear()
 
     addCaseWithCleanup(benchmark, "THashMap", numIterations,
@@ -645,9 +644,9 @@ class MapTest extends SnappyFunSuite {
     val rnd = new XORShiftRandom()
     val data = Array.fill(numEntries)(s"str${rnd.nextInt(100)}")
 
-    val benchmark = new Benchmark("hashing gets", numEntries * numLoops)
+    val benchmark = new BenchmarkWithCleanup("hashing gets", numEntries * numLoops)
 
-    benchmark.addCase("Scala Immutable HashMap", numIterations,
+    addCaseWithCleanup(benchmark, "Scala Immutable HashMap", numIterations,
       () => {
         data.foreach(d => omap3.put(d, d))
         imap3 = omap3.toMap
@@ -663,7 +662,7 @@ class MapTest extends SnappyFunSuite {
         loop += 1
       }
     })
-    benchmark.addCase("Scala HashMap", numIterations,
+    addCaseWithCleanup(benchmark, "Scala HashMap", numIterations,
       () => data.foreach(d => omap3.put(d, d)), omap3.clear)(_ => {
       var loop = 0
       while (loop < numLoops) {
@@ -675,7 +674,7 @@ class MapTest extends SnappyFunSuite {
         loop += 1
       }
     })
-    benchmark.addCase("THashMap", numIterations,
+    addCaseWithCleanup(benchmark, "THashMap", numIterations,
       () => data.foreach(d => omap1.put(d, d)), omap1.clear)(_ => {
       var loop = 0
       while (loop < numLoops) {
@@ -687,7 +686,7 @@ class MapTest extends SnappyFunSuite {
         loop += 1
       }
     })
-    benchmark.addCase("Java HashMap", numIterations,
+    addCaseWithCleanup(benchmark, "Java HashMap", numIterations,
       () => data.foreach(d => omap2.put(d, d)), omap2.clear)(_ => {
       var loop = 0
       while (loop < numLoops) {
@@ -699,7 +698,7 @@ class MapTest extends SnappyFunSuite {
         loop += 1
       }
     })
-    benchmark.addCase("Java ConcurrentHashMap", numIterations,
+    addCaseWithCleanup(benchmark, "Java ConcurrentHashMap", numIterations,
       () => data.foreach(d => omap4.put(d, d)), omap4.clear)(_ => {
       var loop = 0
       while (loop < numLoops) {
@@ -711,7 +710,7 @@ class MapTest extends SnappyFunSuite {
         loop += 1
       }
     })
-    benchmark.addCase("Scala TrieMap", numIterations,
+    addCaseWithCleanup(benchmark, "Scala TrieMap", numIterations,
       () => data.foreach(d => omap5.put(d, d)), omap5.clear)(_ => {
       var loop = 0
       while (loop < numLoops) {
@@ -723,7 +722,7 @@ class MapTest extends SnappyFunSuite {
         loop += 1
       }
     })
-    benchmark.addCase("FastUtil Map", numIterations,
+    addCaseWithCleanup(benchmark, "FastUtil Map", numIterations,
       () => data.foreach(d => omap6.put(d, d)), omap6.clear)(_ => {
       var loop = 0
       while (loop < numLoops) {
@@ -735,7 +734,7 @@ class MapTest extends SnappyFunSuite {
         loop += 1
       }
     })
-    benchmark.addCase("Eclipse Collections Map", numIterations,
+    addCaseWithCleanup(benchmark, "Eclipse Collections Map", numIterations,
       () => data.foreach(d => omap7.put(d, d)), omap7.clear)(_ => {
       var loop = 0
       while (loop < numLoops) {

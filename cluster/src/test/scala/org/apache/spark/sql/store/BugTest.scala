@@ -29,6 +29,7 @@ import io.snappydata.{Property, SnappyFunSuite}
 import org.junit.Assert._
 import org.scalatest.BeforeAndAfterAll
 
+import org.apache.spark.JobExecutionStatus
 import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd}
 import org.apache.spark.sql.catalog.Column
 import org.apache.spark.sql.collection.Utils
@@ -1185,17 +1186,18 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     ds.collect()
 
     // check UI timings and plan details
-    val listener = SparkSession.sqlListener.get()
+    val sqlStore = session.sharedState.statusStore
     // last one should be the query above
-    val queryUIData = listener.getCompletedExecutions.last
-    val duration = queryUIData.completionTime.get - queryUIData.submissionTime
+    val queryUIData = sqlStore.executionsList().last
+    val duration = queryUIData.completionTime.get.getTime - queryUIData.submissionTime
     // never expect the query above to take more than 7 secs
     assert(duration > 0L)
     assert(duration < sleepTime)
-    assert(queryUIData.succeededJobs.length === 2)
+    assert(queryUIData.jobs.count(_._2 == JobExecutionStatus.SUCCEEDED) === 2)
 
-    val metrics = listener.getExecutionMetrics(queryUIData.executionId)
-    val scanNode = queryUIData.physicalPlanGraph.allNodes.find(_.name == "ColumnTableScan").get
+    val executionId = queryUIData.executionId
+    val metrics = sqlStore.executionMetrics(executionId)
+    val scanNode = sqlStore.planGraph(executionId).allNodes.find(_.name == "ColumnTableScan").get
     val numRowsMetric = scanNode.metrics.find(_.name == "number of output rows").get
     assert(metrics(numRowsMetric.accumulatorId) ===
         SQLMetrics.stringValue(numRowsMetric.metricType, numRows :: Nil))

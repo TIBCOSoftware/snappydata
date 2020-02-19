@@ -26,6 +26,7 @@ import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.reflect.io.Path
 import scala.util.{Failure, Success, Try}
+
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.core.{TestData, TestData2}
@@ -33,6 +34,7 @@ import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import io.snappydata.util.TestUtils
 import io.snappydata.{ColumnUpdateDeleteTests, ConcurrentOpsTests, Property, SnappyTableStatsProviderService}
 import org.junit.Assert
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
@@ -40,7 +42,7 @@ import org.apache.spark.sql.execution.CatalogStaleException
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.kafka010.KafkaTestUtils
 import org.apache.spark.sql.store.{SnappyJoinSuite, StoreUtils}
-import org.apache.spark.sql.streaming.ProcessingTime
+import org.apache.spark.sql.streaming.Trigger
 import org.apache.spark.sql.types.{DateType, StringType, StructField, StructType}
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.{Logging, SparkConf, SparkContext}
@@ -49,8 +51,7 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
  * Basic tests for non-embedded mode connections to an embedded cluster.
  */
 class SplitSnappyClusterDUnitTest(s: String)
-    extends ClusterManagerTestBase(s) with SplitClusterDUnitTestBase
-      with Serializable {
+    extends ClusterManagerTestBase(s) with SplitClusterDUnitTestBase with Serializable {
 
   override val locatorNetPort: Int = testObject.locatorNetPort
 
@@ -255,7 +256,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     if (jars.count() > 0) {
       var str = msg
       jars.collect().foreach(x => str += s"$x,")
-      assert(false, str)
+      assert(assertion = false, str)
     }
   }
 
@@ -291,13 +292,16 @@ class SplitSnappyClusterDUnitTest(s: String)
     sns.sql("deploy package testsch.mongo-spark_v1.2  'org.mongodb.spark:mongo-spark" +
         "-connector_2.11:2.2.2'")
     sns.sql("undeploy  testsch.mongo-spark_v1.2")
-    sns.sql(s"""deploy package "testsch"."mongo-spark_v1.3"  'org.mongodb.spark:mongo""" +
+    sns.sql(
+      s"""deploy package "testsch"."mongo-spark_v1.3"  'org.mongodb.spark:mongo""" +
           "-spark-connector_2.11:2.2.2'")
     sns.sql(s"""undeploy  "testsch"."mongo-spark_v1.3" """)
-    sns.sql(s"""deploy package testsch."mongo-spark_v1.4"  'org.mongodb.spark:mongo""" +
+    sns.sql(
+      s"""deploy package testsch."mongo-spark_v1.4"  'org.mongodb.spark:mongo""" +
           "-spark-connector_2.11:2.2.2'")
     sns.sql(s"""undeploy  testsch."mongo-spark_v1.4" """)
-    sns.sql(s"""deploy package "testsch".mongo-spark_v1.5  'org.mongodb.spark:mongo""" +
+    sns.sql(
+      s"""deploy package "testsch".mongo-spark_v1.5  'org.mongodb.spark:mongo""" +
           "-spark-connector_2.11:2.2.2'")
     sns.sql(s"""undeploy "testsch".mongo-spark_v1.5 """)
     assert(sns.sql("list packages").count() == 0)
@@ -346,7 +350,7 @@ class SplitSnappyClusterDUnitTest(s: String)
         "Deploy command should have failed because of the duplicate alias.")
       case Failure(error) =>
         assert(error.getMessage.contains("Name 'akka-v1' specified in" +
-          " context 'of deploying jars/packages' is not unique."))
+            " context 'of deploying jars/packages' is not unique."))
     }
     sns.sql("undeploy  akka-v1")
     functionCheck(sns, "Some jars/packages are not cleaned up! ")
@@ -1411,7 +1415,7 @@ object SplitSnappyClusterDUnitTest
           .writeStream
           .format("snappysink")
           .queryName(tableName)
-          .trigger(ProcessingTime("1 seconds"))
+          .trigger(Trigger.ProcessingTime("1 seconds"))
           .option("tableName", tableName)
           .option("checkpointLocation", s"$testTempDir/checkpoint")
           .start()

@@ -96,7 +96,7 @@ class ConsistencyTest {
         pw.flush()
       } catch {
         case se: SQLException =>
-          pw.println(s"${printTime} Got exception while executing select query for $op", se)
+          pw.println(s"$printTime Got exception while executing select query for $op: $se")
           pw.flush()
       }
     }

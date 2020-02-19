@@ -174,7 +174,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
         // transformDown for expression so that top-most node which is foldable gets
         // selected for wrapping by DynamicFoldableExpression and further sub-expressions
         // do not since foldExpression will reset inner ParamLiterals as non-foldable
-        case q: LogicalPlan => internals.mapExpressions(q, ex => unmarkAll(mark(ex).transformDown {
+        case q: LogicalPlan => q.mapExpressions(ex => unmarkAll(mark(ex).transformDown {
           // ignore leaf literals
           case l@(_: Literal | _: DynamicReplacableConstant) => l
           // Wrap expressions that are foldable.

@@ -213,7 +213,7 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
       Collections.emptyList(), Collections.emptyList(), bucketColumns, sortColumns,
       table.owner, table.createTime, table.lastAccessTime, table.properties.asJava,
       table.unsupportedFeatures.asJava, table.tracksPartitionsInCatalog,
-      internals.catalogTableSchemaPreservesCase(table))
+      table.schemaPreservesCase)
     tableObj.setSchemaName(getOrNull(table.identifier.database))
         .setProvider(getOrNull(table.provider))
         .setViewText(getOrNull(table.viewText))

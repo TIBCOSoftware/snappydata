@@ -79,10 +79,6 @@ abstract class Spark23_4_Internals extends SparkInternals {
     UnsafeHolder.getUnsafe.objectFieldOffset(f)
   }
 
-  override def mapExpressions(plan: LogicalPlan, f: Expression => Expression): LogicalPlan = {
-    plan.mapExpressions(f)
-  }
-
   override def registerFunction(session: SparkSession, name: FunctionIdentifier,
       info: ExpressionInfo, function: Seq[Expression] => Expression): Unit = {
     session.sessionState.functionRegistry.registerFunction(name, info, function)
@@ -173,10 +169,6 @@ abstract class Spark23_4_Internals extends SparkInternals {
   override def createAndAttachSQLListener(sparkContext: SparkContext): Unit = {
     val state = SnappyContext.getExistingSharedState
     if (state ne null) createAndAttachSQLListener(state, sparkContext)
-  }
-
-  override def getActiveExecutionIds(sparkContext: SparkContext): Set[Long] = {
-    SnappyContext.getExistingSharedState.statusStore.executionsList().map(_.executionId).toSet
   }
 
   override def clearSQLListener(): Unit = {
@@ -402,9 +394,6 @@ abstract class Spark23_4_Internals extends SparkInternals {
   // scalastyle:on
 
   override def catalogTableViewOriginalText(catalogTable: CatalogTable): Option[String] = None
-
-  override def catalogTableSchemaPreservesCase(catalogTable: CatalogTable): Boolean =
-    catalogTable.schemaPreservesCase
 
   override def catalogTableIgnoredProperties(catalogTable: CatalogTable): Map[String, String] =
     catalogTable.ignoredProperties
@@ -675,7 +664,7 @@ abstract class SnappySessionStateBuilder23_4(session: SnappySession,
   }
 }
 
-final class CodegenSparkFallback23(child: SparkPlan,
+class CodegenSparkFallback23(child: SparkPlan,
     session: SnappySession) extends CodegenSparkFallback(child, session) {
 
   override def generateTreeString(depth: Int, lastChildren: Seq[Boolean], builder: StringBuilder,
@@ -684,7 +673,7 @@ final class CodegenSparkFallback23(child: SparkPlan,
   }
 }
 
-final class LogicalDStreamPlan23(output: Seq[Attribute],
+class LogicalDStreamPlan23(output: Seq[Attribute],
     stream: DStream[InternalRow])(streamingSnappy: SnappyStreamingContext)
     extends LogicalDStreamPlan(output, stream)(streamingSnappy) {
 

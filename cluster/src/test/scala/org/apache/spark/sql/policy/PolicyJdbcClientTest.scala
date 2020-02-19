@@ -430,18 +430,18 @@ class PolicyJdbcClientTest extends PolicyTestBase {
 
       val expectedColumns = List("NAME", "SCHEMANAME", "TABLENAME",
         "POLICYFOR", "APPLYTO", "FILTER", "OWNER")
-      val expectedResults = Map("TESTPOLICY1" -> (tableOwner.toUpperCase,
+      val expectedResults = Map("TESTPOLICY1" -> ((tableOwner.toUpperCase,
           colTableName.toUpperCase.substring(colTableName.indexOf('.') + 1),
           "select", "current_user", "id > 10",
-          tableOwner.toUpperCase),
-        "TESTPOLICY2" -> (tableOwner.toUpperCase,
+          tableOwner.toUpperCase)),
+        "TESTPOLICY2" -> ((tableOwner.toUpperCase,
             rowTableName.toUpperCase.substring(rowTableName.indexOf('.') + 1),
             "select", "current_user", "id < 30",
-            tableOwner.toUpperCase),
-        "TESTPOLICY3" -> (tableOwner.toUpperCase,
+            tableOwner.toUpperCase)),
+        "TESTPOLICY3" -> ((tableOwner.toUpperCase,
             rowTableName.toUpperCase.substring(rowTableName.indexOf('.') + 1),
             "select", "current_user", "id < 70",
-            tableOwner.toUpperCase)
+            tableOwner.toUpperCase))
       )
 
       // check using session
@@ -622,7 +622,7 @@ class PolicyJdbcClientTest extends PolicyTestBase {
 
   // return true if a policy exists for a table else false
   private def checkIfPoliciesOnTableExist(tableName: String): Boolean = {
-    val policies = Misc.getMemStore.getExternalCatalog.getPolicies()
+    val policies = Misc.getMemStore.getExternalCatalog.getPolicies
     val it = policies.listIterator()
     while (it.hasNext) {
       val p = it.next()

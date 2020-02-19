@@ -24,7 +24,6 @@ import io.snappydata.test.dunit.{AvailablePortHelper, SerializableCallable}
 import io.snappydata.util.TestUtils
 import org.scalatest.Assertions
 
-import org.apache.spark.SparkContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd, SparkListenerTaskStart}
 
@@ -33,11 +32,13 @@ case class TestRecord(col1: Int, col2: Int, col3: Int)
 class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTestBase(s)
     with Assertions with Logging with SparkSupport {
 
-  def activeExecutionIds(sc: SparkContext): Set[Long] = internals.getActiveExecutionIds(sc)
+  private def activeExecutionIds(session: SparkSession): Set[Long] = {
+    session.sharedState.statusStore.executionsList().map(_.executionId).toSet
+  }
 
-  def _testColumnBatchSkipping(): Unit = {
+  def testColumnBatchSkipping(): Unit = {
 
-    val snc = SnappyContext(sc)
+    val session = new SnappySession(sc)
     val ddlStr = "YearI INT NOT NULL," +
         "MonthI INT NOT NULL," +
         "DayOfMonth INT NOT NULL," +
@@ -47,69 +48,69 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
 
     // reduce the batch size to ensure that multiple are created
 
-    snc.sql(s"create table if not exists airline ($ddlStr) " +
+    session.sql(s"create table if not exists airline ($ddlStr) " +
         s" using column options (Buckets '2', COLUMN_BATCH_SIZE '400')")
 
-    import snc.implicits._
+    import session.implicits._
 
-    val ds = snc.createDataset(sc.range(1, 101).map(i =>
+    val ds = session.createDataset(sc.range(1, 101).map(i =>
       AirlineData(2015, 2, 15, 1002, i.toInt, "AA" + i)))
     ds.write.insertInto("airline")
 
     // ***Check for the case when all the column batches are scanned ****
-    var previousExecutionIds = activeExecutionIds(sc)
+    var previousExecutionIds = activeExecutionIds(session)
 
-    val df_allColumnBatchesScan = snc.sql(
+    val df_allColumnBatchesScan = session.sql(
       "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
           "from AIRLINE where  ArrDelay < 101 " +
           "group by UniqueCarrier order by arrivalDelay")
 
     df_allColumnBatchesScan.count()
 
-    var executionIds = activeExecutionIds(sc).diff(previousExecutionIds)
+    var executionIds = activeExecutionIds(session).diff(previousExecutionIds)
 
     var executionId = executionIds.head
 
     val (scanned1, skipped1) =
-      findColumnBatchStats(df_allColumnBatchesScan, snc.snappySession, executionId)
+      findColumnBatchStats(df_allColumnBatchesScan, session, executionId)
     assert(skipped1 == 0, "All Column batches should have been scanned")
     assert(scanned1 > 0, "All Column batches should have been scanned")
 
     // ***Check for the case when all the column batches are skipped****
-    previousExecutionIds = activeExecutionIds(sc)
+    previousExecutionIds = activeExecutionIds(session)
 
-    val df_noColumnBatchesScan = snc.sql(
+    val df_noColumnBatchesScan = session.sql(
       "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
           "from AIRLINE where ArrDelay > 101  " +
           "group by UniqueCarrier order by arrivalDelay")
 
     df_noColumnBatchesScan.count()
 
-    executionIds = activeExecutionIds(sc).diff(previousExecutionIds)
+    executionIds = activeExecutionIds(session).diff(previousExecutionIds)
 
     executionId = executionIds.head
 
     val (scanned2, skipped2) =
-      findColumnBatchStats(df_allColumnBatchesScan, snc.snappySession, executionId)
+      findColumnBatchStats(df_allColumnBatchesScan, session, executionId)
     assert(scanned2 == skipped2, "No Column batches should have been scanned")
     assert(skipped2 > 0, "No Column batches should have been scanned")
 
     // ***Check for the case when some of the column batches are scanned ****
-    previousExecutionIds = activeExecutionIds(sc)
+    previousExecutionIds = activeExecutionIds(session)
 
-    val df_someColumnBatchesScan = snc.sql(
+    val df_someColumnBatchesScan = session.sql(
       "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
           "from AIRLINE where ArrDelay < 20  " +
           "group by UniqueCarrier order by arrivalDelay")
 
     df_someColumnBatchesScan.count()
 
-    executionIds = activeExecutionIds(sc).diff(previousExecutionIds)
+    executionIds = activeExecutionIds(session).diff(previousExecutionIds)
 
     executionId = executionIds.head
 
     val (scanned3, skipped3) =
-      findColumnBatchStats(df_allColumnBatchesScan, snc.snappySession, executionId)
+      findColumnBatchStats(df_allColumnBatchesScan, session, executionId)
 
     assert(skipped3 > 0, "Some Column batches should have been skipped")
     assert(scanned3 != skipped3, "Some Column batches should have been skipped - comparison")
@@ -117,9 +118,9 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     // check for StartsWith predicate with MAX/MIN handling
 
     // first all batches chosen
-    previousExecutionIds = activeExecutionIds(sc)
+    previousExecutionIds = activeExecutionIds(session)
 
-    val df_allColumnBatchesLikeScan = snc.sql(
+    val df_allColumnBatchesLikeScan = session.sql(
       "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
           "from AIRLINE where UniqueCarrier like 'AA%' " +
           "group by UniqueCarrier order by arrivalDelay")
@@ -127,20 +128,20 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     var count = df_allColumnBatchesLikeScan.count()
     assert(count == 100, s"Unexpected count = $count, expected 100")
 
-    executionIds = activeExecutionIds(sc).diff(previousExecutionIds)
+    executionIds = activeExecutionIds(session).diff(previousExecutionIds)
 
     executionId = executionIds.head
 
     val (scanned4, skipped4) =
-      findColumnBatchStats(df_allColumnBatchesLikeScan, snc.snappySession, executionId)
+      findColumnBatchStats(df_allColumnBatchesLikeScan, session, executionId)
 
     assert(skipped4 == 0, "No Column batches should have been skipped")
     assert(scanned4 > 0, "All Column batches should have been scanned")
 
     // next some batches skipped
-    previousExecutionIds = activeExecutionIds(sc)
+    previousExecutionIds = activeExecutionIds(session)
 
-    val df_someColumnBatchesLikeScan = snc.sql(
+    val df_someColumnBatchesLikeScan = session.sql(
       "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
           "from AIRLINE where UniqueCarrier like 'AA1%' " +
           "group by UniqueCarrier order by arrivalDelay")
@@ -148,20 +149,20 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     count = df_someColumnBatchesLikeScan.count()
     assert(count == 12, s"Unexpected count = $count, expected 12")
 
-    executionIds = activeExecutionIds(sc).diff(previousExecutionIds)
+    executionIds = activeExecutionIds(session).diff(previousExecutionIds)
 
     executionId = executionIds.head
 
     val (scanned5, skipped5) =
-      findColumnBatchStats(df_someColumnBatchesLikeScan, snc.snappySession, executionId)
+      findColumnBatchStats(df_someColumnBatchesLikeScan, session, executionId)
 
     assert(skipped5 > 0, "Some Column batches should have been skipped")
     assert(scanned5 != skipped5, "Some Column batches should have been skipped - comparison")
 
     // last all batches skipped
-    previousExecutionIds = activeExecutionIds(sc)
+    previousExecutionIds = activeExecutionIds(session)
 
-    val df_noColumnBatchesLikeScan = snc.sql(
+    val df_noColumnBatchesLikeScan = session.sql(
       "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
           "from AIRLINE where UniqueCarrier like 'AA0%' " +
           "group by UniqueCarrier order by arrivalDelay")
@@ -169,36 +170,28 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     count = df_noColumnBatchesLikeScan.count()
     assert(count == 0, s"Unexpected count = $count, expected 0")
 
-    executionIds = activeExecutionIds(sc).diff(previousExecutionIds)
+    executionIds = activeExecutionIds(session).diff(previousExecutionIds)
 
     executionId = executionIds.head
 
     val (scanned6, skipped6) =
-      findColumnBatchStats(df_noColumnBatchesLikeScan, snc.snappySession, executionId)
+      findColumnBatchStats(df_noColumnBatchesLikeScan, session, executionId)
 
     assert(scanned6 == skipped6, "No Column batches should have been returned")
     assert(skipped6 > 0, "No Column batches should have been returned")
   }
 
   private def findColumnBatchStats(df: DataFrame,
-      sc: SnappySession, executionId: Long): (Long, Long) = {
+      session: SnappySession, executionId: Long): (Long, Long) = {
 
-    val metricValues = sc.sharedState.listener.getExecutionMetrics(executionId)
-    val a = (sc.sharedState.listener.getRunningExecutions ++
-        sc.sharedState.listener.getCompletedExecutions).filter(x => {
-      x.executionId == executionId
-    })
-    val seenid = a.head.accumulatorMetrics.filter(x => {
-      x._2.name == "column batches seen"
-    }).head._1
-    val skippedid = a.head.accumulatorMetrics.filter(x => {
-      x._2.name == "column batches skipped by the predicate"
-    }).head._1
+    val execData = session.sharedState.statusStore.executionsList().find(
+      _.executionId == executionId).get
+    val seenId = execData.metrics.find(_.name == "column batches seen").get
+    val skippedId = execData.metrics.find(_.name == "column batches skipped by the predicate").get
 
-    (metricValues.filter(_._1 == seenid).head._2.toInt,
-        metricValues.filter(_._1 == skippedid).head._2.toInt)
+    (execData.metricValues.filter(_._1 == seenId).head._2.toInt,
+        execData.metricValues.filter(_._1 == skippedId).head._2.toInt)
   }
-
 
   def testCreateColumnTablesFromOtherTables(): Unit = {
     val tempRowTableProps = "BUCKETS '16', PARTITION_BY 'COL2'"

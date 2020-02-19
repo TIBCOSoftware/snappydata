@@ -58,6 +58,8 @@ dependencies {
 
     testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
         configuration: 'testOutput')
+    testCompile project(path: ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion,
+        configuration: 'testOutput')
   } else {
     compile 'io.snappydata:snappy-spark-unsafe_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-core_' + scalaBinaryVersion + ':' + snappySparkVersion
@@ -81,6 +83,8 @@ dependencies {
     }
 
     testCompile group: 'io.snappydata', name: 'snappy-spark-sql_' + scalaBinaryVersion,
+                version: snappySparkVersion, classifier: 'tests'
+    testCompile group: 'io.snappydata', name: 'snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion,
                 version: snappySparkVersion, classifier: 'tests'
   }
 

@@ -47,7 +47,13 @@ dependencies {
 
   compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
 
-  compileOnly project(coreProjectName)
+  compileOnly(project(coreProjectName)) {
+    transitive = false
+  }
+  compileOnly(project(":snappy-jdbc_${scalaBinaryVersion}")) {
+    transitive = false
+  }
+  compileOnly project(':snappy-store:snappydata-store-core')
 }
 
 archivesBaseName = "snappydata-core-compat-spark${spark245Version}_${scalaBinaryVersion}"

@@ -100,10 +100,9 @@ object SparkSupport extends Logging {
     "2.3.2" -> s"$INTERNAL_PACKAGE.Spark23Internals",
     "2.3.1" -> s"$INTERNAL_PACKAGE.Spark23Internals",
     "2.3.0" -> s"$INTERNAL_PACKAGE.Spark23Internals",
-    "2.1.3" -> s"$INTERNAL_PACKAGE.Spark211Internals",
-    "2.1.2" -> s"$INTERNAL_PACKAGE.Spark211Internals",
-    "2.1.1" -> s"$INTERNAL_PACKAGE.Spark211Internals",
-    "2.1.0" -> s"$INTERNAL_PACKAGE.Spark210Internals"
+    "2.1.3" -> s"$INTERNAL_PACKAGE.Spark21Internals",
+    "2.1.2" -> s"$INTERNAL_PACKAGE.Spark21Internals",
+    "2.1.1" -> s"$INTERNAL_PACKAGE.Spark21Internals"
   )
 
   /**

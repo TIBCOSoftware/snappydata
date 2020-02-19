@@ -206,14 +206,14 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     // per-row processing time for those cases.
     val queryRelations = scala.collection.mutable.HashSet[String]()
     snc.sql(queryString).queryExecution.logical.map {
-      case ur@UnresolvedRelation(t: TableIdentifier, _) =>
+      case ur@UnresolvedRelation(t: TableIdentifier) =>
         queryRelations.add(t.table.toLowerCase)
       case lp: LogicalPlan =>
         lp.expressions.foreach {
           _ foreach {
             case subquery: SubqueryExpression =>
               subquery.plan.foreach {
-                case ur@UnresolvedRelation(t: TableIdentifier, _) =>
+                case ur@UnresolvedRelation(t: TableIdentifier) =>
                   queryRelations.add(t.table.toLowerCase)
                 case _ =>
               }
@@ -227,12 +227,14 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
     import scala.concurrent.duration._
     val b = new Benchmark(s"JoinOrder optimization", size,
       warmupTime = numSecs.seconds)
-    b.addCase("WithOut Partition Pruning", numIters = 0,
-      prepare = () => togglePruning(onOff = false, snc),
-      cleanup = () => {})(_ => snc.sql(queryString).collect())
-    b.addCase("With Partition Pruning", numIters = 0,
-      prepare = () => togglePruning(onOff = true, snc),
-      cleanup = () => {})(_ => snc.sql(queryString).collect())
+    b.addCase("WithOut Partition Pruning") { _ =>
+      togglePruning(onOff = false, snc)
+      snc.sql(queryString).collect()
+    }
+    b.addCase("With Partition Pruning") { _ =>
+      togglePruning(onOff = true, snc)
+      snc.sql(queryString).collect()
+    }
     b.run()
   }
 
@@ -269,12 +271,14 @@ class IndexTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
 
     //    b.addCase(s"$qNum baseTPCH index = F", prepare = case1)(i => evalBaseTPCH)
     //    b.addCase(s"$qNum baseTPCH joinOrder = T", prepare = case2)(i => evalBaseTPCH)
-    b.addCase(s"$qNum without PartitionPruning", numIters = 0,
-      prepare = () => togglePruning(onOff = false, snc),
-      cleanup = () => {})(_ => evalSnappyMods(false))
-    b.addCase(s"$qNum with PartitionPruning", numIters = 0,
-      prepare = () => togglePruning(onOff = true, snc),
-      cleanup = () => {})(_ => evalSnappyMods(false))
+    b.addCase(s"$qNum without PartitionPruning") { _ =>
+      togglePruning(onOff = false, snc)
+      evalSnappyMods(false)
+    }
+    b.addCase(s"$qNum with PartitionPruning") { _ =>
+      togglePruning(onOff = true, snc)
+      evalSnappyMods(false)
+    }
     /*
         b.addCase(s"$qNum snappyMods joinOrder = T", prepare = case2)(i => evalSnappyMods(false))
         b.addCase(s"$qNum baseTPCH index = T", prepare = case3)(i => evalBaseTPCH)

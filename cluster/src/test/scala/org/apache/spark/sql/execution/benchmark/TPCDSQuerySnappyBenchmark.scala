@@ -27,9 +27,6 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.fileToString
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.util.Benchmark
-import org.apache.spark.{SparkConf, SparkContext}
-
-import scala.collection.mutable.ArrayBuffer
 
 
 object TPCDSQuerySnappyBenchmark {
@@ -64,7 +61,8 @@ object TPCDSQuerySnappyBenchmark {
         df.write.insertInto(tableName)
 
         // scalastyle:off println
-        println("Table Created..."+ tableName)
+        println("Table Created..." + tableName)
+        // scalastyle:on println
         tableName -> snappy.table(tableName).count()
       }
       else {
@@ -96,20 +94,20 @@ object TPCDSQuerySnappyBenchmark {
 
         if (isSnappy) {
           ds = snappy.sqlContext.sql(queryString)
-          //println("Plan..."+ ds.queryExecution.executedPlan)
-        }
-        else
+          // println("Plan..."+ ds.queryExecution.executedPlan)
+        } else {
           ds = spark.sql(queryString)
+        }
 
         ds.queryExecution.logical.map {
-          case ur@UnresolvedRelation(t: TableIdentifier, _) =>
+          case ur@UnresolvedRelation(t: TableIdentifier) =>
             queryRelations.add(t.table)
           case lp: LogicalPlan =>
             lp.expressions.foreach {
               _ foreach {
                 case subquery: SubqueryExpression =>
                   subquery.plan.foreach {
-                    case ur@UnresolvedRelation(t: TableIdentifier, _) =>
+                    case ur@UnresolvedRelation(t: TableIdentifier) =>
                       queryRelations.add(t.table)
                     case _ =>
                   }
@@ -131,24 +129,28 @@ object TPCDSQuerySnappyBenchmark {
             }
             else {
             val rs = spark.sql(queryString).collect()
-            //sparkPS = new PrintStream(new FileOutputStream(new File(s"Spark_$name.out")))
-            //normalizeRows(rs, sparkPS)
+            // sparkPS = new PrintStream(new FileOutputStream(new File(s"Spark_$name.out")))
+            // normalizeRows(rs, sparkPS)
             }
         }
         benchmark.run()
 
       } catch {
+        // scalastyle:off println
         case e: Exception => println(s"Failed $name  " + e.printStackTrace())
+        // scalastyle:on println
       }
     }
   }
 
   private def normalizeRows(resultSet: Array[Row], printStream: PrintStream): Unit = {
     for (row <- resultSet) {
+      // scalastyle:off println
       printStream.println(row.toSeq.map {
         // case d: Double => "%18.4f".format(d).trim()
-        case v => v
+        v => v
       }.mkString("|"))
+      // scalastyle:on println
     }
   }
 }

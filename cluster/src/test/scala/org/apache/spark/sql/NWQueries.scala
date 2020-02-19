@@ -1104,7 +1104,6 @@ object NWQueries extends SnappyFunSuite {
       case j: LocalTableScanExec => j
       case j: CoalesceExec => j
       case j: FilterExec => j
-      case j: OutputFakerExec => j
       case j: RangeExec => j
       case j: SampleExec => j
       case j: SubqueryExec => j
