@@ -42,7 +42,6 @@ import org.apache.spark.sql.catalyst.optimizer.Optimizer
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, UnknownPartitioning}
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, SQLBuilder, TableIdentifier}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.bootstrap.{ApproxColumnExtractor, Tag, TaggedAlias, TaggedAttribute, TransformableTag}
@@ -63,12 +62,20 @@ import org.apache.spark.status.api.v1.RDDStorageInfo
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.util.Utils
 import org.apache.spark.{SparkConf, SparkContext, SparkException}
 
 /**
  * Base implementation of [[SparkInternals]] for Spark 2.1.x releases.
  */
 class Spark21Internals(override val version: String) extends SparkInternals {
+
+  private[this] lazy val caseInsensitiveMapCons = {
+    val cons = Utils.classForName("org.apache.spark.sql.catalyst.util.CaseInsensitiveMap")
+        .getDeclaredConstructor(classOf[Map[_, _]])
+    cons.setAccessible(true)
+    cons
+  }
 
   override def uncacheQuery(spark: SparkSession, plan: LogicalPlan,
       cascade: Boolean, blocking: Boolean): Unit = {
@@ -144,7 +151,8 @@ class Spark21Internals(override val version: String) extends SparkInternals {
   }
 
   override def newCaseInsensitiveMap(map: Map[String, String]): Map[String, String] = {
-    new CaseInsensitiveMap(map)
+    // versions >= 2.1.2 use CaseInsensitiveMap.apply() so use reflection here
+    caseInsensitiveMapCons.newInstance(map).asInstanceOf[Map[String, String]]
   }
 
   def createAndAttachSQLListener(sparkContext: SparkContext): Unit = {

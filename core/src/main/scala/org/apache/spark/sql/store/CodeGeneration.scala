@@ -107,7 +107,10 @@ object CodeGeneration extends Logging with SparkSupport {
         CodegenMetrics.METRIC_SOURCE_CODE_SIZE.update(code.body.length)
         CodegenMetrics.METRIC_COMPILATION_TIME.update(timeMs.toLong)
         logInfo(s"Local code for ${key.name} generated in $timeMs ms")
-        (result.asInstanceOf[GeneratedClass], references)
+        result match {
+          case (c, _) => (c.asInstanceOf[GeneratedClass], references)
+          case _ => (result.asInstanceOf[GeneratedClass], references)
+        }
       }
     })
 

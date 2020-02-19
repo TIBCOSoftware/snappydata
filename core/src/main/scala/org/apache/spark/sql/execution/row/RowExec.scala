@@ -189,15 +189,15 @@ trait RowExec extends TableExec {
       val isNull = ctx.freshName("isNull")
       val field = ctx.freshName("field")
       val ev = input(col)
-      val dataType = internals.javaType(f.dataType, ctx)
+      val javaType = internals.javaType(f.dataType, ctx)
       val columnSetterFunction = ctx.freshName("setColumnOfRow")
       val columnSetterCode = CodeGeneration.getColumnSetterFragment(col, f.dataType,
-        connProps.dialect, internals.copyExprCode(ev, isNull, field, dataType), stmt,
-        schemaFields, ctx)
+        connProps.dialect, internals.copyExprCode(ev, isNull = isNull, value = field,
+          dt = f.dataType), stmt, schemaFields, ctx)
       ctx.addNewFunction(columnSetterFunction,
         s"""
            |private void $columnSetterFunction(final boolean $isNull,
-           |    final $dataType $field) throws java.sql.SQLException {
+           |    final $javaType $field) throws java.sql.SQLException {
            |  $columnSetterCode
            |}
         """.stripMargin)

@@ -66,6 +66,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
   override def nodeName: String = "SnappyHashJoin"
 
+  override def needCopyResult: Boolean = false
+
   @transient private var mapAccessor: ObjectHashMapAccessor = _
   @transient private var hashMapTerm: String = _
   @transient private var mapDataTerm: String = _
@@ -129,7 +131,6 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
   // return empty here as code of required variables is explicitly instantiated
   override def usedInputs: AttributeSet = AttributeSet.empty
-
 
   private def findShuffleDependencies(rdd: RDD[_]): Seq[Dependency[_]] = {
     rdd.dependencies.flatMap {
@@ -345,7 +346,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       s"""
          |$v = inputs;
          |inputs = new $scalaIterorClass[$buildRDDs.length];
-         |$taskContextClass $contextName = $taskContextClass.get();
+         |$contextName = $taskContextClass.get();
          |for (int $indexVar = 0; $indexVar < $buildRDDs.length; $indexVar++) {
          |  $partitionClass[] parts = $buildPartsVar[$indexVar];
          |  // check for replicate table
@@ -366,10 +367,9 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val numKeyColumns = buildSideKeys.length
     val longLived = replicatedTableJoin
     val buildSideCreateMap =
-      s"""$hashSetClassName $hashMapTerm = new $hashSetClassName(128, 0.6,
+      s"""$hashMapTerm = new $hashSetClassName(128, 0.6,
       $numKeyColumns, $longLived, scala.reflect.ClassTag$$.MODULE$$.apply(
         $entryClass.class));
-      this.$hashMapTerm = $hashMapTerm;
       int $maskTerm = $hashMapTerm.mask();
       $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
       $buildProduce"""

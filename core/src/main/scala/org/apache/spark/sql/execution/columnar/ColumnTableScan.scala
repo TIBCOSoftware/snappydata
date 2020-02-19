@@ -338,10 +338,10 @@ abstract case class ColumnTableScan(
       val updatedDecoderLocal = ctx.freshName("decoderUpdatedLocal")
       val buffer = internals.addClassField(ctx, "java.nio.ByteBuffer", "buffer")
       val numNullsVar = internals.addClassField(ctx, "int", "numNulls")
-      val initBufferFunction = s"${buffer}Init"
+      val initBufferFunction = ctx.freshName("bufferInit")
       val bufferVar = if (isWideSchema) {
         internals.addClassField(ctx, "Object", "bufferObject")
-      } else s"${buffer}Object"
+      } else ctx.freshName("bufferObject")
       // projections are not pushed in embedded mode for optimized access
       val baseIndex = Utils.fieldIndex(schemaAttributes, attr.name, caseSensitive)
       val rsPosition = if (embedded) baseIndex + 1 else rsIndex + 1
@@ -371,7 +371,7 @@ abstract case class ColumnTableScan(
         )
       }
       val updatedDecoder = internals.addClassField(ctx, updatedDecoderClass, "updatedDecoder")
-      val closeDecoderFunction = s"${decoder}Close"
+      val closeDecoderFunction = ctx.freshName("decoderClose")
 
       ctx.addNewFunction(initBufferFunction,
         s"""
@@ -595,7 +595,6 @@ abstract case class ColumnTableScan(
 
     val (assignBatchId, assignOrdinalId) = if (ordinalIdTerm ne null) (
         s"""
-           |final boolean $inputIsRow = this.$inputIsRow;
            |final long $columnBatchIdTerm;
            |final int $bucketIdTerm;
            |if ($inputIsRow) {

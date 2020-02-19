@@ -34,6 +34,10 @@ trait NonRecursivePlans extends SparkPlan with SparkSupport {
    */
   protected final var nonCodeGeneratedPlanCalls: Int = _
 
+  // from CodegenSupport in newer Spark releases that allows child classes
+  // to override and still compile fine in older releases
+  def needCopyResult: Boolean
+
   override protected def doExecute(): RDD[InternalRow] = {
     if (nonCodeGeneratedPlanCalls > 4) {
       throw new CodeGenerationException("Code generation failed for some of the child plans")

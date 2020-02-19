@@ -96,6 +96,8 @@ case class SnappyHashAggregateExec(
   override def nodeName: String =
     if (useByteBufferMapBasedAggregation) "BufferMapHashAggregate" else "SnappyHashAggregate"
 
+  override def needCopyResult: Boolean = false
+
   @transient def resultExpressions: Seq[NamedExpression] = __resultExpressions
 
   @transient lazy private[this] val aggregateBufferAttributes = {

@@ -24,7 +24,7 @@ import io.snappydata.collection.ObjectHashSet
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, NamedExpression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeSet, BindReferences, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.execution.columnar.encoding.StringDictionary
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight, BuildSide, HashJoinExec}
@@ -133,6 +133,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
   @transient private[this] val (className, valueClassName, classVars,
   numNullVars) = initClass()
+
+  // return empty here as code of required variables is explicitly instantiated
+  override def usedInputs: AttributeSet = AttributeSet.empty
 
   private def initClass(): (String, String, IndexedSeq[ClassVar], Int) = {
 
@@ -518,11 +521,11 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       val (dataType, javaType, ev, nullIndex) = vars(index)
       val isKeyVar = index < valueIndex
       val objVar = if (isKeyVar) keyObjVar else valObjVar
-      val evValue = internals.exprCodeValue(ev)
       ev match {
         // nullIndex contains index of referenced key variable in this case
         case null if !onlyValueVars => columnVars += columnVars(nullIndex)
         case _ =>
+          val evValue = internals.exprCodeValue(ev)
           val (localVar, localDeclaration) = {
             dataType match {
               case StringType if !multiMap =>
@@ -599,6 +602,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           case None => ctx.freshName("mapLookup")
           case Some(p) => p._1
         }
+        val hashMapArg = ctx.freshName("hashMap")
         val insertCode = if (skipInit) {
           s"""else {
              |  // key not found so return entry as null for consumption
@@ -619,7 +623,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
              |  ${generateUpdate(objVar, Nil, newKeyVars, forKey = true)}
              |  // insert into the map and rehash if required
              |  $dataTerm[$pos] = $objVar;
-             |  if ($hashMapTerm.handleNewInsert($pos)) {
+             |  if ($hashMapArg.handleNewInsert($pos)) {
              |    // return null to indicate map was rehashed
              |    return null;
              |  } else {
@@ -631,7 +635,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           s"""
              |private $className $function(final int $hash, $keyDeclarations,
              |    final $className[] $dataTerm, final int $maskTerm,
-             |    final ${classOf[ObjectHashSet[_]].getName} $hashMapTerm,
+             |    final ${classOf[ObjectHashSet[_]].getName} $hashMapArg,
              |    final boolean skipInit) {
              |  // Lookup or insert the key in map (for group by).
              |  // Using inline get call so that equals() is inline using
