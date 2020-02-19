@@ -665,7 +665,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
 
     experimentalMethods.extraStrategies = experimentalMethods.extraStrategies ++
         internals.hiveConditionalStrategies(this) ++
-        Seq(SnappyStrategies, StoreStrategy, StreamQueryStrategy) ++ storeOptimizedRules
+        Seq(SnappyStrategies, new StoreStrategy(this), StreamQueryStrategy) ++ storeOptimizedRules
   }
 
   protected def beforeExecutePlan(plan: LogicalPlan): Unit = {
