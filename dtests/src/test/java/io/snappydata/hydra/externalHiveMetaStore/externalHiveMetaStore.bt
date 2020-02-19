@@ -4,9 +4,8 @@
    C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
    D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
    dataFilesLocation="/export/shared/QA_DATA/NW_1GB/"
-   thriftServerHostNameAndPort="dev13:11000"
-   //externalThriftServerHostName="dev13"
-   //externalThriftServerPort="11000"
+   externalThriftServerHostName="dev13"
+   externalThriftServerPort="11000"
 
     io/snappydata/hydra/externalHiveMetaStore/smartConnectorHiveMetaStore.conf
      A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
