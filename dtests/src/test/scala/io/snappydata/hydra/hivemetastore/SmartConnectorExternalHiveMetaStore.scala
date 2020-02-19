@@ -77,6 +77,7 @@ object SmartConnectorExternalHiveMetaStore {
     dropHiveTables(snc, HiveMetaStoreUtils.dropTable)
     dropSnappyTables(snc, HiveMetaStoreUtils.dropTable)
     beelineClientConnection.close()
+    pw.println("Smart Connector External Hive MetaStore job is successful finished.")
     pw.flush()
     pw.close()
     println("Smart Connector External Hive MetaStore job is successful finished.")

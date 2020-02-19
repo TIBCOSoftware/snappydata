@@ -29,17 +29,15 @@ class ExternalHiveMetaStore extends SnappySQLJob {
     // scalastyle:off println
     println("External Hive MetaStore Embedded mode Job started...")
     val dataLocation = jobConfig.getString("dataFilesLocation")
-//    val externalThriftServerHostName = jobConfig.getString("externalThriftServerHostName")
-//    val externalThriftServerPort = jobConfig.getString("externalThriftServerPort")
-    val externalThriftServerHostNameAndPort = jobConfig.getString("thriftServerHostNameAndPort")
+    val externalThriftServerHostName = jobConfig.getString("externalThriftServerHostName")
+    val externalThriftServerPort = jobConfig.getString("externalThriftServerPort")
     val outputFile = "ValidateJoinQuery" + "_" + "column" +
       System.currentTimeMillis() + jobConfig.getString("logFileName")
     val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
     val spark: SparkSession = SparkSession.builder().getOrCreate()
     val snc: SnappyContext = snappySession.sqlContext
 
-//    val beelineClientConnection: Connection = getBeelineClientConnection(externalThriftServerHostName, externalThriftServerPort)
-val beelineClientConnection: Connection = getBeelineClientConnection(externalThriftServerHostNameAndPort)
+    val beelineClientConnection: Connection = getBeelineClientConnection(externalThriftServerHostName, externalThriftServerPort)
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
 
     dropHiveTables(snc, HiveMetaStoreUtils.dropTable)
@@ -77,21 +75,15 @@ val beelineClientConnection: Connection = getBeelineClientConnection(externalThr
     dropHiveTables(snc, HiveMetaStoreUtils.dropTable)
     dropSnappyTables(snc, HiveMetaStoreUtils.dropTable)
     beelineClientConnection.close()
+    pw.println("External Hive MetaStore Embedded mode job is successful")
     pw.flush()
     pw.close()
     println("External Hive MetaStore Embedded mode job is successful")
   }
 
-//  def getBeelineClientConnection(externalThriftServerHostName : String, externalThriftServerPort : String): Connection = {
-//       val beelineClientConnection: Connection = DriverManager.getConnection("jdbc:hive2://" + externalThriftServerHostName + ":" + externalThriftServerPort,
-//        "hive", "Snappy!23")
-//    println("Connection with Beeline established.")
-//    beelineClientConnection
-//  }
-
-  def getBeelineClientConnection(externalThriftServerHostNameAndPort : String): Connection = {
-    val beelineClientConnection: Connection = DriverManager.getConnection("jdbc:hive2://" + externalThriftServerHostNameAndPort,
-      "hive", "Snappy!23")
+  def getBeelineClientConnection(externalThriftServerHostName : String, externalThriftServerPort : String): Connection = {
+       val beelineClientConnection: Connection = DriverManager.getConnection("jdbc:hive2://" + externalThriftServerHostName + ":" + externalThriftServerPort,
+        "hive", "Snappy!23")
     println("Connection with Beeline established.")
     beelineClientConnection
   }
