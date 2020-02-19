@@ -51,7 +51,8 @@ object SmartConnectorExternalHiveMetaStore {
     snc.sql(HiveMetaStoreUtils.setSnappyInBuiltCatalog)
     snc.sql("drop schema if exists TIBCO_DB")
     snc.sql(HiveMetaStoreUtils.setExternalHiveCatalog)
-    alterHiveTable_ChangeTableName(snc, pw)
+    //  SNAP-3191, after resolving this issue remove the comment.
+    //  alterHiveTable_ChangeTableName(snc, pw)
     pw.flush()
     //  Test Case-2
     createAndDropHiveSchema(snc, beelineClientConnection, dataLocation, pw)
@@ -160,8 +161,6 @@ object SmartConnectorExternalHiveMetaStore {
       "double,Quantity smallint,Discount double)", beelineClientConnection, schema)
         loadDataToHiveTbls(dataLocation + "order_details.csv", "hive_order_details",
           beelineClientConnection, schema)
-//    loadDataToHiveTbls(dataLocation + "order-details.csv", "hive_order_details",
-//      beelineClientConnection, schema)
     createHiveTable("hive_products(ProductID int,ProductName string,SupplierID int," +
       "CategoryID int,QuantityPerUnit string,UnitPrice double,UnitsInStock smallint," +
       "UnitsOnOrder smallint,ReorderLevel smallint,Discontinued smallint)",
@@ -180,8 +179,6 @@ object SmartConnectorExternalHiveMetaStore {
       "TerritoryID string)", beelineClientConnection, schema)
         loadDataToHiveTbls(dataLocation + "employee_territories.csv",
           "hive_employee_territories", beelineClientConnection, schema)
-//    loadDataToHiveTbls(dataLocation + "employee-territories.csv",
-//      "hive_employee_territories", beelineClientConnection, schema)
   }
 
   def createSnappyTblsAndLoadData(snc: SnappyContext, dataLocation: String,
