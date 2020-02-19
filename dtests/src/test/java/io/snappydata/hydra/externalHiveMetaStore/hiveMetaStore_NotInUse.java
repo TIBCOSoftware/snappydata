@@ -48,7 +48,7 @@ public class hiveMetaStore_NotInUse extends SnappyTest
 
     static hiveMetaStore metaStore = new hiveMetaStore();
 
-    public hiveMetaStore() {
+    public hiveMetaStore_NotInUse() {
     }
 
     public static Connection connectToBeeline() {
