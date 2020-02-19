@@ -15,7 +15,7 @@ import java.sql.*;
 import java.util.List;
 import java.util.Vector;
 
-public class hiveMetaStore extends SnappyTest
+public class hiveMetaStore_NotInUse extends SnappyTest
 {
     static String setexternalHiveCatalog = "set spark.sql.catalogImplementation=hive";
     static String setexternalInBuiltCatalog = "set spark.sql.catalogImplementation=in-memory";
