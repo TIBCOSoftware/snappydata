@@ -385,7 +385,12 @@ abstract class SnappyHiveExternalCatalog(val conf: SparkConf,
 
   protected def createTableImpl(tableDefinition: CatalogTable, ignoreIfExists: Boolean): Unit = {
     val catalogTable = addViewProperties(tableDefinition)
-    var ifExists = ignoreIfExists
+    var ifExists =
+      if (ignoreIfExists) {
+        val realIfExists = SnappyHiveExternalCatalog.ignoreIfExists.get()
+        // check if the CTAS flag has been explicitly set else honour the passed flag
+        (realIfExists eq null) || realIfExists.booleanValue()
+      } else false
     // Add dependency on base table if required. This is done before actual table
     // entry so that if there is a cluster failure between the two steps, then
     // table will still not be in catalog and base table will simply ignore
@@ -853,6 +858,14 @@ object SnappyHiveExternalCatalog extends SparkSupport {
 
   @GuardedBy("this")
   private[this] var instance: SnappyHiveExternalCatalog = _
+
+  /**
+   * Hack for CTAS for builtin tables that need to pre-create the tables before
+   * insert for the store layer to find them. This flag allows handling of this
+   * case in the ExternalCatalog.createTable method.
+   */
+  private[sql] val ignoreIfExists: ThreadLocal[java.lang.Boolean] =
+    new ThreadLocal[java.lang.Boolean]()
 
   def getInstance(sparkConf: SparkConf,
       hadoopConf: Configuration): SnappyHiveExternalCatalog = synchronized {

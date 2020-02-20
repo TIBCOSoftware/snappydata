@@ -45,7 +45,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.TopK
 import org.apache.spark.sql.execution.command.DDLUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, FindDataSourceTable, LogicalRelation}
-import org.apache.spark.sql.hive.HiveSessionCatalog
+import org.apache.spark.sql.hive.{HiveSessionCatalog, SnappyHiveExternalCatalog}
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.{DestroyRelation, JdbcExtendedUtils, MutableRelation, RowLevelSecurityRelation}
 import org.apache.spark.sql.types._
@@ -585,7 +585,16 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
         }
       case _ =>
         createSchema(schemaName, ignoreIfExists = true)
-        baseCreateTable(table, ignoreIfExists, validateTableLocation)
+        // hack to always pass ignoreIfExists as true so that
+        // for the case of CTAS for builtin tables which is handled
+        // in SnappyHiveExternalCatalog but premature exception gets
+        // thrown in newer SessionCatalog.createTable
+        SnappyHiveExternalCatalog.ignoreIfExists.set(ignoreIfExists)
+        try {
+          baseCreateTable(table, ignoreIfExists = true, validateTableLocation)
+        } finally {
+          SnappyHiveExternalCatalog.ignoreIfExists.remove()
+        }
     }
 
     contextFunctions.postCreateTable(table)
