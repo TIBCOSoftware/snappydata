@@ -23,6 +23,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, QueryHint}
+import org.apache.spark.Logging
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
@@ -43,10 +44,11 @@ import org.apache.spark.streaming._
 import org.parboiled2._
 import shapeless.{::, HNil}
 
+import scala.collection.mutable
 import scala.util.Try
 
 abstract class SnappyDDLParser(session: SnappySession)
-    extends SnappyBaseParser(session) {
+    extends SnappyBaseParser(session) with Logging {
 
   // reserved keywords
   final def ALL: Rule0 = rule { keyword(Consts.ALL) }
@@ -471,17 +473,31 @@ abstract class SnappyDDLParser(session: SnappySession)
       new StringBuilder().append(s))) ~ tableEnd1
   }
 
-  /**
-   *  INTP options (...) code {  ...... }
-   * @return LogicalPlan
-   */
   protected def interpretCode: Rule1[LogicalPlan] = rule {
-    EXEC ~ ws ~ SCALA ~ ws ~ (OPTIONS ~ options ~ ws).? ~ codeChunk ~> {
-      ( opts: Any, code: String) =>
-        val parameters = opts.asInstanceOf[Option[Map[String, String]]]
-          .getOrElse(Map.empty[String, String])
-
-        InterpretCodeCommand(code, parameters)
+    EXEC ~ ws ~ ignoreCase("scala") ~ codeChunk ~> { (code: String) =>
+      val trimmedCodeLC = code.replace("\\s+", " ").trim.toLowerCase
+      if (trimmedCodeLC.startsWith("options")) {
+        val startOptionIndex = code.indexOf('(')
+        val endOptionIndex = code.indexOf(')')
+        val optionStr = code.substring(startOptionIndex+1, endOptionIndex)
+        val scalaCode = code.substring(endOptionIndex+1)
+        if (startOptionIndex <= 0 || endOptionIndex <= 0 || startOptionIndex > endOptionIndex) {
+          throw new RuntimeException("options not specified properly. Refer documentation")
+        }
+        val allOptions = optionStr.split(',')
+        val optionsMap = new mutable.HashMap[String, String]()
+        allOptions.foreach(s => {
+          val kv = s.trim.replace("\\s+", " ").split(' ')
+          if (kv.length != 2) throw new RuntimeException("options not specified properly")
+          val key = kv(0)
+          val value = kv(1).replace("'", "")
+          optionsMap += key -> value
+        })
+        println(optionsMap.toMap)
+        InterpretCodeCommand(scalaCode, session, optionsMap.toMap)
+      } else {
+        InterpretCodeCommand(code, session)
+      }
     }
   }
 
@@ -497,9 +513,6 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected def codeChunk: Rule1[String] = rule {
     capture(ANY.*) ~ EOI ~> ((code : String) => code )
-    /***
-    '{' ~ capture(ANY) ~ '}' ~> ((code : String) => code )
-     ***/
   }
 
 
@@ -811,6 +824,24 @@ abstract class SnappyDDLParser(session: SnappySession)
               .DUMMY_TABLE_QUALIFIED_NAME))), input.sliceString(0, input.length)))
   }
 
+  final def ExtTableIdentifier: Rule1[TableIdentifier] = rule {
+    // case-sensitivity already taken care of properly by "identifier"
+    (identifierExt ~ '.' ~ ws).? ~ identifierExt ~> ((schema: Any, table: String) => {
+      val td = TableIdentifier(table, schema.asInstanceOf[Option[String]])
+      val tmetadata = session.sessionCatalog.getTableMetadata(td)
+      if (tmetadata.tableType == CatalogTableType.EXTERNAL) push(td)
+      else MISMATCH
+    })
+  }
+
+  protected def grantRevokeExternal: Rule1[LogicalPlan] = rule {
+    GRANT ~ ws ~ ALL ~ ws ~ ON ~ ExtTableIdentifier ~ TO ~ capture(ANY.*) ~> {
+      (td: TableIdentifier, users: String) => GrantRevokeOnExternalTable(true, td, users)
+    } |
+    REVOKE ~ ws ~ ALL ~ ws ~ ON ~ ExtTableIdentifier ~ FROM ~ capture(ANY.*) ~> {
+      (td: TableIdentifier, users: String) => GrantRevokeOnExternalTable(false, td, users)
+    }
+  }
   /**
    * Handle other statements not appropriate for SnappyData's builtin sources but used by hive/file
    * based sources in Spark. This rule should always be at the end of the "start" rule so that
@@ -1012,7 +1043,8 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected final def allowDDL: Rule0 = rule {
     MATCH ~> (() => test({
-      SnappyContext.getClusterMode(session.sparkContext).isInstanceOf[ThinClientConnectorMode] || !Misc.getGemFireCache.isSnappyRecoveryMode
+      SnappyContext.getClusterMode(session.sparkContext).isInstanceOf[ThinClientConnectorMode] ||
+        !Misc.getGemFireCache.isSnappyRecoveryMode
     }))
   }
 
@@ -1021,7 +1053,8 @@ abstract class SnappyDDLParser(session: SnappySession)
     dropTable | truncateTable | createView | createTempViewUsing | dropView | alterView | createSchema |
     dropSchema | alterTableToggleRowLevelSecurity | createPolicy | dropPolicy |
     alterTableProps | alterTableOrView | alterTable | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | grantRevokeIntp | passThrough | interpretCode )
+    createIndex | dropIndex | createFunction | dropFunction | grantRevokeIntp | grantRevokeExternal |
+      passThrough | interpretCode )
   }
 
   protected def partitionSpec: Rule1[Map[String, Option[String]]]

@@ -186,14 +186,13 @@ object SnappyUtilLauncher extends StoreCallback {
   }
 
   val intpUsage = s"\nUsage:\n" +
-    s"\n${SCRIPT_NAME} [--snappydata.connection|-conn|--connection] [locatorhost:port]" +
-    s"\n             default = locahost:1527\n" +
-    s"\n             [--snappydata.user|-user|--user] [username]" +
-    s"\n             default = APP\n" +
-    s"\n             [--snappydata.password|-passwd|--password] [password of the user]" +
-    s"\n             default = APP\n" +
-    s"\n             [--run|-r|-run] [scala_file_path(s) (comma separated paths if multiple)]" +
-    s"\n             [--help|-help|-h] ['prints the command line options for the script']\n"
+    s"\n${SCRIPT_NAME} [OPTIONS]\n\n" +
+    s"OPTIONS and Default values\n" +
+    s"\n   -c LOCATOR_OR_SERVER_ENDPOINT  (default value is locahost:1527)\n" +
+    s"\n   -u USERNAME                    (default value is APP)\n" +
+    s"\n   -p PASSWORD                    (default value is APP)\n" +
+    s"\n   -r SCALA_FILE_PATHS            (comma separated paths if multiple)\n" +
+    s"\n   -h, --help                     (prints script usage)\n"
 
 
   private def validateArgs(options: Map[Symbol, Any]): Unit = {
@@ -235,19 +234,21 @@ object SnappyUtilLauncher extends StoreCallback {
 
       list match {
         case Nil => map
-        case ("--snappydata.connection" | "-conn" | "--connection" ) :: value :: tail =>
+        case ("-c" ) :: value :: tail =>
           nextOption(map ++ Map('connection -> value), tail)
-        case ("--snappydata.user" | "-user" | "--user") :: value :: tail =>
+        case ("-u") :: value :: tail =>
           nextOption(map ++ Map('user -> value), tail)
-        case ("--snappydata.password" | "-passwd" | "--password" ) :: value :: tail =>
+        case ("-p") :: value :: tail =>
           nextOption(map ++ Map('password -> value), tail)
-        case ("--run" | "-r" | "-run" ) :: value :: tail =>
+        case ("-r") :: value :: tail =>
           nextOption(map ++ Map('run -> value), tail)
-        case ("--help" | "-h" | "-help" ) :: tail =>
+        case ("-h" | "--help") :: tail =>
           println(intpUsage)
           System.exit(0)
           Map.empty
-        case option :: tail => println("\nUnknown or incomplete option " + option)
+        case option :: tail => println(s"\nBad option $option or its usage")
+          println(intpUsage)
+          System.exit(0)
           Map.empty
       }
     }
@@ -275,7 +276,7 @@ object SnappyUtilLauncher extends StoreCallback {
     println()
     println("Type in expressions to have them evaluated.\n")
     println("Spark context available as 'sc'")
-    println("Snappy session available as 'snappy'.\n")
+    println("Snappy session available as 'snappysession'.\n")
     // scalastyle:on println
   }
 }

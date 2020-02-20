@@ -21,6 +21,7 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 import java.util.Map.Entry
 import java.util.function.Consumer
+import java.util.regex.Pattern
 
 import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.SystemFailure
@@ -68,10 +69,25 @@ import scala.tools.nsc.interpreter.IMain
  */
 case class InterpretCodeCommand(
      code: String,
-     options: Map[String, String]) extends RunnableCommand {
+     snappySession: SnappySession,
+     options: Map[String, String] = Map.empty) extends RunnableCommand {
+
+  lazy val df: Dataset[Row] = {
+    val tcb = ToolsCallbackInit.toolsCallback
+    if (tcb != null) {
+      // supported in embedded mode only
+      tcb.getScalaCodeDF(code, snappySession, options)
+    } else {
+      null
+    }
+  }
+
 
   // This is handled directly by Remote Interpreter code
-  override def run(sparkSession: SparkSession): Seq[Row] = Nil
+  override def run(sparkSession: SparkSession): Seq[Row] = df.collect()
+
+  override def output: Seq[Attribute] = df.schema.fields.map(
+    x => AttributeReference(x.name, x.dataType, x.nullable)())
 }
 
 case class GrantRevokeIntpCommand(
@@ -88,6 +104,31 @@ case class GrantRevokeIntpCommand(
     val user = session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR)
     tcb.updateIntpGrantRevoke(user, isGrant, users)
     Nil
+  }
+}
+
+case class GrantRevokeOnExternalTable(
+   isGrant: Boolean, table: TableIdentifier, users: String) extends RunnableCommand {
+
+  // This is handled directly by Remote Interpreter code
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val tcb = ToolsCallbackInit.toolsCallback
+    if (tcb == null) {
+      throw new AnalysisException("Granting/Revoking" +
+        " on external table not supported from smart connector mode");
+    }
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val ct = session.sessionCatalog.getTableMetadata(table)
+    val user = session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR)
+    tcb.updateGrantRevokeOnExternalTable(user, isGrant, table, users, ct)
+    Nil
+  }
+}
+
+object GrantRevokeOnExternalTable {
+  val META_REGION_KEY_PREFIX = "##_EXTERNAL__GRANT__REVOKE_##"
+  def getMetaRegionKey(fqtn: String): String = {
+    META_REGION_KEY_PREFIX + "####" + fqtn
   }
 }
 
