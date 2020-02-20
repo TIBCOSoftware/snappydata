@@ -35,9 +35,10 @@ object SQLFunctionsUtils {
     *  4. datediff,
     *  5. date_format
     */
-  val dateSet1 : String = "(1, 'AAA', current_date, '2020-01-19', 5, 3)"
-  val dateSet2 : String = "(2, 'BBB', current_date, current_date, 7, 6)"
-  val dateSet3 : String = "(3, 'CCC', '2019-12-31', '2020-12-31', 10, 12)"
+  val dateSet = new Array[String](3)
+  dateSet(0) = "(1, 'AAA', current_date, '2020-01-19', 5, 3)"
+  dateSet(1) = "(2, 'BBB', current_date, current_date, 7, 6)"
+  dateSet(2) = "(3, 'CCC', '2019-12-31', '2020-12-31', 10, 12)"
   val createColTypeTblInSpark : String = createTbl + columnTbl +
     "(id int, name String, date1 date, date2 date, n1 int, n2 int)"
   val createRowTypeTblInSpark : String = createTbl + rowTbl +
@@ -65,8 +66,9 @@ object SQLFunctionsUtils {
     *  (NOTE : reverse logic for arrays is available since  Spark 2.4.0,
     *  test to be added after spark 2.4.0 merge
     */
-  val rseRptSet1 : String = "(1,'TIBCO ComputeDB','TIBCO ComputeDB-')"
-  val rseRptSet2 : String = "(2,'SQL Functions','SQL Functions ')"
+  val rseRptSet = new Array[String](2)
+  rseRptSet(0) = "(1,'TIBCO ComputeDB','TIBCO ComputeDB-')"
+  rseRptSet(1) = "(2,'SQL Functions','SQL Functions ')"
   val createColTypeTbl_RseRpt_Spark : String = createTbl + columnTbl +
   "(id int,reversename string,repeatname string)"
   val createRowTypeTbl_rserpt_Spark : String = createTbl + rowTbl +
@@ -95,10 +97,11 @@ object SQLFunctionsUtils {
     *  11. | (Bitwise OR)
     *  12. ~ (Bitwise NOT)
     */
-  val NOT_AND_ExOR_Set1 : String = "(1,7,3,333)"
-  val NOT_AND_ExOR_Set2 : String = "(2,3,5,7)"
-  val NOT_AND_ExOR_Set3 : String = "(3,5,6,1098)"
-  val NOT_AND_ExOR_Set4 : String = "(4,1,8,1234567)"
+  val NOT_AND_ExOR_Set = new Array[String](4)
+  NOT_AND_ExOR_Set(0) = "(1,7,3,333)"
+  NOT_AND_ExOR_Set(1) = "(2,3,5,7)"
+  NOT_AND_ExOR_Set(2) = "(3,5,6,1098)"
+  NOT_AND_ExOR_Set(3) = "(4,1,8,1234567)"
   val createColTypeTbl_NOT_AND_ExOR_Spark : String = createTbl + columnTbl +
   "(id int,n1 int,n2 int,n3 int)"
   val createRowTypeTbl_NOT_AND_ExOR_Spark : String = createTbl + rowTbl +
@@ -121,8 +124,9 @@ object SQLFunctionsUtils {
     *  17. month, 18. next_day, 19. weekofyear
     *   20 year
     */
-  val day_Month_Year_Set1 : String = "(1,current_date)"
-  val day_Month_Year_Set2 : String = "(2,'2014-04-05')"
+  val day_Month_Year_Set = new Array[String](2)
+  day_Month_Year_Set(0) = "(1,current_date)"
+  day_Month_Year_Set(1) = "(2,'2014-04-05')"
   val createColTypeTbl_Day_Month_Year_Spark : String = createTbl + columnTbl + " (id int,dt date)"
   val createRowTypeTbl_Day_Month_Year_Spark : String = createTbl + rowTbl + " (id int,dt date)"
   val createColumnTbl_Day_Month_Year : String = createTbl + columnTbl +
@@ -141,8 +145,9 @@ object SQLFunctionsUtils {
     *  Below queries test the functions :
     *  21. map , 22. map_keys, 23. map_values
     */
-  val map_Keys_Values_Set1 : String = "1,MAP('Maths',14,'Science',18,'Hindi',15)"
-  val map_Keys_Values_Set2 : String = "2,MAP('Maths',19,'Science',19,'Hindi',19)"
+  val map_Keys_Values_Set = new Array[String](2)
+  map_Keys_Values_Set(0) = "1,MAP('Maths',14,'Science',18,'Hindi',15)"
+  map_Keys_Values_Set(1) = "2,MAP('Maths',19,'Science',19,'Hindi',19)"
   val createColTypeTbl_map_Keys_Values_Spark : String = createTbl + columnTbl +
     " (id int,marks map<string,int>)"
   val createColumnTbl_map_Keys_Values : String = createTbl + columnTbl +
@@ -154,8 +159,9 @@ object SQLFunctionsUtils {
     *  Below queries test the functions :
     *  24. array , 25. array_contains
     */
-  val array_Contains_Set1 : String = "1,Array(3,5,6,8,1)"
-  val array_Contains_Set2 : String = "2,Array(13,45,66,98,101)"
+  val array_Contains_Set = new Array[String](2)
+  array_Contains_Set(0) = "1,Array(3,5,6,8,1)"
+  array_Contains_Set(1) = "2,Array(13,45,66,98,101)"
   val createColTypeTbl_array_Contains_Spark : String = createTbl + columnTbl +
     " (id int,arr Array<Int>)"
   val createColumnTbl_array_Contains_Values : String = createTbl + columnTbl +
@@ -167,10 +173,11 @@ object SQLFunctionsUtils {
     *  Below queries test the functions :
     *  26. and, 27. or , 28. not
     */
-  val And_Or_Not_Set1 : String = "(1,false,false,false)"
-  val And_Or_Not_Set2 : String = "(2,false,true,false)"
-  val And_Or_Not_Set3 : String = "(3,true,false,true)"
-  val And_Or_Not_Set4 : String = "(4,true,true,true)"
+  val And_Or_Not_Set = new Array[String](4)
+  And_Or_Not_Set(0) = "(1,false,false,false)"
+  And_Or_Not_Set(1) = "(2,false,true,false)"
+  And_Or_Not_Set(2) = "(3,true,false,true)"
+  And_Or_Not_Set(3) = "(4,true,true,true)"
   val createColTypeTbl_And_Or_Not_Spark : String = createTbl + columnTbl +
     "(id int,b1 boolean,b2 boolean,b boolean)"
   val createRowTypeTbl_And_Or_Not_Spark : String = createTbl + rowTbl +
@@ -191,10 +198,11 @@ object SQLFunctionsUtils {
     *  NOTE : Following test case is Pending.
     *  SET spark.sql.legacy.sizeOfNull is set to false, the function returns null for null input
     */
-  val size_Set1 : String = "1,Array(10,20,30,40,50,60),Map('Rahul',40.45,'Virat',54.32,'Dhoni',56.78)"
-  val size_Set2 : String = "2,Array(80,99,65,78),null"
-  val size_Set3 : String = "3,null,Map('AAA',0.0,'BBB',6.67)"
-  val size_Set4 : String = "4,null,null"
+  val size_Set = new Array[String](4)
+  size_Set(0) = "1,Array(10,20,30,40,50,60),Map('Rahul',40.45,'Virat',54.32,'Dhoni',56.78)"
+  size_Set(1) = "2,Array(80,99,65,78),null"
+  size_Set(2) = "3,null,Map('AAA',0.0,'BBB',6.67)"
+  size_Set(3) = "4,null,null"
   val createColTypeTbl_Size_Spark : String = createTbl + columnTbl +
     " (id int,testArr Array<Int>,testMap Map<String,Double>)"
   val createColumnTbl_Size : String = createTbl + columnTbl +
@@ -206,9 +214,10 @@ object SQLFunctionsUtils {
     *  Below queries test the functions :
     *  31. rpad, 32. in
     */
-  val rpad_in_Set1 : String = "(1,'TIBCO ComputeDB')"
-  val rpad_in_Set2 : String = "(2,'Spot fire')"
-  val rpad_in_Set3 : String = "(3,'DBVisualizer')"
+  val rpad_in_Set = new Array[String](3)
+  rpad_in_Set(0) = "(1,'TIBCO ComputeDB')"
+  rpad_in_Set(1) = "(2,'Spot fire')"
+  rpad_in_Set(2) = "(3,'DBVisualizer')"
   val createColTypeTbl_rpad_in_Spark : String = createTbl + columnTbl +
     "(id int,testStr string)"
   val createRowTypeTbl_rpad_in_Spark : String = createTbl + rowTbl +
@@ -227,8 +236,9 @@ object SQLFunctionsUtils {
     *  Below queries test the functions :
     *  33. hour, 34. minute, 35. second
     */
-  val hr_min_sec_Set1 : String = "(1,'2019-03-29 12:58:59')"
-  val hr_min_sec_Set2 : String = "(2,'2020-11-14 23:45:12')"
+  val hr_min_sec_Set = new Array[String](2)
+  hr_min_sec_Set(0) = "(1,'2019-03-29 12:58:59')"
+  hr_min_sec_Set(1) = "(2,'2020-11-14 23:45:12')"
   val createColTypeTbl_hr_min_sec_Spark : String = createTbl + columnTbl + "(id int,ts timestamp)"
   val createRowTypeTbl_hr_min_sec_Spark : String = createTbl + rowTbl + "(id int,ts timestamp)"
   val createColumnTbl_hr_min_sec : String = createTbl + columnTbl +
@@ -245,9 +255,10 @@ object SQLFunctionsUtils {
     *  Below queries test the functions :
     *  36. ascii, 37. months_between, 38. current_timestamp
     */
-  val ascii_mnthbet_ts_Set1 : String = "(1,'Spark','S','2019-09-07',current_timestamp)"
-  val ascii_mnthbet_ts_Set2 : String = "(2,'abcd','a','2018-11-15','2017-12-25 16:55:43')"
-  val ascii_mnthbet_ts_Set3 : String = "(3,'0123','0','2019-12-31','2019-12-31 11:12:13')"
+  val ascii_mnthbet_ts_Set = new Array[String](3)
+  ascii_mnthbet_ts_Set(0) = "(1,'Spark','S','2019-09-07',current_timestamp)"
+  ascii_mnthbet_ts_Set(1) = "(2,'abcd','a','2018-11-15','2017-12-25 16:55:43')"
+  ascii_mnthbet_ts_Set(2) = "(3,'0123','0','2019-12-31','2019-12-31 11:12:13')"
   val createColTypeTbl_ascii_mnthbet_ts_Spark : String = createTbl + columnTbl +
     "(id int,s1 string,s2 string,dt1 date,dt2 timestamp)"
   val createRowTypeTbl_ascii_mnthbet_ts_Spark : String = createTbl + rowTbl +

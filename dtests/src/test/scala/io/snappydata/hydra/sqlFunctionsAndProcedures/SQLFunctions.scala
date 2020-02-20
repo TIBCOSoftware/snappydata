@@ -50,31 +50,23 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.createColumnTbl_DateFunctions_1)
     snc.sql(SQLFunctionsUtils.createRowTbl_DateFunctions_1)
     //  INSERT RECORDS IN SPARK / SNAPPY.
-    spark.sql(SQLFunctionsUtils.insertInto +
-      SQLFunctionsUtils.columnTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet1)
-    spark.sql(SQLFunctionsUtils.insertInto +
-      SQLFunctionsUtils.columnTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet2)
-    spark.sql(SQLFunctionsUtils.insertInto +
-      SQLFunctionsUtils.columnTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet3)
-    spark.sql(SQLFunctionsUtils.insertInto +
-      SQLFunctionsUtils.rowTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet1)
-    spark.sql(SQLFunctionsUtils.insertInto +
-      SQLFunctionsUtils.rowTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet2)
-    spark.sql(SQLFunctionsUtils.insertInto +
-      SQLFunctionsUtils.rowTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet3)
-    snc.sql(SQLFunctionsUtils.insertInto +
-      SQLFunctionsUtils.columnTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet1)
-    snc.sql(SQLFunctionsUtils.insertInto +
-      SQLFunctionsUtils.columnTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet2)
-    snc.sql(SQLFunctionsUtils.insertInto +
-      SQLFunctionsUtils.columnTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet3)
-    snc.sql(SQLFunctionsUtils.insertInto +
-      SQLFunctionsUtils.rowTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet1)
-    snc.sql(SQLFunctionsUtils.insertInto +
-      SQLFunctionsUtils.rowTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet2)
-    snc.sql(SQLFunctionsUtils.insertInto +
-      SQLFunctionsUtils.rowTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet3)
-    //  SELECT QUERY / VALIDATION ROUTINE.
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto +
+        SQLFunctionsUtils.columnTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet(i))
+    }
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto +
+        SQLFunctionsUtils.rowTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto +
+        SQLFunctionsUtils.columnTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto +
+        SQLFunctionsUtils.rowTbl + SQLFunctionsUtils.values + SQLFunctionsUtils.dateSet(i))
+    }
+   //  SELECT QUERY / VALIDATION ROUTINE.
     SnappyTestUtils.assertQueryFullResultSet(snc,
       SQLFunctionsUtils.selectQueryOnColTbl_DateFunctions_1,
       "Q1_ColumnTbl_DateFunc", "column", pw, sqlContext)
@@ -107,22 +99,22 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.createColumnTbl_RseRpt)
     snc.sql(SQLFunctionsUtils.createRowTbl_RseRpt)
     //  INSERT RECORDS IN SPARK / SNAPPY.
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet2)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet2)
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet(i))
+    }
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet(i))
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet(i))
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rseRptSet(i))
+    }
     //  SELECT QUERY / VALIDATION ROUTINE.
     SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_RseRpt,
       "Q5_Select_RevRpt", "column", pw, sqlContext)
@@ -154,38 +146,22 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.createColumnTbl_NOT_AND_ExOR)
     snc.sql(SQLFunctionsUtils.createRowTbl_NOT_AND_ExOR)
     //  INSERT RECORDS IN SPARK / SNAPPY.
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set2)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set3)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set4)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set2)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set3)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set4)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set3)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set4)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set3)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set4)
+    for(i <- 0 to 3) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set(i))
+    }
+    for(i <- 0 to 3) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set(i))
+    }
+    for(i <- 0 to 3) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set(i))
+    }
+    for(i <- 0 to 3) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.NOT_AND_ExOR_Set(i))
+    }
     //  SELECT QUERY / VALIDATION ROUTINE.
     SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_NOT_AND_ExOR,
       "Q7_NOT_AND_ExOR", "column", pw, sqlContext)
@@ -210,22 +186,22 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.createColumnTbl_Day_Month_Year)
     snc.sql(SQLFunctionsUtils.createRowTbl_Day_Month_Year)
     //  INSERT RECORDS IN SPARK / SNAPPY.
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set2)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set2)
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set(i))
+    }
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set(i))
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set(i))
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.day_Month_Year_Set(i))
+    }
     //  SELECT QUERY / VALIDATION ROUTINE.
     val snappyDF1 : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_Day_Month_Year)
     val sparkDF1 : DataFrame = spark.sql(SQLFunctionsUtils.select_ColTbl_Day_Month_Year)
@@ -249,15 +225,15 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.createColTypeTbl_map_Keys_Values_Spark)
     snc.sql(SQLFunctionsUtils.createColumnTbl_map_Keys_Values)
     //  INSERT RECORDS IN SPARK / SNAPPY.
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + "(" + SQLFunctionsUtils.map_Keys_Values_Set1 + ")")
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + "("  + SQLFunctionsUtils.map_Keys_Values_Set2 + ")")
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.map_Keys_Values_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.map_Keys_Values_Set2)
-    //  SELECT QUERY / VALIDATION ROUTINE.
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + "(" + SQLFunctionsUtils.map_Keys_Values_Set(i) + ")")
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        " SELECT " + SQLFunctionsUtils.map_Keys_Values_Set(i))
+    }
+   //  SELECT QUERY / VALIDATION ROUTINE.
     val snappyDF_map_Keys_Values : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_map_Keys_Values)
     val sparkDF_map_Keys_Values : DataFrame =
       spark.sql(SQLFunctionsUtils.select_ColTbl_map_Keys_Values)
@@ -275,14 +251,14 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.createColTypeTbl_array_Contains_Spark)
     snc.sql(SQLFunctionsUtils.createColumnTbl_array_Contains_Values)
     //  INSERT RECORDS IN SPARK / SNAPPY.
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.array_Contains_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.array_Contains_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.array_Contains_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.array_Contains_Set2)
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        " SELECT " + SQLFunctionsUtils.array_Contains_Set(i))
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        " SELECT " + SQLFunctionsUtils.array_Contains_Set(i))
+    }
     //  SELECT QUERY / VALIDATION ROUTINE.
     SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_array_Contains,
       "Q12_array_Contains", "column", pw, sqlContext, true)
@@ -301,38 +277,22 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.createColumnTbl_And_Or_Not)
     snc.sql(SQLFunctionsUtils.createRowTbl_And_Or_Not)
     //  INSERT RECORDS IN SPARK / SNAPPY.
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set2)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set3)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set4)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set2)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set3)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set4)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set3)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set4)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set3)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set4)
+    for(i <- 0 to 3) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set(i))
+    }
+    for(i <- 0 to 3) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set(i))
+    }
+    for(i <- 0 to 3) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set(i))
+    }
+    for(i <- 0 to 3) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.And_Or_Not_Set(i))
+    }
     //  SELECT QUERY / VALIDATION ROUTINE.
     SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_And_Or_Not,
       "Q13_And_Or_Not", "column", pw, sqlContext)
@@ -369,22 +329,14 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.createColTypeTbl_Size_Spark)
     snc.sql(SQLFunctionsUtils.createColumnTbl_Size)
     //  INSERT RECORDS IN SPARK / SNAPPY.
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.size_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.size_Set2)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.size_Set3)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.size_Set4)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.size_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.size_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.size_Set3)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      " SELECT " + SQLFunctionsUtils.size_Set4)
+    for(i <- 0 to 3) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        " SELECT " + SQLFunctionsUtils.size_Set(i))
+    }
+    for(i <- 0 to 3) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        " SELECT " + SQLFunctionsUtils.size_Set(i))
+    }
     //  SELECT QUERY / VALIDATION ROUTINE.
     SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_Size,
       "Q16_Size", "column", pw, sqlContext)
@@ -403,30 +355,22 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.createColumnTbl_rpad_in)
     snc.sql(SQLFunctionsUtils.createRowTbl_rpad_in)
     //  INSERT RECORDS IN SPARK / SNAPPY.
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set2)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set3)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set2)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set3)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set3)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set3)
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set(i))
+    }
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.rpad_in_Set(i))
+    }
    //  SELECT QUERY / VALIDATION ROUTINE.
     SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_rpad_in,
       "Q17_rpad_in", "column", pw, sqlContext)
@@ -449,22 +393,22 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.createColumnTbl_hr_min_sec)
     snc.sql(SQLFunctionsUtils.createRowTbl_hr_min_sec)
     //  INSERT RECORDS IN SPARK / SNAPPY.
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set2)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set2)
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set(i))
+    }
+    for(i <- 0 to 1) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set(i))
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set(i))
+    }
+    for(i <- 0 to 1) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.hr_min_sec_Set(i))
+    }
     //  SELECT QUERY / VALIDATION ROUTINE.
     SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_hr_min_sec,
       "Q19_hr_min_sec", "column", pw, sqlContext)
@@ -487,30 +431,22 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql(SQLFunctionsUtils.createColumnTbl_ascii_mnthbet_ts)
     snc.sql(SQLFunctionsUtils.createRowTbl_ascii_mnthbet_ts)
     //  INSERT RECORDS IN SPARK / SNAPPY.
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set2)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set3)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set1)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set2)
-    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set3)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set3)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set1)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set2)
-    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
-      SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set3)
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set(i))
+    }
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.ascii_mnthbet_ts_Set(i))
+    }
     //  SELECT QUERY / VALIDATION ROUTINE.
     SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_ascii_mnthbet_ts,
       "Q21_ascii_mnthbet_ts", "column", pw, sqlContext)
