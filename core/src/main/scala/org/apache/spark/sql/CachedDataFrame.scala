@@ -662,6 +662,7 @@ object CachedDataFrame
           // add the time of plan execution to the end time.
           if (postGUIPlans) sc.listenerBus.post(SparkListenerSQLExecutionEnd(executionId, endTime))
         } finally {
+          snappySession.snappySessionState.clearExecutionData()
           SnappySession.clearExecutionProperties(localProperties)
         }
       }

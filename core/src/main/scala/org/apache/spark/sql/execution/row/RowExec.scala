@@ -204,13 +204,23 @@ trait RowExec extends TableExec {
       s"$columnSetterFunction(${internals.exprCodeIsNull(ev)}, ${internals.exprCodeValue(ev)});"
     }.mkString("\n")
     s"""
-       |$inputCode
-       |$functionCalls
-       |$rowCount++;
-       |$stmt.addBatch();
-       |if (($rowCount % $batchSize) == 0) {
-       |  ${executeBatchCode(numOperations, numOpRowsMetric)}
-       |  $rowCount = 0;
+       |try {
+       |  $inputCode
+       |  $functionCalls
+       |  $rowCount++;
+       |  $stmt.addBatch();
+       |  if (($rowCount % $batchSize) == 0) {
+       |    ${executeBatchCode(numOperations, numOpRowsMetric)}
+       |    $rowCount = 0;
+       |  }
+       |} catch (RuntimeException re) {
+       |  throw re;
+       |} catch (Exception e) {
+       |  if (e instanceof java.io.IOException) {
+       |    throw (java.io.IOException)e;
+       |  } else {
+       |    throw new java.io.IOException(e.toString(), e);
+       |  }
        |}
     """.stripMargin
   }

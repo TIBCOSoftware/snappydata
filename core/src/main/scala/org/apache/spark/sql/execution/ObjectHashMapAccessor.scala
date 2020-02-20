@@ -826,8 +826,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // also add a mapSize check but when continueOnNull is true, then emit a continue immediately
     val (checkMapSize, initFilters) = if (continueOnNull) {
       (s"if ($mapSize == 0) continue;\n", nullStreamKey ++ minMaxFilter)
-    }
-    else ("", s"$mapSize != 0" +: (nullStreamKey ++ minMaxFilter))
+    } else ("", s"$mapSize != 0" +: (nullStreamKey ++ minMaxFilter))
     val initFilterCode = if (initFilters.isEmpty) ""
     else initFilters.mkString("if (", " &&\n", ")")
 

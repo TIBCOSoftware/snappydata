@@ -2169,6 +2169,7 @@ object SnappySession extends Logging {
         // post the end of "plan" phase which will remove this execution from active list
         context.listenerBus.post(SparkListenerSQLPlanExecutionEnd(executionId))
       } else {
+        session.snappySessionState.clearExecutionData()
         // post the end of SQL since body of `f` failed
         context.listenerBus.post(SparkListenerSQLExecutionEnd(
           executionId, System.currentTimeMillis()))

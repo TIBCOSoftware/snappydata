@@ -32,7 +32,7 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, Expression, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, BoundReference, Expression, SortOrder}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.Utils
@@ -471,18 +471,29 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
     ctx.INPUT_ROW = null
     ctx.currentVars = input
-    val (resultVars, streamKeys) = buildSide match {
-      case BuildLeft => (buildVars ++ input,
-          streamSideKeys.map(BindReferences.bindReference(_, right.output)))
-      case BuildRight => (input ++ buildVars,
-          streamSideKeys.map(BindReferences.bindReference(_, left.output)))
+    // empty code blocks for those input variables referenced by streamKeys so that
+    // the code for those are not materialized by both streamKeyVars and resultVars
+    val streamKeys = buildSide match {
+      case BuildLeft => streamSideKeys.map(BindReferences.bindReference(_, right.output))
+      case BuildRight => streamSideKeys.map(BindReferences.bindReference(_, left.output))
+    }
+    val inputArray = input.toArray
+    streamKeys.foreach(_.foreach {
+      case BoundReference(ordinal, _, _) =>
+        inputArray(ordinal) = internals.copyExprCode(inputArray(ordinal), code = "")
+      case _ =>
+    })
+    val newInput = inputArray.toSeq
+    val resultVars = buildSide match {
+      case BuildLeft => buildVars ++ newInput
+      case BuildRight => newInput ++ buildVars
     }
     val streamKeyVars = ctx.generateExpressions(streamKeys)
 
     mapAccessor.generateMapLookup(entryVar, localValueVar,
       mapSize, keyIsUniqueTerm, initMap, initMapCode, numRowsTerm,
       nullMaskVars, initCode, checkCondition, streamSideKeys,
-      streamKeyVars, streamedPlan.output, buildKeyVars, buildVars, input,
+      streamKeyVars, streamedPlan.output, buildKeyVars, buildVars, newInput,
       resultVars, dictionaryArrayTerm, dictionaryArrayInit, joinType, buildSide)
   }
 

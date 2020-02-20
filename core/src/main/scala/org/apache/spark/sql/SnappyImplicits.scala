@@ -36,7 +36,7 @@ object snappy extends Serializable {
     df.sparkSession match {
       case sc: SnappySession => SnappyDataFrameOperations(sc, df)
       case sc => throw new AnalysisException("Extended snappy operations " +
-          s"require SnappyContext and not ${sc.getClass.getSimpleName}")
+          s"require SnappySession and not ${sc.getClass.getSimpleName}")
     }
   }
 
@@ -52,7 +52,7 @@ object snappy extends Serializable {
               s"${plan.getClass.getSimpleName}")
         }
       case sc => throw new AnalysisException("Extended snappy operations " +
-          s"require SnappyContext and not ${sc.getClass.getSimpleName}")
+          s"require SnappySession and not ${sc.getClass.getSimpleName}")
     }
   }
 
@@ -162,13 +162,13 @@ object snappy extends Serializable {
     f => f.getName == "df" || f.getName.endsWith("$df")
   }.getOrElse(sys.error("Failed to obtain DataFrame from DataFrameWriter"))
 
-  private[this] val parColsMethod = classOf[DataFrameWriter[_]]
-      .getDeclaredMethods.find(_.getName.contains("$normalizedParCols"))
-      .getOrElse(sys.error("Failed to obtain method  " +
-          "normalizedParCols from DataFrameWriter"))
+  private[this] val partitionColumnsField = classOf[DataFrameWriter[_]]
+      .getDeclaredFields.find(_.getName.contains("partitioningColumns"))
+      .getOrElse(sys.error("Failed to obtain field  " +
+          "partitioningColumns in DataFrameWriter"))
 
   dfField.setAccessible(true)
-  parColsMethod.setAccessible(true)
+  partitionColumnsField.setAccessible(true)
 
   implicit class DataFrameWriterExtensions(writer: DataFrameWriter[_])
       extends Serializable {
@@ -186,20 +186,22 @@ object snappy extends Serializable {
         case sc: SnappySession => sc
         case _ => sys.error("Expected a SnappyContext for putInto operation")
       }
-      val normalizedParCols = parColsMethod.invoke(writer)
+      val partitionColumns = partitionColumnsField.get(writer)
           .asInstanceOf[Option[Seq[String]]]
       // A partitioned relation's schema can be different from the input
       // logicalPlan, since partition columns are all moved after data columns.
       // We Project to adjust the ordering.
       // TODO: this belongs to the analyzer.
-      val input = normalizedParCols.map { parCols =>
+      val sessionState = df.sparkSession.sessionState
+      val resolver = sessionState.analyzer.resolver
+      val input = partitionColumns.map { parCols =>
         val (inputPartCols, inputDataCols) = df.logicalPlan.output.partition {
-          attr => parCols.contains(attr.name)
+          attr => parCols.exists(resolver(_, attr.name))
         }
         Project(inputDataCols ++ inputPartCols, df.logicalPlan)
       }.getOrElse(df.logicalPlan)
 
-      df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
+      sessionState.executePlan(PutIntoTable(UnresolvedRelation(
         session.tableIdentifier(tableName)), input)).executedPlan.
           executeCollect().foldLeft(0)(_ + _.getInt(0))
     }
