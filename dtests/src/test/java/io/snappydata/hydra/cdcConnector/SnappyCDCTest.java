@@ -569,7 +569,7 @@ public class SnappyCDCTest extends SnappyTest {
         Log.getLogWriter().info("The curlCmd  is " + curlCmd);
         pb = new ProcessBuilder("/bin/bash", "-c", curlCmd);
         log = new File(".");
-        String dest = log.getCanonicalPath() + File.separator + logFileName + "i";
+        String dest = log.getCanonicalPath() + File.separator + logFileName + i;
         logFile = new File(dest);
         snappyTest.executeProcess(pb, logFile);
       }
