@@ -54,12 +54,6 @@ class TestHiveSnappySession(@transient protected val sc: SparkContext,
 
   override def newSession(): SnappySession = new TestHiveSnappySession(sc, loadTestTables)
 
-  override def cloneSession(): SnappySession = {
-    val result = newSession()
-    result.sessionState // force copy of SessionState
-    result
-  }
-
   override private[sql] def overrideConfs: Map[String, String] =
     TestHiveContext.overrideConfs + (Property.HiveCompatibility.name -> "spark")
 

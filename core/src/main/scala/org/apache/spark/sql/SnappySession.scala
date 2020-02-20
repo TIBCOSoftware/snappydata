@@ -75,7 +75,8 @@ import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Logging, ShuffleDependency, SparkContext, SparkEnv}
 
-class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSupport {
+class SnappySession(_sc: SparkContext) extends SparkSession(_sc)
+    with SnappySessionLike with SparkSupport {
 
   self =>
 
@@ -152,6 +153,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
    * @since 2.0.0
    */
   override def newSession(): SnappySession = new SnappySession(sparkContext)
+
+  override private[sql] def cloneSession(): SnappySession = {
+    val result = newSession()
+    result.sessionState // force copy of SessionState
+    result
+  }
 
   /**
    * :: Experimental ::
@@ -2036,6 +2043,14 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
     }
     (scalaTypeVal, SnappySession.getDataType(storeType, storePrecision, storeScale))
   }
+}
+
+/**
+ * Trait that adds cloneSession() added in new Spark releases but absent in older
+ * ones. SnappySession can override this cleanly and be source compatible with both.
+ */
+trait SnappySessionLike {
+  private[sql] def cloneSession(): SparkSession
 }
 
 private class FinalizeSession(session: SnappySession)

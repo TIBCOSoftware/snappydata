@@ -97,6 +97,12 @@ dependencies {
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
+  testCompile(group: 'org.apache.kafka', name: 'kafka_' + scalaBinaryVersion, version: kafka2Version) {
+    exclude(group: 'net.jpountz.lz4', module: 'lz4')
+    exclude(group: 'com.fasterxml.jackson.core', module: 'jackson-core')
+    exclude(group: 'com.fasterxml.jackson.core', module: 'jackson-databind')
+    exclude(group: 'com.fasterxml.jackson.core', module: 'jackson-annotations')
+  }
 
   testCompile project(compatConnectorProjectName)
 
