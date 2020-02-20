@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.columnar.impl
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
@@ -26,7 +27,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.sources.{CreatableRelationProvider, DataSourceRegister, ExternalSchemaRelationProvider, JdbcExtendedUtils, SchemaRelationProvider}
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{CharType, DataType, Metadata, MetadataBuilder, StringType, StructType, VarcharType}
 import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode, SnappyParserConsts, SnappySession}
 
 /**
@@ -50,7 +51,35 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       // Parse locally using SnappyParser that supports complex types unlike store parser.
       // Use a new parser because DataSource.resolveRelation can be invoked by parser itself.
       val parser = session.snappyParser.newInstance()
-      parser.parseSQLOnly(s, parser.tableSchemaOpt.run()).map(StructType(_))
+      val schema = parser.parseSQLOnly(s, parser.tableSchemaOpt.run()).map(StructType(_))
+      options.get("stringtypeas").map(stringTypeAs => {
+        val stringAsDataType = parser.parseSQLOnly[DataType](stringTypeAs,
+          parser.columnDataType.run())
+        val (dataTypeStr, size) = stringAsDataType match {
+          case CharType(size) => "CHAR" -> size
+          case VarcharType(Int.MaxValue) => "CLOB" -> Int.MaxValue
+          case VarcharType(size) => "VARCHAR" -> size
+          case StringType => "STRING" -> -1
+        }
+        schema.map(st => {
+          StructType(st.map(sf => if (sf.dataType.equals(StringType)) {
+            val oldMetadata = sf.metadata
+            val builder = new MetadataBuilder()
+            val newMetadata = if (oldMetadata eq null) {
+              builder.putString(Constant.CHAR_TYPE_BASE_PROP, dataTypeStr).
+                putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+              builder.build()
+            } else {
+              builder.withMetadata(oldMetadata).
+                putString(Constant.CHAR_TYPE_BASE_PROP, dataTypeStr).
+                putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+            }
+            sf.copy(metadata = newMetadata)
+          } else {
+            sf
+          }))
+        })
+      }).getOrElse(schema)
   }
 
   override def createRelation(sqlContext: SQLContext,
@@ -102,8 +131,9 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
   }
 
   private[sql] def createRelation(session: SnappySession, mode: SaveMode,
-      options: Map[String, String], specifiedSchema: StructType): BaseColumnFormatRelation = {
-
+      optionS: Map[String, String], specifiedSchema: StructType): BaseColumnFormatRelation = {
+   // remove the property stringtypeas as it has been utilized
+    val options = optionS.filterNot(tup => tup._1.equalsIgnoreCase("stringtypeas"))
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val fullTableName = ExternalStoreUtils.removeInternalPropsAndGetTable(parameters)
 
