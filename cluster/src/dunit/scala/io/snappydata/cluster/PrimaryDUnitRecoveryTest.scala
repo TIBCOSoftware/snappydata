@@ -16,7 +16,8 @@
  */
 package io.snappydata.cluster
 
-import java.io.{BufferedOutputStream, BufferedWriter, ByteArrayOutputStream, File, FileWriter, PrintStream, PrintWriter}
+import java.io.{BufferedOutputStream, BufferedWriter, ByteArrayOutputStream, File, FileWriter,
+  PrintStream, PrintWriter}
 import java.sql.{Connection, DriverManager, ResultSet, Statement, Timestamp}
 import java.util.Properties
 
@@ -38,7 +39,7 @@ import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 
-class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scalastyle:ignore
+class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
     with Logging {
 
   val adminUser1 = "gemfire10"
@@ -72,8 +73,10 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
 
   def setSecurityProps(): Unit = {
     import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
-    PrimaryDUnitRecoveryTest.ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0,
-      adminUser1, getClass.getResource("/auth.ldif").getPath)
+
+    PrimaryDUnitRecoveryTest.ldapProperties =
+        SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0,
+          adminUser1, getClass.getResource("/auth.ldif").getPath)
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
       System.setProperty(k, PrimaryDUnitRecoveryTest.ldapProperties.getProperty(k))
     }
@@ -108,7 +111,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
   }
 
   def startSnappyCluster(): Unit = {
-    val (out, _) = PrimaryDUnitRecoveryTest.executeCommand(s"${PrimaryDUnitRecoveryTest.snappyHome}" +
+    val (out, _) =
+      PrimaryDUnitRecoveryTest.executeCommand(s"${PrimaryDUnitRecoveryTest.snappyHome}" +
         s"/sbin/snappy-start-all.sh --config $confDirPath")
 
     // TODO need a better way to ensure the cluster has started
@@ -134,7 +138,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
 
     // empty column table & not null column
     // covers - empty buckets
-    stmt.execute("CREATE TABLE tapp.test1coltab2" +
+    stmt.execute("CREATE TABLE tapp.test1coltab1" +
         " (col1 int, col2 int NOT NULL, col3 varchar(22) NOT NULL)" +
         " USING COLUMN OPTIONS (BUCKETS '5', COLUMN_MAX_DELTA_ROWS '10')")
 
@@ -223,7 +227,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
   }
 
   def startSnappyRecoveryCluster(): Unit = {
-    val (out, _) = PrimaryDUnitRecoveryTest.executeCommand(s"${PrimaryDUnitRecoveryTest.snappyHome}" +
+    val (out, _) =
+      PrimaryDUnitRecoveryTest.executeCommand(s"${PrimaryDUnitRecoveryTest.snappyHome}" +
         s"/sbin/snappy-start-all.sh --recover --config $confDirPath")
     // TODO need a better way to ensure the cluster has started
     if (!out.contains("Distributed system now")) {
@@ -398,9 +403,9 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
         case scala.util.Success(_) => assert(diffRes.isEmpty, s"\nRecovered data does not" +
             s" match the original data.\nOrginal data is present in $filePathOrg\n " +
             s"Recovered data is present in $filePathRec")
-        //               delete the directory after the job is done.
-        //                  dir.listFiles().foreach(file => file.delete())
-        //                  if(dir.listFiles().length == 0) dir.delete()
+          // delete the directory after the job is done.
+          dir.listFiles().foreach(file => file.delete())
+          if (dir.listFiles().length == 0) dir.delete()
 
         case scala.util.Failure(exception) =>
           logInfo(s"Error comparing output files.\n$exception")
@@ -529,8 +534,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       }
       rs.close()
 
-      rs = stmtRec.executeQuery("SELECT * FROM tapp.test1coltab2")
-      logDebug("SELECT * FROM tapp.test1coltab2")
+      rs = stmtRec.executeQuery("SELECT * FROM tapp.test1coltab1")
+      logDebug("SELECT * FROM tapp.test1coltab1")
       str.clear()
       while (rs.next()) {
         str ++= s"${rs.getInt(2)}\t"
@@ -586,7 +591,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
         logDebug(c2)
         str ++= s"$c2\t"
       }
-      assert(str.toString().toUpperCase().contains("TEST1COLTAB2")
+      assert(str.toString().toUpperCase().contains("TEST1COLTAB1")
           && str.toString().toUpperCase().contains("TEST1ROWTAB3"))
       rs.close()
 
@@ -650,7 +655,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
 
       // custom diskstore test - row row table
       rs = stmtRec.executeQuery("SELECT * FROM gemfire10.test1rowtab5 ORDER BY 1")
-      arrBuf ++= ArrayBuffer("111,adsf", "111,adsf", "111,adsf", "2223,zxcvxcv", "2223,zxcvxcv", "2223,zxcvxcv")
+      arrBuf ++= ArrayBuffer("111,adsf", "111,adsf", "111,adsf", "2223,zxcvxcv", "2223,zxcvxcv",
+        "2223,zxcvxcv")
       while (rs.next()) {
         assert(s"${rs.getInt(1)},${rs.getString(2)}" === arrBuf(i))
         i += 1
@@ -728,7 +734,6 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       // extracted properly
       // check for row and column type
       logDebug(s"Recovery_mode_dir: $recovery_mode_dir")
-      // TODO:Paresh: following tests can be clubbed/rearranged later. Increase the data volume later
       confDirPath = createConfDir("test3")
       val leadsNum = 1
       val locatorsNum = 1
@@ -771,57 +776,75 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
         s"""CREATE TABLE gemfire10.test3tab1
             (col1 BIGINT NOT NULL, col2 INT NOT NULL, col3 INTEGER NOT NULL,
              col4 long NOT NULL, col5 short NOT NULL, col6 smallint NOT NULL,
-                col7 byte NOT NULL, c1 tinyint NOT NULL, c2 varchar(22) NOT NULL,
-                 c3 string NOT NULL, c5 boolean NOT NULL,c6 double NOT NULL, c8 timestamp NOT NULL,
-                  c9 date NOT NULL, c10 decimal(15,5) NOT NULL, c11 numeric(20,10) NOT NULL,
-                   c12 float NOT NULL,c13 real not null, c14 binary, c15 blob, c16 clob, c17 char(1)) USING COLUMN
-                OPTIONS (BUCKETS '5', COLUMN_MAX_DELTA_ROWS '135');
+             col7 byte NOT NULL, c1 tinyint NOT NULL, c2 varchar(22) NOT NULL,
+             c3 string NOT NULL, c5 boolean NOT NULL,c6 double NOT NULL, c8 timestamp NOT NULL,
+             c9 date NOT NULL, c10 decimal(15,5) NOT NULL, c11 numeric(20,10) NOT NULL,
+             c12 float NOT NULL,c13 real not null, c14 binary, c15 blob, c16 clob, c17 char(1),
+             LastThreeMatchPerformance ARRAY<Int>,Roll MAP<SMALLINT,STRING>,
+             Profile STRUCT<Matches:Long,Runs:Int,SR:Double,isPlaying:Boolean>)
+             USING COLUMN OPTIONS (BUCKETS '5', COLUMN_MAX_DELTA_ROWS '135');
                 """)
 
       stmt.execute(
         s"""INSERT INTO gemfire10.test3tab1 select 9123372036854775807,2117483647,2116483647,
-                  8223372036854775807,72,13,5,5,'qwerqwerqwer','qewrqewr',false,912384020490234.91928374997239749824,
-                  '2019-02-18 15:31:55.333','2019-02-18',2233.67234,4020490234.7239749824,
-                  912384020490234.91928374997239749824,920490234.9192837499724, cast ('aaa' as binary), cast('2234' as blob), cast('adsf' as clob), 'b'""".stripMargin)
+                  8223372036854775807,72,13,5,5,'qwerqwerqwer','qewrqewr',false,
+                  912384020490234.91928374997239749824, '2019-02-18 15:31:55.333','2019-02-18',
+                  2233.67234,4020490234.7239749824, 912384020490234.91928374997239749824,
+                  920490234.9192837499724, cast ('aaa' as binary), cast('2234'
+                  as blob), cast('adsf' as clob), 'b', ARRAY(15,7,12),MAP (4,'Bowler'),
+                  STRUCT(46,123,106.95,true)
+            """.stripMargin)
 
-      stmt.execute("INSERT INTO gemfire10.test3tab1 select id*100000000000000,id,id*100000000" +
-          ",id*100000000000000,id,id, cast(id as byte), cast(id as tinyint)" +
-          ", cast(concat('var',id) as varchar(22)),  cast(concat('str',id) as string)" +
-          ", cast(id%2 as Boolean), cast((id*701*7699 + id*1342341*2267)/2 as double)" +
-          ", CURRENT_TIMESTAMP, CURRENT_DATE, cast(id*241/11 as Decimal(15,5))" +
-          ", cast(id*701/11 as Numeric(20,10)), cast(concat(id*100,'.',(id+1)*7699) as float)" +
-          ", cast(concat(id*100000000000,'.',(id+1)*2267*7699) as real), cast('binary_'|| id as binary), cast('blob_' || id as blob), cast(id*2 as clob), 'a' from range(500);")
+      stmt.execute(
+        """INSERT INTO gemfire10.test3tab1 select id*100000000000000,id,id*100000000 ,
+          |id*100000000000000,id,id, cast(id as byte), cast(id as tinyint), cast(concat('var',id)
+          | as varchar(22)),  cast(concat('str',id) as string), cast(id%2 as Boolean),
+          | cast((id*701*7699 + id*1342341*2267)/2 as double), CURRENT_TIMESTAMP, CURRENT_DATE,
+          | cast(id*241/11 as Decimal(15,5)), cast(id*701/11 as Numeric(20,10)),
+          | cast(concat(id*100,'.',(id+1)*7699) as float),
+          | cast(concat(id*100000000000,'.',(id+1)*2267*7699) as real),
+          | cast('binary_'|| id as binary), cast('blob_' || id as blob), cast(id*2 as clob),
+          | 'a', ARRAY(15,7,12),
+          | MAP(4,'Bowler'),STRUCT(46,123,106.95,true)
+          | from range(500);
+          | """.stripMargin)
 
       val rsTest3tab1 = stmt.executeQuery("SELECT * FROM gemfire10.test3tab1 ORDER BY col2")
       compareResultSet("gemfire10.test3tab1", rsTest3tab1, false)
 
       stmt.execute(
         s"""CREATE TABLE gemfire10.test3tab2
-                (col1 BIGINT , col2 INT , col3 INTEGER , col4 long ,
-                 col5 short , col6 smallint , col7 byte , c1 tinyint ,
-                  c2 varchar(22) , c3 string , c5 boolean  ,c6 double ,
-                   c8 timestamp , c9 date , c10 decimal(15,5) , c11 numeric(20,10) ,
-                    c12 float ,c13 float, c14 char(3)
-                    , primary key (col2,col3))
-                     using row
-                     options (partition_by 'col1,col2,col3', buckets '5', COLUMN_MAX_DELTA_ROWS '135');
-                     """)
+         (col1 BIGINT , col2 INT , col3 INTEGER , col4 long ,
+         col5 short , col6 smallint , col7 byte , c1 tinyint ,
+         c2 varchar(22) , c3 string , c5 boolean  ,c6 double ,
+         c8 timestamp , c9 date , c10 decimal(15,5) , c11 numeric(20,10) ,
+         c12 float ,c13 float, c14 char(3)
+         , primary key (col2,col3))
+         using row
+         options (partition_by 'col1,col2,col3', buckets '5', COLUMN_MAX_DELTA_ROWS
+         '135');
+         """)
 
       stmt.execute(
         s"""INSERT INTO gemfire10.test3tab2 VALUES(9123372036854775807,2117483647,2116483647,
-                  8223372036854775807,72,13,5,5,'qwerqwerqwer','qewrqewr',false,912384020490234.91928374997239749824,
-                  '2019-02-18 15:31:55.333','2019-02-18',2233.67234,4020490234.7239749824,
-                  912384020490234.91928374997239749824,920490234.9192837499724, 'abc')""".stripMargin)
+             8223372036854775807,72,13,5,5,'qwerqwerqwer','qewrqewr',false,
+             912384020490234.91928374997239749824,
+             '2019-02-18 15:31:55.333','2019-02-18',2233.67234,4020490234.7239749824,
+             912384020490234.91928374997239749824,920490234.9192837499724, 'abc')"""
+            .stripMargin)
 
       stmt.execute(
-        s"""INSERT INTO gemfire10.test3tab2 select id*100000000000000,id,id*100000000,id*100000000000000,id,id,
+        s"""INSERT INTO gemfire10.test3tab2 select id*100000000000000,id,id*100000000,
+           | id*100000000000000,id,id,
            | cast(id as byte),
-           | cast(id as tinyint), cast(concat('var',id) as varchar(22)),  cast(concat('str',id) as string),
-           |  cast(id%2 as Boolean), cast((id*701*7699 + id*1342341*2267)/2 as double), CURRENT_TIMESTAMP,
-           |   CURRENT_DATE, cast(id*241/11 as Decimal(15,5)), cast(id*701/11 as Numeric(20,10)),
-           |    cast(concat(id*100,'.',(id+1)*7699) as float),
-           |     cast(concat(id*100000000000,'.',(id+1)*2267*7699) as real), 'asd' from range(5);
-           |     """.stripMargin)
+           | cast(id as tinyint), cast(concat('var',id) as varchar(22)),  cast(concat('str',id)
+           | as string),
+           | cast(id%2 as Boolean), cast((id*701*7699 + id*1342341*2267)/2 as double),
+           | CURRENT_TIMESTAMP,
+           | CURRENT_DATE, cast(id*241/11 as Decimal(15,5)), cast(id*701/11 as Numeric(20,10)),
+           | cast(concat(id*100,'.',(id+1)*7699) as float),
+           | cast(concat(id*100000000000,'.',(id+1)*2267*7699) as real), 'asd' from range(5);
+           |""".stripMargin)
 
 
       val rsTest3tab2 = stmt.executeQuery("SELECT * FROM gemfire10.test3tab2 ORDER BY col2")
@@ -830,24 +853,24 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
 
       stmt.execute(
         s"""CREATE TABLE gemfire10.test3Reptab2
-                  (col1 BIGINT , col2 INT , col3 INTEGER not null, col4 long ,
-                   col5 short not null, col6 smallint , col7 byte not null, c1 tinyint ,
-                    c2 varchar(22) , c3 string , c5 boolean , c6 double ,
-                         c8 timestamp , c9 date not null, c10 decimal(15,5) ,
-                          c11 numeric(12,4) not null, c12 float ,c13 real not null, c14 binary,
-                           c15 blob, c16 char(4), primary key (col2)) using row
-                       options ();
+             (col1 BIGINT , col2 INT , col3 INTEGER not null, col4 long ,
+             col5 short not null, col6 smallint , col7 byte not null, c1 tinyint ,
+             c2 varchar(22) , c3 string , c5 boolean , c6 double ,
+             c8 timestamp , c9 date not null, c10 decimal(15,5) ,
+             c11 numeric(12,4) not null, c12 float ,c13 real not null, c14 binary,
+             c15 blob, c16 char(4), primary key (col2)) using row
+             options ();
                        """)
       stmt.execute(
         s"""INSERT INTO gemfire10.test3Reptab2
                   select id*100000000000000, id, id*100000000, id*100000000000000,
-                  id, id, cast(id as byte), cast(id as tinyint), cast(concat('var',id) as varchar(22)),
-                  cast(concat('str',id) as string), cast(id%2 as Boolean),
-                  cast((id*701*7699 + id*1342341*2267)/2 as double), CURRENT_TIMESTAMP, CURRENT_DATE,
-                  cast(id*241/11 as Decimal(15,5)), cast(id*701/11 as Numeric(12,4)),
-                  cast(concat(id*100,'.',(id+1)*7699) as float),
-                  cast(concat(id*100000000000,'.',(id+1)*2267*7699) as real), cast('aaaa' as binary),
-                   cast('yyyy' as blob), 'asdf' from range(5);
+                  id, id, cast(id as byte), cast(id as tinyint), cast(concat('var',id) as varchar
+                  (22)), cast(concat('str',id) as string), cast(id%2 as Boolean),
+                  cast((id*701*7699 + id*1342341*2267)/2 as double), CURRENT_TIMESTAMP,
+                  CURRENT_DATE, cast(id*241/11 as Decimal(15,5)), cast(id*701/11 as Numeric(12,4)),
+                  cast(concat(id*100,'.',(id+1)*7699) as float), cast(concat(id*100000000000,'.',
+                  (id+1)*2267*7699) as real), cast('aaaa' as binary), cast('yyyy' as blob),
+                  'asdf' from range(5);
                  """.stripMargin)
 
       val rsTest3Reptab2 = stmt.executeQuery("SELECT * FROM gemfire10.test3Reptab2 ORDER BY col2")
@@ -855,11 +878,16 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
 
       // enable once support is added for primary key and binary,clob,blob
       // 3. Random mix n match data types
-      stmt.execute("CREATE TABLE gemfire10.test3tab3 (col1 binary, col2 clob, col3 blob, col4 varchar(44), col5 int, primary key (col5)) using row")
-      stmt.execute("INSERT INTO gemfire10.test3tab3 select cast('a' as binary), cast('b' as clob), cast('1' as blob), 'adsf', 123")
-      stmt.execute("INSERT INTO gemfire10.test3tab3 select cast('aa' as binary), cast('bb' as clob), cast('11' as blob), 'adsfg', 1234")
-      stmt.execute("INSERT INTO gemfire10.test3tab3 select cast('aaa' as binary), cast('bbb' as clob), cast('1111' as blob), 'adsfgh', 12345")
-      stmt.execute("INSERT INTO gemfire10.test3tab3 select cast('asdf' as binary), cast('bnm' as clob), cast('1111111' as blob), 'adsfghi', 123456")
+      stmt.execute("CREATE TABLE gemfire10.test3tab3 (col1 binary, col2 clob, col3 blob, col4 " +
+          "varchar(44), col5 int, primary key (col5)) using row")
+      stmt.execute("INSERT INTO gemfire10.test3tab3 select cast('a' as binary), cast('b' as clob)" +
+          ", cast('1' as blob), 'adsf', 123")
+      stmt.execute("INSERT INTO gemfire10.test3tab3 select cast('aa' as binary), cast('bb' as " +
+          "clob), cast('11' as blob), 'adsfg', 1234")
+      stmt.execute("INSERT INTO gemfire10.test3tab3 select cast('aaa' as binary), cast('bbb' as " +
+          "clob), cast('1111' as blob), 'adsfgh', 12345")
+      stmt.execute("INSERT INTO gemfire10.test3tab3 select cast('asdf' as binary), cast('bnm' as " +
+          "clob), cast('1111111' as blob), 'adsfghi', 123456")
 
       // with option - key_columns
       stmt.execute("CREATE TABLE test3_coltab4 (col1 int, col2 string, col3 float) USING COLUMN" +
@@ -867,11 +895,15 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       stmt.execute("INSERT INTO test3_coltab4 VALUES(1,'aaa',123.122)")
       stmt.execute("INSERT INTO test3_coltab4 VALUES(2,'bbb',4444.55)")
 
-      stmt.execute("CREATE TABLE test3rowtab5 (col1 FloaT NOT NULL, col2 TIMEstamp NOT NULL, col3 BOOLEAN NOT NULL," +
+      stmt.execute("CREATE TABLE test3rowtab5 (col1 FloaT NOT NULL, col2 TIMEstamp NOT NULL, col3" +
+          " BOOLEAN NOT NULL," +
           " col4 varchar(1) NOT NULL, col5 integer NOT NULL) using row")
-      stmt.execute("INSERT INTO test3rowtab5 VALUES(123.12321, '2019-02-18 15:31:55.333', 0, 'a',12)")
-      stmt.execute("INSERT INTO test3rowtab5 VALUES(222.12321, '2019-02-18 16:31:56.333', 0, 'b',13)")
-      stmt.execute("INSERT INTO test3rowtab5 VALUES(3333.12321, '2019-02-18 17:31:57.333', 'true', 'c',14)")
+      stmt.execute("INSERT INTO test3rowtab5 VALUES(123.12321, '2019-02-18 15:31:55.333', 0, 'a'," +
+          "12)")
+      stmt.execute("INSERT INTO test3rowtab5 VALUES(222.12321, '2019-02-18 16:31:56.333', 0, 'b'," +
+          "13)")
+      stmt.execute("INSERT INTO test3rowtab5 VALUES(3333.12321, '2019-02-18 17:31:57.333', " +
+          "'true', 'c',14)")
 
       stmt.execute("CREATE TABLE test3coltab6 (col1 BIGINT, col2 tinyint, col3 BOOLEAN)" +
           " using column")
@@ -879,7 +911,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       stmt.execute("INSERT INTO test3coltab6 VALUES(200000000000001, 4, true)")
       stmt.execute("INSERT INTO test3coltab6 VALUES(300000000000001, 3, false)")
 
-      stmt.execute("CREATE TABLE test3coltab7 (col1 decimal(15,9) NOT NULL, col2 float NOT NULL, col3 BIGint NOT NULL," +
+      stmt.execute("CREATE TABLE test3coltab7 (col1 decimal(15,9) NOT NULL, col2 float NOT NULL, " +
+          "col3 BIGint NOT NULL," +
           " col4 date NOT NULL, col5 string NOT NULL) using column options(BUCKETS '512')")
       stmt.execute("INSERT INTO test3coltab7 VALUES(891012.312321314, 1434124.123434134," +
           " 193471498234123, '2019-02-18', 'ZXcabcdefg')")
@@ -898,11 +931,11 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
 
       stmt.execute(
         """CREATE TABLE gemfire10.test3rowtab9
-                               (col1 BIGINT , col2 INT , col3 INTEGER ,col4 long ,
-                                col5 short , col6 smallint , col7 byte , c1 tinyint ,
-                                 c2 varchar(22) , c3 string , c5 boolean , c6 double ,
-                                      c8 timestamp , c9 date , c10 decimal(15,5) ,
-                                       c11 numeric(20,10) , c12 float ,c13 real ) USING ROW OPTIONS()""")
+            (col1 BIGINT , col2 INT , col3 INTEGER ,col4 long ,
+            col5 short , col6 smallint , col7 byte , c1 tinyint ,
+            c2 varchar(22) , c3 string , c5 boolean , c6 double ,
+            c8 timestamp , c9 date , c10 decimal(15,5) ,
+            c11 numeric(20,10) , c12 float ,c13 real ) USING ROW OPTIONS()""")
 
       stmt.execute(
         """INSERT INTO gemfire10.test3rowtab9 VALUES(null,null,null,
@@ -935,6 +968,140 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
                    null,null,null,null,
                    null,null);""")
 
+      // wide schema
+      stmt.execute(
+        """CREATE TABLE IF NOT EXISTS gemfire10.test3coltab11 (SINGLE_ORDER_DID
+          | BIGINT ,SYS_ORDER_ID VARCHAR(64) ,SYS_ORDER_VER INTEGER ,DATA_SNDG_SYS_NM VARCHAR(128)
+          | ,SRC_SYS VARCHAR(20) ,SYS_PARENT_ORDER_ID VARCHAR(64) ,SYS_PARENT_ORDER_VER SMALLINT ,
+          | PARENT_ORDER_TRD_DATE VARCHAR(20),PARENT_ORDER_SYS_NM VARCHAR(128) ,SYS_ALT_ORDER_ID
+          | VARCHAR(64) ,TRD_DATE VARCHAR(20),GIVE_UP_BROKER VARCHAR(20) ,EVENT_RCV_TS TIMESTAMP ,
+          | SYS_ROOT_ORDER_ID VARCHAR(64) ,GLB_ROOT_ORDER_ID VARCHAR(64) ,GLB_ROOT_ORDER_SYS_NM
+          | VARCHAR(128) ,GLB_ROOT_ORDER_RCV_TS TIMESTAMP ,SYS_ORDER_STAT_CD VARCHAR(20) ,
+          | SYS_ORDER_STAT_DESC_TXT VARCHAR(120) ,DW_STAT_CD VARCHAR(20) ,EVENT_TS TIMESTAMP,
+          | ORDER_OWNER_FIRM_ID VARCHAR(20),RCVD_ORDER_ID VARCHAR(64) ,EVENT_INITIATOR_ID VARCHAR
+          | (64),TRDR_SYS_LOGON_ID VARCHAR(64),SOLICITED_FG  VARCHAR(1),RCVD_FROM_FIRMID_CD
+          | VARCHAR(20),RCV_DESK VARCHAR(20),SYS_ACCT_ID_SRC VARCHAR(64) ,CUST_ACCT_MNEMONIC
+          | VARCHAR(128),CUST_SLANG VARCHAR(20) ,SYS_ACCT_TYPE VARCHAR(20) ,CUST_EXCH_ACCT_ID
+          | VARCHAR(64) ,SYS_SECURITY_ALT_ID VARCHAR(64) ,TICKER_SYMBOL VARCHAR(32) ,
+          | TICKER_SYMBOL_SUFFIX VARCHAR(20) ,PRODUCT_CAT_CD VARCHAR(20) ,SIDE VARCHAR(20) ,
+          | LIMIT_PRICE DECIMAL(28, 8),STOP_PRICE DECIMAL(28, 8),ORDER_QTY DECIMAL(28, 4) ,
+          | TOTAL_EXECUTED_QTY DECIMAL(28, 4) ,AVG_PRICE DECIMAL(28, 8) ,DAY_EXECUTED_QTY DECIMAL
+          | (28, 4) ,DAY_AVG_PRICE DECIMAL(28, 8) ,REMNG_QTY DECIMAL(28, 4) ,CNCL_QTY DECIMAL(28,
+          | 4) ,CNCL_BY_FG  VARCHAR(1) ,EXPIRE_TS TIMESTAMP ,EXEC_INSTR VARCHAR(64) ,TIME_IN_FORCE
+          | VARCHAR(20),RULE80AF  VARCHAR(1) ,DEST_FIRMID_CD VARCHAR(20) ,SENT_TO_CONDUIT VARCHAR
+          | (20) ,SENT_TO_MPID VARCHAR(20) ,RCV_METHOD_CD VARCHAR(20) ,LIMIT_ORDER_DISP_IND
+          | VARCHAR(1) ,MERGED_ORDER_FG  VARCHAR(1) ,MERGED_TO_ORDER_ID VARCHAR(64),RCV_DEPT_ID
+          | VARCHAR(20) ,ROUTE_METHOD_CD VARCHAR(20) ,LOCATE_ID VARCHAR(256) ,LOCATE_TS TIMESTAMP
+          | ,LOCATE_OVERRIDE_REASON VARCHAR(2000) ,LOCATE_BROKER VARCHAR(256) ,
+          | ORDER_BRCH_SEQ_TXT VARCHAR(20) ,IGNORE_CD VARCHAR(20),CLIENT_ORDER_REFID VARCHAR(64)
+          | ,CLIENT_ORDER_ORIG_REFID VARCHAR(64) ,ORDER_TYPE_CD VARCHAR(20) ,SENT_TO_ORDER_ID
+          | VARCHAR(64),ASK_PRICE DECIMAL(28, 8) ,ASK_QTY DECIMAL(28, 4) ,BID_PRICE DECIMAL(28,
+          | 10) ,BID_QTY DECIMAL(28, 4) ,REG_NMS_EXCEP_CD VARCHAR(20),REG_NMS_EXCEP_TXT
+          | VARCHAR(2000) ,REG_NMS_LINK_ID VARCHAR(64) ,REG_NMS_PRINTS  VARCHAR(1) ,
+          | REG_NMS_STOP_TIME TIMESTAMP ,SENT_TS TIMESTAMP ,RULE92  VARCHAR(1) ,
+          | RULE92_OVERRIDE_TXT VARCHAR(2000) ,RULE92_RATIO DECIMAL(25, 10) ,
+          | EXMPT_STGY_BEGIN_TIME TIMESTAMP ,EXMPT_STGY_END_TIME TIMESTAMP ,
+          | EXMPT_STGY_PRICE_INST VARCHAR(2000) ,EXMPT_STGY_QTY DECIMAL(28, 4) ,CAPACITY
+          | VARCHAR(20) ,DISCRETION_QTY DECIMAL(28, 4) ,DISCRETION_PRICE VARCHAR(64) ,
+          | BRCHID_CD VARCHAR(20) ,BASKET_ORDER_ID VARCHAR(64) ,PT_STRTGY_CD VARCHAR(20) ,
+          | SETL_DATE VARCHAR(20),SETL_TYPE VARCHAR(20) ,SETL_CURR_CD VARCHAR(20) ,SETL_INSTRS
+          |  VARCHAR(2000) ,COMMENT_TXT VARCHAR(2000) ,CHANNEL_NM VARCHAR(128) ,FLOW_CAT
+          | VARCHAR(20) ,FLOW_CLASS VARCHAR(20) ,FLOW_TGT VARCHAR(20) ,ORDER_FLOW_ENTRY
+          | VARCHAR(20) ,ORDER_FLOW_CHANNEL VARCHAR(20) ,ORDER_FLOW_DESK VARCHAR(20) ,
+          | FLOW_SUB_CAT VARCHAR(20) ,STRTGY_CD VARCHAR(20) ,RCVD_FROM_VENDOR VARCHAR(20) ,
+          | RCVD_FROM_CONDUIT VARCHAR(20) ,SLS_PERSON_ID VARCHAR(64) ,SYNTHETIC_FG  VARCHAR
+          | (1) ,SYNTHETIC_TYPE VARCHAR(20) ,FXRT DECIMAL(25, 8) ,PARENT_CLREFID VARCHAR(64)
+          | ,REF_TIME_ID INTEGER ,OPT_CONTRACT_QTY DECIMAL(28, 4) ,OCEAN_PRODUCT_ID BIGINT ,
+          | CREATED_BY VARCHAR(64) ,CREATED_DATE TIMESTAMP ,FIRM_ACCT_ID BIGINT ,DEST VARCHAR
+          | (20) ,CNTRY_CD VARCHAR(20) ,DW_SINGLE_ORDER_CAT VARCHAR(20) ,CLIENT_ACCT_ID
+          | BIGINT ,EXTERNAL_TRDR_ID VARCHAR(64) ,ANONYMOUS_ORDER_FG  VARCHAR(1) ,
+          | SYS_SECURITY_ALT_SRC VARCHAR(20) ,CURR_CD VARCHAR(20) ,EVENT_TYPE_CD VARCHAR(20)
+          | ,SYS_CLIENT_ACCT_ID VARCHAR(64) ,SYS_FIRM_ACCT_ID VARCHAR(20) ,SYS_TRDR_ID
+          | VARCHAR(64) ,DEST_ID INTEGER ,OPT_PUT_OR_CALL VARCHAR(20) ,SRC_FEED_REF_CD
+          | VARCHAR(64) ,DIGEST_KEY VARCHAR(128) ,EFF_TS TIMESTAMP ,ENTRY_TS TIMESTAMP ,
+          | OPT_STRIKE_PRICE DECIMAL(28, 8) ,OPT_MATURITY_DATE VARCHAR(20) ,ORDER_RESTR
+          | VARCHAR(4) ,SHORT_SELL_EXEMPT_CD VARCHAR(4) ,QUOTE_TIME TIMESTAMP ,SLS_CREDIT
+          | VARCHAR(20) ,SYS_SECURITY_ID VARCHAR(64) ,SYS_SECURITY_ID_SRC VARCHAR(20) ,
+          | SYS_SRC_SYS_ID VARCHAR(20) ,SYS_ORDER_ID_UNIQUE_SUFFIX VARCHAR(20) ,DEST_ID_SRC
+          | VARCHAR(4) ,GLB_ROOT_SRC_SYS_ID VARCHAR(20) ,GLB_ROOT_ORDER_ID_SUFFIX VARCHAR(64)
+          | ,SYS_ROOT_ORDER_ID_SUFFIX VARCHAR(20) ,SYS_PARENT_ORDER_ID_SUFFIX VARCHAR(20) ,
+          | CREDIT_BREACH_PERCENT DECIMAL(25, 10) ,CREDIT_BREACH_OVERRIDE VARCHAR(256) ,
+          | INFO_BARRIER_ID VARCHAR(256) ,EXCH_PARTICIPANT_ID VARCHAR(64) ,REJECT_REASON_CD
+          | VARCHAR(4) ,DIRECTED_DEST VARCHAR(20) ,REG_NMS_LINK_TYPE VARCHAR(20) ,
+          | CONVER_RATIO DECIMAL(28, 9) ,STOCK_REF_PRICE DECIMAL(28, 8) ,CB_SWAP_ORDER_FG
+          | VARCHAR(1) ,EV DECIMAL(28, 8) ,SYS_DATA_MODIFIED_TS TIMESTAMP ,CMSN_TYPE VARCHAR
+          | (20) ,SYS_CREDIT_TRDR_ID VARCHAR(20) ,SYS_ENTRY_USER_ID VARCHAR(20) ,
+          | OPEN_CLOSE_CD VARCHAR(20) ,AS_OF_TRD_FG  VARCHAR(1) ,HANDLING_INSTR VARCHAR(20)
+          | ,SECURITY_DESC VARCHAR(512) ,MINIMUM_QTY DECIMAL(21, 6) ,CUST_OR_FIRM VARCHAR
+          | (20) ,MAXIMUM_SHOW DECIMAL(21, 6) ,SECURITY_SUB_TYPE VARCHAR(20) ,
+          | MULTILEG_RPT_TYPE VARCHAR(4) ,ORDER_ACTION_TYPE VARCHAR(4) ,BARRIER_STYLE
+          | VARCHAR(4) ,AUTO_IOI_REF_TYPE VARCHAR(4) ,PEG_OFFSET_VAL DECIMAL(10, 2) ,
+          | AUTO_IOI_OFFSET DECIMAL(28, 10) ,IOI_PRICE DECIMAL(28, 10) ,TGT_PRICE DECIMAL
+          | (28, 10) ,IOI_QTY VARCHAR(64) ,IOI_ORDER_QTY DECIMAL(28, 4) ,CMSN VARCHAR(64) ,
+          | SYS_LEG_REF_ID VARCHAR(64) ,TRADING_TYPE VARCHAR(4) ,EXCH_ORDER_ID VARCHAR(64) ,
+          | DEAL_ID VARCHAR(64) ,ORDER_TRD_TYPE VARCHAR(4) ,CXL_REASON VARCHAR(64),name
+          | String,LastThreeMatchPerformance ARRAY<Int>,Roll MAP<SMALLINT,STRING>,Profile
+          | STRUCT<Matches:Long,Runs:Int,SR:Double,isPlaying:Boolean>) using column;"""
+            .stripMargin)
+      stmt.execute(
+        """INSERT INTO gemfire10.test3coltab11 SELECT id ,'SYS_ORDER_ID',
+          |id%10000,'DATA_SNDG_SYS_NM','name','name',id%100,'PARENT_ORDER_TRD_DT' ,
+          |'PARENT_ORDER_SYS_NM','name','201601','GIVE_UP_BROKER',from_unixtime(unix_timestamp
+          |('2018-01-01 01:00:00')+floor(rand()*31536000)),'SYS_ROOT_ORDER_ID',
+          |'GLB_ROOT_ORDER_ID','GLB_ROOT_ORDER_SYS_NM',from_unixtime(unix_timestamp('2018-01-01
+          |01:00:00')+floor(rand()*31536000)),'SYS_ORDER_STAT_CD','SYS_ORDER_STAT_DESC_TXT',
+          |'name',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),
+          |'ORDER_OWNER_FIRM_ID' ,'RCVD_ORDER_ID','EVENT_INITIATOR_ID','TRDR_SYS_LOGON_ID','F',
+          |'RCVD_FROM_FIRMID_CD','name','SYS_ACCT_ID_SRC','CUST_ACCT_MNEMONIC','CUST_SLANG',
+          |'name','CUST_EXCH_ACCT_ID','SYS_SECURITY_ALT_ID','TICKER_SYMBOL',
+          |'TICKER_SYMBOL_SUFFIX','name','name',abs(randn()*10000),abs(randn()*10000),abs(randn()
+          |*10000),abs(randn()*10000),abs(randn()*10000),abs(randn()*10000),abs(randn()*10000),
+          |abs(randn()*10000),abs(randn()*10000),'C' ,from_unixtime(unix_timestamp('2018-01-01
+          |01:00:00')+floor(rand()*31536000)),'EXEC_INSTR','TIME_IN_FORCE','R','DEST_FIRMID_CD',
+          |'SENT_TO_CONDUIT','SENT_TO_MPID','RCV_METHOD_CD','I','M','MERGED_TO_ORDER_ID',
+          |'RCV_DEPT_ID','ROUTE_METHOD_CD','LOCATE_ID',from_unixtime(unix_timestamp('2018-01-01
+          |01:00:00')+floor(rand()*31536000)),lpad('LOCATE_OVERRIDE_REASON',1000,'abcdefg'),
+          |'LOCATE_BROKER','ORDER_BRCH_SEQ_TXT','IGNORE_CD','CLIENT_ORDER_REFID',
+          |'CLIENT_ORDER_ORIG_REFID','ORDER_TYPE_CD','SENT_TO_ORDER_ID',abs(randn()*10000),abs
+          |(randn()*10000),abs(randn()*10000),abs(randn()*10000),'REG_NMS_EXCEP_CD',lpad
+          |('REG_NMS_EXCEP_TXT',1000,'lmopqrst'),'REG_NMS_LINK_ID','P',from_unixtime
+          |(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime
+          |(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),'R',lpad
+          |('RULE92_OVERRIDE_TXT',1000,'ijklmnop'),abs(randn()*10000),from_unixtime
+          |(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime
+          |(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),lpad
+          |('EXMPT_STGY_PRICE_INST',500,'ijklmnop'),abs(randn()*10000),'CAPACITY' ,abs(randn()
+          |*10000),'DISCRETION_PRICE','BRCHID_CD','BASKET_ORDER_ID','PT_STRTGY_CD','SETL_DATE',
+          |'SETL_TYPE','SETL_CURR_CD',lpad('SETL_INSTRS',500,'ijklmnop'),lpad('COMMENT_TXT',500,
+          |'ijklmnop'),'CHANNEL_NM','FLOW_CAT','FLOW_CLASS','FLOW_TGT','ORDER_FLOW_ENTRY',
+          |'ORDER_FLOW_CHANNEL','ORDER_FLOW_DESK','FLOW_SUB_CAT','STRTGY_CD','RCVD_FROM_VENDOR',
+          |'RCVD_FROM_CONDUIT','SLS_PERSON_ID','G','SYNTHETIC_TYPE',abs(randn()*10000),
+          |'PARENT_CLREFID' ,id%1000,abs(randn()*10000),id,'CREATED_BY',from_unixtime
+          |(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),id,'DEST','CNTRY_CD',
+          |'DW_SINGLE_ORDER_CAT',id,'EXTERNAL_TRDR_ID','A','SYS_SECURITY_ALT_SRC','CURR_CD',
+          |'EVENT_TYPE_CD','SYS_CLIENT_ACCT_ID','SYS_FIRM_ACCT_ID','SYS_TRDR_ID',id%10000,
+          |'OPT_PUT_OR_CALL','SRC_FEED_REF_CD','DIGEST_KEY',from_unixtime(unix_timestamp
+          |('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp
+          |('2018-01-01 01:00:00')+floor(rand()*31536000)),abs(randn()*10000),
+          |'OPT_MATURITY_DATE','ABCD','WXYZ',from_unixtime(unix_timestamp('2018-01-01 01:00:00')
+          |+floor(rand()*31536000)),'SLS_CREDIT','SYS_SECURITY_ID','SYS_SECURITY_ID_SRC',
+          |'SYS_SRC_SYS_ID','SYS_ORDER_ID_UNIQUE','DEST','GLB_ROOT_SRC_SYS_ID',
+          |'GLB_ROOT_ORDER_ID','SYS_ROOT_ORD','SYS_PARENT_ORDER_ID',abs(randn()*10000),
+          |'CREDIT_BREACH_OVERRIDE','INFO_BARRIER_ID','EXCH_PARTICIPANT_ID','REJT',
+          |'DIRECTED_DEST','REG_NMS_LINK_TYPE',abs(randn()*10000),abs(randn()*10000),'C',abs
+          |(randn()*10000),from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()
+          |*31536000)),'CMSN_TYPE','SYS_CREDIT_TRDR_ID','SYS_ENTRY_USER_ID','OPEN_CLOSE_CD','S',
+          |'HANDLING_INSTR','SECURITY_DESC',abs(randn()*10000),'CUST_OR_FIRM',abs(randn()*10000),
+          |'SECURITY_SUB_TYPE','MULT','ORDR','BARE','AUTO',abs(randn()*10000),abs(randn()*10000),
+          |abs(randn()*10000),abs(randn()*10000),'IOI_QTY',abs(randn()*10000),'CMSN',
+          |'SYS_LEG_REF_ID','TRAD','EXCH_ORDER_ID','DEAL_ID','ORDR','CXL_REASON','Ravichandran
+          |Ashwin',ARRAY(15,7,12),MAP(4,'Bowler'),STRUCT(46,123,106.95,true) from range(3);"""
+            .stripMargin)
+      val querytest3coltab11 = "SELECT * FROM gemfire10.test3coltab11 ORDER BY 1"
+      val rstest3coltab11 = stmt.executeQuery(querytest3coltab11)
+
+      compareResultSet("gemfire10.test3coltab11", rstest3coltab11, isRecoveredDataRS = false)
+
       // todo: alter table -add/drop column-
 
       stmt.close()
@@ -954,6 +1121,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
         arrBuf.clear()
         i = 0
       }
+
       connRec = getConn(locNetPort, "gemfire10", "gemfire10")
       stmtRec = connRec.createStatement()
 
@@ -970,7 +1138,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       println("select * from test3tab3 =======================")
       resetBuffer
 
-      arrBuf ++= ArrayBuffer("a,b,1,adsf,123", "aa,bb,11,adsfg,1234", "aaa,bbb,1111,adsfgh,12345", "asdf,bnm,1111111,adsfghi,123456")
+      arrBuf ++= ArrayBuffer("a,b,1,adsf,123", "aa,bb,11,adsfg,1234", "aaa,bbb,1111,adsfgh," +
+          "12345", "asdf,bnm,1111111,adsfghi,123456")
       while (rs.next()) {
         // scalastyle:off println
         println(s"${rs.getBlob(1)},${rs.getClob(2)},${rs.getBlob(3)}," +
@@ -997,7 +1166,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       rs = stmtRec.executeQuery("SELECT col1, col2, col3 from gemfire10.test3coltab6 ORDER BY col1")
       arrBuf.clear()
       i = 0
-      arrBuf ++= ArrayBuffer("100000000000001,5,true", "200000000000001,4,true", "300000000000001,3,false")
+      arrBuf ++= ArrayBuffer("100000000000001,5,true", "200000000000001,4,true",
+        "300000000000001,3,false")
       while (rs.next()) {
         assert(s"${rs.getLong("col1")},${rs.getShort("col2")},${rs.getBoolean("col3")}"
             .equalsIgnoreCase(arrBuf(i)),
@@ -1015,7 +1185,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       while (rs.next()) {
         str ++= s"${rs.getInt("rcount")},${rs.getBoolean("c5")}"
       }
-      assert(str.toString().equalsIgnoreCase("250,true"))
+      assert(str.toString().equalsIgnoreCase("250,true"), s"Actual: ${str.toString()}")
       rs.close()
 
       // 4. Test if all sql functions are working fine - like min,max,avg,etc.
@@ -1030,10 +1200,9 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
 
       rs.close()
 
-            rs = stmtRec.executeQuery("SELECT * FROM gemfire10.test3Reptab2 ORDER BY col2;")
-            compareResultSet("gemfire10.test3Reptab2", rs, true)
-            rs.close()
-
+      rs = stmtRec.executeQuery("SELECT * FROM gemfire10.test3Reptab2 ORDER BY col2;")
+      compareResultSet("gemfire10.test3Reptab2", rs, true)
+      rs.close()
 
       rs = stmtRec.executeQuery("SELECT * FROM gemfire10.test3coltab7 ORDER BY col3;")
       resetBuffer
@@ -1063,7 +1232,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
 
       rs = stmtRec.executeQuery("SELECT * FROM gemfire10.test3rowtab9 ORDER BY col2;")
       resetBuffer
-      arrBuf ++= ArrayBuffer("null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null")
+      arrBuf ++= ArrayBuffer("null,null,null,null,null,null,null,null,null,null,null,null,null," +
+          "null,null,null,null,null")
 
       while (rs.next()) {
         assert(s"${rs.getObject(1)},${rs.getObject(2)},${rs.getObject(3)},${rs.getObject(4)}," +
@@ -1096,6 +1266,9 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       assert(i != 0)
       rs.close()
 
+      rs = stmtRec.executeQuery(querytest3coltab11)
+      compareResultSet("gemfire10.test3coltab11", rs, isRecoveredDataRS = true)
+
       stmtRec.execute("call sys.EXPORT_DDLS('./recover_ddls_test3/');")
       stmtRec.close()
       conn.close()
@@ -1119,7 +1292,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
   //
   //
   //    // check for row and column type
-  //    // check if all the contents that are expected to be available to user is present for user to choose
+  //
   //
   //    // After the cluster has come up and ready to be used by user.
   //    // check if all procedures available to user is working fine
@@ -1143,7 +1316,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
   def test5(): Unit = {
     try {
       // todo: Should be able to recover data and export to S3, hdfs, nfs and local file systems.
-      // todo: Recover data in parquet format, test that, reloading the table from the same parquet file should work fine.
+      // todo: Recover data in parquet format, test that, reloading the table from the same
+      // parquet file should work fine.
 
       confDirPath = createConfDir("test5")
       val leadsNum = 1
@@ -1227,17 +1401,19 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       stmt.execute("INSERT INTO test5_rowtab6 values(null, 'afadsf', 134098245 )")
       stmt.execute("INSERT INTO test5_rowtab6 (col1, col4) values(null, 345345.534)")
 
-      stmt.execute("CREATE TABLE test5coltab7 (c3 Array<Varchar(400)>, c4 Map < Int, Double > NOT NULL) using column")
-
+      stmt.execute("CREATE TABLE test5coltab7 (c3 Array<Varchar(400)>, c4 Map < Int, Double > NOT" +
+          " NULL) using column")
 
       stmt.execute("deploy package SPARKREDSHIFT" +
           " 'com.databricks:spark-redshift_2.10:3.0.0-preview1' path '/tmp/deploy_pkg_cache'")
-      stmt.execute("deploy package Sparkcassandra 'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7';")
+      stmt.execute("deploy package Sparkcassandra 'com.datastax" +
+          ".spark:spark-cassandra-connector_2.11:2.0.7';")
       stmt.execute("deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
           " repos 'http://clojars.org/repo/'")
       stmt.execute("deploy package mysql 'clj-mysql:clj-mysql:0.1.0'" +
           " repos 'http://clojars.org/repo/' path '/tmp/deploy_pkg_cache'")
-      stmt.execute(s"deploy jar snappyjar '${PrimaryDUnitRecoveryTest.snappyHome}/jars/zkclient-0.8.jar'")
+      stmt.execute(s"deploy jar snappyjar" +
+          s" '${PrimaryDUnitRecoveryTest.snappyHome}/jars/zkclient-0.8.jar'")
       stmt.execute(s"deploy jar snappyjar2" +
           s" '${PrimaryDUnitRecoveryTest.snappyHome}/jars/zookeeper-3.4.13.jar'")
       stmt.execute("undeploy snappyjar")
@@ -1295,13 +1471,16 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       new File("/tmp/test5_exttab1.csv").delete()
       // todo: add assertion for recover_ddls
 
-//      import reflect.io._, Path._
-//      "find -name recover_ddls_test5*".!!.trim.toDirectory.files.foreach(println)
-//      "find -name regularmode_ddls_test5*".!!.trim.toDirectory.files.foreach(println)
-//
-//      val recoverymodeDdlFile = {for (elem <- "find -name recover_ddls_test5*".!!.trim.toDirectory.files; if(elem.name == "part-00000")) yield elem}.next()
-//      val regularmodeDdlFile = {for (elem <- "find -name regularmode_ddls_test5*".!!.trim.toDirectory.files; if(elem.name == "part-00000")) yield elem }.next()
-//      val cmd = s"comm --nocheck-order -3 ${recoverymodeDdlFile.path} ${recoverymodeDdlFile.path}"
+      //      import reflect.io._, Path._
+      //      "find -name recover_ddls_test5*".!!.trim.toDirectory.files.foreach(println)
+      //      "find -name regularmode_ddls_test5*".!!.trim.toDirectory.files.foreach(println)
+      //
+      //      val recoverymodeDdlFile = {for (elem <- "find -name recover_ddls_test5*".!!.trim
+      // .toDirectory.files; if(elem.name == "part-00000")) yield elem}.next()
+      //      val regularmodeDdlFile = {for (elem <- "find -name regularmode_ddls_test5*".!!.trim
+      // .toDirectory.files; if(elem.name == "part-00000")) yield elem }.next()
+      //      val cmd = s"comm --nocheck-order -3 ${recoverymodeDdlFile.path}
+      // ${recoverymodeDdlFile.path}"
 
       stmtRec.close()
       connRec.close()
@@ -1364,7 +1543,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       fqtn = "gemfire10.t1"
       stmt.executeUpdate(
         s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,
-           |c3 integer) USING COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '4')""".stripMargin)
+           |c3 integer) USING COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '4')"""
+            .stripMargin)
       stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, 11)")
       stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, null)")
       stmt.execute(s"INSERT INTO $fqtn VALUES (3, 322222222222222222.22222222222222222222, 33)")
@@ -1373,15 +1553,20 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       // 2: null and not null complex types 1 bucket
       fqtn = "gemfire10.t2"
       stmt.executeUpdate(
-        s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
-           |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<date>,
+           |c4 Map<Int,date> NOT NULL, c5 Struct<f1:float, f2:date>, c6 Array<timestamp>)
            | USING COLUMN options (buckets '1', COLUMN_MAX_DELTA_ROWS '3')""".stripMargin)
       stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-          s" 1, 1.1, Array(1,null,111), Map(1,true), Struct(1.1, 1)")
+          s" 1, 1.1, Array('2011-11-11', '2010-12-12', null), Map(1,'2011-11-11')," +
+          s" Struct(1.1, '2011-11-11'), Array(null, " +
+          s"'2022-02-22 22:22:22.222')")
       stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-          s" 2, null, Array(null,22,222), Map(2,false), Struct(2.2, 2)")
+          s" 2, null, Array(null,'2022-11-11', '2044-06-06', '2006-06-05')," +
+          s" Map(2, cast(null as date)), Struct(2.2, cast(null as date))," +
+          s" Array('2019-02-18 15:31:55.333', '2022-02-22 22:22:22.222')")
       stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-          s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
+          s" 3, 3.3, Array('2044-11-11', '2088-12-12'), Map(3,'2044-11-11'), " +
+          s"Struct(3.3, '2044-11-11'), Array('2019-02-18 15:31:55.333', null)")
 
       // ==========================================
       // ====== Column tables row buffer only =====
@@ -1390,7 +1575,8 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       fqtn = "gemfire10.t3"
       stmt.executeUpdate(
         s"""CREATE TABLE $fqtn (c1 integer, c2 double NOT NULL,
-           |c3 integer) USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '5')""".stripMargin)
+           |c3 integer) USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '5')"""
+            .stripMargin)
       stmt.execute(s"INSERT INTO $fqtn VALUES (1, 111111111111111111.11111111111111111111, null)")
       stmt.execute(s"INSERT INTO $fqtn VALUES (2, 222222222222222222.22222222222222222222, 22)")
       stmt.execute(s"INSERT INTO $fqtn VALUES (3, 322222222222222222.22222222222222222222, 33)")
@@ -1399,15 +1585,19 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       // 4: null and not null complex types 2 buckets
       fqtn = "gemfire10.t4"
       stmt.executeUpdate(
-        s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
-           |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
+        s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<date>,
+           |c4 Map<Int,date> NOT NULL, c5 Struct<f1:float, f2:date>, c6 Array<timestamp>)
            | USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '4')""".stripMargin)
       stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-          s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
+          s" 1, 1.1, Array(null,'2022-11-11', '2044-06-06', '2006-06-05'), Map(1,cast(null as " +
+          s"date)), Struct(1.1, cast(null as date)), Array(null, '2022-02-22 22:22:22.222')")
       stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-          s" 2, null, Array(2,22,222), Map(2,false), Struct(2.2, 2)")
+          s" 2, null, Array('2011-11-11', '2010-12-12', null), Map(2,'2011-11-11')," +
+          s" Struct(2.2, '2011-11-11'), Array('2019-02-18 15:31:55.333', '2022-02-22 " +
+          s"22:22:22.222')")
       stmt.executeUpdate(s"INSERT INTO $fqtn SELECT" +
-          s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
+          s" 3, 3.3, Array('2044-11-11', '2088-12-12'), Map(3,'2044-11-11')," +
+          s" Struct(3.3, '2044-11-11'), Array('2019-02-18 15:31:55.333', null)")
 
 
       // =======================================================
@@ -1454,19 +1644,31 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 1")
       stmt.execute(s"UPDATE $fqtn SET c3 = 0 WHERE c1 = 4")
 
-      // 8: null and not null complex types 2 buckets
+      // 8: null and not null complex types 1 buckets
       fqtn = "gemfire10.t8"
-      stmt.execute(
-        s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
-           |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>)
-           | USING COLUMN options (buckets '2', COLUMN_MAX_DELTA_ROWS '2')""".stripMargin)
+      stmt.execute(s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<timestamp>,
+           | c4 Map<timestamp,date> NOT NULL, c5 Struct<f1:timestamp, f2:date>,
+           | c6 Map<date, timestamp>) USING COLUMN
+           |  options (buckets '1', COLUMN_MAX_DELTA_ROWS '2')""".stripMargin)
       stmt.execute(s"""INSERT INTO $fqtn SELECT
-           |1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)""".stripMargin)
+                      |1, 1.1, Array(null,'2019-02-18 15:31:55.333','2022-02-22 22:22:22.222'),
+                      | Map(cast('2019-02-18 15:31:55.333' as timestamp),cast(null as date))
+                      |, Struct('2022-02-22 22:22:22.222', cast(null as date)), Map(cast
+                      |('2022-02-22' as date),
+                      |cast('2019-02-18 15:31:55.333' as timestamp))""".stripMargin)
       stmt.execute(s"""INSERT INTO $fqtn SELECT
-           |2, 2.2, Array(2,22,222), Map(2,false), null""".stripMargin)
+                      |2, 2.2, Array('2111-11-11 15:31:55.333', '2022-02-22 44:33:55.666', null),
+                      | Map(cast('2111-11-11 15:31:55.333' as timestamp),cast('2011-11-11' as
+                      | date)), Struct('2022-02-22 22:22:22.222', cast(null as date)),
+                      |  Map(cast('2011-11-11' as date),cast('2111-11-11 15:31:55.333' as
+                      |  timestamp))"""
+          .stripMargin)
       stmt.execute(s"""INSERT INTO $fqtn SELECT
-           |3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)""".stripMargin)
-
+                      |3, 3.3, Array('2022-11-18 11:31:11.333', '2022-02-11 22:11:22.111'),
+                      |Map(cast('2022-11-18 11:31:11.333' as timestamp),cast('2044-11-11' as
+                      | date)), Struct(cast(null as timestamp), '2011-11-11'),
+                      | Map(cast('2044-11-11' as date),
+                      |cast('2022-11-18 11:31:11.333' as timestamp))""".stripMargin)
 
       // ===================================
       // ======= Row table partitioned =====
@@ -1517,17 +1719,32 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       stmt.execute(s"ALTER TABLE $fqtn ADD COLUMN c2 integer")
       stmt.execute(s"INSERT INTO $fqtn VALUES (9, 99, 999)")
 
-      // 12: null and not null complex types no alter
-//          fqtn = "gemfire10.t12"
-//          stmt.execute(
-//            s"""CREATE TABLE $fqtn (c1 integer, c2 double,c3 Array<Integer>,
-//               |c4 Map<Int,Boolean> NOT NULL, c5 Struct<f1:float, f2:int>) USING row""".stripMargin)
-//          stmt.execute(s"INSERT INTO $fqtn SELECT" +
-//              s" 1, 1.1, Array(1,11,111), Map(1,true), Struct(1.1, 1)")
-//          stmt.execute(s"INSERT INTO $fqtn SELECT" +
-//              s" 2, 2.2, Array(2,22,222), Map(2,false), null")
-//          stmt.execute(s"INSERT INTO $fqtn SELECT" +
-//              s" 3, 3.3, Array(3,33,333), Map(3,false), Struct(3.3, 3)")
+      // covers bulk updates, deletes
+      fqtn = "gemfire10.t13"
+      stmt.execute(s"""CREATE TABLE $fqtn(
+                     BNK_ORG_ID BIGINT NOT NULL,
+                     BNK_ID BIGINT NOT NULL,
+                     VER BIGINT NOT NULL,
+                     CLIENT_ID BIGINT NOT NULL,
+                     BNK_FULL_NM VARCHAR(50),
+                     RTNG_NUM VARCHAR(35) NOT NULL,
+                     VLD_FRM_DT TIMESTAMP NOT NULL,
+                     VLD_TO_DT TIMESTAMP,
+                     SRC_SYS_REF_ID VARCHAR(10) NOT NULL,
+                     SRC_SYS_REC_ID VARCHAR(150)) USING column OPTIONS(partition_by 'BNK_ORG_ID',
+                     buckets '32',key_columns 'CLIENT_ID,BNK_ORG_ID,BNK_ID ',
+                     redundancy '1') """)
+      stmt.execute(s"""INSERT into $fqtn select id,id,abs(rand()*1000),abs(rand()*1000),
+                'BNK_FULL_NM','RTNG_NUM',from_unixtime(unix_timestamp('2018-01-01 01:00:00')
+                +floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')
+                +floor(rand()*31536000)),'src_sys_ref_id','src_sys_rec_id' from range(7000000)""")
+
+      stmt.execute(s"UPDATE $fqtn set ver = ver * 2 where bnk_id % 2 = 0")
+      stmt.execute(s"DELETE from $fqtn where bnk_id % 3 = 0;")
+
+      val rst13 = stmt.executeQuery(s"SELECT * FROM $fqtn ORDER BY 1")
+      compareResultSet(fqtn, rst13, false)
+      rst13.close()
 
       stmt.close()
       conn.close()
@@ -1539,7 +1756,6 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       var stmtRec: Statement = null
       var str = new mutable.StringBuilder()
       val arrBuf: ArrayBuffer[String] = ArrayBuffer.empty
-      var i = 0
 
       logInfo("============ Recovery mode ============")
       connRec = getConn(locNetPort, "gemfire10", "gemfire10")
@@ -1554,7 +1770,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
             val fValue = f match {
               case "integer" | "int" => rs.getInt(i)
               case "double" => rs.getDouble(i)
-              case "array"|"map"|"struct" => rs.getString(i)
+              case "array" | "map" | "struct" => rs.getString(i)
               case _ => rs.getString(i)
             }
             i += 1
@@ -1580,7 +1796,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       // *********************************************
       // ****************** testcase 1 ***************
       // *********************************************
-      val rs = stmtRec.executeQuery("select * from gemfire10.t1")
+      var rs = stmtRec.executeQuery("select * from gemfire10.t1")
       val expectedResult1: ListBuffer[Array[Any]] = ListBuffer(
         Array(1, 111111111111111111.11111111111111111111, 11),
         Array(2, 222222222222222222.22222222222222222222, null),
@@ -1592,70 +1808,88 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
       rs.close()
 
       // testcase 2
-      val rs2 = stmtRec.executeQuery("select * from gemfire10.t2")
-      rs2.next()
+      rs = stmtRec.executeQuery("select * from gemfire10.t2")
+      rs.next()
       val expectedResult2: ListBuffer[Array[Any]] = ListBuffer(
-        Array(1, 1.1, """{"col_0":[1,null,111]}""", """{"col_1":{"1":true}}""",
-          """{"col_2":{"f1":1.1,"f2":1}}"""),
-        Array(2, 2.2, """{"col_0":[null,22,222]}""", """{"col_1":{"2":false}}""",
-          """{"col_2":{"f1":2.2,"f2":2}}"""),
-        Array(3, 3.3, """{"col_0":[3,33,333]}""", """{"col_1":{"3":false}}""",
-          """{"col_2":{"f1":3.3,"f2":3}}""")
+        Array(1, 1.1,
+          """{"col_0":["2011-11-11","2010-12-12",null]}""",
+          """{"col_1":{"1":"2011-11-11"}}""",
+          """{"col_2":{"f1":1.1,"f2":"2011-11-11"}}""",
+          """{"col_3":[null,"2022-02-22T22:22:22.222+05:30"]}"""),
+        Array(2, null,
+          """{"col_0":[null,"2022-11-11","2044-06-06","2006-06-05"]}""",
+          """{"col_1":{"2":null}}""",
+          """{"col_2":{"f1":2.2}}""",
+          """{"col_3":["2019-02-18T15:31:55.333+05:30","2022-02-22T22:22:22.222+05:30"]}"""),
+        Array(3, 3.3,
+          """{"col_0":["2044-11-11","2088-12-12"]}""",
+          """{"col_1":{"3":"2044-11-11"}}""",
+          """{"col_2":{"f1":3.3,"f2":"2044-11-11"}}""",
+          """{"col_3":["2019-02-18T15:31:55.333+05:30",null]}""")
       )
       compareResult(expectedResult2,
-        getRecFromResultSet(rs2, "integer,double,array,map,struct"))
-      rs2.close()
+        getRecFromResultSet(rs, "integer,double,array,map,struct,array"))
+      rs.close()
 
       // testcase 3
-      val rs3 = stmtRec.executeQuery("select * from gemfire10.t3")
+      rs = stmtRec.executeQuery("select * from gemfire10.t3")
       val expectedResult3: ListBuffer[Array[Any]] = ListBuffer(
         Array(1, 111111111111111111.11111111111111111111, null),
         Array(2, 222222222222222222.22222222222222222222, 22),
         Array(3, 322222222222222222.22222222222222222222, 33)
       )
       compareResult(expectedResult3,
-        getRecFromResultSet(rs3, "integer,double,integer"))
-      rs3.close()
+        getRecFromResultSet(rs, "integer,double,integer"))
+      rs.close()
 
       // testcase 4
-      val rs4 = stmtRec.executeQuery("select * from gemfire10.t4")
-      rs4.next()
+      rs = stmtRec.executeQuery("select * from gemfire10.t4")
+      rs.next()
       val expectedResult4: ListBuffer[Array[Any]] = ListBuffer(
-        Array(1, 1.1, """{"col_0":[1,11,111]}""", """{"col_1":{"1":true}}""",
-          """{"col_2":{"f1":1.1,"f2":1}}"""),
-        Array(2, 2.2, """{"col_0":[2,22,222]}""", """{"col_1":{"2":false}}""",
-          """{"col_2":{"f1":2.2,"f2":2}}"""),
-        Array(3, 3.3, """{"col_0":[3,33,333]}""", """{"col_1":{"3":false}}""",
-          """{"col_2":{"f1":3.3,"f2":3}}""")
+        Array(1, 1.1,
+          """{"col_0":[null,"2022-11-11","2044-06-06","2006-06-05"]}""",
+          """{"col_1":{"1":null}}""",
+          """{"col_2":{"f1":1.1}}""",
+          """{"col_3":[null,"2022-02-22T22:22:22.222+05:30"]}"""),
+        Array(2, 2.2,
+          """{"col_0":["2011-11-11","2010-12-12",null]}""",
+          """{"col_1":{"2":"2011-11-11"}}""",
+          """{"col_2":{"f1":2.2,"f2":"2011-11-11"}}""",
+          """{"col_3":["2019-02-18T15:31:55.333+05:30","2022-02-22T22:22:22.222+05:30"]}"""),
+        Array(3, 3.3,
+          """{"col_0":["2044-11-11","2088-12-12"]}""",
+          """{"col_1":{"3":"2044-11-11"}}""",
+          """{"col_2":{"f1":3.3,"f2":"2044-11-11"}}""",
+          """{"col_3":["2019-02-18T15:31:55.333+05:30",null]}""")
       )
       compareResult(expectedResult4,
-        getRecFromResultSet(rs4, "integer,double,array,map,struct"))
-      rs4.close()
+        getRecFromResultSet(rs, "integer,double,array,map,struct,array"))
+      rs.close()
 
       // testcase 5
-      val rs5 = stmtRec.executeQuery("select * from gemfire10.t5")
+      rs = stmtRec.executeQuery("select * from gemfire10.t5")
       val expectedResult5: ListBuffer[Array[Any]] = ListBuffer(
         Array(1, 111111111111111111.11111111111111111111, 1),
         Array(3, 333333333333333333.33333333333333333333, null),
         Array(4, 444444444444444444.44444444444444444444, 4)
       )
       compareResult(expectedResult5,
-        getRecFromResultSet(rs5, "integer,double,integer"))
-      rs5.close()
+        getRecFromResultSet(rs, "integer,double,integer"))
+      rs.close()
 
       // testcase 6
-      val rs6 = stmtRec.executeQuery("select * from gemfire10.t6")
+      rs = stmtRec.executeQuery("select * from gemfire10.t6")
       val expectedResult6: ListBuffer[Array[Any]] = ListBuffer(
         Array(1, 111111111111111111.11111111111111111111, 0),
         Array(3, 333333333333333333.33333333333333333333, 3),
         Array(4, 444444444444444444.44444444444444444444, 0)
       )
       compareResult(expectedResult6,
-        getRecFromResultSet(rs6, "integer,double,integer"))
-      rs6.close()
+        getRecFromResultSet(rs, "integer,double,integer"))
+      rs.close()
 
       // 7: null and not null atomic data only 1 bucket updates (in both areas)
-      val rs7 = stmtRec.executeQuery("select * from gemfire10.t7")
+      rs = stmtRec.executeQuery("select * from gemfire10.t7")
       val expectedResult7: ListBuffer[Array[Any]] = ListBuffer(
         Array(1, 111111111111111111.11111111111111111111, 0),
         Array(2, 222222222222222222.22222222222222222222, null),
@@ -1664,24 +1898,34 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
         Array(5, 555555555555555555.55555555555555555555, null)
       )
       compareResult(expectedResult7,
-        getRecFromResultSet(rs7, "integer,double,integer"))
-      rs7.close()
+        getRecFromResultSet(rs, "integer,double,integer"))
+      rs.close()
 
       // 8: null and not null complex types 2 buckets
-      val rs8 = stmtRec.executeQuery("select * from gemfire10.t8")
+      rs = stmtRec.executeQuery("select * from gemfire10.t8")
       val expectedResult8: ListBuffer[Array[Any]] = ListBuffer(
-        Array(2, 2.2, """{"col_0":[2,22,222]}""", """{"col_1":{"2":false}}""", null),
-        Array(1, 1.1, """{"col_0":[1,11,111]}""", """{"col_1":{"1":true}}""",
-          """{"col_2":{"f1":1.1,"f2":1}}"""),
-        Array(3, 3.3, """{"col_0":[3,33,333]}""", """{"col_1":{"3":false}}""",
-          """{"col_2":{"f1":3.3,"f2":3}}""")
+        Array(2, 2.2,
+          """{"col_0":["2111-11-11T15:31:55.333+05:30",null,null]}""",
+          """{"col_1":{"4476679315333000":"2011-11-11"}}""",
+          """{"col_2":{"f1":"2022-02-22T22:22:22.222+05:30"}}""",
+          """{"col_3":{"15289":"2111-11-11T15:31:55.333+05:30"}}"""),
+        Array(1, 1.1,
+          """{"col_0":[null,"2019-02-18T15:31:55.333+05:30","2022-02-22T22:22:22.222+05:30"]}""",
+          """{"col_1":{"1550484115333000":null}}""",
+          """{"col_2":{"f1":"2022-02-22T22:22:22.222+05:30"}}""",
+          """{"col_3":{"19045":"2019-02-18T15:31:55.333+05:30"}}"""),
+        Array(3, 3.3,
+          """{"col_0":["2022-11-18T11:31:11.333+05:30","2022-02-11T22:11:22.111+05:30"]}""",
+          """{"col_1":{"1668751271333000":"2044-11-11"}}""",
+          """{"col_2":{"f2":"2011-11-11"}}""",
+          """{"col_3":{"27343":"2022-11-18T11:31:11.333+05:30"}}""")
       )
       compareResult(expectedResult8,
-        getRecFromResultSet(rs8, "integer,double,array,map,struct"))
-      rs8.close()
+        getRecFromResultSet(rs, "integer,double,array,map,struct,map"))
+      rs.close()
 
       // 9: null and not null atomic data only 1 bucket update/delete alter add/drop/add
-      val rs9 = stmtRec.executeQuery("select * from gemfire10.t9")
+      rs = stmtRec.executeQuery("select * from gemfire10.t9")
       val expectedResult9: ListBuffer[Array[Any]] = ListBuffer(
         Array(1, 0, null),
         Array(3, 3, null),
@@ -1689,32 +1933,36 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s) // scal
         Array(9, 99, 999)
       )
       compareResult(expectedResult9,
-        getRecFromResultSet(rs9, "integer,integer,integer"))
-      rs9.close()
+        getRecFromResultSet(rs, "integer,integer,integer"))
+      rs.close()
 
-//      // 10: null and not null complex types 2 buckets no alter
-//      val rs10 = stmtRec.executeQuery("select * from gemfire10.t10")
-//      val expectedResult10: ListBuffer[Array[Any]] = ListBuffer(
-//        Array(1, 111111111111111111.11111111111111111111, 1),
-//        Array(2, 222222222222222222.22222222222222222222, null),
-//        Array(3, 333333333333333333.33333333333333333333, 3),
-//        Array(4, 444444444444444444.44444444444444444444, null),
-//        Array(5, 555555555555555555.55555555555555555555, 5)
-//      )
-//      compareResult(expectedResult10,
-//        getRecFromResultSet(rs10, "integer,integer,integer"))
-//      rs10.close()
+      //      // 10: null and not null complex types 2 buckets no alter
+      //      val rs10 = stmtRec.executeQuery("select * from gemfire10.t10")
+      //      val expectedResult10: ListBuffer[Array[Any]] = ListBuffer(
+      //        Array(1, 111111111111111111.11111111111111111111, 1),
+      //        Array(2, 222222222222222222.22222222222222222222, null),
+      //        Array(3, 333333333333333333.33333333333333333333, 3),
+      //        Array(4, 444444444444444444.44444444444444444444, null),
+      //        Array(5, 555555555555555555.55555555555555555555, 5)
+      //      )
+      //      compareResult(expectedResult10,
+      //        getRecFromResultSet(rs10, "integer,integer,integer"))
+      //      rs10.close()
 
       // 11: null and not null atomic data only update/delete alter add/drop/add
-      val rs11 = stmtRec.executeQuery("select * from gemfire10.t11")
+      rs = stmtRec.executeQuery("select * from gemfire10.t11")
       val expectedResult11: ListBuffer[Array[Any]] = ListBuffer(
         Array(1, 0, null),
         Array(3, 3, null),
         Array(9, 99, 999)
       )
       compareResult(expectedResult11,
-        getRecFromResultSet(rs11, "integer,integer,integer"))
-      rs11.close()
+        getRecFromResultSet(rs, "integer,integer,integer"))
+      rs.close()
+
+      rs = stmtRec.executeQuery(s"SELECT * FROM gemfire10.t13 ORDER BY 1")
+      compareResultSet(fqtn, rs, true)
+      rs.close()
 
       stmtRec.execute("call sys.EXPORT_DDLS('./recover_ddls/');")
       // todo hmeka Add assertion on recover_ddls output

@@ -3,13 +3,13 @@
 Download the latest version of SnappyData from the [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/), which lists the latest and previous releases of SnappyData.
 
 ```pre
-$ tar -xzf snappydata-1.1.1-bin.tar.gz
-$ cd snappydata-1.1.1-bin/
+$ tar -xzf snappydata-1.2.0-bin.tar.gz
+$ cd snappydata-1.2.0-bin/
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
 $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log
 ```
 
-It opens the Spark shell. All SnappyData metadata, as well as persistent data, is stored in the directory **quickstartdatadir**.
+It opens the Spark shell. All SnappyData metadata, as well as persistent data, is stored in the directory **quickstartdatadir**.</br>The spark-shell can now be used to work with SnappyData using [SQL](using_sql.md) and [Scala APIs](using_spark_scala_apis.md).
 
-The spark-shell can now be used to work with SnappyData using [SQL](using_sql.md) and [Scala APIs](using_spark_scala_apis.md).
+Follow instructions [here](/howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin. 

@@ -155,6 +155,8 @@ object Constant {
 
   val CHANGEABLE_JAR_NAME = "SNAPPY_CHANGEABLE_JAR_NAME"
 
+  val REPL_OUTPUT_DIR = "REPL_OUTPUT_DIR"
+
   val SNAPPY_JOB_URL = "__SNAPPY_JOB_URL_"
 
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"

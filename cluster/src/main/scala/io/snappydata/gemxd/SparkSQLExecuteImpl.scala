@@ -44,7 +44,7 @@ import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{CachedDataFrame, Dataset, SnappyContext, SnappySession}
+import org.apache.spark.sql._
 import org.apache.spark.storage.RDDBlockId
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkEnv}
@@ -81,8 +81,10 @@ class SparkSQLExecuteImpl(
 
   session.setPreparedQuery(preparePhase = false, pvs)
 
-  private[this] val df = if (dfObject != null) dfObject.asInstanceOf[CachedDataFrame]
-  else Utils.sqlInternal(session, sql)
+  private[this] val df = dfObject match {
+    case null => Utils.sqlInternal(session, sql)
+    case d => d.asInstanceOf[DataFrame]
+  }
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
@@ -105,7 +107,12 @@ class SparkSQLExecuteImpl(
     val isLocalExecution = msg.isLocallyExecuted
 
     val bm = SparkEnv.get.blockManager
-    val rddId = df.rddId
+    // val rddId = df.rddId
+    val rddId = df match {
+      case cdf: CachedDataFrame => cdf.rddId
+      case _ => -32489 // Some arbitrary number
+    }
+
     var blockReadSuccess = false
     try {
       // get the results and put those in block manager to avoid going OOM
@@ -115,9 +122,15 @@ class SparkSQLExecuteImpl(
       // call below (but that has additional overheads of plan
       //   shipping/compilation etc and lack of proper BlockManager usage in
       //   messaging + server-side final processing, so do it selectively)
-      val partitionBlocks = df.collectWithHandler(CachedDataFrame,
-        CachedDataFrame.localBlockStoreResultHandler(rddId, bm),
-        CachedDataFrame.localBlockStoreDecoder(querySchema.length, bm))
+      val partitionBlocks = df match {
+        case cdf: CachedDataFrame => cdf.collectWithHandler(CachedDataFrame,
+           CachedDataFrame.localBlockStoreResultHandler(rddId, bm),
+           CachedDataFrame.localBlockStoreDecoder(querySchema.length, bm))
+        case dataFrame: DataFrame => {
+          Iterator(CachedDataFrame(null,
+            dataFrame.queryExecution.executedPlan.executeCollect().iterator)._1)
+        }
+      }
       hdos.clearForReuse()
       SparkSQLExecuteImpl.writeMetaData(srh, hdos, tableNames, nullability, getColumnNames,
         colTypes, getColumnDataTypes, session.getWarnings)
@@ -180,7 +193,7 @@ class SparkSQLExecuteImpl(
       msg.lastResult(srh)
 
     } finally {
-      if (!blockReadSuccess) {
+      if (!blockReadSuccess && !(rddId == -32489)) {
         // remove any cached results from block manager
         bm.removeRdd(rddId)
       }
@@ -393,11 +406,14 @@ object SparkSQLExecuteImpl {
       input.array(), input.position(), input.available())
     unsafeRows.map { row =>
       var index = 0
-      var writeIndex = 0
+      var refTypeIndex = 0
       while (index < numFields) {
         val dvd = dvds(index)
         if (row.isNullAt(index)) {
           dvd.setToNull()
+          if (types(index) == StoredFormatIds.REF_TYPE_ID) {
+            refTypeIndex += 1
+          }
           index += 1
         } else {
           types(index) match {
@@ -451,14 +467,14 @@ object SparkSQLExecuteImpl {
               dvd.setValue(row.getDouble(index))
             case StoredFormatIds.REF_TYPE_ID =>
               // convert to Json using JacksonGenerator
-              val writer = writers(writeIndex)
-              val generator = generators(writeIndex)
+              val writer = writers(refTypeIndex)
+              val generator = generators(refTypeIndex)
               Utils.generateJson(generator, row, index,
                 dataTypes(index).asInstanceOf[DataType])
               val json = writer.toString
               writer.reset()
               dvd.setValue(json)
-              writeIndex += 1
+              refTypeIndex += 1
             case StoredFormatIds.SQL_BLOB_ID =>
               // all complex types too work with below because all of
               // Array, Map, Struct (as well as Binary itself) transport

@@ -244,7 +244,7 @@ Spark applications run as independent sets of processes on a cluster, coordinate
 ```pre
 $ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
 	--master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
-	--packages 'SnappyDataInc:snappydata:1.1.1-s_2.11'
+	--packages 'SnappyDataInc:snappydata:1.2.0-s_2.11'
 ```
 <a id="environment"></a>
 ## Environment Settings

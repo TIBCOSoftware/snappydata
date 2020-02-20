@@ -18,8 +18,12 @@ package io.snappydata
 
 import java.io.File
 import java.net.URLClassLoader
+import java.util.Properties
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.{Dataset, Row, SnappySession}
+import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.catalog.CatalogTable
 
 trait ToolsCallback {
 
@@ -72,9 +76,26 @@ trait ToolsCallback {
 
   def getLeadClassLoader: URLClassLoader
 
+  def invalidateReplClassLoader(replDir: String): Unit
+
+  def refreshLdapGroupCallback(group: String): Unit
+
   /**
    * Check permission to write to given schema for a user. Returns the normalized user or
    * LDAP group name of the schema owner (or passed user itself if security is disabled).
    */
   def checkSchemaPermission(schema: String, currentUser: String): String
+
+  def isUserAuthorizedForExtTable(currentUser: String,
+    metastoreTableIdentifier: Option[TableIdentifier]): Exception
+
+  def updateGrantRevokeOnExternalTable(grantor: String, isGrant: Boolean,
+    tid: TableIdentifier, users: String, catalogTable: CatalogTable): Unit
+
+  def getIntpClassLoader(taskProps: Properties): ClassLoader
+
+  def getScalaCodeDF(code: String,
+    snappySession: SnappySession, options: Map[String, String]): Dataset[Row]
+
+  def closeAndClearScalaInterpreter(uniqueId: Long): Unit
 }

@@ -243,9 +243,9 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
       fail("StreamingQueryException was expected")
     } catch {
       case x: StreamingQueryException =>
-        val expectedMessage = "User 'GEMFIRE5' does not have SELECT permission on column" +
-            " 'STREAM_QUERY_ID' of table 'GEMGROUP1'.'SNAPPYSYS_INTERNAL____SINK_STATE_TABLE'."
-        assert(x.getCause.getCause.getMessage.equals(expectedMessage))
+        val expectedMessage = "User 'GEMFIRE5' does not have SELECT permission" +
+            " on table 'GEMGROUP1'.'SNAPPYSYS_INTERNAL____SINK_STATE_TABLE'."
+        assertResult(expectedMessage)(x.getCause.getCause.getMessage)
     } finally {
       streamingQuery1.stop()
     }

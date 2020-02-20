@@ -37,7 +37,7 @@
 #
 # IV) Start the SnappyData Zeppelin interpreter on the Lead node
 #
-#     lead1   -dir=/tmp/data/server -spark.ui.port=3333 -spark.executor.cores=16 -zeppelin.interpreter.enable=true -classpath=<Path to jar of Zeppelin Interpreter for SnappyData>
+#     lead1   -dir=/tmp/data/server -spark.ui.port=3333 -spark.executor.cores=16 -zeppelin.interpreter.enable=true
 #
 # For more options, see http://snappydatainc.github.io/snappydata/configuration/#configuration
 localhost

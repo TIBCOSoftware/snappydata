@@ -547,6 +547,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def refreshPolicies(ldapGroup: String): Unit = {
     SnappyHiveExternalCatalog.getExistingInstance.refreshPolicies(ldapGroup)
+    ToolsCallbackInit.toolsCallback.refreshLdapGroupCallback(ldapGroup)
   }
 
   override def checkSchemaPermission(schemaName: String, currentUser: String): String = {
