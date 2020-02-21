@@ -1,158 +1,68 @@
-# Introduction 
-TIBCO ComputeDB(aka SnappyData) is a distributed, in-memory optimized, analytics database. TIBCO ComputeDB delivers high throughput, low latency, and high concurrency for unified analytics workloads. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources/formats and stream processing all in one unified cluster.
+# TIBCO ComputeDB
 
-One common use case for TIBCO ComputeDB is to provide analytics at interactive speeds over large volumes of data with minimal or no pre-processing of the dataset. For instance, often, there is no need to pre-aggregate/reduce or generate cubes over your large data sets for ad-hoc visual analytics. This is made possible by smartly managing data in-memory, dynamically generating code, using vectorization optimizations and maximizing the potential of modern multi-core CPUs.
+TIBCO ComputeDB™ is a memory-optimized database based on Apache Spark. It delivers very high throughput, low latency, and high concurrency for unified analytic workloads that may combine streaming, interactive analytics and artificial intelligence in a single, easy to manage distributed cluster.
 
-TIBCO ComputeDB is based on the [open source community project called SnappyData](https://github.com/SnappyDataInc/snappydata)
-
-![TIBCO ComputeDB Positioning](./Images/Snappy_intro.1.png)
-
-!!!Note
-	*TIBCO ComputeDB is not another Enterprise Data Warehouse (EDW) platform, but rather a high performance computational and caching cluster that augments traditional EDWs and data lakes.*
-
-## Important Capabilities
-
-*	**Easily discover and catalog big data sets** </br>
-	You can connect and discover datasets in SQL DBs, Hadoop, NoSQL stores, file systems, or even cloud data stores such as S3 by using SQL, infer schemas automatically and register them in a secure catalog. A wide variety of data formats are supported out of the box such as JSON, CSV, text, Objects, Parquet, ORC, SQL, XML, and more.</br>
-
-*	**Rich connectivity** </br>
-	TIBCO ComputeDB is built with Apache Spark inside. Therefore, any data store that has a Apache Spark connector can be accessed using SQL or by using the Apache Spark RDD/Dataset API. Virtually all modern data stores provide a Apache Spark connector. see [Apache Spark Packages](https://spark-packages.org/). You can also dynamically deploy connectors to a running TIBCO ComputeDB cluster.</br>
-
-*	**Virtual or in-memory data**</br>
-	You can decide which datasets need to be provisioned into distributed memory or left at the source. When the data is left at source, after being modeled as virtual/external tables, the analytic query processing is parallelized, and the query fragments are pushed down whenever possible and executed at high speed.
-When speed is essential, applications can selectively copy the external data into memory using a single SQL command. </br>
-
-*	**In-memory Columnar + Row store**</br> 
-	You can choose in-memory data to be stored in any of the following forms:
-    *	**Columnar**: The form that is compressed and designed for scanning/aggregating large data sets.
-    *	**Row store**: The form that has an extremely fast key access or highly selective access.
-	The columnar store is automatically indexed using a skipping index. Applications can explicitly add indexes for the row store. </br>
-
-*	**High performance** </br>
-	When data is loaded, the engine parallelizes all the accesses by carefully taking into account the available distributed cores, the available memory, and whether the source data can be partitioned to deliver extremely high-speed loading. Therefore, unlike a traditional warehouse, you can bring up TIBCO ComputeDB whenever required, load, process, and tear it down. Query processing uses code generation and vectorization techniques to shift the processing to the modern-day multi-core processor and L1/L2/L3 caches to the possible extent. </br>
-
-*	**Flexible rich data transformations** </br>
-	External data sets when discovered automatically through schema inference will have the schema of the source. Users can cleanse, blend, reshape data using a SQL function library (Apache Spark SQL+) or even submit Apache Spark jobs and use custom logic. The entire rich Apache Spark API is at your disposal. This logic can be written in SQL, Java, Scala, or even Python.</br>
-
-*	**Prepares data for data science** </br>
-	Through the use of Apache Spark API for statistics and machine learning, raw or curated datasets can be easily prepared for machine learning. You can understand the statistical characteristics such as correlation, independence of different variables and so on. You can generate distributed feature vectors from your data. For instance, you can use algorithms such as one-hot encoder, binarizer, and a range of functions built into the Apache Spark ML library. Generated features can be stored back into column tables and shared across a group of users with security and avoid dumping copies to disk, which is slow and error-prone.</br>
- 
-*	**Stream ingestion and liveness** </br>
-	Popular big data systems today resort to periodic refreshing of data sets from the source as the managed data often cannot be mutated. 
-    In TIBCO ComputeDB, operational systems can feed data updates through Kafka to TIBCO ComputeDB. The incoming data can be CDC(Change-data-capture) events (insert, updates, or deletes) and can be easily ingested into in-memory tables with ease, consistency, and exactly-once semantics. The Application can apply custom logic to do sophisticated transformations and get the data ready for analytics. This incremental and continuous process is far more efficient than batch refreshes. Refer [Stream Processing with SnappyData](howto/use_stream_processing_with_snappydata.md) </br> 
-
-*	**Approximate Query Processing(AQP)** </br>
-	When dealing with huge data sets, for example, IoT sensor streaming time-series data, it may not be possible to provision the data in-memory, and if left at the source (say Hadoop or S3) your analytic query processing can take too long. In TIBCO ComputeDB, you can create one or more stratified data samples on the full data set. The query engine automatically uses these samples for aggregation queries, and a nearly accurate answer returned to clients. This can be immensely valuable when visualizing a trend, plotting a graph or bar chart. Refer [AQP](aqp.md)</br>
-
-*	**Access from anywhere** </br>
-	You can use JDBC, ODBC, REST, or any of the Apache Spark APIs. The product is fully compatible with Apache Spark 2.1.1. TIBCO ComputeDB natively supports modern visualization tools such as [TIBCO Spotfire](howto/connecttibcospotfire.md), [Tableau](howto/tableauconnect.md), and [Qlikview](setting_up_jdbc_driver_qlikview.md).
-
-## Downloading and Installing TIBCO ComputeDB
-You can download and install the latest version of TIBCO ComputeDB from [here](https://edelivery.tibco.com/storefront/index.ep). Refer to the [documentation](/install.md) for installation steps.
-
-## Getting Started
-Multiple options are provided to get started with TIBCO ComputeDB. Easiest way to get going with ComputeDB is on your laptop. You can also use any of the following options:
-
-*	On-premise clusters
-
-*	AWS
-
-*	Docker
-*	Kubernetes
-
-You can find more information on options for running TIBCO ComputeDB [here](/quickstart.md).
-
-## Quick Test to Measure Performance of TIBCO ComputeDB vs Apache Apache Spark
-If you are already using Apache Spark, experience upto 20x speedup for your query performance with TIBCO ComputeDB. Try out this [test](https://github.com/SnappyDataInc/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala) using the Apache Spark Shell.
-
-## Other Relevant content
-- [Paper](http://cidrdb.org/cidr2017/papers/p28-mozafari-cidr17.pdf) on Snappydata (Community Edition) at Conference on Innovative Data Systems Research (CIDR) - Info on key concepts and motivating problems.
-- [Another early Paper](https://www.snappydata.io/snappy-industrial) that focuses on overall architecture, use cases, and benchmarks. ACM Sigmod 2016.
-- [TPC-H benchmark](https://www.snappydata.io/whitepapers/snappydata-tpch) comparing Apache Spark with TIBCO ComputeDB
-- Checkout the [SnappyData blog](https://www.snappydata.io/blog) for developer content
--	[TIBCO community page](https://community.tibco.com/products/tibco-computedb) for the latest info.
-
-## Community Support
-
-We monitor the following channels comments/questions:
-
-*	[Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata) ![Stackoverflow](http://i.imgur.com/LPIdp12.png)
-
-*	[Slack](http://snappydata-slackin.herokuapp.com/) ![Slack](http://i.imgur.com/h3sc6GM.png)
-
-*	[Gitter](https://gitter.im/SnappyDataInc/snappydata) ![Gitter](http://i.imgur.com/jNAJeOn.jpg)
-
-*	[Mailing List](https://groups.google.com/forum/#!forum/snappydata-user) ![Mailing List](http://i.imgur.com/YomdH4s.png)
-
-*	[Reddit](https://www.reddit.com/r/snappydata)	![Reddit](http://i.imgur.com/AB3cVtj.png)
-
-*	[JIRA](https://jira.snappydata.io/projects/SNAP/issues)	![JIRA](http://i.imgur.com/E92zntA.png)
-
-## Link with TIBCO ComputeDB Distribution
-
-### Using Maven Dependency
-
-TIBCO ComputeDB artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
-
-```
-groupId: io.snappydata
-artifactId: snappydata-cluster_2.11
-version: 1.2.0
-```
-
-### Using SBT Dependency
-
-If you are using SBT, add this line to your **build.sbt** for core TIBCO ComputeDB artifacts:
-
-```
-libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.2.0"
-```
-
-For additions related to TIBCO ComputeDB cluster, use:
-
-```
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.2.0"
-```
-
-You can find more specific TIBCO ComputeDB artifacts [here](http://mvnrepository.com/artifact/io.snappydata)
-
-!!!Note
-	If your project fails when resolving the above dependency (that is, it fails to download `javax.ws.rs#javax.ws.rs-api;2.1`), it may be due an issue with its pom file. </br> As a workaround, you can add the below code to your **build.sbt**:
-
-```
-val workaround = {
-  sys.props += "packaging.type" -> "jar"
-  ()
-}
-```
-
-For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
-
-
-## Building from Source
-If you would like to build TIBCO ComputeDB from source, refer to the [documentation on building from source](/install/building_from_source.md).
-
-
-## How is TIBCO ComputeDB different than Apache Spark? 
-
-Apache Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and is capable of working with disparate data sources. While this provides rich unified access to data, this can also be quite inefficient and expensive. Analytic processing requires massive data sets to be repeatedly copied and data to be reformatted to suit Apache Spark. In many cases, it ultimately fails to deliver the promise of interactive analytic performance.
-For instance, each time an aggregation is run on a large Cassandra table, it necessitates streaming the entire table into Apache Spark to do the aggregation. Caching within Apache Spark is immutable and results in stale insight.
-
-### The TIBCO ComputeDB Approach
-
-##### TIBCO ComputeDB Architecture
-
-![TIBCO ComputeDB Architecture](./Images/tcdbArchitecture.png)
-
-TIBCO ComputeDB takes a different approach. TIBCO ComputeDB fuses a low latency, highly available in-memory transactional database (Pivotal GemFire/Apache Geode) into Apache Spark with shared memory management and optimizations. Data can be managed in columnar form (similar to Apache Spark caching) or in a row oriented manner(commonly used in popular relational databases like postgres). But, many query engine operators are significantly more optimized through better vectorization, code generation and indexing. </br>
-The net effect is, an order of magnitude performance improvement when compared to native Apache Spark caching, and more than two orders of magnitude better performance when Apache Spark is used in conjunction with external data sources.
-Apache Spark is turned into an in-memory operational database capable of transactions, point reads, writes, working with Streams (Apache Spark) and running analytic SQL queries without losing the computational richness in Apache Spark.
-
-
-## Streaming Example - Ad Analytics
-Here is a stream + Transactions + Analytics use case example to illustrate the SQL as well as the Apache Spark programming approaches in TIBCO ComputeDB - [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc). Here is a [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of TIBCO ComputeDB. The example also goes through a benchmark comparing TIBCO ComputeDB to a Hybrid in-memory database and Cassandra.
-
-## Contributing to TIBCO ComputeDB
-
-If you are interested in contributing, please visit the [community page](http://www.snappydata.io/community) for ways in which you can help.
+<div class="clear" style="clear: both;"></div>
+<div style="width: 30%; float:left; position: relative; padding: 0 .6rem; font-size: .64rem; overflow: auto;">
+  <p style="font-weight: 700; color: #2f4d84; font-size: .75rem;">Getting Started</p>
+  <p>
+    <a href="install/install_on_premise/">On-Premise </a><br>
+    <a href="quickstart/getting_started_with_docker_image/">Docker </a><br>
+    <a href="quickstart/getting_started_with_docker_image/">AWS </a><br>
+    <a href="kubernetes/">Kubernetes </a><br>
+    <a href="howto/use_apache_zeppelin_with_snappydata/">Notebooks </a><br>
+    <a href="configuring_cluster/configure_launch_cluster/">Launch ComputeDB </a><br>    
+    <a href="quickstart/snappydataquick_start/">Quickstart Examples </a><br>
+    <a href="quickstart/using_sql/">Using SQL </a><br>
+    <a href="/quickstart/performance_apache_spark/">ComputeDB   Vs. Apache Spark </a><br>
+  </p>
+</div>
+<div style="width: 30%; float:left; position: relative; padding: 0 .6rem; font-size: .64rem; overflow: auto;">
+  <p style="font-weight: 700; color: #2f4d84; font-size: .75rem;">Data Management</p>
+  <p>
+    <a href="connectors/connector/">Working with Data Sources </a><br>
+    <a href="quickstart/structucture_streamingquickstart/">Structured Streaming </a><br>
+    <a href="/Data/external_hive_support/">Hive Metastore </a><br>
+    <a href="sql_reference/">SQL Support </a><br>
+    <a href="apidocsintro/">API Reference </a><br>
+    <a href="programming_guide/snappydata_jobs/">Snappy Job </a><br>
+    <a href="programming_guide/using_snappydata_shell/">Snappy Shell </a><br>
+    <a href="reference/command_line_utilities/scala-cli/">Snappy Scala CLI </a><br>
+   </p>
+</div>
+<div style="width: 30%; float:left; position: relative; padding: 0 .6rem; font-size: .64rem; overflow: auto;">
+  <p style="font-weight: 700; color: #2f4d84; font-size: .75rem;">Deploy </p>
+  <p>
+    <a href="configuring_cluster/configure_launch_cluster/#initialcapplan">Capacity Planning </a><br>
+    <a href="best_practices/setup_cluster/">Tuning for Concurrency and Performance </a><br>
+    <a href="troubleshooting/troubleshooting/">Troubleshooting </a><br>
+  </p>
+</div>
+<div class="clear" style="clear: both;"></div>
+<div style="width: 30%; float:left; position: relative; padding: 0 .6rem; font-size: .64rem; overflow: auto;">
+  <p style="font-weight: 700; color: #2f4d84; font-size: .75rem;">Reference</p>
+  <p>
+    <a href="configuring_cluster/property_description/">List of Properties</a><br>
+    <a href="reference/misc/supported_datatypes/">Supported Data Types </a><br>
+    <a href="reference/API_Reference/apireference_guide/">Spark Extension APIs</a><br>
+    <a href="reference/command_line_utilities/store-launcher/">Command Line Utilities </a><br>
+    <a href="reference/API_Reference/odbc_supported_apis/">ODBC Supported APIs </a><br>
+    <a href="reference/inbuilt_system_procedures/system-procedures/">Built-in System Procedures and Functions </a><br>
+  </p>
+</div>
+<div style="width: 30%; float:left; position: relative; padding: 0 .6rem; font-size: .64rem; overflow: auto;">
+  <p style="font-weight: 700; color: #2f4d84; font-size: .75rem;">Know ComputeDB</p>
+  <p>
+    <a href="tcdb_intro/">About TIBCO ComputeDB</a><br>
+    <a href="install/concepts/">Concepts </a><br>
+    <a href="architecture/cluster_architecture/">Architecture</a><br>
+  </p>
+</div>
+<div style="width: 30%; float:left; position: relative; padding: 0 .6rem; font-size: .64rem; overflow: auto;">
+  <p style="font-weight: 700; color: #2f4d84; font-size: .75rem;">What's New</p>
+  <p>
+    <a href="reference/sql_reference/exec-scala/">exec scala</a><br>
+    <a href="monitoring/metrics/">Metrics Monitoring</a><br>
+  </p>
+</div>
 
