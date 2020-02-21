@@ -28,7 +28,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.sources.{CreatableRelationProvider, DataSourceRegister, ExternalSchemaRelationProvider, JdbcExtendedUtils, SchemaRelationProvider}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{CharType, DataType, Metadata, MetadataBuilder, StringType, StructType, VarcharType}
-import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode, SnappyParserConsts, SnappySession}
+import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode, SnappyParser, SnappyParserConsts, SnappySession}
 
 /**
  * Column tables don't support any extensions over regular Spark schema syntax,
@@ -52,34 +52,40 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       // Use a new parser because DataSource.resolveRelation can be invoked by parser itself.
       val parser = session.snappyParser.newInstance()
       val schema = parser.parseSQLOnly(s, parser.tableSchemaOpt.run()).map(StructType(_))
-      options.get("stringtypeas").map(stringTypeAs => {
-        val stringAsDataType = parser.parseSQLOnly[DataType](stringTypeAs,
-          parser.columnDataType.run())
-        val (dataTypeStr, size) = stringAsDataType match {
-          case CharType(size) => "CHAR" -> size
-          case VarcharType(Int.MaxValue) => "CLOB" -> Int.MaxValue
-          case VarcharType(size) => "VARCHAR" -> size
-          case StringType => "STRING" -> -1
-        }
-        schema.map(st => {
-          StructType(st.map(sf => if (sf.dataType.equals(StringType)) {
-            val oldMetadata = sf.metadata
-            val builder = new MetadataBuilder()
-            val newMetadata = if (oldMetadata eq null) {
-              builder.putString(Constant.CHAR_TYPE_BASE_PROP, dataTypeStr).
-                putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
-              builder.build()
-            } else {
-              builder.withMetadata(oldMetadata).
-                putString(Constant.CHAR_TYPE_BASE_PROP, dataTypeStr).
-                putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
-            }
-            sf.copy(metadata = newMetadata)
+      modifySchemaIfNeeded(options, parser, schema)
+  }
+
+
+  private def modifySchemaIfNeeded(options: Map[String, String], parser: SnappyParser,
+    schema: Option[StructType]) = {
+    options.get("stringtypeas").map(stringTypeAs => {
+      val stringAsDataType = parser.parseSQLOnly[DataType](stringTypeAs,
+        parser.columnDataType.run())
+      val (dataTypeStr, size) = stringAsDataType match {
+        case CharType(size) => "CHAR" -> size
+        case VarcharType(Int.MaxValue) => "CLOB" -> Int.MaxValue
+        case VarcharType(size) => "VARCHAR" -> size
+        case StringType => "STRING" -> -1
+      }
+      schema.map(st => {
+        StructType(st.map(sf => if (sf.dataType.equals(StringType)) {
+          val oldMetadata = sf.metadata
+          val builder = new MetadataBuilder()
+          val newMetadata = if (oldMetadata eq null) {
+            builder.putString(Constant.CHAR_TYPE_BASE_PROP, dataTypeStr).
+              putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+            builder.build()
           } else {
-            sf
-          }))
-        })
-      }).getOrElse(schema)
+            builder.withMetadata(oldMetadata).
+              putString(Constant.CHAR_TYPE_BASE_PROP, dataTypeStr).
+              putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+          }
+          sf.copy(metadata = newMetadata)
+        } else {
+          sf
+        }))
+      })
+    }).getOrElse(schema)
   }
 
   override def createRelation(sqlContext: SQLContext,
@@ -104,7 +110,10 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       options: Map[String, String], data: DataFrame): BaseColumnFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val schema = getSchema(session, options) match {
-      case None => data.schema
+      case None => {
+        val parser = session.snappyParser.newInstance()
+        modifySchemaIfNeeded(options, parser, Option(data.schema)).get
+      }
       case Some(s) => s
     }
     val relation = createRelation(session, mode, options, schema)

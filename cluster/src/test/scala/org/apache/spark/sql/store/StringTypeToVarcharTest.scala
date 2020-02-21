@@ -16,12 +16,12 @@
  */
 package org.apache.spark.sql.store
 
-import java.sql.{Connection, DriverManager}
+import java.sql.{Connection, DriverManager, Types}
 
 import com.pivotal.gemfirexd.TestUtil
-import io.snappydata.{Property, SnappyFunSuite}
+import io.snappydata.SnappyFunSuite
+import org.junit.Assert._
 
-import org.apache.spark.SparkConf
 
 class StringTypeToVarcharTest extends SnappyFunSuite {
   var serverHostPort2: String = _
@@ -38,8 +38,7 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     super.afterAll()
   }
 
-  test("single key string group by column with aggregagte function using grouping key") {
-
+  test("stringtypeas option in column table with schema") {
     snc.sql("drop table if exists test1")
     snc.sql("create table test1 (col1 string, col2 string, col3 string, col4 String) " +
       "using column options(stringTypeAs 'varchar(2048)')")
@@ -50,10 +49,37 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     val rs = st.executeQuery("select * from test1")
     val rsmd = rs.getMetaData
     for(i <- 1 to rsmd.getColumnCount) {
-      println("data type = "+ rsmd.getColumnTypeName(i))
-      println("size = "+ rsmd.getPrecision(i))
+      assertEquals(Types.VARCHAR, rsmd.getColumnType(i))
+      assertEquals(2048, rsmd.getPrecision(i))
     }
+    snc.dropTable("test1")
+  }
 
+  test("stringtypeas option in column table using CTAS") {
+    snc.sql("drop table if exists test1")
+    val eventsPath: String = getClass.getResource("/events.parquet").getPath
+
+    snc.sql(s"create external table events_external using " +
+      s"parquet options (path '$eventsPath')")
+    snc.table("events_external").printSchema()
+    val conn = getSqlConnection
+    val st = conn.createStatement()
+    val rs1 = st.executeQuery("select * from events_external limit 10")
+    val rsmd1 = rs1.getMetaData
+    for(i <- 1 to rsmd1.getColumnCount) {
+      println(s"data type = ${rsmd1.getColumnTypeName(i)} and size = ${rsmd1.getPrecision(i)}")
+    }
+    snc.sql("create table test1  " +
+      "using column options(stringTypeAs 'varchar(2048)') as (select * from events_external limit 100)")
+    val rs = st.executeQuery("select * from test1 limit 10")
+    val rsmd = rs.getMetaData
+    for(i <- 1 to rsmd.getColumnCount) {
+      //assertEquals(Types.VARCHAR, rsmd.getColumnType(i))
+      //assertEquals(2048, rsmd.getPrecision(i))
+      println(s"data type = ${rsmd.getColumnTypeName(i)} and size = ${rsmd.getPrecision(i)}")
+
+    }
+    snc.dropTable("test1")
   }
 
   def getSqlConnection: Connection =
