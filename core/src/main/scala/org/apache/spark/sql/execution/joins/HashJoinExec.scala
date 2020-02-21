@@ -32,7 +32,7 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, BoundReference, Expression, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{AttributeSet, BindReferences, Expression, SortOrder}
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.Utils
@@ -311,12 +311,12 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val cacheKeyTerm = ctx.addReferenceObj("cacheKey",
       new CacheKey(exprIds, rdds.head.id))
 
-    // generate local variables for HashMap data array and mask
+    // generate variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
     maskTerm = internals.addClassField(ctx, "int", "hashMapMask")
     mapSize = internals.addClassField(ctx, "int", "mapSize", v => s"$v = -1;")
     keyIsUniqueTerm = internals.addClassField(ctx, "boolean", "keyIsUnique", v => s"$v = true;")
-    numRowsTerm = ctx.freshName("numRows")
+    numRowsTerm = internals.addClassField(ctx, "long", "numRows", v => s"$v = 0L;")
 
     // generate the map accessor to generate key/value class
     // and get map access methods
@@ -371,7 +371,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       $numKeyColumns, $longLived, scala.reflect.ClassTag$$.MODULE$$.apply(
         $entryClass.class));
       int $maskTerm = $hashMapTerm.mask();
-      $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
+      this.$maskTerm = $maskTerm;
+      this.$mapDataTerm = ($entryClass[])$hashMapTerm.data();
       $buildProduce"""
 
     if (replicatedTableJoin) {
@@ -432,19 +433,17 @@ case class HashJoinExec(leftKeys: Seq[Expression],
           $buildTime.${metricAdd(s"(System.nanoTime() - $beforeMap) / 1000000")};
 
           this.$initMap = true;
-          this.$mapSize = $hashMapTerm.size();
+          $mapSize = $hashMapTerm.size();
           this.$keyIsUniqueTerm = $keyIsUniqueTerm = $hashMapTerm.keyIsUnique();
           $initMinMaxVars
           this.$maskTerm = $maskTerm = $hashMapTerm.mask();
-          this.$mapDataTerm = $mapDataTerm = ($entryClass[])$hashMapTerm.data();"""
+          $mapDataTerm = ($entryClass[])$hashMapTerm.data();"""
 
     val produced = streamedPlan.asInstanceOf[CodegenSupport].produce(ctx, this)
 
     s"""
       boolean $keyIsUniqueTerm = this.$keyIsUniqueTerm;
       int $maskTerm = this.$maskTerm;
-      $entryClass[] $mapDataTerm = this.$mapDataTerm;
-      long $numRowsTerm = 0L;
       try {
         ${session.evaluateFinallyCode(ctx, produced)}
       } finally {
@@ -469,32 +468,10 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     val buildVars = keyValueVars.drop(buildSideKeys.length)
     val checkCondition = getJoinCondition(ctx, input, buildVars)
 
-    ctx.INPUT_ROW = null
-    ctx.currentVars = input
-    // empty code blocks for those input variables referenced by streamKeys so that
-    // the code for those are not materialized by both streamKeyVars and resultVars
-    val streamKeys = buildSide match {
-      case BuildLeft => streamSideKeys.map(BindReferences.bindReference(_, right.output))
-      case BuildRight => streamSideKeys.map(BindReferences.bindReference(_, left.output))
-    }
-    val inputArray = input.toArray
-    streamKeys.foreach(_.foreach {
-      case BoundReference(ordinal, _, _) =>
-        inputArray(ordinal) = internals.copyExprCode(inputArray(ordinal), code = "")
-      case _ =>
-    })
-    val newInput = inputArray.toSeq
-    val resultVars = buildSide match {
-      case BuildLeft => buildVars ++ newInput
-      case BuildRight => newInput ++ buildVars
-    }
-    val streamKeyVars = ctx.generateExpressions(streamKeys)
-
-    mapAccessor.generateMapLookup(entryVar, localValueVar,
-      mapSize, keyIsUniqueTerm, initMap, initMapCode, numRowsTerm,
-      nullMaskVars, initCode, checkCondition, streamSideKeys,
-      streamKeyVars, streamedPlan.output, buildKeyVars, buildVars, newInput,
-      resultVars, dictionaryArrayTerm, dictionaryArrayInit, joinType, buildSide)
+    mapAccessor.generateMapLookup(entryVar, localValueVar, mapSize, keyIsUniqueTerm, initMap,
+      initMapCode, numRowsTerm, nullMaskVars, initCode, checkCondition, streamSideKeys,
+      streamedPlan.output, buildKeyVars, buildVars, input, dictionaryArrayTerm,
+      dictionaryArrayInit, joinType, buildSide)
   }
 
   override def canConsume(plan: SparkPlan): Boolean = {

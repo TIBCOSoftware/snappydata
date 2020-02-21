@@ -297,8 +297,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
   override protected def doProduce(ctx: CodegenContext): String =
     throw new UnsupportedOperationException("unexpected invocation")
 
-  override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
-      row: ExprCode): String = {
+  private def doConsume(ctx: CodegenContext, keyExpressions: Seq[Expression],
+      valueExpressions: Seq[Expression], input: Seq[ExprCode]): String = {
     // consume the data and populate the map
     val entryVar = "mapEntry" // local variable
     val hashVar = Array(ctx.freshName("hash"))
@@ -307,8 +307,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     val keyVars = getExpressionVars(keyExpressions, input)
     // skip expressions already in key variables (that are also skipped
     //   in the value class fields in class generation)
-    val valueVars = getExpressionVars(
-      valueExprIndexes.filter(_._2 >= 0).map(_._1), input)
+    val valueVars = getExpressionVars(valueExpressions, input)
     // Update min/max code for primitive type columns. Avoiding additional
     // index mapping here for mix of integral and non-integral keys
     // rather using key index since overhead of blanks will be negligible.
@@ -334,13 +333,17 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         // mark map as not unique on multiple inserts for same key
         $hashMapTerm.setKeyIsUnique(false);"""
     }
+    val nullableKeys = keyVars.map(internals.exprCodeIsNull).filter(_ != "false")
+    val (nullCheckStart, nullCheckEnd) =
+      if (nullableKeys.isEmpty) ("", "")
+      else {
+        (s"// skip if a key is null\nif (${nullableKeys.mkString("!", " &&\n!", "")}) {\n", "\n}")
+      }
     s"""
       // evaluate the key and value expressions
       ${evaluateVariables(keyVars)}${evaluateVariables(valueVars)}
-      // skip if any key is null
-      if (${keyVars.map(internals.exprCodeIsNull).mkString(" ||\n")}) continue;
-      // generate hash code
-      ${generateHashCode(hashVar, keyVars, keyExpressions, register = false)}
+      $nullCheckStart// generate hash code
+      ${generateHashCode(hashVar, keyVars, register = false)}
       // lookup or insert the grouping key in map
       // using inline get call so that equals() is inline using
       // existing register variables instead of having to fill up
@@ -376,8 +379,71 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
           break;
         }
-      }
+      }$nullCheckEnd
     """
+  }
+
+  override def doConsume(ctx: CodegenContext, input: Seq[ExprCode], row: ExprCode): String = {
+    val valueExpressions = valueExprIndexes.filter(_._2 >= 0).map(_._1)
+    val output = this.output
+    // try to create a separate function for doConsume to reduce outer function size
+    if (calculateParamLength(ctx, output) <= 255) {
+      val doConsumeFunction = ctx.freshName("doConsume")
+      val usedInput = AttributeSet(keyExpressions) ++ AttributeSet(valueExpressions)
+      val usedInputCode = new mutable.ArrayBuffer[String]
+      val args = new mutable.ArrayBuffer[String]
+      val params = new mutable.ArrayBuffer[String]
+      val newInput = new mutable.ArrayBuffer[ExprCode]()
+      for (i <- input.indices) {
+        val attr = output(i)
+        val ev = input(i)
+        if (usedInput.contains(attr)) {
+          val varName = ctx.freshName("arg")
+          val dataType = attr.dataType
+          val evCode = ev.code.toString
+          if (!evCode.isEmpty) usedInputCode += evCode
+          args += internals.exprCodeValue(ev)
+          params += s"${internals.javaType(dataType, ctx)} $varName"
+          var isNull = internals.exprCodeIsNull(ev)
+          if (isNull != "false") {
+            args += isNull
+            isNull = ctx.freshName("isNull")
+            params += s"boolean $isNull"
+          }
+          newInput += internals.newExprCode(code = "", isNull, varName, dataType)
+        } else {
+          newInput += ev
+        }
+      }
+      val functionName = internals.addFunction(ctx, doConsumeFunction,
+        s"""
+           |private void $doConsumeFunction(${params.mkString(", ")}) throws java.io.IOException {
+           |  ${doConsume(ctx, keyExpressions, valueExpressions, newInput)}
+           |}
+        """.stripMargin)
+      s"""
+         |${usedInputCode.mkString("\n")}
+         |$functionName(${args.mkString(", ")});
+      """.stripMargin
+    } else {
+      doConsume(ctx, keyExpressions, valueExpressions, input)
+    }
+  }
+
+  /**
+   * Taken from CodeGenerator.calculateParamLength in Spark 2.4.x
+   */
+  private def calculateParamLength(ctx: CodegenContext, params: Seq[Expression]): Int = {
+    def paramLengthForExpr(input: Expression): Int = {
+      val javaParamLength = internals.javaType(input.dataType, ctx) match {
+        case "long" | "double" => 2
+        case _ => 1
+      }
+      // For a nullable expression, we need to pass in an extra boolean parameter.
+      (if (input.nullable) 1 else 0) + javaParamLength
+    }
+    // Initial value is 1 for `this`.
+    1 + params.map(paramLengthForExpr).sum
   }
 
   /** get the generated class name */
@@ -388,8 +454,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
    * correspond to the key columns in this class.
    */
   def generateHashCode(hashVar: Array[String], keyVars: Seq[ExprCode],
-      keyExpressions: Seq[Expression], skipDeclaration: Boolean = false,
-      register: Boolean = true): String = {
+      skipDeclaration: Boolean = false, register: Boolean = true): String = {
     var hash = hashVar(0)
     val hashDeclaration = if (skipDeclaration) "" else s"int $hash;\n"
     // check if hash has already been generated for keyExpressions
@@ -745,7 +810,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
             // evaluate the key expressions
             ${evaluateVariables(keyVars)}
             // evaluate hash code of the lookup key
-            ${generateHashCode(hashVar, keyVars, keyExpressions, register = false)}
+            ${generateHashCode(hashVar, keyVars, register = false)}
             ${mapLookupCode(keyVars)}
           }
         """
@@ -757,7 +822,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           $inputEvals
           ${evaluateVariables(keyVars)}
           // evaluate hash code of the lookup key
-          ${generateHashCode(hashVar, keyVars, keyExpressions)}
+          ${generateHashCode(hashVar, keyVars)}
           $className $objVar;
           ${mapLookupCode(keyVars)}
          """
@@ -769,15 +834,13 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     s"$numRows++;\n${consumer.consume(ctx, resultVars)}"
 
   // scalastyle:off
-  def generateMapLookup(entryVar: String, localValueVar: String,
-      mapSize: String, keyIsUnique: String, initMap: String,
-      initMapCode: String, numRows: String, nullMaskVars: Array[String],
-      initCode: String, checkCond: (Option[ExprCode], String, Option[Expression]),
-      streamKeys: Seq[Expression], streamKeyVars: Seq[ExprCode],
-      streamOutput: Seq[Attribute], buildKeyVars: Seq[ExprCode],
-      buildVars: Seq[ExprCode], input: Seq[ExprCode],
-      resultVars: Seq[ExprCode], dictArrayVar: String, dictArrayInitVar: String,
-      joinType: JoinType, buildSide: BuildSide): String = {
+  def generateMapLookup(entryVar: String, localValueVar: String, mapSize: String,
+      keyIsUnique: String, initMap: String, initMapCode: String, numRows: String,
+      nullMaskVars: Array[String], initCode: String, checkCond: (Option[ExprCode], String,
+      Option[Expression]), streamKeys: Seq[Expression], streamOutput: Seq[Attribute],
+      buildKeyVars: Seq[ExprCode], buildVars: Seq[ExprCode], input: Seq[ExprCode],
+      dictArrayVar: String, dictArrayInitVar: String, joinType: JoinType,
+      buildSide: BuildSide): String = {
     // scalastyle:on
 
     val hash = ctx.freshName("hash")
@@ -799,24 +862,43 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     }
     val mapKeyCodes = s"$initCode\n${evaluateVariables(mapKeyVars)}"
 
-    // invoke generateHashCode before consume so that hash variables
-    // can be re-used by consume if possible
-    val streamHashCode = generateHashCode(hashVar, streamKeyVars, streamKeys,
-      skipDeclaration = true)
-    // if previous hash variable is being used then skip declaration
-    val hashInit = if (hashVar(0) eq hash) s"int $hash = 0;" else ""
-    // if a stream-side key is null then skip (or null for outer join)
-    val nullStreamKey = streamKeyVars.filter(internals.exprCodeIsNull(_) != "false")
-        .map(v => s"!${internals.exprCodeIsNull(v)}")
     // continue to next entry on no match
     val continueOnNull = joinType match {
       case Inner | LeftSemi => true
       case _ => false
     }
+    // initialize dictionaryKey
+    initDictionaryCodeForSingleKeyCase(dictArrayInitVar, input, streamKeys, streamOutput)
+
+    // check if streamKeyVars need to be evaluated in the outer block in which case pre-evaluate
+    // the used input variables in appropriate positions to avoid double variable initialization
+    val inputKeysCode = if (dictionaryKey.isEmpty ||
+        // determine if initFilters will be empty or not
+        !continueOnNull || integralKeys.nonEmpty || streamKeys.exists(_.nullable)) {
+      evaluateRequiredVariables(streamOutput, input, AttributeSet(streamKeys))
+    } else ""
+    val resultVars = buildSide match {
+      case BuildLeft => buildVars ++ input
+      case BuildRight => input ++ buildVars
+    }
+
+    ctx.INPUT_ROW = null
+    ctx.currentVars = input
+    val boundStreamKeys = streamKeys.map(BindReferences.bindReference(_, streamOutput))
+    val streamKeyVars = ctx.generateExpressions(boundStreamKeys)
+
+    // invoke generateHashCode before consume so that hash variables
+    // can be re-used by consume if possible
+    val streamHashCode = generateHashCode(hashVar, streamKeyVars, skipDeclaration = true)
+    // if previous hash variable is being used then skip declaration
+    val hashInit = if (hashVar(0) eq hash) s"int $hash = 0;" else ""
+    // if a stream-side key is null then skip (or null for outer join)
+    val nullStreamKeys = streamKeys.indices.collect {
+      case i if streamKeys(i).nullable => s"!${internals.exprCodeIsNull(streamKeyVars(i))}"
+    }
     // filter as per min/max if provided; the min/max variables will be
     // initialized by the caller outside the loop after creating the map
-    val minMaxFilter = integralKeys.zipWithIndex.map {
-      case (indexKey, index) =>
+    val minMaxFilter = integralKeys.zipWithIndex.map { case (indexKey, index) =>
       val keyVar = internals.exprCodeValue(streamKeyVars(indexKey))
       val minVar = integralKeysMinVars(index)
       val maxVar = integralKeysMaxVars(index)
@@ -825,10 +907,10 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // generate the initial filter condition from above two
     // also add a mapSize check but when continueOnNull is true, then emit a continue immediately
     val (checkMapSize, initFilters) = if (continueOnNull) {
-      (s"if ($mapSize == 0) continue;\n", nullStreamKey ++ minMaxFilter)
-    } else ("", s"$mapSize != 0" +: (nullStreamKey ++ minMaxFilter))
-    val initFilterCode = if (initFilters.isEmpty) ""
-    else initFilters.mkString("if (", " &&\n", ")")
+      (s"if ($mapSize == 0) continue;\n", nullStreamKeys ++ minMaxFilter)
+    } else ("", s"$mapSize != 0" +: (nullStreamKeys ++ minMaxFilter))
+    val initFilterCode =
+      if (initFilters.isEmpty) "" else initFilters.mkString("if (", " &&\n", ")")
 
     // common multi-value iteration code fragments
     val entryIndexVar = ctx.freshName("entryIndex")
@@ -880,12 +962,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     }
 
     // optimized path for single key string column if dictionary is present
-    val lookup = mapLookup(entryVar, hashVar(0), streamKeys, streamKeyVars,
-      valueInit = null)
-    val preEvalKeys = if (initFilterCode.isEmpty) ""
-    else evaluateVariables(streamKeyVars)
-    initDictionaryCodeForSingleKeyCase(dictArrayInitVar, input,
-      streamKeys, streamOutput)
+    val lookup = mapLookup(entryVar, hashVar(0), boundStreamKeys, streamKeyVars, valueInit = null)
+    val preEvalKeys = if (initFilterCode.isEmpty) "" else evaluateVariables(streamKeyVars)
     var mapLookupCode = dictionaryKey match {
       case Some(dictKey) =>
         val keyVar = streamKeyVars.head
@@ -895,9 +973,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         // if required outside the block
         val code = s"""
           ${DictionaryOptimizedMapAccessor.dictionaryArrayGetOrInsert(ctx,
-            streamKeys, keyVar, dictKey, dictArrayVar, entryVar,
+            boundStreamKeys, keyVar, dictKey, dictArrayVar, entryVar,
             valueInit = null, continueOnNull, accessor = this)} else {
-            // evaluate the key expressions
+            // evaluate the string key expression
             ${if (keyCode.isEmpty) "" else keyCode.trim}
             // generate hash code from stream side key columns
             $streamHashCode
@@ -981,15 +1059,19 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         s"HashJoin should not take $joinType as the JoinType")
     }
 
+    // wrap in "do {...} while(false)" so that the code inside can break out with continue
     s"""
-      if (!$initMap) {
-        $initMapCode
-      }
-      $checkMapSize$className $entryVar = null;
-      $hashInit
-      $mapLookupCode
-      $entryConsume
-    """
+       |if (!$initMap) {
+       |  $initMapCode
+       |}
+       |do {
+       |  $checkMapSize$className $entryVar = null;
+       |  $inputKeysCode
+       |  $hashInit
+       |  $mapLookupCode
+       |  $entryConsume
+       |} while (false);
+    """.stripMargin
   }
 
   /**

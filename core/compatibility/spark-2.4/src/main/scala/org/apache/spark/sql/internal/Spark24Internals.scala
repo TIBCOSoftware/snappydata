@@ -157,7 +157,7 @@ class Spark24Internals(override val version: String) extends Spark23_4_Internals
 
   override def newExprCode(code: String, isNull: String,
       value: String, dt: DataType): ExprCode = {
-    ExprCode(CodeBlock(code :: Nil, EmptyBlock :: Nil),
+    ExprCode(if (code.isEmpty) EmptyBlock else CodeBlock(code :: Nil, EmptyBlock :: Nil),
       isNull = exprValue(isNull, BooleanType),
       value = exprValue(value, dt))
   }

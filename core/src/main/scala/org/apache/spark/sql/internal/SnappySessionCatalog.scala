@@ -939,9 +939,8 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
 
   override def refreshTable(name: TableIdentifier): Unit = {
     val table = addMissingGlobalTempSchema(name)
-    if (isTemporaryTable(table)) {
-      super.refreshTable(table)
-    } else {
+    super.refreshTable(table)
+    if (!isTemporaryTable(table)) {
       val resolved = resolveTableIdentifier(table)
       snappyExternalCatalog.invalidate(resolved.database.get -> resolved.table)
       if (snappySession.enableHiveSupport) {

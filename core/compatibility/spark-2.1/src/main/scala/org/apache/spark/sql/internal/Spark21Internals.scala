@@ -36,7 +36,7 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog.{ExternalCatalog, _}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, ExprCode, GeneratedClass}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameBoundary, FrameType, Generator, Literal, NamedExpression, NullOrdering, PredicateSubquery, SortDirection, SortOrder, SpecifiedWindowFrame, UnboundedFollowing, UnboundedPreceding, ValueFollowing, ValuePreceding}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameBoundary, FrameType, Generator, In, ListQuery, Literal, NamedExpression, NullOrdering, PredicateSubquery, SortDirection, SortOrder, SpecifiedWindowFrame, UnboundedFollowing, UnboundedPreceding, ValueFollowing, ValuePreceding}
 import org.apache.spark.sql.catalyst.json.JSONOptions
 import org.apache.spark.sql.catalyst.optimizer.Optimizer
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -100,7 +100,7 @@ class Spark21Internals(override val version: String) extends SparkInternals {
   }
 
   override def addFunction(ctx: CodegenContext, funcName: String, funcCode: String,
-      inlineToOuterClass: Boolean = false): String = {
+      inlineToOuterClass: Boolean): String = {
     ctx.addNewFunction(funcName, funcCode)
     funcName
   }
@@ -117,6 +117,10 @@ class Spark21Internals(override val version: String) extends SparkInternals {
 
   override def isPredicateSubquery(expr: Expression): Boolean =
     expr.isInstanceOf[PredicateSubquery]
+
+  override def newInSubquery(expr: Expression, query: LogicalPlan): Expression = {
+    In(expr, ListQuery(query) :: Nil)
+  }
 
   override def copyPredicateSubquery(expr: Expression, newPlan: LogicalPlan,
       newExprId: ExprId): Expression = {

@@ -508,7 +508,7 @@ class SnappyParser(session: SnappySession)
         (termExpression * commaSep) ~ ')' ~ ws ~> ((e: Expression, es: Any) =>
           In(e, es.asInstanceOf[Seq[Expression]])) |
         query ~ ')' ~ ws ~> ((e1: Expression, plan: LogicalPlan) =>
-          In(e1, Seq(ListQuery(plan))))
+          internals.newInSubquery(e1, plan))
         ) |
     BETWEEN ~ termExpression ~ AND ~ termExpression ~>
         ((e: Expression, el: Expression, eu: Expression) =>

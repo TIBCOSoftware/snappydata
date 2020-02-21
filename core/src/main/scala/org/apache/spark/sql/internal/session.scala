@@ -76,6 +76,11 @@ class SnappyConf(@transient val session: SnappySession)
    */
   @volatile private[this] var dynamicCpusPerTask: Int = _
 
+  // disable LogicalPlan cache since the ExternalCatalog implementations already have
+  // a large enough cache and this cache causes lot of trouble with stale data especially
+  // in smart connector mode which is already handled by SmartConnectorExternalCatalog
+  setConfString("spark.sql.filesourceTableRelationCacheSize", "0")
+
   SQLConf.SHUFFLE_PARTITIONS.defaultValue match {
     case Some(d) if (session ne null) && super.numShufflePartitions == d =>
       dynamicShufflePartitions = coreCountForShuffle

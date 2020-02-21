@@ -130,6 +130,12 @@ trait SparkInternals extends Logging {
   def isPredicateSubquery(expr: Expression): Boolean
 
   /**
+   * Create a new IN expression for a subquery. Older Spark versions handle
+   * it as a regular IN expression while newer ones use a separate InSubquery.
+   */
+  def newInSubquery(expr: Expression, query: LogicalPlan): Expression
+
+  /**
    * Make a copy of given predicate sub-query with new plan and [[ExprId]].
    */
   def copyPredicateSubquery(expr: Expression, newPlan: LogicalPlan, newExprId: ExprId): Expression

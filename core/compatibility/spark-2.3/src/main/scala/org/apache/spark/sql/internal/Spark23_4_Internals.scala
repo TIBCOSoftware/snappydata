@@ -36,7 +36,7 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, GeneratedClass}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame, UnaryMinus, UnboundedFollowing, UnboundedPreceding}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, CreateNamedStruct, CurrentRow, ExprId, Expression, ExpressionInfo, FrameType, Generator, ListQuery, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame, UnaryMinus, UnboundedFollowing, UnboundedPreceding}
 import org.apache.spark.sql.catalyst.json.JSONOptions
 import org.apache.spark.sql.catalyst.optimizer.Optimizer
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -113,6 +113,14 @@ abstract class Spark23_4_Internals extends SparkInternals {
   override def resetCopyResult(ctx: CodegenContext): Unit = {}
 
   override def isPredicateSubquery(expr: Expression): Boolean = false
+
+  override def newInSubquery(expr: Expression, query: LogicalPlan): Expression = {
+    val expressions = expr match {
+      case c: CreateNamedStruct => c.valExprs
+      case _ => expr :: Nil
+    }
+    catalyst.expressions.InSubquery(expressions, ListQuery(query))
+  }
 
   override def copyPredicateSubquery(expr: Expression, newPlan: LogicalPlan,
       newExprId: ExprId): Expression = {
