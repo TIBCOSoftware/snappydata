@@ -246,6 +246,16 @@ class Spark24Internals(override val version: String) extends Spark23_4_Internals
       ignoreIfExists: Boolean, validateLocation: Boolean): Unit = {
     catalog.createTable(tableDefinition, ignoreIfExists, validateLocation)
   }
+
+  override def logicalPlanResolveDown(plan: LogicalPlan)(
+      rule: PartialFunction[LogicalPlan, LogicalPlan]): LogicalPlan = {
+    plan.resolveOperatorsDown(rule)
+  }
+
+  override def logicalPlanResolveUp(plan: LogicalPlan)(
+      rule: PartialFunction[LogicalPlan, LogicalPlan]): LogicalPlan = {
+    plan.resolveOperatorsUp(rule)
+  }
 }
 
 class SnappyEmbeddedHiveCatalog24(_conf: SparkConf, _hadoopConf: Configuration,

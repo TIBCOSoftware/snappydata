@@ -759,10 +759,29 @@ trait SparkInternals extends Logging {
   def addStringPromotionRules(rules: Seq[Rule[LogicalPlan]],
       analyzer: SnappyAnalyzer, conf: SQLConf): Seq[Rule[LogicalPlan]]
 
+  /**
+   * Create table definition in the catalog.
+   */
   def createTable(catalog: SessionCatalog, tableDefinition: CatalogTable,
       ignoreIfExists: Boolean, validateLocation: Boolean): Unit = {
     catalog.createTable(tableDefinition, ignoreIfExists)
   }
+
+  /**
+   * Transform down a [[LogicalPlan]] during analysis phase.
+   * This translates to resolveOperatorsDown in Spark 2.4.x
+   * while it uses transformDown in earlier versions.
+   */
+  def logicalPlanResolveDown(plan: LogicalPlan)(
+      rule: PartialFunction[LogicalPlan, LogicalPlan]): LogicalPlan = plan.transformDown(rule)
+
+  /**
+   * Transform up a [[LogicalPlan]] during analysis phase.
+   * This translates to resolveOperatorsUp in Spark 2.4.x
+   * while it uses transformUp in earlier versions.
+   */
+  def logicalPlanResolveUp(plan: LogicalPlan)(
+      rule: PartialFunction[LogicalPlan, LogicalPlan]): LogicalPlan = plan.transformUp(rule)
 }
 
 /**
