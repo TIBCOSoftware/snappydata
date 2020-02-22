@@ -58,7 +58,7 @@ import org.apache.spark.util.CallSite
 
 class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecution,
     private[sql] val queryExecutionString: String,
-    private[sql] val queryPlanInfo: SparkPlanInfo,
+    @transient private[sql] val queryPlanInfo: SparkPlanInfo,
     private[sql] var currentQueryExecutionString: String,
     private[sql] var currentQueryPlanInfo: SparkPlanInfo,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int], encoder: Encoder[Row],
@@ -241,8 +241,10 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     if (currentQueryExecutionString eq null) {
       currentQueryExecutionString = SnappySession.replaceParamLiterals(
         queryExecutionString, currentLiterals, paramsId)
+      val planInfo = if (queryPlanInfo ne null) queryPlanInfo
+      else PartitionedPhysicalScan.getSparkPlanInfo(queryExecution.executedPlan)
       currentQueryPlanInfo = PartitionedPhysicalScan.updatePlanInfo(
-        queryPlanInfo, currentLiterals, paramsId)
+        planInfo, currentLiterals, paramsId)
     }
     // set the query hints as would be set at the end of un-cached sql()
     snappySession.synchronized {

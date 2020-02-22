@@ -212,7 +212,7 @@ object ColumnTableBulkOps extends SparkSupport {
 }
 
 case class PutIntoColumnTable(table: LogicalPlan,
-    insert: LogicalPlan, update: Update) extends BinaryNode {
+    insert: LogicalPlan, update: LogicalPlan) extends BinaryNode {
 
   override lazy val output: Seq[Attribute] = AttributeReference(
     "count", LongType)() :: Nil

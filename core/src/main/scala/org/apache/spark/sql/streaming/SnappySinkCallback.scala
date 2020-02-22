@@ -28,8 +28,10 @@ import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.execution.CatalogStaleException
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.streaming.Sink
-import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
+import org.apache.spark.sql.row.JDBCMutableRelation
+import org.apache.spark.sql.sources.{DataSourceRegister, JdbcExtendedUtils, StreamSinkProvider}
 import org.apache.spark.sql.streaming.SnappyStoreSinkProvider.EventType._
 import org.apache.spark.sql.streaming.SnappyStoreSinkProvider._
 import org.apache.spark.sql.types.StructType
@@ -189,16 +191,18 @@ case class SnappyStoreSink(snappySession: SnappySession, parameters: Map[String,
 
   private def isPossibleDuplicate(queryName: String, batchId: Long): Boolean = {
     val stateTableSchema = parameters.get(STATE_TABLE_SCHEMA)
-    val updated = snappySession.sql(s"update ${stateTable(stateTableSchema)} " +
+    val relation = snappySession.sessionCatalog.resolveRelation(
+      snappySession.tableIdentifier(stateTable(stateTableSchema)))
+        .asInstanceOf[LogicalRelation].relation.asInstanceOf[JDBCMutableRelation]
+    val updated = relation.executeUpdate(s"update ${stateTable(stateTableSchema)} " +
         s"set $BATCH_ID_COLUMN=$batchId where $QUERY_ID_COLUMN='$queryName' " +
-        s"and $BATCH_ID_COLUMN != $batchId")
-        .collect()(0).getAs("count").asInstanceOf[Long]
+        s"and $BATCH_ID_COLUMN != $batchId",
+      JdbcExtendedUtils.toUpperCase(snappySession.getCurrentSchema))
 
-    // TODO: use JDBC connection here
     var posDup = false
     if (updated == 0) {
       try {
-        snappySession.insert(stateTable(stateTableSchema), Row(queryName, batchId))
+        relation.insert(Row(queryName, batchId) :: Nil)
         posDup = false
       }
       catch {

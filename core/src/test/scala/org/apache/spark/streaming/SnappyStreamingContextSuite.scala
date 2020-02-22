@@ -51,9 +51,6 @@ class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually
     stopAll()
   }
 
-  before {
-  }
-
   after {
     val activeSsc = SnappyStreamingContext.getActive
     activeSsc match {

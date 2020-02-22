@@ -183,6 +183,8 @@ class ColumnTableTest
     try {
       snc.sql("insert into coltab values (1, 2)")
     } catch {
+      case ae: AnalysisException => assert(ae.message.contains(
+        "data to be inserted have the same number of columns as the target table"))
       case ex: SQLException => assert("42802".equals(ex.getSQLState))
     }
     snc.sql("drop table coltab")

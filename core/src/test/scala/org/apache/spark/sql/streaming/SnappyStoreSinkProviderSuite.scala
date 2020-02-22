@@ -26,7 +26,7 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.SNAPPY_CA
 import io.snappydata.SnappyFunSuite
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.sql.{Dataset, Row, SnappyContext, SnappySession}
+import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappyContext, SnappySession}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.execution.CatalogStaleException
 import org.apache.spark.sql.kafka010.KafkaTestUtils
@@ -457,7 +457,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   private def createAndStartStreamingQuery(topic: String, testId: Int,
       withEventTypeColumn: Boolean = true, withQueryName: Boolean = true,
       options: Map[String, String] = Map.empty) = {
-    val streamingDF = session
+    val streamingDF: DataFrame = session
         .readStream
         .format("kafka")
         .option("kafka.bootstrap.servers", kafkaTestUtils.brokerAddress)

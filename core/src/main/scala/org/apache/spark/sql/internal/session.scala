@@ -32,8 +32,8 @@ import io.snappydata.{Constant, Property}
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql.catalyst.analysis
-import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Contains, EndsWith, EqualTo, Expression, Like, Literal, StartsWith}
+import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedAttribute, UnresolvedTableValuedFunction}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Contains, EndsWith, EqualTo, Expression, Like, Literal, NamedExpression, StartsWith}
 import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, UnaryNode, Filter => LogicalFilter}
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -45,9 +45,10 @@ import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation,
 import org.apache.spark.sql.execution.{SecurityUtils, SparkOptimizer}
 import org.apache.spark.sql.hive.SnappySessionState
 import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
+import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DecimalType, StringType}
-import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext, SnappyParser, SnappySession, SparkSupport}
+import org.apache.spark.sql.{AnalysisException, DMLExternalTable, SaveMode, SnappyContext, SnappyParser, SnappySession, SparkSupport}
 import org.apache.spark.unsafe.types.UTF8String
 
 // Misc helper classes for session handling
@@ -592,6 +593,62 @@ private[sql] final class PreprocessTable(state: SnappySessionState)
 
   private def conf: SQLConf = state.conf
 
+  private def resolveProjection(u: UnresolvedTableValuedFunction,
+      child: LogicalPlan, op: String): (LogicalPlan, LogicalPlan) = {
+    val session = state.snappySession
+    if (u.functionArgs.forall(_.isInstanceOf[UnresolvedAttribute])) {
+      val relation = session.sessionCatalog.resolveRelation(
+        session.tableIdentifier(u.functionName, resolve = true))
+      val output = relation.output
+      val childOutput = child.output
+      if (childOutput.length != u.functionArgs.length) {
+        throw new AnalysisException("Query in the INSERT/PUT statement " +
+            s"(${childOutput.map(_.name).mkString("; ")}) should generate the same number " +
+            s"of columns as the table projection (${u.functionArgs.mkString("; ")})")
+      }
+      // if all columns are being projected then apply the Projections else
+      // check for row tables and pass them through since those may have
+      // default values or identity columns
+      val projection = new Array[NamedExpression](output.length)
+      val resolver = state.analyzer.resolver
+      var index = -1
+      for (i <- u.functionArgs.indices) {
+        val e = u.functionArgs(i)
+        relation.resolve(e.asInstanceOf[UnresolvedAttribute].nameParts, resolver) match {
+          case Some(attr) if (index = output.indexOf(attr)).isInstanceOf[Unit] && index != -1 =>
+            projection(index) = internals.newAlias(childOutput(i), output(index).name, None)
+          case None =>
+            throw new AnalysisException(s"Could not resolve $e for $op " +
+                s"in table ${u.functionName} among (${output.map(_.name).mkString(", ")})")
+        }
+      }
+      val isRowTable = relation match {
+        case lr: LogicalRelation if lr.relation.isInstanceOf[JDBCMutableRelation] => true
+        case _ => false
+      }
+      val currentKey = session.currentKey
+      var hasNullValueProjection = false
+      for (i <- projection.indices) {
+        if (projection(i) eq null) {
+          hasNullValueProjection = true
+          // add NULL of target type
+          if (!isRowTable || (currentKey eq null)) {
+            val attr = output(i)
+            if (!attr.nullable) {
+              throw new AnalysisException(
+                s"For $op in ${u.functionName}, ${attr.name} not specified but is NOT NULL")
+            }
+            projection(i) = internals.newAlias(Literal(null, attr.dataType), attr.name, None)
+          }
+        }
+      }
+      if (hasNullValueProjection && isRowTable && (currentKey ne null)) {
+        // fallback to store-layer command to handle default and autoincrement columns
+        (u, DMLExternalTable(relation, currentKey.sqlText))
+      } else (relation, Project(projection.toSeq, child))
+    } else (u, child)
+  }
+
   def apply(plan: LogicalPlan): LogicalPlan = internals.logicalPlanResolveDown(plan) {
 
     // Add dbtable property for create table. While other routes can add it in
@@ -632,6 +689,43 @@ private[sql] final class PreprocessTable(state: SnappySessionState)
         }
         c.copy(tableDesc.copy(storage = tableDesc.storage.copy(properties = newOptions)))
       } else c
+
+    // resolve INSERT INTO/OVERWRITE TABLE(columns) ...
+    case i: InsertIntoTable if i.table.isInstanceOf[UnresolvedTableValuedFunction] =>
+      val isOverwrite = internals.getOverwriteOption(i)
+      val query = i.children.head
+      resolveProjection(i.table.asInstanceOf[UnresolvedTableValuedFunction], query,
+        s"INSERT ${if (isOverwrite) "OVERWRITE" else "INTO"}") match {
+        case (_, d: DMLExternalTable) =>
+          // no support for OVERWRITE or PARTITION for this case
+          val tableName = d.child match {
+            case lr: LogicalRelation if lr.relation.isInstanceOf[JDBCMutableRelation] =>
+              " " + lr.relation.asInstanceOf[JDBCMutableRelation].resolvedName
+            case _ => ""
+          }
+          if (isOverwrite) {
+            throw new AnalysisException(s"INSERT OVERWRITE not supported with " +
+                s"table column specification on row table$tableName")
+          }
+          if (i.partition.nonEmpty) {
+            throw new AnalysisException(s"INSERT with PARTITION not supported with " +
+                s"table column specification on row table$tableName")
+          }
+          d
+        case (t, c) =>
+          if ((t eq i.table) && (c eq query)) i
+          else {
+            internals.newInsertPlanWithCountOutput(t, i.partition, c, isOverwrite,
+              internals.getIfNotExistsOption(i))
+          }
+      }
+
+    // resolve PUT INTO TABLE(columns) ...
+    case p@PutIntoTable(u: UnresolvedTableValuedFunction, child) =>
+      resolveProjection(u, child, "PUT INTO") match {
+        case (_, d: DMLExternalTable) => d
+        case (t, c) => if ((t eq u) && (c eq child)) p else p.copy(table = t, child = c)
+      }
 
     // Check for SchemaInsertableRelation first
     case i@InsertIntoTable(l: LogicalRelation, _, child, _, _)

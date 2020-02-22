@@ -55,7 +55,7 @@ case class ResolveQueryHints(snappySession: SnappySession)
       return plan
     }
 
-    plan transformUp {
+    val resolved = internals.logicalPlanResolveUp(plan) {
       case lr: LogicalRelation if lr.relation.isInstanceOf[ColumnFormatRelation] =>
         explicitIndexHint.getOrElse(lr.relation.asInstanceOf[ColumnFormatRelation].table,
           Some(lr)).get
@@ -65,7 +65,8 @@ case class ResolveQueryHints(snappySession: SnappySession)
           case Some(Some(index)) => internals.newSubqueryAlias(s.alias, index)
           case _ => s
         }
-    } transformUp {
+    }
+    internals.logicalPlanResolveUp(resolved) {
       case q: LogicalPlan =>
         q transformExpressionsUp {
           case a: AttributeReference =>

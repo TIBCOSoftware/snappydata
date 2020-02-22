@@ -365,8 +365,8 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
  * Also when hive compatibility is turned on, then this does not include the schema name
  * or "isTemporary" to return hive compatible result.
  */
-class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
-    tablePattern: Option[String]) extends ShowTablesCommand(schemaOpt, tablePattern) {
+class ShowSnappyTablesCommand(schemaOpt: Option[String], tablePattern: Option[String])(
+    session: SnappySession) extends ShowTablesCommand(schemaOpt, tablePattern) {
 
   private val hiveCompatible = Property.HiveCompatibility.get(
     session.sessionState.conf).equalsIgnoreCase("full")
@@ -379,6 +379,8 @@ class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
           AttributeReference("isTemporary", BooleanType, nullable = false)() :: Nil
     }
   }
+
+  override protected def otherCopyArgs: Seq[AnyRef] = session :: Nil
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     if (!hiveCompatible) {

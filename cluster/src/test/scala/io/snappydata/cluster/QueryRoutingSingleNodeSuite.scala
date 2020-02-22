@@ -780,7 +780,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         " 123.56, 0.089, 'abcd', current_timestamp, 'SNAPPY')")
     stmt.execute("put into columntable (bigIntCol, binaryCol1, boolCol, byteCol," +
         " charCol, dateCol , decimalCol , doubleCol , floatCol , intCol)" +
-        " values (1000, 1010, FALSE, 97,'1234567890abcdefghij'," +
+        " values (1000, x'1010', FALSE, 97,'1234567890abcdefghij'," +
         " date('1970-01-08'), 66, 2.2, 1.0E8, 1000)")
     assertEquals(2, snc.sql("select * from columntable").count())
   }
@@ -922,7 +922,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         " 123.56, 0.089, 'abcd', current_timestamp, 'SNAPPY')")
     snc.sql("put into std1.columntable (bigIntCol, binaryCol1, boolCol, byteCol," +
         " charCol, dateCol , decimalCol , doubleCol , floatCol , intCol)" +
-        " values (1000, 1010, FALSE, 97,'1234567890abcdefghij'," +
+        " values (1000, x'1010', FALSE, 97,'1234567890abcdefghij'," +
         " date('1970-01-08'), 66, 2.2, 1.0E8, 1000)")
     assertEquals(2, snc.sql("select * from std1.columntable").count())
   }
@@ -995,7 +995,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
         " 123.56, 0.089, 'abcd', current_timestamp, 'SNAPPY')")
     snc.sql("put into std2.columntable (bigIntCol, binaryCol1, boolCol, byteCol," +
         " charCol, dateCol , decimalCol , doubleCol , floatCol , intCol)" +
-        " values (1000, 1010, FALSE, 97,'1234567890abcdefghij'," +
+        " values (1000, x'1010', FALSE, 97,'1234567890abcdefghij'," +
         " date('1970-01-08'), 66, 2.2, 1.0E8, 1000)")
     assertEquals(2, snc.sql("select * from std2.columntable").count())
   }

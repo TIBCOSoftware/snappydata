@@ -102,7 +102,7 @@ class Spark24Internals(override val version: String) extends Spark23_4_Internals
   override def newSubqueryAlias(alias: String, child: LogicalPlan,
       view: Option[TableIdentifier]): SubqueryAlias = view match {
     case Some(v@TableIdentifier(table, schemaOpt)) =>
-      if (alias != table) {
+      if (!alias.equalsIgnoreCase(table)) {
         throw new AnalysisException(s"Conflicting alias and view: alias=$alias, view=$v")
       } else {
         SubqueryAlias(AliasIdentifier(table, schemaOpt), child)

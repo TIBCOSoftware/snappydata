@@ -102,7 +102,7 @@ case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
     internals.copyExprCode(ev, code =
         s"""
           ${childGen.code.toString}
-          boolean $evIsNull = ${internals.exprCodeValue(childGen)};
+          boolean $evIsNull = ${internals.exprCodeIsNull(childGen)};
           boolean $evValue = false;
           if (!$evIsNull) {
             $evValue = $hsetTerm.containsKey(${internals.exprCodeValue(childGen)});

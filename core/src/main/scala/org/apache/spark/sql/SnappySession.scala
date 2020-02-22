@@ -112,7 +112,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc)
   override lazy val sessionState: SessionState = snappySessionState
 
   @transient
-  final val contextFunctions: SnappyContextFunctions = SparkSupport.newContextFunctions(self)
+  final lazy val contextFunctions: SnappyContextFunctions = SparkSupport.newContextFunctions(self)
 
   final def sessionCatalog: SnappySessionCatalog = snappySessionState.catalog
 
@@ -1781,7 +1781,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc)
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
       Some(this), ExternalStoreUtils.emptyCIMutableMap)
-    val jdbcOptions = new JDBCOptions(connProperties.url, "",
+    val jdbcOptions = new JDBCOptions(connProperties.url, indexName,
       connProperties.connProps.asScala.toMap)
     val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
     try {
