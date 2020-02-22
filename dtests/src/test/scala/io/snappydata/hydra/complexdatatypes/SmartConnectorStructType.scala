@@ -43,6 +43,7 @@ object SmartConnectorStructType {
       new File("ValidateSmartConnectorStructType" + "_" + "column" + System.currentTimeMillis())
       , false))
     val printContent : Boolean = false
+    val isExecute : Boolean = false
 
     /* --- Snappy Job --- */
     snc.sql("DROP TABLE IF EXISTS CricketRecord")
@@ -53,10 +54,16 @@ object SmartConnectorStructType {
     snc.sql("CREATE TABLE IF NOT EXISTS CricketRecord USING COLUMN " +
       "AS (SELECT * FROM TempCRRecord)")
 
+    /**
+      * No need to execute below queries because validation routine runs it.
+      * Keep it here for ready reference.
+      */
+    if(isExecute) {
     snc.sql(ComplexTypeUtils.Struct_Q1)
     snc.sql(ComplexTypeUtils.Struct_Q2)
     snc.sql(ComplexTypeUtils.Struct_Q3)
     snc.sql(ComplexTypeUtils.Struct_Q4)
+    }
 
     if(printContent) {
       println("Struct_Q1 : " + snc.sql(ComplexTypeUtils.Struct_Q1).show())
