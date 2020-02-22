@@ -53,6 +53,7 @@ import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.joins.HashedObjectCache
+import org.apache.spark.sql.execution.ui.SQLTab
 import org.apache.spark.sql.execution.{ConnectionPool, DeployCommand, DeployJarCommand, RefreshMetadata}
 import org.apache.spark.sql.hive.{HiveSessionCatalog, SnappyHiveExternalCatalog, SnappySessionState}
 import org.apache.spark.sql.internal.{ContextJarUtils, SharedState, SnappySharedState, StaticSQLConf}
@@ -799,7 +800,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 }
 
 
-object SnappyContext extends Logging {
+object SnappyContext extends SparkSupport with Logging {
 
   @volatile private[this] var _clusterMode: ClusterMode = _
   @volatile private[this] var _sharedState: SnappySharedState = _
@@ -1182,19 +1183,27 @@ object SnappyContext extends Logging {
 
   def newHiveSession(): SparkSession = contextLock.synchronized {
     val sc = globalSparkContext
-    sc.conf.set(StaticSQLConf.CATALOG_IMPLEMENTATION.key, "hive")
-    if (this.hiveSession ne null) this.hiveSession.newSession()
-    else {
-      val session = SparkSession.builder().enableHiveSupport().getOrCreate()
-      if (session.sessionState.catalog.isInstanceOf[HiveSessionCatalog]) {
-        this.hiveSession = session
-        // this session can be shared via Builder.getOrCreate() so create a new one
-        session.newSession()
-      } else {
-        this.hiveSession = new SparkSession(sc)
-        this.hiveSession
-      }
+    // avoid duplicate SQLTabs and keep only the one created by SnappySharedState
+    val sqlTab = sc.ui match {
+      case Some(ui) => ui.getTabs.find(_.isInstanceOf[SQLTab])
+      case _ => None
     }
+    sc.conf.set(StaticSQLConf.CATALOG_IMPLEMENTATION.key, "hive")
+    val newSession =
+      if (this.hiveSession ne null) this.hiveSession.newSession()
+      else {
+        val session = SparkSession.builder().enableHiveSupport().getOrCreate()
+        if (session.sessionState.catalog.isInstanceOf[HiveSessionCatalog]) {
+          this.hiveSession = session
+          // this session can be shared via Builder.getOrCreate() so create a new one
+          session.newSession()
+        } else {
+          this.hiveSession = new SparkSession(sc)
+          this.hiveSession
+        }
+      }
+    internals.removeSQLTabs(sc, sqlTab)
+    newSession
   }
 
   def hasHiveSession: Boolean = contextLock.synchronized(this.hiveSession ne null)

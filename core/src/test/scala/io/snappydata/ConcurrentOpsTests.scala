@@ -29,6 +29,7 @@ import scala.concurrent.{Await, Future}
 
 object ConcurrentOpsTests extends Assertions with Logging {
 
+  private val maxWait = Duration("180s")
 
   def testSimpleLockInsert(session: SnappySession): Unit = {
     val tableName = "ColumnTable"
@@ -190,10 +191,10 @@ object ConcurrentOpsTests extends Assertions with Logging {
     }
 
     val putTasks = Array.fill(10)(doPut())
-    putTasks.foreach(Await.result(_, Duration.Inf))
+    putTasks.foreach(Await.result(_, maxWait))
 
     val putTasks2 = Array.fill(5)(doPut())
-    putTasks2.foreach(Await.result(_, Duration.Inf))
+    putTasks2.foreach(Await.result(_, maxWait))
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r2 = result.collect
@@ -233,7 +234,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
     }
 
     val putTasks = Array.fill(10)(doUpdate())
-    putTasks.foreach(Await.result(_, Duration.Inf))
+    putTasks.foreach(Await.result(_, maxWait))
 
     val r3 = result.collect
     assert(r3.length == 2000)
@@ -271,7 +272,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
     }
 
     val putTasks = Array.fill(10)(doDelete())
-    putTasks.foreach(Await.result(_, Duration.Inf))
+    putTasks.foreach(Await.result(_, maxWait))
 
     val r3 = session.sql("SELECT * FROM " + tableName).collect()
     assert(r3.length == 0)
@@ -312,8 +313,8 @@ object ConcurrentOpsTests extends Assertions with Logging {
 
     val putTasks = Array.fill(5)(doPut())
     val putTasks2 = Array.fill(5)(doUpdate())
-    putTasks.foreach(Await.result(_, Duration.Inf))
-    putTasks2.foreach(Await.result(_, Duration.Inf))
+    putTasks.foreach(Await.result(_, maxWait))
+    putTasks2.foreach(Await.result(_, maxWait))
 
     val result = session.sql("SELECT * FROM " + tableName)
     val r2 = result.collect
@@ -381,10 +382,10 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val updateTasks = Array.fill(5)(doUpdate())
     val deleteTasks = Array.fill(5)(doDelete())
 
-    putTasks.foreach(Await.result(_, Duration.Inf))
-    insertTasks.foreach(Await.result(_, Duration.Inf))
-    deleteTasks.foreach(Await.result(_, Duration.Inf))
-    updateTasks.foreach(Await.result(_, Duration.Inf))
+    putTasks.foreach(Await.result(_, maxWait))
+    insertTasks.foreach(Await.result(_, maxWait))
+    deleteTasks.foreach(Await.result(_, maxWait))
+    updateTasks.foreach(Await.result(_, maxWait))
 
     val result = session.sql("SELECT * FROM " + tableName)
     val r2 = result.collect
@@ -453,10 +454,10 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val putTasks4 = Array.fill(5)(doPut(tableName4))
 
 
-    putTasks.foreach(Await.result(_, Duration.Inf))
-    putTasks2.foreach(Await.result(_, Duration.Inf))
-    putTasks3.foreach(Await.result(_, Duration.Inf))
-    putTasks4.foreach(Await.result(_, Duration.Inf))
+    putTasks.foreach(Await.result(_, maxWait))
+    putTasks2.foreach(Await.result(_, maxWait))
+    putTasks3.foreach(Await.result(_, maxWait))
+    putTasks4.foreach(Await.result(_, maxWait))
 
     Seq(tableName, tableName2, tableName3, tableName4).foreach(table => {
       val result = session.sql("SELECT * FROM " + table).collect()
@@ -548,10 +549,10 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val delTasks4 = Array.fill(5)(doDelete(tableName4, counter.addAndGet(500)))
 
 
-    delTasks.foreach(Await.result(_, Duration.Inf))
-    delTasks2.foreach(Await.result(_, Duration.Inf))
-    delTasks3.foreach(Await.result(_, Duration.Inf))
-    delTasks4.foreach(Await.result(_, Duration.Inf))
+    delTasks.foreach(Await.result(_, maxWait))
+    delTasks2.foreach(Await.result(_, maxWait))
+    delTasks3.foreach(Await.result(_, maxWait))
+    delTasks4.foreach(Await.result(_, maxWait))
 
     Seq(tableName, tableName2, tableName3, tableName4).foreach(table => {
       val result = session.sql("SELECT * FROM " + table).collect()

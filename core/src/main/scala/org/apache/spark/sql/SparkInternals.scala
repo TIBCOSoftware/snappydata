@@ -41,6 +41,7 @@ import org.apache.spark.sql.execution.common.HAC
 import org.apache.spark.sql.execution.datasources.{DataSource, InsertIntoDataSourceCommand, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.Exchange
 import org.apache.spark.sql.execution.row.RowTableScan
+import org.apache.spark.sql.execution.ui.SQLTab
 import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, PartitionedDataSourceScan, RowDataSourceScanExec, SparkPlan, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.{SnappyAnalyzer, SnappyHiveExternalCatalog, SnappySessionState}
 import org.apache.spark.sql.internal.{SQLConf, SnappySharedState}
@@ -50,6 +51,7 @@ import org.apache.spark.sql.types.{DataType, Metadata, StructField, StructType}
 import org.apache.spark.status.api.v1.RDDStorageInfo
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.ui.WebUITab
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -177,6 +179,23 @@ trait SparkInternals extends Logging {
    * Create a new immutable map whose keys are case-insensitive from a given map.
    */
   def newCaseInsensitiveMap(map: Map[String, String]): Map[String, String]
+
+  /**
+   * Remove all SQLTabs except the one passed (which can be null).
+   */
+  def removeSQLTabs(sparkContext: SparkContext, except: Option[WebUITab]): Unit = {
+    sparkContext.ui match {
+      case Some(ui) =>
+        val skipTab = if (except.isEmpty) null else except.get
+        ui.getTabs.foreach {
+          case tab: SQLTab if tab ne skipTab =>
+            ui.detachTab(tab)
+            ui.getHandlers.find(_.getContextPath == "/static/sql").foreach(ui.detachHandler)
+          case _ =>
+        }
+      case _ =>
+    }
+  }
 
   /**
    * Create a new SQL listener with SnappyData extensions and attach to the SparkUI.
@@ -782,6 +801,16 @@ trait SparkInternals extends Logging {
    */
   def logicalPlanResolveUp(plan: LogicalPlan)(
       rule: PartialFunction[LogicalPlan, LogicalPlan]): LogicalPlan = plan.transformUp(rule)
+
+  /**
+   * Transform all expressions in a [[LogicalPlan]] during analysis phase.
+   * This translates to resolveExpressions in Spark 2.4.x
+   * while it uses transformAllExpressions in earlier versions.
+   */
+  def logicalPlanResolveExpressions(plan: LogicalPlan)(
+      rule: PartialFunction[Expression, Expression]): LogicalPlan = {
+    plan.transformAllExpressions(rule)
+  }
 }
 
 /**

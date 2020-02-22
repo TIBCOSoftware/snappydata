@@ -28,8 +28,9 @@ import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, ExprId, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.optimizer.Optimizer
-import org.apache.spark.sql.catalyst.plans.logical.{Except, Intersect, LogicalPlan, Pivot}
+import org.apache.spark.sql.catalyst.plans.logical.{Except, Intersect, LogicalPlan, Pivot, SubqueryAlias}
 import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.catalyst.{AliasIdentifier, TableIdentifier}
 import org.apache.spark.sql.execution.bootstrap.{ApproxColumnExtractor, Tag, TaggedAlias, TaggedAttribute, TransformableTag}
 import org.apache.spark.sql.execution.closedform.{ClosedFormColumnExtractor, ErrorAggregate, ErrorEstimateAttribute}
 import org.apache.spark.sql.execution.columnar.InMemoryRelation
@@ -98,6 +99,22 @@ class Spark24Internals(override val version: String) extends Spark23_4_Internals
 
   // scalastyle:on
 
+  override def newSubqueryAlias(alias: String, child: LogicalPlan,
+      view: Option[TableIdentifier]): SubqueryAlias = view match {
+    case Some(v@TableIdentifier(table, schemaOpt)) =>
+      if (alias != table) {
+        throw new AnalysisException(s"Conflicting alias and view: alias=$alias, view=$v")
+      } else {
+        SubqueryAlias(AliasIdentifier(table, schemaOpt), child)
+      }
+    case _ => SubqueryAlias(AliasIdentifier(alias, None), child)
+  }
+
+  override def getViewFromAlias(q: SubqueryAlias): Option[TableIdentifier] = q.name match {
+    case AliasIdentifier(_, None) => None
+    case AliasIdentifier(id, schema) => Some(TableIdentifier(id, schema))
+  }
+
   override def newAlias(child: Expression, name: String, copyAlias: Option[NamedExpression],
       exprId: ExprId, qualifier: Seq[String]): Alias = {
     copyAlias match {
@@ -138,6 +155,8 @@ class Spark24Internals(override val version: String) extends Spark23_4_Internals
   }
 
   override def newSharedState(sparkContext: SparkContext): SnappySharedState = {
+    // remove any existing SQLTab since a new one will be created by SharedState constructor
+    removeSQLTabs(sparkContext, except = None)
     val state = new SnappySharedState24(sparkContext)
     createAndAttachSQLListener(state, sparkContext)
     state
@@ -152,6 +171,7 @@ class Spark24Internals(override val version: String) extends Spark23_4_Internals
   private def exprValue(v: String, dt: DataType): ExprValue = v match {
     case "false" => FalseLiteral
     case "true" => TrueLiteral
+    case _ if v.indexOf(' ') != -1 => SimpleExprValue(v, CodeGenerator.javaClass(dt))
     case _ => VariableValue(v, CodeGenerator.javaClass(dt))
   }
 
@@ -255,6 +275,11 @@ class Spark24Internals(override val version: String) extends Spark23_4_Internals
   override def logicalPlanResolveUp(plan: LogicalPlan)(
       rule: PartialFunction[LogicalPlan, LogicalPlan]): LogicalPlan = {
     plan.resolveOperatorsUp(rule)
+  }
+
+  override def logicalPlanResolveExpressions(plan: LogicalPlan)(
+      rule: PartialFunction[Expression, Expression]): LogicalPlan = {
+    plan.resolveExpressions(rule)
   }
 }
 

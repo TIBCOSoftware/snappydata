@@ -263,9 +263,8 @@ abstract class Spark23_4_Internals extends SparkInternals {
 
   override def newSubqueryAlias(alias: String, child: LogicalPlan,
       view: Option[TableIdentifier]): SubqueryAlias = {
-    if (view.isDefined && alias != view.get.unquotedString) {
-      throw new AnalysisException(s"Spark $version does not support creating SubqueryAlias " +
-          s"with a VIEW: alias=$alias, view=${view.get}")
+    if (view.isDefined && alias != view.get.table) {
+      throw new AnalysisException(s"Conflicting alias and view: alias=$alias, view=${view.get}")
     }
     SubqueryAlias(alias, child)
   }

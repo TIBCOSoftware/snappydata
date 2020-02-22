@@ -41,6 +41,7 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     snc.dropTable(tableName2, ifExists = true)
     snc.dropTable(tableName3, ifExists = true)
     snc.dropTable(tableName4, ifExists = true)
+    snc.dropTable("rowTable", ifExists = true)
   }
 
   test("test the shadow table creation") {
@@ -129,17 +130,12 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     // SQL overwrites.
     try {
       snc.sql(s"insert overwrite $tableName select * from $tableName")
-      fail("Expected AnalysisException while overwriting table which is also being read from")
-    }
-    catch {
+    } catch {
       case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
-      case t: Throwable => fail("Unexpected Exception ", t)
     }
     try {
       snc.sql(s"insert into $tableName select * from $tableName")
-      fail("Expected AnalysisException while overwriting table which is also being read from")
-    }
-    catch {
+    } catch {
       case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
       case t: Throwable => fail("Unexpected Exception ", t)
     }

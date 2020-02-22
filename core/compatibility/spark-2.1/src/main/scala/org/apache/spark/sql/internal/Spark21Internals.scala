@@ -179,12 +179,7 @@ class Spark21Internals(override val version: String) extends SparkInternals {
           .isInstanceOf[SnappyEmbeddedMode] =>
         // clear the previous SQLTab, if any
         if (old ne null) {
-          ui.getTabs.foreach {
-            case tab: SQLTab =>
-              ui.detachTab(tab)
-              ui.removeStaticHandler("/static/sql")
-            case _ =>
-          }
+          removeSQLTabs(sparkContext, except = None)
         }
         new SQLTab(listener, ui)
       case _ =>

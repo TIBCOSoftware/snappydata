@@ -592,7 +592,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState)
 
   private def conf: SQLConf = state.conf
 
-  def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
+  def apply(plan: LogicalPlan): LogicalPlan = internals.logicalPlanResolveDown(plan) {
 
     // Add dbtable property for create table. While other routes can add it in
     // SnappySession.createTable, the DataFrameWriter path needs to be handled here.
@@ -789,7 +789,7 @@ private[sql] case class ConditionalPreWriteCheck(sparkPreWriteCheck: LogicalPlan
  * Does not deal with startsAndEndsWith equivalent of Spark's LikeSimplification
  * so 'a%b' kind of pattern with additional escaped chars will not be optimized.
  */
-object LikeEscapeSimplification {
+object LikeEscapeSimplification extends SparkSupport {
 
   private def addTokenizedLiteral(parser: SnappyParser, s: String): Expression = {
     if (parser ne null) parser.addTokenizedLiteral(UTF8String.fromString(s), StringType)
@@ -836,7 +836,7 @@ object LikeEscapeSimplification {
     }
   }
 
-  def apply(plan: LogicalPlan): LogicalPlan = plan resolveExpressions {
+  def apply(plan: LogicalPlan): LogicalPlan = internals.logicalPlanResolveExpressions(plan) {
     case l@Like(left, Literal(pattern, StringType)) =>
       simplifyLike(null, l, left, pattern.toString)
   }

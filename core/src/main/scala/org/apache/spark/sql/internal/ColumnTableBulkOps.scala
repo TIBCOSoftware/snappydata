@@ -53,10 +53,13 @@ object ColumnTableBulkOps extends SparkSupport {
         }
         val condition = prepareCondition(session, table, subQuery, putKeys)
 
+        val analyzer = session.sessionState.analyzer
+        val resolver = analyzer.resolver
         val keyColumns = getKeyColumns(table)
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
-        val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
-        val updateExpressions = subQuery.output.filterNot(a => keyColumns.contains(a.name))
+        val updateColumns = table.output.filterNot(a => keyColumns.exists(resolver(_, a.name)))
+        val updateExpressions = subQuery.output.filterNot(
+          a => keyColumns.exists(resolver(_, a.name)))
         if (updateExpressions.isEmpty) {
           throw new AnalysisException(
             s"PutInto is attempted without any column which can be updated." +
@@ -69,31 +72,38 @@ object ColumnTableBulkOps extends SparkSupport {
 
         val updatePlan = Update(table, updateSubQuery, Nil,
           updateColumns, updateExpressions)
-        val updateDS = new Dataset(session, updatePlan, RowEncoder(updatePlan.schema))
-        var analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
+        // val updateDS = new Dataset(session, updatePlan, RowEncoder(updatePlan.schema))
+        var analyzedUpdate = analyzer.execute(updatePlan).asInstanceOf[Update]
+        // updateDS.queryExecution.analyzed.asInstanceOf[Update]
         updateSubQuery = analyzedUpdate.child
 
         // explicitly project out only the updated expression references and key columns
         // from the sub-query to minimize cache (if it is selected to be done)
-        val analyzer = session.sessionState.analyzer
         val updateReferences = AttributeSet(updateExpressions.flatMap(_.references))
         updateSubQuery = Project(updateSubQuery.output.filter(a =>
-          updateReferences.contains(a) || keyColumns.contains(a.name) ||
-              putKeys.exists(k => analyzer.resolver(a.name, k))), updateSubQuery)
+          updateReferences.contains(a) || keyColumns.exists(resolver(_, a.name)) ||
+              putKeys.exists(resolver(_, a.name))), updateSubQuery)
 
         val insertChild = session.cachePutInto(internals.getStatistics(subQuery)
             .sizeInBytes <= cacheSize, updateSubQuery, mutable.table) match {
           case None => subQuery
           case Some(newUpdateSubQuery) =>
             if (updateSubQuery ne newUpdateSubQuery) {
-              analyzedUpdate = analyzedUpdate.copy(child = newUpdateSubQuery)
+              updateSubQuery = newUpdateSubQuery
+              analyzedUpdate = analyzedUpdate.copy(child = updateSubQuery)
             }
-            Join(subQuery, newUpdateSubQuery, LeftAnti, condition)
+            // project out the columns already present in subQuery
+            val subQueryOutput = subQuery.output
+            if (subQueryOutput.intersect(updateSubQuery.output).nonEmpty) {
+              updateSubQuery = Project(updateSubQuery.output.filterNot(
+                subQueryOutput.contains), updateSubQuery)
+            }
+            Join(subQuery, updateSubQuery, LeftAnti, condition)
         }
         val insertPlan = internals.newInsertPlanWithCountOutput(table, Map.empty[String,
             Option[String]], Project(subQuery.output, insertChild),
           overwrite = false, ifNotExists = false)
-        transFormedPlan = PutIntoColumnTable(table, insertPlan, analyzedUpdate)
+        transFormedPlan = PutIntoColumnTable(table, analyzer.execute(insertPlan), analyzedUpdate)
       case _ => // Do nothing, original putInto plan is enough
     }
     transFormedPlan

@@ -342,7 +342,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
   }
 
   object ResolveAliasInGroupBy extends Rule[LogicalPlan] {
-    def apply(plan: LogicalPlan): LogicalPlan = internals.logicalPlanResolveUp(plan) {
+    def apply(plan: LogicalPlan): LogicalPlan = internals.logicalPlanResolveDown(plan) {
       // pivot with '*' projection messes up references for some reason
       // in older versions of Spark
       case Project(projectList, p: Pivot)
@@ -521,7 +521,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
         s"Update/Delete requires a MutableRelation but got $table"))
       // resolve key columns right away
       var mutablePlan: Option[LogicalRelation] = None
-      val newChild = internals.logicalPlanResolveDown(plan) {
+      val newChild = internals.logicalPlanResolveDown(child) {
         case lr: LogicalRelation if lr.relation.isInstanceOf[MutableRelation] &&
             lr.relation.asInstanceOf[MutableRelation].table.equalsIgnoreCase(tableName) =>
           val mutable = lr.relation.asInstanceOf[MutableRelation]
@@ -779,9 +779,9 @@ trait SnappyAnalyzer extends Analyzer with SparkSupport {
     ParamLiteral (or vice-versa) as by default ParamLiteral datatype is NullType. In such a case, this rule
     converts ParmaLiteral type to StringType to prevent it being replaced by NULL
    */
-  object SnappyPromoteStrings extends Rule[LogicalPlan] {
+  object SnappyPromoteStrings extends Rule[LogicalPlan] with SparkSupport {
     override def apply(plan: LogicalPlan): LogicalPlan = {
-      plan resolveExpressions {
+      internals.logicalPlanResolveExpressions(plan) {
         case e if !e.childrenResolved => e
         case p@BinaryComparison(left@StringType(), right@QuestionMark(_))
           if right.dataType == NullType =>
