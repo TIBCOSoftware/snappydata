@@ -32,6 +32,8 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils.{toLowerCase => lower, toUpperCase => upper}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
+import com.pivotal.gemfirexd.internal.shared.common.reference.Limits.{DB2_VARCHAR_MAXWIDTH => VARCHAR_MAXWIDTH}
+
 
 /**
  * Base parsing facilities for all SnappyData SQL parsers.
@@ -298,7 +300,8 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def columnCharType: Rule1[DataType] = rule {
-    VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => VarcharType(d.toInt)) |
+    VARCHAR ~ ('(' ~ ws ~ digits ~ ')').? ~ ws ~> ((d: Any) => VarcharType(
+      d.asInstanceOf[Option[String]].getOrElse(VARCHAR_MAXWIDTH.toString).toInt)) |
     CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => CharType(d.toInt)) |
     STRING ~> (() => StringType) |
     CLOB ~> (() => VarcharType(Int.MaxValue))

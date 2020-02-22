@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution.row
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
+import org.apache.spark.sql.execution.CommonUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
@@ -64,7 +65,9 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], data: DataFrame): RowFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val schemaString = getSchemaString(options, data.schema, sqlContext.sparkContext)
+    val schemaString = getSchemaString(options,
+      CommonUtils.modifySchemaIfNeeded(options, session, data.schema),
+      sqlContext.sparkContext)
     val relation = createRelation(session, mode, options, schemaString)
     var success = false
     try {
@@ -90,7 +93,9 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
   }
 
   private[sql] def createRelation(session: SnappySession, mode: SaveMode,
-      options: Map[String, String], schemaString: String): RowFormatRelation = {
+      optionS: Map[String, String], schemaString: String): RowFormatRelation = {
+    // remove the property stringtypeas as it has been utilized
+    val options = optionS.filterNot(tup => tup._1.equalsIgnoreCase("stringtypeas"))
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val fullTableName = ExternalStoreUtils.removeInternalPropsAndGetTable(parameters)
