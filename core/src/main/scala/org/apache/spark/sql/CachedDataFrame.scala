@@ -60,7 +60,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     private[sql] val queryExecutionString: String,
     @transient private[sql] val queryPlanInfo: SparkPlanInfo,
     private[sql] var currentQueryExecutionString: String,
-    private[sql] var currentQueryPlanInfo: SparkPlanInfo,
+    @transient private[sql] var currentQueryPlanInfo: SparkPlanInfo,
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int], encoder: Encoder[Row],
     shuffleCleanups: Array[Future[Unit]], val rddId: Int, noSideEffects: Boolean,
     val queryHints: java.util.Map[String, String], private[sql] var currentExecutionId: Long,
