@@ -785,4 +785,37 @@ object SQLFunctionsUtils {
     rowTbl + " GROUP BY CUBE(country,gender)"
   val dropColTbl_rollup_cube : String = dropTbl  + columnTbl
   val dropRowTbl_rollup_cube : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  108. grouping, 109. grouping_id
+    */
+  val grouping_grouping_id = new Array[String](8)
+  grouping_grouping_id(0) = "('Asia','India','Banglore',1000)"
+  grouping_grouping_id(1) = "('Asia','India','Chennai',2000)"
+  grouping_grouping_id(2) = "('Asia','Japan','Tokyo',4000)"
+  grouping_grouping_id(3) = "('Asia','Japan','Hiroshima',5000)"
+  grouping_grouping_id(4) = "('Europe','United Kingdom','London',1000)"
+  grouping_grouping_id(5) = "('Europe','United Kingdom','Manchester',2000)"
+  grouping_grouping_id(6) = "('Europe','France','Paris',4000)"
+  grouping_grouping_id(7) = "('Europe','France','Cannes',5000)"
+  val createColTypeTbl_grouping_grouping_id_Spark : String = createTbl + columnTbl +
+    "(continent string,country string,city string,salesamount int)"
+  val createRowTypeTbl_grouping_grouping_id_Spark : String = createTbl + rowTbl +
+    "(continent string,country string,city string,salesamount int)"
+  val createColumnTbl_grouping_grouping_id : String = createTbl + columnTbl +
+    "(continent string,country string,city string,salesamount int) " + usingCol
+  val createRowTbl_grouping_grouping_id : String = createTbl + rowTbl +
+    "(continent string,country string,city string,salesamount int) " + usingRow
+  val select_ColTbl_grouping_grouping_id : String = "SELECT continent,country,city," +
+    "SUM(salesamount) as totalsales,GROUPING(continent) as GP_Continent," +
+    "GROUPING(country) as GP_Country,GROUPING(city) as GP_City," +
+    "GROUPING_ID(continent,country,city) as GID FROM " +  columnTbl +
+    " GROUP BY ROLLUP(continent,country,city) ORDER BY GID"
+  val select_RowTbl_grouping_grouping_id: String = "SELECT continent,country,city," +
+    "SUM(salesamount) as totalsales,GROUPING(continent) as GP_Continent," +
+    "GROUPING(country) as GP_Country,GROUPING(city) as GP_City," +
+    "GROUPING_ID(continent,country,city) as GID FROM " + rowTbl +
+    " GROUP BY ROLLUP(continent,country,city) ORDER BY GID"
+  val dropColTbl_grouping_grouping_id : String = dropTbl  + columnTbl
+  val dropRowTbl_grouping_grouping_id : String = dropTbl + rowTbl
 }

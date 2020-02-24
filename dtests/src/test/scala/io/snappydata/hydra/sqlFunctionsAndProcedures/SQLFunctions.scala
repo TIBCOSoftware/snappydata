@@ -1170,6 +1170,46 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_rollup_cube)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  108. grouping, 109. grouping_id
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_grouping_grouping_id_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_grouping_grouping_id_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_grouping_grouping_id)
+    snc.sql(SQLFunctionsUtils.createRowTbl_grouping_grouping_id)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 7) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.grouping_grouping_id(i))
+    }
+    for(i <- 0 to 7) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.grouping_grouping_id(i))
+    }
+    for(i <- 0 to 7) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.grouping_grouping_id(i))
+    }
+    for(i <- 0 to 7) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.grouping_grouping_id(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc,
+      SQLFunctionsUtils.select_ColTbl_grouping_grouping_id,
+      "Q65_grouping_grouping_id", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc,
+      SQLFunctionsUtils.select_RowTbl_grouping_grouping_id,
+      "Q66_grouping_grouping_id", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_grouping_grouping_id)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_grouping_grouping_id)
+    spark.sql(SQLFunctionsUtils.dropColTbl_grouping_grouping_id)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_grouping_grouping_id)
+    pw.println()
+    pw.flush()
 
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
