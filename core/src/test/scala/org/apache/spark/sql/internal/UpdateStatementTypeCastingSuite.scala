@@ -29,16 +29,13 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
     with BeforeAndAfter {
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     // creating table with COLUMN_MAX_DELTA_ROWS = 1 to flush the records immediately on
     // column table because if all records will be in row buffer then spark's fail safe type
     // casting doesn't kick in
     snc.sql(
       """create table testTable (id long, int_col int, long_col long, dec_col decimal(15,7),
         | string_col varchar(20)) using column options(COLUMN_MAX_DELTA_ROWS '1')""".stripMargin)
-  }
-
-  override def afterAll(): Unit = {
-    snc.sql("drop table testTable")
   }
 
   before {

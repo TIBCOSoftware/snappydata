@@ -224,10 +224,10 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
       // remap filter
       val mappingInfo = storedLR.output.map(_.exprId).zip(
         queryLR.get.output.map(_.exprId)).toMap
-      filter.transformAllExpressions {
+      internals.logicalPlanResolveExpressions(filter) {
         case ar: AttributeReference if mappingInfo.contains(ar.exprId) =>
           internals.toAttributeReference(ar)(exprId = mappingInfo(ar.exprId))
-      }
+      }.asInstanceOf[Filter]
     }
   }
 

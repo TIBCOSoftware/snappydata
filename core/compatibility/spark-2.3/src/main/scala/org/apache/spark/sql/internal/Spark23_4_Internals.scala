@@ -502,7 +502,7 @@ abstract class Spark23_4_Internals extends SparkInternals {
   override def buildConf(key: String): ConfigBuilder = SQLConf.buildConf(key)
 
   override def getCachedRDDInfos(context: SparkContext): Seq[RDDStorageInfo] = {
-    context.ui.get.store.rddList()
+    context.statusStore.rddList()
   }
 
   override def newExplainCommand(logicalPlan: LogicalPlan, extended: Boolean,

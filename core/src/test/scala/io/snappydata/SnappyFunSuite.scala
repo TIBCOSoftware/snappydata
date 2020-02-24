@@ -154,28 +154,6 @@ abstract class SnappyFunSuite
     baseCleanup()
   }
 
-  /**
-   * Wait until given criterion is met
-   *
-   * @param check          Function criterion to wait on
-   * @param ms             total time to wait, in milliseconds
-   * @param interval       pause interval between waits
-   * @param throwOnTimeout if false, don't generate an error
-   */
-  def waitForCriterion(check: => Boolean, desc: String, ms: Long,
-      interval: Long, throwOnTimeout: Boolean): Unit = {
-    val criterion = new WaitCriterion {
-
-      override def done: Boolean = {
-        check
-      }
-
-      override def description(): String = desc
-    }
-    DistributedTestBase.waitForCriterion(criterion, ms, interval,
-      throwOnTimeout)
-  }
-
   def stopAll(): Unit = {
     val sc = SnappyContext.globalSparkContext
     logInfo("Check stop required for spark context = " + sc)
@@ -253,6 +231,28 @@ object SnappyFunSuite extends Assertions with SparkSupport {
       implicit val encoder: ExpressionEncoder[Row] = RowEncoder(StructType(Nil))
       session.createDataset[Row](Nil)
     }
+  }
+
+  /**
+   * Wait until given criterion is met
+   *
+   * @param check          Function criterion to wait on
+   * @param ms             total time to wait, in milliseconds
+   * @param interval       pause interval between waits
+   * @param throwOnTimeout if false, don't generate an error
+   */
+  def waitForCriterion(check: => Boolean, desc: String, ms: Long = 10000,
+      interval: Long = 500, throwOnTimeout: Boolean = true): Unit = {
+    val criterion = new WaitCriterion {
+
+      override def done: Boolean = {
+        check
+      }
+
+      override def description(): String = desc
+    }
+    DistributedTestBase.waitForCriterion(criterion, ms, interval,
+      throwOnTimeout)
   }
 }
 

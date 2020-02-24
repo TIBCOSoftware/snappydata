@@ -18,6 +18,7 @@ package org.apache.spark.sql.store
 
 import scala.collection.mutable
 
+import io.snappydata.SnappyFunSuite.waitForCriterion
 import io.snappydata.core.{Data, TestData}
 import io.snappydata.{ConcurrentOpsTests, SnappyFunSuite}
 import org.scalatest.{Assertions, BeforeAndAfter}
@@ -462,18 +463,18 @@ object ColumnTableBatchInsertTest extends Assertions with SparkSupport {
     // check that table has been cached and materialized
     assert(isTableCached("cachedTable1"))
     var rddInfos = internals.getCachedRDDInfos(sc)
-    assert(rddInfos.length === 1)
+    waitForCriterion(rddInfos.length == 1, "cached table should show up")
     assert(rddInfos.head.name.contains("Range (0, 1000000"))
 
     assert(executeSQL("select count(*) from cachedTable1").collect()(0).getLong(0) === 1000000)
     rddInfos = internals.getCachedRDDInfos(sc)
-    assert(rddInfos.length === 1)
+    waitForCriterion(rddInfos.length == 1, "cached table should be present")
     assert(rddInfos.head.name.contains("Range (0, 1000000"))
 
     executeSQL("uncache table cachedTable1")
     assert(!isTableCached("cachedTable1"))
     rddInfos = internals.getCachedRDDInfos(sc)
-    assert(rddInfos.length === 0)
+    waitForCriterion(rddInfos.isEmpty, "cached table should be cleared")
 
     // temporary table should still exist
     assert(executeSQL("select count(*) from cachedTable1").collect()(0).getLong(0) === 1000000)
@@ -485,7 +486,7 @@ object ColumnTableBatchInsertTest extends Assertions with SparkSupport {
     assert(rddInfos.length === 0)
     assert(executeSQL("select count(*) from cachedTable2").collect()(0).getLong(0) === 500000)
     rddInfos = internals.getCachedRDDInfos(sc)
-    assert(rddInfos.length === 1)
+    waitForCriterion(rddInfos.length == 1, "lazily cached table should show up after query")
     assert(rddInfos.head.name.contains("Range (0, 500000"))
 
     // drop table directly without explicit uncache should also do it
@@ -493,7 +494,7 @@ object ColumnTableBatchInsertTest extends Assertions with SparkSupport {
     executeSQL("drop table cachedTable2")
     assert(!isCached(table))
     rddInfos = internals.getCachedRDDInfos(sc)
-    assert(rddInfos.length === 0)
+    waitForCriterion(rddInfos.isEmpty, "cached table should be cleared")
 
     executeSQL("drop table cachedTable1")
   }
