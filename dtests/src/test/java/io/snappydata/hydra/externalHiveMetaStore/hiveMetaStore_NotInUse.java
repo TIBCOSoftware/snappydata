@@ -15,7 +15,7 @@ import java.sql.*;
 import java.util.List;
 import java.util.Vector;
 
-public class hiveMetaStore extends SnappyTest
+public class hiveMetaStore_NotInUse extends SnappyTest
 {
     static String setexternalHiveCatalog = "set spark.sql.catalogImplementation=hive";
     static String setexternalInBuiltCatalog = "set spark.sql.catalogImplementation=in-memory";
@@ -46,9 +46,9 @@ public class hiveMetaStore extends SnappyTest
             //"SELECT o.OrderID, c.CompanyName, e.FirstName, e.LastName FROM snappy_orders o JOIN snappy_employees e ON (e.EmployeeID = o.EmployeeID) JOIN snappy_customers c ON (c.CustomerID = o.CustomerID) WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > Cast('1998-01-01' as TIMESTAMP) ORDER BY c.CompanyName"
     };
 
-    static hiveMetaStore metaStore = new hiveMetaStore();
+    static hiveMetaStore_NotInUse metaStore = new hiveMetaStore_NotInUse();
 
-    public hiveMetaStore() {
+    public hiveMetaStore_NotInUse() {
     }
 
     public static Connection connectToBeeline() {
