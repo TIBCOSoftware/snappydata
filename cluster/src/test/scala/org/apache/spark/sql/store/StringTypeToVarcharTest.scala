@@ -16,15 +16,11 @@
  */
 package org.apache.spark.sql.store
 
-import java.io.File
 import java.sql.{Connection, DriverManager, Types}
-
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.shared.common.reference.Limits
 import io.snappydata.{Constant, SnappyFunSuite}
 import org.junit.Assert._
-
-import org.apache.spark.sql.types.{MetadataBuilder, StructType}
 
 
 class StringTypeToVarcharTest extends SnappyFunSuite {
@@ -42,65 +38,369 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     super.afterAll()
   }
 
-  test("stringtypeas option in column table with schema should not respect stringTypeAs") {
+  test("stringtypeas in column table creation with schema using snappysession ,to be ignored") {
+    this.stringTypeOptionUsingSnappySessionIgnored(true)
+  }
+
+  test("stringtypeas in row table creation with schema using snappysession ,to be ignored") {
+    this.stringTypeOptionUsingSnappySessionIgnored(false)
+  }
+
+  private def stringTypeOptionUsingSnappySessionIgnored(isColumnTable: Boolean): Unit = {
+    val tableType = if (isColumnTable) "column" else "row"
     snc.sql("drop table if exists test1")
     snc.sql("create table test1 (col1 char(12), col2 string, col3 string, col4 clob) " +
-      "using column options(stringTypeAs 'varchar')")
+      s"using $tableType options(stringTypeAs 'varchar')")
     snc.sql("insert into test1 values ('str1_1', 'str1_2', 'str1_3', 'str1_4' )," +
       "('str2_1', 'str2_2', 'str2_3', 'str2_4')")
     val conn = getSqlConnection
     val st = conn.createStatement()
     val rs = st.executeQuery("select * from test1")
     val rsmd = rs.getMetaData
-    for(i <- 2 to rsmd.getColumnCount -1) {
-      assertEquals(Types.VARCHAR, rsmd.getColumnType(i))
-      assertEquals(Limits.DB2_VARCHAR_MAXWIDTH, rsmd.getPrecision(i))
-    }
-    assertEquals(Types.CLOB, rsmd.getColumnType(rsmd.getColumnCount))
     assertEquals(Types.CHAR, rsmd.getColumnType(1))
     assertEquals(12, rsmd.getPrecision(1))
-
+    assertEquals(Types.CLOB, rsmd.getColumnType(rsmd.getColumnCount))
     snc.dropTable("test1")
   }
 
+
+  test("stringtypeas in column table creation with schema using jdbcconn ,to be ignored") {
+    this.stringTypeOptionUsingJdbcConnIgnored(true)
+  }
+
+  test("stringtypeas in row table creation with schema using jdbcconn ,to be ignored") {
+    this.stringTypeOptionUsingJdbcConnIgnored(false)
+  }
+
+  private def stringTypeOptionUsingJdbcConnIgnored(isColumnTable: Boolean): Unit = {
+    val tableType = if (isColumnTable) "column" else "row"
+    val conn = getSqlConnection
+    val st = conn.createStatement()
+    st.execute("drop table if exists test1")
+    st.execute("create table test1 (col1 char(12), col2 string, " +
+      "col3 string, col4 clob) " +
+      s"using $tableType options(stringTypeAs 'varchar')")
+    st.executeUpdate("insert into test1 values ('str1_1', 'str1_2', 'str1_3', 'str1_4' )," +
+      "('str2_1', 'str2_2', 'str2_3', 'str2_4')")
+
+    val rs = st.executeQuery("select * from test1")
+    val rsmd = rs.getMetaData
+    assertEquals(Types.CHAR, rsmd.getColumnType(1))
+    assertEquals(12, rsmd.getPrecision(1))
+    assertEquals(Types.CLOB, rsmd.getColumnType(rsmd.getColumnCount))
+
+    st.execute("drop table if exists test1")
+  }
+
   test("stringtypeas option in column table using CTAS") {
-    testOptionOnTableCreation(true)
+    testOptionOnTableCreationUsingCTAS(true)
   }
 
   test("stringtypeas option in row table using CTAS") {
-    testOptionOnTableCreation(false)
+    testOptionOnTableCreationUsingCTAS(false)
   }
 
-
-  def testOptionOnTableCreation(isColumn: Boolean): Unit = {
+  def testOptionOnTableCreationUsingCTAS(isColumn: Boolean): Unit = {
     val tableType = if (isColumn) "column" else "row"
     snc.sql("drop table if exists test1")
     val eventsPath: String = getClass.getResource("/events_clob.parquet").getPath
 
     snc.sql(s"create external table events_external using " +
       s"parquet options (path '$eventsPath')")
+    val extSchema = snc.table("events_external").schema
+    val trueClobCols = extSchema.filter(sf => sf.metadata == null ||
+      (sf.metadata.contains(Constant.CHAR_TYPE_BASE_PROP) &&
+        sf.metadata.getString(Constant.CHAR_TYPE_BASE_PROP).equalsIgnoreCase("clob")))
     val conn = getSqlConnection
     val st = conn.createStatement()
     val rs1 = st.executeQuery("select * from events_external limit 10")
     val rsmd1 = rs1.getMetaData
-    // check if data type is clob
-    for(i <- 1 to 2) {
-      assertEquals(Types.CLOB, rsmd1.getColumnType(i))
-    }
+    // find out false clob types
+    val falseClobs = for (i <- 1 to rsmd1.getColumnCount) yield {
+      val toYield = if (!trueClobCols.exists(_.name.equalsIgnoreCase(rsmd1.getColumnName(i)))) {
+        if (rsmd1.getColumnType(i) == Types.CLOB) {
+          rsmd1.getColumnName(i)
+        } else {
+          ""
+        }
+      } else {
+        ""
+      }
+      toYield
+    }.filterNot(_.isWhitespace)
+    assertFalse(falseClobs.isEmpty)
     snc.sql("create table test1  " +
       s"using $tableType options(stringTypeAs 'varchar') as " +
       s"(select * from events_external limit 100)")
     val rs = st.executeQuery("select * from test1 limit 10")
     val rsmd = rs.getMetaData
-    for(i <- 1 to 2) {
-      assertEquals(Types.VARCHAR, rsmd.getColumnType(i))
-      assertEquals(Limits.DB2_VARCHAR_MAXWIDTH, rsmd.getPrecision(i))
+    for (i <- 1 to rsmd.getColumnCount) {
+      if (falseClobs.exists(_.equalsIgnoreCase(rsmd.getColumnName(i)))) {
+        assertEquals(Types.VARCHAR, rsmd.getColumnType(i))
+        assertEquals(Limits.DB2_VARCHAR_MAXWIDTH, rsmd.getPrecision(i))
+      } else if (trueClobCols.exists(_.name.equalsIgnoreCase(rsmd.getColumnName(i)))) {
+        assertTrue(rsmd.getColumnType(i) == Types.CLOB)
+      }
     }
-    for(i <- 3 to rsmd.getColumnCount) {
-      assertFalse(rsmd.getColumnType(i) == Types.CLOB)
-    }
+
     snc.dropTable("events_external")
     snc.dropTable("test1")
+  }
+
+  test("stringtypeas option in column table using CTAS using jdbcconn") {
+    testOptionOnTableCreationUsingCTASWithJdbcConn(true)
+  }
+
+  test("stringtypeas option in row table using CTAS using jdbcconn") {
+    testOptionOnTableCreationUsingCTASWithJdbcConn(false)
+  }
+
+
+  def testOptionOnTableCreationUsingCTASWithJdbcConn(isColumn: Boolean): Unit = {
+    val tableType = if (isColumn) "column" else "row"
+    val conn = getSqlConnection
+    val st = conn.createStatement()
+    st.execute("drop table if exists test1")
+    val eventsPath: String = getClass.getResource("/events_clob.parquet").getPath
+
+    st.execute(s"create external table events_external using " +
+      s"parquet options (path '$eventsPath')")
+
+    val extSchema = snc.table("events_external").schema
+    val trueClobCols = extSchema.filter(sf => sf.metadata == null ||
+      (sf.metadata.contains(Constant.CHAR_TYPE_BASE_PROP) &&
+        sf.metadata.getString(Constant.CHAR_TYPE_BASE_PROP).equalsIgnoreCase("clob")))
+
+    val rs1 = st.executeQuery("select * from events_external limit 10")
+    val rsmd1 = rs1.getMetaData
+    // find out false clob types
+    val falseClobs = for (i <- 1 to rsmd1.getColumnCount) yield {
+      val toYield = if (!trueClobCols.exists(_.name.equalsIgnoreCase(rsmd1.getColumnName(i)))) {
+        if (rsmd1.getColumnType(i) == Types.CLOB) {
+          rsmd1.getColumnName(i)
+        } else {
+          ""
+        }
+      } else {
+        ""
+      }
+      toYield
+    }.filterNot(_.isWhitespace)
+    assertFalse(falseClobs.isEmpty)
+
+    st.execute("create table test1  " +
+      s"using $tableType options(stringTypeAs 'varchar') as " +
+      s"(select * from events_external limit 100)")
+    val rs = st.executeQuery("select * from test1 limit 10")
+    val rsmd = rs.getMetaData
+    for (i <- 1 to rsmd.getColumnCount) {
+      if (falseClobs.exists(_.equalsIgnoreCase(rsmd.getColumnName(i)))) {
+        assertEquals(Types.VARCHAR, rsmd.getColumnType(i))
+        assertEquals(Limits.DB2_VARCHAR_MAXWIDTH, rsmd.getPrecision(i))
+      } else if (trueClobCols.exists(_.name.equalsIgnoreCase(rsmd.getColumnName(i)))) {
+        assertTrue(rsmd.getColumnType(i) == Types.CLOB)
+      }
+    }
+    st.execute("drop table if exists events_external")
+    st.execute("drop table if exists test1")
+  }
+
+  test("row table created using CTAS from column table should respect stringtype option") {
+    val conn = getSqlConnection
+    val st = conn.createStatement()
+    st.execute("drop table if exists test1")
+    val eventsPath: String = getClass.getResource("/events_clob.parquet").getPath
+
+    st.execute(s"create external table events_external using " +
+      s"parquet options (path '$eventsPath')")
+
+    val extSchema = snc.table("events_external").schema
+    val trueClobCols = extSchema.filter(sf => sf.metadata == null ||
+      (sf.metadata.contains(Constant.CHAR_TYPE_BASE_PROP) &&
+        sf.metadata.getString(Constant.CHAR_TYPE_BASE_PROP).equalsIgnoreCase("clob")))
+
+    val rs1 = st.executeQuery("select * from events_external limit 10")
+    val rsmd1 = rs1.getMetaData
+    // find out false clob types
+    val falseClobs = for (i <- 1 to rsmd1.getColumnCount) yield {
+      val toYield = if (!trueClobCols.exists(_.name.equalsIgnoreCase(rsmd1.getColumnName(i)))) {
+        if (rsmd1.getColumnType(i) == Types.CLOB) {
+          rsmd1.getColumnName(i)
+        } else {
+          ""
+        }
+      } else {
+        ""
+      }
+      toYield
+    }.filterNot(_.isWhitespace)
+    assertFalse(falseClobs.isEmpty)
+
+    st.execute("create table test1  " +
+      s"using column  as " +
+      s"(select * from events_external limit 100)")
+
+    // now create row table
+    st.execute("create table test2  " +
+      s"using row options(stringTypeAs 'varchar') as " +
+      s"(select * from test1 limit 100)")
+    val rs2 = st.executeQuery("select * from test2 limit 10")
+    val rsmd2 = rs2.getMetaData
+    for (i <- 1 to rsmd2.getColumnCount) {
+      if (falseClobs.exists(_.equalsIgnoreCase(rsmd2.getColumnName(i)))) {
+        assertEquals(Types.VARCHAR, rsmd2.getColumnType(i))
+        assertEquals(Limits.DB2_VARCHAR_MAXWIDTH, rsmd2.getPrecision(i))
+      } else if (trueClobCols.exists(_.name.equalsIgnoreCase(rsmd2.getColumnName(i)))) {
+        assertTrue(rsmd2.getColumnType(i) == Types.CLOB)
+      }
+    }
+    st.execute("drop table if exists events_external")
+    st.execute("drop table if exists test1")
+    st.execute("drop table if exists test2")
+  }
+
+  test("column table created using CTAS from row table should NOT respect stringtype option") {
+    val conn = getSqlConnection
+    val st = conn.createStatement()
+    st.execute("drop table if exists test1")
+    val eventsPath: String = getClass.getResource("/events_clob.parquet").getPath
+
+    st.execute(s"create external table events_external using " +
+      s"parquet options (path '$eventsPath')")
+
+    val extSchema = snc.table("events_external").schema
+    val trueClobCols = extSchema.filter(sf => sf.metadata == null ||
+      (sf.metadata.contains(Constant.CHAR_TYPE_BASE_PROP) &&
+        sf.metadata.getString(Constant.CHAR_TYPE_BASE_PROP).equalsIgnoreCase("clob")))
+
+    val rs1 = st.executeQuery("select * from events_external limit 10")
+    val rsmd1 = rs1.getMetaData
+    // find out false clob types
+    val falseClobs = for (i <- 1 to rsmd1.getColumnCount) yield {
+      val toYield = if (!trueClobCols.exists(_.name.equalsIgnoreCase(rsmd1.getColumnName(i)))) {
+        if (rsmd1.getColumnType(i) == Types.CLOB) {
+          rsmd1.getColumnName(i)
+        } else {
+          ""
+        }
+      } else {
+        ""
+      }
+      toYield
+    }.filterNot(_.isWhitespace)
+    assertFalse(falseClobs.isEmpty)
+
+    st.execute("create table test1  " +
+      s"using row options(stringTypeAs 'varchar') as " +
+      s"(select * from events_external limit 100)")
+
+    val rs = st.executeQuery("select * from test1 limit 10")
+    val rsmd = rs.getMetaData
+    for (i <- 1 to rsmd.getColumnCount) {
+      if (falseClobs.exists(_.equalsIgnoreCase(rsmd.getColumnName(i)))) {
+        assertEquals(Types.VARCHAR, rsmd.getColumnType(i))
+        assertEquals(Limits.DB2_VARCHAR_MAXWIDTH, rsmd.getPrecision(i))
+      } else if (trueClobCols.exists(_.name.equalsIgnoreCase(rsmd.getColumnName(i)))) {
+        assertTrue(rsmd.getColumnType(i) == Types.CLOB)
+      }
+    }
+
+    // now create column table
+    st.execute("create table test2  " +
+      s"using column options(stringTypeAs 'varchar') as " +
+      s"(select * from test1 limit 100)")
+    val rs2 = st.executeQuery("select * from test2 limit 10")
+    val rsmd2 = rs2.getMetaData
+    for (i <- 1 to rsmd2.getColumnCount) {
+      if (falseClobs.exists(_.equalsIgnoreCase(rsmd2.getColumnName(i)))) {
+        assertEquals(Types.VARCHAR, rsmd2.getColumnType(i))
+        assertEquals(Limits.DB2_VARCHAR_MAXWIDTH, rsmd2.getPrecision(i))
+      } else if (trueClobCols.exists(_.name.equalsIgnoreCase(rsmd2.getColumnName(i)))) {
+        assertTrue(rsmd2.getColumnType(i) == Types.CLOB)
+      }
+    }
+    st.execute("drop table if exists events_external")
+    st.execute("drop table if exists test1")
+    st.execute("drop table if exists test2")
+  }
+
+  test("row table created using CTAS from row table should NOT respect stringtype option") {
+    val conn = getSqlConnection
+    val st = conn.createStatement()
+    st.execute("drop table if exists test1")
+    val eventsPath: String = getClass.getResource("/events_clob.parquet").getPath
+
+    st.execute(s"create external table events_external using " +
+      s"parquet options (path '$eventsPath')")
+
+    val extSchema = snc.table("events_external").schema
+    val trueClobCols = extSchema.filter(sf => sf.metadata == null ||
+      (sf.metadata.contains(Constant.CHAR_TYPE_BASE_PROP) &&
+        sf.metadata.getString(Constant.CHAR_TYPE_BASE_PROP).equalsIgnoreCase("clob")))
+
+    val rs1 = st.executeQuery("select * from events_external limit 10")
+    val rsmd1 = rs1.getMetaData
+    // find out false clob types
+    val falseClobs = for (i <- 1 to rsmd1.getColumnCount) yield {
+      val toYield = if (!trueClobCols.exists(_.name.equalsIgnoreCase(rsmd1.getColumnName(i)))) {
+        if (rsmd1.getColumnType(i) == Types.CLOB) {
+          rsmd1.getColumnName(i)
+        } else {
+          ""
+        }
+      } else {
+        ""
+      }
+      toYield
+    }.filterNot(_.isWhitespace)
+    assertFalse(falseClobs.isEmpty)
+
+    st.execute("create table test1  " +
+      s"using row options(stringTypeAs 'varchar') as " +
+      s"(select * from events_external limit 100)")
+
+    val rs = st.executeQuery("select * from test1 limit 10")
+    val rsmd = rs.getMetaData
+    for (i <- 1 to rsmd.getColumnCount) {
+      if (falseClobs.exists(_.equalsIgnoreCase(rsmd.getColumnName(i)))) {
+        assertEquals(Types.VARCHAR, rsmd.getColumnType(i))
+        assertEquals(Limits.DB2_VARCHAR_MAXWIDTH, rsmd.getPrecision(i))
+      } else if (trueClobCols.exists(_.name.equalsIgnoreCase(rsmd.getColumnName(i)))) {
+        assertTrue(rsmd.getColumnType(i) == Types.CLOB)
+      }
+    }
+
+    // now create column table
+    st.execute("create table test2  " +
+      s"using row options(stringTypeAs 'varchar') as " +
+      s"(select * from test1 limit 100)")
+    val rs2 = st.executeQuery("select * from test2 limit 10")
+    val rsmd2 = rs2.getMetaData
+    for (i <- 1 to rsmd2.getColumnCount) {
+      if (falseClobs.exists(_.equalsIgnoreCase(rsmd2.getColumnName(i)))) {
+        assertEquals(Types.VARCHAR, rsmd2.getColumnType(i))
+        assertEquals(Limits.DB2_VARCHAR_MAXWIDTH, rsmd2.getPrecision(i))
+      } else if (trueClobCols.exists(_.name.equalsIgnoreCase(rsmd2.getColumnName(i)))) {
+        assertTrue(rsmd2.getColumnType(i) == Types.CLOB)
+      }
+    }
+    st.execute("drop table if exists test2")
+    snc.sql("create table test2  " +
+      s"using row options(stringTypeAs 'varchar') as " +
+      s"(select * from test1 limit 100)")
+    val rs3 = st.executeQuery("select * from test2 limit 10")
+    val rsmd3 = rs3.getMetaData
+    for (i <- 1 to rsmd3.getColumnCount) {
+      if (falseClobs.exists(_.equalsIgnoreCase(rsmd3.getColumnName(i)))) {
+        assertEquals(Types.VARCHAR, rsmd3.getColumnType(i))
+        assertEquals(Limits.DB2_VARCHAR_MAXWIDTH, rsmd3.getPrecision(i))
+      } else if (trueClobCols.exists(_.name.equalsIgnoreCase(rsmd3.getColumnName(i)))) {
+        assertTrue(rsmd3.getColumnType(i) == Types.CLOB)
+      }
+    }
+    st.execute("drop table if exists test2")
+    st.execute("drop table if exists events_external")
+    st.execute("drop table if exists test1")
   }
 
   def getSqlConnection: Connection =

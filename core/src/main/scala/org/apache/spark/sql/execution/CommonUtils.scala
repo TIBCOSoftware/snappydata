@@ -23,7 +23,6 @@ import org.apache.spark.sql.{SnappyParser, SnappySession}
 import org.apache.spark.sql.types.{CharType, DataType, MetadataBuilder, StringType, StructType, VarcharType}
 
 
-
 object CommonUtils {
   def modifySchemaIfNeeded(options: Map[String, String], session: SnappySession,
     schema: StructType): StructType = {
@@ -38,32 +37,32 @@ object CommonUtils {
         case StringType => "STRING" -> -1
       }
 
-        StructType(schema.map(sf => if (sf.dataType.equals(StringType)) {
-          val oldMetadata = sf.metadata
-          val builder = new MetadataBuilder()
-          if ((oldMetadata eq null) ||
-            !oldMetadata.contains(Constant.CHAR_TYPE_BASE_PROP) ||
-            oldMetadata.getString(Constant.CHAR_TYPE_BASE_PROP).
-              equalsIgnoreCase("CLOB") ||
-            oldMetadata.getString(Constant.CHAR_TYPE_BASE_PROP).
-              equalsIgnoreCase("STRING")) {
-            val newMetadata = if (oldMetadata eq null) {
-              builder.putString(Constant.CHAR_TYPE_BASE_PROP, dataTypeStr).
-                putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
-              builder.build()
-            } else {
-              builder.withMetadata(oldMetadata).
-                putString(Constant.CHAR_TYPE_BASE_PROP, dataTypeStr).
-                putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
-            }
-            sf.copy(metadata = newMetadata)
+      StructType(schema.map(sf => if (sf.dataType.equals(StringType)) {
+        val oldMetadata = sf.metadata
+        val builder = new MetadataBuilder()
+        if ((oldMetadata eq null) ||
+          !oldMetadata.contains(Constant.CHAR_TYPE_BASE_PROP) ||
+          /* oldMetadata.getString(Constant.CHAR_TYPE_BASE_PROP).
+            equalsIgnoreCase("CLOB")  || */
+          oldMetadata.getString(Constant.CHAR_TYPE_BASE_PROP).
+            equalsIgnoreCase("STRING")) {
+          val newMetadata = if (oldMetadata eq null) {
+            builder.putString(Constant.CHAR_TYPE_BASE_PROP, dataTypeStr).
+              putLong(Constant.CHAR_TYPE_SIZE_PROP, size)
+            builder.build()
           } else {
-            sf
+            builder.withMetadata(oldMetadata).
+              putString(Constant.CHAR_TYPE_BASE_PROP, dataTypeStr).
+              putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
           }
+          sf.copy(metadata = newMetadata)
         } else {
           sf
-        }))
-      }).getOrElse(schema)
+        }
+      } else {
+        sf
+      }))
+    }).getOrElse(schema)
 
   }
 }
