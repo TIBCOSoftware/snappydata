@@ -18,10 +18,13 @@
 package io.snappydata
 
 import java.io.File
+import java.sql.{DriverManager, Types}
 
 import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.TestUtil
+import com.pivotal.gemfirexd.internal.shared.common.reference.Limits
+import org.junit.Assert._
 
 import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.execution.exchange.{BroadcastExchangeExec, ShuffleExchange}
@@ -34,29 +37,29 @@ class QueryTest extends SnappyFunSuite {
     val snContext = SnappyContext(sc)
 
     snContext.sql("CREATE TABLE titles(title_id varchar(20), title varchar(80) " +
-        "not null, type varchar(12) not null, pub_id varchar(4), price int not null, " +
-        "advance int not null , royalty int , ytd_sales int,notes varchar(200))")
+      "not null, type varchar(12) not null, pub_id varchar(4), price int not null, " +
+      "advance int not null , royalty int , ytd_sales int,notes varchar(200))")
 
     snContext.sql("insert into titles values ('1', 'Secrets', " +
-        "'popular_comp', '1389', 20, 8000, 10, 4095,'Note 1')")
+      "'popular_comp', '1389', 20, 8000, 10, 4095,'Note 1')")
     snContext.sql("insert into titles values ('2', 'The', " +
-        "'business',     '1389', 19, 5000, 10, 4095,'Note 2')")
+      "'business',     '1389', 19, 5000, 10, 4095,'Note 2')")
     snContext.sql("insert into titles values ('3', 'Emotional', " +
-        "'psychology',   '0736', 7,  4000, 10, 3336,'Note 3')")
+      "'psychology',   '0736', 7,  4000, 10, 3336,'Note 3')")
     snContext.sql("insert into titles values ('4', 'Prolonged', " +
-        "'psychology',   '0736', 19, 2000, 10, 4072,'Note 4')")
+      "'psychology',   '0736', 19, 2000, 10, 4072,'Note 4')")
     snContext.sql("insert into titles values ('5', 'With', " +
-        "'business',     '1389', 11, 5000, 10, 3876,'Note 5')")
+      "'business',     '1389', 11, 5000, 10, 3876,'Note 5')")
     snContext.sql("insert into titles values ('6', 'Valley', " +
-        "'mod_cook',     '0877', 9,  0,    12, 2032,'Note 6')")
+      "'mod_cook',     '0877', 9,  0,    12, 2032,'Note 6')")
     snContext.sql("insert into titles values ('7', 'Any?', " +
-        "'trad_cook',    '0877', 14, 8000, 10, 4095,'Note 7')")
+      "'trad_cook',    '0877', 14, 8000, 10, 4095,'Note 7')")
     snContext.sql("insert into titles values ('8', 'Fifty', " +
-        "'trad_cook',    '0877', 11, 4000, 14, 1509,'Note 8')")
+      "'trad_cook',    '0877', 11, 4000, 14, 1509,'Note 8')")
 
     snContext.sql("CREATE TABLE sales(stor_id varchar(4) not null, " +
-        "ord_num varchar(20) not null, qty int not null, " +
-        "payterms varchar(12) not null,title_id varchar(80))")
+      "ord_num varchar(20) not null, qty int not null, " +
+      "payterms varchar(12) not null,title_id varchar(80))")
 
     snContext.sql("insert into sales values('1', 'QA7442.3',  75, 'ON Billing','1')")
     snContext.sql("insert into sales values('2', 'D4482',     10, 'Net 60',    '1')")
@@ -66,7 +69,7 @@ class QueryTest extends SnappyFunSuite {
     snContext.sql("insert into sales values('6', '423LL930',  10, 'ON Billing','2')")
 
     val df = snContext.sql("SELECT  title, price FROM titles WHERE EXISTS (" +
-        "SELECT * FROM sales WHERE sales.title_id = titles.title_id AND qty >30)")
+      "SELECT * FROM sales WHERE sales.title_id = titles.title_id AND qty >30)")
     df.collect()
   }
 
@@ -111,12 +114,12 @@ class QueryTest extends SnappyFunSuite {
   test("GITHUB-534") {
     val session = SnappyContext(sc).snappySession
     session.sql("CREATE TABLE yes_with(device_id VARCHAR(200), " +
-        "sdk_version VARCHAR(200)) USING COLUMN OPTIONS(PARTITION_BY 'device_id')")
+      "sdk_version VARCHAR(200)) USING COLUMN OPTIONS(PARTITION_BY 'device_id')")
     session.insert("yes_with", Row("id1", "v1"), Row("id1", "v2"),
       Row("id2", "v1"), Row("id2", "v1"), Row("id2", "v3"))
     val r = session.sql("select sdk_version, count(distinct device_id) from (" +
-        "select sdk_version,device_id from YES_WITH group by sdk_version, " +
-        "device_id) a group by sdk_version")
+      "select sdk_version,device_id from YES_WITH group by sdk_version, " +
+      "device_id) a group by sdk_version")
     ColumnCacheBenchmark.collect(r,
       Seq(Row("v1", 2), Row("v2", 1), Row("v3", 1)))
   }
@@ -124,11 +127,11 @@ class QueryTest extends SnappyFunSuite {
   test("SNAP-1714") {
     val snc = new SnappySession(this.sc)
     snc.sql("CREATE TABLE ColumnTable(\"a/b\" INT ,Col2 INT, Col3 INT) " +
-        "USING column " +
-        "options " +
-        "(" +
-        "PARTITION_BY 'col2'," +
-        "BUCKETS '1')")
+      "USING column " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'col2'," +
+      "BUCKETS '1')")
     snc.sql("insert into ColumnTable(\"a/b\",col2,col3) values(1,2,3)")
     snc.sql("select col2,col3 from columnTable").collect()
     snc.sql("select col2, col3, `a/b` from columnTable").collect()
@@ -252,9 +255,9 @@ class QueryTest extends SnappyFunSuite {
     val t2 = "snap2088_2"
 
     snc.sql(s"create table $t1 (airport_id int, name string, city string, country string) " +
-        s"using column options (COLUMN_BATCH_SIZE '50')")
+      s"using column options (COLUMN_BATCH_SIZE '50')")
     snc.sql(s"create table $t2 (airport_id int, name string, city string, country string) " +
-        s"using column options (COLUMN_BATCH_SIZE '5000')")
+      s"using column options (COLUMN_BATCH_SIZE '5000')")
 
     val data = snc.range(10000).selectExpr("cast ((rand() * 100000) as int) as airport_id",
       "concat('name_', cast((id % 20) as string)) as name",
@@ -276,11 +279,11 @@ class QueryTest extends SnappyFunSuite {
       "select count(*), city from $t group by city",
       "select count(*), city from $t where country like 'country_1%' group by city",
       "select count(*), city, collect_list(airport_id), collect_list(name), " +
-          "collect_list(country) from (select * from $t order by airport_id, name, country) " +
-          "as t group by city order by city",
+        "collect_list(country) from (select * from $t order by airport_id, name, country) " +
+        "as t group by city order by city",
       "select count(*), city, collect_list(airport_id), collect_list(name), " +
-          "collect_list(country) from (select * from $t where country like 'country_1%' " +
-          "  order by airport_id, name, country) as t group by city order by city"
+        "collect_list(country) from (select * from $t where country like 'country_1%' " +
+        "  order by airport_id, name, country) as t group by city order by city"
     )
 
     // To validate the results against queries directly on data disabling snappy aggregation.
@@ -299,9 +302,9 @@ class QueryTest extends SnappyFunSuite {
 
     // fire updates and check again
     snc.sql(s"update $t1 set airport_id = airport_id, name = name, city = city, " +
-        s"country = country where (airport_id % 3) = 0")
+      s"country = country where (airport_id % 3) = 0")
     snc.sql(s"update $t2 set airport_id = airport_id, name = name, city = city, " +
-        s"country = country where (airport_id % 2) = 0")
+      s"country = country where (airport_id % 2) = 0")
 
     results = queries.map { q =>
       snc.sql(q.replace("$t", t1)) -> snc.sql(q.replace("$t", t2))
@@ -333,8 +336,8 @@ class QueryTest extends SnappyFunSuite {
     val session = this.snc.snappySession
 
     val query = "select count(t1.data), count(*) from test1 t1 join test2 t2 on (t1.id = t2.id) " +
-        "union all " +
-        "select count(*), count(t1.data) from test1 t1 join test2 t2 on (t1.id = t2.id)"
+      "union all " +
+      "select count(*), count(t1.data) from test1 t1 join test2 t2 on (t1.id = t2.id)"
     for (tableType <- Seq("column", "row", "parquet")) {
       val (declaration, options) = if (tableType == "parquet") {
         "external " -> ((table: String) => s"options (path '${table}_pq')")
@@ -342,8 +345,8 @@ class QueryTest extends SnappyFunSuite {
 
       def tableDeclaration(table: String, size: Int): String = {
         s"create ${declaration}table $table using $tableType ${options(table)} as " +
-            s"select id, case when id % 100 = 0 then null else 'data' || id end as data " +
-            s"from range($size)"
+          s"select id, case when id % 100 = 0 then null else 'data' || id end as data " +
+          s"from range($size)"
       }
 
       session.sql(tableDeclaration("test1", 50000))
@@ -390,5 +393,58 @@ class QueryTest extends SnappyFunSuite {
     // delete the directories created for parquet
     TestUtil.deleteDir(new File("test1_pq"))
     TestUtil.deleteDir(new File("test2_pq"))
+  }
+
+  test("create table test with datatype as only varchar using snappy session") {
+    val session = snc.newSession()
+    session.sql("create table test1 (field1 int, field2 varchar, field3 varchar(12)) using column")
+    var schema = session.table("test1").schema
+    assertTrue(schema.exists(sf => sf.name.equalsIgnoreCase("field2") &&
+      sf.metadata.getString(Constant.CHAR_TYPE_BASE_PROP).equalsIgnoreCase("VARCHAR")
+      && sf.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP) == Constant.MAX_VARCHAR_SIZE))
+
+    assertTrue(schema.exists(sf => sf.name.equalsIgnoreCase("field3") &&
+      sf.metadata.getString(Constant.CHAR_TYPE_BASE_PROP).equalsIgnoreCase("VARCHAR")
+      && sf.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP) == 12))
+    snc.dropTable("test1", true)
+
+    session.sql("create table test1 (field1 int, field2 varchar, field3 varchar(12)) using row")
+    schema = session.table("test1").schema
+    assertTrue(schema.exists(sf => sf.name.equalsIgnoreCase("field2") &&
+      sf.metadata.getString(Constant.CHAR_TYPE_BASE_PROP).equalsIgnoreCase("VARCHAR")
+      && sf.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP) == Constant.MAX_VARCHAR_SIZE))
+
+    assertTrue(schema.exists(sf => sf.name.equalsIgnoreCase("field3") &&
+      sf.metadata.getString(Constant.CHAR_TYPE_BASE_PROP).equalsIgnoreCase("VARCHAR")
+      && sf.metadata.getLong(Constant.CHAR_TYPE_SIZE_PROP) == 12))
+
+    snc.dropTable("test1", true)
+  }
+
+  test("create table test with datatype as only varchar using jdbc conn") {
+    val serverHostPort2 = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    val st = conn.createStatement
+    st.execute(s"create table test1 (field1 int, field2 varchar, " +
+      s"field3 varchar(12)) using column")
+    var rs = st.executeQuery("select * from test1");
+    var rsmd = rs.getMetaData;
+    assertEquals(Types.VARCHAR, rsmd.getColumnType(2))
+    assertEquals(Limits.DB2_VARCHAR_MAXWIDTH, rsmd.getPrecision(2))
+    assertEquals(Types.VARCHAR, rsmd.getColumnType(3))
+    assertEquals(12, rsmd.getPrecision(3))
+    st.execute("drop table test1")
+
+    st.execute(s"create table test1 (field1 int, field2 varchar, " +
+      s"field3 varchar(12)) using row")
+    rs = st.executeQuery("select * from test1");
+    rsmd = rs.getMetaData;
+    assertEquals(Types.VARCHAR, rsmd.getColumnType(2))
+    assertEquals(Limits.DB2_VARCHAR_MAXWIDTH, rsmd.getPrecision(2))
+    assertEquals(Types.VARCHAR, rsmd.getColumnType(3))
+    assertEquals(12, rsmd.getPrecision(3))
+    st.execute("drop table test1")
+    conn.close()
+    TestUtil.stopNetServer()
   }
 }
