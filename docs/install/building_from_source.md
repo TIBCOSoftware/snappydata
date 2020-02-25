@@ -51,11 +51,7 @@ The above aliases can serve as useful shortcuts to pull and push all projects fr
 
 Gradle is the build tool used for all the TIBCO ComputeDB projects. Changes to _Apache Spark_ and _spark-jobserver_ forks include the addition of Gradle build scripts to allow building them independently as well as a sub-project of TIBCO ComputeDB. The only requirement for the build is a JDK 8 installation. The Gradle wrapper script downloads all the other build dependencies as required.
 
-If you do not want to deal with sub-modules and only work on a TIBCO ComputeDB project, you can clone only the TIBCO ComputeDB repository (without the `--recursive` option) and the build pulls those TIBCO ComputeDB project jar dependencies from Maven central.
-
-If working on all the separate projects integrated inside the top-level TIBCO ComputeDB clone, the Gradle build recognizes the same and build those projects too and includes the same in the top-level product distribution jar. The *spark* and *store* submodules can also be built and published independently.
-
-Useful build and test targets:
+**Useful build and test targets**:
 
 ```pre
 ./gradlew assemble      -  build all the sources
