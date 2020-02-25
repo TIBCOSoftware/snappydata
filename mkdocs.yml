@@ -306,12 +306,12 @@ nav:
 - Legal Notices: legalnotices.md
 
 theme: 'material'
-theme_dir: 'docs/custom_theme'
+#custom_dir: 'docs/custom_theme'
 
 #extra_javascript:
 #    - 'custom_theme/js/menu.js'
 #    - 'custom_theme/js/highlight.pack.js'
-extra_css:
+#extra_css:
 #    - 'custom_theme/css/toc.css'
 #    - 'custom_theme/css/menu.css'
 #    - 'custom_theme/css/images.css'

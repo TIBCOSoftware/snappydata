@@ -21,7 +21,7 @@ The following list of commonly used configuration properties can be set to confi
 
 |Property|Description|Components</br>|
 |-|-|-|
-|-ack-severe-alert-threshold| See [ack-severe-alert-threshold](/reference/configuration_parameters/ack-severe-alert-threshold.md)|
+|-ack-severe-alert-threshold| See [ack-severe-alert-threshold](../reference/configuration_parameters/ack-severe-alert-threshold.md)|
 |-ack-wait-threshold| See [ack-wait-threshold](/reference/configuration_parameters/ack-wait-threshold.md)| |
 |-bind-address|IP address on which the member is bound. The default behavior is to bind to all local addresses. Also see [bind-address](/reference/configuration_parameters/bind-address.md) |Server</br>Lead</br>Locator|
 |-client-port| The port that the network controller listens for client connections in the range of 1 to 65535. The default value is 1527.|Locator</br>Server|
