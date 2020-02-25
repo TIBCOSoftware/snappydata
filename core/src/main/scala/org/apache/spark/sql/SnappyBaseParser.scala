@@ -34,7 +34,6 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import com.pivotal.gemfirexd.internal.shared.common.reference.Limits.{DB2_VARCHAR_MAXWIDTH => VARCHAR_MAXWIDTH}
 
-
 /**
  * Base parsing facilities for all SnappyData SQL parsers.
  */

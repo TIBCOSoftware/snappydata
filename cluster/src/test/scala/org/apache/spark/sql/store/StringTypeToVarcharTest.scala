@@ -38,11 +38,11 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     super.afterAll()
   }
 
-  test("stringtypeas in column table creation with schema using snappysession ,to be ignored") {
+  test("string_type_as in column table creation with schema using snappysession ,to be ignored") {
     this.stringTypeOptionUsingSnappySessionIgnored(true)
   }
 
-  test("stringtypeas in row table creation with schema using snappysession ,to be ignored") {
+  test("string_type_as in row table creation with schema using snappysession ,to be ignored") {
     this.stringTypeOptionUsingSnappySessionIgnored(false)
   }
 
@@ -50,7 +50,7 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     val tableType = if (isColumnTable) "column" else "row"
     snc.sql("drop table if exists test1")
     snc.sql("create table test1 (col1 char(12), col2 string, col3 string, col4 clob) " +
-      s"using $tableType options(stringTypeAs 'varchar')")
+      s"using $tableType options(${Constant.STRING_TYPE_AS} 'varchar')")
     snc.sql("insert into test1 values ('str1_1', 'str1_2', 'str1_3', 'str1_4' )," +
       "('str2_1', 'str2_2', 'str2_3', 'str2_4')")
     val conn = getSqlConnection
@@ -64,11 +64,11 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
   }
 
 
-  test("stringtypeas in column table creation with schema using jdbcconn ,to be ignored") {
+  test("string_type_as in column table creation with schema using jdbcconn ,to be ignored") {
     this.stringTypeOptionUsingJdbcConnIgnored(true)
   }
 
-  test("stringtypeas in row table creation with schema using jdbcconn ,to be ignored") {
+  test("string_type_as in row table creation with schema using jdbcconn ,to be ignored") {
     this.stringTypeOptionUsingJdbcConnIgnored(false)
   }
 
@@ -79,7 +79,7 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     st.execute("drop table if exists test1")
     st.execute("create table test1 (col1 char(12), col2 string, " +
       "col3 string, col4 clob) " +
-      s"using $tableType options(stringTypeAs 'varchar')")
+      s"using $tableType options(${Constant.STRING_TYPE_AS} 'varchar')")
     st.executeUpdate("insert into test1 values ('str1_1', 'str1_2', 'str1_3', 'str1_4' )," +
       "('str2_1', 'str2_2', 'str2_3', 'str2_4')")
 
@@ -92,11 +92,11 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     st.execute("drop table if exists test1")
   }
 
-  test("stringtypeas option in column table using CTAS") {
+  test("string_type_as option in column table using CTAS") {
     testOptionOnTableCreationUsingCTAS(true)
   }
 
-  test("stringtypeas option in row table using CTAS") {
+  test("string_type_as option in row table using CTAS") {
     testOptionOnTableCreationUsingCTAS(false)
   }
 
@@ -130,7 +130,7 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     }.filterNot(_.isWhitespace)
     assertFalse(falseClobs.isEmpty)
     snc.sql("create table test1  " +
-      s"using $tableType options(stringTypeAs 'varchar') as " +
+      s"using $tableType options(${Constant.STRING_TYPE_AS} 'varchar') as " +
       s"(select * from events_external limit 100)")
     val rs = st.executeQuery("select * from test1 limit 10")
     val rsmd = rs.getMetaData
@@ -147,11 +147,11 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     snc.dropTable("test1")
   }
 
-  test("stringtypeas option in column table using CTAS using jdbcconn") {
+  test("string_type_as option in column table using CTAS using jdbcconn") {
     testOptionOnTableCreationUsingCTASWithJdbcConn(true)
   }
 
-  test("stringtypeas option in row table using CTAS using jdbcconn") {
+  test("string_type_as option in row table using CTAS using jdbcconn") {
     testOptionOnTableCreationUsingCTASWithJdbcConn(false)
   }
 
@@ -189,7 +189,7 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     assertFalse(falseClobs.isEmpty)
 
     st.execute("create table test1  " +
-      s"using $tableType options(stringTypeAs 'varchar') as " +
+      s"using $tableType options(${Constant.STRING_TYPE_AS} 'varchar') as " +
       s"(select * from events_external limit 100)")
     val rs = st.executeQuery("select * from test1 limit 10")
     val rsmd = rs.getMetaData
@@ -242,7 +242,7 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
 
     // now create row table
     st.execute("create table test2  " +
-      s"using row options(stringTypeAs 'varchar') as " +
+      s"using row options(${Constant.STRING_TYPE_AS} 'varchar') as " +
       s"(select * from test1 limit 100)")
     val rs2 = st.executeQuery("select * from test2 limit 10")
     val rsmd2 = rs2.getMetaData
@@ -291,7 +291,7 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     assertFalse(falseClobs.isEmpty)
 
     st.execute("create table test1  " +
-      s"using row options(stringTypeAs 'varchar') as " +
+      s"using row options(${Constant.STRING_TYPE_AS} 'varchar') as " +
       s"(select * from events_external limit 100)")
 
     val rs = st.executeQuery("select * from test1 limit 10")
@@ -307,7 +307,7 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
 
     // now create column table
     st.execute("create table test2  " +
-      s"using column options(stringTypeAs 'varchar') as " +
+      s"using column options(${Constant.STRING_TYPE_AS} 'varchar') as " +
       s"(select * from test1 limit 100)")
     val rs2 = st.executeQuery("select * from test2 limit 10")
     val rsmd2 = rs2.getMetaData
@@ -356,7 +356,7 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     assertFalse(falseClobs.isEmpty)
 
     st.execute("create table test1  " +
-      s"using row options(stringTypeAs 'varchar') as " +
+      s"using row options(${Constant.STRING_TYPE_AS} 'varchar') as " +
       s"(select * from events_external limit 100)")
 
     val rs = st.executeQuery("select * from test1 limit 10")
@@ -372,7 +372,7 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
 
     // now create column table
     st.execute("create table test2  " +
-      s"using row options(stringTypeAs 'varchar') as " +
+      s"using row options(${Constant.STRING_TYPE_AS} 'varchar') as " +
       s"(select * from test1 limit 100)")
     val rs2 = st.executeQuery("select * from test2 limit 10")
     val rsmd2 = rs2.getMetaData
@@ -386,7 +386,7 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     }
     st.execute("drop table if exists test2")
     snc.sql("create table test2  " +
-      s"using row options(stringTypeAs 'varchar') as " +
+      s"using row options(${Constant.STRING_TYPE_AS} 'varchar') as " +
       s"(select * from test1 limit 100)")
     val rs3 = st.executeQuery("select * from test2 limit 10")
     val rsmd3 = rs3.getMetaData

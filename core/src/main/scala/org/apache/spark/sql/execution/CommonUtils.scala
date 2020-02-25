@@ -26,7 +26,7 @@ import org.apache.spark.sql.types.{CharType, DataType, MetadataBuilder, StringTy
 object CommonUtils {
   def modifySchemaIfNeeded(options: Map[String, String], session: SnappySession,
     schema: StructType): StructType = {
-    options.get("stringtypeas").map(stringTypeAs => {
+    options.get(Constant.STRING_TYPE_AS).map(stringTypeAs => {
       val parser = session.snappyParser.newInstance()
       val stringAsDataType = parser.parseSQLOnly[DataType](stringTypeAs,
         parser.columnDataType.run())
