@@ -54,7 +54,7 @@ class Spark23Internals(override val version: String) extends Spark23_4_Internals
 
   override def newSharedState(sparkContext: SparkContext): SnappySharedState = {
     // remove any existing SQLTab since a new one will be created by SharedState constructor
-    removeSQLTabs(sparkContext, except = null)
+    removeSQLTabs(sparkContext, except = None)
     val state = new SnappySharedState23(sparkContext)
     createAndAttachSQLListener(state, sparkContext)
     state

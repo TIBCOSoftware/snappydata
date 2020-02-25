@@ -1973,10 +1973,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc)
   private[sql] def defaultPooledConnection(name: String): java.sql.Connection =
     ConnectionUtil.getPooledConnection(name, new ConnectionConf(defaultConnectionProps))
 
-  private[sql] def getPooledConnectionToServer(name: String): java.sql.Connection = {
-    ConnectionUtil.getPooledConnection(name, new ConnectionConf(defaultConnectionProps))
-  }
-
   /**
    * Fetch the topK entries in the Approx TopK synopsis for the specified
    * time interval. See _createTopK_ for how to create this data structure

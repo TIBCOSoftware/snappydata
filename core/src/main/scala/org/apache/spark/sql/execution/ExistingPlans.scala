@@ -299,7 +299,7 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
     }
     finally {
       logDebug(s" Unlocking the table in execute of ExecutePlan:" +
-          s" ${child.treeString(false)}")
+          s" ${child.treeString(verbose = false)}")
       session.clearWriteLockOnTable()
     }
   }
@@ -348,11 +348,9 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
 
   private var consumedCode: String = _
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
-  private val inputCode = basePlan.asInstanceOf[CodegenSupport]
 
   private val withShuffle = internals.newShuffleExchange(HashPartitioning(
-    ClusteredDistribution(otherPartKeys)
-        .clustering, inputCode.inputRDDs().head.getNumPartitions), otherPlan)
+    otherPartKeys, basePlan.inputRDDs().head.getNumPartitions), otherPlan)
 
   override def needCopyResult: Boolean = false
 
@@ -362,10 +360,10 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
     ClusteredDistribution(basePartKeys) :: ClusteredDistribution(otherPartKeys) :: Nil
 
   override def inputRDDs(): Seq[RDD[InternalRow]] =
-    inputCode.inputRDDs ++ Some(withShuffle.execute())
+    basePlan.inputRDDs ++ Some(withShuffle.execute())
 
   override protected def doProduce(ctx: CodegenContext): String = {
-    val child1Produce = inputCode.produce(ctx, this)
+    val child1Produce = basePlan.produce(ctx, this)
     val input = internals.addClassField(ctx, "scala.collection.Iterator", "input",
       v => s"$v = inputs[1];")
 

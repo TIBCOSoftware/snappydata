@@ -267,8 +267,12 @@ object JdbcExtendedUtils extends Logging {
           size, scale, metadataBuilder, session)
         cols += StructField(columnName, columnType, nullable, metadataBuilder.build())
       } while (rs.next())
+      rs.close()
       normalizeSchema(StructType(cols))
-    } else EMPTY_SCHEMA
+    } else {
+      rs.close()
+      EMPTY_SCHEMA
+    }
   }
 
   def tableExistsInMetaData(schemaName: String, tableName: String,

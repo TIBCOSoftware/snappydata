@@ -474,8 +474,6 @@ object MetadataTest extends Assertions {
     // check schema of the returned Dataset
     assert(ds.schema.map(_.copy(metadata = Metadata.empty)) === expectedColumns.zip(nullability)
         .map(p => StructField(p._1, StringType, p._2)))
-    // last row is detailed information and an empty row before that (no partitioning information)
-    assert(rs.length === sysSchemasColumns.length + 2)
     assert(rs.take(sysSchemasColumns.length).toSeq === sysSchemasColumns.map(
       p => Row(p._1, s"${p._3.toLowerCase}(${p._2})", null)))
     assert(rs(sysSchemasColumns.length + 1).getString(0) === "# Detailed Table Information")
@@ -496,8 +494,6 @@ object MetadataTest extends Assertions {
     // check schema of the returned Dataset
     assert(ds.schema.map(_.copy(metadata = Metadata.empty)) === expectedColumns.zip(nullability)
         .map(p => StructField(p._1, StringType, p._2)))
-    // last row is detailed information and an empty row before that (no partitioning information)
-    assert(rs.length === sysTablesColumns.length + 2)
     assert(rs.take(sysTablesColumns.length).toSeq === sysTablesColumns.map {
       case (name, _, "BOOLEAN", _) => Row(name, BooleanType.simpleString, null)
       case (name, _, "LONGVARCHAR", _) => Row(name, StringType.simpleString, null)
@@ -597,8 +593,6 @@ object MetadataTest extends Assertions {
     assert(rs === Array(Row("id", IntegerType.simpleString, null),
       Row("data", StringType.simpleString, null)))
     rs = executeSQL("describe extended columnTable2").collect()
-    // last row is detailed information and an empty row before that (no partitioning information)
-    assert(rs.length === 5)
     assert(rs.take(3) === Array(Row("id", LongType.simpleString, null),
       Row("data", StringType.simpleString, null),
       Row("data2", DecimalType.SYSTEM_DEFAULT.simpleString, null)))
@@ -712,7 +706,7 @@ object MetadataTest extends Assertions {
     }
     expectedPattern = ".*Physical Plan.*Partitioned Scan ColumnFormatRelation" +
         "\\[app.columntable2\\].*numBuckets = [0-9]* numPartitions = [0-9]*" +
-        s".*id#[0-9]*L = DynExpr\\(" + literalString("10") + "\\).*"
+        s".*id#[0-9]*L = .*" + literalString("10") + ".*"
     assert(matches(plan, expectedPattern))
 
     ds = executeSQL("explain extended select * from columnTable2 where id > 20")
@@ -727,10 +721,10 @@ object MetadataTest extends Assertions {
     }
     expectedPattern = s".*Parsed Logical Plan.*Filter.*id > ${literalString("20")}" +
         s".*Analyzed Logical Plan.*Filter.*id#[0-9]*L > cast\\(${literalString("20")} as bigint" +
-        s".*Optimized Logical Plan.*Filter.*id#[0-9]*L > DynExpr\\(${literalString("20")}\\)" +
+        s".*Optimized Logical Plan.*Filter.*id#[0-9]*L > .*${literalString("20")}" +
         ".*ColumnFormatRelation\\[app.columntable2\\].*Physical Plan.*Partitioned Scan" +
         " ColumnFormatRelation\\[app.columntable2\\].*numBuckets = [0-9]* numPartitions = [0-9]*" +
-        s".*id#[0-9]*L > DynExpr\\(${literalString("20")}\\).*"
+        s".*id#[0-9]*L > .*${literalString("20")}.*"
     assert(matches(plan, expectedPattern))
 
     // ----- check EXPLAIN for DDLs -----
@@ -745,7 +739,7 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
-    assert(matches(plan, ".*Physical Plan.*ExecutedCommand.*CreateTableUsingCommand" +
+    assert(matches(plan, ".*Physical Plan.*Execute.*CreateTableUsingCommand" +
         ".*rowtable2.*\\(id int primary key, id2 int\\), row.*"))
 
     // create more tables and repeat the checks
@@ -789,8 +783,6 @@ object MetadataTest extends Assertions {
       Row("data", DateType.simpleString, null),
       Row("data2", StringType.simpleString, null)))
     rs = executeSQL("describe extended schema2.rowTable2").collect()
-    // last row is detailed information and an empty row before that (no partitioning information)
-    assert(rs.length === 4)
     assert(rs.take(2) === Array(Row("id", IntegerType.simpleString, null),
       Row("data", StringType.simpleString, null)))
     assert(rs(3).getString(0) === "# Detailed Table Information")

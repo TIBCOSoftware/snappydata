@@ -17,11 +17,11 @@
 package org.apache.spark.jdbc
 
 import scala.collection.JavaConverters._
-
 import java.sql.Connection
 
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.{SparkContext, SparkEnv}
 
 
@@ -62,7 +62,12 @@ object ConnectionUtil {
       case SparkContext.DRIVER_IDENTIFIER => connectionProps.connProps
       case _ => connectionProps.executorConnProps
     }
-    val jdbcOptions = new JDBCOptions(connectionProps.url, "", connProps.asScala.toMap)
+    // dbtable option is now always required so fill in dummy table name if not present
+    val tableName = connProps.remove(JDBCOptions.JDBC_TABLE_NAME) match {
+      case null => JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME
+      case t => t.toString
+    }
+    val jdbcOptions = new JDBCOptions(connectionProps.url, tableName, connProps.asScala.toMap)
     JdbcUtils.createConnectionFactory(jdbcOptions)()
   }
 

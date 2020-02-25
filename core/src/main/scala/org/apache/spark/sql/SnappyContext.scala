@@ -1271,11 +1271,7 @@ object SnappyContext extends SparkSupport with Logging {
       clearStaticArtifacts()
 
       contextLock.synchronized {
-        val sharedState = _sharedState
-        if (sharedState ne null) {
-          sharedState.globalTempViewManager.clear()
-          _sharedState = null
-        }
+        _sharedState = null
         if (_globalClear ne null) {
           _globalClear()
           _globalClear = null

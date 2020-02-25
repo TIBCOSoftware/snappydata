@@ -18,13 +18,12 @@ package org.apache.spark.sql.sources
 
 import java.sql.Connection
 
-import scala.collection.JavaConverters._
-
 import com.gemstone.gemfire.internal.cache.LocalRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
 
 import org.apache.spark.annotation.DeveloperApi
+import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
@@ -33,7 +32,6 @@ import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JDBCRDD}
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -397,8 +395,12 @@ trait SnappyTableRelation extends DestroyRelation with RowLevelSecurityRelation 
     if (invalidateCached) session.externalCatalog.invalidate(schemaName -> tableName)
     _relationInfoAndRegion = null
     if (fetchFromStore) {
-      _schema = JdbcExtendedUtils.normalizeSchema(JDBCRDD.resolveTable(new JDBCOptions(
-        connProperties.url, table, connProperties.connProps.asScala.toMap)))
+      val conn = ConnectionUtil.getPooledConnection(schemaName, new ConnectionConf(connProperties))
+      try {
+        _schema = JdbcExtendedUtils.getTableSchema(schemaName, tableName, conn, Some(session))
+      } finally {
+        conn.close()
+      }
     } else {
       session.externalCatalog.getTableIfExists(schemaName, tableName) match {
         case None => _schema = JdbcExtendedUtils.EMPTY_SCHEMA
