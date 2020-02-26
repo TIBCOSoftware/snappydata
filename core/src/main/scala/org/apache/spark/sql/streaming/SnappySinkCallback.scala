@@ -103,7 +103,7 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
 
   private def createSinkStateTableIfNotExist(sqlContext: SQLContext,
       stateTableSchema: Option[String]) = {
-    sqlContext.asInstanceOf[SnappyContext].snappySession.sql(s"create table if not exists" +
+    sqlContext.sql(s"create table if not exists" +
         s" ${stateTable(stateTableSchema)} (" +
         s" $QUERY_ID_COLUMN varchar(200)," +
         s" $BATCH_ID_COLUMN long, " +

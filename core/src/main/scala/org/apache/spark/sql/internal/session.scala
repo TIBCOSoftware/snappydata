@@ -643,7 +643,8 @@ private[sql] final class PreprocessTable(state: SnappySessionState)
         }
       }
       if (hasNullValueProjection && isRowTable && (currentKey ne null)) {
-        // fallback to store-layer command to handle default and autoincrement columns
+        // fallback to store-layer SQL to handle possible default and autoincrement columns
+        // TODO: handle default (using Metadata query) and autoinc (using builtin functions)
         (u, DMLExternalTable(relation, currentKey.sqlText))
       } else (relation, Project(projection.toSeq, child))
     } else (u, child)

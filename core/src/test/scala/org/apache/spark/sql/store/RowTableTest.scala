@@ -303,7 +303,7 @@ class RowTableTest
     val rdd1 = sc.parallelize(data1, data1.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF1 = snc.createDataFrame(rdd1)
 
-    dataDF1.write.format("row").mode(SaveMode.Overwrite).options(props).saveAsTable(tableName)
+    dataDF1.write.insertInto(tableName)
 
     snc.sql("PUT INTO TABLE " + tableName + " SELECT * FROM tempTable")
 

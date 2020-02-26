@@ -1370,6 +1370,7 @@ task buildAll {
   dependsOn getTasksByName('testClasses', true).findAll { taskFilter(it) }.collect { it.path }
   dependsOn ':snappy-spark:scalaStyle'
   dependsOn ':copyShadowJars'
+  dependsOn ':generateSources'
   mustRunAfter cleanAll
 }
 task buildDtests {

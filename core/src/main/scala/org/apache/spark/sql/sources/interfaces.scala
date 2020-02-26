@@ -384,7 +384,7 @@ trait SnappyTableRelation extends DestroyRelation with RowLevelSecurityRelation 
     }
   }
 
-  protected[this] var _schema: StructType = _
+  protected[this] var _schema: StructType = JdbcExtendedUtils.EMPTY_SCHEMA
   @transient protected[this] var _relationInfoAndRegion: (RelationInfo, Option[LocalRegion]) = _
 
   protected def refreshTableSchema(invalidateCached: Boolean, fetchFromStore: Boolean): Unit = {

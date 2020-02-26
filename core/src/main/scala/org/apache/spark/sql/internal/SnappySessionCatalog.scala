@@ -561,7 +561,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
 
     // hive tables will be created in external hive catalog if enabled else will fail
     table.provider match {
-      case Some(DDLUtils.HIVE_PROVIDER) =>
+      case Some(p) if p.equalsIgnoreCase(DDLUtils.HIVE_PROVIDER) =>
         if (snappySession.enableHiveSupport) {
 
           // check for existing table else for hive table it could create in both catalogs
@@ -700,18 +700,17 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
           // remove from temporary base table if applicable
           dropFromTemporaryBaseTable(metadata)
           metadata.provider match {
-            case Some(provider) if provider != DDLUtils.HIVE_PROVIDER =>
-              val relation = try {
+            case Some(provider) if !provider.equalsIgnoreCase(DDLUtils.HIVE_PROVIDER) =>
+              try {
                 DataSource(snappySession, provider, userSpecifiedSchema = Some(metadata.schema),
                   partitionColumns = metadata.partitionColumnNames,
                   bucketSpec = metadata.bucketSpec,
-                  options = metadata.storage.properties).resolveRelation()
+                  options = metadata.storage.properties).resolveRelation() match {
+                  case d: DestroyRelation if d ne null => d.destroy(ignoreIfNotExists)
+                  case _ =>
+                }
               } catch {
-                case NonFatal(_) => null // ignore any exception in class lookup
-              }
-              relation match {
-                case d: DestroyRelation => d.destroy(ignoreIfNotExists)
-                case _ =>
+                case NonFatal(_) => // ignore any exception in class lookup
               }
             case _ =>
           }
