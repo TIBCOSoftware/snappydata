@@ -818,4 +818,33 @@ object SQLFunctionsUtils {
     " GROUP BY ROLLUP(continent,country,city) ORDER BY GID"
   val dropColTbl_grouping_grouping_id : String = dropTbl  + columnTbl
   val dropRowTbl_grouping_grouping_id : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  110. approx_count_dist, 111. mean
+    */
+  val approxcntdist_mean = new Array[String](10)
+  approxcntdist_mean(0) = "('James','Sales',3000)"
+  approxcntdist_mean(1) = "('Michael','Sales',4600)"
+  approxcntdist_mean(2) = "('Robert','Sales',4100)"
+  approxcntdist_mean(3) = "('Maria','Finance',3000)"
+  approxcntdist_mean(4) = "('James','Sales',3000)"
+  approxcntdist_mean(5) = "('Scott','Finance',3300)"
+  approxcntdist_mean(6) = "('Jen','Finance',3900)"
+  approxcntdist_mean(7) = "('Jeff','Marketing',3000)"
+  approxcntdist_mean(8) = "('Kumar','Marketing',2000)"
+  approxcntdist_mean(9) = "('Saif','Sales',4100)"
+  val createColTypeTbl_approxcntdist_mean_Spark : String = createTbl + columnTbl +
+    "(empname string,department string,salary int)"
+  val createRowTypeTbl_approxcntdist_mean_Spark : String = createTbl + rowTbl +
+    "(empname string,department string,salary int)"
+  val createColumnTbl_approxcntdist_mean : String = createTbl + columnTbl +
+    "(empname string,department string,salary int) " + usingCol
+  val createRowTbl_approxcntdist_mean : String = createTbl + rowTbl +
+    "(empname string,department string,salary int) " + usingRow
+  val select_ColTbl_approxcntdist_mean : String = "SELECT " +
+    "approx_count_distinct(salary),mean(salary),approx_count_distinct(department) FROM " + columnTbl
+  val select_RowTbl_approxcntdist_mean: String = "SELECT " +
+    "approx_count_distinct(salary),mean(salary),approx_count_distinct(department) FROM " + rowTbl
+  val dropColTbl_approxcntdist_mean : String = dropTbl  + columnTbl
+  val dropRowTbl_approxcntdist_mean : String = dropTbl + rowTbl
 }

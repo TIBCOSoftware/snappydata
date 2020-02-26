@@ -1210,7 +1210,46 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_grouping_grouping_id)
     pw.println()
     pw.flush()
-
+    /**
+      *  Below queries test the functions :
+      *  110. approx_count_dist, 111. mean
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_approxcntdist_mean_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_approxcntdist_mean_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_approxcntdist_mean)
+    snc.sql(SQLFunctionsUtils.createRowTbl_approxcntdist_mean)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 9) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.approxcntdist_mean(i))
+    }
+    for(i <- 0 to 9) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.approxcntdist_mean(i))
+    }
+    for(i <- 0 to 9) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.approxcntdist_mean(i))
+    }
+    for(i <- 0 to 9) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.approxcntdist_mean(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc,
+      SQLFunctionsUtils.select_ColTbl_approxcntdist_mean,
+      "Q67_approxcntdist_mean", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc,
+      SQLFunctionsUtils.select_RowTbl_approxcntdist_mean,
+      "Q68_approxcntdist_mean", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_approxcntdist_mean)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_approxcntdist_mean)
+    spark.sql(SQLFunctionsUtils.dropColTbl_approxcntdist_mean)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_approxcntdist_mean)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
