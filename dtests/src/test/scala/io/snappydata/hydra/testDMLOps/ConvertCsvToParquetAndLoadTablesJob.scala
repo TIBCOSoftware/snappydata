@@ -49,7 +49,6 @@ class ConvertCsvToParquetAndLoadTablesJob extends SnappySQLJob {
 
       SnappyDMLTestUtil.createParquetData(snc, parquetFileLocation, pw)
       snc.setConf("parquetFileLocation", parquetFileLocation)
-      snc.sql("set schema gemfire1")
       pw.println("Now loading data to the snappy tables...")
       pw.println("Loading data into orders...");  pw.flush()
       SnappyDMLTestUtil.orders_par(snc).write.insertInto("orders")
