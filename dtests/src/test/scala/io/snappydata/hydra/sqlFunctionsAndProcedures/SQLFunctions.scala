@@ -1290,6 +1290,102 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_printf_md5)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  114.  assert_true
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_assert_true_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_assert_true_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_assert_true)
+    snc.sql(SQLFunctionsUtils.createRowTbl_assert_true)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(0))
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(0))
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(0))
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(0))
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_assert_true,
+      "Q71_asserttrue_column", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_assert_true,
+      "Q71_asserttrue_row", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_printf_md5)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_printf_md5)
+    spark.sql(SQLFunctionsUtils.dropColTbl_printf_md5)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_printf_md5)
+    pw.println()
+    pw.flush()
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_assert_true_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_assert_true_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_assert_true)
+    snc.sql(SQLFunctionsUtils.createRowTbl_assert_true)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(1))
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(1))
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(1))
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(1))
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    try {
+      SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_assert_true,
+        "Q72_asserttrue_column", "column", pw, sqlContext)
+      SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_assert_true,
+        "Q72_asserttrue_row", "row", pw, sqlContext)
+    } catch {
+      case e : Exception => {
+        pw.println("assert_true equal condition:")
+        pw.println(e.getCause)
+        pw.flush()
+      }
+    }
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_printf_md5)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_printf_md5)
+    spark.sql(SQLFunctionsUtils.dropColTbl_printf_md5)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_printf_md5)
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_assert_true_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_assert_true_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_assert_true)
+    snc.sql(SQLFunctionsUtils.createRowTbl_assert_true)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(2))
+    spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(2))
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(2))
+    snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+      SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(2))
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    try {
+      SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_ColTbl_assert_true,
+        "Q73_asserttrue_column", "column", pw, sqlContext)
+      SnappyTestUtils.assertQueryFullResultSet(snc, SQLFunctionsUtils.select_RowTbl_assert_true,
+        "Q73_asserttrue_row", "row", pw, sqlContext)
+    } catch {
+      case e : Exception => {
+        pw.println("assert_true > condition:")
+        pw.println(e.getCause)
+        pw.flush()
+      }
+    }
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_printf_md5)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_printf_md5)
+    spark.sql(SQLFunctionsUtils.dropColTbl_printf_md5)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_printf_md5)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()

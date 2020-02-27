@@ -871,4 +871,22 @@ object SQLFunctionsUtils {
   " ORDER BY id"
   val dropColTbl_printf_md5 : String = dropTbl  + columnTbl
   val dropRowTbl_printf_md5 : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  114.  assert_true
+    */
+  val assert_true = new Array[String](3)
+  assert_true(0) = "(9,6)"
+  assert_true(1) = "(8,8)"
+  assert_true(2) = "(5,10)"
+  val createColTypeTbl_assert_true_Spark : String = createTbl + columnTbl + "(i1 int,i2 int)"
+  val createRowTypeTbl_assert_true_Spark : String = createTbl + rowTbl + "(i1 int,i2 int)"
+  val createColumnTbl_assert_true : String = createTbl + columnTbl +
+    "(i1 int,i2 int) " + usingCol
+  val createRowTbl_assert_true : String = createTbl + rowTbl +
+    "(i1 int,i2 int) " + usingRow
+  val select_ColTbl_assert_true : String = "SELECT " + "assert_true(i1 > i2) FROM " + columnTbl
+  val select_RowTbl_assert_true: String = "SELECT " + "assert_true(i1 > i2) FROM " + rowTbl
+  val dropColTbl_assert_true : String = dropTbl  + columnTbl
+  val dropRowTbl_assert_true : String = dropTbl + rowTbl
 }
