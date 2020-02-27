@@ -1250,6 +1250,46 @@ class SQLFunctions extends SnappySQLJob {
     spark.sql(SQLFunctionsUtils.dropRowTbl_approxcntdist_mean)
     pw.println()
     pw.flush()
+    /**
+      *  Below queries test the functions :
+      *  112. printf, 113. md5
+      */
+    //  CREATE TABLE IN SPARK / SNAPPY.
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_printf_md5_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_printf_md5_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_printf_md5)
+    snc.sql(SQLFunctionsUtils.createRowTbl_printf_md5)
+    //  INSERT RECORDS IN SPARK / SNAPPY.
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.printf_md5(i))
+    }
+    for(i <- 0 to 2) {
+      spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.printf_md5(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.printf_md5(i))
+    }
+    for(i <- 0 to 2) {
+      snc.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
+        SQLFunctionsUtils.values + SQLFunctionsUtils.printf_md5(i))
+    }
+    //  SELECT QUERY / VALIDATION ROUTINE.
+    SnappyTestUtils.assertQueryFullResultSet(snc,
+      SQLFunctionsUtils.select_ColTbl_printf_md5,
+      "Q69_printf_md5", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc,
+      SQLFunctionsUtils.select_RowTbl_printf_md5,
+      "Q70_printf_md5", "row", pw, sqlContext)
+    // DROP SPARK / SNAPPY TABLES.
+    snc.sql(SQLFunctionsUtils.dropColTbl_printf_md5)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_printf_md5)
+    spark.sql(SQLFunctionsUtils.dropColTbl_printf_md5)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_printf_md5)
+    pw.println()
+    pw.flush()
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()

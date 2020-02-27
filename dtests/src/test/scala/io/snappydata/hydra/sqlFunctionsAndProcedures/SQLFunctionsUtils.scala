@@ -847,4 +847,28 @@ object SQLFunctionsUtils {
     "approx_count_distinct(salary),mean(salary),approx_count_distinct(department) FROM " + rowTbl
   val dropColTbl_approxcntdist_mean : String = dropTbl  + columnTbl
   val dropRowTbl_approxcntdist_mean : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  112. printf, 113. md5
+    */
+  val printf_md5 = new Array[String](3)
+  printf_md5(0) = "(1,'TIBCO',' ComputeDB')"
+  printf_md5(1) = "(2,'TIBCO',' Spotfire')"
+  printf_md5(2) = "(3,'TIBCO',' Data Virtualization')"
+  val createColTypeTbl_printf_md5_Spark : String = createTbl + columnTbl +
+    "(id int,str1 string,str2 string)"
+  val createRowTypeTbl_printf_md5_Spark : String = createTbl + rowTbl +
+    "(id int,str1 string,str2 string)"
+  val createColumnTbl_printf_md5 : String = createTbl + columnTbl +
+    "(id int,str1 string,str2 string) " + usingCol
+  val createRowTbl_printf_md5 : String = createTbl + rowTbl +
+    "(id int,str1 string,str2 string) " + usingRow
+  val select_ColTbl_printf_md5 : String = "SELECT " +
+    "id,printf(CONCAT(str1,str2)) as product, md5(CONCAT(str1,str2)) FROM " + columnTbl +
+    " ORDER BY id"
+  val select_RowTbl_printf_md5: String = "SELECT " +
+    "id,printf(CONCAT(str1,str2)) as product, md5(CONCAT(str1,str2)) FROM " + rowTbl +
+  " ORDER BY id"
+  val dropColTbl_printf_md5 : String = dropTbl  + columnTbl
+  val dropRowTbl_printf_md5 : String = dropTbl + rowTbl
 }
