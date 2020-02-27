@@ -639,7 +639,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc)
         if (lock != null) {
           logInfo(s"Going to unlock the lock object bulkOp $lock and " +
             s"app ${sqlContext.sparkContext.appName}")
-          lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
+          lock.unlock()
         }
       case (conn: Connection, id: TableIdentifier) =>
         var unlocked = false

@@ -59,7 +59,7 @@ class StoreStrategy(sessionState: SnappySessionState) extends Strategy with Spar
     case i: InsertIntoDataSourceCommand
       if i.logicalRelation.relation.isInstanceOf[PlanInsertableRelation] =>
       val p = i.logicalRelation.relation.asInstanceOf[PlanInsertableRelation]
-      val childPlan = sessionState.executePlan(i.query).sparkPlan
+      val childPlan = new QueryExecution(sessionState.snappySession, i.query).sparkPlan
       val preAction = if (internals.getOverwriteOption(i)) () => p.truncate() else () => ()
       ExecutePlan(p.getInsertPlan(i.logicalRelation, childPlan), preAction) :: Nil
 
