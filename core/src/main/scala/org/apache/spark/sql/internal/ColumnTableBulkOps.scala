@@ -53,9 +53,13 @@ object ColumnTableBulkOps extends SparkSupport {
         }
         val condition = prepareCondition(session, table, subQuery, putKeys)
 
+        val conf = session.sessionState.conf
         val analyzer = session.sessionState.analyzer
         val resolver = analyzer.resolver
         val keyColumns = getKeyColumns(table)
+        // JOIN may be optimized to a trivial form (e.g. PUT INTO ... VALUES(...))
+        // where condition may be missing after optimization so enable cross join
+        conf.setConf(SQLConf.CROSS_JOINS_ENABLED, value = true)
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
         val updateColumns = table.output.filterNot(a => keyColumns.exists(resolver(_, a.name)))
         val updateExpressions = subQuery.output.filterNot(
@@ -67,14 +71,12 @@ object ColumnTableBulkOps extends SparkSupport {
         }
 
         val cacheSize = ExternalStoreUtils.sizeAsBytes(
-          Property.PutIntoInnerJoinCacheSize.get(session.sqlContext.conf),
+          Property.PutIntoInnerJoinCacheSize.get(conf),
           Property.PutIntoInnerJoinCacheSize.name, -1, Long.MaxValue)
 
         val updatePlan = Update(table, updateSubQuery, Nil,
           updateColumns, updateExpressions)
-        // val updateDS = new Dataset(session, updatePlan, RowEncoder(updatePlan.schema))
         var analyzedUpdate = analyzer.execute(updatePlan).asInstanceOf[Update]
-        // updateDS.queryExecution.analyzed.asInstanceOf[Update]
         updateSubQuery = analyzedUpdate.child
 
         // explicitly project out only the updated expression references and key columns

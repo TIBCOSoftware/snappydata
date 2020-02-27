@@ -21,7 +21,7 @@ import java.sql.{DriverManager, SQLException}
 import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.cache.{EvictionAction, EvictionAlgorithm}
-import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{DistributedRegion, GemFireCacheImpl, PartitionedRegion, TXManagerImpl}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
@@ -953,6 +953,13 @@ class ColumnTableTest
     testRowBufferEviction("testTableWithoutSchema")
   }
 
+  private def commitTX(): Unit = {
+    val tx = TXManagerImpl.getCurrentSnapshotTXState
+    val txMgr = GemFireCacheImpl.getExisting.getCacheTransactionManager
+    txMgr.masqueradeAs(tx)
+    txMgr.commit()
+  }
+
   private def testRowBufferEviction(tableName: String): Unit = {
     val props = Map("BUCKETS" -> "1", "PARTITION_BY" -> "col1")
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
@@ -976,6 +983,9 @@ class ColumnTableTest
     assert(rs.getInt(1) <= 3)
     assert(!rs.next())
     rs.close()
+    // need to do explicit commit on thread-local TX since this creates an implicit
+    // scan-local snapshot TX which is normally closed by Spark layer commit
+    commitTX()
 
     // also check with the insert API
     snc.truncateTable(tableName)
@@ -985,6 +995,9 @@ class ColumnTableTest
     assert(rs.getInt(1) <= 3)
     assert(!rs.next())
     rs.close()
+    // need to do explicit commit on thread-local TX since this creates an implicit
+    // scan-local snapshot TX which is normally closed by Spark layer commit
+    commitTX()
 
     conn.close()
   }
@@ -1460,7 +1473,7 @@ class ColumnTableTest
   }
 
   test("Test method for getting table type of snappy tables") {
-    var session = new SnappySession(snc.sparkContext)
+    val session = new SnappySession(snc.sparkContext)
     session.sql("drop table if exists temp1")
     session.sql("drop table if exists temp2")
     session.sql("drop table if exists temp3")
@@ -1483,7 +1496,7 @@ class ColumnTableTest
     snc.sql(s"insert into t1 values(3,'test3')")
     val df = snc.sql("select * from t1")
     df.collect()
-    val tempPath = System.getProperty("user.dir") + System.currentTimeMillis()
+    val tempPath = System.getProperty("user.dir") + "/" + System.currentTimeMillis()
 
     assert(df.count() == 3)
     df.write.option("header", "true").csv(tempPath)
@@ -1507,6 +1520,13 @@ class ColumnTableTest
         "Should not have succedded with incorrect options")
       case Failure(_) => // Do nothing
     }
+
+    session.sql("drop table if exists temp1")
+    session.sql("drop table if exists temp2")
+    session.sql("drop table if exists temp3")
+    session.sql("drop table if exists temp4")
+    snc.sql("drop table if exists t1")
+    FileUtils.deleteDirectory(new java.io.File(tempPath))
   }
 
   private def getTableType(table: String, session: SnappySession): String = {
@@ -1519,6 +1539,7 @@ class ColumnTableTest
     snc.sql("create table t1(id integer, str string) using column options(key_columns 'id')")
     snc.sql("put into t1 select 1, 'aa'")
     snc.sql("put into t1 select 2, 'aa' union all select 3, 'bb'")
+    // TODO: using values causes serialization error for some reason
     snc.sql("put into t1 select 1, 'cc'")
     val rows = snc.sql("select * from t1")
     assert(rows.count() == 3)

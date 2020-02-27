@@ -101,6 +101,9 @@ object ExternalStoreUtils extends SparkSupport {
     COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
     COLUMN_MAX_DELTA_ROWS_TRANSIENT, COMPRESSION_CODEC, RELATION_FOR_SAMPLE, KEY_COLUMNS)
 
+  private[this] val storePropertyPrefixes = Array("", Constant.STORE_PROPERTY_PREFIX,
+    Constant.SPARK_STORE_PREFIX, Constant.PROPERTY_PREFIX, Constant.SPARK_SNAPPY_PREFIX)
+
   registerBuiltinDrivers()
 
   def registerBuiltinDrivers(): Unit = {
@@ -383,12 +386,18 @@ object ExternalStoreUtils extends SparkSupport {
   }
 
   def getCredentials(session: SparkSession, prefix: String = ""): (String, String) = {
-    val prefix = SnappyContext.getClusterMode(session.sparkContext) match {
-      case ThinClientConnectorMode(_, _) => Constant.SPARK_STORE_PREFIX
-      case _ => ""
+    for (prefix <- storePropertyPrefixes) {
+      val userProperty =
+        if (prefix.isEmpty) ClientAttribute.USERNAME
+        else prefix + ClientAttribute.USERNAME
+      if (session.conf.contains(userProperty)) {
+        val passwordProperty =
+          if (prefix.isEmpty) ClientAttribute.PASSWORD
+          else prefix + ClientAttribute.PASSWORD
+        return (session.conf.get(userProperty), session.conf.get(passwordProperty, ""))
+      }
     }
-    (session.conf.get(prefix + ClientAttribute.USERNAME, ""),
-        session.conf.get(prefix + ClientAttribute.PASSWORD, ""))
+    ("", "")
   }
 
   def getConnection(id: String, connProperties: ConnectionProperties,
