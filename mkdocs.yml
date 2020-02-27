@@ -321,7 +321,6 @@ theme: 'material'
     
 markdown_extensions:
     - admonition
-
     
 copyright: Copyright © 2017-2020 TIBCO Software Inc. All rights reserved. 
 
