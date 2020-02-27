@@ -40,6 +40,8 @@ public class SnappySecurityPrms extends SnappyPrms{
 
   public static Long isGrant;
 
+  public static Long isExtTblSecurity;
+
   public static Long isRevoke;
 
   public static Long isJoinQuery;
@@ -54,6 +56,36 @@ public class SnappySecurityPrms extends SnappyPrms{
 
   public static Long isSecurity;
 
+  public static Long passFile;
+ 
+  public static Long isAltTableRLS;
+
+  public static Long isRLS;
+
+  public static Long isDropPolicy;
+
+  public static Long numOfPolicy;
+
+  public static int getPolicyCnt() {
+    Long key = numOfPolicy;
+    return tasktab().intAt(key, tab().intAt(key, 1));
+  }
+
+  public static boolean getIsAltTableRLS() {
+    Long key = isAltTableRLS;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsRLS() {
+    Long key = isRLS;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsDropPolicy() {
+    Long key = isDropPolicy;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
   public static Vector getDmlOps() {
     Long key = dmlOperations;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
@@ -66,18 +98,35 @@ public class SnappySecurityPrms extends SnappyPrms{
     return dataLoc;
   }
 
+  public static String getPassFile(){
+    String pwdFile = tasktab().stringAt(passFile, tab().stringAt
+        (passFile, null));
+    if (pwdFile == null) return "";
+    return pwdFile;
+  }
+
   public static Vector getSchema() {
     Long key = onSchema;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
   }
 
-    public static boolean getIsGrant() {
+  public static boolean getIsExtTblSecurity() {
+    Long key = isExtTblSecurity;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsGrant() {
     Long key = isGrant;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
   public static boolean getIsRevoke() {
     Long key = isRevoke;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsSecurity() {
+    Long key = isSecurity;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 

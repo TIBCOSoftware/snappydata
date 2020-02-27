@@ -108,9 +108,14 @@ public class SnappyCDCTest extends SnappyTest {
 
   public void performRebalance() {
     try {
-      Connection conn = SnappyTest.getLocatorConnection();
+      Connection con = null;
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if (isSecurityEnabled)
+        con = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        con = SnappyTest.getLocatorConnection();
       Long startTime = System.currentTimeMillis();
-      conn.createStatement().execute("call sys.rebalance_all_buckets();");
+      con.createStatement().execute("call sys.rebalance_all_buckets();");
       Long endTime = System.currentTimeMillis();
       Long totalTime = endTime - startTime;
       Log.getLogWriter().info("The rebalance procedure took  " + totalTime + " ms");
@@ -291,8 +296,13 @@ public class SnappyCDCTest extends SnappyTest {
     String fileName = SnappyCDCPrms.getDataLocation();
     String schema = SnappyDataExtractorToolTestPrms.getSchemaName();
     try {
-      Connection con = SnappyTest.getLocatorConnection();
-      String tableCntQry = "SELECT COUNT(*) FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='" +schema+ "' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
+      Connection con = null;
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if (isSecurityEnabled)
+        con = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        con = SnappyTest.getLocatorConnection();
+      String tableCntQry = "SELECT COUNT(*) FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='APP' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
       ResultSet rs = con.createStatement().executeQuery(tableCntQry);
       while (rs.next())
         tableCnt = rs.getInt(1);
@@ -351,16 +361,22 @@ public class SnappyCDCTest extends SnappyTest {
     Map<String, Long> tableCntMap = (Map<String, Long>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
     Log.getLogWriter().info("tableCntMap size = " + tableCntMap.size() );
     try {
-      Connection con = SnappyTest.getLocatorConnection();
+      Connection con = null;
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if (isSecurityEnabled)
+        con = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        con = SnappyTest.getLocatorConnection();
       for (Map.Entry<String, Long> val : tableCntMap.entrySet()) {
-        long snappyCnt = 0;
+        int snappyCnt = 0;
+
         String tableName = val.getKey();
         long BBCnt = val.getValue();
         String cntQry = "SELECT COUNT(*) FROM " + tableName;
         Log.getLogWriter().info("The query to be executed is " + cntQry);
         ResultSet rs3 = con.createStatement().executeQuery(cntQry);
         while (rs3.next())
-          snappyCnt = rs3.getLong(1);
+          snappyCnt = rs3.getInt(1);
         rs3.close();
         if (snappyCnt == BBCnt)
           Log.getLogWriter().info("SUCCESS : The cnt for table " + tableName + " = " + snappyCnt + " is EQUAL to the BB count = " + BBCnt);
@@ -375,7 +391,7 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
-  public void getResultSet(Connection conn, Boolean isBeforeRestart, String fileName) {
+  public void getResultSet(Connection con, Boolean isBeforeRestart, String fileName) {
     SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
     String logFile = getCurrentDirPath()+ File.separator + "queryResultFiles";
     File queryResultDir = new File(logFile);
@@ -390,7 +406,7 @@ public class SnappyCDCTest extends SnappyTest {
           outputFile = logFile + File.separator + "afterRestartResultSet_query_" +System.currentTimeMillis() + "_" + i + ".out";
         String qStr = queryList.get(i);
         Log.getLogWriter().info("The query for validation is " + qStr);
-        ResultSet snappyRS = conn.createStatement().executeQuery(qStr);
+        ResultSet snappyRS = con.createStatement().executeQuery(qStr);
         StructTypeImpl snappySti = ResultSetHelper.getStructType(snappyRS);
         List<Struct> snappyList = ResultSetHelper.asList(snappyRS, snappySti, false);
         snappyRS.close();
@@ -526,7 +542,8 @@ public class SnappyCDCTest extends SnappyTest {
       String queryPath = SnappyCDCPrms.getDataLocation();
       String sqlServer = SnappyCDCPrms.getSqlServerInstance();
       List<String> endpoints = validateLocatorEndpointData();
-      CDCIngestionApp.runIngestionApp(sRange, eRange, threadCnt, queryPath, sqlServer, endpoints.get(0));
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      CDCIngestionApp.runIngestionApp(sRange, eRange, threadCnt, queryPath, sqlServer, endpoints.get(0), isSecurityEnabled);
     } catch (Exception ex) {
       Log.getLogWriter().info("Caught Exception" + ex.getMessage() + " in runIngestionApp() method");
     }
@@ -552,7 +569,7 @@ public class SnappyCDCTest extends SnappyTest {
         Log.getLogWriter().info("The curlCmd  is " + curlCmd);
         pb = new ProcessBuilder("/bin/bash", "-c", curlCmd);
         log = new File(".");
-        String dest = log.getCanonicalPath() + File.separator + logFileName + "i";
+        String dest = log.getCanonicalPath() + File.separator + logFileName + i;
         logFile = new File(dest);
         snappyTest.executeProcess(pb, logFile);
       }

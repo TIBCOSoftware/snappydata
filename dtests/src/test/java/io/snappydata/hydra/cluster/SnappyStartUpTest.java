@@ -192,7 +192,11 @@ public class SnappyStartUpTest extends SnappyTest {
     String query = "create table tab1 (id int, name String, address String) USING  column " +
         "OPTIONS(partition_by 'id')";
     try {
-      conn = getLocatorConnection();
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       conn.createStatement().executeUpdate(query);
       Log.getLogWriter().info("query executed successfully: " + query);
       query = "insert into tab1 values(111, 'aaa', 'hello')";
@@ -231,7 +235,11 @@ public class SnappyStartUpTest extends SnappyTest {
     ResultSet rs;
     String query = "DROP TABLE IF EXISTS order_details";
     try {
-      conn = getLocatorConnection();
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       conn.createStatement().executeUpdate(query);
       Log.getLogWriter().info("order_details table dropped successfully");
       query = "DROP TABLE IF EXISTS staging_order_details";
@@ -401,7 +409,11 @@ public class SnappyStartUpTest extends SnappyTest {
     Vector tableNames, numRowsinTables = null;
     long expectedNumRows, actualNumRows = 0;
     try {
-      conn = getLocatorConnection();
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       tableNames = SnappyPrms.getTableList();
       numRowsinTables = SnappyPrms.getNumRowsList();
       if (tableNames.isEmpty() || numRowsinTables.isEmpty()) {

@@ -138,6 +138,22 @@ object CDCValidationApp {
           }
 
           if (flag.equals(2.toString)) {
+            // Match the difference :
+            pw.println("=================================================Count Validation===================================================")
+            pw.println("For table " + tableName + " Present sqlServer cnt = " + sqlServerTableCnt + " Previous sqlServer cnt " + sqlServerTableCnt1Arr(j))
+            pw.println("For table " + tableName + " Present snappy cnt = " + snappyTableCnt + " Previous snappy cnt " + snappyTableCnt1Arr(j))
+            val sqlServerCntDiff = sqlServerTableCnt - sqlServerTableCnt1Arr(j).toLong
+            val snappyCntDiff = snappyTableCnt - snappyTableCnt1Arr(j).toLong
+
+            if (sqlServerCntDiff == snappyCntDiff) {
+              pw.println(s"SUCCESS :$tableName in snappy cluster  has equal difference of $snappyCntDiff before and after ingestion ")
+              pw.println(s"SUCCESS :$tableName in sqlServer cluster  has equal difference of $sqlServerCntDiff before and after ingestion")
+            }
+            else {
+              pw.println("FAILURE:" + tableName + " table has incorrect number of records: sqlServer table has "
+                  + sqlServerTableCnt + " and snappytable has " + snappyTableCnt)
+            }
+            pw.println("====================================================================================================================")
 
             //Do full resultSet validation:
             pw.println()
@@ -156,22 +172,7 @@ object CDCValidationApp {
             checkDataConsistency(endRange)
             //fullResultSetValidation(snc, connection, sqlQ, snappyQ, pw)
             pw.println("=====================================================================================================================")
-            // Match the difference :
-            pw.println("=================================================Count Validation=====================================================")
-            pw.println("For table " + tableName + " Present sqlServer cnt = " + sqlServerTableCnt + " Previous sqlServer cnt " + sqlServerTableCnt1Arr(j))
-            pw.println("For table " + tableName + " Present snappy cnt = " + snappyTableCnt + " Previous snappy cnt " + snappyTableCnt1Arr(j))
-            val sqlServerCntDiff = sqlServerTableCnt - sqlServerTableCnt1Arr(j).toLong
-            val snappyCntDiff = snappyTableCnt - snappyTableCnt1Arr(j).toLong
 
-            if (sqlServerCntDiff == snappyCntDiff) {
-              pw.println(s"SUCCESS :$tableName in snappy cluster  has equal difference of $snappyCntDiff before and after ingestion ")
-              pw.println(s"SUCCESS :$tableName in sqlServer cluster  has equal difference of $sqlServerCntDiff before and after ingestion")
-            }
-            else {
-              pw.println("FAILURE:" + tableName + " table has incorrect number of records: sqlServer table has "
-                  + sqlServerTableCnt + " and snappytable has " + snappyTableCnt)
-            }
-            pw.println("=====================================================================================================================")
             pw.println()
           }
         }

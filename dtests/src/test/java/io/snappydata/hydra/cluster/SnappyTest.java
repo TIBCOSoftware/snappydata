@@ -39,6 +39,8 @@ import io.snappydata.hydra.cdcConnector.SnappyCDCPrms;
 import io.snappydata.hydra.connectionPool.HikariConnectionPool;
 import io.snappydata.hydra.connectionPool.SnappyConnectionPoolPrms;
 import io.snappydata.hydra.connectionPool.TomcatConnectionPool;
+import io.snappydata.hydra.security.SnappySecurityPrms;
+import io.snappydata.hydra.security.SnappySecurityTest;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -51,7 +53,11 @@ import sql.SQLHelper;
 import sql.SQLPrms;
 import sql.dmlStatements.DMLStmtIF;
 import sql.sqlutil.DMLStmtsFactory;
-import util.*;
+import util.PRObserver;
+import util.StopStartPrms;
+import util.StopStartVMs;
+import util.TestException;
+import util.TestHelper;
 
 import static hydra.Prms.maxResultWaitSec;
 
@@ -94,6 +100,7 @@ public class SnappyTest implements Serializable {
   public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
   public static boolean forceStart = TestConfig.tab().booleanAt(SnappyPrms.forceStart, false);  //default to false
   public static boolean forceCopy = TestConfig.tab().booleanAt(SnappyPrms.forceCopy, false);  //default to false
+  public static boolean isSecurity = SnappySecurityPrms.getIsSecurity();
   private static String primaryLocator = null;
   public static String leadHost = null;
   public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
@@ -180,9 +187,9 @@ public class SnappyTest implements Serializable {
           snappyTest.generateConfig("primaryLocatorHost");
           snappyTest.generateConfig("primaryLocatorPort");
         }
-
-
       }
+      if (!SnappyBB.getBB().getSharedMap().containsKey("SECURITY_ENABLED"))
+        SnappyBB.getBB().getSharedMap().put("SECURITY_ENABLED", isSecurity);
     }
   }
 
@@ -329,6 +336,13 @@ public class SnappyTest implements Serializable {
   }
 
   protected void generateNodeConfig(String logDir, boolean returnNodeLogDir) {
+    String secureBootProperties = " ";
+    boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+    if(isSecurityEnabled) {
+      secureBootProperties = " -server-auth-provider=NONE " + SnappySecurityTest.getSecureBootProp();
+      Log.getLogWriter().info(" secureBootProperties are " + secureBootProperties);
+      Log.getLogWriter().info("Security is Enabled");
+    }
     if (logDirExists) return;
     String addr = HostHelper.getHostAddress();
     int port = PortHelper.getRandomPort();
@@ -347,8 +361,7 @@ public class SnappyTest implements Serializable {
         while (locPort < 0 || locPort > 65535);
         nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port +
             locPortString + locPort + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
-            " -Dgemfire.DISALLOW_RESERVE_SPACE=true " +
-            " " + SnappyPrms.getLocatorLauncherProps();
+            " " + SnappyPrms.getLocatorLauncherProps() + " " + secureBootProperties;
         SnappyBB.getBB().getSharedMap().put("locatorHost" + "_" + RemoteTestModule.getMyVmid(),
             HostHelper.getLocalHost());
         SnappyBB.getBB().getSharedMap().put("locatorPort" + "_" + RemoteTestModule.getMyVmid(),
@@ -385,8 +398,7 @@ public class SnappyTest implements Serializable {
             " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
             SnappyPrms.getFlightRecorderOptions(dirPath) +
             SnappyPrms.getGCOptions(dirPath) + " " +
-            " -Dgemfire.DISALLOW_RESERVE_SPACE=true " +
-            SnappyPrms.getServerLauncherProps() +
+            SnappyPrms.getServerLauncherProps() + " " + secureBootProperties +
             " -classpath=" + getStoreTestsJar();
         Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numServers);
@@ -417,8 +429,7 @@ public class SnappyTest implements Serializable {
             " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
             SnappyPrms.getFlightRecorderOptions(dirPath) +
             SnappyPrms.getGCOptions(dirPath) + " " +
-            " -Dgemfire.DISALLOW_RESERVE_SPACE=true " +
-            SnappyPrms.getLeaderLauncherProps() +
+            SnappyPrms.getLeaderLauncherProps() + " " + secureBootProperties +
             " -spark.driver.extraClassPath=" + getStoreTestsJar() +
             " -spark.executor.extraClassPath=" + getStoreTestsJar();
         try {
@@ -560,11 +571,16 @@ public class SnappyTest implements Serializable {
    * @return Lead node status
    */
   public static boolean isPrimaryLeadUpAndRunning() {
+    boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
     boolean isLeadNodeRunning = false;
     ResultSet rs;
+    Connection conn ;
     try {
-      Connection conn = getLocatorConnection();
-      rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead'");
+      if (isSecurityEnabled)
+       conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
+      rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead';");
       while (rs.next()) {
         Log.getLogWriter().info("Checking the Lead node status...");
         if (rs.getString("STATUS").equals("RUNNING")) {
@@ -1267,6 +1283,17 @@ public class SnappyTest implements Serializable {
     connPoolType = (int) SnappyBB.getBB().getSharedMap().get("connPoolType");
   }
 
+  public static Connection getSecuredLocatorConnection(String usr, String pass) throws SQLException {
+    List<String> endpoints = validateLocatorEndpointData();
+    Properties props = new Properties();
+    props.setProperty("user", usr);
+    props.setProperty("password", pass);
+    Connection conn = null;
+    String url = "jdbc:snappydata://" + endpoints.get(0) + "/";
+    conn = getConnection(url, "io.snappydata.jdbc.ClientDriver", props);
+    return conn;
+  }
+
   /**
    * Gets Client connection.
    */
@@ -1277,6 +1304,13 @@ public class SnappyTest implements Serializable {
       setConnPoolType();
     else
       connPoolType = (int) SnappyBB.getBB().getSharedMap().get("connPoolType");
+    boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+    Properties props = new Properties();
+    if(isSecurityEnabled)
+    {
+      props.setProperty("user","gemfire1");
+      props.setProperty("password","gemfire1");
+    }
 
     if (connPoolType == 0) {
       conn = HikariConnectionPool.getConnection();
@@ -1288,7 +1322,7 @@ public class SnappyTest implements Serializable {
       if (!runGemXDQuery) {
         String url = "jdbc:snappydata://" + endpoints.get(0);
         Log.getLogWriter().info("url is " + url);
-        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver",props);
       } else {
         String url = "jdbc:gemfirexd://" + endpoints.get(0);
         Log.getLogWriter().info("url is " + url);
@@ -1303,14 +1337,20 @@ public class SnappyTest implements Serializable {
     List<String> endpoints = validateLocatorEndpointData();
     Properties props = new Properties();
     Vector connPropsList = SnappyPrms.getConnPropsList();
+    Connection conn = null;
     for (int i = 0; i < connPropsList.size(); i++) {
       String conProp = (String) connPropsList.elementAt(i);
       String conPropKey = conProp.substring(0, conProp.indexOf("="));
       String conPropValue = conProp.substring(conProp.indexOf("=") + 1);
       props.setProperty(conPropKey, conPropValue);
     }
-    Connection conn = null;
+    boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
     String url = "jdbc:snappydata://" + endpoints.get(0) + "/";
+    if(isSecurityEnabled)
+    {
+      props.setProperty("user","gemfire1");
+      props.setProperty("password","gemfire1");
+    }
     conn = getConnection(url, "io.snappydata.jdbc.ClientDriver", props);
     return conn;
   }
@@ -1318,13 +1358,23 @@ public class SnappyTest implements Serializable {
   public static Connection getServerConnection() throws SQLException {
     List<String> endpoints = validateServerEndpointData();
     Connection conn = null;
+    Properties props = new Properties();
+    props.setProperty("user","gemfire1");
+    props.setProperty("password","gemfire1");
+    boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
     if (!runGemXDQuery) {
       String url = "jdbc:snappydata://" + endpoints.get(0);
       Log.getLogWriter().info("url is " + url);
-      conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+      if(isSecurityEnabled)
+        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver", props);
+      else
+        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
     } else {
       String url = "jdbc:gemfirexd://" + endpoints.get(0);
       Log.getLogWriter().info("url is " + url);
+      if(isSecurityEnabled)
+        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver", props);
+      else
       conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
     }
     return conn;
@@ -1641,6 +1691,7 @@ public class SnappyTest implements Serializable {
         maxPartitionSizeList = null, evictionByOptionList = null;
     File log = null, logFile = null;
     scriptNames = SnappyPrms.getSQLScriptNames();
+    boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
     if (scriptNames == null) {
       String s = "No Script names provided for executing in the Hydra TASK";
       throw new TestException(s);
@@ -1732,16 +1783,34 @@ public class SnappyTest implements Serializable {
         logFile = new File(dest);
         String primaryLocatorHost = getPrimaryLocatorHost();
         String primaryLocatorPort = getPrimaryLocatorPort();
-        ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" +
-            filePath, "-param:dataLocation=" + dataLocation,
-            "-param:persistenceMode=" + persistenceMode, "-param:colocateWith=" +
-            colocateWith, "-param:partitionBy=" + partitionBy,
-            "-param:numPartitions=" + numPartitions, "-param:redundancy=" +
-            redundancy, "-param:recoverDelay=" + recoverDelay,
-            "-param:maxPartitionSize=" + maxPartitionSize, "-param:evictionByOption="
-            + evictionByOption, "-client-port=" + primaryLocatorPort,
-            "-client-bind-address=" + primaryLocatorHost);
-        snappyTest.executeProcess(pb, logFile);
+        if (isSecurityEnabled) {
+           Log.getLogWriter().info("SP:Inside secure sqlScriptExecution");
+           String user = "gemfire1";
+           String pass = "gemfire1";
+            ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" +
+                filePath, "-param:dataLocation=" + dataLocation,
+                "-param:persistenceMode=" + persistenceMode, "-param:colocateWith=" +
+                colocateWith, "-param:partitionBy=" + partitionBy,
+                "-param:numPartitions=" + numPartitions, "-param:redundancy=" +
+                redundancy, "-param:recoverDelay=" + recoverDelay,
+                "-param:maxPartitionSize=" + maxPartitionSize, "-param:evictionByOption="
+                + evictionByOption, "-client-port=" + primaryLocatorPort,
+                "-client-bind-address=" + primaryLocatorHost, "-user=" + user, "-password=" + pass);
+
+            Log.getLogWriter().info(" cmd " + pb.command());
+            snappyTest.executeProcess(pb, logFile);
+        } else {
+          ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" +
+              filePath, "-param:dataLocation=" + dataLocation,
+              "-param:persistenceMode=" + persistenceMode, "-param:colocateWith=" +
+              colocateWith, "-param:partitionBy=" + partitionBy,
+              "-param:numPartitions=" + numPartitions, "-param:redundancy=" +
+              redundancy, "-param:recoverDelay=" + recoverDelay,
+              "-param:maxPartitionSize=" + maxPartitionSize, "-param:evictionByOption="
+              + evictionByOption, "-client-port=" + primaryLocatorPort,
+              "-client-bind-address=" + primaryLocatorHost);
+          snappyTest.executeProcess(pb, logFile);
+        }
       }
     } catch (IOException e) {
       throw new TestException("IOException occurred while retriving destination logFile " +
@@ -2005,6 +2074,18 @@ public class SnappyTest implements Serializable {
         "snappyStreamingJobTaskResult_" + System.currentTimeMillis() + ".log");
   }
 
+
+  public static void HydraTask_executeSnappyJobUsingJobScript() {
+    int count = 0;
+    int currentThread = snappyTest.getMyTid();
+    String logFile = "snappyJobResult_thread_" + currentThread + "_" + System.currentTimeMillis() + ".log";
+    SnappyBB.getBB().getSharedMap().put("logFilesForJobs_" + currentThread + "_" + System.currentTimeMillis(), logFile);
+
+    snappyTest.executeSnappyJobUsingJobScript(SnappyPrms.getSnappyJobClassNames(), SnappyPrms.getUserAppName() + "_" + count + "_" + System.currentTimeMillis(), logFile);
+    count++;
+  }
+
+
   /**
    * Executes Snappy Jobs.
    */
@@ -2013,8 +2094,11 @@ public class SnappyTest implements Serializable {
     int currentThread = snappyTest.getMyTid();
     String logFile = "snappyJobResult_thread_" + currentThread + "_" + System.currentTimeMillis() + ".log";
     SnappyBB.getBB().getSharedMap().put("logFilesForJobs_" + currentThread + "_" + System.currentTimeMillis(), logFile);
+    boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+    if(!isSecurityEnabled)
     snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms
         .getUserAppJar(), jarPath, SnappyPrms.getUserAppName() + "_" + count + "_" + System.currentTimeMillis());
+    else snappyTest.executeSnappyJobUsingJobScript(SnappyPrms.getSnappyJobClassNames(), SnappyPrms.getUserAppName() + "_" + count + "_" + System.currentTimeMillis(), logFile);
     count++;
   }
 
@@ -2128,19 +2212,33 @@ public class SnappyTest implements Serializable {
     ProcessBuilder pb = null;
     File log = null;
     File logFile = null;
+    String confString=null;
     userAppJar = SnappyPrms.getUserAppJar();
     snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
     leadHost = getLeadHost();
     String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
+    boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+    String passFilePath = SnappySecurityPrms.getPassFile();
     try {
       for (int i = 0; i < jobClassNames.size(); i++) {
         String userJob = (String) jobClassNames.elementAt(i);
         pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", leadHost + ":" + leadPort, "--app-name", "myapp", "--class", userJob, "--app-jar", snappyTest.getUserAppJarLocation(userAppJar, jarPath), "--stream");
         java.util.Map<String, String> env = pb.environment();
-        if (SnappyPrms.getCommaSepAPPProps() == null) {
-          env.put("APP_PROPS", "shufflePartitions=" + SnappyPrms.getShufflePartitions());
-        } else {
-          env.put("APP_PROPS", SnappyPrms.getCommaSepAPPProps() + ",shufflePartitions=" + SnappyPrms.getShufflePartitions());
+        if (SnappyPrms.getCommaSepAPPProps() != null)
+          confString = getConfForJobScripts(confString);
+        if (!isSecurityEnabled) {
+          if (SnappyPrms.getCommaSepAPPProps() == null) {
+            env.put("APP_PROPS", " --conf shufflePartitions=" + SnappyPrms.getShufflePartitions());
+          } else {
+            env.put("APP_PROPS", confString + " --conf shufflePartitions=" + SnappyPrms.getShufflePartitions());
+          }
+        }
+        else {
+          if (SnappyPrms.getCommaSepAPPProps() == null) {
+            env.put("APP_PROPS", " --conf shufflePartitions=" + SnappyPrms.getShufflePartitions() + " --passfile " + passFilePath);
+          } else {
+            env.put("APP_PROPS", SnappyPrms.getCommaSepAPPProps() + " --conf shufflePartitions=" + SnappyPrms.getShufflePartitions() + " --passfile " + passFilePath);
+          }
         }
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;
@@ -2207,9 +2305,9 @@ public class SnappyTest implements Serializable {
 
   public void executeSnappyJob(Vector jobClassNames, String logFileName, String
       userAppJar, String jarPath, String appName) {
+    Log.getLogWriter().info("Inside executeSnappyJob");
     String snappyJobScript = getScriptLocation("snappy-job.sh");
     File log = null, logFile = null;
-//        userAppJar = SnappyPrms.getUserAppJar();
     if (appName == null) appName = SnappyPrms.getUserAppName() + "_" + System.currentTimeMillis();
     snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
     leadHost = getLeadHost();
@@ -2296,9 +2394,19 @@ public class SnappyTest implements Serializable {
       SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", finalEnd2 + 1);
       SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", finalEnd2 + 1000);
     } else if (appName.equals("CDCIngestionApp1")) {
-      userAppArgs = finalStart + " " + finalEnd + " " + userAppArgs;
-      SnappyBB.getBB().getSharedMap().put("finalStartRange", finalStart);
-      SnappyBB.getBB().getSharedMap().put("finalEndRange", finalEnd);
+      int BBfinalStart1 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP1");
+      int BBfinalEnd1 = (Integer) SnappyBB.getBB().getSharedMap().get("END_RANGE_APP1");
+      int finalStart1, finalEnd1;
+      if (BBfinalStart1 == 0 || BBfinalEnd1 == 0) {
+        finalStart1 = finalStart;
+        finalEnd1 = finalEnd;
+      } else {
+        finalStart1 = BBfinalStart1;
+        finalEnd1 = BBfinalEnd1;
+      }
+      userAppArgs = finalStart1 + " " + finalEnd1 + " " + userAppArgs;
+      SnappyBB.getBB().getSharedMap().put("START_RANGE_APP1", finalEnd1 + 1);
+      SnappyBB.getBB().getSharedMap().put("END_RANGE_APP1", finalEnd1 + 1000);
     } else if (appName.equals("BulkDeleteApp")) {
       commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
           " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener ";
@@ -2314,13 +2422,147 @@ public class SnappyTest implements Serializable {
     return command;
   }
 
+  public void executeSnappyJobUsingJobScript(Vector jobClassNames, String userAppName, String logFileName) {
+    String snappyJobScript = getScriptLocation("snappy-job.sh");
+    if (userAppName == null) userAppName = SnappyPrms.getUserAppName() + "_" + System.currentTimeMillis();
+    ProcessBuilder pb = null;
+    File log = null;
+    File logFile = null;
+    String Parameters;
+    String confString = "";
+    String[] confParameter = null;
+    userAppJar = SnappyPrms.getUserAppJar();
+    snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
+    leadHost = getLeadHost();
+    String leadPort = getLeadPort();
+    boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+    String passFilePath = SnappySecurityPrms.getPassFile();
+    if (SnappyPrms.getCommaSepAPPProps() != null)
+      confString = getConfForJobScripts(confString);
+    if (SnappyPrms.useJDBCConnInSnappyJob()) {
+      String primaryLocatorHost = getPrimaryLocatorHost();
+      String primaryLocatorPort = getPrimaryLocatorPort();
+      confString += "--conf primaryLocatorHost=" + primaryLocatorHost + " --conf primaryLocatorPort=" + primaryLocatorPort;
+      Log.getLogWriter().info("SP: confString for useJDBCConnInSnappyJob : " + confString.toString());
+    }
+    if (SnappyPrms.isLongRunningJob()) {
+      confString += " --conf maxResultWaitSec=" + maxResultWaitSecs;
+    }
+    if (SnappyPrms.hasDynamicAppProps()) {
+      String dmlProps = dynamicAppProps.get(getMyTid());
+      if (dmlProps == null) {
+        dmlProps = dynamicAppProps.get(getMyTid());
+        if (dmlProps == null) throw new TestException("Test issue: dml statement for " +
+            getMyTid() + " is null");
+      }
+      ArrayList<String> columnValues = new ArrayList<>();
+    if (dmlProps.contains("\"")) {
+        String str3 = dmlProps;
+        while (str3.contains("\"")) {
+          int beginIndex = str3.indexOf("\"");
+          int endIndex = str3.indexOf("\"", beginIndex + 2);
+          String str1 = str3.substring(0, beginIndex);
+          columnValues.addAll(new ArrayList<>(Arrays.asList(str1.split(","))));
+          String str2 = str3.substring(beginIndex, endIndex + 1);
+          str2 = columnValues.get((columnValues.size()) - 1) + str2;
+          columnValues.set((columnValues.size()) - 1, str2);
+          if (endIndex < str3.length())
+            str3 = str3.substring(endIndex + 2, str3.length());
+          else str3 = "";
+          //columnValues.add(str2);
+        }
+        if (str3.length() > 0) {
+          columnValues.addAll(new ArrayList<>(Arrays.asList(str3.split(","))));
+        }
+      } else {
+        columnValues = new ArrayList<>(Arrays.asList(dmlProps.split(",")));
+      }
+      if(columnValues.size() != 0){
+        for (int i = 0; i < columnValues.size(); i++) {
+          String confValue = columnValues.get(i);
+          if(confValue.contains(" ") || confValue.contains("(") || confValue.contains(")") || confValue.contains("<") || confValue.contains("'") || confValue.contains(">")){
+            confValue = confValue.replace(" ","\\ ");
+            confValue = confValue.replace("(","\\(");
+            confValue = confValue.replace(")","\\)");
+            confValue = confValue.replace("<","\\<");
+            confValue = confValue.replace(">","\\>");
+            confValue = confValue.replace("'","\\'");
+          }
+          Log.getLogWriter().info("SP: each config is " + confValue);
+          confString += " --conf " + confValue;
+        }
+      }
+      Log.getLogWriter().info("SP: confString for hasDynamicAppProps : " + confString);
+    }
+    if (isSecurityEnabled){
+      if(!confString.contains("--passfile")) // check for security related tests
+        confString += " --passfile " + passFilePath + " --conf logFileName=" + logFileName;
+      else
+        confString += " --conf logFileName=" + logFileName;
+     }
+
+    Log.getLogWriter().info("SP: confString for security: " + confString);
+
+    try {
+      String cmd;
+      for (int i = 0; i < jobClassNames.size(); i++) {
+        String userJob = (String) jobClassNames.elementAt(i);
+        cmd = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
+            " --app-name " + userAppName + " --class " + userJob + " --app-jar " +
+            snappyTest.getUserAppJarLocation(userAppJar, jarPath);
+        if (!confString.isEmpty())
+          cmd += confString;
+
+        pb = new ProcessBuilder("/bin/bash", "-c", cmd);
+        Log.getLogWriter().info("Command is : " + pb.command());
+
+        log = new File(".");
+        String dest = log.getCanonicalPath() + File.separator + logFileName;
+        logFile = new File(dest);
+        snappyTest.executeProcess(pb, logFile);
+      }
+      boolean retry = snappyTest.getSnappyJobsStatus(snappyJobScript, logFile, leadPort);
+      if (retry && jobSubmissionCount <= SnappyPrms.getRetryCountForJob()) {
+        jobSubmissionCount++;
+        Thread.sleep(180000);
+        Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting" +
+            " the job to new primary lead node.....");
+        retrievePrimaryLeadHost();
+        HydraTask_executeSnappyJob();
+      }
+    } catch (IOException e) {
+      throw new TestException("IOException occurred while retriving destination logFile path " +
+          log + "\nError Message:" + e.getMessage());
+    } catch (InterruptedException e) {
+      throw new TestException("Exception occurred while waiting for the snappy streaming job  " +
+          "process re-execution." + "\nError Message:" + e.getMessage());
+    }
+    //  }
+  }
+
+  public String getConfForJobScripts(String confString) {
+    String Parameters;
+    String[] confParameter = null;
+    Parameters = SnappyPrms.getCommaSepAPPProps();
+    Log.getLogWriter().info("Parameters : " + Parameters);
+    confParameter = Parameters.split(",");
+    for (int i = 0; i < confParameter.length; i++) {
+      Log.getLogWriter().info("ConfParameter : " + confParameter[i].toString());
+      confString += " --conf " + confParameter[i].toString();
+    }
+    return confString;
+  }
+
+
   public void executeSparkJob(Vector jobClassNames, String logFileName) {
     String snappyJobScript = getScriptLocation("spark-submit");
     boolean isCDCStream = SnappyCDCPrms.getIsCDCStream();
     ProcessBuilder pb = null;
     File log = null, logFile = null;
     userAppJar = SnappyPrms.getUserAppJar();
+    boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
     snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
+    String commonArgs = "";
     try {
       for (int i = 0; i < jobClassNames.size(); i++) {
         String userJob = (String) jobClassNames.elementAt(i);
@@ -2330,9 +2572,15 @@ public class SnappyTest implements Serializable {
         String primaryLocatorHost = getPrimaryLocatorHost();
         String primaryLocatorPort = getPrimaryLocatorPort();
         String userAppArgs = SnappyPrms.getUserAppArgs();
-        String commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
+        commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
             " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener " +
             " --conf snappydata.connection=" + primaryLocatorHost + ":" + primaryLocatorPort;
+        if (isSecurityEnabled) {
+          String sparkSubmitExtraPrms = SnappyPrms.getSparkSubmitExtraPrms();
+          if (!sparkSubmitExtraPrms.contains("spark.snappydata.store.user")) //check for security tests
+            commonArgs = " --conf spark.snappydata.store.user=gemfire1 --conf spark.snappydata.store.password=gemfire1 " + commonArgs;
+        }
+        Log.getLogWriter().info("SP: The commonArgs are " + commonArgs);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;
         logFile = new File(dest);
@@ -2496,6 +2744,8 @@ public class SnappyTest implements Serializable {
   public boolean getSnappyJobsStatus(String snappyJobScript, File logFile, String leadPort) {
     boolean found = false;
     try {
+      String passFilePath = SnappySecurityPrms.getPassFile();
+      Log.getLogWriter().info("SP: passFilePath = " + passFilePath);
       String line = null;
       Set<String> jobIds = new LinkedHashSet<String>();
       FileReader freader = new FileReader(logFile);
@@ -2517,9 +2767,19 @@ public class SnappyTest implements Serializable {
         String dest = log.getCanonicalPath() + File.separator + "jobStatus_" + RemoteTestModule
             .getCurrentThread().getThreadId() + "_" + System.currentTimeMillis() + ".log";
         File commandOutput = new File(dest);
-        String expression = snappyJobScript + " status --lead " + leadHost + ":" + leadPort + " " +
-            "--job-id " + str + " > " + commandOutput + " 2>&1 ; grep -e '\"status\": " +
-            "\"FINISHED\"' -e 'curl:' -e '\"status\": \"ERROR\"' " + commandOutput + " | wc -l)\"";
+        boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+        String expression = null;
+        if(isSecurityEnabled) {
+          expression = snappyJobScript + " status --lead " + leadHost + ":" + leadPort + " " +
+              "--job-id " + str + " --passfile " + passFilePath + " > " + commandOutput + " 2>&1 ; grep -e '\"status\": " +
+              "\"FINISHED\"' -e 'curl:' -e '\"status\": \"ERROR\"' " + commandOutput + " | wc -l)\"";
+        }
+        else {
+          expression = snappyJobScript + " status --lead " + leadHost + ":" + leadPort + " " +
+              "--job-id " + str + " > " + commandOutput + " 2>&1 ; grep -e '\"status\": " +
+              "\"FINISHED\"' -e 'curl:' -e '\"status\": \"ERROR\"' " + commandOutput + " | wc -l)\"";
+        }
+        Log.getLogWriter().info("SP: The expression is " + expression);
         String command = "while [ \"$(" + expression + " -le  0 ] ; do rm " +
             commandOutput + " ;  touch " + commandOutput + "   ;  sleep " +
             SnappyPrms.getSleepTimeSecsForJobStatus() + " ; done";
@@ -3728,13 +3988,19 @@ public class SnappyTest implements Serializable {
   protected void startSnappyLocator() {
     File log = null;
     ProcessBuilder pb = null;
+    String secureBootProperties = "";
     List<String> hostNames = getHostNameFromConf("locators");
     try {
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled) {
+        secureBootProperties = " -server-auth-provider=NONE " + SnappySecurityTest.getSecureBootProp();
+        Log.getLogWriter().info("SP: secureBootProperties are " + secureBootProperties);
+      }
       if (useRowStore) {
         Log.getLogWriter().info("Starting locator/s using rowstore option...");
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", "rowstore");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", "rowstore");//,secureBootProperties);
       } else {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start");//, secureBootProperties);
       }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
@@ -3752,13 +4018,19 @@ public class SnappyTest implements Serializable {
   protected void startSnappyServer() {
     File log = null;
     ProcessBuilder pb = null;
+    String secureBootProperties = "";
     List<String> hostNames = getHostNameFromConf("servers");
     try {
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled) {
+        secureBootProperties = " -server-auth-provider=NONE " + SnappySecurityTest.getSecureBootProp();
+        Log.getLogWriter().info("SP: secureBootProperties are " + secureBootProperties);
+      }
       if (useRowStore) {
         Log.getLogWriter().info("Starting server/s using rowstore option...");
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", "rowstore");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", "rowstore");//, secureBootProperties);
       } else {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start");//, secureBootProperties);
       }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
@@ -3789,10 +4061,16 @@ public class SnappyTest implements Serializable {
 
   protected void startSnappyLead() {
     File log = null;
+    String secureBootProperties = "";
     List<String> hostNames = getHostNameFromConf("leads");
     try {
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled) {
+        secureBootProperties = " -server-auth-provider=NONE " + SnappySecurityTest.getSecureBootProp();
+        Log.getLogWriter().info("SP: secureBootProperties are " + secureBootProperties);
+      }
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
-          "start");
+          "start");//,secureBootProperties);
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
       File logFile = new File(dest);

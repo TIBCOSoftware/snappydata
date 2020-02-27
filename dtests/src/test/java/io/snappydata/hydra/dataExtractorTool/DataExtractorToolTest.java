@@ -56,12 +56,16 @@ public class DataExtractorToolTest extends SnappyTest {
 
   public void executeQuery() {
     int expectedExcptCnt = SnappySecurityPrms.getExpectedExcptCnt();
+    boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
     Log.getLogWriter().info("SP: Inside runDMLOps ");
     String queryFile = SnappySecurityPrms.getDataLocation();
     Connection conn = null;
     ArrayList queryArray = getQueryArr(queryFile);
     try {
-      conn = getLocatorConnection();
+      if (isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       for (int i = 0; i < queryArray.size(); i++) {
         try {
           String queryStr = (String) queryArray.get(i);
@@ -113,6 +117,7 @@ public class DataExtractorToolTest extends SnappyTest {
 
   public void extractData() {
     Connection conn;
+    boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
     Vector filePath = SnappyPrms.getDataLocationList();
     String ddlPath = filePath.get(0).toString();
     String dataPath = filePath.get(1).toString();
@@ -126,7 +131,10 @@ public class DataExtractorToolTest extends SnappyTest {
     try {
       ProcessBuilder p = new ProcessBuilder("/bin/bash", "-c", cmd);
       snappyTest.executeProcess(p, logFile);
-      conn = getLocatorConnection();
+      if (isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       String query1 = "call sys.EXPORT_DATA('" + dataPath + "','parquet','all','true')";
       conn.createStatement().execute(query1);
       String query2 = "call sys.EXPORT_DDLS('" + ddlPath + "')";
@@ -169,15 +177,18 @@ public class DataExtractorToolTest extends SnappyTest {
       String primaryLocatorPort = getPrimaryLocatorPort();
       Log.getLogWriter().info("SP: The primaryLocatorHost = " + primaryLocatorHost + "\n The primaryLocatorPort is " + primaryLocatorPort);
 
-
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      String userPwdStr="";
+      if(isSecurityEnabled)
+        userPwdStr = " -user=gemfire1 , -password=gemfire1 ";
       //First drop the tables already in the cluster:
       ProcessBuilder pb1 = new ProcessBuilder(SnappyShellPath, "run", "-file=" +
-          dropTableQPath, "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
+          dropTableQPath, "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost + userPwdStr );
       snappyTest.executeProcess(pb1, logFile);
 
       //Then Create the tables from extracted ddls.
       ProcessBuilder pb2 = new ProcessBuilder(SnappyShellPath, "run", "-file=" +
-          destPath, "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost);
+          destPath, "-client-port=" + primaryLocatorPort, "-client-bind-address=" + primaryLocatorHost + userPwdStr);
       snappyTest.executeProcess(pb2, logFile);
     } catch (Exception ex) {
       throw new io.snappydata.test.util.TestException("Task createTableFromExtracteddDDL got exception " + ex.getMessage());
