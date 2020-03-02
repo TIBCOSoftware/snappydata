@@ -117,8 +117,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
    */
   private def addBatchSizeAndCloseEncoders(ctx: CodegenContext,
       closeEncoders: String): String = {
-    val closeEncodersFunction = ctx.freshName("closeEncoders")
-    ctx.addNewFunction(closeEncodersFunction,
+    var closeEncodersFunction = ctx.freshName("closeEncoders")
+    closeEncodersFunction = internals.addFunction(ctx, closeEncodersFunction,
       s"""
          |private void $closeEncodersFunction() {
          |  $closeEncoders
@@ -187,13 +187,13 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
     child match {
       case c: CallbackColumnInsert =>
-        ctx.addNewFunction(c.resetInsertions,
+        internals.addFunction(ctx, c.resetInsertions,
           s"""
              |public final void ${c.resetInsertions}() {
              |  $batchSizeTerm = 0;
              |  $numInsertions = -1;
              |}
-          """.stripMargin)
+          """.stripMargin, inlineToOuterClass = true)
         batchBucketIdTerm = Some(c.bucketIdTerm)
       case _ =>
     }
@@ -209,13 +209,13 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       s"if ($numInsertions >= 0) return"
     }
     // no need to stop in iteration at any point
-    ctx.addNewFunction("shouldStop",
+    internals.addFunction(ctx, "shouldStop",
       s"""
          |@Override
          |protected final boolean shouldStop() {
          |  return false;
          |}
-      """.stripMargin)
+      """.stripMargin, inlineToOuterClass = true)
 
     val closeEncoders = loop(
       s"if ($encoderArrayTerm[i] != null) $encoderArrayTerm[i].close();",
@@ -321,13 +321,13 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val childProduce = doChildProduce(ctx)
     child match {
       case c: CallbackColumnInsert =>
-        ctx.addNewFunction(c.resetInsertions,
+        internals.addFunction(ctx, c.resetInsertions,
           s"""
              |public final void ${c.resetInsertions}() {
              |  $batchSizeTerm = 0;
              |  $numInsertions = -1;
              |}
-          """.stripMargin)
+          """.stripMargin, inlineToOuterClass = true)
         batchBucketIdTerm = Some(c.bucketIdTerm)
       case _ =>
     }
@@ -338,13 +338,13 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       s"if ($numInsertions >= 0) return"
     }
     // no need to stop in iteration at any point
-    ctx.addNewFunction("shouldStop",
+    internals.addFunction(ctx, "shouldStop",
       s"""
          |@Override
          |protected final boolean shouldStop() {
          |  return false;
          |}
-      """.stripMargin)
+      """.stripMargin, inlineToOuterClass = true)
     val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders.toString())
     val useBatchSize = if (columnBatchSize > 0) columnBatchSize
     else ExternalStoreUtils.sizeAsBytes(Property.ColumnBatchSize.defaultValue.get,
@@ -439,8 +439,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
            |  $body
            |}
          """.stripMargin
-      ctx.addNewFunction(name, code)
-      name
+      internals.addFunction(ctx, name, code)
     }
     s"""
        |${functions.map(name => s"$name();").mkString("\n")}
@@ -531,8 +530,9 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val tableName = ctx.addReferenceObj("columnTable", columnTable,
       "java.lang.String")
 
+    val cursorArray = ctx.freshName("cursorArray")
     val bufferLoopCode =
-      s"""$buffers[i] = $encoderArrayTerm[i].finish($cursorArrayTerm[i]);\n""".stripMargin
+      s"$buffers[i] = $encoderArrayTerm[i].finish($cursorArray[i]);\n"
     val buffersCode = loop(bufferLoopCode, schema.length)
 
     val (statsSchema, stats) = columnStats.unzip
@@ -540,10 +540,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val statsRow = internals.exprCodeValue(statsEv)
 
     storeColumnBatch = ctx.freshName("storeColumnBatch")
-    ctx.addNewFunction(storeColumnBatch,
+    storeColumnBatch = internals.addFunction(ctx, storeColumnBatch,
       s"""
          |private final void $storeColumnBatch(int $maxDeltaRowsTerm,
-         |    int $batchSizeTerm, long[] $cursorArrayTerm, scala.Option $conn) {
+         |    int $batchSizeTerm, long[] $cursorArray, scala.Option $conn) {
          |  // create statistics row
          |  ${statsEv.code.toString.trim}
          |  // create ColumnBatch and insert
@@ -562,21 +562,21 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     generateBeginSnapshotTx(ctx, externalStoreTerm)
 
     commitSnapshotTx = ctx.freshName("commitSnapshotTx")
-    ctx.addNewFunction(commitSnapshotTx,
+    commitSnapshotTx = internals.addFunction(ctx, commitSnapshotTx,
       s"""
          |private final void $commitSnapshotTx(String $txId, scala.Option $conn) {
          |  $externalStoreTerm.commitTx($txId, false, $conn);
          |}
       """.stripMargin)
     rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")
-    ctx.addNewFunction(rollbackSnapshotTx,
+    rollbackSnapshotTx = internals.addFunction(ctx, rollbackSnapshotTx,
       s"""
          |private final void $rollbackSnapshotTx(String $txId, scala.Option $conn) {
          |  $externalStoreTerm.rollbackTx($txId, $conn);
          |}
       """.stripMargin)
     closeConnection = ctx.freshName("closeConnection")
-    ctx.addNewFunction(closeConnection,
+    closeConnection = internals.addFunction(ctx, closeConnection,
       s"""
          |private final void $closeConnection(scala.Option $conn) {
          |  $externalStoreTerm.closeConnection($conn);
@@ -616,14 +616,14 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
     if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
       // on smart connector also set connection attributes to check catalog schema version
-      ctx.addNewFunction(beginSnapshotTx,
+      beginSnapshotTx = internals.addFunction(ctx, beginSnapshotTx,
         s"""
            |private final Object[] $beginSnapshotTx() throws java.io.IOException {
            |  return $externalStoreTerm.beginTxSmartConnector(false, $catalogVersion);
            |}
       """.stripMargin)
     } else {
-      ctx.addNewFunction(beginSnapshotTx,
+      beginSnapshotTx = internals.addFunction(ctx, beginSnapshotTx,
         s"""
            |private final Object[] $beginSnapshotTx() {
            |  return $externalStoreTerm.beginTx(false);
@@ -689,7 +689,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val statsEv = ColumnWriter.genStatsRow(ctx, batchSizeTerm, stats, statsSchema)
     val statsRow = internals.exprCodeValue(statsEv)
     storeColumnBatch = ctx.freshName("storeColumnBatch")
-    ctx.addNewFunction(storeColumnBatch,
+    storeColumnBatch = internals.addFunction(ctx, storeColumnBatch,
       s"""
          |private final void $storeColumnBatch(int $maxDeltaRowsTerm,
          |    int $batchSizeTerm, ${batchFunctionDeclarations.toString()}, scala.Some $conn) {
@@ -709,21 +709,21 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       """.stripMargin)
     generateBeginSnapshotTx(ctx, externalStoreTerm)
     commitSnapshotTx = ctx.freshName("commitSnapshotTx")
-    ctx.addNewFunction(commitSnapshotTx,
+    commitSnapshotTx = internals.addFunction(ctx, commitSnapshotTx,
       s"""
          |private final void $commitSnapshotTx(String $txId, scala.Option $conn) {
          |  $externalStoreTerm.commitTx($txId, false, $conn);
          |}
       """.stripMargin)
     rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")
-    ctx.addNewFunction(rollbackSnapshotTx,
+    rollbackSnapshotTx = internals.addFunction(ctx, rollbackSnapshotTx,
       s"""
          |private final void $rollbackSnapshotTx(String $txId, scala.Option $conn) {
          |  $externalStoreTerm.rollbackTx($txId, $conn);
          |}
       """.stripMargin)
     closeConnection = ctx.freshName("closeConnection")
-    ctx.addNewFunction(closeConnection,
+    closeConnection = internals.addFunction(ctx, closeConnection,
       s"""
          |private final void $closeConnection(scala.Option $conn) {
          |  $externalStoreTerm.closeConnection($conn);

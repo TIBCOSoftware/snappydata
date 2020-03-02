@@ -24,6 +24,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.{RDD, ZippedPartitionsBaseRDD}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
+import org.apache.spark.sql.catalyst.plans.logical.Statistics
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
@@ -529,4 +530,14 @@ case class DictionaryCode(dictionary: ExprCode, bufferVar: String,
   def evaluateDictionaryCode(): String = evaluate(dictionary)
 
   def evaluateIndexCode(): String = evaluate(dictionaryIndex)
+}
+
+/**
+ * Intermediate trait to accommodate differences in statistics method in Spark versions.
+ */
+trait LogicalPlanLike {
+
+  def statistics: Statistics
+
+  def computeStats(): Statistics
 }

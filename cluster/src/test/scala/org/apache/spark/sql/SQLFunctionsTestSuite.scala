@@ -569,6 +569,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
+    /* NullIf is only 2 argument (3 argument constructor is for internal use only)
     query = "SELECT nullif( 9, 9, 4)"
     sparkDf = sparkSession.sql(s"$query")
     snappyDf = snc.sql(s"$query")
@@ -581,7 +582,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     // sparkDf = sparkSession.sql(s"$query")
     // snappyDf = snc.sql(s"$query")
     // validateResult(sparkDf, snappyDf)
-
+    */
   }
 
   test("nvl") {

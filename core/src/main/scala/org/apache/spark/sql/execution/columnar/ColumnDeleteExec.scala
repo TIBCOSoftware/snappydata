@@ -134,7 +134,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     val rowConsume = super.doConsume(ctx, keysInput.dropRight(3),
       StructType(getUpdateSchema(keyColumns.dropRight(3))))
 
-    ctx.addNewFunction(finishDelete,
+    finishDelete = internals.addFunction(ctx, finishDelete,
       s"""
          |private void $finishDelete(long batchId, int bucketId, int numRows) {
          |  if (batchId == $invalidUUID || batchId != $lastColumnBatchId) {

@@ -269,7 +269,7 @@ case class SnappyHashAggregateExec(
       // this array will be used at batch level for grouping if possible
       dictionaryArrayTerm = ctx.freshName("dictionaryArray")
       dictionaryArrayInit = ctx.freshName("dictionaryArrayInit")
-      ctx.addNewFunction(dictionaryArrayInit,
+      dictionaryArrayInit = internals.addFunction(ctx, dictionaryArrayInit,
         s"""
            |private $className[] $dictionaryArrayInit() {
            |  return null;
@@ -353,7 +353,7 @@ case class SnappyHashAggregateExec(
       (resultVars, evaluateVariables(resultVars))
     }
 
-    val doAgg = ctx.freshName("doAggregateWithoutKey")
+    var doAgg = ctx.freshName("doAggregateWithoutKey")
     var produceOutput = getChildProducer.asInstanceOf[CodegenSupport].produce(
       ctx, this)
     if (bufVarUpdates ne null) {
@@ -369,7 +369,7 @@ case class SnappyHashAggregateExec(
       }.mkString("", "\n", initBufVar).trim
       produceOutput = s"$produceOutput\n$bufVarUpdates"
     }
-    ctx.addNewFunction(doAgg,
+    doAgg = internals.addFunction(ctx, doAgg,
       s"""
          |private void $doAgg() throws java.io.IOException {
          |  // initialize aggregation buffer
@@ -531,14 +531,14 @@ case class SnappyHashAggregateExec(
   private def generateResultCodeForSHAMap(
     ctx: CodegenContext, keyBufferVars: Seq[ExprCode],
     aggBufferVars: Seq[ExprCode], iterValueOffsetTerm: String): String = {
-    /* Asif: It appears that we have to put the code of materilization of each grouping column
-    & aggreagte before we can send it to parent. The reason is following:
-    1) In the byte buffer hashmap data is written consecitively i.e key1, key2 agg1 etc.
+    /* Asif: It appears that we have to put the code of materialization of each grouping column
+    & aggregate before we can send it to parent. The reason is following:
+    1) In the byte buffer hashmap data is written consecutively i.e key1, key2 agg1 etc.
     Now the pointer cannot jump arbitrarily to just read key2 without reading key1
-     So suppose we have a nested query such that inner query produces code for outputting key1 , key2,
-     while outer query is going to use only key2. If we do not write the code of materialzing key1,
-     the pointer will not move forward, as the outer query is going to try to materialzie only key2,
-     but the pointer will not move to key2 unleass key1 has been consumed.
+     So suppose we have a nested query such that inner query produces code for outputting key1/2,
+     while outer query is going to use only key2. If we do not write the code of materializing key1,
+     the pointer will not move forward, as the outer query is going to try to materialize only key2,
+     but the pointer will not move to key2 unless key1 has been consumed.
      We need to resolve this issue. I suppose we can declare  local variable pointers pointing to start location
      of each key/aggregate & use those declared pointers in the materialization code for each key
      */
@@ -581,17 +581,20 @@ case class SnappyHashAggregateExec(
 
     } else if (modes.contains(Partial) || modes.contains(PartialMerge)) {
       // Combined grouping keys and aggregate values in buffer
+      var evaluateKeyVars = evaluateVariables(keyBufferVars)
       ctx.INPUT_ROW = null
       ctx.currentVars = keyBufferVars
       val keyVars = groupingExpressions.zipWithIndex.map {
         case (e, i) => BoundReference(i, e.dataType, e.nullable).genCode(ctx)
       }
-      val evaluateKeyVars = evaluateVariables(keyVars)
+      evaluateKeyVars += evaluateVariables(keyVars)
+
+      var evaluateBufferVars = evaluateVariables(aggBufferVars)
       ctx.currentVars = aggBufferVars
       val bufferVars = aggregateBufferAttributesForGroup.zipWithIndex.map {
         case (e, i) => BoundReference(i, e.dataType, e.nullable).genCode(ctx)
       }
-      val evaluateBufferVars = evaluateVariables(bufferVars)
+      evaluateBufferVars += evaluateVariables(bufferVars)
       s"""
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)}
@@ -601,8 +604,6 @@ case class SnappyHashAggregateExec(
        $evaluateBufferVars
        ${consume(ctx, keyBufferVars ++ aggBufferVars)}
        """
-
-
     } else {
       // generate result based on grouping key
       ctx.INPUT_ROW = null
@@ -670,15 +671,15 @@ case class SnappyHashAggregateExec(
     val arrayDataClass = classOf[ArrayData].getName
     val platformClass = classOf[Platform].getName
 
-    val sizeAndNumNotNullFuncForStringArr = ctx.freshName("calculateStringArrSizeAndNumNotNulls")
+    var sizeAndNumNotNullFuncForArray = ctx.freshName("calculateArraySizeAndNumNotNulls")
 
     if (groupingAttributes.exists(_.dataType.existsRecursively {
       case ArrayType(StringType, _) | ArrayType(_, true) => true
       case _ => false
     })) {
-      ctx.addNewFunction(sizeAndNumNotNullFuncForStringArr,
+      sizeAndNumNotNullFuncForArray = internals.addFunction(ctx, sizeAndNumNotNullFuncForArray,
         s"""
-        private long $sizeAndNumNotNullFuncForStringArr($arrayDataClass arrayData,
+        private long $sizeAndNumNotNullFuncForArray($arrayDataClass arrayData,
          boolean isStringData)  {
            long size = 0L;
            int numNulls = 0;
@@ -697,16 +698,14 @@ case class SnappyHashAggregateExec(
        """)
     }
 
-
-
     val valueOffsetTerm = ctx.freshName("valueOffset")
     val currentValueOffSetTerm = ctx.freshName("currentValueOffSet")
     val valueDataTerm = ctx.freshName("valueData")
     val vdBaseObjectTerm = ctx.freshName("vdBaseObjectTerm")
     val vdBaseOffsetTerm = ctx.freshName("vdBaseOffsetTerm")
     val valueDataCapacityTerm = ctx.freshName("valueDataCapacity")
-    val doAgg = ctx.freshName("doAggregateWithKeys")
-    val setBBMap = ctx.freshName("setBBMap")
+    var doAgg = ctx.freshName("doAggregateWithKeys")
+    var setBBMap = ctx.freshName("setBBMap")
 
     // generate variable names for holding data from the Map buffer
     val aggregateBufferVars = for (i <- this.aggregateBufferAttributesForGroup.indices) yield {
@@ -847,7 +846,7 @@ case class SnappyHashAggregateExec(
       keyValSize, valueOffsetTerm, numKeyBytesTerm, numValueBytes,
       currentValueOffSetTerm, valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
-      numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForStringArr,
+      numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForArray,
       keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset, keyExistedTerm,
       skipLenForAttrib, codeForLenOfSkippedTerm, valueDataCapacityTerm,
       if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None,
@@ -859,7 +858,7 @@ case class SnappyHashAggregateExec(
 
     val childProduce =
       childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)
-    ctx.addNewFunction(doAgg,
+    doAgg = internals.addFunction(ctx, doAgg,
       s"""private void $doAgg() throws java.io.IOException {
            |$hashMapTerm = new $hashSetClassName(${Property.initialCapacityOfSHABBMap.get(
         sqlContext.sparkSession.asInstanceOf[SnappySession].sessionState.conf)},
@@ -908,7 +907,7 @@ case class SnappyHashAggregateExec(
            |}
          |}""".stripMargin)
 
-    ctx.addNewFunction(setBBMap,
+    setBBMap = internals.addFunction(ctx, setBBMap,
       s"""private boolean $setBBMap()  {
            |if ($hashMapTerm != null) {
              |return true;
@@ -1042,7 +1041,7 @@ case class SnappyHashAggregateExec(
     val iterClass = "java.util.Iterator"
     val iterTerm = internals.addClassField(ctx, iterClass, "mapIter")
 
-    val doAgg = ctx.freshName("doAggregateWithKeys")
+    var doAgg = ctx.freshName("doAggregateWithKeys")
 
     // generate variable name for hash map for use here and in consume
     val hashSetClassName = classOf[ObjectHashSet[_]].getName
@@ -1068,7 +1067,7 @@ case class SnappyHashAggregateExec(
 
     val childProduce =
       childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)
-    ctx.addNewFunction(doAgg,
+    doAgg = internals.addFunction(ctx, doAgg,
       s"""
         private void $doAgg() throws java.io.IOException {
           $hashMapTerm = new $hashSetClassName(128, 0.6, $numKeyColumns, false,

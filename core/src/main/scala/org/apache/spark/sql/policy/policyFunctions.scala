@@ -52,9 +52,7 @@ case class CurrentUser() extends LeafExpression with CodegenFallback {
 
   override def dataType: DataType = StringType
 
-  override def prettyName: String = "CURRENT_USER"
-
-  private val userName: UTF8String = {
+  override def eval(input: InternalRow): Any = {
     val snappySession = SparkSession.getActiveSession.getOrElse(
       throw new IllegalStateException("SnappySession unavailable")).asInstanceOf[SnappySession]
     val owner = snappySession.conf.get(Attribute.USERNAME_ATTR, Constant.DEFAULT_SCHEMA)
@@ -62,7 +60,7 @@ case class CurrentUser() extends LeafExpression with CodegenFallback {
     UTF8String.fromString(IdUtil.getUserAuthorizationId(owner))
   }
 
-  override def eval(input: InternalRow): Any = userName
+  override def prettyName: String = "current_user"
 }
 
 /**

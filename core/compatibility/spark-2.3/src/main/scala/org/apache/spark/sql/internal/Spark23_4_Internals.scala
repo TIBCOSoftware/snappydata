@@ -608,6 +608,10 @@ abstract class SnappySessionStateBuilder23_4(session: SnappySession,
           state.ResolveAliasInGroupBy ::
           new FindDataSourceTable(session) ::
           new ResolveSQLOnFile(session) ::
+          state.AnalyzeMutableOperations(session, aSelf) ::
+          ResolveQueryHints(session) ::
+          state.RowLevelSecurity ::
+          state.ExternalRelationLimitFetch ::
           session.contextFunctions.getExtendedResolutionRules) ++ customResolutionRules
     }
 
@@ -619,10 +623,6 @@ abstract class SnappySessionStateBuilder23_4(session: SnappySession,
           PreprocessTableInsertion(conf) ::
           DataSourceAnalysis(conf) ::
           new HiveConditionalRule(_ => HiveAnalysis, state) ::
-          state.AnalyzeMutableOperations(session, aSelf) ::
-          ResolveQueryHints(session) ::
-          state.RowLevelSecurity ::
-          state.ExternalRelationLimitFetch ::
           session.contextFunctions.getPostHocResolutionRules) ++ customPostHocResolutionRules
     }
 

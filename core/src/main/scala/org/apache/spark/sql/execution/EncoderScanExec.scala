@@ -18,10 +18,12 @@ package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.objects.StaticInvoke
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, BindReferences, Expression}
+import org.apache.spark.sql.catalyst.plans.logical.{LeafNode, Statistics}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types.{DateType, ObjectType}
@@ -158,13 +160,23 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
   }
 }
 
-class EncoderPlan[T](rdd: RDD[T], val encoder: ExpressionEncoder[T],
-    val isFlat: Boolean, output: Seq[Attribute], session: SparkSession)
-    extends LogicalRDD(output, rdd.asInstanceOf[RDD[InternalRow]])(session) {
+case class EncoderPlan[T](rdd: RDD[T], encoder: ExpressionEncoder[T],
+    isFlat: Boolean, output: Seq[Attribute])(session: SparkSession)
+    extends LeafNode with MultiInstanceRelation with LogicalPlanLike {
+
+  override protected def otherCopyArgs: Seq[AnyRef] = session :: Nil
 
   override def newInstance(): EncoderPlan.this.type = {
-    val newRDD = super.newInstance().asInstanceOf[LogicalRDD]
-    new EncoderPlan(rdd, encoder, isFlat,
-      newRDD.output, session).asInstanceOf[this.type]
+    EncoderPlan(rdd, encoder, isFlat, output.map(_.newInstance()))(session).asInstanceOf[this.type]
   }
+
+  override protected def stringArgs: Iterator[Any] = Iterator(output)
+
+  override def computeStats(): Statistics = Statistics(
+    // TODO: Instead of returning a default value here, find a way to return a meaningful size
+    // estimate for RDDs. See PR 1238 for more discussions.
+    sizeInBytes = BigInt(session.sessionState.conf.defaultSizeInBytes)
+  )
+
+  @transient override lazy val statistics: Statistics = computeStats()
 }

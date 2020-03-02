@@ -43,7 +43,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   vdBaseObjectTerm: String, vdBaseOffsetTerm: String,
   nullKeysBitsetTerm: String, numBytesForNullKeyBits: Int,
   allocatorTerm: String, numBytesForNullAggBits: Int,
-  nullAggsBitsetTerm: String, sizeAndNumNotNullFuncForStringArr: String,
+  nullAggsBitsetTerm: String, sizeAndNumNotNullFuncForArray: String,
   keyBytesHolderVarTerm: String, baseKeyObject: String,
   baseKeyHolderOffset: String, keyExistedTerm: String,
   skipLenForAttribIndex: Int, codeForLenOfSkippedTerm: String,
@@ -966,12 +966,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
             val snippetNotNullFixedWidth = s"4 + $exprValue.numElements() * $unitSize"
             val snippetNotNullVarWidth =
-              s"""4 + (int)($sizeAndNumNotNullFuncForStringArr($exprValue, true) >>> 32L)
+              s"""4 + (int)($sizeAndNumNotNullFuncForArray($exprValue, true) >>> 32L)
                """.stripMargin
             val snippetNullVarWidth = s" $snippetNullBitsSizeCode + $snippetNotNullVarWidth"
             val snippetNullFixedWidth =
               s"""4 + $snippetNullBitsSizeCode +
-                 |$unitSize * (int)($sizeAndNumNotNullFuncForStringArr(
+                 |$unitSize * (int)($sizeAndNumNotNullFuncForArray(
                  |$exprValue, false) & 0xffffffffL)
             """.stripMargin
 

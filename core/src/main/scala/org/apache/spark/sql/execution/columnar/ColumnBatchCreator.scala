@@ -190,8 +190,8 @@ case class CallbackColumnInsert(_schema: StructType)
 
   override protected def doProduce(ctx: CodegenContext): String = {
     val row = ctx.freshName("row")
-    val hasResults = ctx.freshName("hasResults")
-    val clearResults = ctx.freshName("clearResults")
+    var hasResults = ctx.freshName("hasResults")
+    var clearResults = ctx.freshName("clearResults")
     val rowsBufferClass = classOf[ColumnBatchRowsBuffer].getName
     val rowsBuffer = internals.addClassField(ctx, rowsBufferClass, "rowsBuffer")
     // add bucketId variable set to -1 by default
@@ -203,19 +203,19 @@ case class CallbackColumnInsert(_schema: StructType)
     ctx.INPUT_ROW = row
     ctx.currentVars = null
     val columnsInput = ctx.generateExpressions(columnsExpr)
-    ctx.addNewFunction(hasResults,
+    hasResults = internals.addFunction(ctx, hasResults,
       s"""
          |public final boolean $hasResults() {
          |  return !currentRows.isEmpty();
          |}
       """.stripMargin)
-    ctx.addNewFunction(clearResults,
+    clearResults = internals.addFunction(ctx, clearResults,
       s"""
          |public final void $clearResults() {
          |  currentRows.clear();
          |}
       """.stripMargin)
-    ctx.addNewFunction("getRowsBuffer",
+    internals.addFunction(ctx, "getRowsBuffer",
       s"""
          |public $rowsBufferClass getRowsBuffer() throws java.io.IOException {
          |  $clearResults(); // clear any old results
@@ -227,7 +227,7 @@ case class CallbackColumnInsert(_schema: StructType)
          |  }
          |  return this.$rowsBuffer;
          |}
-      """.stripMargin)
+      """.stripMargin, inlineToOuterClass = true)
     // create the rows buffer implementation as an inner anonymous
     // class so that it can be fit easily in the iterator model of
     // doProduce/doConsume having access to all the final local variables

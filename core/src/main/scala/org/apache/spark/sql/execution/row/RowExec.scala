@@ -131,9 +131,9 @@ trait RowExec extends TableExec {
     val numOpRowsMetric = if (onExecutor) null else metricTerm(ctx, s"num${opType}Rows")
     val numOperations = ctx.freshName("numOperations")
     val childProduce = doChildProduce(ctx)
-    val mutateTable = ctx.freshName("mutateTable")
+    var mutateTable = ctx.freshName("mutateTable")
 
-    ctx.addNewFunction(mutateTable,
+    mutateTable = internals.addFunction(ctx, mutateTable,
       s"""
          |private void $mutateTable() throws java.io.IOException, java.sql.SQLException {
          |  $childProduce
@@ -190,11 +190,11 @@ trait RowExec extends TableExec {
       val field = ctx.freshName("field")
       val ev = input(col)
       val javaType = internals.javaType(f.dataType, ctx)
-      val columnSetterFunction = ctx.freshName("setColumnOfRow")
+      var columnSetterFunction = ctx.freshName("setColumnOfRow")
       val columnSetterCode = CodeGeneration.getColumnSetterFragment(col, f.dataType,
         connProps.dialect, internals.copyExprCode(ev, isNull = isNull, value = field,
           dt = f.dataType), stmt, schemaFields, ctx)
-      ctx.addNewFunction(columnSetterFunction,
+      columnSetterFunction = internals.addFunction(ctx, columnSetterFunction,
         s"""
            |private void $columnSetterFunction(final boolean $isNull,
            |    final $javaType $field) throws java.sql.SQLException {

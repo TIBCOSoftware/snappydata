@@ -148,8 +148,7 @@ abstract case class ColumnTableScan(
            |  $body
            |}
          """.stripMargin
-      ctx.addNewFunction(name, code)
-      name
+      internals.addFunction(ctx, name, code)
     }
     functions.map(name => s"$name();").mkString("\n")
   }
@@ -160,7 +159,7 @@ abstract case class ColumnTableScan(
     val nullVarForCol = internals.addClassField(ctx, "boolean", s"nullVarForCol$index")
     val sqlType = Utils.getSQLDataType(attr.dataType)
     val jt = internals.javaType(sqlType, ctx)
-    val name = s"readValue_$index"
+    var name = s"readValue_$index"
     val code =
       s"""
          |private $jt $name(int $batchOrdinal) {
@@ -169,7 +168,7 @@ abstract case class ColumnTableScan(
          |  return ${internals.exprCodeValue(expr)};
          |}
          """.stripMargin
-    ctx.addNewFunction(name, code)
+    name = internals.addFunction(ctx, name, code)
     val exprCode =
       s"""
          |$jt $retValName = $name($batchOrdinal);
@@ -338,7 +337,7 @@ abstract case class ColumnTableScan(
       val updatedDecoderLocal = ctx.freshName("decoderUpdatedLocal")
       val buffer = internals.addClassField(ctx, "java.nio.ByteBuffer", "buffer")
       val numNullsVar = internals.addClassField(ctx, "int", "numNulls")
-      val initBufferFunction = ctx.freshName("bufferInit")
+      var initBufferFunction = ctx.freshName("bufferInit")
       val bufferVar = if (isWideSchema) {
         internals.addClassField(ctx, "Object", "bufferObject")
       } else ctx.freshName("bufferObject")
@@ -371,9 +370,9 @@ abstract case class ColumnTableScan(
         )
       }
       val updatedDecoder = internals.addClassField(ctx, updatedDecoderClass, "updatedDecoder")
-      val closeDecoderFunction = ctx.freshName("decoderClose")
+      var closeDecoderFunction = ctx.freshName("decoderClose")
 
-      ctx.addNewFunction(initBufferFunction,
+      initBufferFunction = internals.addFunction(ctx, initBufferFunction,
         s"""
            |private void $initBufferFunction() {
            |  $buffer = $colInput.getColumnLob($baseIndex);
@@ -390,7 +389,7 @@ abstract case class ColumnTableScan(
         """.stripMargin)
       columnBufferInit.append(s"$initBufferFunction();\n")
 
-      ctx.addNewFunction(closeDecoderFunction,
+      closeDecoderFunction = internals.addFunction(ctx, closeDecoderFunction,
         s"""
            |private void $closeDecoderFunction() {
            |  if ($decoder != null) {
@@ -530,7 +529,7 @@ abstract case class ColumnTableScan(
           if (!$colInput.hasNext()) return false;
         }"""
     }
-    val nextBatch = ctx.freshName("nextBatch")
+    var nextBatch = ctx.freshName("nextBatch")
     val closeDecodersFunction = ctx.freshName("closeAllDecoders")
     val switchSRR = if (isForSampleReservoirAsRegion) {
       // triple switch between rowInputSRR, rowInput, colInput
@@ -551,7 +550,7 @@ abstract case class ColumnTableScan(
       """.stripMargin
     } else ""
 
-    ctx.addNewFunction(nextBatch,
+    nextBatch = internals.addFunction(ctx, nextBatch,
       s"""
          |private boolean $nextBatch() throws Exception {
          |  if ($buffers != null) return true;
@@ -586,12 +585,12 @@ abstract case class ColumnTableScan(
          |  return true;
          |}
       """.stripMargin)
-    ctx.addNewFunction(closeDecodersFunction,
+    internals.addFunction(ctx, closeDecodersFunction,
       s"""
          |private void $closeDecodersFunction() {
          |  ${closeDecoders.toString()}
          |}
-      """.stripMargin)
+      """.stripMargin, inlineToOuterClass = true)
 
     val (assignBatchId, assignOrdinalId) = if (ordinalIdTerm ne null) (
         s"""
@@ -936,8 +935,8 @@ object ColumnTableScan extends Logging with SparkSupport {
     val addBatchMetric = if (columnBatchesSkipped ne null) {
       s"$columnBatchesSkipped.${metricAdd("1")};"
     } else ""
-    val filterFunction = ctx.freshName("columnBatchFilter")
-    ctx.addNewFunction(filterFunction,
+    var filterFunction = ctx.freshName("columnBatchFilter")
+    filterFunction = internals.addFunction(ctx, filterFunction,
       s"""
          |private boolean $filterFunction(UnsafeRow $statsRow, int $numRowsTerm,
          |    boolean isLastStatsRow, boolean isDelta) {

@@ -190,7 +190,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     val rowConsume = super.doConsume(ctx, updateInput.dropRight(3),
       StructType(getUpdateSchema(allExpressions.dropRight(3))))
 
-    ctx.addNewFunction(initializeEncoders,
+    internals.addFunction(ctx, initializeEncoders,
       s"""
          |private void $initializeEncoders() {
          |  for (int $index = 0; $index < $numColumns; $index++) {
@@ -199,12 +199,12 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |        ${classOf[ColumnDelta].getName}.INIT_SIZE(), true);
          |  }
          |}
-      """.stripMargin)
+      """.stripMargin, inlineToOuterClass = true)
     // Creating separate encoder write functions instead of inlining for wide-schemas
     // in updates (especially with support for putInto being added). Performance should
     // be about the same since JVM inlines where it determines will help performance.
     val callEncoders = updateColumns.zipWithIndex.map { case (col, i) =>
-      val function = ctx.freshName("encoderFunction")
+      var function = ctx.freshName("encoderFunction")
       val ordinal = ctx.freshName("ordinal")
       val isNull = ctx.freshName("isNull")
       val field = ctx.freshName("field")
@@ -213,7 +213,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       val realEncoderTerm = s"${encoderTerm}_realEncoder"
       val cursorTerm = s"$cursors[$i]"
       val ev = updateInput(i)
-      ctx.addNewFunction(function,
+      function = internals.addFunction(ctx, function,
         s"""
            |private void $function(int $ordinal, int $ordinalIdVar,
            |    boolean $isNull, ${internals.javaType(dataType, ctx)} $field) {
@@ -269,7 +269,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     // methods if required so no need to add separate functions explicitly.
     // Count is hardcoded as zero which will change for "insert" index deltas.
     val statsEv = ColumnWriter.genStatsRow(ctx, "0", stats, statsSchema)
-    ctx.addNewFunction(finishUpdate,
+    finishUpdate = internals.addFunction(ctx, finishUpdate,
       s"""
          |private void $finishUpdate(long batchId, int bucketId, int numRows) {
          |  if (batchId == $invalidUUID || batchId != $lastColumnBatchId) {

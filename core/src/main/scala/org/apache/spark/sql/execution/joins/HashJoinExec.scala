@@ -288,7 +288,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
     val createMap = ctx.freshName("createMap")
     val createMapClass = ctx.freshName("CreateMap")
-    val getOrCreateMap = ctx.freshName("getOrCreateMap")
+    var getOrCreateMap = ctx.freshName("getOrCreateMap")
 
     val beforeMap = ctx.freshName("beforeMap")
     val buildTime = metricTerm(ctx, "buildTime")
@@ -378,7 +378,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     if (replicatedTableJoin) {
       var cacheClass = HashedObjectCache.getClass.getName
       cacheClass = cacheClass.substring(0, cacheClass.length - 1)
-      ctx.addNewFunction(getOrCreateMap,
+      getOrCreateMap = internals.addFunction(ctx, getOrCreateMap,
         s"""
         public final void $createMap() throws java.io.IOException {
           $buildSideCreateMap
@@ -398,7 +398,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
         }
       """)
     } else {
-      ctx.addNewFunction(getOrCreateMap,
+      getOrCreateMap = internals.addFunction(ctx, getOrCreateMap,
         s"""
           public final void $getOrCreateMap() throws java.io.IOException {
             $buildSideCreateMap
@@ -491,7 +491,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     // this array will be used at batch level for grouping if possible
     dictionaryArrayTerm = ctx.freshName("dictionaryArray")
     dictionaryArrayInit = ctx.freshName("dictionaryArrayInit")
-    ctx.addNewFunction(dictionaryArrayInit,
+    dictionaryArrayInit = internals.addFunction(ctx, dictionaryArrayInit,
       s"""
          |private $className[] $dictionaryArrayInit() {
          |  return null;

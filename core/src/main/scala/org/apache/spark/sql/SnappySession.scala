@@ -26,7 +26,6 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
-import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{Cache, CacheBuilder}
@@ -409,7 +408,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc)
   private[sql] def addFinallyCode(ctx: CodegenContext, code: String): Int = {
     val depth = getContextObject[Int](ctx, "D", "depth").getOrElse(0) + 1
     addContextObject(ctx, "D", "depth", depth)
-    addContextObject(ctx, "F", "finally" -> depth, code)
+    addContextObject(ctx, "FIN", "finally" -> depth, code)
     depth
   }
 
@@ -423,7 +422,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc)
     else addContextObject(ctx, "D", "depth", d - 1)
 
     val key = "finally" -> d
-    getContextObject[String](ctx, "F", key) match {
+    getContextObject[String](ctx, "FIN", key) match {
       case Some(finallyCode) => removeContextObject(ctx, "F", key)
         if (body.isEmpty) finallyCode
         else {
@@ -635,7 +634,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc)
   private[sql] def releaseLock(lock: Any): Unit = {
     logInfo(s"Releasing the lock : $lock")
     lock match {
-      case lock: RegionLock =>
+      case lock: PartitionedRegion.RegionLock =>
         if (lock != null) {
           logInfo(s"Going to unlock the lock object bulkOp $lock and " +
             s"app ${sqlContext.sparkContext.appName}")
@@ -780,7 +779,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc)
     val c = encoder.clsTag.runtimeClass
     val isFlat = !(classOf[Product].isAssignableFrom(c) ||
         classOf[DefinedByConstructorParams].isAssignableFrom(c))
-    val plan = new EncoderPlan[T](data, encoder, isFlat, output, self)
+    val plan = EncoderPlan[T](data, encoder, isFlat, output)(self)
     Dataset[T](self, plan)
   }
 

@@ -217,12 +217,12 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
             }
           }
         """
-      // using addNewFunction to register the class since there is nothing
-      // function specific in the addNewFunction method
+      // using addFunction to register the class since there is nothing
+      // function specific in the addFunction method
       if (!valueClassCode.isEmpty) {
-        ctx.addNewFunction(valueClass, valueClassCode)
+        internals.addFunction(ctx, valueClass, valueClassCode, inlineToOuterClass = true)
       }
-      ctx.addNewFunction(entryClass, classCode)
+      internals.addFunction(ctx, entryClass, classCode, inlineToOuterClass = true)
       session.addClass(ctx, valClassTypes, keyTypes, entryTypes,
         valueClass, entryClass, multiMap)
     }
@@ -658,8 +658,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     val skipInit = valueInit eq null
     // check for existing function with matching null vars and skipInit
     val fnKey = className -> keyVars.map(internals.exprCodeIsNull(_) == "false")
-    val fn = session.getContextObject[(String, Boolean)](ctx, "F", fnKey) match {
-      case Some((functionName, skip)) if skipInit || !skip => functionName
+    val fn = session.getContextObject[(String, String, Boolean)](ctx, "F", fnKey) match {
+      case Some((_, functionName, skip)) if skipInit || !skip => functionName
       case f =>
         // re-use function for non-matching skipInit but change its body
         // to also handle insertion of new blank entry
@@ -696,7 +696,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
              |  }
              |}""".stripMargin
         }
-        ctx.addNewFunction(function,
+        val functionName = internals.addFunction(ctx, function,
           s"""
              |private $className $function(final int $hash, $keyDeclarations,
              |    final $className[] $dataTerm, final int $maskTerm,
@@ -725,8 +725,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
           """.stripMargin)
 
         // register the new function
-        session.addContextObject(ctx, "F", fnKey, function -> skipInit)
-        function
+        session.addContextObject(ctx, "F", fnKey, (function, functionName, skipInit))
+        functionName
     }
 
     val keyArgs = keyCalls.mkString(", ")
@@ -761,7 +761,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         // and dictionary index will be initialized to that by ColumnTableScan
         internals.addClassField(ctx, classOf[StringDictionary].getName,
           dictValue, forceInline = true, useFreshName = false)
-        ctx.addNewFunction(dictionaryArrayInit,
+        internals.addFunction(ctx, dictionaryArrayInit,
           s"""
              |public $className[] $dictionaryArrayInit() {
              |  ${d.evaluateDictionaryCode()}
@@ -771,7 +771,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
              |    return null;
              |  }
              |}
-           """.stripMargin)
+           """.stripMargin, inlineToOuterClass = true)
         true
       case None => false
     }
