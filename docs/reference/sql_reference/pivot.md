@@ -10,30 +10,28 @@ explicit GROUP BY columns with PIVOT instead of always doing implicit detection.
 
 Both the following examples are identical. Spark 2.4 does not support second variant:
 
-  ```
-select * from (
-    select year(day) year, month(day) month, temp
-    from dayAvgTemp
-  )
-  PIVOT (
-    CAST(avg(temp) AS DECIMAL(5, 2))
-    FOR month IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
-  )
-  ORDER BY year DESC
-```
+
+        select * from (
+            select year(day) year, month(day) month, temp
+            from dayAvgTemp
+          )
+          PIVOT (
+            CAST(avg(temp) AS DECIMAL(5, 2))
+            FOR month IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+          )
+          ORDER BY year DESC
+
 
 Compared to blog example the **IN** clause only supports constants and not aliases.
 
-```
-  select * from (
-    select year(day) year, month(day) month, temp
-    from dayAvgTemp
-  )
-  PIVOT (
-    CAST(avg(temp) AS DECIMAL(5, 2))
-    FOR month IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
-  )
-  GROUP BY year
-  ORDER BY year DESC
 
-```
+          select * from (
+            select year(day) year, month(day) month, temp
+            from dayAvgTemp
+          )
+          PIVOT (
+            CAST(avg(temp) AS DECIMAL(5, 2))
+            FOR month IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+          )
+          GROUP BY year
+          ORDER BY year DESC
