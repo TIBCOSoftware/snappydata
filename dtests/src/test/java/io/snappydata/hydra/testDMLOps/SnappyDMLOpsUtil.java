@@ -41,6 +41,7 @@ import com.gemstone.gemfire.cache.query.types.ObjectType;
 import hydra.Log;
 import hydra.Prms;
 import hydra.TestConfig;
+import hydra.blackboard.AnyCyclicBarrier;
 import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
@@ -71,6 +72,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     int dmlTableLength = SnappySchemaPrms.getDMLTables().length;
     ArrayList<Integer> insertCounters = new ArrayList<>();
     ArrayList<Integer> deleteCounters = new ArrayList<>();
+    if (dmlTableLength == 0)
+      dmlTableLength = SnappySchemaPrms.getTableNames().length;
     for (int i = 0; i < dmlTableLength; i++) {
       insertCounters.add(1);
       deleteCounters.add(0);
@@ -800,6 +803,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     return delCounter;
   }
 
+  public static void waitForBarrier(String barrierName, int numThreads) {
+    AnyCyclicBarrier barrier = AnyCyclicBarrier.lookup(numThreads, barrierName);
+    Log.getLogWriter().info("Waiting for " + numThreads + " to meet at barrier " + barrierName);
+    barrier.await();
+    Log.getLogWriter().info("Wait completed for " + barrierName);
+  }
+
   public void performInsertUsingBatch(Connection conn, String tableName,
       String stmt, int index, int totalInserts, int tid, boolean isPopulate){
     int initCounter = getInitialCounter(index, totalInserts);
@@ -831,7 +841,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         ("tableMetaData_" + tableName.toUpperCase());
     ObjectType[] oTypes = sType.getFieldTypes();
     String[] fieldNames = sType.getFieldNames();
-
+    if(isPopulate) waitForBarrier("batchInsertThreads", dmlthreads.size());
+    Long startTime = System.currentTimeMillis();
     int batchCnt = 0;
     try {
       String value;
@@ -893,16 +904,22 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           batchCnt = 0;
         }
       }
-      Log.getLogWriter().info("Executing the remaining batch...");
-      if(!isPopulate)  SnappyConsistencyTest.waitForBarrier(tid + "", 2);
-      snappyPS.executeBatch();
-      snappyPS.close();
-      if(!isPopulate)  SnappyConsistencyTest.waitForBarrier(tid + "", 2);
-      if (hasDerbyServer) {
-        derbyPS.executeBatch();
-        derbyPS.close();
-        derbyTestUtils.closeDiscConnection(dConn, true);
+      if(batchCnt > 0) {
+        Log.getLogWriter().info("Executing the remaining batch...");
+        if (!isPopulate) SnappyConsistencyTest.waitForBarrier(tid + "", 2);
+        snappyPS.executeBatch();
+        snappyPS.close();
+        if(!isPopulate)  SnappyConsistencyTest.waitForBarrier(tid + "", 2);
+        if (hasDerbyServer) {
+          derbyPS.executeBatch();
+          derbyPS.close();
+          derbyTestUtils.closeDiscConnection(dConn, true);
+        }
       }
+      Long endTime = System.currentTimeMillis();
+      Long totalTime = (endTime - startTime)/1000;
+      Log.getLogWriter().info("Insert took " + totalTime + " secs.");
+
     } catch (Exception se) {
       Log.getLogWriter().info("Got exception while creating prepared statement" + se.getMessage());
       throw new TestException("Exception while creating PreparedStatement.", se);
@@ -1225,11 +1242,52 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   }
 
   /*
+   *   Verify results in the begining of the test
+   */
+  public static void HydraTask_verifyResultsForBatchOperations() {
+    String selectQuery = "select count(*) from  ";
+    testInstance.verifyResultsFromBB(selectQuery);
+  }
+
+  /*
  *   Verify results in the begining of the test
  */
   public static void HydraTask_verifyResultsInitTask() {
     String selectQuery = "select CAST(count(*) as integer) as numRows from  ";
     testInstance.verifyResults(selectQuery);
+  }
+
+  public void verifyResultsFromBB(String query) {
+    String[] tables = SnappySchemaPrms.getTableNames();
+    StringBuffer mismatchString = new StringBuffer();
+    Connection conn, dConn;
+    try {
+      conn = getLocatorConnection();
+      for (int i =0 ;i< tables.length ; i++) {
+        int numRowsFromBB = getInitialCounter(i,0) -1;
+        int numRowsInserted = 0;
+        ResultSet rs = conn.createStatement().executeQuery(query + tables[i]);
+        while(rs.next()){
+          numRowsInserted = rs.getInt(1);
+        }
+        if(numRowsInserted != numRowsFromBB)
+          mismatchString.append("Number of rows did not match for table " + tables[i] + ". Expected rows are " + numRowsFromBB + " and found " + numRowsInserted + " rows.\n");
+      }
+      if (mismatchString.length() > 0) {
+        Log.getLogWriter().info(mismatchString.toString());
+        query = "select * from ";
+        for (String table : tables) {
+          ResultSet rs = conn.createStatement().executeQuery(query + table);
+          StructTypeImpl snappySti = ResultSetHelper.getStructType(rs);
+          List<Struct> snappyList = ResultSetHelper.asList(rs, snappySti, false);
+          rs.close();
+          listToFile(snappyList,getCurrentDirPath() + File.separator + "outputDir" + File.separator + table + "_data.out");
+        }
+        throw new TestException(mismatchString.toString());
+      }
+    } catch(Exception e){
+      Log.getLogWriter().info("Got exception ");
+    }
   }
 
   /*

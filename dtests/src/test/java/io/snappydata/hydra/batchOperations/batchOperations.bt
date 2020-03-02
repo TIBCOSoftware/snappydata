@@ -1,6 +1,22 @@
+// 6 threads single column table, differing batch size
 io/snappydata/hydra/batchOperations/batchInsertOnColumnTable.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=4
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=4
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
-  persistenceMode="sync" redundantCopies=1
+  persistenceMode="sync" redundantCopies=1 batchSize=1000
+
+io/snappydata/hydra/batchOperations/batchInsertOnColumnTable.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=4
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=4
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  persistenceMode="sync" redundantCopies=1 batchSize=5000
+
+io/snappydata/hydra/batchOperations/batchInsertOnColumnTable.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=4
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=4
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  persistenceMode="sync" redundantCopies=1 batchSize=10000
+
