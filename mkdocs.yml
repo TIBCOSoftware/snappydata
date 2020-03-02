@@ -204,7 +204,7 @@ pages:
         - 'LATERAL VIEW': 'reference/sql_reference/lateral-view.md'
         - 'LIST': 'reference/sql_reference/list.md'
         - 'EXPLAIN': 'reference/sql_reference/explain.md'
-        - 'PIVOT': 'reference/sql_reference/pivot.md'
+#        - 'PIVOT': 'reference/sql_reference/pivot.md'
         - 'PUT INTO': 'reference/sql_reference/put-into.md'
         - 'REVOKE': 'reference/sql_reference/revoke.md'
         - 'REVOKE ALL': 'reference/sql_reference/revoke_all.md'
