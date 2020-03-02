@@ -203,3 +203,42 @@ val collectedNumbers = numbersRdd.map(_ * x).collect()
 
 This is because the closure is referring to **x**, which is defined outside the closure. 
 There are no issues if the closure has no dependency on any external variables.
+
+
+## Exceptions
+
+Following are some examples of exceptions that can occur in the code that is executed through **exec scala**. 
+
+!!! Attention 
+	Whenever an exception occurs in the code that is executed via exec scala, then the error code, as part of SQLEexception, is **SQLState=38000**. Hence, if you get an SQLException with an error code other than **SQLState=38000**, the exception is originated from another part of code and not from the snippet that is passed  via exec scala.
+    
+### Examples
+
+**Example 1**
+
+```
+execstr = "exe scala snappysession.sql(\"create table testtab (col1 int)\").show" 
+ 
+ java.sql.SQLException: (SQLState=42X01 Severity=20000) (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-9) Syntax error: Invalid input "exe ", expected select, insert, put, update, delete, ctes, dmlOperation, putValuesOperation or ddl (line 1, column 1):
+exe scala snappysession.sql("create table testtab (col1 int)").show
+^;.
+```
+
+**Example 2**
+
+```
+ execstr = "exec scala snappysession.sql(\"create table testtab (col1 int)\").show"
+  
+java.sql.SQLException: (SQLState=38000 Severity=20000) (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-9) The exception 'com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException: myID: 127.0.0.1(16536)<v1>:30591, caused by java.lang.RuntimeException: Got error while interpreting line  snappysession.sql("create table testtab (col1 int)").show and interpreter output = org.apache.spark.sql.AnalysisException: Table app.testtab already exists.;
+
+```
+
+**Example 3**
+
+```
+ execstr = "exec scala snappysession.sql(\"create ta testtab (col1 int)\").show"
+
+java.sql.SQLException: (SQLState=38000 Severity=20000) (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-9) The exception 'com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException: myID: 127.0.0.1(16536)<v1>:30591, caused by java.lang.RuntimeException: Got error while interpreting line  snappysession.sql("create ta testtab (col1 int)").show and interpreter output = org.apache.spark.sql.ParseException: Invalid input "ta ", expected TABLE, EXTERNAL, OR, globalOrTemporary, VIEW, SCHEMA, POLICY, STREAM, GLOBAL, UNIQUE, INDEX, TEMPORARY or FUNCTION (line 1, column 8):
+create ta testtab (col1 int)
+       ^;
+```
