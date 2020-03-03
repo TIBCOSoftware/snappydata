@@ -57,7 +57,7 @@ If all the machines in your cluster can share a path over an NFS or similar prot
 2. Extract the downloaded archive file and go to SnappyData home directory.
 
 		$ tar -xzf snappydata-<version-number>-bin.tar.gz
-		$ cd snappydata-<version-number>.-bin/
+		$ cd snappydata-<version-number>-bin/
 
 3. Configure the cluster as described in [Configuring the Cluster](../configuring_cluster/configuring_cluster.md).
 
