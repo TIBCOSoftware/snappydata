@@ -79,6 +79,7 @@ pages:
     - 'How to connect TIBCO Spotfire® Desktop to TIBCO ComputeDB': 'howto/connecttibcospotfire.md' 
     - 'How to connect TIBCO® Data Virtualization to TIBCO ComputeDB': 'howto/connecttibcodv.md'
     - 'How to Connect Tableau to TIBCO ComputeDB': 'howto/tableauconnect.md' 
+    - 'How to Deploy TIBCO ComputeDB from AWS Marketplace': 'howto/deploy_tcdb_aws_marketplace.md' 
     - 'How to Configure Apache Zeppelin to Securely and Concurrently access the TIBCO ComputeDB Cluster': 'howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md'
 #    - 'List of Properties':    (to be updated later)
 #        - 'Property Details': 'configuring_cluster/property_details.md'
