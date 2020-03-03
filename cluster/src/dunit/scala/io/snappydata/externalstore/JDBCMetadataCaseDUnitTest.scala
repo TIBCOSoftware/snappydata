@@ -16,21 +16,17 @@
  */
 package io.snappydata.externalstore
 
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedDatabaseMetaData.METADATACASE_UPPER_PROP
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 import org.junit.Assert.assertEquals
 
 import org.apache.spark.Logging
 
-
-// scalastyle:off println
-
 class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
     with Logging {
 
   val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
-
-  sysProps.put("metadatacase.lower", "")
 
   private val table = "t1"
 
