@@ -502,7 +502,7 @@ class QueryRoutingDUnitTest(val s: String)
       doQueries(newConn.createStatement(), newConn.getMetaData, colTable)
 
       // Ensure parquet table can be dropped (SNAP-215)
-      val parquetTable = "PARQUETTABLE"
+      val parquetTable = "parquettable"
       dataDir.mkdir()
       s.execute(s"CREATE EXTERNAL TABLE APP_PARQUET.$parquetTable " +
           s"(Col1 INT, Col2 INT, Col3 INT) USING parquet OPTIONS (path '$filePath')")
@@ -513,8 +513,8 @@ class QueryRoutingDUnitTest(val s: String)
       while (schemaMd.next()) {
         results += schemaMd.getString(1)
       }
-      assert(results.contains("APP"))
-      assert(results.contains("APP_PARQUET"))
+      assert(results.contains("app"))
+      assert(results.contains("app_parquet"))
       results.clear()
 
       val tableMd = dbmd.getTables(null, "APP%", null,
@@ -525,8 +525,8 @@ class QueryRoutingDUnitTest(val s: String)
       }
       // 1 for column table and 1 for parquet external table
       assert(results.size == 2, s"Got size = ${results.size} [$results] but expected 2.")
-      assert(results.contains(s"APP.$colTable"))
-      assert(results.contains(s"APP_PARQUET.$parquetTable"))
+      assert(results.contains(s"APP.$colTable".toLowerCase()))
+      assert(results.contains(s"app_parquet.$parquetTable"))
       results.clear()
 
       // check the columns

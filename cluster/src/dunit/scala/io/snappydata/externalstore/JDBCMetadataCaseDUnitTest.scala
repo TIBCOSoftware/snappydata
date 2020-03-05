@@ -16,10 +16,14 @@
  */
 package io.snappydata.externalstore
 
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedDatabaseMetaData.METADATACASE_UPPER_PROP
+import java.sql.{Connection, DatabaseMetaData}
+
+import scala.util.Try
+
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 import org.junit.Assert.assertEquals
+import org.junit.{Assert, Ignore}
 
 import org.apache.spark.Logging
 
@@ -28,46 +32,38 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
   val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
 
-  private val table = "t1"
+  // using mixed case name to cover case insensitivity scenarios
+  private val table1 = "tABle1"
+  private val table2 = "tABle2"
+  private val table3 = "tABle3"
+  val schema = "Schema1"
 
-  def testLowercaseMetadata(): Unit = {
+  def testJDBCMetadataCase_queryRoutingOn(): Unit = {
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
     try {
       val stmt = conn.createStatement()
       try {
-        stmt.execute("drop table if exists " + table)
-        stmt.execute("create table " + table + "(id integer, fs string) using column")
+        stmt.execute("drop table if exists " + table1)
+        stmt.execute("drop table if exists " + table2)
+        stmt.execute("drop table if exists " + table3)
+        stmt.execute("drop schema if exists " + schema)
+        stmt.execute("create schema " + schema)
+        stmt.execute("create table " + schema + "." + table1 +
+            "(id integer primary key, col1 string, col2 long)")
+        stmt.execute("create table " + schema + "." + table2 + "(id integer , fs string)")
+        stmt.execute("create table " + table3 + "(id integer , fs string)")
       } finally {
         stmt.close()
       }
       val dbmd = conn.getMetaData
-      val tableRS = dbmd.getTables(null, "app", null,
-        Array[String]("TABLE"))
 
-      while (tableRS.next) {
-        // making sure that column data can be retrieved with lower case column name
-        val tableName = tableRS.getString("table_name")
-        val schemaName = tableRS.getString("TABLE_SCHEM")
-        // tableName and schemaName should be in lower case
-        assertEquals(tableName.toLowerCase, tableName)
-        assertEquals(schemaName.toLowerCase, schemaName)
-      }
+      // JDBC metadata APIs should return result in lower case when query routing is true
+      // i.e. for external connections
+      testMetadataAPIs(dbmd, (s: String) => s.toLowerCase)
 
-      val schemaRS = dbmd.getSchemas(null, "APP")
-      while (schemaRS.next) {
-        val schemaName = schemaRS.getString("TABLE_SCHEM")
-        // schemaName should be in lower case
-        assertEquals(schemaName.toLowerCase, schemaName)
-      }
     } finally {
-      val stmt = conn.createStatement()
-      try {
-        stmt.execute("drop table if exists " + table)
-      } finally {
-        stmt.close()
-      }
-      conn.close()
+      cleanup(conn)
     }
   }
 
@@ -75,43 +71,176 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
   // is written with upper case assumption. We don't want to affect that code. Internal connection
   // is identified based on status of query routing as for internal connections query routing is
   // always disabled.
-  def testLowercaseMetadata_internalConnections(): Unit = {
+  def testJDBCMetadataCase_queryRoutingOff(): Unit = {
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1, disableQueryRouting = true)
     try {
       val stmt = conn.createStatement()
       try {
-        stmt.execute("drop table if exists " + table)
-        stmt.execute("create table " + table + "(id integer, fs string)")
+//        stmt.execute("drop schema if exists " + schema)
+        Try(stmt.execute("drop table " + table1))
+
+        Try(stmt.execute("drop table " + table2))
+        Try(stmt.execute("drop table " + table3))
+        Try(stmt.execute("create schema " + schema))
+        stmt.execute("create table " + schema + "." + table1 +
+            "(id integer primary key, col1 string, col2 long)")
+        stmt.execute("create table " + schema + "." + table2 + "(id integer , fs string)")
+        stmt.execute("create table " + table3 + "(id integer , fs string)")
       } finally {
         stmt.close()
       }
       val dbmd = conn.getMetaData
-      val rs = dbmd.getTables(null.asInstanceOf[String], "app", null.asInstanceOf[String],
-        Array[String]("TABLE"))
 
-      while (rs.next) {
-        val tableName = rs.getString("table_name")
-        val schemaName = rs.getString("TABLE_SCHEM")
-        // tableName and schemaName should be in upper case
-        assertEquals(tableName.toUpperCase, tableName)
-        assertEquals(schemaName.toUpperCase, schemaName)
-      }
+      // DDBC metadata APIs should return result in upper case when query routing is false
+      // i.e. for internal connections
+      testMetadataAPIs(dbmd, (s: String) => s.toUpperCase)
 
-      val schemaRS = dbmd.getSchemas(null, "APP")
-      while (schemaRS.next) {
-        val schemaName = schemaRS.getString("TABLE_SCHEM")
-        // schemaName should be in upper case
-        assertEquals(schemaName.toUpperCase(), schemaName)
-      }
     } finally {
-      val stmt = conn.createStatement()
-      try {
-        stmt.execute("drop table if exists " + table)
-      } finally {
-        stmt.close()
-      }
-      conn.close()
+      cleanup(conn)
     }
+  }
+
+  private def testMetadataAPIs(dbmd: DatabaseMetaData, matchFunction: String => String): Unit = {
+    testGetTables(dbmd, matchFunction)
+    testGetSchemas(dbmd, matchFunction)
+    testGetColumns(dbmd, matchFunction)
+    testGetTableTypes(dbmd, matchFunction)
+    testGetTypeInfo(dbmd, matchFunction)
+  }
+
+  private def testGetTypeInfo(dbmd: DatabaseMetaData, matchFunction: String => String): Unit = {
+    val typeInfoRS = dbmd.getTypeInfo
+    var resultSetSize = 0
+    while (typeInfoRS.next()) {
+      val typeName = typeInfoRS.getString("TYPE_NAME")
+      val literalPrefix = typeInfoRS.getString("LITERAL_PREFIX")
+      val literalSuffix = typeInfoRS.getString("LITERAL_SUFFIX")
+      val createParams = typeInfoRS.getString("CREATE_PARAMS")
+      val localTypeName = typeInfoRS.getString("LOCAL_TYPE_NAME")
+
+      println(s"Type info - typeName:$typeName, literalPrefix:$literalPrefix," +
+          s" literalSuffix:$literalSuffix, createParam:$createParams," +
+          s" localTypeName:$localTypeName")
+
+      assertEquals(matchFunction(typeName), typeName)
+      if (literalPrefix != null) assertEquals(matchFunction(literalPrefix), literalPrefix)
+      if (literalSuffix != null) assertEquals(matchFunction(literalSuffix), literalSuffix)
+      // not asserting below condition because createParams are hard-coded to be in small
+      // case in metadata.properties file.
+      // if (createParams != null) assertEquals(matchFunction(createParams), createParams)
+      assertEquals(matchFunction(localTypeName), localTypeName)
+
+      resultSetSize += 1
+    }
+
+    assertEquals(26, resultSetSize)
+  }
+
+  private def testGetTableTypes(dbmd: DatabaseMetaData, matchFunction: String => String): Unit = {
+    val tableTypesRS = dbmd.getTableTypes
+
+    var resultSetSize = 0
+    while (tableTypesRS.next()) {
+      val tableType = tableTypesRS.getString("TABLE_TYPE")
+      assertEquals(matchFunction(tableType), tableType)
+      resultSetSize += 1
+    }
+    assertEquals(11, resultSetSize)
+  }
+
+  private def testGetColumns(dbmd: DatabaseMetaData, matchFunction: String => String): Unit = {
+    var resultSetSize = 0
+    val columnsRS = dbmd.getColumns(null, schema, table1, "cOL%")
+    while (columnsRS.next()) {
+      val columnName = columnsRS.getString("COLUMN_NAME")
+      val tableName = columnsRS.getString("table_name")
+      val schemaName = columnsRS.getString("TABLE_SCHEM")
+      val typeName = columnsRS.getString("TYPE_NAME")
+      val isAutoIncrement = columnsRS.getString("IS_AUTOINCREMENT")
+      val isNullable = columnsRS.getString("IS_AUTOINCREMENT")
+
+      println(s"Column details - columnName:$columnName, tableName:$tableName," +
+          s" schemaName:$schemaName, typeName:$typeName," +
+          s" isAutoIncrement:$isAutoIncrement, isNullable:$isNullable ")
+
+      assertEquals(matchFunction(table1), tableName)
+      assertEquals(matchFunction(schema), schemaName)
+      assertEquals(matchFunction(columnName), columnName)
+      assertEquals(matchFunction(typeName), typeName)
+      assertEquals(matchFunction(isAutoIncrement), isAutoIncrement)
+      assertEquals(matchFunction(isNullable), isNullable)
+
+
+      resultSetSize += 1
+    }
+    columnsRS.close()
+
+
+    // result set should contain only two columns matching specified column name pattern,
+    // schema name pattern and table name pattern
+    assertEquals(2, resultSetSize)
+  }
+
+  private def testGetSchemas(dbmd: DatabaseMetaData, matchFunction: String => String): Unit = {
+    var resultSetSize = 0
+    val schemaRS = dbmd.getSchemas(null, schema)
+    while (schemaRS.next) {
+      val schemaName = schemaRS.getString("TABLE_SCHEM")
+      // schemaName should be in lower case
+      assertEquals(matchFunction(schema), schemaName)
+
+      resultSetSize += 1
+    }
+    schemaRS.close()
+
+    // result set should contain only one table which belongs to app schema as we have specified
+    // schema pattern
+    assertEquals(1, resultSetSize)
+  }
+
+  private def testGetTables(dbmd: DatabaseMetaData, matchFunction: String => String): Unit = {
+    // passing schema pattern in mixed case to ensure that schema pattern handling is
+    // case-insensitive
+    val tableRS = dbmd.getTables(null, schema, table1,
+      Array[String]("TABLE"))
+
+    var resultSetSize = 0
+    while (tableRS.next) {
+      // making sure that column data can be retrieved with lower case column name
+      val tableName = tableRS.getString("table_name")
+      val schemaName = tableRS.getString("TABLE_SCHEM")
+      val tableType = tableRS.getString("TABLE_TYPE")
+      val remarks = tableRS.getString("REMARKS")
+
+      // tableName and schemaName should be in lower case
+      assertEquals(matchFunction(table1), tableName)
+      assertEquals(matchFunction(schema), schemaName)
+      assertEquals(matchFunction(tableType), tableType)
+      assertEquals(matchFunction(remarks), remarks)
+
+      resultSetSize += 1
+    }
+    tableRS.close()
+
+    // result set should contain only one table matching the specified table name and schema
+    // pattern
+    assertEquals(1, resultSetSize)
+  }
+
+  private def cleanup(conn: Connection): Unit = {
+    val stmt = conn.createStatement()
+    try {
+      stmt.execute("drop table " + table1)
+      stmt.execute("drop table " + table2)
+      stmt.execute("drop table " + table3)
+      stmt.execute("drop schema " + schema)
+    } catch {
+      case _: Throwable => // ignore
+    }
+    finally {
+      stmt.close()
+    }
+    conn.close()
   }
 }
