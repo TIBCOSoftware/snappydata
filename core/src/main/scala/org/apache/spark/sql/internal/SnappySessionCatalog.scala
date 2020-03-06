@@ -58,8 +58,8 @@ import org.apache.spark.util.MutableURLClassLoader
  */
 trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
 
-  val snappyExternalCatalog: SnappyExternalCatalog
-  val globalTempManager: GlobalTempViewManager
+  def snappyExternalCatalog: SnappyExternalCatalog
+  def globalTempManager: GlobalTempViewManager
   val functionResourceLoader: FunctionResourceLoader
   val functionRegistry: FunctionRegistry
   val snappySession: SnappySession

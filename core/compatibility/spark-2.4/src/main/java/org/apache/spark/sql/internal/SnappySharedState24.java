@@ -16,14 +16,16 @@
  */
 package org.apache.spark.sql.internal;
 
+import io.snappydata.sql.catalog.SnappyExternalCatalog;
 import org.apache.spark.SparkContext;
+import org.apache.spark.sql.SnappySession;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalogEvent;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalogEventListener;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalogWithListener;
 
 public final class SnappySharedState24 extends SnappySharedState {
 
-  private final ExternalCatalogWithListener catalogWrapper;
+  private volatile ExternalCatalogWithListener catalogWrapper;
 
   SnappySharedState24(SparkContext sparkContext) {
     super(sparkContext);
@@ -39,8 +41,21 @@ public final class SnappySharedState24 extends SnappySharedState {
           sparkContext().listenerBus().post(event);
         }
       });
+    }
+  }
+
+  @Override
+  public SnappyExternalCatalog getExternalCatalogInstance(SnappySession session) {
+    if (this.embedCatalog != null) {
+      return super.getExternalCatalogInstance(session);
     } else {
-      this.catalogWrapper = null;
+      synchronized (this) {
+        SnappyExternalCatalog catalog = super.getExternalCatalogInstance(session);
+        if (this.catalogWrapper == null) {
+          this.catalogWrapper = new ExternalCatalogWithListener(catalog);
+        }
+        return catalog;
+      }
     }
   }
 

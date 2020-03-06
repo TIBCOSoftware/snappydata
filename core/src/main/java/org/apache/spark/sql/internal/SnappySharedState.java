@@ -50,6 +50,14 @@ public abstract class SnappySharedState extends SharedState {
   final SnappyHiveExternalCatalog embedCatalog;
 
   /**
+   * An instance of ExternalCatalog implementation used for SnappyData in connector mode.
+   *
+   * Note that this is only to satisfy some calls like from globalTempViewManager that
+   * require a global instance else all normal calls should use SnappySessionCatalog.
+   */
+  private volatile SnappyExternalCatalog connectorCatalog;
+
+  /**
    * Used to skip initializing meta-store in super's constructor.
    */
   protected final boolean initialized;
@@ -124,10 +132,16 @@ public abstract class SnappySharedState extends SharedState {
     } else if (this.embedCatalog != null) {
       return this.embedCatalog;
     } else {
-      // create a new connector catalog instance for connector mode
-      // each instance has its own set of credentials for authentication
-      return SparkSupport$.MODULE$.internals(session.sparkContext())
-          .newSmartConnectorExternalCatalog(session);
+      synchronized (this) {
+        // create a new connector catalog instance for connector mode
+        // each instance has its own set of credentials for authentication
+        SnappyExternalCatalog catalog = SparkSupport$.MODULE$.internals(session.sparkContext())
+            .newSmartConnectorExternalCatalog(session);
+        if (this.connectorCatalog == null) {
+          this.connectorCatalog = catalog;
+        }
+        return catalog;
+      }
     }
   }
 
@@ -144,7 +158,7 @@ public abstract class SnappySharedState extends SharedState {
   protected ExternalCatalog getExternalCatalog() {
     if (this.initialized) {
       // noinspection RedundantCast
-      return (ExternalCatalog)this.embedCatalog;
+      return (ExternalCatalog)(this.embedCatalog != null ? this.embedCatalog : connectorCatalog);
     } else {
       // in super constructor, no harm in returning super's value at this point
       return super.externalCatalog();

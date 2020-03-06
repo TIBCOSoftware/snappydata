@@ -33,6 +33,7 @@ import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.types.TypeId
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
+import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
@@ -689,7 +690,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc)
   /** Close the session which will be unusable after this call. */
   override def close(): Unit = synchronized {
     clear()
-    externalCatalog.close()
+    externalCatalog match {
+      case c: SmartConnectorExternalCatalog => c.close()
+      case _ => // nothing for global embedded catalog
+    }
   }
 
   /**

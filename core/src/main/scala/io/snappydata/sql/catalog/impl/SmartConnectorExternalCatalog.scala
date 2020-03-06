@@ -56,8 +56,17 @@ abstract class SmartConnectorExternalCatalog extends SnappyExternalCatalog {
       .asInstanceOf[ThinClientConnectorMode].url
 
   @GuardedBy("this")
-  private[this] var connectorHelper: SmartConnectorHelper =
-    new SmartConnectorHelper(session, jdbcUrl)
+  private[this] var _connectorHelper: SmartConnectorHelper = _
+
+  @GuardedBy("this")
+  private[this] def connectorHelper: SmartConnectorHelper = {
+    val helper = _connectorHelper
+    if (helper ne null) helper
+    else {
+      _connectorHelper = new SmartConnectorHelper(session, jdbcUrl)
+      _connectorHelper
+    }
+  }
 
   protected[catalog] def helper: SmartConnectorHelper = connectorHelper
 
@@ -67,8 +76,8 @@ abstract class SmartConnectorExternalCatalog extends SnappyExternalCatalog {
     } catch {
       case e: SQLException if isConnectionException(e) =>
         // attempt to create a new connection
-        connectorHelper.close()
-        connectorHelper = new SmartConnectorHelper(session, jdbcUrl)
+        if (_connectorHelper ne null) _connectorHelper.close()
+        _connectorHelper = new SmartConnectorHelper(session, jdbcUrl)
         function
     }
   }

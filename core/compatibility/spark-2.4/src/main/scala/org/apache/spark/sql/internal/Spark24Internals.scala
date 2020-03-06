@@ -435,13 +435,15 @@ class SmartConnectorExternalCatalog24(override val session: SparkSession)
 
 class SnappySessionCatalog24(override val snappySession: SnappySession,
     override val snappyExternalCatalog: SnappyExternalCatalog,
-    override val globalTempManager: GlobalTempViewManager,
     override val functionResourceLoader: FunctionResourceLoader,
     override val functionRegistry: FunctionRegistry, override val parser: SnappySqlParser,
     override val sqlConf: SQLConf, hadoopConf: Configuration,
     override val wrappedCatalog: Option[SnappySessionCatalog])
-    extends SessionCatalog(() => snappyExternalCatalog, () => globalTempManager, functionRegistry,
-      sqlConf, hadoopConf, parser, functionResourceLoader) with SnappySessionCatalog23_4 {
+    extends SessionCatalog(() => snappyExternalCatalog,
+      () => snappySession.sharedState.globalTempViewManager, functionRegistry, sqlConf,
+      hadoopConf, parser, functionResourceLoader) with SnappySessionCatalog23_4 {
+
+  override def globalTempManager: GlobalTempViewManager = globalTempViewManager
 
   override protected def baseCreateTable(table: CatalogTable, ignoreIfExists: Boolean,
       validateTableLocation: Boolean): Unit = {
@@ -467,7 +469,6 @@ class SnappySessionStateBuilder24(session: SnappySession, parentState: Option[Se
     new SnappySessionCatalog24(
       session,
       externalCatalog,
-      session.sharedState.globalTempViewManager,
       resourceLoader,
       functionRegistry,
       sqlParser,
