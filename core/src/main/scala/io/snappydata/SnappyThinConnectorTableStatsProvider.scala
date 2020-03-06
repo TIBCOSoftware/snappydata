@@ -53,10 +53,10 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
         }
       case None => ""
     }
-    val jdbcOptions = new JDBCOptions(_url + securePart + ";route-query=false;", "",
+    val jdbcOptions = new JDBCOptions(_url + securePart + ";route-query=false;", "sys.tablestats",
       Map("driver" -> Constant.JDBC_CLIENT_DRIVER))
     conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
-    getStatsStmt = conn.prepareStatement("select * from sys.TABLESTATS")
+    getStatsStmt = conn.prepareStatement("select * from sys.tablestats")
   }
 
   def start(sc: SparkContext, url: String): Unit = {

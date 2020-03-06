@@ -38,11 +38,19 @@ dependencies {
   compileOnly 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
   compileOnly 'org.slf4j:jul-to-slf4j:' + slf4jVersion
 
-  compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkCompatVersion}")
-  compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkCompatVersion}")
-  compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkCompatVersion}")
-  compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkCompatVersion}")
-  compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkCompatVersion}")
+  if (System.properties.containsKey('ideaBuild') && new File(rootDir, 'spark/build.gradle').exists()) {
+    compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
+  } else {
+    compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkCompatVersion}")
+    compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkCompatVersion}")
+    compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkCompatVersion}")
+    compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkCompatVersion}")
+    compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkCompatVersion}")
+  }
 
   compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
 

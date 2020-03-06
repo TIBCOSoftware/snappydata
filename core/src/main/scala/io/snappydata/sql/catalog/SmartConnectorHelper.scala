@@ -34,15 +34,17 @@ import io.snappydata.{Constant, Property}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.collection.{SharedUtils, SmartExecutorBucketPartition, Utils}
+import org.apache.spark.sql.collection.{SharedUtils, SmartExecutorBucketPartition}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JDBCOptions, JdbcUtils}
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.{Logging, Partition, SparkContext, SparkEnv}
 
 class SmartConnectorHelper(session: SparkSession, jdbcUrl: String) extends Logging {
 
   private val conn: Connection = {
-    val jdbcOptions = new JDBCOptions(jdbcUrl + getSecurePart + ";route-query=false;", "",
+    val jdbcOptions = new JDBCOptions(jdbcUrl + getSecurePart + ";route-query=false;",
+      JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME,
       Map("driver" -> Constant.JDBC_CLIENT_DRIVER))
     JdbcUtils.createConnectionFactory(jdbcOptions)()
   }
