@@ -68,9 +68,17 @@ dependencies {
     testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
   }
 
-  compile project(':snappy-store:snappydata-store-client')
-  compile project(':snappy-store:snappydata-store-core')
-  compile project(':snappy-store:snappydata-store-tools')
+  if (new File(rootDir, 'store/build.gradle').exists()) {
+    compile project(':snappy-store:snappydata-store-client')
+    compile project(':snappy-store:snappydata-store-core')
+    compile project(':snappy-store:snappydata-store-tools')
+    testCompile project(path: ':snappy-store:snappydata-store-tools', configuration: 'testOutput')
+  } else {
+    compile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
+    compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
+    compile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion
+    testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
+  }
   compile project(":snappy-jdbc_${scalaBinaryVersion}")
   compile project(":snappy-encoders_${scalaBinaryVersion}")
 
@@ -79,7 +87,6 @@ dependencies {
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
   testCompile project(compatProjectName)
-  testCompile project(path: ':snappy-store:snappydata-store-tools', configuration: 'testOutput')
 
   testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
