@@ -889,4 +889,22 @@ object SQLFunctionsUtils {
   val select_RowTbl_assert_true: String = "SELECT " + "assert_true(i1 > i2) FROM " + rowTbl
   val dropColTbl_assert_true : String = dropTbl  + columnTbl
   val dropRowTbl_assert_true : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  115.  input_file_name
+    *  Before merge this to master, change the path to colo machines rather than
+    *  local machine.
+    */
+  val externalTbl : String = "CREATE EXTERNAL TABLE staging_regions USING CSV" +
+    " OPTIONS(PATH 'file:////home/cbhatt/NW_1GB/NW_1GB/regions.csv',header 'true')"
+  val manageTblCol : String = "CREATE TABLE snappy_regions_col" +  " USING COLUMN" +
+    " OPTIONS(BUCKETS '10') AS SELECT * FROM staging_regions"
+  val manageTblRow : String = "CREATE TABLE snappy_regions_row" + " USING ROW" +
+    " AS SELECT * FROM staging_regions"
+  val input_file_name_colTbl : String = "SELECT regionID,regiondescription," +
+    "input_file_name() AS filename FROM snappy_regions_col"
+  val input_file_name_RowTbl : String = "SELECT regionID,regiondescription," +
+    "input_file_name() AS filename FROM snappy_regions_row"
+  val input_file_name_externaTbl : String = "SELECT regionID,regiondescription," +
+    "input_file_name() AS filename FROM staging_regions"
 }

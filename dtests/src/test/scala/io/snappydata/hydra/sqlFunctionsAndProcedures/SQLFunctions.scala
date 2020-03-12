@@ -766,6 +766,22 @@ class SQLFunctions extends SnappySQLJob {
     dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_printf_md5, SQLFunctionsUtils.
       dropRowTbl_printf_md5, SQLFunctionsUtils.dropColTbl_printf_md5,
       SQLFunctionsUtils.dropRowTbl_printf_md5)
+    /**
+      *  Below  segment test the function: 115. input_file_name
+      */
+    snc.sql(SQLFunctionsUtils.externalTbl)
+    snc.sql(SQLFunctionsUtils.manageTblCol)
+    snc.sql(SQLFunctionsUtils.manageTblRow)
+    val input_file_name_colTbl = snc.sql(SQLFunctionsUtils.input_file_name_colTbl).collect()
+    val input_file_name_rowTbl = snc.sql(SQLFunctionsUtils.input_file_name_RowTbl).collect()
+    val input_file_name_externalTbl =
+      snc.sql(SQLFunctionsUtils.input_file_name_externaTbl).collect()
+    pw.println(input_file_name_colTbl.mkString(","))
+    pw.println(input_file_name_rowTbl.mkString(","))
+    pw.println(input_file_name_externalTbl.mkString(","))
+    snc.sql("DROP TABLE IF EXISTS snappy_regions_col")
+    snc.sql("DROP TABLE IF EXISTS snappy_regions_row")
+    snc.sql("DROP TABLE IF EXISTS staging_regions")
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
