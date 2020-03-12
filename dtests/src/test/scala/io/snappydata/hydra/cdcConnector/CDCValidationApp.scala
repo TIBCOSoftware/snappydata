@@ -138,24 +138,6 @@ object CDCValidationApp {
           }
 
           if (flag.equals(2.toString)) {
-
-            //Do full resultSet validation:
-            pw.println()
-            pw.println("=============================================ResultSet Validation ==================================================")
-            val rndNo = new Random()
-            val idVal = rndNo.nextInt(endRange) + 10
-            var num = rndNo.nextInt(5)
-            if(num == 0) {
-              num += 1
-            }
-            val sqlTab = "[testdatabase].[dbo].[" + tableName + num + "]"
-            val sqlQ = "SELECT * FROM "+ sqlTab +" WHERE "+ idNameArr(j) +" = " + idVal
-            System.out.println("The sql query is " + sqlQ)
-            val snappyQ = "SELECT * FROM "+ tableName +" WHERE "+ idNameArr(j) +" = " + idVal
-            System.out.println("The snappy query is "+ snappyQ)
-            checkDataConsistency(endRange)
-            //fullResultSetValidation(snc, connection, sqlQ, snappyQ, pw)
-            pw.println("=====================================================================================================================")
             // Match the difference :
             pw.println("=================================================Count Validation=====================================================")
             pw.println("For table " + tableName + " Present sqlServer cnt = " + sqlServerTableCnt + " Previous sqlServer cnt " + sqlServerTableCnt1Arr(j))
@@ -172,6 +154,19 @@ object CDCValidationApp {
                   + sqlServerTableCnt + " and snappytable has " + snappyTableCnt)
             }
             pw.println("=====================================================================================================================")
+
+            //Do full resultSet validation:
+            pw.println()
+            pw.println("=============================================ResultSet Validation ==================================================")
+         /*   val rndNo = new Random()
+            val idVal = rndNo.nextInt(10) //+ startRange
+            val sqlQ = "SELECT * FROM "+ sqlTable +" WHERE "+ idNameArr(j) +" = " + idVal
+            System.out.println("The sql query is " + sqlQ)
+            val snappyQ = "SELECT * FROM "+ tableName +" WHERE "+ idNameArr(j) +" = " + idVal
+            System.out.println("The snappy query is "+ snappyQ)
+            fullResultSetValidation(snc, connection, sqlQ, snappyQ, pw)*/
+            pw.println("=====================================================================================================================")
+
             pw.println()
           }
         }
