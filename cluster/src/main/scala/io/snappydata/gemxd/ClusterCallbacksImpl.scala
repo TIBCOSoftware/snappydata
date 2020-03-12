@@ -17,15 +17,14 @@
 package io.snappydata.gemxd
 
 import java.io.{File, InputStream}
+import java.util.{Iterator => JIterator}
 import java.{lang, util}
 import java.util.{List, Iterator => JIterator}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Try
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemFireCacheImpl}
 import com.gemstone.gemfire.internal.shared.Version
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ClassPathLoader, GemFireVersion}
 import com.pivotal.gemfirexd.Attribute
@@ -38,6 +37,8 @@ import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 import io.snappydata.recovery.RecoveryService
 import io.snappydata.remote.interpreter.SnappyInterpreterExecute
+import io.snappydata.sql.catalog.CatalogObjectType
+import io.snappydata.util.ServiceUtils
 import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
@@ -45,6 +46,9 @@ import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.{Row, SaveMode}
+import org.apache.spark.sql.catalyst.catalog.CatalogTable
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -52,6 +56,8 @@ import org.apache.spark.sql.{Row, SaveMode}
 object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   CallbackFactoryProvider.setClusterCallbacks(this)
+
+  private val PASSWORD_MATCH = "(?i)(password|passwd|secret).*".r
 
   private[snappydata] def initialize(): Unit = {
     // nothing to be done; singleton constructor does all
@@ -263,6 +269,37 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
         }
       case _ =>
     }
+  }
+
+  override def getHiveTablesMetadata():
+  util.Collection[ExternalTableMetaData] = {
+    val catalogTables = SnappyContext.getHiveCatalogTables()
+    import scala.collection.JavaConverters._
+    getTablesMetadata(catalogTables).asJava
+  }
+
+  private def getTablesMetadata(catalogTables: Seq[CatalogTable]): Seq[ExternalTableMetaData] = {
+    catalogTables.map(catalogTableToMetadata)
+  }
+
+  private def catalogTableToMetadata(table: CatalogTable) = {
+    val tableType = CatalogObjectType.getTableType(table)
+    val tblDataSourcePath = table.storage.locationUri match {
+      case None => ""
+      case Some(l) => ServiceUtils.maskLocationURI(l)
+    }
+
+    val metaData = new ExternalTableMetaData(table.identifier.table,
+      table.database, tableType.toString, null, -1,
+      -1, null, null, null, null,
+      tblDataSourcePath, "", false)
+    metaData.provider = table.provider match {
+      case None => ""
+      case Some(p) => p
+    }
+    metaData.shortProvider = metaData.provider
+    metaData.columns = ExternalStoreUtils.getColumnMetadata(table.schema)
+    metaData
   }
 
   override def getInterpreterExecution(sql: String, v: Version,

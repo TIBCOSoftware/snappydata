@@ -37,6 +37,7 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.engine.store.GemFireStore.StoreAdvisee
 import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog}
 import io.snappydata.util.ServiceUtils
@@ -49,6 +50,7 @@ import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd, SparkListenerExecutorAdded}
 import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
+import org.apache.spark.sql.catalyst.catalog.CatalogTable
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -874,6 +876,12 @@ object SnappyContext extends Logging {
     }
   }
 
+  def getHiveCatalogTables(skipSchemas: Seq[String] = "SYS" :: Nil): Seq[CatalogTable] = {
+    val catalog = hiveSession.sessionState.catalog
+    catalog.listDatabases().filter(s => skipSchemas.isEmpty || !skipSchemas.contains(s)).
+        flatMap(schema => catalog.listTables(schema).map(table => catalog.getTableMetadata(table)))
+  }
+
   private[spark] def getBlockIdIfNull(
       executorId: String): Option[BlockAndExecutorId] =
     Option(storeToBlockMap.get(executorId))
@@ -1190,7 +1198,7 @@ object SnappyContext extends Logging {
   def newHiveSession(): SparkSession = contextLock.synchronized {
     val sc = globalSparkContext
     sc.conf.set(StaticSQLConf.CATALOG_IMPLEMENTATION.key, "hive")
-    if (this.hiveSession ne null) this.hiveSession.newSession()
+    val hiveSession = if (this.hiveSession ne null) this.hiveSession.newSession()
     else {
       val session = SparkSession.builder().enableHiveSupport().getOrCreate()
       if (session.sharedState.externalCatalog.isInstanceOf[HiveExternalCatalog] &&
@@ -1203,6 +1211,14 @@ object SnappyContext extends Logging {
         this.hiveSession
       }
     }
+    updateAndDistributeProfile()
+    hiveSession
+  }
+
+  private def updateAndDistributeProfile(): Unit = {
+    val advisee = GemFireXDUtils.getGfxdAdvisor.getAdvisee.asInstanceOf[StoreAdvisee]
+    advisee.setHiveSessionInitialized(true)
+    GemFireXDUtils.getGfxdAdvisor.distributeProfileUpdate()
   }
 
   def hasHiveSession: Boolean = contextLock.synchronized(this.hiveSession ne null)

@@ -41,6 +41,7 @@ import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.sql.catalog.SnappyExternalCatalog.checkSchemaPermission
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, SnappyExternalCatalog}
 import io.snappydata.thrift._
+import io.snappydata.util.ServiceUtils
 import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.sql.catalyst.TableIdentifier
@@ -511,33 +512,17 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       }
     }
 
-    private def maskPassword(s: String): String = {
-      SnappyExternalCatalog.PASSWORD_MATCH.replaceAllIn(s, "xxx")
-    }
-
-    // Mask access key and secret access key in case of S3 URI
-    private def maskLocationURI(locURI: String): String = {
-      val uri = toLowerCase(locURI)
-      val maskedSrcPath = if ((uri.startsWith("s3a://") ||
-          uri.startsWith("s3://") ||
-          uri.startsWith("s3n://")) && uri.contains("@")) {
-        locURI.replace(locURI.slice(locURI.indexOf("//") + 2,
-          locURI.indexOf("@")), "****:****")
-      } else maskPassword(locURI)
-      maskedSrcPath
-    }
-
     // latest change is here - mask it here - include s3 masking here too
     private def getDataSourcePath(properties: scala.collection.Map[String, String],
         storage: CatalogStorageFormat): String = {
       properties.get("path") match {
-        case Some(p) if !p.isEmpty => maskLocationURI(p)
+        case Some(p) if !p.isEmpty => ServiceUtils.maskLocationURI(p)
         case _ => properties.get("region.path") match { // for external GemFire connector
-          case Some(p) if !p.isEmpty => maskLocationURI(p)
+          case Some(p) if !p.isEmpty => ServiceUtils.maskLocationURI(p)
           case _ => properties.get("url") match { // jdbc
             case Some(p) if !p.isEmpty =>
               // mask the password if present
-              val url = maskLocationURI(p)
+              val url = ServiceUtils.maskLocationURI(p)
               // add dbtable if present
               properties.get(SnappyExternalCatalog.DBTABLE_PROPERTY) match {
                 case Some(d) if !d.isEmpty => s"$url; ${SnappyExternalCatalog.DBTABLE_PROPERTY}=$d"
@@ -545,7 +530,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
               }
             case _ => storage.locationUri match { // fallback to locationUri
               case None => ""
-              case Some(l) => maskLocationURI(l)
+              case Some(l) => ServiceUtils.maskLocationURI(l)
             }
           }
         }
