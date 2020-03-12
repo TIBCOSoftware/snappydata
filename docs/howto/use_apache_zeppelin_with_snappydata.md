@@ -5,11 +5,13 @@ Do the following to use Apache Zeppelin with SnappyData:
 
 1.	[Download and Install SnappyData](/install/install_on_premise.md). The install zip for computeDB contains the Apache Zeppelin zip folder. 
 2.	[Configure the SnappyData Cluster](/configuring_cluster/configuring_cluster.md).
-3.	Unzip the Apache Zeppelin artifact<name>.
-4.	Change to **Zeppelin** directory and start Zeppelin.
-			cd Zeppelin directory
-			./bin/zeppelin-daemon.sh start
-5.	Go to localhost:8080 or (AWS-AMI_PublicIP):8080.
+3. Unzip the Apache Zeppelin artifact **zeppelin-0.8.2-snappydata-1.2.0.zip**. Change to the directory **zeppelin-0.8.2-snappydata-1.2.0** and start Apache Zeppelin server.
+
+        $ unzip zeppelin-0.8.2-snappydata-1.2.0.zip
+        $ cd zeppelin-0.8.2-snappydata-1.2.0/
+		$ ./bin/zeppelin-daemon.sh start
+
+5.	Enter this URL in the browser: localhost:8080 or (AWS-AMI_PublicIP):8080.
 
 ![homepage](../Images/zeppelin.png)
 
@@ -54,7 +56,7 @@ Refer [here](concurrent_apache_zeppelin_access_to_secure_snappydata.md) for inst
 
     | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
 	|--------|--------|--------|
-    |[Version 0.7.3.6](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.6) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.1.1](https://edelivery.tibco.com)|
+    |[Version 0.7.3.6](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.6) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.2.0](https://edelivery.tibco.com)|
 
 2. [Configure the SnappyData Cluster](../configuring_cluster/configuring_cluster.md).
 

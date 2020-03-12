@@ -320,11 +320,11 @@ public class SnappyCDCTest extends SnappyTest {
         ResultSet rs3 = con.createStatement().executeQuery(cntQry);
         while (rs3.next()) {
           count = rs3.getLong(1);
-          Log.getLogWriter().info("SP: The tableName = " + tableName + " count = " + count);
+          Log.getLogWriter().info("The tableName = " + tableName + " count = " + count);
         }
         if(!tableCntMap.containsKey(tableName)) //To avoid overwriting the existing key(table)
         {
-          Log.getLogWriter().info("SP: Inserting in the table as " + tableName + " not in the map" );
+          Log.getLogWriter().info("Inserting in the table as " + tableName + " not in the map" );
           tableCntMap.put(tableName, count);
         }
           rs3.close();
@@ -533,7 +533,6 @@ public class SnappyCDCTest extends SnappyTest {
 
   public void runIngestionApp() {
     try {
-    //  CDCIngestionApp app = new CDCIngestionApp();
       Integer threadCnt = SnappyCDCPrms.getThreadCnt();
       Integer sRange = SnappyCDCPrms.getInitStartRange();
       Integer eRange = SnappyCDCPrms.getInitEndRange();
@@ -550,6 +549,8 @@ public class SnappyCDCTest extends SnappyTest {
     String curlCmd = null;
     ProcessBuilder pb = null;
     String appName = SnappyCDCPrms.getAppName();
+    int noOfApps = 5;
+    Boolean isResubmitApp = SnappyCDCPrms.getIsResubmitApp();
     String logFileName = "sparkStreamingStopResult_" + System.currentTimeMillis() + ".log";
     File log = null;
     File logFile = null;
@@ -559,13 +560,19 @@ public class SnappyCDCTest extends SnappyTest {
     try {
       InetAddress myHost = InetAddress.getLocalHost();
       String hostName[] = myHost.toString().split("/");
-      curlCmd = "curl -d \"name=" + appName + "&terminate=true\" -X POST http://" + hostName[0] + ":8080/app/killByName/";
-      Log.getLogWriter().info("The curlCmd  is " + curlCmd);
-      pb = new ProcessBuilder("/bin/bash", "-c", curlCmd);
-      log = new File(".");
-      String dest = log.getCanonicalPath() + File.separator + logFileName;
-      logFile = new File(dest);
-      snappyTest.executeProcess(pb, logFile);
+      for (int i = 1; i <= noOfApps; i++) {
+        curlCmd = "curl -d \"name=" + appName + i + "&terminate=true\" -X POST http://" + hostName[0] + ":8080/app/killByName/";
+        Log.getLogWriter().info("The curlCmd  is " + curlCmd);
+        pb = new ProcessBuilder("/bin/bash", "-c", curlCmd);
+        log = new File(".");
+        String dest = log.getCanonicalPath() + File.separator + logFileName + "i";
+        logFile = new File(dest);
+        snappyTest.executeProcess(pb, logFile);
+      }
+      if (isResubmitApp) {
+        Log.getLogWriter().info("Resubmitting the app " + appName);
+        HydraTask_executeSparkJob();
+      }
     } catch (Exception ex) {
       Log.getLogWriter().info("Exception in HydraTask_closeStreamingJob() " + ex.getMessage());
     }
@@ -774,7 +781,7 @@ public class SnappyCDCTest extends SnappyTest {
     try {
       String dirName = "vm_2_snappyStore1_"+nodeName;
       String dirPath = getCurrentDirPath() + File.separator + dirName;
-      Log.getLogWriter().info("SP:The dir path is " + dirPath);
+      Log.getLogWriter().info("The dir path is " + dirPath);
       File dir = new File(dirPath);
 
       String[] extensions = new String[]{"crf", "drf", "krf", "idxkrf", "if"};
