@@ -96,7 +96,8 @@ CREATE TABLE ORDERS_DETAILS1
              IOI_PRICE DECIMAL(28, 10) ,TGT_PRICE DECIMAL(28, 10) ,IOI_QTY VARCHAR(64) ,IOI_ORDER_QTY DECIMAL(28, 4) ,CMSN VARCHAR(64) ,SYS_LEG_REF_ID VARCHAR(64) ,
              TRADING_TYPE VARCHAR(4) ,EXCH_ORDER_ID VARCHAR(64) ,DEAL_ID VARCHAR(64) ,ORDER_TRD_TYPE VARCHAR(4) ,CXL_REASON VARCHAR(64))
              USING column OPTIONS (partition_by 'SINGLE_ORDER_DID', redundancy '1',buckets '32');
-INSERT INTO ORDERS_DETAILS1 SELECT * FROM staging_orders_details;
+INSERT INTO ORDERS_DETAILS1 SELECT * FROM staging_orders_details1;
+DROP table if exists staging_orders_details1;
 
 CREATE EXTERNAL TABLE staging_exec_details1 USING com.databricks.spark.csv
              OPTIONS (path ':dataLocation/EXEC_DETAILS.dat', header 'true', inferSchema 'false', nullValue 'NULL', maxCharsPerColumn '4096');
@@ -139,4 +140,5 @@ CREATE TABLE EXEC_DETAILS1(
              UNDERLYING_FX_RATE DECIMAL(18, 8),CONVERSION_RATE DECIMAL(18, 8),TRANS_COMMENT VARCHAR(256),AGGRESSOR_FLAG VARCHAR(1))
              USING column OPTIONS (partition_by 'EXEC_DID', redundancy '1', buckets '32');
 
-INSERT INTO EXEC_DETAILS1 SELECT * FROM staging_exec_details;
+INSERT INTO EXEC_DETAILS1 SELECT * FROM staging_exec_details1;
+DROP TABLE IF EXISTS staging_exec_details1;
