@@ -1688,7 +1688,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
       stmt.execute(s"ALTER TABLE $fqtn DROP COLUMN c2")
       stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 2")
       stmt.execute(s"DELETE FROM $fqtn WHERE c1 = 5")
-      stmt.execute(s"ALTER TABLE $fqtn ADD COLUMN c2 integer")
+      stmt.execute(s"ALTER TABLE $fqtn ADD COLUMN c4 integer")
       stmt.execute(s"INSERT INTO $fqtn VALUES (9, 99, 999)")
 
       // 10: null and not null complex types 2 buckets no alter
