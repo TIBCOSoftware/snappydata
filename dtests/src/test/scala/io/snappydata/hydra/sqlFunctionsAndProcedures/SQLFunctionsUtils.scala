@@ -821,6 +821,7 @@ object SQLFunctionsUtils {
   /**
     *  Below queries test the functions :
     *  110. approx_count_dist, 111. mean
+    *   116. cume_dist, 117. percent_rank
     */
   val approxcntdist_mean = new Array[String](10)
   approxcntdist_mean(0) = "('James','Sales',3000)"
@@ -845,6 +846,15 @@ object SQLFunctionsUtils {
     "approx_count_distinct(salary),mean(salary),approx_count_distinct(department) FROM " + columnTbl
   val select_RowTbl_approxcntdist_mean: String = "SELECT " +
     "approx_count_distinct(salary),mean(salary),approx_count_distinct(department) FROM " + rowTbl
+  /**
+    *   116. cume_dist, 117. percent_rank
+    */
+  val select_ColTbl_cumedist_prank : String = "SELECT *," +
+    "cume_dist() OVER(PARTITION BY department ORDER BY salary) cume_dist," +
+    "percent_rank() OVER(PARTITION BY department ORDER BY salary) percent_rank FROM " + columnTbl
+  val select_RowTbl_cumedist_prank: String = "SELECT *," +
+    "cume_dist() OVER(PARTITION BY department ORDER BY salary) cume_dist," +
+    "percent_rank() OVER(PARTITION BY department ORDER BY salary) percent_rank FROM " + rowTbl
   val dropColTbl_approxcntdist_mean : String = dropTbl  + columnTbl
   val dropRowTbl_approxcntdist_mean : String = dropTbl + rowTbl
   /**

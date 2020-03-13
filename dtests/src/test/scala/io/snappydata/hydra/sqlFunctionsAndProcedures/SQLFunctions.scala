@@ -670,7 +670,8 @@ class SQLFunctions extends SnappySQLJob {
         dropColTbl_grouping_grouping_id, SQLFunctionsUtils.dropRowTbl_grouping_grouping_id)
     /**
       *  Below queries test the functions :
-      *  110. approx_count_dist, 111. mean
+      *  110. approx_count_dist, 111. mean,
+      *   116. cume_dist, 117. percent_rank
       */
     createTables(SQLFunctionsUtils.createColTypeTbl_approxcntdist_mean_Spark,
       SQLFunctionsUtils.createRowTypeTbl_approxcntdist_mean_Spark,
@@ -680,6 +681,12 @@ class SQLFunctions extends SnappySQLJob {
     validateResult(SQLFunctionsUtils.select_ColTbl_approxcntdist_mean,
       SQLFunctionsUtils.select_RowTbl_approxcntdist_mean, "Q67_approxcntdist_mean",
       "Q68_approxcntdist_mean")
+    /**
+      *  116. cume_dist, 117. percent_rank
+      */
+    validateResult(SQLFunctionsUtils.select_ColTbl_cumedist_prank,
+      SQLFunctionsUtils.select_RowTbl_cumedist_prank, "Q74_cumedist_percentrank",
+    "Q75_cumedist_percentrank")
     dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_approxcntdist_mean, SQLFunctionsUtils.
       dropRowTbl_approxcntdist_mean, SQLFunctionsUtils.dropColTbl_approxcntdist_mean,
       SQLFunctionsUtils.dropRowTbl_approxcntdist_mean)
