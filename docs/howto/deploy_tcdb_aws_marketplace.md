@@ -48,6 +48,10 @@ If your cluster has security enabled, the credentials required for your Notebook
 To modify SnappySession APIs in the Notebooks, do the following:
 
 1.	From the **Notebook** dropdown, select **ComputeDB API Quickstart** Notebook.
+	
+    !!!Note
+    	You must clone this notebook before you run its paragraphs. 
+
 2.	Go to **Step 1**, where the SnappySession instance is created and add the following lines after the initialization:
 
 	    	snappyNoteSession.conf.set(“user”, “snappyuser”)
