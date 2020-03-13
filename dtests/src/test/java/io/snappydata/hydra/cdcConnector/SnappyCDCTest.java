@@ -377,6 +377,8 @@ public class SnappyCDCTest extends SnappyTest {
 
   public void getResultSet(Connection conn, Boolean isBeforeRestart, String fileName) {
     SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
+    Boolean isFirstCluster = SnappyCDCPrms.getIsFirstClusterForCPDE();
+    Boolean isCPDE = SnappyCDCPrms.getIsCPDE();
     String logFile = getCurrentDirPath()+ File.separator + "queryResultFiles";
     File queryResultDir = new File(logFile);
     if (!queryResultDir.exists()) queryResultDir.mkdir();
@@ -385,7 +387,10 @@ public class SnappyCDCTest extends SnappyTest {
       ArrayList<String> queryList = getQueryList(fileName);
       for (int i = 0; i < queryList.size(); i++) {
         if (isBeforeRestart) {
-          outputFile = logFile + File.separator + "beforeRestartResultSet_query_" + i + ".out";
+          if(isFirstCluster)
+            outputFile = logFile + File.separator + "beforeRestartResultSet_query_firstCluster_" + i + ".out";
+           else
+            outputFile = logFile + File.separator + "beforeRestartResultSet_query_" + i + ".out";
         } else
           outputFile = logFile + File.separator + "afterRestartResultSet_query_" +System.currentTimeMillis() + "_" + i + ".out";
         String qStr = queryList.get(i);
@@ -396,7 +401,15 @@ public class SnappyCDCTest extends SnappyTest {
         snappyRS.close();
         testInstance.listToFile(snappyList, outputFile);
         if (!isBeforeRestart) {
-          String beforeRestartFileName = logFile + File.separator + "beforeRestartResultSet_query_" + i + ".out";
+          String beforeRestartFileName;
+          if(isCPDE && (i < 11)) {
+            beforeRestartFileName = logFile + File.separator + "beforeRestartResultSet_query_firstCluster_" + i + ".out";
+            Log.getLogWriter().info("SP: Inside isCPDE and i = " + i + " filename = " + beforeRestartFileName);
+          }
+          else {
+            beforeRestartFileName = logFile + File.separator + "beforeRestartResultSet_query_" + i + ".out";
+            Log.getLogWriter().info("SP: Inside NotisBeforeRestart and i = " + i + " filename = " + beforeRestartFileName);
+          }
           String mismatchStr = testInstance.compareFiles(logFile, outputFile, beforeRestartFileName, true, "query_" + i);
           if(mismatchStr.length() > 0){
             throw new TestException("Observed data mismatch in query  " + qStr);
