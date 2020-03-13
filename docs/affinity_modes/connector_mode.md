@@ -41,7 +41,7 @@ When queries are executed, while the entire query planning and execution are coo
 **Example: Launch a Spark local mode cluster and use Smart Connector to access TIBCO ComputeDB cluster**
 
 **Step 1: Start the TIBCO ComputeDB cluster**:
-You can either start TIBCO ComputeDB members using the `snappy_start_all` script or you can start them individually.
+You can either start TIBCO ComputeDB members using the `snappy-start-all` script or you can start them individually.
 
 **Step 2: Launch the Apache Spark program**
 
@@ -60,9 +60,10 @@ This opens a Scala Shell.
 
 **Step 3: Import any or all of the following:** 
 
+*	**SnappySession**
 *	**SQL Context**
 *	**SnappyContext**
-*	**SnappySession**
+
 
 ```
 import org.apache.spark.sql.{SQLContext,SnappyContext,SnappySession}
