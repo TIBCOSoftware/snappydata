@@ -917,4 +917,29 @@ object SQLFunctionsUtils {
     "input_file_name() AS filename FROM snappy_regions_row"
   val input_file_name_externaTbl : String = "SELECT regionID,regiondescription," +
     "input_file_name() AS filename FROM staging_regions"
+  /**
+    *  Below queries test the functions :
+    *  118.  regexp_extract, 119. regexp_replace
+    */
+  val regexp_extract_replace = new Array[String](3)
+  regexp_extract_replace(0) = "(100,'unix','unix@gmail.co.tt')"
+  regexp_extract_replace(1) = "(200,'windows','windows@gmail.co.tt')"
+  regexp_extract_replace(2) = "(300,'macos','macos@gmail.co.tt')"
+  val createColTypeTbl_regexp_extract_replace_Spark : String = createTbl + columnTbl +
+    "(empid int,empname string,email string)"
+  val createRowTypeTbl_regexp_extract_replace_Spark : String = createTbl + rowTbl +
+    "(empid int,empname string,email string)"
+  val createColumnTbl_regexp_extract_replace : String = createTbl + columnTbl +
+    "(empid int,empname string,email string) " + usingCol
+  val createRowTbl_regexp_extract_replace : String = createTbl + rowTbl +
+    "(empid int,empname string,email string) " + usingRow
+  val select_ColTbl_regexp_extract_replace : String = "SELECT empid,empname," +
+    "regexp_extract(email,'@(\\\\w+)') AS domain," +
+    "regexp_replace(email,'@(\\\\w+)','@tibco') AS change FROM " + columnTbl
+  val select_RowTbl_regexp_extract_replace: String = "SELECT empid,empname," +
+    "regexp_extract(email,'@(\\\\w+)') AS domain," +
+    "regexp_replace(email,'@(\\\\w+)','@tibco') AS change FROM " + rowTbl
+  val dropColTbl_regexp_extract_replace : String = dropTbl  + columnTbl
+  val dropRowTbl_regexp_extract_replace : String = dropTbl + rowTbl
+
 }

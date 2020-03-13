@@ -789,6 +789,22 @@ class SQLFunctions extends SnappySQLJob {
     snc.sql("DROP TABLE IF EXISTS snappy_regions_col")
     snc.sql("DROP TABLE IF EXISTS snappy_regions_row")
     snc.sql("DROP TABLE IF EXISTS staging_regions")
+    pw.println()
+    /**
+      *  Below queries test the functions :
+      *  118.  regexp_extract, 119. regexp_replace
+      */
+    createTables(SQLFunctionsUtils.createColTypeTbl_regexp_extract_replace_Spark,
+      SQLFunctionsUtils.createRowTypeTbl_regexp_extract_replace_Spark,
+      SQLFunctionsUtils.createColumnTbl_regexp_extract_replace,
+      SQLFunctionsUtils.createRowTbl_regexp_extract_replace)
+    insertRecordsToTable(2, SQLFunctionsUtils.regexp_extract_replace)
+    validateResult(SQLFunctionsUtils.select_ColTbl_regexp_extract_replace, SQLFunctionsUtils.
+      select_RowTbl_regexp_extract_replace, "Q76_regexp_extract_replace",
+      "Q77_regexp_extract_replace")
+    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_regexp_extract_replace, SQLFunctionsUtils.
+      dropRowTbl_regexp_extract_replace, SQLFunctionsUtils.dropColTbl_regexp_extract_replace,
+      SQLFunctionsUtils.dropRowTbl_regexp_extract_replace)
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
