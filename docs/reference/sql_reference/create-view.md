@@ -63,4 +63,4 @@ snappy> CREATE GLOBAL TEMPORARY VIEW ORDER AS SELECT ORDERID, ITEMID FROM TRADE.
 snappy> CREATE GLOBAL TEMPORARY VIEW AIRLINEVIEW USING PARQUET OPTIONS(PATH '../../QUICKSTART/DATA/AIRLINEPARQUETDATA');
 ```
 !!! Note
-	Temporary views/tables are scoped to SQL connection or the Snappy Spark session that creates it. VIEW or TABLE are synonyms in this context with the former being the preferred usage. This table does not appear in the system catalog nor visible to other connections or sessions.
+	Temporary views/tables are scoped to SQL connection or the Snappy Spark session that creates it. VIEW or TABLE are synonyms in this context with the former being the preferred usage. This table does not appear in the system catalog nor visible to other connections or sessions. To fetch the list of global temporary view use the following query:</br> `show tables in global_temp`
