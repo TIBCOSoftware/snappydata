@@ -13,12 +13,12 @@ To deploy TIBCO ComputeDB from AWS Marketplace, do the following:
 
 	| Parameters | Description |
 	|--------|--------|
-	|   **ClientCIDR**     |   The allowed CIDR IP range for client (JDBC/ODBC) connections. To access the cluster from your personal laptop, first, find your public IP address. You can go to [whatismyip.com](whatismyip.com) to get your IPv4 address and then append **/32** to it. For example, 123.201.112.0/32.     |
+	|   **ClientCIDR**     |   The allowed CIDR IP range for client (JDBC/ODBC) connections. To access the cluster from your personal laptop, first, find your public IP address. You can go to [whatismyip.com](https://whatsmyip.com/) to get your IPv4 address and then append **/32** to it. For example, 123.201.112.0/32.     |
     |    **EBSVolumeSize**    |  Specify the Amazon EBS volume size (in GB), which will be attached to the EC2 instance that gets launched. It can be any number between 16 and 1024, depending on your data volume. The TIBCO ComputeDB catalog metadata and its database are managed in this volume. |
     |  **InstanceTypeName**      |   Select one instance type from the dropdown list as per your workload requirement. For more details, refer [https://aws.amazon.com/ec2/pricing/on-demand](https://aws.amazon.com/ec2/pricing/on-demand).|
     |   **KeyPairName**     |   Select one from the dropdown list whose key file (.pem) is available with you. This is needed to connect to the EC2 instance through SSH. |
     |  **VPCID** |   Select the DEFAULT VPC ID of this region from the dropdown list. Your instance is launched within this VPC. |
-    |  **WebUICIDR**      |  The allowed CIDR IP range that can access TIBCO ComputeDB Monitoring Console. Can also be the same as ClientCIDR, for example, 123.201.112.0/32. To access the cluster from your personal laptop, first find your public IP address. You can go to [whatismyip.com](whatismyip.com) to get your IPv4 address and append **/32** to it.     |
+    |  **WebUICIDR**  |  The allowed CIDR IP range that can access TIBCO ComputeDB Monitoring Console. Can also be the same as ClientCIDR, for example, 123.201.112.0/32. To access the cluster from your personal laptop, first find your public IP address. You can go to [whatismyip.com](https://whatsmyip.com/) to get your IPv4 address and append **/32** to it.     |
 
 	!!!Note
 		On the next page, you may see the following error message if you do not have adequate permissions for AWS SNS topics:</br> `Failed to retrieve sns topics `</br>You can safely ignore this message and proceed to create the stack.
@@ -39,7 +39,7 @@ You can also view the details about the status of stack creation from the **Even
 			If your cluster is security enabled, you will be prompted for the username and password to access this console. Use **snappyuser** as the username and the EC2 instance ID as the password. You can find this instance ID on this page.
 	
 	*	**ZeppelinNotebooks**:</br>
-		Click the **ZeppelinNotebooks** URL to access the Apache Zeppelin server that is launched along with the TIBCO ComputeDB cluster. You can only access it from the machines whose IP falls in the CIDR IP range you provided as **WebUICIDR** while creating the stack. It comes with a set of sample Notebooks for you to interact with the TIBCO ComputeDB cluster. Clone the Notebook you want to run. You can also create your own Notebooks. For more detail, refer to [Using Apache Zepplin with TIBCO ComputeDB](/howto/use_apache_zeppelin_with_snappydata.md).
+		Click the **ZeppelinNotebooks** URL to access the Apache Zeppelin server that is launched along with the TIBCO ComputeDB cluster. You can only access it from the machines whose IP falls in the CIDR IP range you provided as **WebUICIDR** while creating the stack. It comes with a set of sample Notebooks for you to interact with the TIBCO ComputeDB cluster. Clone the Notebook you want to run. You can also create your own Notebooks. For more details, refer to [Using Apache Zepplin with TIBCO ComputeDB](/howto/use_apache_zeppelin_with_snappydata.md).
 
 ## Setting Credentials for SnappySession in Notebooks
 
