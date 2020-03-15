@@ -102,7 +102,7 @@ object ColumnTableBulkOps extends SparkSupport {
             }
             Join(subQuery, updateSubQuery, LeftAnti, condition)
         }
-        val insertPlan = internals.newInsertPlanWithCountOutput(table, Map.empty[String,
+        val insertPlan = internals.newInsertIntoTable(table, Map.empty[String,
             Option[String]], Project(subQuery.output, insertChild),
           overwrite = false, ifNotExists = false)
         transFormedPlan = PutIntoColumnTable(table, analyzer.execute(insertPlan), analyzedUpdate)
@@ -200,7 +200,7 @@ object ColumnTableBulkOps extends SparkSupport {
         table = UnresolvedRelation(tableIdent),
         child = ds.logicalPlan)
     } else {
-      internals.newInsertPlanWithCountOutput(
+      internals.newInsertIntoTable(
         table = UnresolvedRelation(tableIdent),
         partition = Map.empty[String, Option[String]],
         child = ds.logicalPlan,

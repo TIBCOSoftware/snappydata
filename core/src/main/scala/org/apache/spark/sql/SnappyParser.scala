@@ -1202,7 +1202,7 @@ class SnappyParser(session: SnappySession)
   protected final def insert: Rule1[LogicalPlan] = rule {
     INSERT ~ ((OVERWRITE ~ push(true)) | (INTO ~ push(false))) ~
     TABLE.? ~ baseRelation ~ queryTerm ~> ((overwrite: Boolean, r: LogicalPlan,
-        s: LogicalPlan) => internals.newInsertPlanWithCountOutput(
+        s: LogicalPlan) => internals.newInsertIntoTable(
         r, Map.empty[String, Option[String]], s, overwrite, ifNotExists = false)) |
     INSERT ~ OVERWRITE ~ LOCAL.? ~ DIRECTORY ~ ANY. + ~> (() =>
       sparkParser.parsePlan(input.sliceString(0, input.length)))

@@ -55,6 +55,10 @@ dependencies {
     if (rootProject.hasProperty('k8s')) {
       compile project(':snappy-spark:snappy-spark-kubernetes_' + scalaBinaryVersion)
     }
+    if (rootProject.hasProperty('flume')) {
+      compile project(':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion)
+      compile project(':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion)
+    }
 
     testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
         configuration: 'testOutput')
@@ -80,6 +84,10 @@ dependencies {
     }
     if (rootProject.hasProperty('k8s')) {
       compile 'io.snappydata:snappy-spark-kubernetes_' + scalaBinaryVersion + ':' + snappySparkVersion
+    }
+    if (rootProject.hasProperty('flume')) {
+      compile 'io.snappydata:snappy-spark-streaming-flume_' + scalaBinaryVersion + ':' + snappySparkVersion
+      compile 'io.snappydata:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion + ':' + snappySparkVersion
     }
 
     testCompile group: 'io.snappydata', name: 'snappy-spark-sql_' + scalaBinaryVersion,

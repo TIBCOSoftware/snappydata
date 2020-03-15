@@ -23,9 +23,15 @@ import scala.reflect.runtime.universe._
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.{Input, Output}
+import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, RowFormatter}
+import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.ColumnDescriptor
+import com.pivotal.gemfirexd.internal.impl.jdbc.Util
+import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.execution.CodegenSupport
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
 
@@ -127,6 +133,63 @@ object TypeUtilities {
         case _ => false
       }
       case _ => false
+    }
+  }
+
+  private def assertCharType(cd: ColumnDescriptor): Unit = {
+    cd.columnType.getTypeId.getTypeFormatId match {
+      case StoredFormatIds.CHAR_TYPE_ID | StoredFormatIds.LONGVARCHAR_TYPE_ID |
+           StoredFormatIds.VARCHAR_TYPE_ID | StoredFormatIds.CLOB_TYPE_ID =>
+      case _ => throw Util.generateCsSQLException(SQLState.LANG_FORMAT_EXCEPTION,
+        "UTF8String", cd.getColumnName)
+    }
+  }
+
+  private def readUTF8String(rf: RowFormatter, index: Int, bytes: Array[Byte]): UTF8String = {
+    val cd = rf.columns(index)
+    val offsetFromMap = rf.positionMap(index)
+    val offsetAndWidth = rf.getOffsetAndWidth(index, bytes, offsetFromMap, cd, false)
+    if (offsetAndWidth >= 0) {
+      val columnWidth = offsetAndWidth.toInt
+      val offset = (offsetAndWidth >>> Integer.SIZE).toInt
+      assertCharType(cd)
+      // TODO: SW: SQLChar should be full UTF8 else below is broken for > 3-character UTF8
+      UTF8String.fromAddress(bytes, Platform.BYTE_ARRAY_OFFSET + offset, columnWidth)
+    } else {
+      if (offsetAndWidth == RowFormatter.OFFSET_AND_WIDTH_IS_NULL) null
+      else {
+        assert(offsetAndWidth == RowFormatter.OFFSET_AND_WIDTH_IS_DEFAULT)
+        val defaultBytes = cd.columnDefaultBytes
+        if (defaultBytes ne null) {
+          UTF8String.fromAddress(defaultBytes, Platform.BYTE_ARRAY_OFFSET, defaultBytes.length)
+        } else null
+      }
+    }
+  }
+
+  private def readUTF8String(rf: RowFormatter, index: Int,
+      byteArrays: Array[Array[Byte]]): UTF8String = {
+    val cd = rf.columns(index)
+    if (!cd.isLob) {
+      readUTF8String(rf, index, byteArrays(0))
+    } else {
+      val offsetFromMap = rf.positionMap(index)
+      val bytes =
+        if (offsetFromMap != 0) byteArrays(offsetFromMap) else cd.columnDefaultBytes
+      if (bytes ne null) {
+        assertCharType(cd)
+        UTF8String.fromAddress(bytes, Platform.BYTE_ARRAY_OFFSET, bytes.length)
+      } else null
+    }
+  }
+
+  def readUTF8String(row: AbstractCompactExecRow, index: Int): UTF8String = {
+    val rf = row.getRowFormatter
+    row.getBaseByteSource match {
+      case bytes: Array[Byte] => readUTF8String(rf, index, bytes)
+      case byteArrays: Array[Array[Byte]] => readUTF8String(rf, index, byteArrays)
+      case s => throw new UnsupportedOperationException(
+        s"readUTF8String(AbstractCompactExecRow): unexpected source: $s")
     }
   }
 

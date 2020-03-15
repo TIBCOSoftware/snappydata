@@ -84,8 +84,17 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
       "PARTITION_BY 'Col1'," +
       "BUCKETS '1')")
 
+    // check insert statement result
+    assert(snc.sql(s"insert into $tableName values (1, 2, 3)").collect() === Array(Row(1L)))
+    assert(snc.sql(s"insert into $tableName values (1, 2, 3), (4, 5, 6)").collect() ===
+        Array(Row(2L)))
+    assert(snc.sql(s"insert into $tableName select 7, 8, 9").collect() === Array(Row(1L)))
+    assert(snc.sql(s"insert into $tableName select 7, 8, 9 union all select 1, 2, 3").collect() ===
+        Array(Row(2L)))
+    snc.sql(s"truncate table $tableName")
+
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     dataDF.write.insertInto(tableName)
@@ -131,6 +140,7 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     // SQL overwrites.
     try {
       snc.sql(s"insert overwrite $tableName select * from $tableName")
+      fail("Expected AnalysisException while overwriting table which is also being read from")
     } catch {
       case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
     }
@@ -138,11 +148,8 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
       snc.sql(s"insert into $tableName select * from $tableName")
     } catch {
       case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
-      case t: Throwable => fail("Unexpected Exception ", t)
     }
-
   }
-
 
   test("test the shadow table creation heavy insert") {
     // snc.sql(s"DROP TABLE IF EXISTS $tableName")

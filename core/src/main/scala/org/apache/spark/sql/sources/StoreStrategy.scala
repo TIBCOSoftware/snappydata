@@ -18,16 +18,15 @@ package org.apache.spark.sql.sources
 
 import scala.reflect.{ClassTag, classTag}
 
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Strategy, _}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
-import org.apache.spark.sql.execution.datasources.{InsertIntoDataSourceCommand, LogicalRelation}
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.SnappySessionState
-import org.apache.spark.sql.internal.PutIntoColumnTable
+import org.apache.spark.sql.internal.{InsertIntoPlan, PutIntoColumnTable}
 import org.apache.spark.sql.types.{DataType, LongType}
+import org.apache.spark.sql.{Strategy, _}
 
 /**
  * Support for DML and other operations on external tables.
@@ -45,23 +44,12 @@ class StoreStrategy(sessionState: SnappySessionState) extends Strategy with Spar
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
     case p: EncoderPlan[_] =>
       val plan = p.asInstanceOf[EncoderPlan[Any]]
-      EncoderScanExec(plan.rdd.asInstanceOf[RDD[Any]],
-        plan.encoder, plan.isFlat, plan.output) :: Nil
+      EncoderScanExec(plan.rdd, plan.encoder, plan.isFlat, plan.output) :: Nil
 
-    case i: InsertIntoTable if i.partition.isEmpty &&
-        !internals.getIfNotExistsOption(i) && i.table.isInstanceOf[LogicalRelation] &&
-        i.table.asInstanceOf[LogicalRelation].relation.isInstanceOf[PlanInsertableRelation] =>
-      val l = i.table.asInstanceOf[LogicalRelation]
-      val p = l.relation.asInstanceOf[PlanInsertableRelation]
-      val preAction = if (internals.getOverwriteOption(i)) () => p.truncate() else () => ()
-      ExecutePlan(p.getInsertPlan(l, planLater(i.children.head)), preAction) :: Nil
-
-    case i: InsertIntoDataSourceCommand
-      if i.logicalRelation.relation.isInstanceOf[PlanInsertableRelation] =>
-      val p = i.logicalRelation.relation.asInstanceOf[PlanInsertableRelation]
-      val childPlan = new QueryExecution(sessionState.snappySession, i.query).sparkPlan
-      val preAction = if (internals.getOverwriteOption(i)) () => p.truncate() else () => ()
-      ExecutePlan(p.getInsertPlan(i.logicalRelation, childPlan), preAction) :: Nil
+    case i@InsertIntoPlan(l, query, overwrite) =>
+      val preAction = if (overwrite) () => i.relation.truncate() else () => ()
+      val childPlan = new QueryExecution(sessionState.snappySession, query).sparkPlan
+      ExecutePlan(i.relation.getInsertPlan(l, childPlan), preAction) :: Nil
 
     case d@DMLExternalTable(table, cmd) => findLogicalRelation[BaseRelation](table) match {
       case Some(l) => ExecutedCommandExec(ExternalTableDMLCmd(l, cmd, d.output)) :: Nil

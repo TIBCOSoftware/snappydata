@@ -16,15 +16,15 @@
  */
 package io.snappydata.cluster
 
-import java.io.{File, FileFilter}
+import java.io.File
+
+import scala.sys.process._
 
 import io.snappydata.test.dunit.DistributedTestBase
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
+import org.apache.commons.lang.StringUtils
 
 import org.apache.spark.{Logging, TestPackageUtils}
-import scala.sys.process._
-
-import org.apache.commons.lang.StringUtils
 
 /**
  * A helper trait containing functions for managing snappy jobs.

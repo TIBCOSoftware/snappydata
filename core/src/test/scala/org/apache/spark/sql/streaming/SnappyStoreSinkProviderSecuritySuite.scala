@@ -243,10 +243,12 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
       fail("StreamingQueryException was expected")
     } catch {
       case x: StreamingQueryException =>
-        val expectedMessage = "User 'GEMFIRE5' does not have SELECT permission on column" +
+        val expectedMessage1 = "User 'GEMFIRE5' does not have SELECT permission on column" +
             " 'STREAM_QUERY_ID' of table 'GEMGROUP1'.'SNAPPYSYS_INTERNAL____SINK_STATE_TABLE'."
+        val expectedMessage2 = "User 'GEMFIRE5' does not have UPDATE permission on column " +
+            " 'BATCH_ID' of table 'GEMGROUP1'.'SNAPPYSYS_INTERNAL____SINK_STATE_TABLE'."
         val cause = if (x.getCause.getCause eq null) x.getCause else x.getCause.getCause
-        assert(cause.getMessage.equals(expectedMessage))
+        assert(cause.getMessage === expectedMessage1 || cause.getMessage === expectedMessage2)
     } finally {
       streamingQuery1.stop()
     }

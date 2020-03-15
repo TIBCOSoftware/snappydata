@@ -834,17 +834,15 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
 case class TokenizeSubqueries(sparkSession: SparkSession)
     extends Rule[SparkPlan] with SparkSupport {
 
-  def apply(plan: SparkPlan): SparkPlan = {
-    plan.transformAllExpressions {
-      case subquery: catalyst.expressions.ScalarSubquery =>
-        val executedPlan = new QueryExecution(sparkSession, subquery.plan).executedPlan
-        new TokenizedScalarSubquery(SubqueryExec(s"subquery${subquery.exprId.id}",
-          executedPlan), subquery.exprId)
-      case expr if internals.isPredicateSubquery(expr) && expr.children.size == 1 =>
-        val subquery = expr.asInstanceOf[SubqueryExpression]
-        val executedPlan = new QueryExecution(sparkSession, subquery.plan).executedPlan
-        InSubquery(subquery.children.head, SubqueryExec(s"subquery${subquery.exprId.id}",
-          executedPlan), subquery.exprId)
-    }
+  def apply(plan: SparkPlan): SparkPlan = plan.transformAllExpressions {
+    case subquery: catalyst.expressions.ScalarSubquery =>
+      val executedPlan = new QueryExecution(sparkSession, subquery.plan).executedPlan
+      new TokenizedScalarSubquery(SubqueryExec(s"subquery${subquery.exprId.id}",
+        executedPlan), subquery.exprId)
+    case expr if internals.isPredicateSubquery(expr) && expr.children.size == 1 =>
+      val subquery = expr.asInstanceOf[SubqueryExpression]
+      val executedPlan = new QueryExecution(sparkSession, subquery.plan).executedPlan
+      InSubquery(subquery.children.head, SubqueryExec(s"subquery${subquery.exprId.id}",
+        executedPlan), subquery.exprId)
   }
 }

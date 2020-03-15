@@ -33,8 +33,9 @@ import org.apache.spark.SparkConf
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedAttribute, UnresolvedTableValuedFunction}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Contains, EndsWith, EqualTo, Expression, Like, Literal, NamedExpression, StartsWith}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, Cast, Contains, EndsWith, EqualTo, Expression, Like, Literal, NamedExpression, StartsWith}
 import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
+import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, UnaryNode, Filter => LogicalFilter}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
@@ -47,7 +48,7 @@ import org.apache.spark.sql.hive.SnappySessionState
 import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.{DecimalType, StringType}
+import org.apache.spark.sql.types.{DecimalType, LongType, StringType}
 import org.apache.spark.sql.{AnalysisException, DMLExternalTable, SaveMode, SnappyContext, SnappyParser, SnappySession, SparkSupport}
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -664,7 +665,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState)
       if (mode == SaveMode.Append && queryOpt.isDefined && (isBuiltin ||
           (tableDesc.bucketSpec.isEmpty && tableDesc.partitionColumnNames.isEmpty)) &&
           state.catalog.tableExists(tableIdent)) {
-        internals.newInsertPlanWithCountOutput(
+        internals.newInsertIntoTable(
           table = internals.newUnresolvedRelation(tableIdent, None),
           partition = Map.empty, child = queryOpt.get, overwrite = false, ifNotExists = false)
       } else if (isBuiltin) {
@@ -715,10 +716,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState)
           d
         case (t, c) =>
           if ((t eq i.table) && (c eq query)) i
-          else {
-            internals.newInsertPlanWithCountOutput(t, i.partition, c, isOverwrite,
-              internals.getIfNotExistsOption(i))
-          }
+          else i.copy(t, i.partition, c, i.overwrite)
       }
 
     // resolve PUT INTO TABLE(columns) ...
@@ -876,6 +874,45 @@ private[sql] case class ConditionalPreWriteCheck(sparkPreWriteCheck: LogicalPlan
       case PutIntoColumnTable(_, _, _) => // Do nothing
       case _ => sparkPreWriteCheck.apply(plan)
     }
+  }
+}
+
+/**
+ * Unlike Spark's `InsertIntoTable` this plan provides the count of rows
+ * inserted as the output.
+ *
+ * Note that the underlying BaseRelation should always be a [[PlanInsertableRelation]].
+ */
+case class InsertIntoPlan(logicalRelation: LogicalRelation,
+    query: LogicalPlan, overwrite: Boolean) extends LogicalPlan {
+
+  override lazy val output: Seq[Attribute] = AttributeReference("count", LongType)() :: Nil
+
+  override def children: Seq[LogicalPlan] = Nil
+
+  override protected def innerChildren: Seq[QueryPlan[_]] = query :: Nil
+
+  val relation: PlanInsertableRelation =
+    logicalRelation.relation.asInstanceOf[PlanInsertableRelation]
+}
+
+private[sql] object ResolveInsertIntoPlan extends Rule[LogicalPlan] with SparkSupport {
+
+  override def apply(plan: LogicalPlan): LogicalPlan = internals.logicalPlanResolveDown(plan) {
+    case i@InsertIntoTable(l: LogicalRelation, _, query, _, _)
+      if l.relation.isInstanceOf[PlanInsertableRelation] && l.resolved && query.resolved =>
+
+      // check that insert with overwrite does not refer to the source table in the query
+      val isOverwrite = internals.getOverwriteOption(i)
+      if (isOverwrite) {
+        query.foreach {
+          case lr: LogicalRelation if lr.relation == l.relation =>
+            throw new AnalysisException(
+              "Cannot insert overwrite into table that is also being read from.")
+          case _ =>
+        }
+      }
+      InsertIntoPlan(l, query, isOverwrite)
   }
 }
 

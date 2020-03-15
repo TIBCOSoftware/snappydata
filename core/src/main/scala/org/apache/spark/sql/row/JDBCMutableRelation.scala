@@ -192,7 +192,7 @@ abstract case class JDBCMutableRelation(
     // use the Insert plan for best performance
     // that will use the getInsertPlan above (in StoreStrategy)
     sqlContext.sessionState.executePlan(
-      internals.newInsertPlanWithCountOutput(
+      internals.newInsertIntoTable(
         table = LogicalRelation(this),
         partition = Map.empty[String, Option[String]],
         child = data.logicalPlan,

@@ -167,7 +167,8 @@ abstract case class RowTableScan(
         s"final $javaType $col = $rowVar.getAsInt($pos, $holder);"
       case StringType =>
         useHolder = false
-        s"final $javaType $col = $rowVar.getAsUTF8String($ordinal);"
+        val typeUtilsClass = TypeUtilities.getClass.getName.replace("$", "")
+        s"final $javaType $col = $typeUtilsClass.readUTF8String($rowVar, $ordinal);"
       case LongType =>
         s"final $javaType $col = $rowVar.getAsLong($pos, $holder);"
       case BooleanType =>

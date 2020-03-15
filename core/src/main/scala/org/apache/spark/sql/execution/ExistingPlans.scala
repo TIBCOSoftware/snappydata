@@ -418,8 +418,10 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
 final class TokenizedScalarSubquery(_plan: SubqueryExec, _exprId: ExprId)
     extends ScalarSubquery(_plan, _exprId) {
 
-  override def withNewPlan(query: SubqueryExec): ScalarSubquery =
-    new TokenizedScalarSubquery(query, exprId)
+  override def copy(plan: SubqueryExec = plan, exprId: ExprId = exprId): ScalarSubquery =
+    new TokenizedScalarSubquery(plan, exprId)
+
+  override def withNewPlan(query: SubqueryExec): ScalarSubquery = copy(plan = query)
 
   override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
     val result = CatalystTypeConverters.convertToCatalyst(super.eval(null))

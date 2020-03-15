@@ -90,6 +90,10 @@ object MetadataTest extends Assertions {
     assert(!rsMap.contains("spark.sql.sources.schema.numParts"))
   }
 
+  private def compare(schema1: StructType, schema2: StructType): Unit = {
+    assert(schema1.toString() === schema2.toString())
+  }
+
   private val expectedSYSTables = Array("ASYNCEVENTLISTENERS", "GATEWAYRECEIVERS",
     "GATEWAYSENDERS", "SYSALIASES", "SYSCHECKS", "SYSCOLPERMS", "SYSCOLUMNS", "SYSCONGLOMERATES",
     "SYSCONSTRAINTS", "SYSDEPENDS", "SYSDISKSTORES", "SYSFILES", "SYSFOREIGNKEYS",
@@ -166,7 +170,7 @@ object MetadataTest extends Assertions {
     val expectedSizes = List(256, 256, 24, 12, 32672, 32672)
     rs = ds.collect()
     // check schema of the returned Dataset
-    assert(ds.schema === StructType(expectedColumns.zip(expectedSizes).map(p =>
+    compare(ds.schema, StructType(expectedColumns.zip(expectedSizes).map(p =>
       StructField(p._1, StringType, nullable = false, getMetadata(p._1, p._2)))))
     checkMembers(rs, forShow = true)
 
@@ -175,7 +179,7 @@ object MetadataTest extends Assertions {
     ds = executeSQL("select * from sys.sysSchemas")
     rs = ds.collect()
     // check schema of the returned Dataset
-    assert(ds.schema === StructType(sysSchemasColumns.map(p =>
+    compare(ds.schema, StructType(sysSchemasColumns.map(p =>
       StructField(p._1, StringType, nullable = false, getMetadata(p._1, p._2, p._3)))))
     val expectedDefaultSchemas = List("APP", "DEFAULT", "NULLID", "SNAPPY_HIVE_METASTORE", "SQLJ",
       "SYS", "SYSCAT", "SYSCS_DIAG", "SYSCS_UTIL", "SYSFUN", "SYSIBM", "SYSPROC", "SYSSTAT")
@@ -186,7 +190,7 @@ object MetadataTest extends Assertions {
     ds = executeSQL("select * from sys.sysTables where tableSchemaName = 'SYS'")
     rs = ds.collect()
     // check schema of the returned Dataset
-    assert(ds.schema === StructType(sysTablesColumns.map { case (name, size, typeName, nullable) =>
+    compare(ds.schema, StructType(sysTablesColumns.map { case (name, size, typeName, nullable) =>
       val dataType = typeName match {
         case "BOOLEAN" => BooleanType
         case _ => StringType
@@ -622,10 +626,10 @@ object MetadataTest extends Assertions {
     // check schema of the returned Dataset which should be a single string column
     // for JDBC it should be a CLOB column
     if (usingJDBC) {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+      compare(ds.schema, StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      compare(ds.schema, StructType(Array(StructField("plan", StringType))))
     }
     assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[app" +
         ".rowtable1\\].*numBuckets = 1 numPartitions = 1.*"))
@@ -636,10 +640,10 @@ object MetadataTest extends Assertions {
     assert(rs.length === 1)
     plan = rs(0).getString(0)
     if (usingJDBC) {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+      compare(ds.schema, StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      compare(ds.schema, StructType(Array(StructField("plan", StringType))))
     }
 
     def literalString(value: String): String = {
@@ -662,13 +666,13 @@ object MetadataTest extends Assertions {
     assert(rs.length === 1)
     plan = rs(0).getString(0)
     if (usingJDBC) {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = false,
+      compare(ds.schema, StructType(Array(StructField("plan", StringType, nullable = false,
         getMetadata("plan", 0, "CLOB")))))
       assert(plan.contains("stmt_id"))
       assert(plan.contains("SQL_stmt select * from rowTable1 where id = 10"))
       assert(plan.contains("REGION-GET"))
     } else {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      compare(ds.schema, StructType(Array(StructField("plan", StringType))))
       expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[app" +
           ".rowtable1\\].*numBuckets = 1 numPartitions = 1.*id.* = " + literalString("10") + ".*"
       assert(matches(plan, expectedPattern))
@@ -679,10 +683,10 @@ object MetadataTest extends Assertions {
     assert(rs.length === 1)
     plan = rs(0).getString(0)
     if (usingJDBC) {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+      compare(ds.schema, StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      compare(ds.schema, StructType(Array(StructField("plan", StringType))))
     }
     expectedPattern = s".*Parsed Logical Plan.*Filter.*id = " + literalString("10") + "" +
         ".*Analyzed Logical Plan.*Filter.*id#[0-9]* = " + literalString("10") +
@@ -699,10 +703,10 @@ object MetadataTest extends Assertions {
     assert(rs.length === 1)
     plan = rs(0).getString(0)
     if (usingJDBC) {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+      compare(ds.schema, StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      compare(ds.schema, StructType(Array(StructField("plan", StringType))))
     }
     expectedPattern = ".*Physical Plan.*Partitioned Scan ColumnFormatRelation" +
         "\\[app.columntable2\\].*numBuckets = [0-9]* numPartitions = [0-9]*" +
@@ -714,10 +718,10 @@ object MetadataTest extends Assertions {
     assert(rs.length === 1)
     plan = rs(0).getString(0)
     if (usingJDBC) {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+      compare(ds.schema, StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      compare(ds.schema, StructType(Array(StructField("plan", StringType))))
     }
     expectedPattern = s".*Parsed Logical Plan.*Filter.*id > ${literalString("20")}" +
         s".*Analyzed Logical Plan.*Filter.*id#[0-9]*L > cast\\(${literalString("20")} as bigint" +
@@ -734,10 +738,10 @@ object MetadataTest extends Assertions {
     assert(rs.length === 1)
     plan = rs(0).getString(0)
     if (usingJDBC) {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+      compare(ds.schema, StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      compare(ds.schema, StructType(Array(StructField("plan", StringType))))
     }
     assert(matches(plan, ".*Physical Plan.*Execute.*CreateTableUsingCommand" +
         ".*rowtable2.*\\(id int primary key, id2 int\\), row.*"))
@@ -810,10 +814,10 @@ object MetadataTest extends Assertions {
     // check schema of the returned Dataset which should be a single string column
     // for JDBC it should be a CLOB column
     if (usingJDBC) {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+      compare(ds.schema, StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      compare(ds.schema, StructType(Array(StructField("plan", StringType))))
     }
     assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[schema2" +
         ".rowtable2\\].*numBuckets = 8 numPartitions = [0-9]*.*"))
@@ -824,10 +828,10 @@ object MetadataTest extends Assertions {
     assert(rs.length === 1)
     plan = rs(0).getString(0)
     if (usingJDBC) {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+      compare(ds.schema, StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      compare(ds.schema, StructType(Array(StructField("plan", StringType))))
     }
     expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation" +
         "\\[schema2.rowtable2\\].*numBuckets = 8 numPartitions = [0-9]*" +
@@ -841,13 +845,13 @@ object MetadataTest extends Assertions {
     assert(rs.length === 1)
     plan = rs(0).getString(0)
     if (usingJDBC) {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = false,
+      compare(ds.schema, StructType(Array(StructField("plan", StringType, nullable = false,
         getMetadata("plan", 0, "CLOB")))))
       assert(plan.contains("stmt_id"))
       assert(plan.contains("SQL_stmt select * from schema2.rowTable2 where id = 15"))
       assert(plan.contains("REGION-GET"))
     } else {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      compare(ds.schema, StructType(Array(StructField("plan", StringType))))
       // no pruning for row tables yet
       expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation" +
           "\\[schema2.rowtable2\\].*numBuckets = 8 numPartitions = [0-9]*" +
@@ -862,10 +866,10 @@ object MetadataTest extends Assertions {
     assert(rs.length === 1)
     plan = rs(0).getString(0)
     if (usingJDBC) {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+      compare(ds.schema, StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      compare(ds.schema, StructType(Array(StructField("plan", StringType))))
     }
     assert(matches(plan, ".*Physical Plan.*Partitioned Scan ColumnFormatRelation" +
         "\\[schema1.columntable1\\].*numBuckets = [0-9]* numPartitions = 1" +
@@ -876,10 +880,10 @@ object MetadataTest extends Assertions {
     assert(rs.length === 1)
     plan = rs(0).getString(0)
     if (usingJDBC) {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
+      compare(ds.schema, StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
-      assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
+      compare(ds.schema, StructType(Array(StructField("plan", StringType))))
     }
 
     // should prune to a single partition

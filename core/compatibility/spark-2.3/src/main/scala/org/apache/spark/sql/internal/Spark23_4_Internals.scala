@@ -235,17 +235,13 @@ abstract class Spark23_4_Internals extends SparkInternals {
     insert.copy(query = newChild)
   }
 
-  override def newInsertPlanWithCountOutput(table: LogicalPlan,
+  override def newInsertIntoTable(table: LogicalPlan,
       partition: Map[String, Option[String]], child: LogicalPlan,
       overwrite: Boolean, ifNotExists: Boolean): InsertIntoTable = {
-    new Insert23(table, partition, child, overwrite, ifNotExists)
+    InsertIntoTable(table, partition, child, overwrite, ifNotExists)
   }
 
   override def getOverwriteOption(insert: InsertIntoTable): Boolean = insert.overwrite
-
-  override def getOverwriteOption(insert: InsertIntoDataSourceCommand): Boolean = insert.overwrite
-
-  override def getIfNotExistsOption(insert: InsertIntoTable): Boolean = insert.ifPartitionNotExists
 
   override def newGroupingSet(groupingSets: Seq[Seq[Expression]],
       groupByExprs: Seq[Expression], child: LogicalPlan,
@@ -621,6 +617,7 @@ abstract class SnappySessionStateBuilder23_4(session: SnappySession,
             RelationConversions(s.conf, s.catalog.asInstanceOf[HiveSessionCatalog]), state) ::
           PreprocessTableCreation(session) ::
           PreprocessTableInsertion(conf) ::
+          ResolveInsertIntoPlan ::
           DataSourceAnalysis(conf) ::
           new HiveConditionalRule(_ => HiveAnalysis, state) ::
           session.contextFunctions.getPostHocResolutionRules) ++ customPostHocResolutionRules

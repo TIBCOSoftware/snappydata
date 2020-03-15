@@ -303,19 +303,13 @@ class Spark21Internals(override val version: String) extends SparkInternals {
     insert.copy(child = newChild)
   }
 
-  override def newInsertPlanWithCountOutput(table: LogicalPlan,
+  override def newInsertIntoTable(table: LogicalPlan,
       partition: Map[String, Option[String]], child: LogicalPlan,
       overwrite: Boolean, ifNotExists: Boolean): InsertIntoTable = {
-    new Insert21(table, partition, child, OverwriteOptions(enabled = overwrite), ifNotExists)
+    InsertIntoTable(table, partition, child, OverwriteOptions(enabled = overwrite), ifNotExists)
   }
 
   override def getOverwriteOption(insert: InsertIntoTable): Boolean = insert.overwrite.enabled
-
-  override def getOverwriteOption(insert: InsertIntoDataSourceCommand): Boolean = {
-    insert.overwrite.enabled
-  }
-
-  override def getIfNotExistsOption(insert: InsertIntoTable): Boolean = insert.ifNotExists
 
   override def newGroupingSet(groupingSets: Seq[Seq[Expression]],
       groupByExprs: Seq[Expression], child: LogicalPlan,
@@ -962,6 +956,7 @@ class SnappySessionState21(override val snappySession: SnappySession)
           new PreprocessTable(state) ::
           ResolveAliasInGroupBy ::
           new FindDataSourceTable(session) ::
+          ResolveInsertIntoPlan ::
           DataSourceAnalysis(conf) ::
           AnalyzeMutableOperations(session, this) ::
           ResolveQueryHints(session) ::

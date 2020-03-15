@@ -22,36 +22,11 @@ import io.snappydata.{HintName, QueryHint}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, InsertIntoTable, LogicalPlan, OverwriteOptions}
+import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, LogicalPlan}
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, SparkPlan}
-import org.apache.spark.sql.types.{LongType, StructType}
-
-
-/**
- * Unlike Spark's InsertIntoTable this plan provides the count of rows
- * inserted as the output.
- */
-final class Insert21(
-    table: LogicalPlan,
-    partition: Map[String, Option[String]],
-    child: LogicalPlan,
-    overwrite: OverwriteOptions,
-    ifNotExists: Boolean)
-    extends InsertIntoTable(table, partition, child, overwrite, ifNotExists) {
-
-  override def output: Seq[Attribute] = AttributeReference(
-    "count", LongType)() :: Nil
-
-  override def copy(table: LogicalPlan = table,
-      partition: Map[String, Option[String]] = partition,
-      child: LogicalPlan = child,
-      overwrite: OverwriteOptions = overwrite,
-      ifNotExists: Boolean = ifNotExists): Insert21 = {
-    new Insert21(table, partition, child, overwrite, ifNotExists)
-  }
-}
+import org.apache.spark.sql.types.StructType
 
 /**
  * An extended version of [[BroadcastHint]] to encapsulate any kind of hint rather
