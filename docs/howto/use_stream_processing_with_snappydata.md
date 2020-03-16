@@ -2,7 +2,7 @@
 
 # How to use Stream Processing with TIBCO ComputeDB 
 
-TIBCO ComputeDB supports both the older [Spark Streaming model (based on DStreams)](#dstreams) as well as the newer [Structured Streaming model](#structuredstreaming). Unlike the Spark streaming DStreams model, that is based on RDDs, TIBCO ComputeDB supports Spark SQL in both models.
+TIBCO ComputeDB supports <!---both the older [Spark Streaming model (based on DStreams)](#dstreams) as well as the newer---> [Structured Streaming model](#structuredstreaming). <!---Unlike the Spark streaming DStreams model, that is based on RDDs, TIBCO ComputeDB supports Spark SQL in both models.--->
 
 <a id= structuredstreaming> </a>
 ## Structured Streaming
@@ -204,6 +204,7 @@ Limitations of **Snappy Sink** are as follows:
 
 *	The default **Snappy Sink** implementation does not support partial records for updates. Which means that there is no support to merge updates on a few columns into the store. For all update events, the incoming records must provide values into all the columns of the target table.
 
+<!---
 <a id= dstreams> </a>
 ## Spark Streaming DStreams Model
 
@@ -320,4 +321,4 @@ resultStream.foreachDataFrame(df => {
 
 ```pre
 snsc.snappySession.sql("select publisher, bidCount from publisher_bid_counts").show()
-```
+``` --->
