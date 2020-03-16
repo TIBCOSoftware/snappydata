@@ -1623,7 +1623,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       if (count == 26) {
         var typeName = resultSet.getString(1);
         var typeNum = resultSet.getInt(2);
-        assert("BOOLEAN" == typeName)
+        assert("boolean" == typeName)
         assert(typeNum == -7)
       }
     }

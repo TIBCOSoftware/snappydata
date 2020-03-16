@@ -230,17 +230,11 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
   private def cleanup(conn: Connection): Unit = {
     val stmt = conn.createStatement()
-    try {
-      stmt.execute("drop table " + table1)
-      stmt.execute("drop table " + table2)
-      stmt.execute("drop table " + table3)
-      stmt.execute("drop schema " + schema)
-    } catch {
-      case _: Throwable => // ignore
-    }
-    finally {
-      stmt.close()
-    }
+    Try(stmt.execute("drop table " + table1))
+    Try(stmt.execute("drop table " + table2))
+    Try(stmt.execute("drop table " + table3))
+    Try(stmt.execute("drop schema " + schema))
+    stmt.close()
     conn.close()
   }
 }
