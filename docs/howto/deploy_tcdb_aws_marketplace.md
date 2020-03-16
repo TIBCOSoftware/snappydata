@@ -2,6 +2,10 @@
 
 You can quickly set up a simple TIBCO ComputeDB cluster on AWS using its Amazon Machine Image (AMI) that is available in the AWS Marketplace. The AMI comes with the sample CloudFormation templates.
 
+
+!!!Note
+	The TIBCO ComputeDB 1.2.0 AMI will be available shortly.
+
 !!!Note
 	The **IAM user** or the role with which you create the stack and other AWS resources as part of the stack must have adequate AWS permissions.
 
