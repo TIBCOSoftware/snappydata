@@ -805,6 +805,20 @@ class SQLFunctions extends SnappySQLJob {
     dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_regexp_extract_replace, SQLFunctionsUtils.
       dropRowTbl_regexp_extract_replace, SQLFunctionsUtils.dropColTbl_regexp_extract_replace,
       SQLFunctionsUtils.dropRowTbl_regexp_extract_replace)
+    /**
+      *  Below queries test the functions :
+      *  120.  now()
+      */
+    snc.sql("CREATE TABLE columnTbl(id int, ts timestamp) using column")
+    snc.sql("CREATE TABLE rowTbl(id int, ts timestamp) using row")
+    snc.sql("INSERT INTO columnTbl SELECT 1,now()")
+    snc.sql("INSERT INTO rowTbl SELECT 1,now()")
+    val columnDF = snc.sql("SELECT * FROM columnTbl")
+    val rowDF = snc.sql("SELECT * FROM rowTbl")
+    pw.println("now() function in Column table :")
+    pw.println(columnDF.collect().mkString)
+    pw.println("now() function in Row table :")
+    pw.println(rowDF.collect().mkString)
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
