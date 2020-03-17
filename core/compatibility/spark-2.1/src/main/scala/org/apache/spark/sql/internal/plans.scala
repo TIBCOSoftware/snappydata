@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, LogicalPlan}
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
-import org.apache.spark.sql.execution.row.RowTableScan
+import org.apache.spark.sql.execution.row.{RowFormatScanRDD, RowTableScan}
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.types.StructType
 
@@ -72,7 +72,14 @@ final class RowTableScan21(output: Seq[Attribute], schema: StructType, dataRDD: 
       partitionColumnAliases, table, baseRelation, caseSensitive) {
 
   override def sameResult(plan: SparkPlan): Boolean = plan match {
-    case r: RowTableScan => r.table == table && r.numBuckets == numBuckets && r.schema == schema
+    case r: RowTableScan => r.table == table && r.numBuckets == numBuckets &&
+        r.schema == schema && (this.dataRDD match {
+      case rowRdd: RowFormatScanRDD =>
+        val rdd2 = r.dataRDD.asInstanceOf[RowFormatScanRDD]
+        rowRdd.filters.length == rdd2.filters.length &&
+            rowRdd.filters.indices.forall(i => rowRdd.filters(i).semanticEquals(rdd2.filters(i)))
+      case _ => true
+    })
     case _ => false
   }
 }

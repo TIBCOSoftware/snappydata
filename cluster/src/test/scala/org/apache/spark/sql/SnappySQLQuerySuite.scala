@@ -450,6 +450,9 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     }
   }
 
+  private def normalizeTreeString(s: String): String =
+    idPattern.replaceAllIn(s.replace("`", ""), "#0")
+
   private def testTPCHQ19(): Unit = {
     // check common sub-expression elimination in query leading to push down
     // of filters should not be inhibited due to ParamLiterals
@@ -475,7 +478,7 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
          |      +- SubqueryAlias ct2
          |         +- Relation[id#0,data#0] ColumnFormatRelation[app.ct2]
          |""".stripMargin
-    assert(idPattern.replaceAllIn(ds.queryExecution.analyzed.treeString, "#0") === expectedTree)
+    assert(normalizeTreeString(ds.queryExecution.analyzed.treeString) === expectedTree)
     assert(ds.collect() === Array(Row(100L, "data100")))
 
     // check filter push down in the plan
@@ -501,7 +504,7 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     analyzedFilter = "Filter (((id#0 < cast(ParamLiteral:0#0,1000 as bigint)) && " +
         "(data#0 = ParamLiteral:1#0,data100)) || ((id#0 < cast(ParamLiteral:2#0,20 as " +
         "bigint)) && (data#0 = ParamLiteral:3#0,data100)))"
-    assert(idPattern.replaceAllIn(ds.queryExecution.analyzed.treeString, "#0") === expectedTree)
+    assert(normalizeTreeString(ds.queryExecution.analyzed.treeString) === expectedTree)
     assert(ds.collect() === Array(Row(100L, "data100")))
 
     // check no filter push down in the plan

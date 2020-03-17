@@ -279,24 +279,6 @@ case class SnappyHashAggregateExec(
     }
   }
 
-  override def beforeStop(ctx: CodegenContext, plan: SparkPlan,
-      input: Seq[ExprCode]): String = {
-    if (bufVars eq null) ""
-    else {
-      bufVarUpdates = bufVars.indices.map { i =>
-        val ev = bufVars(i)
-        val evIsNull = internals.exprCodeIsNull(ev)
-        val evValue = internals.exprCodeValue(ev)
-        s"""
-           |// update the member result variables from local variables
-           |this.$evIsNull = $evIsNull;
-           |this.$evValue = $evValue;
-        """.stripMargin
-      }.mkString("\n").trim
-      bufVarUpdates
-    }
-  }
-
   // The variables used as aggregation buffer
   @transient protected var bufVars: Seq[ExprCode] = _
   // code to update buffer variables with current values
@@ -323,7 +305,7 @@ case class SnappyHashAggregateExec(
         """.stripMargin
       internals.newExprCode(ev.code.toString + initVars, isNull, value, e.dataType)
     }
-    var initBufVar = evaluateVariables(bufVars)
+    val initBufVar = evaluateVariables(bufVars)
 
     // generate variables for output
     val (resultVars, genResult) = if (modes.contains(Final) ||
@@ -354,21 +336,8 @@ case class SnappyHashAggregateExec(
     }
 
     var doAgg = ctx.freshName("doAggregateWithoutKey")
-    var produceOutput = getChildProducer.asInstanceOf[CodegenSupport].produce(
+    val produceOutput = getChildProducer.asInstanceOf[CodegenSupport].produce(
       ctx, this)
-    if (bufVarUpdates ne null) {
-      // use local variables while member variables are updated at the end
-      initBufVar = bufVars.indices.map { i =>
-        val ev = bufVars(i)
-        val evIsNull = internals.exprCodeIsNull(ev)
-        val evValue = internals.exprCodeValue(ev)
-        s"""
-           |boolean $evIsNull = this.$evIsNull;
-           |${internals.javaType(initExpr(i).dataType, ctx)} $evValue = this.$evValue;
-        """.stripMargin
-      }.mkString("", "\n", initBufVar).trim
-      produceOutput = s"$produceOutput\n$bufVarUpdates"
-    }
     doAgg = internals.addFunction(ctx, doAgg,
       s"""
          |private void $doAgg() throws java.io.IOException {
@@ -700,10 +669,12 @@ case class SnappyHashAggregateExec(
 
     val valueOffsetTerm = ctx.freshName("valueOffset")
     val currentValueOffSetTerm = ctx.freshName("currentValueOffSet")
-    val valueDataTerm = ctx.freshName("valueData")
-    val vdBaseObjectTerm = ctx.freshName("vdBaseObjectTerm")
-    val vdBaseOffsetTerm = ctx.freshName("vdBaseOffsetTerm")
-    val valueDataCapacityTerm = ctx.freshName("valueDataCapacity")
+
+    val valueDataTerm = internals.addClassField(ctx, bbDataClass, "valueData")
+    val vdBaseObjectTerm = internals.addClassField(ctx, "Object", "vdBaseObjectTerm")
+    val vdBaseOffsetTerm = internals.addClassField(ctx, "long", "vdBaseOffsetTerm")
+    val valueDataCapacityTerm = internals.addClassField(ctx, "int", "valueDataCapacity")
+
     var doAgg = ctx.freshName("doAggregateWithKeys")
     var setBBMap = ctx.freshName("setBBMap")
 
@@ -722,13 +693,6 @@ case class SnappyHashAggregateExec(
     val nestedStructNullBitsTermCreator: ((String, StructType, Int) => Any) =>
         (String, StructType, Int) => Any = (f: (String, StructType, Int) => Any) =>
       (structVarName: String, structType: StructType, nestingLevel: Int) => {
-        val numBytesForNullBits = SHAMapAccessor.
-            calculateNumberOfBytesForNullBits(structType.length)
-        if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
-          // TODO: variable not used in generated code apart from declaration??
-          internals.addClassField(ctx, "byte[]", "struct_nullKeysBitset",
-            v => s"$v = new byte[$numBytesForNullBits];")
-        }
         structType.zipWithIndex.foreach { case (sf, index) => sf.dataType match {
           case stt: StructType => val structtVarName = SHAMapAccessor.
               generateExplodedStructFieldVars(structVarName, nestingLevel + 1, index)._1
@@ -745,9 +709,8 @@ case class SnappyHashAggregateExec(
       (structVarName: String, structType: StructType, nestingLevel: Int) => {
         val numBytesForNullBits = SHAMapAccessor.
             calculateNumberOfBytesForNullBits(structType.length)
-        val nullBitTerm = SHAMapAccessor.
-            generateNullKeysBitTermForStruct(structVarName)
-        val snippet1 = SHAMapAccessor.initNullBitsetCode(nullBitTerm, numBytesForNullBits)
+        val nullBitTerm = SHAMapAccessor.generateNullKeysBitTermForStruct(structVarName)
+        val snippet1 = SHAMapAccessor.initNullBitsetCode(nullBitTerm, numBytesForNullBits, ctx)
 
         val snippet2 = structType.zipWithIndex.map { case (sf, index) => sf.dataType match {
           case stt: StructType => val structtVarName = SHAMapAccessor.
@@ -781,10 +744,11 @@ case class SnappyHashAggregateExec(
     val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
     val byteBufferClass = classOf[ByteBuffer].getName
 
-    val keyBytesHolderVar = ctx.freshName("keyBytesHolder")
-    val baseKeyHolderOffset = ctx.freshName("baseKeyHolderOffset")
-    val baseKeyObject = ctx.freshName("baseKeyHolderObject")
-    val keyHolderCapacityTerm = ctx.freshName("keyholderCapacity")
+    val keyBytesHolderVar = internals.addClassField(ctx, byteBufferClass, "keyBytesHolder")
+    val baseKeyHolderOffset = internals.addClassField(ctx, "long", "baseKeyHolderOffset")
+    val baseKeyObject = internals.addClassField(ctx, "Object", "baseKeyHolderObject")
+    val keyHolderCapacityTerm = internals.addClassField(ctx, "int", "keyholderCapacity")
+
     val keyExistedTerm = ctx.freshName("keyExisted")
 
     val codeForLenOfSkippedTerm = if (skipLenForAttrib != -1) {
@@ -830,7 +794,7 @@ case class SnappyHashAggregateExec(
     // generate the map accessor to generate key/value class
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val numKeyBytesTerm = ctx.freshName("numKeyBytes")
+    val numKeyBytesTerm = internals.addClassField(ctx, "int", "numKeyBytes")
     val numValueBytes = SHAMapAccessor.getSizeOfValueBytes(aggBuffDataTypes,
       numBytesForNullAggsBits)
 
@@ -866,27 +830,33 @@ case class SnappyHashAggregateExec(
         asInstanceOf[SnappySession].sessionState.conf)});
            |$allocatorClass $allocatorTerm = $gfeCacheImplClass.
            |getCurrentBufferAllocator();
-           |$byteBufferClass $keyBytesHolderVar = null;
-           |int $keyHolderCapacityTerm = 0;
-           |Object $baseKeyObject = null;
-           |long $baseKeyHolderOffset = -1L;
-           |$bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
-           |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
-           |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
-           |int $valueDataCapacityTerm = $valueDataTerm.capacity();
-           |${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
-           |${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggsBits)}
-           |${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
-           |${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
+           |$keyBytesHolderVar = null;
+           |$keyHolderCapacityTerm = 0;
+           |$baseKeyObject = null;
+           |$baseKeyHolderOffset = -1L;
+           |$valueDataTerm = $hashMapTerm.getValueData();
+           |$vdBaseObjectTerm = $valueDataTerm.baseObject();
+           |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+           |$valueDataCapacityTerm = $valueDataTerm.capacity();
+           |${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits,
+              ctx, genClassField = true)}
+           |${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggsBits,
+              ctx, genClassField = true)}
+           |${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars,
+              genClassField = true)}
+           |${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars,
+              genClassField = true)}
            |${ if (cacheStoredAggNullBits) {
-                 SHAMapAccessor.initNullBitsetCode(storedAggNullBitsTerm, numBytesForNullAggsBits)
+                 SHAMapAccessor.initNullBitsetCode(storedAggNullBitsTerm,
+                   numBytesForNullAggsBits, ctx, genClassField = true)
                } else ""
             }
            |${ if (cacheStoredKeyNullBits) {
-                 SHAMapAccessor.initNullBitsetCode(storedKeyNullBitsTerm, numBytesForNullKeyBits)
+                 SHAMapAccessor.initNullBitsetCode(storedKeyNullBitsTerm,
+                   numBytesForNullKeyBits, ctx, genClassField = true)
                } else ""
             }
-           |int $numKeyBytesTerm = 0;
+           |$numKeyBytesTerm = 0;
            |$childProduce
            |if ($overflowHashMapsTerm == null) {
            |  long $maxMemory = $hashMapTerm.maxMemory();
@@ -914,8 +884,8 @@ case class SnappyHashAggregateExec(
            |} else {
              |if ($overflowMapIter.hasNext()) {
                |$hashMapTerm = ($hashSetClassName)$overflowMapIter.next();
-               |$bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
-               |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
+               |$valueDataTerm = $hashMapTerm.getValueData();
+               |$vdBaseObjectTerm = $valueDataTerm.baseObject();
                |$iterValueOffsetTerm = $valueDataTerm.baseOffset();
                  return true;
              |} else {
@@ -976,8 +946,8 @@ case class SnappyHashAggregateExec(
           $overflowMapIter = $overflowHashMapsTerm.iterator();
           $overflowMapIter.next();
         }
-        $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
-        Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
+        $valueDataTerm = $hashMapTerm.getValueData();
+        $vdBaseObjectTerm = $valueDataTerm.baseObject();
         $iterValueOffsetTerm += $valueDataTerm.baseOffset();
       }
       if ($hashMapTerm == null) {
@@ -987,8 +957,8 @@ case class SnappyHashAggregateExec(
                       getCurrentBufferAllocator();
       ${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
       ${byteBufferAccessor.initKeyOrBufferVal(keysDataType, KeyBufferVars)}
-      ${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
-      ${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggsBits)}
+      ${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits, ctx)}
+      ${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggsBits, ctx)}
       ${KeyBufferVars.zip(keysDataType).map {
           case (varName, dataType) => dataType match {
           case st: StructType =>
@@ -999,8 +969,8 @@ case class SnappyHashAggregateExec(
 
       // output the result
       while($setBBMap()) {
-        $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
-        Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
+        $valueDataTerm = $hashMapTerm.getValueData();
+        $vdBaseObjectTerm = $valueDataTerm.baseObject();
         long $endIterValueOffset = $hashMapTerm.valueDataSize() + $valueDataTerm.baseOffset();
         long $localIterValueOffsetTerm = $iterValueOffsetTerm;
         ${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
@@ -1061,9 +1031,13 @@ case class SnappyHashAggregateExec(
         aggregateBufferAttributesForGroup, "KeyBuffer", hashMapTerm,
         mapDataTerm, maskTerm, multiMap = false, this, this.parent, child)
 
-
     val entryClass = keyBufferAccessor.getClassName
     val numKeyColumns = groupingExpressions.length
+
+    internals.addClassField(ctx, s"$entryClass[]", mapDataTerm,
+      forceInline = true, useFreshName = false)
+    internals.addClassField(ctx, "int", maskTerm,
+      forceInline = true, useFreshName = false)
 
     val childProduce =
       childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)
@@ -1072,8 +1046,8 @@ case class SnappyHashAggregateExec(
         private void $doAgg() throws java.io.IOException {
           $hashMapTerm = new $hashSetClassName(128, 0.6, $numKeyColumns, false,
             scala.reflect.ClassTag$$.MODULE$$.apply($entryClass.class));
-          $entryClass[] $mapDataTerm = ($entryClass[])$hashMapTerm.data();
-          int $maskTerm = $hashMapTerm.mask();
+          $mapDataTerm = ($entryClass[])$hashMapTerm.data();
+          $maskTerm = $hashMapTerm.mask();
 
           $childProduce
 

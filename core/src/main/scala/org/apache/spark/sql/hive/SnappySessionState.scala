@@ -640,6 +640,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
     snappySession.contextFunctions.queryPreparations(topLevel)
 
   protected def newQueryExecution(plan: LogicalPlan): QueryExecution = {
+    initSnappyStrategies
     new QueryExecution(snappySession, plan) {
 
       override protected def preparations: Seq[Rule[SparkPlan]] = {
@@ -651,7 +652,6 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
   }
 
   override final def executePlan(plan: LogicalPlan): QueryExecution = {
-    initSnappyStrategies
     clearExecutionData()
     beforeExecutePlan(plan)
     val qe = newQueryExecution(plan)
@@ -659,7 +659,7 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
     qe
   }
 
-  private lazy val initSnappyStrategies: Unit = {
+  private[sql] lazy val initSnappyStrategies: Unit = {
     val storeOptimizedRules: Seq[Strategy] =
       Seq(StoreDataSourceStrategy, SnappyAggregation, HashJoinStrategies)
 

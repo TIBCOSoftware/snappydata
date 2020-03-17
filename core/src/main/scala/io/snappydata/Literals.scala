@@ -217,7 +217,7 @@ object Property extends Enumeration {
     Some(false), Constant.SPARK_PREFIX)
 
   val SchedulerPool: SQLValue[String] = SQLVal[String](
-    s"${Constant.PROPERTY_PREFIX}scheduler.pool",
+    s"${Constant.SPARK_PREFIX}scheduler.pool",
     "Property to set the scheduler pool for the current session. This property can " +
       "be used to assign queries to different pools for improving " +
       "throughput of specific queries.", Some("default"))

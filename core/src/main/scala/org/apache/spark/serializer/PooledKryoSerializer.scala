@@ -24,7 +24,7 @@ import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{ByteBufferOutput, Input}
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer
-import com.esotericsoftware.kryo.serializers.ExternalizableSerializer
+import com.esotericsoftware.kryo.serializers.{ExternalizableSerializer, JavaSerializer => KryoJavaSerializer}
 import com.esotericsoftware.kryo.{Kryo, KryoException}
 
 import org.apache.spark.broadcast.TorrentBroadcast
@@ -36,6 +36,7 @@ import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LaunchTa
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
 import org.apache.spark.sql.catalyst.expressions.{DynamicFoldableExpression, ParamLiteral, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, NarrowExecutorLocalSplitDep, SmartExecutorBucketPartition}
+import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
 import org.apache.spark.sql.execution.columnar.impl.{ColumnarStorePartitionedRDD, JDBCSourceAsColumnarStore, SmartConnectorColumnRDD, SmartConnectorRowRDD}
 import org.apache.spark.sql.execution.joins.CacheKey
 import org.apache.spark.sql.execution.metric.SQLMetric
@@ -151,6 +152,8 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[TokenLiteral], new KryoSerializableSerializer)
     kryo.register(classOf[ParamLiteral], new KryoSerializableSerializer)
     kryo.register(classOf[DynamicFoldableExpression], new KryoSerializableSerializer)
+    // default kryo field serializer fails for InMemoryTableScanExec for some reason
+    kryo.register(classOf[InMemoryTableScanExec], new KryoJavaSerializer)
 
     try {
       val launchTasksClass = Utils.classForName(

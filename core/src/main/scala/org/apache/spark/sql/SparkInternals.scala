@@ -21,7 +21,7 @@ import io.snappydata.{HintName, QueryHint}
 import org.apache.hadoop.conf.Configuration
 
 import org.apache.spark.internal.config.ConfigBuilder
-import org.apache.spark.rdd.RDD
+import org.apache.spark.rdd.{EmptyRDD, RDD}
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
@@ -67,6 +67,11 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
 trait SparkInternals extends Logging {
 
   final val emptyFunc: String => String = _ => ""
+
+  /**
+   * Global instance of EmptyRDD used in canonicalized versions of plans.
+   */
+  lazy val EMPTY_RDD = new EmptyRDD[Any](SparkContext.getActive.get)
 
   if (version != SparkSupport.DEFAULT_VERSION) {
     logInfo(s"SnappyData: loading support for Spark $version")

@@ -1109,7 +1109,7 @@ object NWQueries extends SnappyFunSuite {
       case j: SubqueryExec => j
       case j: UnionExec => j
     }
-    if (operators.head.getClass != c) {
+    if (!c.isAssignableFrom(operators.head.getClass)) {
       throw new IllegalStateException(s"$sqlString expected operator: $c," +
           s" but got ${operators.head}\n physical: \n$physical")
     }

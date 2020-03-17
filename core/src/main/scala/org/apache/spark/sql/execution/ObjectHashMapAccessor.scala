@@ -131,11 +131,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
   private type ClassVar = (DataType, String, ExprCode, Int)
 
-  @transient private[this] val (className, valueClassName, classVars,
-  numNullVars) = initClass()
-
-  // return empty here as code of required variables is explicitly instantiated
-  override def usedInputs: AttributeSet = AttributeSet.empty
+  @transient private[this] val (className, valueClassName, classVars, numNullVars) = initClass()
 
   private def initClass(): (String, String, IndexedSeq[ClassVar], Int) = {
 

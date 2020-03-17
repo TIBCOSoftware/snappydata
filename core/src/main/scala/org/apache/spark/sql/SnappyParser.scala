@@ -153,13 +153,13 @@ class SnappyParser(session: SnappySession)
       }
       case 'S' | 's' => if (Character.isDigit(s.charAt(len - 2))) {
         return newTokenizedLiteral(
-          java.lang.Short.parseShort(s.substring(0, len - 1)), LongType)
+          java.lang.Short.parseShort(s.substring(0, len - 1)), ShortType)
       } else {
         throw new ParseException(s"Found non numeric token $s")
       }
-      case 'Y' | 'y' => if (Character.isDigit(s.charAt(len - 2))) {
+      case 'B' | 'b' | 'Y' | 'y' => if (Character.isDigit(s.charAt(len - 2))) {
         return newTokenizedLiteral(
-          java.lang.Byte.parseByte(s.substring(0, len - 1)), LongType)
+          java.lang.Byte.parseByte(s.substring(0, len - 1)), ByteType)
       } else {
         throw new ParseException(s"Found non numeric token $s")
       }
@@ -624,8 +624,13 @@ class SnappyParser(session: SnappySession)
       (math.random * 1000).toInt, child)
   }
 
-  protected final def toDouble(s: String): Double =
-    toNumericLiteral(s).eval(EmptyRow).asInstanceOf[Number].doubleValue()
+  protected final def toDouble(s: String): Double = {
+    toNumericLiteral(s).eval(EmptyRow) match {
+      case n: Number => n.doubleValue()
+      case d: Decimal => d.toDouble
+      case o => throw new ParseException(s"Cannot convert '$o' to double")
+    }
+  }
 
   protected final def sample: Rule1[LogicalPlan => LogicalPlan] = rule {
     TABLESAMPLE ~ '(' ~ ws ~ (

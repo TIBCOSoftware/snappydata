@@ -60,8 +60,10 @@ class DelegateRDD[T: ClassTag](
     preferredLocations: Array[Seq[String]] = null,
     allDependencies: Seq[Dependency[_]] = null)
     extends RDD[T](sc,
-      if (allDependencies == null) baseRdd.dependencies
-      else allDependencies)
+      // for some weird reason passing dependencies as such causes deserialization errors
+      // in tests, so converting to forms (toArray.toList) that deserialize correctly
+      if (allDependencies == null) baseRdd.dependencies.toArray.toList
+      else allDependencies.toArray.toList)
         with Serializable {
 
   @transient override val partitioner: Option[Partitioner] = baseRdd.partitioner

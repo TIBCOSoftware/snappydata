@@ -415,7 +415,7 @@ trait SerializedRowData extends SpecializedGetters
     out.writeInt(bytes.length)
     out.writeVarInt(this.skipBytes, true)
     out.writeVarInt(this.nFields, true)
-    out.write(bytes)
+    out.writeBytes(bytes)
   }
 
   override final def read(kryo: Kryo, in: Input): Unit = {
@@ -425,7 +425,7 @@ trait SerializedRowData extends SpecializedGetters
     this.bitSetWidthInBytes = calculateBitSetWidthInBytes(nFields)
     this.baseOffset = Platform.BYTE_ARRAY_OFFSET
     val bytes = new Array[Byte](sizeInBytes)
-    in.read(bytes)
+    in.readBytes(bytes)
     this.baseObject = bytes
   }
 

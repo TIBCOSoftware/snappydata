@@ -50,17 +50,18 @@ import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunction
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
 import org.apache.spark.sql.execution.row.RowTableScan
+import org.apache.spark.sql.execution.streaming.BaseStreamingSink
 import org.apache.spark.sql.execution.ui.{SQLAppStatusListener, SQLAppStatusStore, SnappySQLAppListener}
 import org.apache.spark.sql.hive._
 import org.apache.spark.sql.sources.{BaseRelation, Filter, JdbcExtendedUtils, ResolveQueryHints}
-import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
+import org.apache.spark.sql.streaming.{LogicalDStreamPlan, OutputMode, StreamingQuery, StreamingQueryManager, Trigger}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.status.api.v1.RDDStorageInfo
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.util.Utils
+import org.apache.spark.util.{Clock, Utils}
 
 /**
  * Base implementation of [[SparkInternals]] for Spark 2.3.x and 2.4.x releases.
@@ -636,13 +637,25 @@ abstract class SnappySessionStateBuilder23_4(session: SnappySession,
   }
 
   override protected def streamingQueryManager: StreamingQueryManager = {
-    // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
-    // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
-    // implies that Snappydata aggregation optimisation will be turned off for any usage of
-    // this session including non-streaming queries.
+    new StreamingQueryManager(session) {
 
-    HashAggregateSize.set(conf, "-1")
-    new StreamingQueryManager(session)
+      override private[sql] def startQuery(userSpecifiedName: Option[String],
+          userSpecifiedCheckpointLocation: Option[String], df: DataFrame,
+          extraOptions: Map[String, String], sink: BaseStreamingSink, outputMode: OutputMode,
+          useTempCheckpointLocation: Boolean, recoverFromCheckpointLocation: Boolean,
+          trigger: Trigger, triggerClock: Clock): StreamingQuery = {
+
+        session.snappySessionState.initSnappyStrategies
+        // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
+        // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
+        // implies that Snappydata aggregation optimisation will be turned off for any usage of
+        // this session including non-streaming queries.
+        HashAggregateSize.set(conf, "-1")
+        super.startQuery(userSpecifiedName, userSpecifiedCheckpointLocation, df,
+          extraOptions, sink, outputMode, useTempCheckpointLocation,
+          recoverFromCheckpointLocation, trigger, triggerClock)
+      }
+    }
   }
 
   override def build(): SnappySessionState = {

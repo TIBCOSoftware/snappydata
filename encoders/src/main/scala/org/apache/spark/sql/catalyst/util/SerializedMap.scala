@@ -149,13 +149,13 @@ final class SerializedMap extends MapData
   override def write(kryo: Kryo, out: Output): Unit = {
     val bytes = toBytes
     out.writeInt(bytes.length)
-    out.write(bytes)
+    out.writeBytes(bytes)
   }
 
   override def read(kryo: Kryo, in: Input): Unit = {
     val size = in.readInt
     val bytes = new Array[Byte](size)
-    in.read(bytes)
+    in.readBytes(bytes)
     pointTo(bytes, Platform.BYTE_ARRAY_OFFSET)
     if (size != sizeInBytes) {
       throw new IOException(

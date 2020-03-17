@@ -24,6 +24,7 @@ import io.snappydata.{ConcurrentOpsTests, SnappyFunSuite}
 import org.scalatest.{Assertions, BeforeAndAfter}
 
 import org.apache.spark.sql._
+import org.apache.spark.status.api.v1.RDDStorageInfo
 import org.apache.spark.{Logging, SparkContext}
 
 class ColumnTableBatchInsertTest extends SnappyFunSuite
@@ -464,24 +465,31 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
 
 object ColumnTableBatchInsertTest extends Assertions with SparkSupport {
 
+  private def waitForRDDInfos(sc: SparkContext, expectedSize: Int,
+      message: String): Seq[RDDStorageInfo] = {
+    var rddInfos: Seq[RDDStorageInfo] = null
+    waitForCriterion({
+      rddInfos = internals.getCachedRDDInfos(sc)
+      rddInfos.length == expectedSize
+    }, message)
+    rddInfos
+  }
+
   def testSparkCachingUsingSQL(sc: SparkContext, executeSQL: String => Dataset[Row],
       isTableCached: String => Boolean, isCached: Dataset[Row] => Boolean): Unit = {
     executeSQL("cache table cachedTable1 as select id, rand() from range(1000000)")
     // check that table has been cached and materialized
     assert(isTableCached("cachedTable1"))
-    var rddInfos = internals.getCachedRDDInfos(sc)
-    waitForCriterion(rddInfos.length == 1, "cached table should show up")
+    var rddInfos = waitForRDDInfos(sc, 1, "cached table should show up")
     assert(rddInfos.head.name.contains("Range (0, 1000000"))
 
     assert(executeSQL("select count(*) from cachedTable1").collect()(0).getLong(0) === 1000000)
-    rddInfos = internals.getCachedRDDInfos(sc)
-    waitForCriterion(rddInfos.length == 1, "cached table should be present")
+    rddInfos = waitForRDDInfos(sc, 1, "cached table should be present")
     assert(rddInfos.head.name.contains("Range (0, 1000000"))
 
     executeSQL("uncache table cachedTable1")
     assert(!isTableCached("cachedTable1"))
-    rddInfos = internals.getCachedRDDInfos(sc)
-    waitForCriterion(rddInfos.isEmpty, "cached table should be cleared")
+    rddInfos = waitForRDDInfos(sc, 0, "cached table should be cleared")
 
     // temporary table should still exist
     assert(executeSQL("select count(*) from cachedTable1").collect()(0).getLong(0) === 1000000)
@@ -492,16 +500,14 @@ object ColumnTableBatchInsertTest extends Assertions with SparkSupport {
     rddInfos = internals.getCachedRDDInfos(sc)
     assert(rddInfos.length === 0)
     assert(executeSQL("select count(*) from cachedTable2").collect()(0).getLong(0) === 500000)
-    rddInfos = internals.getCachedRDDInfos(sc)
-    waitForCriterion(rddInfos.length == 1, "lazily cached table should show up after query")
+    rddInfos = waitForRDDInfos(sc, 1, "lazily cached table should show up after query")
     assert(rddInfos.head.name.contains("Range (0, 500000"))
 
     // drop table directly without explicit uncache should also do it
     val table = executeSQL("select * from cachedTable2")
     executeSQL("drop table cachedTable2")
     assert(!isCached(table))
-    rddInfos = internals.getCachedRDDInfos(sc)
-    waitForCriterion(rddInfos.isEmpty, "cached table should be cleared")
+    rddInfos = waitForRDDInfos(sc, 0, "cached table should be cleared")
 
     executeSQL("drop table cachedTable1")
   }

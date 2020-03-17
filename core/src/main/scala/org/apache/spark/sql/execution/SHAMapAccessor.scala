@@ -366,15 +366,25 @@ case class SHAMapAccessor(@transient session: SnappySession,
     }
   }
 
+  def initKeyOrBufferVal(dataTypes: Seq[DataType], varNames: Seq[String],
+      genClassField: Boolean = false): String = {
+    dataTypes.zip(varNames).map { case (dt, varName) =>
+      if (genClassField) {
+        internals.addClassField(ctx, internals.javaType(dt, ctx), varName,
+          forceInline = true, useFreshName = false)
+        s"$varName = ${internals.defaultValue(dt, ctx)};"
+      } else s"${internals.javaType(dt, ctx)} $varName = ${internals.defaultValue(dt, ctx)};"
+    }.mkString("\n")
+  }
 
-  def initKeyOrBufferVal(dataTypes: Seq[DataType], varNames: Seq[String]):
-  String = dataTypes.zip(varNames).map { case (dt, varName) =>
-    s"${internals.javaType(dt, ctx)} $varName = ${internals.defaultValue(dt, ctx)};"
-  }.mkString("\n")
-
-  def declareNullVarsForAggBuffer(varNames: Seq[String]): String =
-    varNames.map(varName => s"boolean $varName${SHAMapAccessor.nullVarSuffix} = false;").
-      mkString("\n")
+  def declareNullVarsForAggBuffer(varNames: Seq[String], genClassField: Boolean = false): String =
+    varNames.map { varName =>
+      if (genClassField) {
+        internals.addClassField(ctx, "boolean", s"$varName${SHAMapAccessor.nullVarSuffix}",
+          forceInline = true, useFreshName = false)
+        s"$varName${SHAMapAccessor.nullVarSuffix} = false;"
+      } else s"boolean $varName${SHAMapAccessor.nullVarSuffix} = false;"
+    }.mkString("\n")
 
   /**
    * Generate code to lookup the map or insert a new key, value if not found.
@@ -549,7 +559,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     ${
       SHAMapAccessor.initNullBitsetCode(
         SHAMapAccessor.generateNullKeysBitTermForStruct(structVarName),
-        SHAMapAccessor.calculateNumberOfBytesForNullBits(structType.length))
+        SHAMapAccessor.calculateNumberOfBytesForNullBits(structType.length), ctx)
     }
     $explodedStructCode
      """.stripMargin
@@ -921,7 +931,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
             } else {
               s"($strPart + 4)"
             }
-          case BinaryType => s"(${internals.exprCodeValue(expr)}}.length + 4) "
+          case BinaryType => s"(${internals.exprCodeValue(expr)}.length + 4) "
           case st: StructType =>
             val (childKeysVars, childDataTypes) =
               getExplodedExprCodeAndDataTypeForStruct(exprValue, st, nestingLevel)
@@ -1185,17 +1195,33 @@ object SHAMapAccessor extends SparkSupport {
     // ( depends on element type) , struct type ( depends on fields)
   }
 
-  def initNullBitsetCode(nullBitsetTerm: String,
-    numBytesForNullBits: Int): String = if (numBytesForNullBits == 0) {
+  def initNullBitsetCode(nullBitsetTerm: String, numBytesForNullBits: Int, ctx: CodegenContext,
+      genClassField: Boolean = false): String = if (numBytesForNullBits == 0) {
     ""
   } else if (numBytesForNullBits == 1) {
-    s"byte $nullBitsetTerm = 0;"
+    if (genClassField) {
+      internals.addClassField(ctx, "byte", nullBitsetTerm,
+        forceInline = true, useFreshName = false)
+      s"$nullBitsetTerm = 0;"
+    } else s"byte $nullBitsetTerm = 0;"
   } else if (numBytesForNullBits == 2) {
-    s"short $nullBitsetTerm = 0;"
+    if (genClassField) {
+      internals.addClassField(ctx, "short", nullBitsetTerm,
+        forceInline = true, useFreshName = false)
+      s"$nullBitsetTerm = 0;"
+    } else s"short $nullBitsetTerm = 0;"
   } else if (numBytesForNullBits <= 4) {
-    s"int $nullBitsetTerm = 0;"
+    if (genClassField) {
+      internals.addClassField(ctx, "int", nullBitsetTerm,
+        forceInline = true, useFreshName = false)
+      s"$nullBitsetTerm = 0;"
+    } else s"int $nullBitsetTerm = 0;"
   } else if (numBytesForNullBits <= 8) {
-    s"long $nullBitsetTerm = 0l;"
+    if (genClassField) {
+      internals.addClassField(ctx, "long", nullBitsetTerm,
+        forceInline = true, useFreshName = false)
+      s"$nullBitsetTerm = 0L;"
+    } else s"long $nullBitsetTerm = 0L;"
   } else {
     s"""
         |for( int i = 0 ; i < $numBytesForNullBits; ++i) {
@@ -1219,7 +1245,10 @@ object SHAMapAccessor extends SparkSupport {
 
   def calculateNumberOfBytesForNullBits(numAttributes: Int): Int = (numAttributes + 7 )/ 8
 
-  def generateNullKeysBitTermForStruct(structName: String): String = s"${structName}_nullKeysBitset"
+  def generateNullKeysBitTermForStruct(structName: String): String = {
+    if (structName.indexOf('[') == -1) s"${structName}_nullKeysBitset"
+    else s"${structName.replace('[', '_').replace(']', '_')}_nullKeysBitset"
+  }
 
   def generateVarNameForStructField(parentVar: String,
     nestingLevel: Int, index: Int): String = s"${parentVar}_${nestingLevel}_$index"

@@ -990,11 +990,11 @@ class SnappySessionState21(override val snappySession: SnappySession)
   override lazy val sqlParser: SnappySqlParser = snappySession.contextFunctions.newSQLParser()
 
   override lazy val streamingQueryManager: StreamingQueryManager = {
+    initSnappyStrategies
     // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
     // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
     // implies that Snappydata aggregation optimisation will be turned off for any usage of
     // this session including non-streaming queries.
-
     HashAggregateSize.set(snappySession.sessionState.conf, "-1")
     new StreamingQueryManager(snappySession)
   }

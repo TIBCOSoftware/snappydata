@@ -19,15 +19,15 @@ package org.apache.spark.sql.internal
 
 import io.snappydata.{HintName, QueryHint}
 
-import org.apache.spark.rdd.{EmptyRDD, RDD}
-import org.apache.spark.sql.JoinStrategy
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, ExprId, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{HintInfo, LogicalPlan, ResolvedHint}
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, SparkPlan}
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{JoinStrategy, SparkSupport}
 
 /**
  * An extension to [[ResolvedHint]] to encapsulate any kind of hint rather
@@ -61,10 +61,15 @@ final class ColumnTableScan23(output: Seq[Attribute], dataRDD: RDD[Any],
       caseSensitive, isSampleReservoirAsRegion) {
 
   override protected def doCanonicalize(): SparkPlan = if (isCanonicalizedPlan) this else {
-    new ColumnTableScan23(output, dataRDD = new EmptyRDD[Any](sparkContext), otherRDDs = Nil,
-      numBuckets, partitionColumns = Nil, partitionColumnAliases = Nil, baseRelation,
-      relationSchema, allFilters = Nil, schemaAttributes = Nil, caseSensitive = false,
-      isSampleReservoirAsRegion)
+    var id = -1
+    val newOutput = output.map { ar =>
+      id += 1
+      ar.withExprId(ExprId(id))
+    }
+    new ColumnTableScan23(newOutput, dataRDD = SparkSupport.internals.EMPTY_RDD,
+      otherRDDs = Nil, numBuckets, partitionColumns = Nil, partitionColumnAliases = Nil,
+      baseRelation, relationSchema, allFilters = Nil, schemaAttributes = Nil,
+      caseSensitive = false, isSampleReservoirAsRegion)
   }
 }
 
@@ -76,7 +81,13 @@ final class RowTableScan23(output: Seq[Attribute], schema: StructType, dataRDD: 
       partitionColumnAliases, table, baseRelation, caseSensitive) {
 
   override protected def doCanonicalize(): SparkPlan = if (isCanonicalizedPlan) this else {
-    new RowTableScan23(output, schema, dataRDD = null, numBuckets, partitionColumns = Nil,
-      partitionColumnAliases = Nil, table, baseRelation, caseSensitive = false)
+    var id = -1
+    val newOutput = output.map { ar =>
+      id += 1
+      ar.withExprId(ExprId(id))
+    }
+    new RowTableScan23(newOutput, schema, dataRDD = SparkSupport.internals.EMPTY_RDD,
+      numBuckets, partitionColumns = Nil, partitionColumnAliases = Nil,
+      table, baseRelation, caseSensitive = false)
   }
 }

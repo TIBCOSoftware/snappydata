@@ -1368,7 +1368,7 @@ final class BlockAndExecutorId(private[spark] var _blockId: BlockManagerId,
   }
 
   override def readExternal(in: ObjectInput): Unit = {
-    _blockId.readExternal(in)
+    _blockId = BlockManagerId(in)
     _executorCores = in.readInt()
     _numProcessors = in.readInt()
     _usableHeapBytes = in.readLong()

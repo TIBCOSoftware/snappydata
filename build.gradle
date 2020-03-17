@@ -135,7 +135,7 @@ allprojects {
     scalatestVersion = '3.0.8'
     jettyVersion = '9.3.28.v20191105'
     guavaVersion = '14.0.1'
-    kryoVersion = '4.0.1'
+    kryoVersion = '4.0.2'
     thriftVersion = '0.9.3'
     metricsVersion = '4.0.3'
     metrics2Version = '2.2.0'

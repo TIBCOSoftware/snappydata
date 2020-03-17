@@ -35,7 +35,7 @@ import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.Constant
+import io.snappydata.{Constant, Property}
 
 import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
@@ -223,7 +223,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
         pool = Constant.LOW_LATENCY_POOL
       }
     }
-    snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
+    snappySession.sparkContext.setLocalProperty(Property.SchedulerPool.name, pool)
   }
 
   private def prepareForCollect(): Boolean = {
@@ -263,7 +263,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       // reset the pool
       if (isLowLatencyQuery) {
         val pool = snappySession.snappySessionState.snappyConf.activeSchedulerPool
-        snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
+        snappySession.sparkContext.setLocalProperty(Property.SchedulerPool.name, pool)
       }
       // clear the shuffle dependencies asynchronously after the execution.
       startShuffleCleanups(snappySession.sparkContext)

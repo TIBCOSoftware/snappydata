@@ -93,7 +93,7 @@ trait SnappyJobTestSupport extends Logging {
   private def buildJobSubmissionCommand(packageStr: String, className: String): String = {
     val jobSubmissionCommand = s"$snappyJobScript submit --app-name $className" +
         s" --class $packageStr.$className" +
-        s" --app-jar ${getJobJar(className, packageStr.replaceAll("\\.", "/") + "/")}"
+        s" --app-jar ${getJobJar(className, packageStr.replaceAll("\\.", "/"))}"
     if (jobConfigFile != null) {
       jobSubmissionCommand + s" --passfile $jobConfigFile"
     } else jobSubmissionCommand
