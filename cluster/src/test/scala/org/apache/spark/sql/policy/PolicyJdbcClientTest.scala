@@ -487,10 +487,10 @@ class PolicyJdbcClientTest extends PolicyTestBase {
       // should find the SYS.SYSPOLICIES table in meta-data
       var foundSysPolicies = false
       while (rs1.next()) {
-        if (rs1.getString("TABLE_NAME") == "syspolicies") {
+        if (rs1.getString("TABLE_NAME") == "SYSPOLICIES") {
           foundSysPolicies = true
-          assert(rs1.getString("TABLE_SCHEM") === "sys")
-          assert(rs1.getString("TABLE_TYPE") === "virtual table")
+          assert(rs1.getString("TABLE_SCHEM") === "SYS")
+          assert(rs1.getString("TABLE_TYPE") === "VIRTUAL TABLE")
         }
       }
       assert(foundSysPolicies, "Failed to find SYS.SYSPOLICIES table in meta-data")

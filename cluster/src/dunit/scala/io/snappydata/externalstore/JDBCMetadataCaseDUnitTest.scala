@@ -32,6 +32,8 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
   val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
 
+  sysProps.put("metadatacase.lower", "")
+
   // using mixed case name to cover case insensitivity scenarios
   private val table1 = "tABle1"
   private val table2 = "tABle2"
