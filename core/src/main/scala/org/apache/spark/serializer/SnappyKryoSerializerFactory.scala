@@ -19,9 +19,10 @@ package org.apache.spark.serializer
 import java.io.{ObjectInputStream, ObjectOutputStream, Serializable => JavaSerializable}
 
 import com.esotericsoftware.kryo.factories.SerializerFactory
-import com.esotericsoftware.kryo.serializers.{FieldSerializer => KryoFieldSerializer, JavaSerializer => KryoJavaSerializer}
+import com.esotericsoftware.kryo.serializers.{FieldSerializer => KryoFieldSerializer}
 import com.esotericsoftware.kryo.{Kryo, Serializer => KryoClassSerializer}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
+import io.snappydata.impl.KryoJavaSerializer
 
 /**
  * This serializer factory will instantiate new serializers of a given class via reflection. If

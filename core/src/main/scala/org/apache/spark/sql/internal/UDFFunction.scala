@@ -18,16 +18,16 @@ package org.apache.spark.sql.internal
 
 import scala.util.control.NonFatal
 
-import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.api.java._
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry._
 import org.apache.spark.sql.catalyst.expressions.{Expression, ScalaUDF}
 import org.apache.spark.sql.execution.aggregate.ScalaUDAF
 import org.apache.spark.sql.expressions.UserDefinedAggregateFunction
-import org.apache.spark.sql.types.DataType
+import org.apache.spark.sql.types.{DataType, NullType}
+import org.apache.spark.sql.{AnalysisException, SparkSupport}
 
 
-object UDFFunction {
+object UDFFunction extends SparkSupport {
 
   private def scalaUDF(function: AnyRef, dataType: DataType,
       children: Seq[Expression], inputTypes: Seq[DataType] = Nil,
@@ -36,13 +36,45 @@ object UDFFunction {
     new ScalaUDF(function, dataType, children, inputTypes, udfName)
   }
 
-  def makeFunctionBuilder(name: String, clazz: Class[_], returnType: DataType): FunctionBuilder = {
+  def makeFunctionBuilder(name: String, clazz: Class[_], dt: Option[DataType]): FunctionBuilder = {
     children: Seq[Expression] => {
       try {
         if (classOf[UserDefinedAggregateFunction].isAssignableFrom(clazz)) {
           val udaf = clazz.newInstance().asInstanceOf[UserDefinedAggregateFunction]
-          ScalaUDAF(children, udaf)
+          val e = ScalaUDAF(children, udaf, 1, 1)
+          // Check input argument size
+          if (e.inputTypes.length != children.length) {
+            throw new AnalysisException(s"Invalid number of arguments for function $name. " +
+                s"Expected: ${e.inputTypes.size}; Found: ${children.length}")
+          }
+          dt match {
+            case None =>
+            case Some(t) =>
+              if (t.asNullable != e.dataType.asNullable) {
+                throw new AnalysisException(s"Defined return type (${t.catalogString}) " +
+                    s"does not match the one in function definition (${e.dataType.catalogString})")
+              }
+          }
+          e
         } else {
+          // infer the return type and check against the one defined
+          val inferred = clazz.getMethods.find(_.getName == "call") match {
+            case None => NullType
+            case Some(m) => internals.getReturnDataType(m)
+          }
+          val returnType = dt match {
+            case None => inferred
+            case Some(t) =>
+              if (t.asNullable != inferred.asNullable) {
+                // an inferred type of NullType can be StructType or any other
+                if (inferred != NullType) {
+                  throw new AnalysisException(s"Defined return type (${t.catalogString}) " +
+                      s"does not match the one in function definition (${inferred.catalogString})")
+                }
+              }
+              t
+          }
+          // noinspection ScalaDocParserErrorInspection
           children.size match {
             // scalastyle:off line.size.limit
 
@@ -156,8 +188,7 @@ object UDFFunction {
           }
         }
       } catch {
-        case ae: AnalysisException =>
-          throw ae
+        case ae: AnalysisException => throw ae
         case NonFatal(e) =>
           val analysisException =
             new AnalysisException(s"No handler for SnappyStore UDF '${clazz.getCanonicalName}': $e")

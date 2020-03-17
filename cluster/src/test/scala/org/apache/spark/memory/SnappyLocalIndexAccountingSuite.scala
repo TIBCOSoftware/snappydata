@@ -61,11 +61,13 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
       "jdbc:snappydata://" + serverHostPort)
     val stmt = conn.createStatement()
     stmt.execute("create index t1_index1 on t1 (col1)")
+    SnappyMemoryAccountingSuite.cleanupBroadcasts()
     val afterCreateIndex = SparkEnv.get.memoryManager.storageMemoryUsed
     assert(afterCreateIndex > 0)
     stmt.execute("drop index t1_index1")
+    SnappyMemoryAccountingSuite.cleanupBroadcasts()
     val afterDropIndex = SparkEnv.get.memoryManager.storageMemoryUsed
-    assert(afterDropIndex <   afterCreateIndex)
+    assert(afterDropIndex < afterCreateIndex)
   }
 
   test("Test Put Overhead on row partitioned table") {
@@ -217,6 +219,7 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
       "jdbc:snappydata://" + serverHostPort)
     val stmt = conn.createStatement()
     stmt.execute("create index t1_index1 on t1 (col1)")
+    SnappyMemoryAccountingSuite.cleanupBroadcasts()
     val afterIndex = SparkEnv.get.memoryManager.storageMemoryUsed
     SnappyContext.globalSparkContext.stop()
     sparkSession = createSparkSession(1, 0, 2000000L)
@@ -238,6 +241,7 @@ class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
       "jdbc:snappydata://" + serverHostPort)
     val stmt = conn.createStatement()
     stmt.execute("create index t1_index1 on t1 (col1)")
+    SnappyMemoryAccountingSuite.cleanupBroadcasts()
     val afterIndex = SparkEnv.get.memoryManager.storageMemoryUsed
     SnappyContext.globalSparkContext.stop()
     sparkSession = createSparkSession(1, 0, 2000000L)

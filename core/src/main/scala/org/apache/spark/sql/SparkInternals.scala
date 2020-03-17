@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql
 
+import java.lang.reflect.Method
+
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.{HintName, QueryHint}
 import org.apache.hadoop.conf.Configuration
@@ -668,6 +670,12 @@ trait SparkInternals extends Logging {
    * Get the global list of cached RDDs (as list of [[RDDStorageInfo]]).
    */
   def getCachedRDDInfos(context: SparkContext): Seq[RDDStorageInfo]
+
+  /**
+   * Get the return data type of given java method.
+   * A result of NullType indicates a possible StructType, so caller should check for the same.
+   */
+  def getReturnDataType(method: Method): DataType
 
   /**
    * Create a new ExprCode with given arguments.

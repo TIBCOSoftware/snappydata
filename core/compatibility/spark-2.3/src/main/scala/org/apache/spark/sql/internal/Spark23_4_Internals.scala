@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.internal
 
-import java.lang.reflect.Field
+import java.lang.reflect.{Field, Method}
 
 import scala.collection.mutable
 
@@ -55,13 +55,13 @@ import org.apache.spark.sql.execution.ui.{SQLAppStatusListener, SQLAppStatusStor
 import org.apache.spark.sql.hive._
 import org.apache.spark.sql.sources.{BaseRelation, Filter, JdbcExtendedUtils, ResolveQueryHints}
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, OutputMode, StreamingQuery, StreamingQueryManager, Trigger}
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.status.api.v1.RDDStorageInfo
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.util.{Clock, Utils}
+import org.apache.spark.util.Clock
 
 /**
  * Base implementation of [[SparkInternals]] for Spark 2.3.x and 2.4.x releases.
@@ -502,6 +502,10 @@ abstract class Spark23_4_Internals extends SparkInternals {
     context.statusStore.rddList()
   }
 
+  override def getReturnDataType(method: Method): DataType = {
+    HiveAccessUtil.javaTypeToDataType(method.getGenericReturnType)
+  }
+
   override def newExplainCommand(logicalPlan: LogicalPlan, extended: Boolean,
       codegen: Boolean, cost: Boolean): LogicalPlan = {
     ExplainCommand(logicalPlan, extended, codegen, cost)
@@ -547,20 +551,13 @@ trait SnappySessionCatalog23_4 extends SessionCatalog with SnappySessionCatalog 
 
   override def registerFunction(funcDefinition: CatalogFunction,
       overrideIfExists: Boolean, functionBuilder: Option[FunctionBuilder]): Unit = {
-    val func = funcDefinition.identifier
-    if (functionRegistry.functionExists(func) && !overrideIfExists) {
-      throw new AnalysisException(s"Function $func already exists")
+    val builder = functionBuilder match {
+      case None =>
+        Some(makeFunctionBuilderImpl(funcDefinition.identifier.unquotedString,
+          funcDefinition.className))
+      case _ => functionBuilder
     }
-    val info = new ExpressionInfo(funcDefinition.className, func.database.orNull, func.funcName)
-    val builder = functionBuilder.getOrElse {
-      val className = funcDefinition.className
-      if (!Utils.classIsLoadable(className)) {
-        throw new AnalysisException(s"Can not load class '$className' when registering " +
-            s"the function '$func', please make sure it is on the classpath")
-      }
-      makeFunctionBuilderImpl(func.unquotedString, className)
-    }
-    functionRegistry.registerFunction(func, info, builder)
+    super.registerFunction(funcDefinition, overrideIfExists, builder)
   }
 }
 

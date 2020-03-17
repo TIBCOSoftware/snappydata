@@ -24,9 +24,11 @@ import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{ByteBufferOutput, Input}
 import com.esotericsoftware.kryo.serializers.DefaultSerializers.KryoSerializableSerializer
-import com.esotericsoftware.kryo.serializers.{ExternalizableSerializer, JavaSerializer => KryoJavaSerializer}
+import com.esotericsoftware.kryo.serializers.ExternalizableSerializer
 import com.esotericsoftware.kryo.{Kryo, KryoException}
+import io.snappydata.impl.KryoJavaSerializer
 
+import org.apache.spark.api.python.PythonBroadcast
 import org.apache.spark.broadcast.TorrentBroadcast
 import org.apache.spark.executor.{InputMetrics, OutputMetrics, ShuffleReadMetrics, ShuffleWriteMetrics, TaskMetrics}
 import org.apache.spark.network.util.ByteUnit
@@ -48,8 +50,8 @@ import org.apache.spark.storage.BlockManagerMessages.{RemoveBlock, RemoveBroadca
 import org.apache.spark.storage._
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.collection.BitSet
-import org.apache.spark.util.{CollectionAccumulator, DoubleAccumulator, LongAccumulator, SerializableBuffer, Utils}
-import org.apache.spark.{Logging, SparkConf, SparkEnv}
+import org.apache.spark.util.{CollectionAccumulator, DoubleAccumulator, LongAccumulator, SerializableBuffer, SerializableConfiguration, SerializableJobConf, Utils}
+import org.apache.spark.{Logging, SerializableWritable, SparkConf, SparkEnv}
 
 /**
  * A pooled, optimized version of Spark's KryoSerializer that also works for
@@ -152,6 +154,12 @@ final class PooledKryoSerializer(conf: SparkConf)
     kryo.register(classOf[TokenLiteral], new KryoSerializableSerializer)
     kryo.register(classOf[ParamLiteral], new KryoSerializableSerializer)
     kryo.register(classOf[DynamicFoldableExpression], new KryoSerializableSerializer)
+
+    // Allow sending classes with custom Java serializers
+    kryo.register(classOf[SerializableWritable[_]], new KryoJavaSerializer)
+    kryo.register(classOf[SerializableConfiguration], new KryoJavaSerializer)
+    kryo.register(classOf[SerializableJobConf], new KryoJavaSerializer)
+    kryo.register(classOf[PythonBroadcast], new KryoJavaSerializer)
     // default kryo field serializer fails for InMemoryTableScanExec for some reason
     kryo.register(classOf[InMemoryTableScanExec], new KryoJavaSerializer)
 

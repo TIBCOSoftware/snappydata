@@ -730,17 +730,18 @@ abstract class SnappyDDLParser(session: SnappySession)
    */
   protected def createFunction: Rule1[LogicalPlan] = rule {
     CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ (TEMPORARY ~ push(true)).? ~ FUNCTION ~
-        ifNotExists ~ functionIdentifier ~ AS ~ qualifiedName ~ RETURNS ~ columnDataType ~
-        USING ~ (resourceType + commaSep) ~>
+        ifNotExists ~ functionIdentifier ~ AS ~ (qualifiedName | stringLiteral) ~
+        (RETURNS ~ columnDataType).? ~ USING ~ (resourceType + commaSep) ~>
         { (replace: Any, te: Any, ignoreIfExists: Boolean, functionIdent: FunctionIdentifier,
-            className: String, t: DataType, resources: Any) =>
+            className: String, t: Any, resources: Any) =>
 
           val isTemp = te.asInstanceOf[Option[Boolean]].isDefined
           val funcResources = resources.asInstanceOf[Seq[FunctionResource]]
           funcResources.foreach(checkExists)
-          val catalogString = t match {
-            case VarcharType(Int.MaxValue) => "string"
-            case _ => t.catalogString
+          val catalogString = t.asInstanceOf[Option[DataType]] match {
+            case None => ""
+            case Some(CharType(Int.MaxValue)) | Some(VarcharType(Int.MaxValue)) => "string"
+            case Some(dt) => dt.catalogString
           }
           val classNameWithType = className + "__" + catalogString
           internals.newCreateFunctionCommand(functionIdent.database,

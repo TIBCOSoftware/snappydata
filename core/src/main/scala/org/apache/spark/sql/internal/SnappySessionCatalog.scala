@@ -1085,7 +1085,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
     super.listPartitionsByFilter(tableName, predicates)
   }
 
-  // TODO: SW: clean up function creation to be like Spark with backward compatibility
+  // TODO: SW: clean up function resource loading to be like Spark with backward compatibility
 
   override def loadFunctionResources(resources: Seq[FunctionResource]): Unit = {
     val qualifiedName = SnappyExternalCatalog.currentFunctionIdentifier.get()
@@ -1094,15 +1094,11 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
     val callbacks = ToolsCallbackInit.toolsCallback
     val newClassLoader = ContextJarUtils.getDriverJar(functionQualifiedName) match {
       case None =>
-        val urls = if (callbacks != null) {
+        val urls = if (callbacks ne null) {
           resources.map { r =>
             ContextJarUtils.fetchFile(functionQualifiedName, r.uri)
           }
-        } else {
-          resources.map { r =>
-            toUrl(r)
-          }
-        }
+        } else resources.map(toUrl)
         val newClassLoader = new MutableURLClassLoader(urls.toArray, parentLoader)
         ContextJarUtils.addDriverJar(functionQualifiedName, newClassLoader)
         newClassLoader
@@ -1162,14 +1158,15 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
   }
 
   protected def makeFunctionBuilderImpl(funcName: String, className: String): FunctionBuilder = {
-    val uRLClassLoader = ContextJarUtils.getDriverJar(funcName) match {
+    val urlClassLoader = ContextJarUtils.getDriverJar(funcName) match {
       case None => org.apache.spark.util.Utils.getContextOrSparkClassLoader
       case Some(c) => c
     }
-    val (actualClassName, typeName) = className.splitAt(className.lastIndexOf("__"))
-    UDFFunction.makeFunctionBuilder(funcName,
-      uRLClassLoader.loadClass(actualClassName),
-      parser.parseDataType(typeName.stripPrefix("__")))
+    val splitIndex = className.lastIndexOf("__")
+    val actualClassName = className.substring(0, splitIndex)
+    val typeName = if (splitIndex != -1) className.substring(splitIndex + 2) else ""
+    val dataType = if (typeName.isEmpty) None else Some(parser.parseDataType(typeName))
+    UDFFunction.makeFunctionBuilder(funcName, urlClassLoader.loadClass(actualClassName), dataType)
   }
 
   /**

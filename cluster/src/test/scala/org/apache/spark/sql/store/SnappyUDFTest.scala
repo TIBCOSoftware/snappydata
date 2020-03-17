@@ -24,6 +24,7 @@ import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.jdbc.{ConnectionConfBuilder, ConnectionUtil}
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest._
 
 case class OrderData(ref: Int, description: String, price: Long,
@@ -92,6 +93,14 @@ class SnappyUDFTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("select APP.byteudf(description) from rr_table").collect()
     showDescribe("byteudf")
     dropUdf("byteudf")
+
+    // also check without RETURNS
+    snc.sql(s"CREATE FUNCTION APP.byteudf2 AS ByteUDF " +
+        s"USING JAR '$jar'")
+    assert(snc.sql("select app.byteudf2(description) from col_table a").collect()(0) ===
+        Row(122.asInstanceOf[Byte]))
+    showDescribe("byteudf2")
+    dropUdf("byteudf2")
   }
 
   test("Test Nested UDF with schema") {

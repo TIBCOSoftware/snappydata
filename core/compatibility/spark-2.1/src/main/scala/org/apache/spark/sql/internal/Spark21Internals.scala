@@ -17,6 +17,8 @@
 
 package org.apache.spark.sql.internal
 
+import java.lang.reflect.Method
+
 import scala.util.control.NonFatal
 
 import io.snappydata.Property.HashAggregateSize
@@ -53,7 +55,7 @@ import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.ui.{SQLTab, SnappySQLListener}
-import org.apache.spark.sql.hive.{HiveConditionalRule, HiveConditionalStrategy, HiveSessionCatalog, SnappyAnalyzer, SnappyHiveExternalCatalog, SnappySessionState}
+import org.apache.spark.sql.hive.{HiveAccessUtil, HiveConditionalRule, HiveConditionalStrategy, HiveSessionCatalog, SnappyAnalyzer, SnappyHiveExternalCatalog, SnappySessionState}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources.{BaseRelation, Filter, JdbcExtendedUtils, ResolveQueryHints}
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
@@ -621,6 +623,10 @@ class Spark21Internals(override val version: String) extends SparkInternals {
     context.ui.get.storageListener.rddInfoList.map(info => new RDDStorageInfo(info.id, info.name,
       info.numPartitions, info.numCachedPartitions, info.storageLevel.description,
       info.memSize, info.diskSize, dataDistribution = None, partitions = None))
+  }
+
+  override def getReturnDataType(method: Method): DataType = {
+    HiveAccessUtil.javaClassToDataType(method.getReturnType)
   }
 
   override def newExprCode(code: String, isNull: String, value: String, dt: DataType): ExprCode = {

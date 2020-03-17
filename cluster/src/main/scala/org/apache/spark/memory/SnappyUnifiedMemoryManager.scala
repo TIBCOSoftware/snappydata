@@ -193,7 +193,7 @@ class SnappyUnifiedMemoryManager private[memory](
 
   private[this] val threadsWaitingForStorage = new AtomicInteger()
 
-  private[this] val SPARK_CACHE = "_SPARK_CACHE_"
+  private[this] val SPARK_CACHE = "_SPARK_CACHE_AND_BROADCAST_"
 
   private[this] val evictor = new SnappyStorageEvictor
 
