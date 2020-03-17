@@ -819,6 +819,21 @@ class SQLFunctions extends SnappySQLJob {
     pw.println(columnDF.collect().mkString)
     pw.println("now() function in Row table :")
     pw.println(rowDF.collect().mkString)
+    pw.println()
+    /**
+      *  Below queries test the functions :
+      *  121.  json_tuple, 122.  crc32
+      */
+    createTables(SQLFunctionsUtils.createColTypeTbl_json_tuple_crc32_Spark,
+      SQLFunctionsUtils.createRowTypeTbl_json_tuple_crc32_Spark, SQLFunctionsUtils.
+        createColumnTbl_json_tuple_crc32, SQLFunctionsUtils.createRowTbl_json_tuple_crc32)
+    insertRecordsToTable(2, SQLFunctionsUtils.json_tuple_crc32)
+    validateResult(SQLFunctionsUtils.select_ColTbl_json_tuple_crc32, SQLFunctionsUtils.
+      select_RowTbl_json_tuple_crc32, "Q78_json_tuple_crc32",
+      "Q79_json_tuple_crc32")
+    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_json_tuple_crc32, SQLFunctionsUtils.
+      dropRowTbl_json_tuple_crc32, SQLFunctionsUtils.dropColTbl_json_tuple_crc32,
+      SQLFunctionsUtils.dropRowTbl_json_tuple_crc32)
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()

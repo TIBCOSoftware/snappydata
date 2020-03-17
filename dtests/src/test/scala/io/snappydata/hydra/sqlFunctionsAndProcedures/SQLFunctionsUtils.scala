@@ -941,5 +941,31 @@ object SQLFunctionsUtils {
     "regexp_replace(email,'@(\\\\w+)','@tibco') AS change FROM " + rowTbl
   val dropColTbl_regexp_extract_replace : String = dropTbl  + columnTbl
   val dropRowTbl_regexp_extract_replace : String = dropTbl + rowTbl
-
+  /**
+    *  Below queries test the functions :
+    *  121.  json_tuple, 122.  crc32
+    */
+  val json_tuple_crc32 = new Array[String](3)
+  val jsonStr1 = """'{"Name":"TIBCO","Location":20,"Revenue":30.45}'"""
+  val jsonStr2 = """'{"Name":"Snappy","Location":2,"Revenue":5.4}'"""
+  val jsonStr3 = """'{"Name":"Amazon","Location":32,"Revenue":100.23}'"""
+  json_tuple_crc32(0) = "(1,'ComputeDB',".concat(jsonStr1).concat(")")
+  json_tuple_crc32(1) = "(2,'SpotFire',".concat(jsonStr2).concat(")")
+  json_tuple_crc32(2) = "(3,'AWS',".concat(jsonStr3).concat(")")
+  val createColTypeTbl_json_tuple_crc32_Spark : String = createTbl + columnTbl +
+    "(id int,checksum string,jsonstr string)"
+  val createRowTypeTbl_json_tuple_crc32_Spark : String = createTbl + rowTbl +
+    "(id int,checksum string,jsonstr string)"
+  val createColumnTbl_json_tuple_crc32 : String = createTbl + columnTbl +
+    "(id int,checksum string,jsonstr string) " + usingCol
+  val createRowTbl_json_tuple_crc32 : String = createTbl + rowTbl +
+    "(id int,checksum string,jsonstr string) " + usingRow
+  val select_ColTbl_json_tuple_crc32 : String = "SELECT id," +
+    "json_tuple(jsonstr,'Name','Location','Revenue'), crc32(checksum) FROM " + columnTbl +
+    " ORDER BY ID"
+  val select_RowTbl_json_tuple_crc32: String = "SELECT id," +
+    "json_tuple(jsonstr,'Name','Location','Revenue'),crc32(checksum) FROM " + rowTbl +
+  " ORDER BY ID"
+  val dropColTbl_json_tuple_crc32 : String = dropTbl  + columnTbl
+  val dropRowTbl_json_tuple_crc32 : String = dropTbl + rowTbl
 }
