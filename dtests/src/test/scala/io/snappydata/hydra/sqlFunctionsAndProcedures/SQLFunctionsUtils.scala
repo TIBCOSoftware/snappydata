@@ -755,7 +755,7 @@ object SQLFunctionsUtils {
   /**
     *  Below queries test the functions :
     *  106. rollup, 107. cube.
-    *  123. window
+    *  125. window
     */
   val rollup_cube = new Array[String](10)
   rollup_cube(0) = "(1,'Mark','Male',5000,'USA')"
@@ -1026,4 +1026,41 @@ object SQLFunctionsUtils {
     " WHERE state RLIKE '[UG]'"
   val dropColTbl_like_rlike : String = dropTbl  + columnTbl
   val dropRowTbl_like_rlike : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  126. variance, 127. var_samp, 128. var_pop
+    */
+  val variance = new Array[String](17)
+  variance(0) = "(1,'Andhra Pradesh',1,0)"
+  variance(1) = "(2,'Delhi',9,1)"
+  variance(2) = "(3,'Haryana',2,14)"
+  variance(3) = "(4,'Karnataka',11,0)"
+  variance(4) = "(5,'Kerala',25,2)"
+  variance(5) = "(6,'Maharashtra',38,3)"
+  variance(6) = "(7,'Odisha',1,0)"
+  variance(7) = "(8,'Punjab',1,0)"
+  variance(8) = "(9,'Rajshthan',2,2)"
+  variance(9) = "(10,'Tamilnadu',1,0)"
+  variance(10) = "(11,'Telengana',3,2)"
+  variance(11) = "(12,'Jammu and Kashmir',3,0)"
+  variance(12) = "(13,'Ladakh',8,0)"
+  variance(13) = "(14,'Uttar Pradesh',15,1)"
+  variance(14) = "(15,'Uttarakhand',1,0)"
+  variance(15) = "(16,'West Bengal',1,0)"
+  val createColTypeTbl_variance_Spark : String = createTbl + columnTbl +
+    "(id int,state string,indian_nationals_corona int,foreign_national_corana int)"
+  val createRowTypeTbl_variance_Spark : String = createTbl + rowTbl +
+    "(id int,state string,indian_nationals_corona int,foreign_national_corana int)"
+  val createColumnTbl_variance : String = createTbl + columnTbl +
+    "(id int,state string,indian_nationals_corona int,foreign_national_corana int) " + usingCol
+  val createRowTbl_variance : String = createTbl + rowTbl +
+    "(id int,state string,indian_nationals_corona int,foreign_national_corana int) " + usingRow
+  val select_ColTbl_variance : String = "SELECT SUM(indian_nationals_corona)," +
+    "VAR_POP(indian_nationals_corona),VARIANCE(indian_nationals_corona)," +
+    "VAR_SAMP(indian_nationals_corona) FROM " + columnTbl
+  val select_RowTbl_variance: String = "SELECT SUM(indian_nationals_corona)," +
+    "VAR_POP(indian_nationals_corona),VARIANCE(indian_nationals_corona)," +
+    "VAR_SAMP(indian_nationals_corona) FROM " + rowTbl
+  val dropColTbl_variance : String = dropTbl  + columnTbl
+  val dropRowTbl_variance : String = dropTbl + rowTbl
 }

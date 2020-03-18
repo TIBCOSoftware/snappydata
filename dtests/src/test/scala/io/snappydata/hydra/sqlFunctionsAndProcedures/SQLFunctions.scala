@@ -848,12 +848,31 @@ class SQLFunctions extends SnappySQLJob {
         createColumnTbl_like_rlike, SQLFunctionsUtils.createRowTbl_like_rlike)
     insertRecordsToTable(14, SQLFunctionsUtils.like_rlike)
     validateResult(SQLFunctionsUtils.select_ColTbl_like, SQLFunctionsUtils.select_RowTbl_like,
-      "Q80_like","Q81_like")
+      "Q80_like", "Q81_like")
     validateResult(SQLFunctionsUtils.select_ColTbl_rlike, SQLFunctionsUtils.select_RowTbl_rlike,
       "Q82_rlike", "Q83_rlike")
     dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_like_rlike, SQLFunctionsUtils.
       dropRowTbl_like_rlike, SQLFunctionsUtils.dropColTbl_like_rlike,
       SQLFunctionsUtils.dropRowTbl_like_rlike)
+    /**
+      *  Below queries test the functions :
+      *  126. variance, 127. var_samp, 128. var_pop
+      */
+    createTables(SQLFunctionsUtils.createColTypeTbl_variance_Spark,
+      SQLFunctionsUtils.createRowTypeTbl_variance_Spark, SQLFunctionsUtils.
+        createColumnTbl_variance, SQLFunctionsUtils.createRowTbl_variance)
+    insertRecordsToTable(15, SQLFunctionsUtils.variance)
+    val varianceSncColDF = snc.sql(SQLFunctionsUtils.select_ColTbl_variance)
+    val varianceSparkColDF = spark.sql(SQLFunctionsUtils.select_ColTbl_variance)
+    validateResultThroughDataFrames(varianceSncColDF, varianceSparkColDF,
+    "Q86_column_variance", "column")
+    val varianceSncRowDF = snc.sql(SQLFunctionsUtils.select_RowTbl_variance)
+    val varianceSparkRowDF = spark.sql(SQLFunctionsUtils.select_RowTbl_variance)
+    validateResultThroughDataFrames(varianceSncRowDF, varianceSparkRowDF,
+    "Q87_row_variance", "row")
+    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_variance, SQLFunctionsUtils.
+      dropRowTbl_variance, SQLFunctionsUtils.dropColTbl_variance,
+      SQLFunctionsUtils.dropRowTbl_variance)
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
