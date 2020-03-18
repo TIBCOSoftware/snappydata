@@ -277,7 +277,7 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
             treeString(verbose = true), paramLiterals, paramsId), PartitionedPhysicalScan
               .getSparkPlanInfo(this, paramLiterals, paramsId))
         }
-        CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
+        CachedDataFrame.withNewExecutionId(session, child, queryStringShortForm,
           queryStr, queryExecStr, planInfo) {
           preAction()
           val rdd = child.execute()

@@ -397,7 +397,7 @@ class NorthWindTest
         case "Q9" => NWQueries.assertQuery(snc, NWQueries.Q9, "Q9", 3, 4, classOf[ProjectExec])
         case "Q10" => NWQueries.assertQuery(snc, NWQueries.Q10, "Q10", 2, 4, classOf[FilterExec])
         case "Q11" => NWQueries.assertQuery(snc, NWQueries.Q11, "Q11", 4, 4, classOf[ProjectExec])
-        case "Q12" => NWQueries.assertQuery(snc, NWQueries.Q12, "Q12", 2, 3, classOf[FilterExec])
+        case "Q12" => NWQueries.assertQuery(snc, NWQueries.Q12, "Q12", 2, 2, classOf[FilterExec])
         case "Q13" => NWQueries.assertQuery(snc, NWQueries.Q13, "Q13", 2, 4, classOf[FilterExec])
         case "Q14" => NWQueries.assertQuery(snc, NWQueries.Q14, "Q14", 69, 1, classOf[FilterExec])
         case "Q15" => NWQueries.assertQuery(snc, NWQueries.Q15, "Q15", 5, 4, classOf[FilterExec])
@@ -408,7 +408,7 @@ class NorthWindTest
         case "Q20" => NWQueries.assertQuery(snc, NWQueries.Q20, "Q20", 1, 1, classOf[ProjectExec])
         case "Q21" => NWQueries.assertQuery(snc, NWQueries.Q21, "Q21", 1, 1,
           classOf[ColumnTableScan])
-        case "Q22" => NWQueries.assertQuery(snc, NWQueries.Q22, "Q22", 1, 2, classOf[ProjectExec])
+        case "Q22" => NWQueries.assertQuery(snc, NWQueries.Q22, "Q22", 1, 1, classOf[ProjectExec])
         case "Q23" => NWQueries.assertQuery(snc, NWQueries.Q23, "Q23", 1, 1,
           classOf[ColumnTableScan])
         case "Q24" => NWQueries.assertQuery(snc, NWQueries.Q24, "Q24", 4, 4, classOf[ProjectExec])
@@ -538,7 +538,7 @@ class NorthWindTest
         case "Q9" => NWQueries.assertQuery(snc, NWQueries.Q9, "Q9", 3, 4, classOf[ProjectExec])
         case "Q10" => NWQueries.assertQuery(snc, NWQueries.Q10, "Q10", 2, 4, classOf[FilterExec])
         case "Q11" => NWQueries.assertQuery(snc, NWQueries.Q11, "Q11", 4, 4, classOf[ProjectExec])
-        case "Q12" => NWQueries.assertQuery(snc, NWQueries.Q12, "Q12", 2, 3, classOf[FilterExec])
+        case "Q12" => NWQueries.assertQuery(snc, NWQueries.Q12, "Q12", 2, 2, classOf[FilterExec])
         case "Q13" => NWQueries.assertQuery(snc, NWQueries.Q13, "Q13", 2, 4, classOf[FilterExec])
         case "Q14" => NWQueries.assertQuery(snc, NWQueries.Q14, "Q14", 69, 4, classOf[FilterExec])
         case "Q15" => NWQueries.assertQuery(snc, NWQueries.Q15, "Q15", 5, 4, classOf[FilterExec])
@@ -548,7 +548,7 @@ class NorthWindTest
         case "Q19" => NWQueries.assertQuery(snc, NWQueries.Q19, "Q19", 13, 4, classOf[ProjectExec])
         case "Q20" => NWQueries.assertQuery(snc, NWQueries.Q20, "Q20", 1, 1, classOf[ProjectExec])
         case "Q21" => NWQueries.assertQuery(snc, NWQueries.Q21, "Q21", 1, 1, classOf[RowTableScan])
-        case "Q22" => NWQueries.assertQuery(snc, NWQueries.Q22, "Q22", 1, 2, classOf[ProjectExec])
+        case "Q22" => NWQueries.assertQuery(snc, NWQueries.Q22, "Q22", 1, 1, classOf[ProjectExec])
         case "Q23" => NWQueries.assertQuery(snc, NWQueries.Q23, "Q23", 1, 1, classOf[RowTableScan])
         case "Q24" => NWQueries.assertQuery(snc, NWQueries.Q24, "Q24", 4, 4, classOf[ProjectExec])
         case "Q25" => NWQueries.assertJoin(snc, NWQueries.Q25, "Q25", 1, 4,

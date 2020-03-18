@@ -1193,7 +1193,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     // never expect the query above to take more than 7 secs
     assert(duration > 0L)
     assert(duration < sleepTime)
-    assert(queryUIData.jobs.count(_._2 == JobExecutionStatus.SUCCEEDED) === 2)
+    assert(queryUIData.jobs.count(_._2 == JobExecutionStatus.SUCCEEDED) === 1)
 
     val executionId = queryUIData.executionId
     val metrics = sqlStore.executionMetrics(executionId)

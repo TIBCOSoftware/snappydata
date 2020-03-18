@@ -17,11 +17,9 @@
 
 package org.apache.spark.sql.execution.ui
 
-import java.util.concurrent.ConcurrentMap
-
 import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.SparkListenerEvent
-import org.apache.spark.sql.{CachedDataFrame, SparkListenerSQLPlanExecutionEnd, SparkListenerSQLPlanExecutionStart}
+import org.apache.spark.sql.CachedDataFrame
 import org.apache.spark.status.ElementTrackingStore
 
 /**
@@ -38,58 +36,29 @@ class SnappySQLAppListener(context: SparkContext)
     extends SQLAppStatusListener(context.conf,
       context.statusStore.store.asInstanceOf[ElementTrackingStore], live = true) {
 
-  private[this] val baseLiveExecutions: ConcurrentMap[Long, LiveExecutionData] = {
-    val f = classOf[SQLAppStatusListener].getDeclaredFields
-        .find(_.getName.contains("liveExecutions")).get
-    f.setAccessible(true)
-    f.get(this).asInstanceOf[ConcurrentMap[Long, LiveExecutionData]]
-  }
-
   /**
    * Snappy's execution happens in two phases. First phase the plan is executed
    * to create a rdd which is then used to create a CachedDataFrame.
    * In second phase, the CachedDataFrame is then used for further actions.
    * For accumulating the metrics for first phase,
-   * SparkListenerSQLPlanExecutionStart is fired. This keeps the current
+   * SparkListenerSQLExecutionStart is fired. This keeps the current
    * executionID in _executionIdToData but does not add it to the active
    * executions. This ensures that query is not shown in the UI but the
    * new jobs that are run while the plan is being executed are tracked
    * against this executionID. In the second phase, when the query is
-   * actually executed, SparkListenerSQLPlanExecutionStart adds the execution
-   * data to the active executions. SparkListenerSQLPlanExecutionEnd is
+   * actually executed, SparkListenerSQLExecutionStart adds the execution
+   * data to the active executions. SparkListenerSQLExecutionEnd is
    * then sent with the accumulated time of both the phases.
    */
   override def onOtherEvent(event: SparkListenerEvent): Unit = event match {
-    case SparkListenerSQLPlanExecutionStart(executionId, description, details,
-    physicalPlanDescription, sparkPlanInfo, time) =>
-      super.onOtherEvent(SparkListenerSQLExecutionStart(executionId, description, details,
-        physicalPlanDescription, sparkPlanInfo, time))
-
     case SparkListenerSQLExecutionStart(executionId, description, details,
     physicalPlanDescription, sparkPlanInfo, time) =>
-      // if executionId already exists (from SparkListenerSQLPlanExecutionStart) then
-      // use the submissionTime from those details
-      val submissionTime = try {
-        context.statusStore.store.read(classOf[SQLExecutionUIData], executionId) match {
-          case null => time
-          case data if data.submissionTime <= 0 => time
-          case data => data.submissionTime
-        }
-      } catch {
-        case _: NoSuchElementException => time
-      }
-      // description and details strings being reference equals means
-      // trim off former here
+      // description and details strings being reference equals so trim off former here
       if (description eq details) {
         val desc = CachedDataFrame.queryStringShortForm(details)
         super.onOtherEvent(SparkListenerSQLExecutionStart(executionId, desc, details,
-          physicalPlanDescription, sparkPlanInfo, submissionTime))
-      } else if (submissionTime != time) {
-        super.onOtherEvent(SparkListenerSQLExecutionStart(executionId, description, details,
-          physicalPlanDescription, sparkPlanInfo, submissionTime))
+          physicalPlanDescription, sparkPlanInfo, time))
       } else super.onOtherEvent(event)
-
-    case SparkListenerSQLPlanExecutionEnd(executionId) => baseLiveExecutions.remove(executionId)
 
     case _ => super.onOtherEvent(event)
   }

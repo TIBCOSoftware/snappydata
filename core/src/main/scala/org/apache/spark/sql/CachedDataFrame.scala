@@ -64,8 +64,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     cachedRDD: RDD[InternalRow], shuffleDependencies: Array[Int], encoder: Encoder[Row],
     shuffleCleanups: Array[Future[Unit]], val rddId: Int, noSideEffects: Boolean,
     val queryHints: java.util.Map[String, String], private[sql] var currentExecutionId: Long,
-    private[sql] var planStartTime: Long, private[sql] var planEndTime: Long,
-    val linkPart : Boolean = false)
+    private[sql] var planningTime: Long, val linkPart : Boolean = false)
     extends Dataset[Row](snappySession, queryExecution, encoder) with Logging {
 
   private[sql] final def isCached: Boolean = cachedRDD ne null
@@ -155,7 +154,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private[sql] def duplicate(): CachedDataFrame = {
     val cdf = new CachedDataFrame(snappySession, queryExecution, queryExecutionString,
       queryPlanInfo, null, null, cachedRDD, shuffleDependencies, encoder, shuffleCleanups,
-      rddId, noSideEffects, queryHints, -1L, -1L, -1L, linkPart)
+      rddId, noSideEffects, queryHints, -1L, -1L, linkPart)
     cdf.log_ = log_
     cdf.levelFlags = levelFlags
     cdf._boundEnc = boundEnc // force materialize boundEnc which is commonly used
@@ -293,14 +292,13 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     try {
       didPrepare = prepareForCollect()
       val (result, elapsedMillis) = CachedDataFrame.withNewExecutionId(snappySession,
-        queryShortString, queryString, currentQueryExecutionString, currentQueryPlanInfo,
-        currentExecutionId, planStartTime, planEndTime)(body)
+        queryExecution.executedPlan, queryShortString, queryString, currentQueryExecutionString,
+        currentQueryPlanInfo, currentExecutionId, planningTime)(body)
       (result, elapsedMillis * 1000000L)
     } finally {
       if (isCached) {
         currentExecutionId = -1L
-        planStartTime = -1L
-        planEndTime = -1L
+        planningTime = 0L
       }
       endCollect(didPrepare)
     }
@@ -629,10 +627,12 @@ object CachedDataFrame
    *
    * Custom method to allow passing in cached SparkPlanInfo and queryExecution string.
    */
-  def withNewExecutionId[T](snappySession: SnappySession, queryShortForm: String,
-      queryLongForm: String, queryExecutionStr: String, queryPlanInfo: SparkPlanInfo,
-      currentExecutionId: Long = -1L, planStartTime: Long = -1L, planEndTime: Long = -1L,
-      postGUIPlans: Boolean = true)(body: => T): (T, Long) = {
+  // scalastyle:off
+  def withNewExecutionId[T](snappySession: SnappySession, executedPlan: SparkPlan,
+      queryShortForm: String, queryLongForm: String, queryExecutionStr: String,
+      queryPlanInfo: SparkPlanInfo, currentExecutionId: Long = -1L,
+      planningTime: Long = 0L, postGUIPlans: Boolean = true)(body: => T): (T, Long) = {
+    // scalastyle:on
     val sc = snappySession.sparkContext
     val localProperties = sc.getLocalProperties
     val oldExecutionId = localProperties.getProperty(SQLExecution.EXECUTION_ID_KEY)
@@ -644,7 +644,8 @@ object CachedDataFrame
       val executionIdStr = java.lang.Long.toString(executionId)
       SnappySession.setExecutionProperties(localProperties, executionIdStr, queryLongForm)
 
-      val startTime = System.currentTimeMillis()
+      // adjust the planning time in the start time
+      val startTime = System.currentTimeMillis() - planningTime
       var endTime = -1L
       try {
         if (postGUIPlans) sc.listenerBus.post(SparkListenerSQLExecutionStart(executionId,
@@ -655,15 +656,10 @@ object CachedDataFrame
       } finally {
         try {
           if (endTime == -1L) endTime = System.currentTimeMillis()
-          // the total duration displayed will be completion time provided below
-          // minus the start time of either above, or else the start time of
-          // original planning submission, so adjust the endTime accordingly
-          if (planEndTime != -1L) {
-            endTime -= (startTime - planEndTime)
-          }
           // add the time of plan execution to the end time.
           if (postGUIPlans) sc.listenerBus.post(SparkListenerSQLExecutionEnd(executionId, endTime))
         } finally {
+          SnappySession.cleanupBroadcasts(executedPlan, blocking = false)
           snappySession.snappySessionState.clearExecutionData()
           SnappySession.clearExecutionProperties(localProperties)
         }

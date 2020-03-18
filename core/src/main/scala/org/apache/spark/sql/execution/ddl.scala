@@ -335,12 +335,13 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
           session.snappySessionState.enableExecutionCache = false
           session.snappySessionState.clearExecutionCache()
         }
-        val memoryPlan = df.queryExecution.executedPlan.collectFirst {
+        val executedPlan = cachedExecution.executedPlan
+        val memoryPlan = executedPlan.collectFirst {
           case plan: InMemoryTableScanExec => plan.relation
         }.get
-        val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(cachedExecution.executedPlan)
+        val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(executedPlan)
         Row(CachedDataFrame.withCallback(session, df = null, cachedExecution, "cache")(_ =>
-          CachedDataFrame.withNewExecutionId(session, queryShortString, queryString,
+          CachedDataFrame.withNewExecutionId(session, executedPlan, queryShortString, queryString,
             cachedExecution.toString(), planInfo)({
             val start = System.nanoTime()
             // Dummy op to materialize the cache. This does the minimal job of count on

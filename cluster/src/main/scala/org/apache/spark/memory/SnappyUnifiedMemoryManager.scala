@@ -173,7 +173,7 @@ class SnappyUnifiedMemoryManager private[memory](
       memoryForObject.forEachKeyValue(new ObjectLongProcedure[MemoryOwner] {
         override def value(p: MemoryOwner, numBytes: Long): Unit = {
           val objectName = p.owner
-          if (!objectName.equals(SPARK_CACHE) &&
+          if (!objectName.equals(SnappyUnifiedMemoryManager.SPARK_CACHE) &&
               !objectName.endsWith(BufferAllocator.STORE_DATA_FRAME_OUTPUT)) {
             bootManagerMap.addToValue(p, numBytes)
           }
@@ -192,8 +192,6 @@ class SnappyUnifiedMemoryManager private[memory](
   }
 
   private[this] val threadsWaitingForStorage = new AtomicInteger()
-
-  private[this] val SPARK_CACHE = "_SPARK_CACHE_AND_BROADCAST_"
 
   private[this] val evictor = new SnappyStorageEvictor
 
@@ -545,8 +543,8 @@ class SnappyUnifiedMemoryManager private[memory](
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode): Boolean = {
-    acquireStorageMemoryForObject(SPARK_CACHE, blockId, numBytes, memoryMode, null,
-      shouldEvict = true)
+    acquireStorageMemoryForObject(SnappyUnifiedMemoryManager.SPARK_CACHE, blockId, numBytes,
+      memoryMode, null, shouldEvict = true)
   }
 
   private def askStoragePool(objectName: String,
@@ -775,7 +773,7 @@ class SnappyUnifiedMemoryManager private[memory](
   }
 
   override def releaseStorageMemory(numBytes: Long, memoryMode: MemoryMode): Unit = {
-    releaseStorageMemoryForObject(SPARK_CACHE, numBytes, memoryMode)
+    releaseStorageMemoryForObject(SnappyUnifiedMemoryManager.SPARK_CACHE, numBytes, memoryMode)
   }
 
   override def dropStorageMemoryForObject(name: String,
@@ -857,6 +855,8 @@ object SnappyUnifiedMemoryManager extends Logging {
   private val DEFAULT_EVICTION_FRACTION = 0.8
 
   private val DEFAULT_STORAGE_FRACTION = 0.5
+
+  val SPARK_CACHE: String = "_SPARK_CACHE_AND_BROADCAST_"
 
   private def getMaxHeapMemory: Long = {
     val maxMemory = Runtime.getRuntime.maxMemory()

@@ -22,7 +22,6 @@ import java.sql.SQLException
 import java.util.Properties
 
 import scala.actors.Futures._
-import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
@@ -35,7 +34,7 @@ import org.apache.spark.sql.catalyst.expressions.{SpecificInternalRow, UnsafePro
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{CachedDataFrame, Row, SnappyContext, SnappySession}
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{CleanBroadcast, SparkContext, SparkEnv, TaskContextImpl}
+import org.apache.spark.{SparkEnv, TaskContextImpl}
 
 
 class SnappyMemoryAccountingSuite extends MemoryFunSuite {
@@ -278,7 +277,6 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     snSession = new SnappySession(sparkSession.sparkContext)
 
     assert(snSession.sql("select * from t1").collect().length == 0)
-    SnappyMemoryAccountingSuite.cleanupBroadcasts()
     val afterRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
     assert(beforeInsertMem == afterRebootMemory) // 4 bytes for hashmap. Need to check
     snSession.dropTable("t1")
@@ -309,7 +307,6 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
     assert(snSession.sql("select * from t1").collect().length == 5)
 
-    SnappyMemoryAccountingSuite.cleanupBroadcasts()
     val afterRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
     // Due to a design flaw in recovery we always recover one more value than the LRU limit.
     assertApproximate(beforeRebootMemory, afterRebootMemory)
@@ -335,7 +332,6 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     snSession = new SnappySession(sparkSession.sparkContext)
 
     assert(snSession.sql("select * from t1").collect().length == 0)
-    SnappyMemoryAccountingSuite.cleanupBroadcasts()
     val afterRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
     assert(beforeInsertMem == afterRebootMemory) // 4 bytes for hashmap. Need to check
     snSession.dropTable("t1")
@@ -361,7 +357,6 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     snSession = new SnappySession(sparkSession.sparkContext)
 
     assert(snSession.sql("select * from t1").collect().length == 5)
-    SnappyMemoryAccountingSuite.cleanupBroadcasts()
     val afterRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
     // Due to a design flaw in recovery we always recover one more value than the LRU limit.
     assertApproximate(beforeRebootMemory, afterRebootMemory)
@@ -388,7 +383,6 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     snSession = new SnappySession(sparkSession.sparkContext)
 
     assert(snSession.sql("select * from t1").collect().length == 10)
-    SnappyMemoryAccountingSuite.cleanupBroadcasts()
     val afterRebootMemory = SparkEnv.get.memoryManager.storageMemoryUsed
     assertApproximate(beforeRebootMemory, afterRebootMemory, 4)
     snSession.dropTable("t1")
@@ -665,21 +659,5 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val afterUpdate = SparkEnv.get.memoryManager.storageMemoryUsed
     assert(afterUpdate > afterInsert)
     snSession.dropTable("t1")
-  }
-}
-
-object SnappyMemoryAccountingSuite {
-
-  /**
-   * Each Task in Spark creates a broadcast that will normally be cleaned up
-   * after reference has been collected by GC. This method forcefully clears
-   * all pending broadcasts.
-   */
-  def cleanupBroadcasts(): Unit = {
-    val cleaner = SparkContext.getActive.get.cleaner.get
-    cleaner.referenceBuffer.asScala.foreach(_.task match {
-      case CleanBroadcast(id) => cleaner.doCleanupBroadcast(id, blocking = true)
-      case _ =>
-    })
   }
 }

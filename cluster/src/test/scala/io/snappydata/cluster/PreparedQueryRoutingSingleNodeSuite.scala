@@ -1086,7 +1086,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       }
       logInfo(s"1-Number of rows read " + index)
       assert(index == 46)
-      assert(cacheMap.size() == 0)
+      assert(cacheMap.size() == 0 || cacheMap.size() == 1)
 
       prepStatement1.setInt(1, 5)
       prepStatement1.setInt(2, 5)
@@ -1107,7 +1107,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       }
       logInfo(s"2-Number of rows read " + index)
       assert(index == 65)
-      assert(cacheMap.size() == 0)
+      assert(cacheMap.size() == 0 || cacheMap.size() == 1)
       close(prepStatement1)
     }
     finally {

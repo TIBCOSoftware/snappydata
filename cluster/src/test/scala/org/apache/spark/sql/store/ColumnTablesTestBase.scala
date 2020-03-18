@@ -79,7 +79,7 @@ abstract class ColumnTablesTestBase extends SnappyFunSuite {
         "T12 Timestamp not null, T13 Binary not null) " +
         "USING column options (buckets '8')")
     session.sql("CREATE TABLE TypesTable3 (Index Int not null, T1 Boolean, " +
-        "T2 Integer, T3 smallint, T4 Int, T5 bigint, T6 REAL, T7 Double, T8 varchar(100), " +
+        "T2 Tinyint, T3 smallint, T4 Int, T5 bigint, T6 REAL, T7 Double, T8 varchar(100), " +
         "T9 Decimal(10, 4), T10 Decimal(35, 15), T11 Date, T12 Timestamp, " +
         "T13 blob) USING row")
 
@@ -98,7 +98,7 @@ abstract class ColumnTablesTestBase extends SnappyFunSuite {
         }
 
         val t2 = rnd.nextInt(150) match {
-          case b if b < 128 => Byte.box(b.toByte)
+          case b if b < 128 => Short.box(b.toByte)
           case _ => null
         }
 
@@ -185,7 +185,7 @@ object ColumnTablesTestBase {
   var hasNulls = true
 }
 
-case class AllTypes(index: Int, t1: java.lang.Boolean, t2: java.lang.Byte,
+case class AllTypes(index: Int, t1: java.lang.Boolean, t2: java.lang.Short,
     t3: java.lang.Short, t4: java.lang.Integer, t5: java.lang.Long,
     t6: java.lang.Float, t7: java.lang.Double, t8: String, t9: Decimal,
     t10: Decimal, t11: Date, t12: Timestamp, t13: Array[Byte]) {
