@@ -650,6 +650,11 @@ class SQLFunctions extends SnappySQLJob {
       select_RowTbl_rollup, "Q61_rollup_column", "Q62_rollup_row")
     validateResult(SQLFunctionsUtils.select_ColTbl_cube, SQLFunctionsUtils.
       select_RowTbl_cube, "Q63_cube_column", "Q64_cube_row")
+    /**
+      * window function validation.
+      */
+    validateResult(SQLFunctionsUtils.select_ColTbl_window, SQLFunctionsUtils.
+      select_RowTbl_window, "Q84_window_col", "Q85_window_row")
     dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_rollup_cube,
       SQLFunctionsUtils.dropRowTbl_rollup_cube, SQLFunctionsUtils.
         dropColTbl_rollup_cube, SQLFunctionsUtils.dropRowTbl_rollup_cube)
@@ -845,7 +850,7 @@ class SQLFunctions extends SnappySQLJob {
     validateResult(SQLFunctionsUtils.select_ColTbl_like, SQLFunctionsUtils.select_RowTbl_like,
       "Q80_like","Q81_like")
     validateResult(SQLFunctionsUtils.select_ColTbl_rlike, SQLFunctionsUtils.select_RowTbl_rlike,
-      "Q82_rlike","Q83_rlike")
+      "Q82_rlike", "Q83_rlike")
     dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_like_rlike, SQLFunctionsUtils.
       dropRowTbl_like_rlike, SQLFunctionsUtils.dropColTbl_like_rlike,
       SQLFunctionsUtils.dropRowTbl_like_rlike)

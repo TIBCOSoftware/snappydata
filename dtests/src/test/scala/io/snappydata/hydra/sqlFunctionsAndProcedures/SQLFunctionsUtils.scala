@@ -755,6 +755,7 @@ object SQLFunctionsUtils {
   /**
     *  Below queries test the functions :
     *  106. rollup, 107. cube.
+    *  123. window
     */
   val rollup_cube = new Array[String](10)
   rollup_cube(0) = "(1,'Mark','Male',5000,'USA')"
@@ -783,6 +784,25 @@ object SQLFunctionsUtils {
     columnTbl + " GROUP BY CUBE(country,gender)"
   val select_RowTbl_cube: String = "SELECT country,gender,sum(salary) AS total FROM " +
     rowTbl + " GROUP BY CUBE(country,gender)"
+  /**
+    *  window function.
+    */
+  val select_ColTbl_window : String = "SELECT name,gender,salary," +
+    "AVG(salary) OVER (PARTITION BY gender ORDER BY salary " +
+    "ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS Average," +
+    "COUNT(salary) OVER (PARTITION BY gender ORDER BY salary " +
+    "ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS TotalCount," +
+    "SUM(salary) OVER (PARTITION BY gender ORDER BY salary " +
+    "ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS SalarySum" +
+    " FROM " + columnTbl
+  val select_RowTbl_window: String = "SELECT name,gender,salary," +
+    "AVG(salary) OVER (PARTITION BY gender ORDER BY salary " +
+    "ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS Average," +
+    "COUNT(salary) OVER (PARTITION BY gender ORDER BY salary " +
+    "ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS TotalCount," +
+    "SUM(salary) OVER (PARTITION BY gender ORDER BY salary " +
+    "ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS SalarySum" +
+    " FROM " + rowTbl
   val dropColTbl_rollup_cube : String = dropTbl  + columnTbl
   val dropRowTbl_rollup_cube : String = dropTbl + rowTbl
   /**
