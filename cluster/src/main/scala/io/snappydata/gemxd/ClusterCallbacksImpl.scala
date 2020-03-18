@@ -24,6 +24,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
+
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.Version
@@ -39,12 +40,13 @@ import io.snappydata.impl.LeadImpl
 import io.snappydata.recovery.RecoveryService
 import io.snappydata.remote.interpreter.SnappyInterpreterExecute
 import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
-import org.apache.spark.Logging
+
+import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.collection.ToolsCallbackInit
-import org.apache.spark.sql.{Row, SaveMode}
+import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -272,5 +274,10 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     val tcb = ToolsCallbackInit.toolsCallback
     if (tcb.isUserAuthorizedForExtTable(user, Some(TableIdentifier(table))) != null) return false
     true
+  }
+
+  override def cancelJobGroup(groupId: String): Unit = {
+    println("VMVM: about to cancel job group:" + groupId )
+    SnappyContext.globalSparkContext.cancelJobGroup(groupId)
   }
 }
