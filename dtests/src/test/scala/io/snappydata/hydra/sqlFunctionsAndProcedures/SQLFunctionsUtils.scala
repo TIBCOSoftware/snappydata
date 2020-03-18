@@ -968,4 +968,42 @@ object SQLFunctionsUtils {
   " ORDER BY ID"
   val dropColTbl_json_tuple_crc32 : String = dropTbl  + columnTbl
   val dropRowTbl_json_tuple_crc32 : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  123.  like, 124.  rlike
+    */
+  val like_rlike = new Array[String](15)
+  like_rlike(0) = "('Jawaharlal Nehru','Uttar Pradesh','Indian National Congress')"
+  like_rlike(1) = "('Gulzarilal Nanda','Gujarat','Indian National Congress')"
+  like_rlike(2) = "('Lal Bahadur Shastri','Uttar Pradesh','Indian National Congress')"
+  like_rlike(3) = "('Indira Gandhi','Uttar Pradesh','Indian National Congress')"
+  like_rlike(4) = "('Morarji Desai','Gujarat','Janata Party')"
+  like_rlike(5) = "('Charan Singh','Uttar Pradesh','Janata Party Secular')"
+  like_rlike(6) = "('Rajiv Gandhi','Uttar Pradesh','Indian National Congress')"
+  like_rlike(7) = "('Vishwanath Pratap Singh','Uttar Pradesh','Janata Dal')"
+  like_rlike(8) = "('Chandra Shekhar','Uttar Pradesh','Samajwadi Janata Party')"
+  like_rlike(9) = "('P. V. Narasimha Rao','Andhra Pradesh','Indian National Congress(I)')"
+  like_rlike(10) = "('Atal Bihari Vajpayee','Uttar Pradesh','Bharatiya Janata Party')"
+  like_rlike(11) = "('H. D. Deve Gowda','Karnataka','Janata Dal(U)')"
+  like_rlike(12) = "('Inder Kumar Gujral','Bihar','Janata Dal(U)')"
+  like_rlike(13) = "('Manmohan Singh','Assam','Indian National Congress(I)')"
+  like_rlike(14) = "('Narendra Modi','Uttar Pradesh','Bharatiya Janata Party')"
+  val createColTypeTbl_like_rlike_Spark : String = createTbl + columnTbl +
+    "(name string,state string,party string)"
+  val createRowTypeTbl_like_rlike_Spark : String = createTbl + rowTbl +
+    "(name string,state string,party string)"
+  val createColumnTbl_like_rlike : String = createTbl + columnTbl +
+    "(name string,state string,party string) " + usingCol
+  val createRowTbl_like_rlike : String = createTbl + rowTbl +
+    "(name string,state string,party string) " + usingRow
+  val select_ColTbl_like : String = "SELECT name,state,party FROM " + columnTbl +
+  " WHERE state LIKE 'Ut%' AND party LIKE 'Bhar%'"
+  val select_RowTbl_like: String = "SELECT name,state,party FROM " + rowTbl +
+    " WHERE state LIKE 'Ut%' AND party LIKE 'Bhar%'"
+  val select_ColTbl_rlike : String = "SELECT name,state,party FROM " + columnTbl +
+    " WHERE state RLIKE '[UG]'"
+  val select_RowTbl_rlike: String = "SELECT name,state,party FROM " + rowTbl +
+    " WHERE state RLIKE '[UG]'"
+  val dropColTbl_like_rlike : String = dropTbl  + columnTbl
+  val dropRowTbl_like_rlike : String = dropTbl + rowTbl
 }

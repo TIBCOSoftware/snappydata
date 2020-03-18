@@ -834,6 +834,21 @@ class SQLFunctions extends SnappySQLJob {
     dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_json_tuple_crc32, SQLFunctionsUtils.
       dropRowTbl_json_tuple_crc32, SQLFunctionsUtils.dropColTbl_json_tuple_crc32,
       SQLFunctionsUtils.dropRowTbl_json_tuple_crc32)
+    /**
+      *  Below queries test the functions :
+      *  123.  like, 124.  rlike
+      */
+    createTables(SQLFunctionsUtils.createColTypeTbl_like_rlike_Spark,
+      SQLFunctionsUtils.createRowTypeTbl_like_rlike_Spark, SQLFunctionsUtils.
+        createColumnTbl_like_rlike, SQLFunctionsUtils.createRowTbl_like_rlike)
+    insertRecordsToTable(14, SQLFunctionsUtils.like_rlike)
+    validateResult(SQLFunctionsUtils.select_ColTbl_like, SQLFunctionsUtils.select_RowTbl_like,
+      "Q80_like","Q81_like")
+    validateResult(SQLFunctionsUtils.select_ColTbl_rlike, SQLFunctionsUtils.select_RowTbl_rlike,
+      "Q82_rlike","Q83_rlike")
+    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_like_rlike, SQLFunctionsUtils.
+      dropRowTbl_like_rlike, SQLFunctionsUtils.dropColTbl_like_rlike,
+      SQLFunctionsUtils.dropRowTbl_like_rlike)
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
