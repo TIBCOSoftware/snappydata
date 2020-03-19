@@ -277,7 +277,6 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def cancelJobGroup(groupId: String): Unit = {
-    println("VMVM: about to cancel job group:" + groupId )
     SnappyContext.globalSparkContext.cancelJobGroup(groupId)
   }
 }
