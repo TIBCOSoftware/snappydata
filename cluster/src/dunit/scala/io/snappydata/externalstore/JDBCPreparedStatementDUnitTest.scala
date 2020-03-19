@@ -18,7 +18,7 @@ package io.snappydata.externalstore
 
 import java.sql.{PreparedStatement, SQLException}
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{CountDownLatch, Executors}
+import java.util.concurrent.{CountDownLatch, Executors, TimeoutException}
 
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.Try
@@ -464,7 +464,6 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
       s"""create table $table (col1 int, col2  int) using column as
         |select id as col1, id as col2 from range(10000000)""".stripMargin)
     try {
-      val latch = new CountDownLatch(1)
       implicit val context: ExecutionContextExecutor =
         ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
       val f = Future {
@@ -476,7 +475,9 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
             Assert.fail("The query execution should have cancelled.")
           }
         } catch {
-          case e: SQLException => "XCL56".equals(e.getSQLState)
+          case e: SQLException =>
+            val expectedMessage = "The statement has been cancelled due to a user request."
+            assert("XCL56".equals(e.getSQLState) && e.getMessage.contains(expectedMessage))
         }
       }
       // wait for select query submission
@@ -487,7 +488,11 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
 
       import scala.concurrent.duration._
       println("Awaiting result of the future.")
-      Await.result(f, 10.seconds)
+      try {
+        Await.result(f, 10.seconds)
+      } catch {
+        case _: TimeoutException => Assert.fail("Query didn't get cancelled in stipulated time.")
+      }
     } finally {
       stmt.execute(s"drop table if exists $table")
       Try(stmt.close())
