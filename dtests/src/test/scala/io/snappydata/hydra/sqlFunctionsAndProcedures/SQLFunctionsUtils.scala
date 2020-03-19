@@ -1029,7 +1029,7 @@ object SQLFunctionsUtils {
   /**
     *  Below queries test the functions :
     *  126. variance, 127. var_samp, 128. var_pop,
-    *  129. stddev, 130. stddev_samp, 131. stddev_pop
+    *  129. stddev, 130. stddev_samp, 131. stddev_pop, 132. std
     */
   val variance = new Array[String](17)
   variance(0) = "(1,'Andhra Pradesh',1,0)"
@@ -1059,13 +1059,13 @@ object SQLFunctionsUtils {
   val select_ColTbl_variance : String = "SELECT SUM(indian_nationals_corona)," +
     "VAR_POP(indian_nationals_corona),VARIANCE(indian_nationals_corona)," +
     "VAR_SAMP(indian_nationals_corona),STDDEV_POP(indian_nationals_corona)," +
-    "STDDEV(indian_nationals_corona),STDDEV_SAMP(indian_nationals_corona)" +
-    " FROM " + columnTbl
+    "STDDEV(indian_nationals_corona),STDDEV_SAMP(indian_nationals_corona)," +
+    "STD(indian_nationals_corona) FROM " + columnTbl
   val select_RowTbl_variance: String = "SELECT SUM(indian_nationals_corona)," +
     "VAR_POP(indian_nationals_corona),VARIANCE(indian_nationals_corona)," +
     "VAR_SAMP(indian_nationals_corona),STDDEV_POP(indian_nationals_corona)," +
-    "STDDEV(indian_nationals_corona),STDDEV_SAMP(indian_nationals_corona)" +
-    " FROM " + rowTbl
+    "STDDEV(indian_nationals_corona),STDDEV_SAMP(indian_nationals_corona)," +
+    "STD(indian_nationals_corona) FROM " + rowTbl
   val dropColTbl_variance : String = dropTbl  + columnTbl
   val dropRowTbl_variance : String = dropTbl + rowTbl
 }
