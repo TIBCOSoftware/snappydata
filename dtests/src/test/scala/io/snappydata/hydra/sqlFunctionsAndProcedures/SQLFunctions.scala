@@ -856,7 +856,8 @@ class SQLFunctions extends SnappySQLJob {
       SQLFunctionsUtils.dropRowTbl_like_rlike)
     /**
       *  Below queries test the functions :
-      *  126. variance, 127. var_samp, 128. var_pop
+      *  126. variance, 127. var_samp, 128. var_pop,
+      *  129. stddev, 130. stddev_samp, 131. stddev_pop
       */
     createTables(SQLFunctionsUtils.createColTypeTbl_variance_Spark,
       SQLFunctionsUtils.createRowTypeTbl_variance_Spark, SQLFunctionsUtils.
