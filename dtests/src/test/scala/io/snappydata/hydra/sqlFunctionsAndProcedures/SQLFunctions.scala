@@ -874,6 +874,25 @@ class SQLFunctions extends SnappySQLJob {
     dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_variance, SQLFunctionsUtils.
       dropRowTbl_variance, SQLFunctionsUtils.dropColTbl_variance,
       SQLFunctionsUtils.dropRowTbl_variance)
+    /**
+      *  Below queries test the functions :
+      *  133. named_struct
+      */
+    createTables(SQLFunctionsUtils.createColTypeTbl_named_struct_Spark,
+      SQLFunctionsUtils.createRowTypeTbl_named_struct_Spark, SQLFunctionsUtils.
+        createColumnTbl_named_struct, SQLFunctionsUtils.createRowTbl_named_struct)
+    insertRecordsToTable(2, SQLFunctionsUtils.named_struct)
+    val namedStructSncColDF = snc.sql(SQLFunctionsUtils.select_ColTbl_named_struct)
+    val namedStructSparkColDF = spark.sql(SQLFunctionsUtils.select_ColTbl_named_struct)
+    validateResultThroughDataFrames(namedStructSncColDF, namedStructSparkColDF,
+      "Q88_column_namedstruct", "column")
+    val namedStructSncRowDF = snc.sql(SQLFunctionsUtils.select_RowTbl_named_struct)
+    val namedStructSparkRowDF = spark.sql(SQLFunctionsUtils.select_RowTbl_named_struct)
+    validateResultThroughDataFrames(namedStructSncRowDF, namedStructSparkRowDF,
+      "Q89_row_namedstruct", "row")
+    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_named_struct, SQLFunctionsUtils.
+      dropRowTbl_named_struct, SQLFunctionsUtils.dropColTbl_named_struct,
+      SQLFunctionsUtils.dropRowTbl_named_struct)
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()

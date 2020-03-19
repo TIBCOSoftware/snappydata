@@ -1068,4 +1068,26 @@ object SQLFunctionsUtils {
     "STD(indian_nationals_corona) FROM " + rowTbl
   val dropColTbl_variance : String = dropTbl  + columnTbl
   val dropRowTbl_variance : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  133. named_struct
+    */
+  val named_struct = new Array[String](3)
+  named_struct(0) = "(1,'TIBCO',43.654,true)"
+  named_struct(1) = "(2,'Snappy',12.3,true)"
+  named_struct(2) = "(3,'ABCD',NULL,false)"
+  val createColTypeTbl_named_struct_Spark : String = createTbl + columnTbl +
+    "(id int,v1 string,v2 double,v3 boolean)"
+  val createRowTypeTbl_named_struct_Spark : String = createTbl + rowTbl +
+    "(id int,v1 string,v2 double,v3 boolean)"
+  val createColumnTbl_named_struct : String = createTbl + columnTbl +
+    "(id int,v1 string,v2 double,v3 boolean) " + usingCol
+  val createRowTbl_named_struct : String = createTbl + rowTbl +
+    "(id int,v1 string,v2 double,v3 boolean) " + usingRow
+  val select_ColTbl_named_struct : String = "SELECT id," +
+    "named_struct('Name',v1,'Revenue',v2,'Equal Employer',v3) FROM " + columnTbl + " ORDER BY ID"
+  val select_RowTbl_named_struct: String = "SELECT id," +
+    "named_struct('Name',v1,'Revenue',v2,'Equal Employer',v3) FROM " + rowTbl + " ORDER BY ID"
+  val dropColTbl_named_struct : String = dropTbl  + columnTbl
+  val dropRowTbl_named_struct : String = dropTbl + rowTbl
 }
