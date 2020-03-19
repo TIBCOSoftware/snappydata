@@ -1090,4 +1090,20 @@ object SQLFunctionsUtils {
     "named_struct('Name',v1,'Revenue',v2,'Equal Employer',v3) FROM " + rowTbl + " ORDER BY ID"
   val dropColTbl_named_struct : String = dropTbl  + columnTbl
   val dropRowTbl_named_struct : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  134. dsid() - Returns the unique distributed member ID of executor fetching current row.
+    */
+  val dsid = new Array[String](4)
+  dsid(0) = "(1,'ComputeDB')"
+  dsid(1) = "(2,'Spotfire')"
+  dsid(2) = "(3,'Data Virutualization')"
+  dsid(3) = "(4,'Data Science')"
+  val createColumnTbl_dsid : String = createTbl + columnTbl + "(id int,name string) " + usingCol
+  val createRowTbl_dsid : String = createTbl + rowTbl + "(id int,name string) " + usingRow
+  val select_ColTbl_dsid : String = "SELECT id,name,dsid() FROM " + columnTbl
+  val select_RowTbl_dsid: String = "SELECT id,name,dsid() FROM " + rowTbl
+  val dropColTbl_dsid : String = dropTbl  + columnTbl
+  val dropRowTbl_dsid : String = dropTbl + rowTbl
+
 }

@@ -893,6 +893,28 @@ class SQLFunctions extends SnappySQLJob {
     dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_named_struct, SQLFunctionsUtils.
       dropRowTbl_named_struct, SQLFunctionsUtils.dropColTbl_named_struct,
       SQLFunctionsUtils.dropRowTbl_named_struct)
+    /**
+      *  Below queries test the functions :
+      *  134. dsid() - Returns the unique distributed member ID of executor fetching current row.
+      */
+    snc.sql(SQLFunctionsUtils.createColumnTbl_dsid)
+    snc.sql(SQLFunctionsUtils.createRowTbl_dsid)
+    for(index <- 0 to 3) {
+      snc.sql("INSERT INTO " + SQLFunctionsUtils.columnTbl +
+        " VALUES" + SQLFunctionsUtils.dsid(index))
+    }
+    for(index <- 0 to 3) {
+      snc.sql("INSERT INTO " + SQLFunctionsUtils.rowTbl +
+        " VALUES" + SQLFunctionsUtils.dsid(index))
+    }
+    val dsidColDF = snc.sql(SQLFunctionsUtils.select_ColTbl_dsid)
+    val dsidRowDF = snc.sql(SQLFunctionsUtils.select_RowTbl_dsid)
+    pw.println("dsid COLUMN Table :")
+    pw.println(dsidColDF.collect().mkString)
+    pw.println("dsid ROW Table:")
+    pw.println(dsidRowDF.collect().mkString)
+    snc.sql(SQLFunctionsUtils.dropColTbl_dsid)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_dsid)
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
