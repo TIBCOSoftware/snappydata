@@ -469,7 +469,7 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
       val f = Future {
         println("Firing select...")
         try {
-          val rs1 = stmt.executeQuery(s"select avg(col1) from $table group by col2")
+          stmt.executeQuery(s"select avg(col1) from $table group by col2")
           println("Firing select... Done.")
           Assert.fail("The query execution should have cancelled.")
         } catch {
