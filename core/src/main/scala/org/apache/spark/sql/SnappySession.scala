@@ -30,7 +30,6 @@ import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{Cache, CacheBuilder}
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
-import com.pivotal.gemfirexd.internal.iapi.types.TypeId
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
@@ -2020,22 +2019,16 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc)
           s" constants = ${parameterValueSet.getParameterCount}")
     }
     val dvd = parameterValueSet.getParameter(questionMarkCounter - 1)
-    var scalaTypeVal = SnappySession.getValue(dvd)
+    val scalaTypeVal = SnappySession.getValue(dvd)
     val storeType = dvd.getTypeFormatId
     val (storePrecision, storeScale) = dvd match {
       case _: stypes.SQLDecimal =>
-        // try to normalize parameter value into target column's scale/precision
         val index = (questionMarkCounter - 1) * 4 + 1
-        // actual scale of the target column
-        val scale = preparedParamsTypesInfo.map(a => a(index + 2)).getOrElse(-1)
-
-        val decimalValue = new com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal()
-        val typeId = TypeId.getBuiltInTypeId(java.sql.Types.DECIMAL)
-        val dtd = new com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor(
-          typeId, DecimalType.MAX_PRECISION, scale, true, typeId.getMaximumMaximumWidth)
-        decimalValue.normalize(dtd, dvd)
-        scalaTypeVal = decimalValue.getBigDecimal
-        (decimalValue.getDecimalValuePrecision, scale)
+        // actual precision and scale of the target column
+        preparedParamsTypesInfo match {
+          case None => (-1, -1)
+          case Some(a) => (a(index + 1), a(index + 2))
+        }
 
       case _ => (-1, -1)
     }
@@ -2473,7 +2466,21 @@ object SnappySession extends Logging {
     case StoredFormatIds.SQL_TIMESTAMP_ID => TimestampType
     case StoredFormatIds.SQL_DATE_ID => DateType
     case StoredFormatIds.SQL_DOUBLE_ID => DoubleType
-    case StoredFormatIds.SQL_DECIMAL_ID => DecimalType(precision, scale)
+    case StoredFormatIds.SQL_DECIMAL_ID =>
+      if (precision == -1) DecimalType.SYSTEM_DEFAULT
+      else if (precision == DecimalType.SYSTEM_DEFAULT.precision &&
+          scale == DecimalType.SYSTEM_DEFAULT.scale) {
+        DecimalType.SYSTEM_DEFAULT
+      }
+      else if (precision == DecimalType.USER_DEFAULT.precision &&
+          scale == DecimalType.USER_DEFAULT.scale) {
+        DecimalType.USER_DEFAULT
+      }
+      else {
+        assert(precision >= 0)
+        assert(scale >= 0)
+        DecimalType(precision, scale)
+      }
     case StoredFormatIds.SQL_REAL_ID => FloatType
     case StoredFormatIds.SQL_BOOLEAN_ID => BooleanType
     case StoredFormatIds.SQL_SMALLINT_ID => ShortType

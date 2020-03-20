@@ -541,8 +541,15 @@ trait SnappySessionCatalog23_4 extends SessionCatalog with SnappySessionCatalog 
     super.failFunctionLookup(FunctionIdentifier(name, None))
   }
 
-  override def newView(table: CatalogTable, child: LogicalPlan): LogicalPlan =
-    View(desc = table, output = table.schema.toAttributes, child)
+  override def newView(table: CatalogTable, child: LogicalPlan): LogicalPlan = {
+    // remove the view column name properties that can cause failure in CheckAnalysis since these
+    // names can be different compared to child output due to
+    // org.apache.spark.sql.catalyst.util.usePrettyExpression that handles Literals
+    // (in CREATE VIEW) but does not handle ParamLiterals which results in difference between
+    // Literal.toString vs Literal.sql; CatalogTable.schema is the reliable one in any case
+    View(desc = table.copy(properties = table.properties.filterNot(_._1.startsWith(
+      CatalogTable.VIEW_QUERY_OUTPUT_PREFIX))), output = table.schema.toAttributes, child)
+  }
 
   override def newCatalogRelation(schemaName: String, table: CatalogTable): LogicalPlan =
     UnresolvedCatalogRelation(table)

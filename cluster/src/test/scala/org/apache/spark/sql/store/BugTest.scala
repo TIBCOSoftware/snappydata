@@ -16,12 +16,11 @@
  */
 package org.apache.spark.sql.store
 
-import java.io.{BufferedReader, FileReader}
-import java.lang
 import java.sql.{Connection, DriverManager, SQLException, Statement}
 import java.util.Properties
 
 import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
 
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite.resultSetToDataset
@@ -363,17 +362,10 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     // create a big view on it
     val viewFile = getClass.getResource("/bigviewcase.sql")
-    val br = new BufferedReader(new FileReader(viewFile.getFile))
-    var viewSql = ""
-    var keepGoing = true
-    while(keepGoing) {
-      val x = br.readLine()
-      if (x != null) {
-        viewSql += x
-      } else {
-        keepGoing = false
-      }
-    }
+    val source = Source.fromInputStream(viewFile.openStream())
+    val viewSql = source.mkString
+    source.close()
+
     val viewname = "AIRLINEBOGUSVIEW"
 
     // check catalog cache is cleared for VIEWs
@@ -1085,34 +1077,34 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       ps1.setInt(1, i)
       dataTypeForSetParams match {
         case "DOUBLE" =>
-          ps1.setDouble(2, java.lang.Double.valueOf(i * 0.1))
-          ps1.setDouble(3, java.lang.Double.valueOf(i * 0.1))
+          ps1.setDouble(2, i * 0.1)
+          ps1.setDouble(3, i * 0.1)
         case "STRING" =>
-          ps1.setString(2, s"$i" + 0.1)
-          ps1.setString(3, s"$i" + 0.1)
+          ps1.setString(2, s"$i.1")
+          ps1.setString(3, s"$i.1")
         case "FLOAT" =>
-          ps1.setFloat(2, java.lang.Float.valueOf(new lang.Float(i*0.1)))
-          ps1.setFloat(3, java.lang.Float.valueOf(new lang.Float(i*0.1)))
+          ps1.setFloat(2, i * 0.1f)
+          ps1.setFloat(3, i * 0.1f)
         case "DECIMAL" =>
-          ps1.setBigDecimal(2, new java.math.BigDecimal(s"$i" + 0.1))
-          ps1.setBigDecimal(3, new java.math.BigDecimal(s"$i" + 0.1))
+          ps1.setBigDecimal(2, new java.math.BigDecimal(s"$i.1"))
+          ps1.setBigDecimal(3, new java.math.BigDecimal(s"$i.1"))
       }
       ps1.executeUpdate()
     }
 
     println("executing prepared select statement")
-    var result1: Array[(java.math.BigDecimal, java.math.BigDecimal)] = new Array(numRows)
+    val result1: Array[(java.math.BigDecimal, java.math.BigDecimal)] = new Array(numRows)
     val ps2 = conn.prepareStatement("select * from column_table where col2 = ? order by col1")
     for (j <- 0 until numRows) {
       dataTypeForSetParams match {
         case "DOUBLE" =>
-          ps2.setDouble(1, java.lang.Double.valueOf(j * 0.1))
+          ps2.setDouble(1, j * 0.1)
         case "STRING" =>
-          ps2.setString(1, s"$j" + 0.1)
+          ps2.setString(1, s"$j.1")
         case "FLOAT" =>
-          ps2.setFloat(1, java.lang.Float.valueOf(new lang.Float(j * 0.1)))
+          ps2.setFloat(1, j * 0.1f)
         case "DECIMAL" =>
-          ps2.setBigDecimal(1, new java.math.BigDecimal(s"$j" + 0.1))
+          ps2.setBigDecimal(1, new java.math.BigDecimal(s"$j.1"))
       }
 
       val rs2 = ps2.executeQuery()
@@ -1131,7 +1123,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
 
     println("executing unprepared select statement")
-    var result2: Array[(java.math.BigDecimal, java.math.BigDecimal)] = new Array(numRows)
+    val result2: Array[(java.math.BigDecimal, java.math.BigDecimal)] = new Array(numRows)
     for (j <- 0 until numRows) {
       var rs3: java.sql.ResultSet = null
       dataTypeForSetParams match {
@@ -1140,15 +1132,15 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
           rs3 = stmt.executeQuery(s"select * from column_table" +
               s" where col2 = cast($v as double) order by col1")
         case "STRING" =>
-          val v = s"$j" + 0.1
+          val v = s"$j.1"
           rs3 = stmt.executeQuery(s"select * from column_table" +
               s" where col2 = cast($v as string) order by col1")
         case "FLOAT" =>
-          val v = j * 0.1
+          val v = j * 0.1f
           rs3 = stmt.executeQuery(s"select * from column_table" +
               s" where col2 = cast($v as float) order by col1")
         case "DECIMAL" =>
-          val v = new java.math.BigDecimal(s"$j" + 0.1)
+          val v = new java.math.BigDecimal(s"$j.1")
           rs3 = stmt.executeQuery(s"select * from column_table" +
               s" where col2 = cast($v as decimal) order by col1")
       }
@@ -1165,10 +1157,8 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       }
     }
 
-    assert(result1.sameElements(result2),
-      "results of prepared and unprepared statements do not match")
+    assert(result1 === result2)
     // scalastyle:on println
-
   }
 
   test("SNAP-3123: check for GUI plans and SNAP-3141: code gen failure") {

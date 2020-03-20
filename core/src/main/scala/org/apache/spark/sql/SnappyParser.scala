@@ -245,7 +245,8 @@ class SnappyParser(session: SnappySession)
           "For Prepared Statement, Parameter constants are not provided")
         val (scalaTypeVal, dataType) = session.getParameterValue(
           _questionMarkCounter, _parameterValueSet.get, _preparedParamsTypesInfo)
-        val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
+        val catalystTypeVal = CatalystTypeConverters.createToCatalystConverter(
+          dataType)(scalaTypeVal)
         newTokenizedLiteral(catalystTypeVal, dataType)
       }
     })
