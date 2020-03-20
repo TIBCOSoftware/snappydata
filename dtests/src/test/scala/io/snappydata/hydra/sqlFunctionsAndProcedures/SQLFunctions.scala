@@ -916,6 +916,7 @@ class SQLFunctions extends SnappySQLJob {
     pw.println(dsidRowDF.collect().mkString)
     snc.sql(SQLFunctionsUtils.dropColTbl_dsid)
     snc.sql(SQLFunctionsUtils.dropRowTbl_dsid)
+    pw.println()
     /**
       *  Below queries test the functions :
       *  137.  corr,138. covar_pop,139. covar_samp,
@@ -929,6 +930,25 @@ class SQLFunctions extends SnappySQLJob {
     dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_correlation, SQLFunctionsUtils.
       dropRowTbl_correlation, SQLFunctionsUtils.dropColTbl_correlation,
       SQLFunctionsUtils.dropRowTbl_correlation)
+    /**
+      *  Below queries test the functions :
+      *  140. approx_percentile,141. percentile,142. percentile_approx
+      */
+    createTables(SQLFunctionsUtils.createColTypeTbl_percentile_Spark,
+      SQLFunctionsUtils.createRowTypeTbl_percentile_Spark, SQLFunctionsUtils.
+        createColumnTbl_percentile, SQLFunctionsUtils.createRowTbl_percentile)
+    insertRecordsToTable(4, SQLFunctionsUtils.percentile)
+    val percentileSncColDF = snc.sql(SQLFunctionsUtils.select_ColTbl_percentile)
+    val percentileSparkColDF = spark.sql(SQLFunctionsUtils.select_ColTbl_percentile)
+    validateResultThroughDataFrames(percentileSncColDF, percentileSparkColDF,
+      "Q92_percentile_Column", "Column")
+    val percentileSncRowDF = snc.sql(SQLFunctionsUtils.select_RowTbl_percentile)
+    val percentileSparkRowDF = spark.sql(SQLFunctionsUtils.select_RowTbl_percentile)
+    validateResultThroughDataFrames(percentileSncRowDF, percentileSparkRowDF,
+      "Q93_percentile_Row", "Row")
+    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_percentile, SQLFunctionsUtils.
+      dropRowTbl_percentile, SQLFunctionsUtils.dropColTbl_percentile,
+      SQLFunctionsUtils.dropRowTbl_percentile)
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()

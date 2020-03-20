@@ -1145,4 +1145,26 @@ object SQLFunctionsUtils {
     "COVAR_POP(temperature,icecreamsales) FROM " + rowTbl
   val dropColTbl_correlation : String = dropTbl  + columnTbl
   val dropRowTbl_correlation : String = dropTbl + rowTbl
+  /**
+    *  Below queries test the functions :
+    *  140. approx_percentile,141. percentile,142. percentile_approx
+    */
+  val  percentile = new Array[String](5)
+  percentile(0) = "(1,98.7)"
+  percentile(1) = "(2,76.1)"
+  percentile(2) = "(3,45.3)"
+  percentile(3) = "(4,89.6)"
+  percentile(4) = "(5,77.4)"
+  val createColTypeTbl_percentile_Spark : String = createTbl + columnTbl + "(id int,d double)"
+  val createRowTypeTbl_percentile_Spark : String = createTbl + rowTbl + "(id int,d double)"
+  val createColumnTbl_percentile : String = createTbl + columnTbl + "(id int,d double) " + usingCol
+  val createRowTbl_percentile : String = createTbl + rowTbl + "(id int,d double) " + usingRow
+  val select_ColTbl_percentile : String = "SELECT PERCENTILE(d,0.50)," +
+    "PERCENTILE_APPROX(d,0.60,100)," +
+    "APPROX_PERCENTILE(d,0.85,100) FROM " + columnTbl
+  val select_RowTbl_percentile: String = "SELECT PERCENTILE(d,0.50)," +
+    "PERCENTILE_APPROX(d,0.60,100)," +
+    "APPROX_PERCENTILE(d,0.85,100) FROM " + rowTbl
+  val dropColTbl_percentile : String = dropTbl  + columnTbl
+  val dropRowTbl_percentile : String = dropTbl + rowTbl
 }
