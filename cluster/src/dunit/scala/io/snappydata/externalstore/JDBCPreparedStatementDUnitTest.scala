@@ -471,9 +471,7 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
         try {
           val rs1 = stmt.executeQuery(s"select avg(col1) from $table group by col2")
           println("Firing select... Done.")
-          while (rs1.next()) {
-            Assert.fail("The query execution should have cancelled.")
-          }
+          Assert.fail("The query execution should have cancelled.")
         } catch {
           case e: SQLException =>
             val expectedMessage = "The statement has been cancelled due to a user request."
