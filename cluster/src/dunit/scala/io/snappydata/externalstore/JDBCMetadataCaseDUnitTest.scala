@@ -20,10 +20,10 @@ import java.sql.{Connection, DatabaseMetaData}
 
 import scala.util.Try
 
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedDatabaseMetaData.METADATACASE_LOWER_PROP
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 import org.junit.Assert.assertEquals
-import org.junit.{Assert, Ignore}
 
 import org.apache.spark.Logging
 
@@ -32,13 +32,18 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
   val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
 
-  sysProps.put("metadatacase.lower", "")
+  sysProps.put(METADATACASE_LOWER_PROP, "")
 
   // using mixed case name to cover case insensitivity scenarios
   private val table1 = "tABle1"
   private val table2 = "tABle2"
   private val table3 = "tABle3"
   val schema = "Schema1"
+
+  override def afterClass(): Unit = {
+    super.afterClass()
+    sysProps.remove(METADATACASE_LOWER_PROP)
+  }
 
   def testJDBCMetadataCase_queryRoutingOn(): Unit = {
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
