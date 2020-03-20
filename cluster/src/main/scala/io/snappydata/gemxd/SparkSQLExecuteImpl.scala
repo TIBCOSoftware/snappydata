@@ -81,6 +81,8 @@ class SparkSQLExecuteImpl(
 
   session.setPreparedQuery(preparePhase = false, pvs)
 
+  session.sessionState.jdbcQueryJobGroupId = Option(ctx.getStatementId.toString)
+
   private[this] val df = dfObject match {
     case null => Utils.sqlInternal(session, sql)
     case d => d.asInstanceOf[DataFrame]
