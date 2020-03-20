@@ -857,12 +857,13 @@ class SQLFunctions extends SnappySQLJob {
     /**
       *  Below queries test the functions :
       *  126. variance, 127. var_samp, 128. var_pop,
-      *  129. stddev, 130. stddev_samp, 131. stddev_pop, 132. std
+      *  129. stddev, 130. stddev_samp, 131. stddev_pop, 132. std,
+      *  135. skewness, 136. kurtosis
       */
     createTables(SQLFunctionsUtils.createColTypeTbl_variance_Spark,
       SQLFunctionsUtils.createRowTypeTbl_variance_Spark, SQLFunctionsUtils.
         createColumnTbl_variance, SQLFunctionsUtils.createRowTbl_variance)
-    insertRecordsToTable(15, SQLFunctionsUtils.variance)
+    insertRecordsToTable(19, SQLFunctionsUtils.variance)
     val varianceSncColDF = snc.sql(SQLFunctionsUtils.select_ColTbl_variance)
     val varianceSparkColDF = spark.sql(SQLFunctionsUtils.select_ColTbl_variance)
     validateResultThroughDataFrames(varianceSncColDF, varianceSparkColDF,

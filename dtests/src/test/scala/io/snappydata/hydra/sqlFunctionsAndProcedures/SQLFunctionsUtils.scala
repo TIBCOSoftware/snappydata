@@ -1029,25 +1029,30 @@ object SQLFunctionsUtils {
   /**
     *  Below queries test the functions :
     *  126. variance, 127. var_samp, 128. var_pop,
-    *  129. stddev, 130. stddev_samp, 131. stddev_pop, 132. std
+    *  129. stddev, 130. stddev_samp, 131. stddev_pop, 132. std,
+    *  135. skewness, 136. kurtosis
     */
-  val variance = new Array[String](17)
-  variance(0) = "(1,'Andhra Pradesh',1,0)"
-  variance(1) = "(2,'Delhi',11,1)"
+  val variance = new Array[String](20)
+  variance(0) = "(1,'Andhra Pradesh',2,0)"
+  variance(1) = "(2,'Delhi',16,1)"
   variance(2) = "(3,'Haryana',3,14)"
-  variance(3) = "(4,'Karnataka',14,0)"
-  variance(4) = "(5,'Kerala',25,2)"
-  variance(5) = "(6,'Maharashtra',42,3)"
+  variance(3) = "(4,'Karnataka',15,0)"
+  variance(4) = "(5,'Kerala',26,2)"
+  variance(5) = "(6,'Maharashtra',44,3)"
   variance(6) = "(7,'Odisha',1,0)"
-  variance(7) = "(8,'Punjab',3,0)"
+  variance(7) = "(8,'Punjab',2,0)"
   variance(8) = "(9,'Rajshthan',5,2)"
-  variance(9) = "(10,'Tamilnadu',2,0)"
-  variance(10) = "(11,'Telengana',4,2)"
+  variance(9) = "(10,'Tamilnadu',3,0)"
+  variance(10) = "(11,'Telengana',7,9)"
   variance(11) = "(12,'Jammu and Kashmir',4,0)"
-  variance(12) = "(13,'Ladakh',8,0)"
-  variance(13) = "(14,'Uttar Pradesh',16,1)"
+  variance(12) = "(13,'Ladakh',10,0)"
+  variance(13) = "(14,'Uttar Pradesh',18,1)"
   variance(14) = "(15,'Uttarakhand',1,0)"
   variance(15) = "(16,'West Bengal',1,0)"
+  variance(16) = "(17,'Chhattisgarh',1,0)"
+  variance(17) = "(18,'Gujarat',2,0)"
+  variance(18) = "(19,'Puducherry',1,0)"
+  variance(19) = "(20,'Chandigarh',1,0)"
   val createColTypeTbl_variance_Spark : String = createTbl + columnTbl +
     "(id int,state string,indian_nationals_corona int,foreign_national_corana int)"
   val createRowTypeTbl_variance_Spark : String = createTbl + rowTbl +
@@ -1060,12 +1065,14 @@ object SQLFunctionsUtils {
     "VAR_POP(indian_nationals_corona),VARIANCE(indian_nationals_corona)," +
     "VAR_SAMP(indian_nationals_corona),STDDEV_POP(indian_nationals_corona)," +
     "STDDEV(indian_nationals_corona),STDDEV_SAMP(indian_nationals_corona)," +
-    "STD(indian_nationals_corona) FROM " + columnTbl
+    "STD(indian_nationals_corona),SKEWNESS(indian_nationals_corona)," +
+    "KURTOSIS(indian_nationals_corona) FROM " + columnTbl
   val select_RowTbl_variance: String = "SELECT SUM(indian_nationals_corona)," +
     "VAR_POP(indian_nationals_corona),VARIANCE(indian_nationals_corona)," +
     "VAR_SAMP(indian_nationals_corona),STDDEV_POP(indian_nationals_corona)," +
     "STDDEV(indian_nationals_corona),STDDEV_SAMP(indian_nationals_corona)," +
-    "STD(indian_nationals_corona) FROM " + rowTbl
+    "STD(indian_nationals_corona),SKEWNESS(indian_nationals_corona)," +
+    "KURTOSIS(indian_nationals_corona) FROM " + rowTbl
   val dropColTbl_variance : String = dropTbl  + columnTbl
   val dropRowTbl_variance : String = dropTbl + rowTbl
   /**
