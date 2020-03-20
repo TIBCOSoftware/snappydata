@@ -1112,5 +1112,37 @@ object SQLFunctionsUtils {
   val select_RowTbl_dsid: String = "SELECT id,name,dsid() FROM " + rowTbl
   val dropColTbl_dsid : String = dropTbl  + columnTbl
   val dropRowTbl_dsid : String = dropTbl + rowTbl
-
+  /**
+    *  Below queries test the functions :
+    *  137.  corr,138. covar_pop,139. covar_samp,
+    */
+  val correlation = new Array[String](12)
+  correlation(0) = "(14.2,215)"
+  correlation(1) = "(16.4,325)"
+  correlation(2) = "(11.9,185)"
+  correlation(3) = "(15.2,332)"
+  correlation(4) = "(18.5,406)"
+  correlation(5) = "(22.1,522)"
+  correlation(6) = "(19.4,412)"
+  correlation(7) = "(25.1,614)"
+  correlation(8) = "(23.4,544)"
+  correlation(9) = "(18.1,421)"
+  correlation(10) = "(22.6,445)"
+  correlation(11) = "(17.2,408)"
+  val createColTypeTbl_correlation_Spark : String = createTbl + columnTbl +
+    "(temperature double,icecreamsales int)"
+  val createRowTypeTbl_correlation_Spark : String = createTbl + rowTbl +
+    "(temperature double,icecreamsales int)"
+  val createColumnTbl_correlation : String = createTbl + columnTbl +
+    "(temperature double,icecreamsales int) " + usingCol
+  val createRowTbl_correlation : String = createTbl + rowTbl +
+    "(temperature double,icecreamsales int) " + usingRow
+  val select_ColTbl_correlation : String = "SELECT CORR(temperature,icecreamsales)," +
+    "COVAR_SAMP(temperature,icecreamsales)," +
+    "COVAR_POP(temperature,icecreamsales) FROM " + columnTbl
+  val select_RowTbl_correlation: String = "SELECT CORR(temperature,icecreamsales)," +
+    "COVAR_SAMP(temperature,icecreamsales)," +
+    "COVAR_POP(temperature,icecreamsales) FROM " + rowTbl
+  val dropColTbl_correlation : String = dropTbl  + columnTbl
+  val dropRowTbl_correlation : String = dropTbl + rowTbl
 }

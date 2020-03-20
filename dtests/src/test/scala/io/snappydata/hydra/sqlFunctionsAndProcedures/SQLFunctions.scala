@@ -916,6 +916,19 @@ class SQLFunctions extends SnappySQLJob {
     pw.println(dsidRowDF.collect().mkString)
     snc.sql(SQLFunctionsUtils.dropColTbl_dsid)
     snc.sql(SQLFunctionsUtils.dropRowTbl_dsid)
+    /**
+      *  Below queries test the functions :
+      *  137.  corr,138. covar_pop,139. covar_samp,
+      */
+    createTables(SQLFunctionsUtils.createColTypeTbl_correlation_Spark,
+      SQLFunctionsUtils.createRowTypeTbl_correlation_Spark, SQLFunctionsUtils.
+        createColumnTbl_correlation, SQLFunctionsUtils.createRowTbl_correlation)
+    insertRecordsToTable(11, SQLFunctionsUtils.correlation)
+    validateResult(SQLFunctionsUtils.select_ColTbl_correlation, SQLFunctionsUtils.
+      select_RowTbl_correlation, "Q90_correlation", "Q91_correlation")
+    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_correlation, SQLFunctionsUtils.
+      dropRowTbl_correlation, SQLFunctionsUtils.dropColTbl_correlation,
+      SQLFunctionsUtils.dropRowTbl_correlation)
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
