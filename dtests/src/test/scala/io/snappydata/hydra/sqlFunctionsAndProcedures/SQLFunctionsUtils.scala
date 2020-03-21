@@ -29,24 +29,13 @@ object SQLFunctionsUtils {
   val dropTbl : String = "DROP TABLE IF EXISTS "
   /**
     *  Below queries test the functions :
-    *  1. date,
-    *  2. date_add,
-    *  3. date_sub,
-    *  4. datediff,
-    *  5. date_format
+    *  1. date, 2. date_add, 3. date_sub,
+    *  4. datediff, 5. date_format
     */
   val dateSet = new Array[String](3)
   dateSet(0) = "(1, 'AAA', current_date, '2020-01-19', 5, 3)"
   dateSet(1) = "(2, 'BBB', current_date, current_date, 7, 6)"
   dateSet(2) = "(3, 'CCC', '2019-12-31', '2020-12-31', 10, 12)"
-  val createColTypeTblInSpark : String = createTbl + columnTbl +
-    "(id int, name String, date1 date, date2 date, n1 int, n2 int)"
-  val createRowTypeTblInSpark : String = createTbl + rowTbl +
-    "(id int, name String, date1 date, date2 date, n1 int, n2 int)"
-  val createColumnTbl_DateFunctions_1 : String = createTbl + columnTbl +
-    "(id int, name String, date1 date, date2 date, n1 int, n2 int)" + usingCol
-  val createRowTbl_DateFunctions_1 : String = createTbl + rowTbl +
-    "(id int, name String, date1 date, date2 date, n1 int, n2 int)" + usingRow
   val selectQueryOnColTbl_DateFunctions_1 : String =
     "SELECT id, name, date1, date_add(date1, n1), " +
     "date_sub(date2, n2), datediff(date1, date2), date_format(current_date, 'y') " +
@@ -57,8 +46,6 @@ object SQLFunctionsUtils {
     "FROM " + rowTbl + " ORDER BY id"
   val selectMonth_In_DateFormatFunc : String = "SELECT date_format(current_date, 'M')"
   val selectDay_DateFormatFunc : String = "SELECT date_format(current_date, 'd')"
-  val dropColumnTbl_DateFunctions_1 : String = dropTbl + columnTbl
-  val dropRowTbl_DateFunctions_1 : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  6. repeat
@@ -69,20 +56,10 @@ object SQLFunctionsUtils {
   val rseRptSet = new Array[String](2)
   rseRptSet(0) = "(1,'TIBCO ComputeDB','TIBCO ComputeDB-')"
   rseRptSet(1) = "(2,'SQL Functions','SQL Functions ')"
-  val createColTypeTbl_RseRpt_Spark : String = createTbl + columnTbl +
-  "(id int,reversename string,repeatname string)"
-  val createRowTypeTbl_rserpt_Spark : String = createTbl + rowTbl +
-    "(id int,reversename string,repeatname string)"
-  val createColumnTbl_RseRpt : String = createTbl + columnTbl +
-  "(id int,reversename string,repeatname string) " + usingCol
-  val createRowTbl_RseRpt : String = createTbl + rowTbl +
-    "(id int,reversename string,repeatname string) " + usingRow
   val select_ColTbl_RseRpt : String = "SELECT id, reverse(reversename), " +
     "repeat(repeatname, 3) FROM " + columnTbl +  " ORDER BY id"
   val select_RowTbl_RseRpt : String = "SELECT id, reverse(reversename), " +
     "repeat(repeatname, 3) FROM " + rowTbl +  " ORDER BY id"
-  val dropColTbl_RseRpt : String = dropTbl  + columnTbl
-  val dropRowTbl_RseRpt : String = dropTbl + rowTbl
   /**
     * Below queries test the functions :
     * 8. !(Logical Not)
@@ -102,22 +79,12 @@ object SQLFunctionsUtils {
   NOT_AND_ExOR_Set(1) = "(2,3,5,7)"
   NOT_AND_ExOR_Set(2) = "(3,5,6,1098)"
   NOT_AND_ExOR_Set(3) = "(4,1,8,1234567)"
-  val createColTypeTbl_NOT_AND_ExOR_Spark : String = createTbl + columnTbl +
-  "(id int,n1 int,n2 int,n3 int)"
-  val createRowTypeTbl_NOT_AND_ExOR_Spark : String = createTbl + rowTbl +
-    "(id int,n1 int,n2 int,n3 int)"
-  val createColumnTbl_NOT_AND_ExOR : String = createTbl + columnTbl +
-    "(id int,n1 int,n2 int,n3 int) " + usingCol
-  val createRowTbl_NOT_AND_ExOR : String = createTbl + rowTbl +
-    "(id int,n1 int,n2 int,n3 int) " + usingRow
   val select_ColTbl_NOT_AND_ExOR : String = "SELECT id, (n1 & n2) as BitwiseAND, " +
     "(n1 ^ n2) as BitwiseExOR, (n1 | n2) as BitwiseOR,~(n3) as BitwiseNOT " +
     "FROM " + columnTbl + " ORDER BY id"
   val select_RowTbl_NOT_AND_ExOR : String = "SELECT id, (n1 & n2) as BitwiseAND, " +
     "(n1 ^ n2) as BitwiseExOR, (n1 | n2) as BitwiseOR,~n3 as BitwiseNOT " +
     "FROM " + rowTbl + " ORDER BY id"
-  val dropColTbl_NOT_AND_ExOR : String = dropTbl + columnTbl
-  val dropRowTbl_NOT_AND_ExOR : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  13. day ,14. dayofmonth, 15. dayofyear, 16. last_day,
@@ -127,20 +94,12 @@ object SQLFunctionsUtils {
   val day_Month_Year_Set = new Array[String](2)
   day_Month_Year_Set(0) = "(1,current_date)"
   day_Month_Year_Set(1) = "(2,'2014-04-05')"
-  val createColTypeTbl_Day_Month_Year_Spark : String = createTbl + columnTbl + " (id int,dt date)"
-  val createRowTypeTbl_Day_Month_Year_Spark : String = createTbl + rowTbl + " (id int,dt date)"
-  val createColumnTbl_Day_Month_Year : String = createTbl + columnTbl +
-    "(id int,dt date) " + usingCol
-  val createRowTbl_Day_Month_Year : String = createTbl + rowTbl +
-    "(id int,dt date) " + usingRow
   val select_ColTbl_Day_Month_Year : String = "SELECT id,day(dt),dayofmonth(dt)," +
     "dayofyear(dt),last_day(dt),month(dt),next_day(dt,'FR'),weekofyear(dt)," +
     "year(dt) FROM " + columnTbl + " ORDER BY id"
   val select_RowTbl_Day_Month_Year : String = "SELECT id,day(dt),dayofmonth(dt)," +
     "dayofyear(dt),last_day(dt),month(dt),next_day(dt,'FR'),weekofyear(dt)," +
     "year(dt) FROM " + rowTbl + " ORDER BY id"
-  val dropColTbl_Day_Month_Year : String = dropTbl  + columnTbl
-  val dropRowTbl_Day_Month_Year : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  21. map , 22. map_keys, 23. map_values
@@ -148,13 +107,8 @@ object SQLFunctionsUtils {
   val map_Keys_Values_Set = new Array[String](2)
   map_Keys_Values_Set(0) = "1,MAP('Maths',14,'Science',18,'Hindi',15)"
   map_Keys_Values_Set(1) = "2,MAP('Maths',19,'Science',19,'Hindi',19)"
-  val createColTypeTbl_map_Keys_Values_Spark : String = createTbl + columnTbl +
-    " (id int,marks map<string,int>)"
-  val createColumnTbl_map_Keys_Values : String = createTbl + columnTbl +
-    "(id int,marks map<string,int>) " + usingCol
   val select_ColTbl_map_Keys_Values : String = "SELECT id,map_keys(marks)," +
     "map_values(marks),marks FROM " + columnTbl + " ORDER BY ID"
-  val dropColTbl_map_Keys_Values : String = dropTbl  + columnTbl
   /**
     *  Below queries test the functions :
     *  24. array , 25. array_contains
@@ -162,13 +116,8 @@ object SQLFunctionsUtils {
   val array_Contains_Set = new Array[String](2)
   array_Contains_Set(0) = "1,Array(3,5,6,8,1)"
   array_Contains_Set(1) = "2,Array(13,45,66,98,101)"
-  val createColTypeTbl_array_Contains_Spark : String = createTbl + columnTbl +
-    " (id int,arr Array<Int>)"
-  val createColumnTbl_array_Contains_Values : String = createTbl + columnTbl +
-    "(id int,arr Array<Int>) " + usingCol
   val select_ColTbl_array_Contains : String = "SELECT id,arr as Array,array_contains(arr,8) " +
     "FROM " + columnTbl + " ORDER BY ID"
-  val dropColTbl_array_Contains : String = dropTbl  + columnTbl
   /**
     *  Below queries test the functions :
     *  26. and, 27. or , 28. not
@@ -178,20 +127,10 @@ object SQLFunctionsUtils {
   And_Or_Not_Set(1) = "(2,false,true,false)"
   And_Or_Not_Set(2) = "(3,true,false,true)"
   And_Or_Not_Set(3) = "(4,true,true,true)"
-  val createColTypeTbl_And_Or_Not_Spark : String = createTbl + columnTbl +
-    "(id int,b1 boolean,b2 boolean,b boolean)"
-  val createRowTypeTbl_And_Or_Not_Spark : String = createTbl + rowTbl +
-    "(id int,b1 boolean,b2 boolean,b boolean)"
-  val createColumnTbl_And_Or_Not : String = createTbl + columnTbl +
-    "(id int,b1 boolean,b2 boolean,b boolean) " + usingCol
-  val createRowTbl_And_Or_Not : String = createTbl + rowTbl +
-    "(id int,b1 boolean,b2 boolean,b boolean) " + usingRow
   val select_ColTbl_And_Or_Not : String = "SELECT id,(b1 AND b2) as LogicalAND," +
     "(b1 OR b2) as LogicalOR, NOT(b) as LogicalNOT FROM " + columnTbl + " ORDER BY id"
   val select_RowTbl_And_Or_Not : String = "SELECT id,(b1 AND b2) as LogicalAND," +
     "(b1 OR b2) as LogicalOR, NOT(b) as LogicalNOT FROM " + rowTbl + " ORDER BY id"
-  val dropColTbl_And_Or_Not : String = dropTbl  + columnTbl
-  val dropRowTbl_And_Or_Not : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  30. size.
@@ -203,13 +142,8 @@ object SQLFunctionsUtils {
   size_Set(1) = "2,Array(80,99,65,78),null"
   size_Set(2) = "3,null,Map('AAA',0.0,'BBB',6.67)"
   size_Set(3) = "4,null,null"
-  val createColTypeTbl_Size_Spark : String = createTbl + columnTbl +
-    " (id int,testArr Array<Int>,testMap Map<String,Double>)"
-  val createColumnTbl_Size : String = createTbl + columnTbl +
-    "(id int,testArr Array<Int>,testMap Map<String,Double>) " + usingCol
   val select_ColTbl_Size : String = "SELECT id,size(testArr),size(testMap) FROM " +
     columnTbl + " ORDER BY ID"
-  val dropColTbl_Size : String = dropTbl  + columnTbl
   /**
     *  Below queries test the functions :
     *  31. rpad, 32. in
@@ -218,20 +152,10 @@ object SQLFunctionsUtils {
   rpad_in_Set(0) = "(1,'TIBCO ComputeDB')"
   rpad_in_Set(1) = "(2,'Spot fire')"
   rpad_in_Set(2) = "(3,'DBVisualizer')"
-  val createColTypeTbl_rpad_in_Spark : String = createTbl + columnTbl +
-    "(id int,testStr string)"
-  val createRowTypeTbl_rpad_in_Spark : String = createTbl + rowTbl +
-    "(id int,testStr string)"
-  val createColumnTbl_rpad_in : String = createTbl + columnTbl +
-    "(id int,testStr string) " + usingCol
-  val createRowTbl_rpad_in : String = createTbl + rowTbl +
-    "(id int,testStr string) " + usingRow
   val select_ColTbl_rpad_in : String = "SELECT id,rpad(testStr,50,'-The TIBCO Product')," +
     "'Spot fire' in(testStr) FROM " + columnTbl + " ORDER BY id"
   val select_RowTbl_rpad_in : String = "SELECT id,rpad(testStr,50,'-The TIBCO Product')," +
     "'Spot fire' in(testStr) FROM " + rowTbl + " ORDER BY id"
-  val dropColTbl_rpad_in : String = dropTbl  + columnTbl
-  val dropRowTbl_rpad_in : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  33. hour, 34. minute, 35. second
@@ -239,18 +163,10 @@ object SQLFunctionsUtils {
   val hr_min_sec_Set = new Array[String](2)
   hr_min_sec_Set(0) = "(1,'2019-03-29 12:58:59')"
   hr_min_sec_Set(1) = "(2,'2020-11-14 23:45:12')"
-  val createColTypeTbl_hr_min_sec_Spark : String = createTbl + columnTbl + "(id int,ts timestamp)"
-  val createRowTypeTbl_hr_min_sec_Spark : String = createTbl + rowTbl + "(id int,ts timestamp)"
-  val createColumnTbl_hr_min_sec : String = createTbl + columnTbl +
-    "(id int,ts timestamp) " + usingCol
-  val createRowTbl_hr_min_sec : String = createTbl + rowTbl +
-    "(id int,ts timestamp) " + usingRow
   val select_ColTbl_hr_min_sec : String = "SELECT id,hour(ts),minute(ts),second(ts) FROM " +
     columnTbl + " ORDER BY id"
   val select_RowTbl_hr_min_sec : String = "SELECT id,hour(ts),minute(ts),second(ts) FROM " +
     rowTbl + " ORDER BY id"
-  val dropColTbl_hr_min_sec : String = dropTbl  + columnTbl
-  val dropRowTbl_hr_min_sec : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  36. ascii, 37. months_between, 38. current_timestamp
@@ -259,20 +175,10 @@ object SQLFunctionsUtils {
   ascii_mnthbet_ts_Set(0) = "(1,'Spark','S','2019-09-07',current_timestamp)"
   ascii_mnthbet_ts_Set(1) = "(2,'abcd','a','2018-11-15','2017-12-25 16:55:43')"
   ascii_mnthbet_ts_Set(2) = "(3,'0123','0','2019-12-31','2019-12-31 11:12:13')"
-  val createColTypeTbl_ascii_mnthbet_ts_Spark : String = createTbl + columnTbl +
-    "(id int,s1 string,s2 string,dt1 date,dt2 timestamp)"
-  val createRowTypeTbl_ascii_mnthbet_ts_Spark : String = createTbl + rowTbl +
-    "(id int,s1 string,s2 string,dt1 date,dt2 timestamp)"
-  val createColumnTbl_ascii_mnthbet_ts : String = createTbl + columnTbl +
-    "(id int,s1 string,s2 string,dt1 date,dt2 timestamp) " + usingCol
-  val createRowTbl_ascii_mnthbet_ts : String = createTbl + rowTbl +
-    "(id int,s1 string,s2 string,dt1 date,dt2 timestamp) " + usingRow
   val select_ColTbl_ascii_mnthbet_ts : String = "SELECT id,ascii(s1),ascii(s2)," +
     "months_between(dt1,dt2) FROM " + columnTbl + " ORDER BY id"
   val select_RowTbl_ascii_mnthbet_ts : String = "SELECT id,ascii(s1),ascii(s2)," +
     "months_between(dt1,dt2) FROM " + rowTbl + " ORDER BY id"
-  val dropColTbl_ascii_mnthbet_ts : String = dropTbl  + columnTbl
-  val dropRowTbl_ascii_mnthbet_ts : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  39. string, 40. substr, 41. substring
@@ -280,22 +186,12 @@ object SQLFunctionsUtils {
   val str_subStr = new Array[String](2)
   str_subStr(0) = "(1,123456,43.45,'TIBCO ComputeDB')"
   str_subStr(1) = "(2,9999,1004.56,'JDBC Driver')"
-  val createColTypeTbl_str_substr_Spark : String = createTbl + columnTbl +
-    "(id int,testNumber int,testDouble Double,testStr string)"
-  val createRowTypeTbl_str_substr_Spark : String = createTbl + rowTbl +
-    "(id int,testNumber int,testDouble Double,testStr string)"
-  val createColumnTbl_str_substr : String = createTbl + columnTbl +
-    "(id int,testNumber int,testDouble Double,testStr string) " + usingCol
-  val createRowTbl_str_substr : String = createTbl + rowTbl +
-    "(id int,testNumber int,testDouble Double,testStr string) " + usingRow
   val select_ColTbl_str_substr : String = "SELECT id,string(testNumber),string(testDouble)," +
     "substr(teststr,0,5),substring(teststr,0,5),substr(teststr,3),substring(teststr,3)," +
     "substr(teststr,-5),substring(teststr,-5) FROM " + columnTbl + " ORDER BY id"
   val select_RowTbl_str_substr : String = "SELECT id,string(testNumber),string(testDouble)," +
     "substr(teststr,0,5),substring(teststr,0,5),substr(teststr,3),substring(teststr,3)," +
     "substr(teststr,-5),substring(teststr,-5) FROM " + rowTbl + " ORDER BY id"
-  val dropColTbl_str_substr : String = dropTbl  + columnTbl
-  val dropRowTbl_str_substr : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  42. >, 43. >=, 44. <, 45. <=, 46 hypot (hypot already done)
@@ -311,20 +207,10 @@ object SQLFunctionsUtils {
   hypot_gt_lt(5) = "(6,8,NULL)"
   hypot_gt_lt(6) = "(7,NULL,225)"
   hypot_gt_lt(7) = "(8,4,4)"
-  val createColTypeTbl_hypot_gt_lt_Spark : String = createTbl + columnTbl +
-    "(id int,n1 int,n2 int)"
-  val createRowTypeTbl_hypot_gt_lt_Spark : String = createTbl + rowTbl +
-    "(id int,n1 int,n2 int)"
-  val createColumnTbl_hypot_gt_lt : String = createTbl + columnTbl +
-    "(id int,n1 int,n2 int) " + usingCol
-  val createRowTbl_hypot_gt_lt : String = createTbl + rowTbl +
-    "(id int,n1 int,n2 int) " + usingRow
   val select_ColTbl_hypot_gt_lt : String = "SELECT id,(n1>n2) as GT,(n1>=n2) as GTEQ," +
     "(n1<n2) as LT,(n1<=n2) as LTEQ,hypot(n1,n2) as HYPOT FROM " + columnTbl + " ORDER BY id"
   val select_RowTbl_hypot_gt_lt : String = "SELECT id,(n1>n2) as GT,(n1>=n2) as GTEQ," +
     "(n1<n2) as LT,(n1<=n2) as LTEQ,hypot(n1,n2) as HYPOT FROM " + rowTbl + " ORDER BY id"
-  val dropColTbl_hypot_gt_lt : String = dropTbl  + columnTbl
-  val dropRowTbl_hypot_gt_lt : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  46. space, 47. soundex
@@ -334,20 +220,10 @@ object SQLFunctionsUtils {
   spc_soundex(1) = "(2,'Computation','Computation')"
   spc_soundex(2) = "(3,'Spark','Spark')"
   spc_soundex(3) = "(4,NULL,NULL)"
-  val createColTypeTbl_spc_soundex_Spark : String = createTbl + columnTbl +
-    "(id int,str1 string,str2 string)"
-  val createRowTypeTbl_spc_soundex_Spark : String = createTbl + rowTbl +
-    "(id int,str1 string,str2 string)"
-  val createColumnTbl_spc_soundex : String = createTbl + columnTbl +
-    "(id int,str1 string,str2 string) " + usingCol
-  val createRowTbl_spc_soundex : String = createTbl + rowTbl +
-    "(id int,str1 string,str2 string) " + usingRow
   val select_ColTbl_spc_soundex : String = "SELECT id,concat(space(20),str1)," +
     "soundex(str2) as soundex FROM " + columnTbl + " ORDER BY id"
   val select_RowTbl_spc_soundex : String = "SELECT id,concat(space(20),str1)," +
     "soundex(str2) as soundex FROM " + rowTbl + " ORDER BY id"
-  val dropColTbl_spc_soundex : String = dropTbl  + columnTbl
-  val dropRowTbl_spc_soundex : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  48. xpath, 49. xpath_boolean, 50. xpath_double, 51. xpath_float,
@@ -391,20 +267,10 @@ object SQLFunctionsUtils {
   trim_isnotnull(0) = "(1,' TIBCO-ComputeDB ','       TIBCO-ComputeDB'," +
     "'TIBCO-ComputeDB       ','JDBC Client')"
   trim_isnotnull(1) = "(2,' DB Visualizer    ','     DB Visualizer','DB Visualizer         ',null)"
-  val createColTypeTbl_trim_isnotnull_Spark : String = createTbl + columnTbl +
-    "(id int,s1 string,s2 string,s3 string,s4 string)"
-  val createRowTypeTbl_trim_isnotnull_Spark : String = createTbl + rowTbl +
-    "(id int,s1 string,s2 string,s3 string,s4 string)"
-  val createColumnTbl_trim_isnotnull : String = createTbl + columnTbl +
-    "(id int,s1 string,s2 string,s3 string,s4 string) " + usingCol
-  val createRowTbl_trim_isnotnull : String = createTbl + rowTbl +
-    "(id int,s1 string,s2 string,s3 string,s4 string) " + usingRow
   val select_ColTbl_trim_isnotnull : String = "SELECT id,trim(s1),ltrim(s2),rtrim(s3)," +
     "isnotnull(s4) FROM " + columnTbl + " ORDER BY id"
   val select_RowTbl_trim_isnotnull : String = "SELECT id,trim(s1),ltrim(s2),rtrim(s3)," +
     "isnotnull(s4) FROM " + rowTbl + " ORDER BY id"
-  val dropColTbl_trim_isnotnull : String = dropTbl  + columnTbl
-  val dropRowTbl_trim_isnotnull : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  61. =, 62. ==, 63. <=>
@@ -415,20 +281,10 @@ object SQLFunctionsUtils {
   operators(2) = "(3,5,9,'5','9')"
   operators(3) = "(4,44,56,null,null)"
   operators(4) = "(5,34,78,'76','98')"
-  val createColTypeTbl_operators_Spark : String = createTbl + columnTbl +
-    "(id int,n1 int,n2 int,s1 string,s2 string)"
-  val createRowTypeTbl_operators_Spark : String = createTbl + rowTbl +
-    "(id int,n1 int,n2 int,s1 string,s2 string)"
-  val createColumnTbl_operators : String = createTbl + columnTbl +
-    "(id int,n1 int,n2 int,s1 string,s2 string) " + usingCol
-  val createRowTbl_operators : String = createTbl + rowTbl +
-    "(id int,n1 int,n2 int,s1 string,s2 string) " + usingRow
   val select_ColTbl_operators : String = "SELECT id,n1=s1,n2=s2,n1==s1,n2==s2," +
     "n1<=>s1,n2<=>s2 FROM " + columnTbl + " ORDER BY id"
   val select_RowTbl_operators : String = "SELECT id,n1=s1,n2=s2,n1==s1,n2==s2," +
     "n1<=>s1,n2<=>s2 FROM " + rowTbl + " ORDER BY id"
-  val dropColTbl_operators : String = dropTbl  + columnTbl
-  val dropRowTbl_operators : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  64. row_number(), 65. rank(), 66. dense_rank()
@@ -447,14 +303,6 @@ object SQLFunctionsUtils {
   rownumber_rank(10) = "('Harish','Third',67.4)"
   rownumber_rank(11) = "('Kapil','Third',88.9)"
   rownumber_rank(12) = "('Rahul','Fifth',60.3)"
-  val createColTypeTbl_rownumber_rank_Spark : String = createTbl + columnTbl +
-    "(name string,class string,total double)"
-  val createRowTypeTbl_rownumber_rank_Spark : String = createTbl + rowTbl +
-    "(name string,class string,total double)"
-  val createColumnTbl_rownumber_rank : String = createTbl + columnTbl +
-    "(name string,class string,total double) " + usingCol
-  val createRowTbl_rownumber_rank : String = createTbl + rowTbl +
-    "(name string,class string,total double) " + usingRow
   val select_ColTbl_rownumber_rank : String = "SELECT *," +
     "row_number() over (partition by class order by total) row_number," +
     "rank() over (partition by class order by total) rank," +
@@ -465,8 +313,6 @@ object SQLFunctionsUtils {
     "rank() over (partition by class order by total) rank," +
     " dense_rank() over (partition by class order by total) dense_rank " +
     "FROM " + rowTbl
-  val dropColTbl_rownumber_rank : String = dropTbl  + columnTbl
-  val dropRowTbl_rownumber_rank : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  67. encode, 68. decode
@@ -476,22 +322,12 @@ object SQLFunctionsUtils {
   encode_decode(1) = "(2,'ComputeDB')"
   encode_decode(2) = "(3,'Spark')"
   encode_decode(3) = "(4,'Docker')"
-  val createColTypeTbl_encode_decode_Spark : String = createTbl + columnTbl +
-    "(id int,testStr String)"
-  val createRowTypeTbl_encode_decode_Spark : String = createTbl + rowTbl +
-    "(id int,testStr String)"
-  val createColumnTbl_encode_decode : String = createTbl + columnTbl +
-    "(id int,testStr String) " + usingCol
-  val createRowTbl_encode_decode : String = createTbl + rowTbl +
-    "(id int,testStr String) " + usingRow
   val select_ColTbl_encode_decode : String = "SELECT id,decode(encode(testStr,'utf-16'),'utf-8')," +
     "decode(encode(testStr,'utf-8'),'us-ascii')," +
     "decode(encode(testStr,'us-ascii'),'utf-16') FROM " + columnTbl
   val select_RowTbl_encode_decode : String = "SELECT id,decode(encode(testStr,'utf-16'),'utf-8')," +
     "decode(encode(testStr,'utf-8'),'us-ascii')," +
     "decode(encode(testStr,'us-ascii'),'utf-16') FROM " + rowTbl
-  val dropColTbl_encode_decode : String = dropTbl  + columnTbl
-  val dropRowTbl_encode_decode : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  69. bigint, 70. binary, 71. boolean, 72. decimal,
@@ -500,14 +336,6 @@ object SQLFunctionsUtils {
     */
   val dataTypes = new Array[String](1)
   dataTypes(0) = "(1,'45',56.7,121)"
-  val createColTypeTbl_dataTypes_Spark : String = createTbl + columnTbl +
-    "(id int,testStr string,testDouble double,testInt int)"
-  val createRowTypeTbl_dataTypes_Spark : String = createTbl + rowTbl +
-    "(id int,testStr string,testDouble double,testInt int)"
-  val createColumnTbl_dataTypes : String = createTbl + columnTbl +
-    "(id int,testStr string,testDouble double,testInt int) " + usingCol
-  val createRowTbl_dataTypes : String = createTbl + rowTbl +
-    "(id int,testStr string,testDouble double,testInt int) " + usingRow
   val select_ColTbl_dataTypes : String = "SELECT id,bigint(testStr) as bigint," +
     "binary(testStr) as binary,boolean(testStr) as boolean,decimal(testStr) as decimal," +
     "double(testStr) as double,float(testStr) as float,int(testStr) as int," +
@@ -518,8 +346,6 @@ object SQLFunctionsUtils {
     "double(testStr) as double,float(testStr) as float,int(testStr) as int," +
     "smallint(testStr) as smallint,tinyint(testStr) as tinyint,decimal(testDouble) as decimal," +
     "float(testDouble) as float,boolean(0),boolean(1) FROM " + rowTbl
-  val dropColTbl_dataTypes : String = dropTbl  + columnTbl
-  val dropRowTbl_dataTypes : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  78. hash, 79. sha, 80. sha1, 81. sha2.
@@ -529,22 +355,12 @@ object SQLFunctionsUtils {
   hash_sha(0) = "(1,'ComputeDB')"
   hash_sha(1) = "(2,'SnappyData')"
   hash_sha(2) = "(3,'TDV')"
-  val createColTypeTbl_hash_sha_Spark : String = createTbl + columnTbl +
-    "(id int,testStr string)"
-  val createRowTypeTbl_hash_sha_Spark : String = createTbl + rowTbl +
-    "(id int,testStr string)"
-  val createColumnTbl_hash_sha : String = createTbl + columnTbl +
-    "(id int,testStr string) " + usingCol
-  val createRowTbl_hash_sha : String = createTbl + rowTbl +
-    "(id int,testStr string) " + usingRow
   val select_ColTbl_hash_sha : String = "SELECT id,hash(1,testStr,Map('ABC','XYZ'))," +
     "sha(testStr),sha1(testStr),sha2(testStr,224),sha2(testStr,256)," +
     "sha2(testStr,384),sha2(testStr,512) FROM " + columnTbl
   val select_RowTbl_hash_sha : String = "SELECT id,hash(1,testStr)," +
     "sha(testStr),sha1(testStr),sha2(testStr,224),sha2(testStr,256)," +
     "sha2(testStr,384),sha2(testStr,512) FROM " + rowTbl
-  val dropColTbl_hash_sha : String = dropTbl  + columnTbl
-  val dropRowTbl_hash_sha : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  82. translate, 83. substring_index,
@@ -555,14 +371,6 @@ object SQLFunctionsUtils {
     "'Spark SQL','TIBCO ComputeDB is a in-memory database and efficient compute engine')"
   translate_split(1) = "(2,null,null,null,null)"
   translate_split(2) = "(3,'','','','')"
-  val createColTypeTbl_translate_split_Spark : String = createTbl + columnTbl +
-    "(id int,str1 string,str2 string,str3 string,str4 string)"
-  val createRowTypeTbl_translate_split_Spark : String = createTbl + rowTbl +
-    "(id int,str1 string,str2 string,str3 string,str4 string)"
-  val createColumnTbl_translate_split : String = createTbl + columnTbl +
-    "(id int,str1 string,str2 string,str3 string,str4 string) " + usingCol
-  val createRowTbl_translate_split : String = createTbl + rowTbl +
-    "(id int,str1 string,str2 string,str3 string,str4 string) " + usingRow
   val select_ColTbl_translate_split : String = "SELECT id,translate(str1,'CB','TV')," +
     "substring_index(str2,'-',2),substring_index(str2,'-',1)," +
     "substring_index(str2,'-',-1),substring_index(str2,'-',-2)," +
@@ -571,8 +379,6 @@ object SQLFunctionsUtils {
     "substring_index(str2,'-',2),substring_index(str2,'-',1),substring_index(str2,'-',-1)," +
     "substring_index(str2,'-',-2),substring_index(str2,'-',-3)," +
     "split(str3,'S+'),sentences(str4) FROM " + rowTbl
-  val dropColTbl_translate_split : String = dropTbl  + columnTbl
-  val dropRowTbl_translate_split : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  86. monotonically_increasing_id
@@ -634,14 +440,6 @@ object SQLFunctionsUtils {
   date_time(0) = "(1,current_date,current_timestamp,12345678)"
   date_time(1) = "(2,'2020-01-31',current_timestamp,234598765)"
   date_time(2) = "(3,'2000-02-02',null,0)"
-  val createColTypeTbl_date_time_Spark : String = createTbl + columnTbl +
-    "(id int,date Date,ts timestamp,number int)"
-  val createRowTypeTbl_date_time_Spark : String = createTbl + rowTbl +
-    "(id int,date Date,ts timestamp,number int)"
-  val createColumnTbl_date_time : String = createTbl + columnTbl +
-    "(id int,date Date,ts timestamp,number int) " + usingCol
-  val createRowTbl_date_time : String = createTbl + rowTbl +
-    "(id int,date Date,ts timestamp,number int) " + usingRow
   val select_ColTbl_date_time : String = "SELECT id,to_date(ts)," +
     "to_unix_timestamp(date,'yyyy-MM-dd'),to_utc_timestamp(date,'UTC-11')," +
     "from_utc_timestamp(date,'UTC-8'),from_unixtime(number,'yyyy-MM-dd') FROM " + columnTbl +
@@ -650,20 +448,10 @@ object SQLFunctionsUtils {
     "to_unix_timestamp(date,'yyyy-MM-dd'),to_utc_timestamp(date,'UTC-11')," +
     "from_utc_timestamp(date,'UTC-8'),from_unixtime(number,'yyyy-MM-dd') FROM " + rowTbl +
     " ORDER BY id"
-  val dropColTbl_date_time : String = dropTbl  + columnTbl
-  val dropRowTbl_date_time : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  93. lag, 94. lead, 95. ntile,
     */
-  val createColTypeTbl_lead_lag_ntile_Spark : String = createTbl + columnTbl +
-    "(name string,class string,total double)"
-  val createRowTypeTbl_lead_lag_ntile_Spark : String = createTbl + rowTbl +
-    "(name string,class string,total double)"
-  val createColumnTbl_lead_lag_ntile : String = createTbl + columnTbl +
-    "(name string,class string,total double) " + usingCol
-  val createRowTbl_lead_lag_ntile : String = createTbl + rowTbl +
-    "(name string,class string,total double) " + usingRow
   val select_ColTbl_lead_lag_ntile : String = "SELECT name,class,total," +
     "lag(total) over (partition by class order by total) as lag," +
     "lead(total) over (partition by class order by total) as lead," +
@@ -672,8 +460,6 @@ object SQLFunctionsUtils {
     "lag(total) over (partition by class order by total) as lag," +
     "lead(total) over (partition by class order by total) as lead," +
     "ntile(3) over (partition by class order by total) as ntile FROM " + rowTbl
-  val dropColTbl_lead_lag_ntile : String = dropTbl  + columnTbl
-  val dropRowTbl_lead_lag_ntile : String = dropTbl + rowTbl
   /**
     *  96th function is timestamp and it is already
     *  tested in above queries.
@@ -686,22 +472,12 @@ object SQLFunctionsUtils {
   base_unbase(1) = "(2,'Hive MetaStore','SGl2ZSBNZXRhU3RvcmU='," +
     "'48697665204d65746153746f7265','2011-09-30 16:30:22')"
   base_unbase(2) = "(3,'AWS','QVdT','415753','2017-10-16 8:30:57')"
-  val createColTypeTbl_base_unbase_Spark : String = createTbl + columnTbl +
-    "(id int,testStr1 string,testStr2 string,testStr3 string,ts timestamp)"
-  val createRowTypeTbl_base_unbase_Spark : String = createTbl + rowTbl +
-    "(id int,testStr1 string,testStr2 string,testStr3 string,ts timestamp)"
-  val createColumnTbl_base_unbase : String = createTbl + columnTbl +
-    "(id int,testStr1 string,testStr2 string,testStr3 string,ts timestamp) " + usingCol
-  val createRowTbl_base_unbase : String = createTbl + rowTbl +
-    "(id int,testStr1 string,testStr2 string,testStr3 string,ts timestamp) " + usingRow
   val select_ColTbl_base_unbase : String = "SELECT id,base64(testStr1)," +
     "decode(unbase64(testStr2),'UTF-8'),decode(unhex(testStr3),'UTF-8'),unix_timestamp(ts) " +
     "FROM " + columnTbl
   val select_RowTbl_base_unbase : String = "SELECT id,base64(testStr1)," +
     "decode(unbase64(testStr2),'UTF-8')," +
     "decode(unhex(testStr3),'UTF-8'),unix_timestamp(ts) FROM " + rowTbl
-  val dropColTbl_base_unbase : String = dropTbl  + columnTbl
-  val dropRowTbl_base_unbase : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  101. trunc, 102. quarter, 103. parse_url, 104. java_method
@@ -710,14 +486,6 @@ object SQLFunctionsUtils {
   parseurl(0) = "(1,current_date," +
     "'https://spark.apache.org/docs/latest/api/sql/index.html#parse_url')"
   parseurl(1) = "(2,null,null)"
-  val createColTypeTbl_parseurl_Spark : String = createTbl + columnTbl +
-    "(id int,dt date,testStr1 string)"
-  val createRowTypeTbl_parseurl_Spark : String = createTbl + rowTbl +
-    "(id int,dt date,testStr1 string)"
-  val createColumnTbl_parseurl : String = createTbl + columnTbl +
-    "(id int,dt date,testStr1 string) " + usingCol
-  val createRowTbl_parseurl : String = createTbl + rowTbl +
-    "(id int,dt date,testStr1 string) " + usingRow
   val select_ColTbl_parseurl : String = "SELECT id,trunc(dt,'YEAR') as year," +
     "trunc(dt,'MM') as month,trunc(dt,'DAY') as day,quarter(dt) as q1," +
     "quarter('2019-11-26') as q2,parse_url(testStr1,'PROTOCOL') as protocol," +
@@ -730,8 +498,6 @@ object SQLFunctionsUtils {
     "parse_url(testStr1,'HOST') as host,parse_url(testStr1,'PATH') as path," +
     "parse_url(testStr1,'QUERY') as query,java_method('java.util.UUID','randomUUID') FROM " +
     rowTbl + " ORDER BY id"
-  val dropColTbl_parseurl : String = dropTbl  + columnTbl
-  val dropRowTbl_parseurl : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  105. spark_partition_id.
@@ -768,14 +534,6 @@ object SQLFunctionsUtils {
   rollup_cube(7) = "(8,'Elizabeth','Female',7000,'USA')"
   rollup_cube(8) = "(9,'Tom','Male',5500,'UK')"
   rollup_cube(9) = "(10,'Rom','Male',5000,'USA')"
-  val createColTypeTbl_rollup_cube_Spark : String = createTbl + columnTbl +
-    "(id int,name string,gender string,salary int,country string)"
-  val createRowTypeTbl_rollup_cube_Spark : String = createTbl + rowTbl +
-    "(id int,name string,gender string,salary int,country string)"
-  val createColumnTbl_rollup_cube : String = createTbl + columnTbl +
-    "(id int,name string,gender string,salary int,country string) " + usingCol
-  val createRowTbl_rollup_cube : String = createTbl + rowTbl +
-    "(id int,name string,gender string,salary int,country string) " + usingRow
   val select_ColTbl_rollup : String = "SELECT country,gender,sum(salary) AS total FROM " +
     columnTbl + " GROUP BY ROLLUP(country,gender)"
   val select_RowTbl_rollup: String = "SELECT country,gender,sum(salary) AS total FROM " +
@@ -803,9 +561,7 @@ object SQLFunctionsUtils {
     "SUM(salary) OVER (PARTITION BY gender ORDER BY salary " +
     "ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS SalarySum" +
     " FROM " + rowTbl
-  val dropColTbl_rollup_cube : String = dropTbl  + columnTbl
-  val dropRowTbl_rollup_cube : String = dropTbl + rowTbl
-  /**
+   /**
     *  Below queries test the functions :
     *  108. grouping, 109. grouping_id
     */
@@ -818,14 +574,6 @@ object SQLFunctionsUtils {
   grouping_grouping_id(5) = "('Europe','United Kingdom','Manchester',2000)"
   grouping_grouping_id(6) = "('Europe','France','Paris',4000)"
   grouping_grouping_id(7) = "('Europe','France','Cannes',5000)"
-  val createColTypeTbl_grouping_grouping_id_Spark : String = createTbl + columnTbl +
-    "(continent string,country string,city string,salesamount int)"
-  val createRowTypeTbl_grouping_grouping_id_Spark : String = createTbl + rowTbl +
-    "(continent string,country string,city string,salesamount int)"
-  val createColumnTbl_grouping_grouping_id : String = createTbl + columnTbl +
-    "(continent string,country string,city string,salesamount int) " + usingCol
-  val createRowTbl_grouping_grouping_id : String = createTbl + rowTbl +
-    "(continent string,country string,city string,salesamount int) " + usingRow
   val select_ColTbl_grouping_grouping_id : String = "SELECT continent,country,city," +
     "SUM(salesamount) as totalsales,GROUPING(continent) as GP_Continent," +
     "GROUPING(country) as GP_Country,GROUPING(city) as GP_City," +
@@ -836,8 +584,6 @@ object SQLFunctionsUtils {
     "GROUPING(country) as GP_Country,GROUPING(city) as GP_City," +
     "GROUPING_ID(continent,country,city) as GID FROM " + rowTbl +
     " GROUP BY ROLLUP(continent,country,city) ORDER BY GID"
-  val dropColTbl_grouping_grouping_id : String = dropTbl  + columnTbl
-  val dropRowTbl_grouping_grouping_id : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  110. approx_count_dist, 111. mean
@@ -854,14 +600,6 @@ object SQLFunctionsUtils {
   approxcntdist_mean(7) = "('Jeff','Marketing',3000)"
   approxcntdist_mean(8) = "('Kumar','Marketing',2000)"
   approxcntdist_mean(9) = "('Saif','Sales',4100)"
-  val createColTypeTbl_approxcntdist_mean_Spark : String = createTbl + columnTbl +
-    "(empname string,department string,salary int)"
-  val createRowTypeTbl_approxcntdist_mean_Spark : String = createTbl + rowTbl +
-    "(empname string,department string,salary int)"
-  val createColumnTbl_approxcntdist_mean : String = createTbl + columnTbl +
-    "(empname string,department string,salary int) " + usingCol
-  val createRowTbl_approxcntdist_mean : String = createTbl + rowTbl +
-    "(empname string,department string,salary int) " + usingRow
   val select_ColTbl_approxcntdist_mean : String = "SELECT " +
     "approx_count_distinct(salary),mean(salary),approx_count_distinct(department) FROM " + columnTbl
   val select_RowTbl_approxcntdist_mean: String = "SELECT " +
@@ -875,8 +613,6 @@ object SQLFunctionsUtils {
   val select_RowTbl_cumedist_prank: String = "SELECT *," +
     "cume_dist() OVER(PARTITION BY department ORDER BY salary) cume_dist," +
     "percent_rank() OVER(PARTITION BY department ORDER BY salary) percent_rank FROM " + rowTbl
-  val dropColTbl_approxcntdist_mean : String = dropTbl  + columnTbl
-  val dropRowTbl_approxcntdist_mean : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  112. printf, 113. md5
@@ -885,22 +621,12 @@ object SQLFunctionsUtils {
   printf_md5(0) = "(1,'TIBCO',' ComputeDB')"
   printf_md5(1) = "(2,'TIBCO',' Spotfire')"
   printf_md5(2) = "(3,'TIBCO',' Data Virtualization')"
-  val createColTypeTbl_printf_md5_Spark : String = createTbl + columnTbl +
-    "(id int,str1 string,str2 string)"
-  val createRowTypeTbl_printf_md5_Spark : String = createTbl + rowTbl +
-    "(id int,str1 string,str2 string)"
-  val createColumnTbl_printf_md5 : String = createTbl + columnTbl +
-    "(id int,str1 string,str2 string) " + usingCol
-  val createRowTbl_printf_md5 : String = createTbl + rowTbl +
-    "(id int,str1 string,str2 string) " + usingRow
   val select_ColTbl_printf_md5 : String = "SELECT " +
     "id,printf(CONCAT(str1,str2)) as product, md5(CONCAT(str1,str2)) FROM " + columnTbl +
     " ORDER BY id"
   val select_RowTbl_printf_md5: String = "SELECT " +
     "id,printf(CONCAT(str1,str2)) as product, md5(CONCAT(str1,str2)) FROM " + rowTbl +
   " ORDER BY id"
-  val dropColTbl_printf_md5 : String = dropTbl  + columnTbl
-  val dropRowTbl_printf_md5 : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  114.  assert_true
@@ -909,16 +635,8 @@ object SQLFunctionsUtils {
   assert_true(0) = "(9,6)"
   assert_true(1) = "(8,8)"
   assert_true(2) = "(5,10)"
-  val createColTypeTbl_assert_true_Spark : String = createTbl + columnTbl + "(i1 int,i2 int)"
-  val createRowTypeTbl_assert_true_Spark : String = createTbl + rowTbl + "(i1 int,i2 int)"
-  val createColumnTbl_assert_true : String = createTbl + columnTbl +
-    "(i1 int,i2 int) " + usingCol
-  val createRowTbl_assert_true : String = createTbl + rowTbl +
-    "(i1 int,i2 int) " + usingRow
   val select_ColTbl_assert_true : String = "SELECT " + "assert_true(i1 > i2) FROM " + columnTbl
   val select_RowTbl_assert_true: String = "SELECT " + "assert_true(i1 > i2) FROM " + rowTbl
-  val dropColTbl_assert_true : String = dropTbl  + columnTbl
-  val dropRowTbl_assert_true : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  115.  input_file_name
@@ -945,22 +663,12 @@ object SQLFunctionsUtils {
   regexp_extract_replace(0) = "(100,'unix','unix@gmail.co.tt')"
   regexp_extract_replace(1) = "(200,'windows','windows@gmail.co.tt')"
   regexp_extract_replace(2) = "(300,'macos','macos@gmail.co.tt')"
-  val createColTypeTbl_regexp_extract_replace_Spark : String = createTbl + columnTbl +
-    "(empid int,empname string,email string)"
-  val createRowTypeTbl_regexp_extract_replace_Spark : String = createTbl + rowTbl +
-    "(empid int,empname string,email string)"
-  val createColumnTbl_regexp_extract_replace : String = createTbl + columnTbl +
-    "(empid int,empname string,email string) " + usingCol
-  val createRowTbl_regexp_extract_replace : String = createTbl + rowTbl +
-    "(empid int,empname string,email string) " + usingRow
   val select_ColTbl_regexp_extract_replace : String = "SELECT empid,empname," +
     "regexp_extract(email,'@(\\\\w+)') AS domain," +
     "regexp_replace(email,'@(\\\\w+)','@tibco') AS change FROM " + columnTbl
   val select_RowTbl_regexp_extract_replace: String = "SELECT empid,empname," +
     "regexp_extract(email,'@(\\\\w+)') AS domain," +
     "regexp_replace(email,'@(\\\\w+)','@tibco') AS change FROM " + rowTbl
-  val dropColTbl_regexp_extract_replace : String = dropTbl  + columnTbl
-  val dropRowTbl_regexp_extract_replace : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  121.  json_tuple, 122.  crc32
@@ -972,22 +680,12 @@ object SQLFunctionsUtils {
   json_tuple_crc32(0) = "(1,'ComputeDB',".concat(jsonStr1).concat(")")
   json_tuple_crc32(1) = "(2,'SpotFire',".concat(jsonStr2).concat(")")
   json_tuple_crc32(2) = "(3,'AWS',".concat(jsonStr3).concat(")")
-  val createColTypeTbl_json_tuple_crc32_Spark : String = createTbl + columnTbl +
-    "(id int,checksum string,jsonstr string)"
-  val createRowTypeTbl_json_tuple_crc32_Spark : String = createTbl + rowTbl +
-    "(id int,checksum string,jsonstr string)"
-  val createColumnTbl_json_tuple_crc32 : String = createTbl + columnTbl +
-    "(id int,checksum string,jsonstr string) " + usingCol
-  val createRowTbl_json_tuple_crc32 : String = createTbl + rowTbl +
-    "(id int,checksum string,jsonstr string) " + usingRow
   val select_ColTbl_json_tuple_crc32 : String = "SELECT id," +
     "json_tuple(jsonstr,'Name','Location','Revenue'), crc32(checksum) FROM " + columnTbl +
     " ORDER BY ID"
   val select_RowTbl_json_tuple_crc32: String = "SELECT id," +
     "json_tuple(jsonstr,'Name','Location','Revenue'),crc32(checksum) FROM " + rowTbl +
   " ORDER BY ID"
-  val dropColTbl_json_tuple_crc32 : String = dropTbl  + columnTbl
-  val dropRowTbl_json_tuple_crc32 : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  123.  like, 124.  rlike
@@ -1008,14 +706,6 @@ object SQLFunctionsUtils {
   like_rlike(12) = "('Inder Kumar Gujral','Bihar','Janata Dal(U)')"
   like_rlike(13) = "('Manmohan Singh','Assam','Indian National Congress(I)')"
   like_rlike(14) = "('Narendra Modi','Uttar Pradesh','Bharatiya Janata Party')"
-  val createColTypeTbl_like_rlike_Spark : String = createTbl + columnTbl +
-    "(name string,state string,party string)"
-  val createRowTypeTbl_like_rlike_Spark : String = createTbl + rowTbl +
-    "(name string,state string,party string)"
-  val createColumnTbl_like_rlike : String = createTbl + columnTbl +
-    "(name string,state string,party string) " + usingCol
-  val createRowTbl_like_rlike : String = createTbl + rowTbl +
-    "(name string,state string,party string) " + usingRow
   val select_ColTbl_like : String = "SELECT name,state,party FROM " + columnTbl +
   " WHERE state LIKE 'Ut%' AND party LIKE 'Bhar%'"
   val select_RowTbl_like: String = "SELECT name,state,party FROM " + rowTbl +
@@ -1024,8 +714,6 @@ object SQLFunctionsUtils {
     " WHERE state RLIKE '[UG]'"
   val select_RowTbl_rlike: String = "SELECT name,state,party FROM " + rowTbl +
     " WHERE state RLIKE '[UG]'"
-  val dropColTbl_like_rlike : String = dropTbl  + columnTbl
-  val dropRowTbl_like_rlike : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  126. variance, 127. var_samp, 128. var_pop,
@@ -1053,14 +741,6 @@ object SQLFunctionsUtils {
   variance(17) = "(18,'Gujarat',2,0)"
   variance(18) = "(19,'Puducherry',1,0)"
   variance(19) = "(20,'Chandigarh',1,0)"
-  val createColTypeTbl_variance_Spark : String = createTbl + columnTbl +
-    "(id int,state string,indian_nationals_corona int,foreign_national_corana int)"
-  val createRowTypeTbl_variance_Spark : String = createTbl + rowTbl +
-    "(id int,state string,indian_nationals_corona int,foreign_national_corana int)"
-  val createColumnTbl_variance : String = createTbl + columnTbl +
-    "(id int,state string,indian_nationals_corona int,foreign_national_corana int) " + usingCol
-  val createRowTbl_variance : String = createTbl + rowTbl +
-    "(id int,state string,indian_nationals_corona int,foreign_national_corana int) " + usingRow
   val select_ColTbl_variance : String = "SELECT SUM(indian_nationals_corona)," +
     "VAR_POP(indian_nationals_corona),VARIANCE(indian_nationals_corona)," +
     "VAR_SAMP(indian_nationals_corona),STDDEV_POP(indian_nationals_corona)," +
@@ -1073,8 +753,6 @@ object SQLFunctionsUtils {
     "STDDEV(indian_nationals_corona),STDDEV_SAMP(indian_nationals_corona)," +
     "STD(indian_nationals_corona),SKEWNESS(indian_nationals_corona)," +
     "KURTOSIS(indian_nationals_corona) FROM " + rowTbl
-  val dropColTbl_variance : String = dropTbl  + columnTbl
-  val dropRowTbl_variance : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  133. named_struct
@@ -1083,20 +761,10 @@ object SQLFunctionsUtils {
   named_struct(0) = "(1,'TIBCO',43.654,true)"
   named_struct(1) = "(2,'Snappy',12.3,true)"
   named_struct(2) = "(3,'ABCD',NULL,false)"
-  val createColTypeTbl_named_struct_Spark : String = createTbl + columnTbl +
-    "(id int,v1 string,v2 double,v3 boolean)"
-  val createRowTypeTbl_named_struct_Spark : String = createTbl + rowTbl +
-    "(id int,v1 string,v2 double,v3 boolean)"
-  val createColumnTbl_named_struct : String = createTbl + columnTbl +
-    "(id int,v1 string,v2 double,v3 boolean) " + usingCol
-  val createRowTbl_named_struct : String = createTbl + rowTbl +
-    "(id int,v1 string,v2 double,v3 boolean) " + usingRow
   val select_ColTbl_named_struct : String = "SELECT id," +
     "named_struct('Name',v1,'Revenue',v2,'Equal Employer',v3) FROM " + columnTbl + " ORDER BY ID"
   val select_RowTbl_named_struct: String = "SELECT id," +
     "named_struct('Name',v1,'Revenue',v2,'Equal Employer',v3) FROM " + rowTbl + " ORDER BY ID"
-  val dropColTbl_named_struct : String = dropTbl  + columnTbl
-  val dropRowTbl_named_struct : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  134. dsid() - Returns the unique distributed member ID of executor fetching current row.
@@ -1129,22 +797,12 @@ object SQLFunctionsUtils {
   correlation(9) = "(18.1,421)"
   correlation(10) = "(22.6,445)"
   correlation(11) = "(17.2,408)"
-  val createColTypeTbl_correlation_Spark : String = createTbl + columnTbl +
-    "(temperature double,icecreamsales int)"
-  val createRowTypeTbl_correlation_Spark : String = createTbl + rowTbl +
-    "(temperature double,icecreamsales int)"
-  val createColumnTbl_correlation : String = createTbl + columnTbl +
-    "(temperature double,icecreamsales int) " + usingCol
-  val createRowTbl_correlation : String = createTbl + rowTbl +
-    "(temperature double,icecreamsales int) " + usingRow
   val select_ColTbl_correlation : String = "SELECT CORR(temperature,icecreamsales)," +
     "COVAR_SAMP(temperature,icecreamsales)," +
     "COVAR_POP(temperature,icecreamsales) FROM " + columnTbl
   val select_RowTbl_correlation: String = "SELECT CORR(temperature,icecreamsales)," +
     "COVAR_SAMP(temperature,icecreamsales)," +
     "COVAR_POP(temperature,icecreamsales) FROM " + rowTbl
-  val dropColTbl_correlation : String = dropTbl  + columnTbl
-  val dropRowTbl_correlation : String = dropTbl + rowTbl
   /**
     *  Below queries test the functions :
     *  140. approx_percentile,141. percentile,142. percentile_approx
@@ -1155,16 +813,10 @@ object SQLFunctionsUtils {
   percentile(2) = "(3,45.3)"
   percentile(3) = "(4,89.6)"
   percentile(4) = "(5,77.4)"
-  val createColTypeTbl_percentile_Spark : String = createTbl + columnTbl + "(id int,d double)"
-  val createRowTypeTbl_percentile_Spark : String = createTbl + rowTbl + "(id int,d double)"
-  val createColumnTbl_percentile : String = createTbl + columnTbl + "(id int,d double) " + usingCol
-  val createRowTbl_percentile : String = createTbl + rowTbl + "(id int,d double) " + usingRow
   val select_ColTbl_percentile : String = "SELECT PERCENTILE(d,0.50)," +
     "PERCENTILE_APPROX(d,0.60,100)," +
     "APPROX_PERCENTILE(d,0.85,100) FROM " + columnTbl
   val select_RowTbl_percentile: String = "SELECT PERCENTILE(d,0.50)," +
     "PERCENTILE_APPROX(d,0.60,100)," +
     "APPROX_PERCENTILE(d,0.85,100) FROM " + rowTbl
-  val dropColTbl_percentile : String = dropTbl  + columnTbl
-  val dropRowTbl_percentile : String = dropTbl + rowTbl
 }

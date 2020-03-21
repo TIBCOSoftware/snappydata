@@ -35,33 +35,46 @@ class SQLFunctions extends SnappySQLJob {
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
     val sqlContext : SQLContext = spark.sqlContext
     pw.println("Snappy Embedded Job -  SQL Functions")
-
     //  CREATE TABLE IN SPARK / SNAPPY.
-    def createTables(sparkColumnTypeTbl : String, sparkRowTypeTbl: String,
-                                     sncColumnTbl : String, sncRowTbl : String) : Unit = {
-          spark.sql(sparkColumnTypeTbl)
-          snc.sql(sncColumnTbl)
-          if(sparkRowTypeTbl != "" &&
-          sncRowTbl != "") {
-            spark.sql(sparkRowTypeTbl)
-            snc.sql(sncRowTbl)
-          }
+    def createTables(schema : String, tbls : String) : Unit = {
+      if (tbls == "R") {
+        spark.sql(SQLFunctionsUtils.createTbl + SQLFunctionsUtils.rowTbl + schema)
+        snc.sql(SQLFunctionsUtils.createTbl + SQLFunctionsUtils.rowTbl +
+          schema + SQLFunctionsUtils.usingRow)
+      }
+      else if (tbls == "C") {
+        spark.sql(SQLFunctionsUtils.createTbl + SQLFunctionsUtils.columnTbl + schema)
+        snc.sql(SQLFunctionsUtils.createTbl + SQLFunctionsUtils.columnTbl +
+          schema + SQLFunctionsUtils.usingCol)
+      }
+      else if (tbls == "RC") {
+        spark.sql(SQLFunctionsUtils.createTbl + SQLFunctionsUtils.rowTbl + schema)
+        spark.sql(SQLFunctionsUtils.createTbl + SQLFunctionsUtils.columnTbl + schema)
+        snc.sql(SQLFunctionsUtils.createTbl + SQLFunctionsUtils.rowTbl +
+          schema + SQLFunctionsUtils.usingRow)
+        snc.sql(SQLFunctionsUtils.createTbl + SQLFunctionsUtils.columnTbl +
+          schema + SQLFunctionsUtils.usingCol)
+      }
     }
-
     // DROP SPARK / SNAPPY TABLES.
-    def dropTablesAndPrint(sparkColumnTypeTbl : String, sparkRowTypeTbl: String,
-                           sncColumnTbl : String, sncRowTbl : String) : Unit = {
-      spark.sql(sparkColumnTypeTbl)
-      snc.sql(sncColumnTbl)
-      if(sparkRowTypeTbl != "" &&
-        sncRowTbl != "") {
-        spark.sql(sparkRowTypeTbl)
-        snc.sql(sncRowTbl)
+    def dropTablesAndPrint(tbls : String) : Unit = {
+      if (tbls == "R") {
+        spark.sql(SQLFunctionsUtils.dropTbl + SQLFunctionsUtils.rowTbl )
+        snc.sql(SQLFunctionsUtils.dropTbl + SQLFunctionsUtils.rowTbl )
+      }
+      else if (tbls == "C") {
+        spark.sql(SQLFunctionsUtils.dropTbl + SQLFunctionsUtils.columnTbl )
+        snc.sql(SQLFunctionsUtils.dropTbl + SQLFunctionsUtils.columnTbl)
+      }
+      else if (tbls == "RC") {
+        spark.sql(SQLFunctionsUtils.dropTbl + SQLFunctionsUtils.rowTbl)
+        spark.sql(SQLFunctionsUtils.dropTbl + SQLFunctionsUtils.columnTbl)
+        snc.sql(SQLFunctionsUtils.dropTbl + SQLFunctionsUtils.rowTbl)
+        snc.sql(SQLFunctionsUtils.dropTbl + SQLFunctionsUtils.columnTbl)
       }
       pw.println()
       pw.flush()
     }
-
     //  INSERT RECORDS IN SPARK / SNAPPY.
     def insertRecordsToTable(length : Int, records : Array[String],
                              isColumnTbl : Boolean = true) : Unit = {
@@ -94,7 +107,6 @@ class SQLFunctions extends SnappySQLJob {
           }
         }
       }
-
     //  SELECT QUERY / VALIDATION ROUTINE.
     def validateResult(selectColumnTbl : String, selectRowTbl : String,
                        columnStr : String, rowStr : String) : Unit = {
@@ -105,21 +117,17 @@ class SQLFunctions extends SnappySQLJob {
           rowStr, "row", pw, sqlContext)
       }
     }
-
     //  SELECT QUERY / VALIDATION ROUTINE.
     def validateResultThroughDataFrames(selectSnappyDF : DataFrame, selectSparkDF : DataFrame,
                                         queryIndentifier : String, tableType : String) : Unit = {
       SnappyTestUtils.assertQueryFullResultSet(snc, selectSnappyDF, selectSparkDF,
         queryIndentifier, tableType, pw, sqlContext, true)
     }
-
     /**
       *  Below queries/code test the functions :
       *  1. date, 2. date_add, 3. date_sub, 4. date_diff, 5. date_format
       */
-    createTables(SQLFunctionsUtils.createColTypeTblInSpark,
-      SQLFunctionsUtils.createRowTypeTblInSpark, SQLFunctionsUtils.createColumnTbl_DateFunctions_1,
-      SQLFunctionsUtils.createRowTbl_DateFunctions_1)
+    createTables("(id int, name String, date1 date, date2 date, n1 int, n2 int)", "RC")
     insertRecordsToTable(2, SQLFunctionsUtils.dateSet)
     validateResult(SQLFunctionsUtils.selectQueryOnColTbl_DateFunctions_1,
       SQLFunctionsUtils.selectQueryOnRowTbl_DateFunctions_1,
@@ -128,24 +136,18 @@ class SQLFunctions extends SnappySQLJob {
       "Q3_SelectMonth_DateFormat", "")
     validateResult(SQLFunctionsUtils.selectDay_DateFormatFunc, "",
       "Q4_SelectDay_DateFormat", "")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColumnTbl_DateFunctions_1,
-      SQLFunctionsUtils.dropRowTbl_DateFunctions_1, SQLFunctionsUtils.dropColumnTbl_DateFunctions_1,
-      SQLFunctionsUtils.dropRowTbl_DateFunctions_1)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  6. repeat, 7. reverse
       *  (NOTE : reverse logic for arrays is available since  Spark 2.4.0,
       *  test to be added after spark 2.4.0 merge
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_RseRpt_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_rserpt_Spark, SQLFunctionsUtils.createColumnTbl_RseRpt,
-      SQLFunctionsUtils.createRowTbl_RseRpt)
+    createTables("(id int,reversename string,repeatname string)", "RC")
     insertRecordsToTable(1, SQLFunctionsUtils.rseRptSet)
     validateResult(SQLFunctionsUtils.select_ColTbl_RseRpt,
       SQLFunctionsUtils.select_RowTbl_RseRpt, "Q5_Select_RevRpt", "Q6_Select_RevRpt")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_RseRpt,
-      SQLFunctionsUtils.dropRowTbl_RseRpt, SQLFunctionsUtils.dropColTbl_RseRpt,
-      SQLFunctionsUtils.dropRowTbl_RseRpt)
+    dropTablesAndPrint("RC")
     /**
       * Below queries test the functions :
       * 8. !(Logical Not)
@@ -154,25 +156,17 @@ class SQLFunctions extends SnappySQLJob {
       *  9. & (Bitwise AND), 10. ^ (Bitwise exclusiveOR/ExOR),
       *  11. | (Bitwise OR), 12. ~ (Bitwise NOT)
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_NOT_AND_ExOR_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_NOT_AND_ExOR_Spark,
-      SQLFunctionsUtils.createColumnTbl_NOT_AND_ExOR, SQLFunctionsUtils.createRowTbl_NOT_AND_ExOR)
+    createTables("(id int,n1 int,n2 int,n3 int)", "RC")
     insertRecordsToTable(3, SQLFunctionsUtils.NOT_AND_ExOR_Set)
     validateResult(SQLFunctionsUtils.select_ColTbl_NOT_AND_ExOR,
       SQLFunctionsUtils.select_RowTbl_NOT_AND_ExOR, "Q7_NOT_AND_ExOR", "Q8_NOT_AND_ExOR")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_NOT_AND_ExOR,
-      SQLFunctionsUtils.dropRowTbl_NOT_AND_ExOR, SQLFunctionsUtils.dropColTbl_NOT_AND_ExOR,
-      SQLFunctionsUtils.dropRowTbl_NOT_AND_ExOR)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  13. day ,14. dayofmonth, 15. dayofyear, 16. last_day,
       *  17. month, 18. next_day, 19. weekofyear, 20 year
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_Day_Month_Year_Spark,
-      SQLFunctionsUtils.
-        createRowTypeTbl_Day_Month_Year_Spark,
-      SQLFunctionsUtils.createColumnTbl_Day_Month_Year,
-      SQLFunctionsUtils.createRowTbl_Day_Month_Year)
+    createTables("(id int,dt date)", "RC")
     insertRecordsToTable(1, SQLFunctionsUtils.day_Month_Year_Set)
     val snappyDF1 : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_Day_Month_Year)
     val sparkDF1 : DataFrame = spark.sql(SQLFunctionsUtils.select_ColTbl_Day_Month_Year)
@@ -182,15 +176,12 @@ class SQLFunctions extends SnappySQLJob {
     val sparkDF2 : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_Day_Month_Year)
     validateResultThroughDataFrames(snappyDF2, sparkDF2,
       "Q10_Day_Mnth_Yr", "row")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_Day_Month_Year,
-      SQLFunctionsUtils.dropRowTbl_Day_Month_Year, SQLFunctionsUtils.dropColTbl_Day_Month_Year,
-      SQLFunctionsUtils.dropRowTbl_Day_Month_Year)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  21. map , 22. map_keys, 23. map_values
       */
-     createTables(SQLFunctionsUtils.createColTypeTbl_map_Keys_Values_Spark, "",
-      SQLFunctionsUtils.createColumnTbl_map_Keys_Values, "")
+     createTables("(id int,marks map<string,int>)", "C")
     insertRecordsToTable(1, SQLFunctionsUtils.map_Keys_Values_Set, false)
     val snappyDF_map_Keys_Values : DataFrame =
       snc.sql(SQLFunctionsUtils.select_ColTbl_map_Keys_Values)
@@ -198,32 +189,25 @@ class SQLFunctions extends SnappySQLJob {
       spark.sql(SQLFunctionsUtils.select_ColTbl_map_Keys_Values)
     validateResultThroughDataFrames(snappyDF_map_Keys_Values, sparkDF_map_Keys_Values,
       "Q11_map_Keys_Values", "column")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_map_Keys_Values, "",
-      SQLFunctionsUtils.dropColTbl_map_Keys_Values, "")
+    dropTablesAndPrint("C")
     /**
       *  Below queries test the functions :
       *  24. array , 25. array_contains
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_array_Contains_Spark, "",
-      SQLFunctionsUtils.createColumnTbl_array_Contains_Values, "")
+    createTables("(id int,arr Array<Int>)", "C")
     insertRecordsToTable(1, SQLFunctionsUtils.array_Contains_Set, false)
     validateResult(SQLFunctionsUtils.select_ColTbl_array_Contains, "",
       "Q12_array_Contains", "")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_array_Contains, "",
-      SQLFunctionsUtils.dropColTbl_array_Contains, "")
+    dropTablesAndPrint("C")
     /**
       *  Below queries test the functions :
       *  26. and, 27. or , 28. not
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_And_Or_Not_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_And_Or_Not_Spark,
-      SQLFunctionsUtils.createColumnTbl_And_Or_Not, SQLFunctionsUtils.createRowTbl_And_Or_Not)
+    createTables("(id int,b1 boolean,b2 boolean,b boolean)", "RC")
     insertRecordsToTable(3, SQLFunctionsUtils.And_Or_Not_Set)
     validateResult(SQLFunctionsUtils.select_ColTbl_And_Or_Not,
       SQLFunctionsUtils.select_RowTbl_And_Or_Not, "Q13_And_Or_Not", "Q14_And_Or_Not")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_And_Or_Not,
-      SQLFunctionsUtils.dropRowTbl_And_Or_Not, SQLFunctionsUtils.dropColTbl_And_Or_Not,
-      SQLFunctionsUtils.dropRowTbl_And_Or_Not)
+    dropTablesAndPrint("RC")
     /**
     Below queries test the function:
      29. current_database(), 92. current_schema().
@@ -243,60 +227,43 @@ class SQLFunctions extends SnappySQLJob {
       *  NOTE : Following test case is Pending.
       *  SET spark.sql.legacy.sizeOfNull is set to false, the function returns null for null input
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_Size_Spark, "",
-      SQLFunctionsUtils.createColumnTbl_Size, "")
+    createTables("(id int,testArr Array<Int>,testMap Map<String,Double>)", "C")
     insertRecordsToTable(3, SQLFunctionsUtils.size_Set, false)
    validateResult(SQLFunctionsUtils.select_ColTbl_Size, "", "Q16_Size", "")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_Size, "",
-      SQLFunctionsUtils.dropColTbl_Size, "")
+    dropTablesAndPrint("C")
     /**
       *  Below queries test the functions :
       *  31. rpad, 32. in
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_rpad_in_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_rpad_in_Spark, SQLFunctionsUtils.createColumnTbl_rpad_in,
-      SQLFunctionsUtils.createRowTbl_rpad_in)
+    createTables("(id int,testStr string)", "RC")
     insertRecordsToTable(2, SQLFunctionsUtils.rpad_in_Set)
     validateResult(SQLFunctionsUtils.select_ColTbl_rpad_in, SQLFunctionsUtils.select_RowTbl_rpad_in,
       "Q17_rpad_in", "Q18_rpad_in")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_rpad_in, SQLFunctionsUtils.dropRowTbl_rpad_in,
-      SQLFunctionsUtils.dropColTbl_rpad_in, SQLFunctionsUtils.dropRowTbl_rpad_in)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  33. hour, 34. minute, 35. second
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_hr_min_sec_Spark,
-      SQLFunctionsUtils.
-        createRowTypeTbl_hr_min_sec_Spark, SQLFunctionsUtils.createColumnTbl_hr_min_sec,
-      SQLFunctionsUtils.createRowTbl_hr_min_sec)
+    createTables("(id int,ts timestamp)", "RC")
     insertRecordsToTable(1, SQLFunctionsUtils.hr_min_sec_Set)
     validateResult(SQLFunctionsUtils.select_ColTbl_hr_min_sec,
       SQLFunctionsUtils.select_RowTbl_hr_min_sec, "Q19_hr_min_sec", "Q20_hr_min_sec")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_hr_min_sec,
-      SQLFunctionsUtils.dropRowTbl_hr_min_sec,
-      SQLFunctionsUtils.dropColTbl_hr_min_sec, SQLFunctionsUtils.dropRowTbl_hr_min_sec)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  36. ascii, 37. months_between, 35. current_timestamp
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_ascii_mnthbet_ts_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_ascii_mnthbet_ts_Spark,
-      SQLFunctionsUtils.
-        createColumnTbl_ascii_mnthbet_ts, SQLFunctionsUtils.createRowTbl_ascii_mnthbet_ts)
+    createTables("(id int,s1 string,s2 string,dt1 date,dt2 timestamp)", "RC")
     insertRecordsToTable(2, SQLFunctionsUtils.ascii_mnthbet_ts_Set)
     validateResult(SQLFunctionsUtils.select_ColTbl_ascii_mnthbet_ts,
       SQLFunctionsUtils.select_RowTbl_ascii_mnthbet_ts,
       "Q21_ascii_mnthbet_ts", "Q22_ascii_mnthbet_ts")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_ascii_mnthbet_ts,
-      SQLFunctionsUtils.dropRowTbl_ascii_mnthbet_ts, SQLFunctionsUtils.dropColTbl_ascii_mnthbet_ts,
-      SQLFunctionsUtils.dropRowTbl_ascii_mnthbet_ts)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  39. string, 40. substr, 41. substring
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_str_substr_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_str_substr_Spark,
-      SQLFunctionsUtils.createColumnTbl_str_substr, SQLFunctionsUtils.createRowTbl_str_substr)
+    createTables("(id int,testNumber int,testDouble Double,testStr string)", "RC")
     insertRecordsToTable(1, SQLFunctionsUtils.str_subStr)
     val str_subStr_Col_SparkDF : DataFrame = spark.sql(SQLFunctionsUtils.select_ColTbl_str_substr)
     val str_subStr_Col_SnappyDF : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_str_substr)
@@ -306,35 +273,25 @@ class SQLFunctions extends SnappySQLJob {
       "Q23_str_substr", "column")
     validateResultThroughDataFrames(str_subStr_Row_SnappyDF, str_subStr_Row_SparkDF,
       "Q24_str_substr", "row")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_str_substr,
-      SQLFunctionsUtils.dropRowTbl_str_substr, SQLFunctionsUtils.dropColTbl_str_substr,
-      SQLFunctionsUtils.dropRowTbl_str_substr)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  42. >, 43. >=, 44. <, 45. <=, 46 hypot
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_hypot_gt_lt_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_hypot_gt_lt_Spark,
-      SQLFunctionsUtils.createColumnTbl_hypot_gt_lt, SQLFunctionsUtils.createRowTbl_hypot_gt_lt)
+    createTables("(id int,n1 int,n2 int)", "RC")
     insertRecordsToTable(7, SQLFunctionsUtils.hypot_gt_lt)
     validateResult(SQLFunctionsUtils.select_ColTbl_hypot_gt_lt,
       SQLFunctionsUtils.select_RowTbl_hypot_gt_lt, "Q25_hypot_gt_lt", "Q26_hypot_gt_lt")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_hypot_gt_lt,
-      SQLFunctionsUtils.dropRowTbl_hypot_gt_lt, SQLFunctionsUtils.dropColTbl_hypot_gt_lt,
-      SQLFunctionsUtils.dropRowTbl_hypot_gt_lt)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  46. space, 47. soundex
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_spc_soundex_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_spc_soundex_Spark,
-      SQLFunctionsUtils.createColumnTbl_spc_soundex, SQLFunctionsUtils.createRowTbl_spc_soundex)
+    createTables("(id int,str1 string,str2 string)", "RC")
     insertRecordsToTable(3, SQLFunctionsUtils.spc_soundex)
     validateResult(SQLFunctionsUtils.select_ColTbl_spc_soundex,
       SQLFunctionsUtils.select_RowTbl_spc_soundex, "Q27_spc_soundex", "Q28_spc_soundex")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_spc_soundex,
-      SQLFunctionsUtils.dropRowTbl_spc_soundex,
-      SQLFunctionsUtils.dropColTbl_spc_soundex, SQLFunctionsUtils.dropRowTbl_spc_soundex)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  48. xpath, 49. xpath_boolean, 50. xpath_double, 51. xpath_float,
@@ -385,23 +342,16 @@ class SQLFunctions extends SnappySQLJob {
       *  Below queries test the functions :
       *  57. trim, 58. ltrim, 59. rtrim, 60. isnotnull
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_trim_isnotnull_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_trim_isnotnull_Spark, SQLFunctionsUtils.
-        createColumnTbl_trim_isnotnull, SQLFunctionsUtils.createRowTbl_trim_isnotnull)
+    createTables("(id int,s1 string,s2 string,s3 string,s4 string)", "RC")
     insertRecordsToTable(1, SQLFunctionsUtils.trim_isnotnull)
     validateResult(SQLFunctionsUtils.select_ColTbl_trim_isnotnull, SQLFunctionsUtils.
       select_RowTbl_trim_isnotnull, "Q39_trim_isnotnull", "Q40_trim_isnotnull")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_trim_isnotnull,
-      SQLFunctionsUtils.dropRowTbl_trim_isnotnull,
-      SQLFunctionsUtils.dropColTbl_trim_isnotnull, SQLFunctionsUtils.dropRowTbl_trim_isnotnull)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  61. =, 62. ==, 63. <=>
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_operators_Spark,
-      SQLFunctionsUtils.
-        createRowTypeTbl_operators_Spark, SQLFunctionsUtils.createColumnTbl_operators,
-      SQLFunctionsUtils.createRowTbl_operators)
+    createTables("(id int,n1 int,n2 int,s1 string,s2 string)", "RC")
     insertRecordsToTable(4, SQLFunctionsUtils.operators)
     val operators_sncDF_Col : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_operators)
     val operators_sparkDF_Col : DataFrame = spark.sql(SQLFunctionsUtils.select_ColTbl_operators)
@@ -411,50 +361,34 @@ class SQLFunctions extends SnappySQLJob {
     val operators_sparkDF_Row : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_operators)
     validateResultThroughDataFrames(operators_sncDF_Row, operators_sparkDF_Row,
       "Q42_operators", "row")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_operators,
-      SQLFunctionsUtils.dropRowTbl_operators, SQLFunctionsUtils.dropColTbl_operators,
-      SQLFunctionsUtils.dropRowTbl_operators)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  64. row_number(), 65. rank(), 66. dense_rank()
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_rownumber_rank_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_rownumber_rank_Spark,
-      SQLFunctionsUtils.createColumnTbl_rownumber_rank,
-      SQLFunctionsUtils.createRowTbl_rownumber_rank)
+    createTables("(name string,class string,total double)", "RC")
     insertRecordsToTable(12, SQLFunctionsUtils.rownumber_rank)
     validateResult(SQLFunctionsUtils.select_ColTbl_rownumber_rank,
       SQLFunctionsUtils.select_RowTbl_rownumber_rank,
       "Q43_rowno_rank", "Q44_rowno_rank")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_rownumber_rank,
-      SQLFunctionsUtils.dropRowTbl_rownumber_rank, SQLFunctionsUtils.
-        dropColTbl_rownumber_rank, SQLFunctionsUtils.dropRowTbl_rownumber_rank)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  67. encode, 68. decode
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_encode_decode_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_encode_decode_Spark,
-      SQLFunctionsUtils.createColumnTbl_encode_decode,
-      SQLFunctionsUtils.createRowTbl_encode_decode)
+    createTables("(id int,testStr String)", "RC")
     insertRecordsToTable(3, SQLFunctionsUtils.encode_decode)
     validateResult(SQLFunctionsUtils.select_ColTbl_encode_decode,
       SQLFunctionsUtils.select_RowTbl_encode_decode,
       "Q45_encode_decode", "Q46_encode_decode")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_encode_decode,
-      SQLFunctionsUtils.dropRowTbl_encode_decode,
-      SQLFunctionsUtils.dropColTbl_encode_decode,
-      SQLFunctionsUtils.dropRowTbl_encode_decode)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  69. bigint, 70. binary, 71. boolean, 72. decimal,
       *  73. double, 74. float, 75. int, 76. smallint,
       *  77. tinyint
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_dataTypes_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_dataTypes_Spark,
-      SQLFunctionsUtils.createColumnTbl_dataTypes,
-      SQLFunctionsUtils.createRowTbl_dataTypes)
+    createTables("(id int,testStr string,testDouble double,testInt int)", "RC")
     spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
         SQLFunctionsUtils.values + SQLFunctionsUtils.dataTypes(0))
     spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
@@ -471,17 +405,12 @@ class SQLFunctions extends SnappySQLJob {
     val sparkDataType_Row : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_dataTypes)
     validateResultThroughDataFrames(sncDataType_Row, sparkDataType_Row,
       "Q48_datatypes", "row")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_dataTypes,
-      SQLFunctionsUtils.dropRowTbl_dataTypes, SQLFunctionsUtils.dropColTbl_dataTypes,
-      SQLFunctionsUtils.dropRowTbl_dataTypes)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  78. hash, 79. sha, 80. sha1, 81. sha2.
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_hash_sha_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_hash_sha_Spark,
-      SQLFunctionsUtils.createColumnTbl_hash_sha,
-      SQLFunctionsUtils.createRowTbl_hash_sha)
+    createTables("(id int,testStr string)", "RC")
     insertRecordsToTable(2, SQLFunctionsUtils.hash_sha)
     val sncDF_hash_sha_column : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_hash_sha)
     val sparkDF_hash_sha_column : DataFrame = spark.sql(SQLFunctionsUtils.select_ColTbl_hash_sha)
@@ -489,29 +418,20 @@ class SQLFunctions extends SnappySQLJob {
       "Q49_hash_sha", "column")
     val sncDF_hash_sha_row : DataFrame = snc.sql(SQLFunctionsUtils.select_RowTbl_hash_sha)
     val sparkDF_hash_sha_row : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_hash_sha)
-//    SnappyTestUtils.assertQueryFullResultSet(snc, sncDF_hash_sha_row, sparkDF_hash_sha_row,
-//      "Q50_hash_sha", "row", pw, sqlContext, true)
     validateResultThroughDataFrames(sncDF_hash_sha_row, sparkDF_hash_sha_row,
       "Q50_hash_sha", "row")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_hash_sha,
-      SQLFunctionsUtils.dropRowTbl_hash_sha,
-      SQLFunctionsUtils.dropColTbl_hash_sha, SQLFunctionsUtils.dropRowTbl_hash_sha)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  82. translate, 83. substring_index,
       *  84. split, 85. sentences.
       *   In this row table query has result mismatch, need to look.
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_translate_split_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_translate_split_Spark,
-      SQLFunctionsUtils.createColumnTbl_translate_split,
-      SQLFunctionsUtils.createRowTbl_translate_split)
+    createTables("(id int,str1 string,str2 string,str3 string,str4 string)", "RC")
     insertRecordsToTable(2, SQLFunctionsUtils.translate_split)
     validateResult(SQLFunctionsUtils.select_ColTbl_translate_split,
       SQLFunctionsUtils.select_RowTbl_translate_split, "Q51_translate_split", "Q52_translate_split")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_translate_split,
-      SQLFunctionsUtils.dropRowTbl_translate_split,
-      SQLFunctionsUtils.dropColTbl_translate_split, SQLFunctionsUtils.dropRowTbl_translate_split)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  86. monotonically_increasing_id
@@ -550,54 +470,39 @@ class SQLFunctions extends SnappySQLJob {
       *  87. to_unix_timestamp, 88. to_utc_timestamp, 89. to_date,
       *  90. from_unixtime, 91. from_utc_timestamp.
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_date_time_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_date_time_Spark,
-      SQLFunctionsUtils.createColumnTbl_date_time,
-      SQLFunctionsUtils.createRowTbl_date_time)
+    createTables("(id int,date Date,ts timestamp,number int)", "RC")
     insertRecordsToTable(2, SQLFunctionsUtils.date_time)
     validateResult(SQLFunctionsUtils.select_ColTbl_date_time,
       SQLFunctionsUtils.select_RowTbl_date_time,
       "Q53_date_time", "Q54_date_time")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_date_time,
-      SQLFunctionsUtils.dropRowTbl_date_time, SQLFunctionsUtils.dropColTbl_date_time,
-      SQLFunctionsUtils.dropRowTbl_date_time)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  93. lag, 94. lead, 95. ntile,
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_lead_lag_ntile_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_lead_lag_ntile_Spark, SQLFunctionsUtils.
-        createColumnTbl_lead_lag_ntile, SQLFunctionsUtils.createRowTbl_lead_lag_ntile)
+    createTables("(name string,class string,total double)", "RC")
     insertRecordsToTable(12, SQLFunctionsUtils.rownumber_rank)
     validateResult(SQLFunctionsUtils.select_ColTbl_lead_lag_ntile,
       SQLFunctionsUtils.select_RowTbl_lead_lag_ntile, "Q55_lead_lag_ntile",
       "Q56_lead_lag_ntile")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_rownumber_rank,
-      SQLFunctionsUtils.dropRowTbl_rownumber_rank, SQLFunctionsUtils.
-        dropColTbl_rownumber_rank, SQLFunctionsUtils.dropRowTbl_rownumber_rank)
+    dropTablesAndPrint("RC")
     /**
       *  96th function is timestamp and it is already
       *  tested in above queries.
       *  Below queries test the functions :
       *  97. base64, 98. unbase64, 99. unix_timestamp, 100. unhex
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_base_unbase_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_base_unbase_Spark, SQLFunctionsUtils.
-        createColumnTbl_base_unbase, SQLFunctionsUtils.createRowTbl_base_unbase)
+    createTables("(id int,testStr1 string,testStr2 string,testStr3 string,ts timestamp)", "RC")
     insertRecordsToTable(2, SQLFunctionsUtils.base_unbase)
     validateResult(SQLFunctionsUtils.select_ColTbl_base_unbase,
       SQLFunctionsUtils.select_RowTbl_base_unbase, "Q57_base_unbase",
       "Q58_base_unbase")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_base_unbase,
-      SQLFunctionsUtils.dropRowTbl_base_unbase, SQLFunctionsUtils.
-        dropColTbl_base_unbase, SQLFunctionsUtils.dropRowTbl_base_unbase)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  101. trunc, 102. quarter, 103. parse_url, 104. java_method
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_parseurl_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_parseurl_Spark, SQLFunctionsUtils.
-        createColumnTbl_parseurl, SQLFunctionsUtils.createRowTbl_parseurl)
+    createTables("(id int,dt date,testStr1 string)", "RC")
     insertRecordsToTable(1, SQLFunctionsUtils.parseurl)
     val sncurlDF : DataFrame = snc.sql(SQLFunctionsUtils.select_ColTbl_parseurl)
     val sparkurlDF : DataFrame = spark.sql(SQLFunctionsUtils.select_ColTbl_parseurl)
@@ -605,16 +510,15 @@ class SQLFunctions extends SnappySQLJob {
     val sncurlDF_Row : DataFrame = snc.sql(SQLFunctionsUtils.select_RowTbl_parseurl)
     val sparkurlDF_Row : DataFrame = spark.sql(SQLFunctionsUtils.select_RowTbl_parseurl)
     validateResultThroughDataFrames(sncurlDF_Row, sparkurlDF_Row, "Q60_parseurl", "row")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_parseurl, SQLFunctionsUtils.
-      dropRowTbl_parseurl, SQLFunctionsUtils.dropColTbl_parseurl,
-      SQLFunctionsUtils.dropRowTbl_parseurl)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  105. spark_partition_id.
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_sparkpartitionid_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_sparkpartitionid_Spark, SQLFunctionsUtils.
-        createColumnTbl_sparkpartitionid, SQLFunctionsUtils.createRowTbl_sparkpartitionid)
+    spark.sql(SQLFunctionsUtils.createColTypeTbl_sparkpartitionid_Spark)
+    spark.sql(SQLFunctionsUtils.createRowTypeTbl_sparkpartitionid_Spark)
+    snc.sql(SQLFunctionsUtils.createColumnTbl_sparkpartitionid)
+    snc.sql(SQLFunctionsUtils.createRowTbl_sparkpartitionid)
     spark.sql("INSERT INTO " + SQLFunctionsUtils.columnTbl +
       " SELECT id,concat('TIBCO_',id) from range(1000000)")
     spark.sql("INSERT INTO " + SQLFunctionsUtils.rowTbl +
@@ -635,16 +539,16 @@ class SQLFunctions extends SnappySQLJob {
       + snc_spid_Row.take(1).mkString)
     pw.println("Spark Row type Table Count for spark_partition_id() -> " +
       spark_spid_Row.take(1).mkString)
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_sparkpartitionid,
-      SQLFunctionsUtils.dropRowTbl_sparkpartitionid, SQLFunctionsUtils.
-        dropColTbl_sparkpartitionid, SQLFunctionsUtils.dropRowTbl_sparkpartitionid)
+    spark.sql(SQLFunctionsUtils.dropColTbl_sparkpartitionid)
+    spark.sql(SQLFunctionsUtils.dropRowTbl_sparkpartitionid)
+    snc.sql(SQLFunctionsUtils.dropColTbl_sparkpartitionid)
+    snc.sql(SQLFunctionsUtils.dropRowTbl_sparkpartitionid)
+    pw.println()
     /**
       *  Below queries test the functions :
       *  106. rollup, 107. cube.
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_rollup_cube_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_rollup_cube_Spark, SQLFunctionsUtils.
-        createColumnTbl_rollup_cube, SQLFunctionsUtils.createRowTbl_rollup_cube)
+    createTables("(id int,name string,gender string,salary int,country string)", "RC")
     insertRecordsToTable(9, SQLFunctionsUtils.rollup_cube)
     validateResult(SQLFunctionsUtils.select_ColTbl_rollup, SQLFunctionsUtils.
       select_RowTbl_rollup, "Q61_rollup_column", "Q62_rollup_row")
@@ -655,33 +559,23 @@ class SQLFunctions extends SnappySQLJob {
       */
     validateResult(SQLFunctionsUtils.select_ColTbl_window, SQLFunctionsUtils.
       select_RowTbl_window, "Q84_window_col", "Q85_window_row")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_rollup_cube,
-      SQLFunctionsUtils.dropRowTbl_rollup_cube, SQLFunctionsUtils.
-        dropColTbl_rollup_cube, SQLFunctionsUtils.dropRowTbl_rollup_cube)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  108. grouping, 109. grouping_id
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_grouping_grouping_id_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_grouping_grouping_id_Spark,
-      SQLFunctionsUtils.createColumnTbl_grouping_grouping_id,
-      SQLFunctionsUtils.createRowTbl_grouping_grouping_id)
+    createTables("(continent string,country string,city string,salesamount int)", "RC")
     insertRecordsToTable(7, SQLFunctionsUtils.grouping_grouping_id)
     validateResult(SQLFunctionsUtils.select_ColTbl_grouping_grouping_id,
       SQLFunctionsUtils.select_RowTbl_grouping_grouping_id, "Q65_grouping_grouping_id",
       "Q66_grouping_grouping_id")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_grouping_grouping_id,
-      SQLFunctionsUtils.dropRowTbl_grouping_grouping_id, SQLFunctionsUtils.
-        dropColTbl_grouping_grouping_id, SQLFunctionsUtils.dropRowTbl_grouping_grouping_id)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  110. approx_count_dist, 111. mean,
       *   116. cume_dist, 117. percent_rank
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_approxcntdist_mean_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_approxcntdist_mean_Spark,
-      SQLFunctionsUtils.createColumnTbl_approxcntdist_mean,
-      SQLFunctionsUtils.createRowTbl_approxcntdist_mean)
+    createTables("(empname string,department string,salary int)", "RC")
     insertRecordsToTable(9, SQLFunctionsUtils.approxcntdist_mean)
     validateResult(SQLFunctionsUtils.select_ColTbl_approxcntdist_mean,
       SQLFunctionsUtils.select_RowTbl_approxcntdist_mean, "Q67_approxcntdist_mean",
@@ -692,29 +586,21 @@ class SQLFunctions extends SnappySQLJob {
     validateResult(SQLFunctionsUtils.select_ColTbl_cumedist_prank,
       SQLFunctionsUtils.select_RowTbl_cumedist_prank, "Q74_cumedist_percentrank",
     "Q75_cumedist_percentrank")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_approxcntdist_mean, SQLFunctionsUtils.
-      dropRowTbl_approxcntdist_mean, SQLFunctionsUtils.dropColTbl_approxcntdist_mean,
-      SQLFunctionsUtils.dropRowTbl_approxcntdist_mean)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  112. printf, 113. md5
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_printf_md5_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_printf_md5_Spark,
-      SQLFunctionsUtils.createColumnTbl_printf_md5, SQLFunctionsUtils.createRowTbl_printf_md5)
+    createTables("(id int,str1 string,str2 string)", "RC")
     insertRecordsToTable(2, SQLFunctionsUtils.printf_md5)
     validateResult(SQLFunctionsUtils.select_ColTbl_printf_md5, SQLFunctionsUtils.
       select_RowTbl_printf_md5, "Q69_printf_md5", "Q70_printf_md5")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_printf_md5, SQLFunctionsUtils.
-      dropRowTbl_printf_md5, SQLFunctionsUtils.dropColTbl_printf_md5,
-      SQLFunctionsUtils.dropRowTbl_printf_md5)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  114.  assert_true
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_assert_true_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_assert_true_Spark, SQLFunctionsUtils.
-        createColumnTbl_assert_true, SQLFunctionsUtils.createRowTbl_assert_true)
+    createTables("(i1 int,i2 int)", "RC")
     spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
       SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(0))
     spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
@@ -726,12 +612,8 @@ class SQLFunctions extends SnappySQLJob {
     validateResult(SQLFunctionsUtils.select_ColTbl_assert_true, SQLFunctionsUtils.
       select_RowTbl_assert_true, "Q71_asserttrue_column",
       "Q71_asserttrue_row")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_printf_md5, SQLFunctionsUtils.
-      dropRowTbl_printf_md5, SQLFunctionsUtils.dropColTbl_printf_md5,
-      SQLFunctionsUtils.dropRowTbl_printf_md5)
-    createTables(SQLFunctionsUtils.createColTypeTbl_assert_true_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_assert_true_Spark, SQLFunctionsUtils.
-        createColumnTbl_assert_true, SQLFunctionsUtils.createRowTbl_assert_true)
+    dropTablesAndPrint("RC")
+    createTables("(i1 int,i2 int)", "RC")
     spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
       SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(1))
     spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
@@ -750,12 +632,8 @@ class SQLFunctions extends SnappySQLJob {
         pw.flush()
       }
     }
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_printf_md5, SQLFunctionsUtils.
-      dropRowTbl_printf_md5, SQLFunctionsUtils.dropColTbl_printf_md5,
-      SQLFunctionsUtils.dropRowTbl_printf_md5)
-    createTables(SQLFunctionsUtils.createColTypeTbl_assert_true_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_assert_true_Spark, SQLFunctionsUtils.
-        createColumnTbl_assert_true, SQLFunctionsUtils.createRowTbl_assert_true)
+    dropTablesAndPrint("RC")
+    createTables("(i1 int,i2 int)", "RC")
     spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.columnTbl +
       SQLFunctionsUtils.values + SQLFunctionsUtils.assert_true(2))
     spark.sql(SQLFunctionsUtils.insertInto + SQLFunctionsUtils.rowTbl +
@@ -775,9 +653,7 @@ class SQLFunctions extends SnappySQLJob {
         pw.flush()
       }
     }
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_printf_md5, SQLFunctionsUtils.
-      dropRowTbl_printf_md5, SQLFunctionsUtils.dropColTbl_printf_md5,
-      SQLFunctionsUtils.dropRowTbl_printf_md5)
+    dropTablesAndPrint("RC")
     /**
       *  Below  segment test the function: 115. input_file_name
       */
@@ -799,17 +675,12 @@ class SQLFunctions extends SnappySQLJob {
       *  Below queries test the functions :
       *  118.  regexp_extract, 119. regexp_replace
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_regexp_extract_replace_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_regexp_extract_replace_Spark,
-      SQLFunctionsUtils.createColumnTbl_regexp_extract_replace,
-      SQLFunctionsUtils.createRowTbl_regexp_extract_replace)
+    createTables("(empid int,empname string,email string)", "RC")
     insertRecordsToTable(2, SQLFunctionsUtils.regexp_extract_replace)
     validateResult(SQLFunctionsUtils.select_ColTbl_regexp_extract_replace, SQLFunctionsUtils.
       select_RowTbl_regexp_extract_replace, "Q76_regexp_extract_replace",
       "Q77_regexp_extract_replace")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_regexp_extract_replace, SQLFunctionsUtils.
-      dropRowTbl_regexp_extract_replace, SQLFunctionsUtils.dropColTbl_regexp_extract_replace,
-      SQLFunctionsUtils.dropRowTbl_regexp_extract_replace)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  120.  now()
@@ -829,40 +700,31 @@ class SQLFunctions extends SnappySQLJob {
       *  Below queries test the functions :
       *  121.  json_tuple, 122.  crc32
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_json_tuple_crc32_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_json_tuple_crc32_Spark, SQLFunctionsUtils.
-        createColumnTbl_json_tuple_crc32, SQLFunctionsUtils.createRowTbl_json_tuple_crc32)
+    createTables("(id int,checksum string,jsonstr string)", "RC")
     insertRecordsToTable(2, SQLFunctionsUtils.json_tuple_crc32)
     validateResult(SQLFunctionsUtils.select_ColTbl_json_tuple_crc32, SQLFunctionsUtils.
       select_RowTbl_json_tuple_crc32, "Q78_json_tuple_crc32",
       "Q79_json_tuple_crc32")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_json_tuple_crc32, SQLFunctionsUtils.
-      dropRowTbl_json_tuple_crc32, SQLFunctionsUtils.dropColTbl_json_tuple_crc32,
-      SQLFunctionsUtils.dropRowTbl_json_tuple_crc32)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  123.  like, 124.  rlike
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_like_rlike_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_like_rlike_Spark, SQLFunctionsUtils.
-        createColumnTbl_like_rlike, SQLFunctionsUtils.createRowTbl_like_rlike)
+    createTables("(name string,state string,party string)", "RC")
     insertRecordsToTable(14, SQLFunctionsUtils.like_rlike)
     validateResult(SQLFunctionsUtils.select_ColTbl_like, SQLFunctionsUtils.select_RowTbl_like,
       "Q80_like", "Q81_like")
     validateResult(SQLFunctionsUtils.select_ColTbl_rlike, SQLFunctionsUtils.select_RowTbl_rlike,
       "Q82_rlike", "Q83_rlike")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_like_rlike, SQLFunctionsUtils.
-      dropRowTbl_like_rlike, SQLFunctionsUtils.dropColTbl_like_rlike,
-      SQLFunctionsUtils.dropRowTbl_like_rlike)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  126. variance, 127. var_samp, 128. var_pop,
       *  129. stddev, 130. stddev_samp, 131. stddev_pop, 132. std,
       *  135. skewness, 136. kurtosis
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_variance_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_variance_Spark, SQLFunctionsUtils.
-        createColumnTbl_variance, SQLFunctionsUtils.createRowTbl_variance)
+    createTables("(id int,state string,indian_nationals_corona int,foreign_national_corana int)",
+      "RC")
     insertRecordsToTable(19, SQLFunctionsUtils.variance)
     val varianceSncColDF = snc.sql(SQLFunctionsUtils.select_ColTbl_variance)
     val varianceSparkColDF = spark.sql(SQLFunctionsUtils.select_ColTbl_variance)
@@ -872,16 +734,12 @@ class SQLFunctions extends SnappySQLJob {
     val varianceSparkRowDF = spark.sql(SQLFunctionsUtils.select_RowTbl_variance)
     validateResultThroughDataFrames(varianceSncRowDF, varianceSparkRowDF,
     "Q87_row_variance", "row")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_variance, SQLFunctionsUtils.
-      dropRowTbl_variance, SQLFunctionsUtils.dropColTbl_variance,
-      SQLFunctionsUtils.dropRowTbl_variance)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  133. named_struct
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_named_struct_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_named_struct_Spark, SQLFunctionsUtils.
-        createColumnTbl_named_struct, SQLFunctionsUtils.createRowTbl_named_struct)
+    createTables("(id int,v1 string,v2 double,v3 boolean)", "RC")
     insertRecordsToTable(2, SQLFunctionsUtils.named_struct)
     val namedStructSncColDF = snc.sql(SQLFunctionsUtils.select_ColTbl_named_struct)
     val namedStructSparkColDF = spark.sql(SQLFunctionsUtils.select_ColTbl_named_struct)
@@ -891,9 +749,7 @@ class SQLFunctions extends SnappySQLJob {
     val namedStructSparkRowDF = spark.sql(SQLFunctionsUtils.select_RowTbl_named_struct)
     validateResultThroughDataFrames(namedStructSncRowDF, namedStructSparkRowDF,
       "Q89_row_namedstruct", "row")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_named_struct, SQLFunctionsUtils.
-      dropRowTbl_named_struct, SQLFunctionsUtils.dropColTbl_named_struct,
-      SQLFunctionsUtils.dropRowTbl_named_struct)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  134. dsid() - Returns the unique distributed member ID of executor fetching current row.
@@ -921,22 +777,16 @@ class SQLFunctions extends SnappySQLJob {
       *  Below queries test the functions :
       *  137.  corr,138. covar_pop,139. covar_samp,
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_correlation_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_correlation_Spark, SQLFunctionsUtils.
-        createColumnTbl_correlation, SQLFunctionsUtils.createRowTbl_correlation)
+    createTables("(temperature double,icecreamsales int)", "RC")
     insertRecordsToTable(11, SQLFunctionsUtils.correlation)
     validateResult(SQLFunctionsUtils.select_ColTbl_correlation, SQLFunctionsUtils.
       select_RowTbl_correlation, "Q90_correlation", "Q91_correlation")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_correlation, SQLFunctionsUtils.
-      dropRowTbl_correlation, SQLFunctionsUtils.dropColTbl_correlation,
-      SQLFunctionsUtils.dropRowTbl_correlation)
+    dropTablesAndPrint("RC")
     /**
       *  Below queries test the functions :
       *  140. approx_percentile,141. percentile,142. percentile_approx
       */
-    createTables(SQLFunctionsUtils.createColTypeTbl_percentile_Spark,
-      SQLFunctionsUtils.createRowTypeTbl_percentile_Spark, SQLFunctionsUtils.
-        createColumnTbl_percentile, SQLFunctionsUtils.createRowTbl_percentile)
+    createTables("(id int,d double)", "RC")
     insertRecordsToTable(4, SQLFunctionsUtils.percentile)
     val percentileSncColDF = snc.sql(SQLFunctionsUtils.select_ColTbl_percentile)
     val percentileSparkColDF = spark.sql(SQLFunctionsUtils.select_ColTbl_percentile)
@@ -946,9 +796,7 @@ class SQLFunctions extends SnappySQLJob {
     val percentileSparkRowDF = spark.sql(SQLFunctionsUtils.select_RowTbl_percentile)
     validateResultThroughDataFrames(percentileSncRowDF, percentileSparkRowDF,
       "Q93_percentile_Row", "Row")
-    dropTablesAndPrint(SQLFunctionsUtils.dropColTbl_percentile, SQLFunctionsUtils.
-      dropRowTbl_percentile, SQLFunctionsUtils.dropColTbl_percentile,
-      SQLFunctionsUtils.dropRowTbl_percentile)
+    dropTablesAndPrint("RC")
 
     pw.println("Snappy Embedded Job - SQL Functions passed successfully.")
     pw.close()
