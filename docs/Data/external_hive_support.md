@@ -130,9 +130,191 @@ If you set the property **spark.sql.catalogImplementation = in-memory**, you can
 	
         snappy-sql> SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID, o.OrderDate FROM default.hive_employees emp JOIN snappy_orders o ON (emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderDate;
 
+## Creating and Querying Hive Tables 
+
+To access, the hive tables, you must first create a database or schema in external hive catalog from TIBCO ComputeDB. Go to the Snappy Shell prompt and enter the following command:
+
+		snappy> create database hivedb;
+
+After creating the database or schema, you can create hive tables,S load data into the hive tables, and run DDL queries on hive tables from TIBCO ComputeDB using one of the following methods:
+
+### Method 1
+
+In this method, you must use the schema or database name before the table name as shown in the following example:	
+
+    snappy> 
+	create table hivedb.hive_regions(RegionID int,RegionDescription string) row format delimited fields 	terminated by ',' tblproperties("skip.header.line.count"="1");
+
+	snappy> 
+	load data local inpath '/export/shared/QA_DATA/NW_1GB/regions.csv' overwrite into table 	hivedb.hive_regions;
+
+	snappy> select * from hivedb.hive_regions where RegionDescription <> 'RegionDescription';
+
+		RegionID   |RegionDescription                                                                                                               
+		--------------------------------------------------------------------------------------------------------------------------------------------
+		1          |Eastern                                                                                                                         
+		2          |Western                                                                                                                         
+		3          |Northern                                                                                                                        
+		4          |Southern                                                                                                                        
+
+		4 rows selected
+
+
+### Method 2
+
+In this method, you must first run the command `use <database-name>` as shown in the following example. If you use this method you need not mention the schema or database name.
+	
+        snappy> use hivedb;
+        snappy> create table hive_employee_territories(EmployeeID int,TerritoryID string) row format 		  delimited fields terminated by ',';
+        snappy> load data local inpath '/export/shared/QA_DATA/NW_1GB/employee_territories.csv' 			  overwrite into table hive_employee_territories;
+
+        snappy> select * from hive_employee_territories limit 10;
+        EmployeeID |TerritoryID                                                                                                                     
+        --------------------------------------------------------------------------------------------------------------------------------------------
+        NULL       |TerritoryID                                                                                                                     
+        1          |06897                                                                                                                           
+        1          |19713                                                                                                                           
+        2          |01581                                                                                                                           
+        2          |01730                                                                                                                           
+        2          |01833                                                                                                                           
+        2          |02116                                                                                                                           
+        2          |02139                                                                                                                           
+        2          |02184                                                                                                                           
+        2          |40222                                                                                                                           
+
+        10 rows selected
+
+        snappy> drop table hive_employee_territories;
+
+## Creating and Querying TIBCO ComputeDB Tables
+After the hive catalog is visible, you can create and access the TIBCO ComputeDB tables as well. For accessing the tables, the following two methods are available.
+
+### Method 1
+ 
+1.	Run the command `set spark.sql.catalogImplementation=in-memory`.
+2.	After this run the command `use <database-name>` or `use schema / <database name used while creating the table>`.
+
+	After above two steps, the external hive catalog is not visible from TIBCO ComputeDB and hence all the tables that are created and accessed are TIBCO ComputeDB tables only.
+    
+The following examples demonstrates how to create and access TIBCO ComputeDB tables from an external hive catalog. 
+
+```
+snappy> set spark.sql.catalogImplementation=in-memory;
+
+snappy> use app;
+
+snappy> create table t1(id int) using column;
+
+snappy> insert into t1 select id from range(1000);
+1000 rows inserted/updated/deleted
+
+snappy> select * from t1 order by id limit 10;
+id         
+-----------
+0          
+1          
+2          
+3          
+4          
+5          
+6          
+7          
+8          
+9          
+
+10 rows selected
+
+
+
+
+snappy> show tables in app;
+schemaName                                                          |tableName                                                                           |isTemporary
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------app                                                                             |t1                                                                                  |false      
+
+1 row selected
+
+snappy> drop table t1;
+
+```
+					
+
+```
+snappy> set spark.sql.catalogImplementation=in-memory;
+
+snappy> create table app.t1(id int) using column;
+
+snappy> insert into app.t1 select id from range(10);
+10 rows inserted/updated/deleted
+
+snappy> select * from app.t1;
+id         
+-----------
+4          
+2          
+6          
+1          
+3          
+0          
+7          
+5          
+9          
+8          
+10 rows selected
+snappy> drop table app.t1;
+
+snappy> show tables in app;
+schemaName 		          |tableName                                                       |isTemporary
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+0 rows selected
+```
+
+### Method 2
+
+If you want to create and access the TIBCO ComputeDB tables, while keeping the hive catalog visible, then use the `<schemaname>.<tablename>` in the DDL / DML statements as shown in following examples:
+
+In case you have run the command `spark.sql.catalogImplementation=in-memory`,  then you can run the command that points to any hive catalog database. For Example: `use hivedb;`
+
+```
+snappy> set spark.sql.catalogImplementation=hive;
+
+snappy> create table app.t1(id int,name String) using column;
+
+snappy> show tables in app;
+schemaName                                           |tableName                                                    |isTemporary
+------------------------------------------------------------------------------------------------------------------------
+app                                                              |t1                                                                      |false      
+
+1 row selected
+
+
+snappy> insert into app.t1 select id,concat('TIBCO_',id) from range(1000);
+1000 rows inserted/updated/deleted
+
+snappy> select * from app.t1 where id > 995 order by id;
+id         |name                                                                                                                            
+996        |TIBCO_996                                                                                                                       
+997        |TIBCO_997                                                                                                                       
+998        |TIBCO_998                                                                                                                       
+999        |TIBCO_999                                                                                                                       
+
+4 rows selected
+
+snappy> drop table app.t1;
+
+```
+
+If you want to join the hive table and TIBCO ComputeDB table, then use the `<schemaname>.<tablename>` in the join query for both the hive table as well as for the TIBCO ComputeDB table.
+
+**Example**
+
+```
+snappy> SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID, o.OrderDate FROM default.hive_employees emp JOIN app.snappy_orders o ON (emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderID;
+```
+
+
 ## Troubleshooting
 
-Following are some issues that you may come across and their corresponding solutions / workarounds:
+Following are some issues that you may come across and their corresponding solutions and  workarounds:
 
 *	If the property **hive.execution.engine** is set  as Tez then the following exception is shown:
 
