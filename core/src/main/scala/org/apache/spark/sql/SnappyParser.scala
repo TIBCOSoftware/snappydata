@@ -1298,7 +1298,7 @@ class SnappyParser(session: SnappySession)
   protected def show: Rule1[LogicalPlan] = rule {
     SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
         ((id: Any, pat: Any) => new ShowSnappyTablesCommand(
-          id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])(session)) |
+          id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]], session)) |
     SHOW ~ TABLE ~ ANY. + ~> (() => sparkParser.parsePlan(input.sliceString(0, input.length))) |
     SHOW ~ VIEWS ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
         ((id: Any, pat: Any) => ShowViewsCommand(session,

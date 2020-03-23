@@ -82,13 +82,20 @@ final class PooledKryoSerializer(conf: SparkConf)
     val classLoader = kryo.getClassLoader
     kryo.setClassLoader(oldClassLoader)
 
+    // use Externalizable, if available, rather than going to FieldSerializer
+    kryo.addDefaultSerializer(classOf[Externalizable], new ExternalizableSerializer)
+
+    // use a custom default serializer factory that will honour
+    // readObject/writeObject, readResolve/writeReplace methods to fall-back
+    // to java serializer else use Kryo's FieldSerializer
+    kryo.setDefaultSerializer(new SnappyKryoSerializerFactory)
+
     // specific serialization implementations in Spark and commonly used classes
     kryo.register(classOf[UnsafeRow])
     kryo.register(classOf[UTF8String])
     kryo.register(classOf[UpdateBlockInfo], new ExternalizableOnlySerializer)
     kryo.register(classOf[CompressedMapStatus], new ExternalizableOnlySerializer)
-    kryo.register(classOf[HighlyCompressedMapStatus],
-      new ExternalizableOnlySerializer)
+    kryo.register(classOf[HighlyCompressedMapStatus], new ExternalizableOnlySerializer)
     kryo.register(classOf[IndirectTaskResult[_]])
     kryo.register(classOf[RDDBlockId])
     kryo.register(classOf[ShuffleBlockId])
@@ -171,16 +178,6 @@ final class PooledKryoSerializer(conf: SparkConf)
       case _: ClassNotFoundException => // ignore
     }
 
-    // use Externalizable by default as last fallback, if available,
-    // rather than going to FieldSerializer
-    kryo.addDefaultSerializer(classOf[Externalizable],
-      new ExternalizableSerializer)
-
-    // use a custom default serializer factory that will honour
-    // readObject/writeObject, readResolve/writeReplace methods to fall-back
-    // to java serializer else use Kryo's FieldSerializer
-    kryo.setDefaultSerializer(new SnappyKryoSerializerFactory)
-
     kryo.setClassLoader(classLoader)
     kryo
   }
@@ -198,12 +195,12 @@ final class PooledKryoSerializer(conf: SparkConf)
   }
 }
 
-final class PooledObject(serializer: PooledKryoSerializer,
-    bufferSize: Int) {
+final class PooledObject(serializer: PooledKryoSerializer, bufferSize: Int) {
   val kryo: Kryo = serializer.newKryo()
   val input: Input = new KryoInputStringFix(0)
 
   def newOutput(): ByteBufferOutput = new ByteBufferOutput(bufferSize, -1)
+
   def newOutput(size: Int): ByteBufferOutput = new ByteBufferOutput(size, -1)
 }
 
@@ -323,14 +320,14 @@ private[spark] final class PooledKryoSerializerInstance(
         // bigger than the code string size. If it is not bigger, the writestring call inside
         // WholeStageCodeGenRDD.write calls writeString_slow. Refer Output.writeString.
         // So create a buffer of size greater than the size of code.
-            if (rdd.productArity == 5 &&
-              // Hackish way to determine if it is a WholeStageRDD.
-              // Any change to WholeStageCodeGenRDD needs to reflect here
-              rdd.productElement(1).isInstanceOf[CodeAndComment]) {
-              val size = rdd.productElement(1).asInstanceOf[CodeAndComment].body.length
-              // round off to a multiple of 1024
-              ((size + 4 * 1024) >> 10) << 10
-            } else -1
+        if (rdd.productArity == 5 &&
+            // Hackish way to determine if it is a WholeStageRDD.
+            // Any change to WholeStageCodeGenRDD needs to reflect here
+            rdd.productElement(1).isInstanceOf[CodeAndComment]) {
+          val size = rdd.productElement(1).asInstanceOf[CodeAndComment].body.length
+          // round off to a multiple of 1024
+          ((size + 4 * 1024) >> 10) << 10
+        } else -1
       case _ => -1
     }
     ByteBuffer.wrap(KryoSerializerPool.serialize(
@@ -454,8 +451,7 @@ private[spark] class KryoStringFixDeserializationStream(
  * Fix for https://github.com/EsotericSoftware/kryo/issues/128.
  * Uses an additional 0x0 byte as end marker.
  */
-private[spark] final class KryoInputStringFix(size: Int)
-    extends Input(size) {
+private[spark] final class KryoInputStringFix(size: Int) extends Input(size) {
 
   override def readString: String = {
     require(1)

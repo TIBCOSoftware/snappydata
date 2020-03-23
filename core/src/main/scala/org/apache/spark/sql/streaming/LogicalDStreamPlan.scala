@@ -31,6 +31,8 @@ abstract case class LogicalDStreamPlan(output: Seq[Attribute],
     (val streamingSnappy: SnappyStreamingContext)
     extends LogicalPlan with MultiInstanceRelation with SparkSupport {
 
+  override protected def otherCopyArgs: Seq[AnyRef] = streamingSnappy :: Nil
+
   def newInstance(): LogicalDStreamPlan =
     internals.newLogicalDStreamPlan(output.map(_.newInstance()),
       stream, streamingSnappy).asInstanceOf[this.type]

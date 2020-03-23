@@ -335,14 +335,13 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
           session.snappySessionState.enableExecutionCache = false
           session.snappySessionState.clearExecutionCache()
         }
-        val executedPlan = cachedExecution.executedPlan
-        val memoryPlan = executedPlan.collectFirst {
+        val memoryPlan = df.queryExecution.executedPlan.collectFirst {
           case plan: InMemoryTableScanExec => plan.relation
         }.get
-        val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(executedPlan)
+        val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(cachedExecution.executedPlan)
         Row(CachedDataFrame.withCallback(session, df = null, cachedExecution, "cache")(_ =>
-          CachedDataFrame.withNewExecutionId(session, executedPlan, queryShortString, queryString,
-            cachedExecution.toString(), planInfo)({
+          CachedDataFrame.withNewExecutionId(session, cachedExecution.executedPlan,
+            queryShortString, queryString, cachedExecution.toString(), planInfo)({
             val start = System.nanoTime()
             // Dummy op to materialize the cache. This does the minimal job of count on
             // the actual cached data (RDD[CachedBatch]) to force materialization of cache
@@ -367,10 +366,12 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
  * or "isTemporary" to return hive compatible result.
  */
 class ShowSnappyTablesCommand(schemaOpt: Option[String], tablePattern: Option[String])(
-    session: SnappySession) extends ShowTablesCommand(schemaOpt, tablePattern) {
+    val hiveCompatible: Boolean) extends ShowTablesCommand(schemaOpt, tablePattern) {
 
-  private val hiveCompatible = Property.HiveCompatibility.get(
-    session.sessionState.conf).equalsIgnoreCase("full")
+  def this(schemaOpt: Option[String], tablePattern: Option[String], session: SnappySession) {
+    this(schemaOpt, tablePattern)(Property.HiveCompatibility.get(
+      session.sessionState.conf).equalsIgnoreCase("full"))
+  }
 
   override val output: Seq[Attribute] = {
     if (hiveCompatible) AttributeReference("name", StringType, nullable = false)() :: Nil
@@ -381,7 +382,7 @@ class ShowSnappyTablesCommand(schemaOpt: Option[String], tablePattern: Option[St
     }
   }
 
-  override protected def otherCopyArgs: Seq[AnyRef] = session :: Nil
+  override protected def otherCopyArgs: Seq[AnyRef] = Boolean.box(hiveCompatible) :: Nil
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     if (!hiveCompatible) {
