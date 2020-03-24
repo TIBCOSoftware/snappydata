@@ -330,6 +330,10 @@ object Property extends Enumeration {
   val MaxRetryAttemptsForWrite: SQLValue[Int] = SQLVal[Int](
     s"${Constant.PROPERTY_PREFIX}maxRetryAttemptsForWrite",
     s"The number of times a write task should be retried before all tasks failing." , Some(4))
+
+  val FailFastTypeCasting: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}failFastTypeCasting",
+    "Property to enable/disable fail fast type casting", Some(false))
 }
 
 // extractors for properties
