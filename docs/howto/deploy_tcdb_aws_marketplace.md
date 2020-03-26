@@ -65,7 +65,7 @@ You can also view the details about the status of stack creation from the **Even
 		Click **ComputeDBConsole** URL to access the TIBCO ComputeDB monitoring console. The monitoring console  which provides an overview of the cluster is displayed. You can only access it from the machines whose IP falls in the CIDR IP range you provided as **WebUICIDR** while creating the stack.
 	
     	!!!NOTE
-			If your cluster has security enabled, you will be prompted for the username and password to access this console. Use **snappyuser** as the username and the EC2 instance ID as the password. You can find this instance ID on this page.
+			If your cluster has security enabled, you will be prompted for the username and password to access this console. Use **snappyuser** as the username and the EC2 instance ID as the password. You can find this instance ID on [this page](https://console.aws.amazon.com/ec2/v2/home#Instances:sort=instanceState).
 	
 	*	**ZeppelinNotebooks**:</br>
 		Click the **ZeppelinNotebooks** URL to access the Apache Zeppelin server that is launched along with the TIBCO ComputeDB cluster. You can only access it from the machines whose IP falls in the CIDR IP range you provided as **WebUICIDR** while creating the stack. It comes with a set of sample Notebooks for you to interact with the TIBCO ComputeDB cluster. Clone the Notebook you want to run. You can also create your own Notebooks. For more details, refer to [Using Apache Zepplin with TIBCO ComputeDB](/howto/use_apache_zeppelin_with_snappydata.md).
