@@ -64,7 +64,7 @@ If you would like to deploy Kubernetes on-premises, you can use any of the follo
             git clone https://github.com/SnappyDataInc/spark-on-k8s
             cd spark-on-k8s/charts
 
-2.	Edit the **TIBCO ComputeDB > values.yaml**  file to configure in the SnappyData Chart. Specify the details of your TIBCO ComputeDB Docker image as mentioned in the example below. Replace values for image and tag appropriatly with your Dockerhub registry name, image name and tag .
+2.	Edit the **snappydata > values.yaml**  file to configure in the SnappyData Chart. Specify the details of your TIBCO ComputeDB Docker image as mentioned in the example below. Replace values for image and tag appropriatly with your Dockerhub registry name, image name and tag.
            
             image: your-dockerhub-registry/snappydata-docker-image
             imageTag: 1.2

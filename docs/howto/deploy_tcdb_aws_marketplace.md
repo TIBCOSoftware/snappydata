@@ -13,17 +13,18 @@ To deploy TIBCO ComputeDB from AWS Marketplace, do the following:
 1.  Go to the TIBCO ComputeDB's page on [AWS Marketplace](https://aws.amazon.com/marketplace).
 2.  Select the region where you want to launch the instances from the dropdown list.
 3.  Select an appropriate **Fulfillment** option from the following:
-    - 64-bit (x86) Amazon Machine Image (AMI)
-    - TIBCO ComputeDB - Developer Configuration
-    - TIBCO ComputeDB - Secured Configuration
+    - **64-bit (x86) Amazon Machine Image (AMI)**
+    - **TIBCO ComputeDB - Developer Configuration**
+    - **TIBCO ComputeDB - Secured Configuration**
 
     The first option only launches the EC2 instance from the AMI, but it does not start the TIBCO ComputeDB cluster. You must configure and launch the cluster from the instance manually.
 
     The next two options allow you to launch the cluster using AWS CloudFormation via sample templates, which are pre-loaded on the AWS CloudFormation's Create stack page.
+	
+    **TIBCO ComputeDB - Developer Configuration** is the recommended option in most cases. This option lets you launch the TIBCO ComputeDB cluster with no cluster-level security enabled. This is preferred option if you want to quickly try out the TIBCO ComputeDB product.
 
-   *	**TIBCO ComputeDB - Developer Configuration** is the recommended option in most cases. This option lets you launch the TIBCO ComputeDB cluster with no cluster-level security enabled. This is preferred option if you want to quickly try out the TIBCO ComputeDB product.
-   *	**TIBCO ComputeDB - Secured Configuration** option lets you launch the TIBCO ComputeDB cluster with security enabled. As TIBCO ComputeDB relies on an externally managed LDAP server for authentication, a test-only LDAP setup is provided in the AMI. </br>
-	Therefore, in this **Fulfillment** option, the test-only LDAP server is launched along with the TIBCO ComputeDB cluster. This LDAP setup has one admin user (**snappyadmin**) and one non-admin user (**snappyuser**). The password for **snappyadmin** is available in the **/opt/snappydata/props.txt** file, which is located in the EC2 instance. The password for **snappyuser** is the ID of the EC2 instance that will be launched.
+	**TIBCO ComputeDB - Secured Configuration** option lets you launch the TIBCO ComputeDB cluster with security enabled. As TIBCO ComputeDB relies on an externally managed LDAP server for authentication, a test-only LDAP setup is provided in the AMI. </br>
+	Therefore, in this **Fulfillment** option, the test-only LDAP server is launched along with the TIBCO ComputeDB cluster. This LDAP setup has one admin user (**snappyadmin**) and one non-admin user (**snappyuser**). </br>The password for **snappyadmin** is available in the **/opt/snappydata/props.txt** file, which is located in the EC2 instance. The password for **snappyuser** is the ID of the EC2 instance that will be launched.
 
     !!!Note 
     	You must provision your own LDAP server to work with the TIBCO ComputeDB cluster in production and must not rely on the test-only LDAP setup provided in the AMI.
