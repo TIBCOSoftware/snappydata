@@ -5,9 +5,17 @@ Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform 
 You can set up TIBCO ComputeDB cluster on Amazon Web Services using one of the following options:
 
 <!---*	[TIBCO ComputeDB CloudBuilder](#usingcloudbuiler)--->
-*	[EC2 Scripts](#EC2)	
+*	[AWS Marketplace](../howto/deploy_tcdb_aws_marketplace.md)
+*	[EC2 Scripts](#EC2)
 *	[AWS Management Console](#usingawsmgmtconsole)
 
+The first option is best suited if you want to quickly launch a basic ComputeDB cluster on a single EC2 instance and start playing with it.
+
+The EC2 scripts would be a better option if you want to launch the ComputeDB cluster on multiple EC2 instances. Note that this option requires that you download the product tarball file (.tar.gz) locally.
+It is available inside a zip archive available on [TIBCO eDelivery website](https://edelivery.tibco.com/storefront/eval/tibco-computedb-enterprise-edition/prod12074.html).
+Otherwise, the script picks the Community Edition of the product from GitHub.
+
+The third option lets you only launch the EC2 instance(s) using the ComputeDB AMI but you'll need to configure and start the ComputeDB cluster manually.
 
 <!---<a id="usingcloudbuiler"></a>
 ## TIBCO ComputeDB CloudBuilder
@@ -516,15 +524,12 @@ Options:
 <a id="usingawsmgmtconsole"></a>
 ## AWS Management Console
 
-You can launch a TIBCO ComputeDB cluster on Amazon EC2 instance(s) using Linux-based AMIs available on AWS. For more information on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
+You can launch a TIBCO ComputeDB cluster on Amazon EC2 instance(s) using ComputeDB AMIs available on AWS Marketplace. For more information on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
 This section covers the following:
 
 *	[Prerequisites](#prereqaws)
 *	[Launching the Instance and Cluster](#launchawsinstance)
 *	[Accessing TIBCO ComputeDB Cluster](#accesssnappydatacluster)
-
-!!! Attention
-	The AMIs of TIBCO ComputeDB are currently unavailable on AWS.
 
 <a id="prereqaws"></a>
 ### Prerequisites
@@ -533,7 +538,9 @@ This section covers the following:
 
 <a id="launchawsinstance"></a>
 ### Deploying TIBCO ComputeDB Cluster with AWS Management Console
-To launch the instance and start the TIBCO ComputeDB cluster on EC2 instance(s):
+To launch the instance and start the TIBCO ComputeDB cluster on EC2 instance(s) follow below steps.
+
+If you are launching the cluster via AWS Marketplace, jump to step 5.
 
 1. Open the [Amazon EC2 console](https://console.aws.amazon.com/ec2/) and sign in using your AWS login credentials. The current region is displayed at the top of the screen.
 
@@ -541,16 +548,13 @@ To launch the instance and start the TIBCO ComputeDB cluster on EC2 instance(s):
 
 3. Click **Launch Instance** from the Amazon EC2 console dashboard.
 
-4. On the **Choose an Amazon Machine Image (AMI)** page, select your preferred Linux-based AMI. For example, you can select **Amazon Linux 2 AMI** or **Ubuntu Server 16.04 LTS**. See [this page](./system_requirements.md#operating-systems-supported) for recommended Operating Systems.
-
-	!!!Note
-		The AMIs with pre-installed TIBCO ComputeDB distribution are currently unavailable under **AWS Marketplace** or **Community AMIs**.
+4. On the **Choose an Amazon Machine Image (AMI)** page, search and select the ComputeDB AMI. For 1.2.0 release, it'll be named like **tibco-computedb_1.2.0-yyyymmdd-amznlnx_2018.03**.
 
 5. On the **Choose an Instance Type** page, select the instance type as per the requirement of your use case and then click **Review and Launch** to launch the instance with default configurations. <br/>
 
 	!!! Note
 
-		* You can also continue customizing your instance before you launch the instance. Refer to the [AWS documentation](https://docs.aws.amazon.com/) for more information.
+		* You can also further customize your instance(s) like below before you launch them. Refer to the [AWS documentation](https://docs.aws.amazon.com/) for more information.
 
 		* For the setup across multiple EC2 instances, specify the appropriate number for *Number of instances* field on **Configure Instance** page. For example, to launch a SnappyData cluster with 3 servers and 1 locator and 1 lead on separate instances, specify the number as 5. You can also launch locator and lead processes on a single EC2 instance, thereby reducing the instances to 4.
 
@@ -579,34 +583,16 @@ To launch the instance and start the TIBCO ComputeDB cluster on EC2 instance(s):
 	!!!Note
 		The public DNS/IP of the instance is available on the **EC2 dashboard** > **Instances** page. Select your EC2 instance and search for it in the lower part of the page.
 
-12. Download the required TIBCO ComputeDB distribution into the EC2 instance(s). You can find the latest Enterprise edition release [here](https://edelivery.tibco.com/storefront/eval/tibco-computedb-enterprise-edition/prod12074.html).
+12. The ComputeDB is already installed at **/opt/snappydata** in the launched EC2 instance(s). It also has Java 8 installed.
 
-    !!!Note
-    	When TIBCO ComputeDB AMI is made available on AWS in the future, it will have the distribution pre-installed. In that case, you can jump directly to [step 15](#15step).
-
-13. Download and unzip `TIB_compute_<version>_linux.zip`, untar the tar.gz file in it and rename it to **/opt/snappydata**.
-
-		unzip TIB_compute_<version>_linux.zip
-		tar -xvf TIB_compute_<version>_linux.tar.gz 
-		sudo mv TIB_compute_<version>_linux-bin /opt/snappydata
-		chown -R ec2-user:ec2-user /opt/snappydata
-
-14. Ensure that Java 8 is installed and set as default. For Amazon Linux 2018.03, you may need to uninstall Java 7 first. Following commands update OpenJDK to 8:
-
-		sudo yum -y -q remove  jre-1.7.0-openjdk
-		sudo yum -y -q install java-1.8.0-openjdk-devel
-		java -version  # Ensure it prints correct Java version
-
-    Repeat above three steps for all the instances launched.
-
-15. <a id="15step"></a>If you are launching the cluster across multiple EC2 instances, you need to do the following 
+13. <a id="15step"></a>If you are launching the cluster across multiple EC2 instances, you need to do the following
 
 	*	Setup [passwordless ssh](../reference/misc/passwordless_ssh.md) access across these instances
 	*	Provide EC2 instance information in TIBCO ComputeDB's conf files.
 
-    You can skip these two steps for a TIBCO ComputeDB cluster on a single EC2 instance.
+    You can skip to the next step for a TIBCO ComputeDB cluster on a single EC2 instance.
 
-    To provide EC2 instance information in TIBCO ComputeDB's conf files, at a minimum, provide private IP addresses of EC2 instances in appropriate conf files, viz. `conf/locators`, `conf/servers` and `conf/leads`.
+    After setting up the passwordless ssh access, provide EC2 instance information in TIBCO ComputeDB's conf files. At a minimum, provide private IP addresses of EC2 instances in appropriate conf files, viz. `conf/locators`, `conf/servers` and `conf/leads`.
 
     Sample conf files for a cluster with 3 servers, 1 locator and 1 lead are given below. Here the locator and lead processes are configured to run on the same EC2 instance.
 
@@ -621,11 +607,11 @@ To launch the instance and start the TIBCO ComputeDB cluster on EC2 instance(s):
             cat /opt/snappydata/conf/leads
             172.16.32.180
 
-16. Go to the **/opt/snappydata** directory. Run the following command to start your cluster. By default, it will launch a basic cluster with one data server, one lead, and one locator.
+14. Go to the **/opt/snappydata** directory. Run the following command to start your cluster. By default, it will launch a basic cluster with one data server, one lead, and one locator.
 
 		./sbin/snappy-start-all.sh
 
-17.	After deploying TIBCO ComputeDB, follow the instructions [here](/howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin.
+15.	After deploying TIBCO ComputeDB, follow the instructions [here](/howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin.
 
 <a id="accesssnappydatacluster"></a>
 ### Accessing TIBCO ComupteDB Cluster
