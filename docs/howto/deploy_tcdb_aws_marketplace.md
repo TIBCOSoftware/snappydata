@@ -11,34 +11,30 @@ You can quickly set up a simple TIBCO ComputeDB cluster on AWS using its Amazon 
 To deploy TIBCO ComputeDB from AWS Marketplace, do the following:
 
 1.  Go to the TIBCO ComputeDB's page on [AWS Marketplace](https://aws.amazon.com/marketplace).
-2.  Select the region where you want to launch the instances, from the dropdown list.
-3.  Select the appropriate Fulfillment Option from these three listed in the dropdown:
+2.  Select the region where you want to launch the instances from the dropdown list.
+3.  Select an appropriate **Fulfillment** option from the following:
     - 64-bit (x86) Amazon Machine Image (AMI)
     - TIBCO ComputeDB - Developer Configuration
     - TIBCO ComputeDB - Secured Configuration
 
-    The first option will only launch the EC2 instance from the AMI but it'll not start the ComputeDB cluster. Users will have to configure and launch the cluster from the instance manually.
+    The first option only launches the EC2 instance from the AMI, but it does not start the TIBCO ComputeDB cluster. You must configure and launch the cluster from the instance manually.
 
-    The next two options let you launch the cluster using AWS CloudFormation via sample templates which will be pre-loaded on the AWS CloudFormation's Create stack page.
+    The next two options allow you to launch the cluster using AWS CloudFormation via sample templates, which are pre-loaded on the AWS CloudFormation's Create stack page.
 
-    The option *TIBCO ComputeDB - Developer Configuration* is the recommended one in most cases. It lets you launch the ComputeDB cluster with no cluster-level security enabled.
-    This is preferred if you quickly want to try out the ComputeDB product.
+   *	**TIBCO ComputeDB - Developer Configuration** is the recommended option in most cases. This option lets you launch the TIBCO ComputeDB cluster with no cluster-level security enabled. This is preferred option if you want to quickly try out the TIBCO ComputeDB product.
+   *	**TIBCO ComputeDB - Secured Configuration** option lets you launch the TIBCO ComputeDB cluster with security enabled. As TIBCO ComputeDB relies on an externally managed LDAP server for authentication, a test-only LDAP setup is provided in the AMI. </br>
+	Therefore, in this **Fulfillment** option, the test-only LDAP server is launched along with the TIBCO ComputeDB cluster. This LDAP setup has one admin user (**snappyadmin**) and one non-admin user (**snappyuser**). The password for **snappyadmin** is available in the **/opt/snappydata/props.txt** file, which is located in the EC2 instance. The password for **snappyuser** is the ID of the EC2 instance that will be launched.
 
-    The option *TIBCO ComputeDB - Secured Configuration* lets you launch the ComputeDB cluster with security enabled.
-    As ComputeDB relies on an externally managed LDAP server for authentication, we've provided a test-only LDAP setup in the AMI.
-    So in this fulfillment option, the test-only LDAP server is launched along with the ComputeDB cluster. This LDAP setup has one admin user (*snappyadmin*) and one non-admin user (*snappyuser*).
-    The password for *snappyadmin* will be available in file `/opt/snappydata/props.txt` in the EC2 instance. The password for *snappyuser* is the ID of the EC2 instance that will be launched.
-
-    Please note that you must provision your own LDAP server to work with the ComputeDB cluster in production and must not rely on the test-only LDAP setup provided in the AMI.
+    !!!Note 
+    	You must provision your own LDAP server to work with the TIBCO ComputeDB cluster in production and must not rely on the test-only LDAP setup provided in the AMI.
 
 4.  Click **Continue to Subscribe**.
 5.  Go through the Terms and Conditions and click **Continue to Configure**.
-5.  Select *CloudFormation Template* as the Fulfillment option and select one of the two templates explained above. Then click **Continue to Launch**.
-6.  Select *Launch CloudFormation* as the action and click on **Launch**.
-    Alternatively, if you selected *Amazon Machine Image* as the Fulfillment option on the previous page, select *Launch through EC2* as the action on this page, click **Launch** and skip to [these steps](https://tibco-computedb.readthedocs.io/en/enterprise_docv1.2.0/install/setting_up_cluster_on_amazon_web_services/#usingawsmgmtconsole) to complete the setup.
-7.	You will be taken to the AWS CloudFormation’s **Create stack** page. The Amazon S3 URL of the template is already populated here.
-8.	Click **Next**. The **Specify stack details** page is displayed.
-9.	Enter the Stack name and the configuration details of the cluster using the following parameters and then click **Next**:
+5.  Select **CloudFormation Template** as the **Fulfillment** option and select one of the two templates explained above. Then click **Continue to Launch**.
+6.  Select **Launch CloudFormation** as the action and then click **Launch**.
+    Alternatively, if you selected **Amazon Machine Image** as the **Fulfillment** option on the previous page, select **Launch through EC2** as the action on this page. Click **Launch** and then perform [these steps](https://tibco-computedb.readthedocs.io/en/enterprise_docv1.2.0/install/setting_up_cluster_on_amazon_web_services/#usingawsmgmtconsole) to complete the setup.</br>The AWS CloudFormation’s **Create stack** page is displayed. The Amazon S3 URL of the template is already populated here.
+7.	Click **Next**. The **Specify stack details** page is displayed.
+8.	Enter the Stack name and the configuration details of the cluster using the following parameters and then click **Next**:
 
 	| Parameters | Description |
 	|--------|--------|
@@ -47,22 +43,22 @@ To deploy TIBCO ComputeDB from AWS Marketplace, do the following:
     |  **InstanceTypeName**      |   Select one instance type from the dropdown list as per your workload requirement. For more details, refer [https://aws.amazon.com/ec2/pricing/on-demand](https://aws.amazon.com/ec2/pricing/on-demand).|
     |   **KeyPairName**     |   Select one from the dropdown list whose key file (.pem) is available with you. This is needed to connect to the EC2 instance through SSH. |
     |  **VPCID** |   Select the DEFAULT VPC ID of this region from the dropdown list. Your instance is launched within this VPC. |
-    |  **WebUICIDR**  |  The allowed CIDR IP range that can access TIBCO ComputeDB Monitoring Console. Can also be the same as ClientCIDR, for example, 123.201.112.0/32. To access the cluster from your personal laptop, first find your public IP address. You can go to [whatismyip.com](https://whatsmyip.com/) to get your IPv4 address and append **/32** to it.     |
+    |  **WebUICIDR**  |  The allowed CIDR IP range that can access the TIBCO ComputeDB Monitoring Console. It can also be the same as ClientCIDR, for example, 123.201.112.0/32. To access the cluster from your personal laptop, first, find your public IP address. You can go to [whatismyip.com](https://whatsmyip.com/) to get your IPv4 address and append **/32** to it.     |
 
 	!!!Note
 		On the next page, you may see the following error message if you do not have adequate permissions for AWS SNS topics:</br> `Failed to retrieve sns topics `</br>You can safely ignore this message and proceed to create the stack.
 
-10.	In the **Configure stack options** page, you can configure advance options for the stack. Click **Next**. The **Review** page is displayed.
-11.	In the **Review** page, you can review and edit the stack details before proceeding to create the stack. This page also displays the stack description. The stack description mentions if the cluster will be launched with security enabled.
+9.	In the **Configure stack options** page, you can configure advance options for the stack. Click **Next**. The **Review** page is displayed.
+10.	In the **Review** page, you can review and edit the stack details before proceeding to create the stack. This page also displays the stack description. The stack description mentions if the cluster will be launched with security enabled.
 You can also view the details about the status of stack creation from the **Events** tab. The status changes to **CREATE_COMPLETE** when it is successfully completed.
 
 	!!!Note
-		A test LDAP server is launched within the launched EC2 instance to demonstrate a TIBCO ComputeDB cluster with security enabled. You must provision your own LDAP server to work with the TIBCO ComputeDB cluster in production. For more details about configuring a secure ComputeDB cluster with LDAP, refer [Launching the Cluster in Secure Mode](../security/launching_the_cluster_in_secure_mode.md).
+		A test LDAP server is launched within the launched EC2 instance to demonstrate a TIBCO ComputeDB cluster with security enabled. You must provision your own LDAP server to work with the TIBCO ComputeDB cluster in production. For more details about configuring a secure TIBCO ComputeDB cluster with LDAP, refer [Launching the Cluster in Secure Mode](../security/launching_the_cluster_in_secure_mode.md).
 
-12.	After the **CREATE_COMPLETE** status is displayed, click the **Outputs** tab. The following two URLs are displayed:
+11.	After the **CREATE_COMPLETE** status is displayed, click the **Outputs** tab. The following two URLs are displayed:
 
 	*	**ComputeDBConsole**:</br>
-		Click **ComputeDBConsole** URL to access the TIBCO ComputeDB monitoring console. The monitoring console  which provides an overview of the cluster is displayed. You can only access it from the machines whose IP falls in the CIDR IP range you provided as **WebUICIDR** while creating the stack.
+		Click **ComputeDBConsole** URL to access the TIBCO ComputeDB monitoring console. The monitoring console, which provides an overview of the cluster, is displayed. You can only access it from the machines whose IP falls in the CIDR IP range you provided as **WebUICIDR** while creating the stack.
 	
     	!!!NOTE
 			If your cluster has security enabled, you will be prompted for the username and password to access this console. Use **snappyuser** as the username and the EC2 instance ID as the password. You can find this instance ID on [this page](https://console.aws.amazon.com/ec2/v2/home#Instances:sort=instanceState).
@@ -72,14 +68,14 @@ You can also view the details about the status of stack creation from the **Even
 
 ## Setting Credentials for SnappySession in Notebooks
 
-If your cluster has security enabled, the credentials required for your Notebook to communicate with TIBCO ComputeDB cluster are already pre-configured in the interpreter settings. However, some of the Notebooks that use SnappySession APIs must be modified to set the credentials in the session's conf:
+If your cluster has security enabled, the credentials required for your Notebook to communicate with the TIBCO ComputeDB cluster are already pre-configured in the interpreter settings. However, some of the Notebooks that use SnappySession APIs must be modified to set the credentials in the session's conf:
 
 To modify SnappySession APIs in the Notebooks, do the following:
 
 1.	From the **Notebook** dropdown, select **ComputeDB API Quickstart** Notebook.
 	
     !!!Note
-    	You must clone this notebook before you run its paragraphs. 
+    	You must clone this Notebook before you run its paragraphs. 
 
 2.	Go to **Step 1**, where the SnappySession instance is created and add the following lines after the initialization:
 
@@ -107,7 +103,7 @@ jdbc:snappydata://ec2-instance-IP:1527/
 ```
 
 !!!Note
-	Your program (or JDBC client tool) should be running on a machine whose IP address is in the range you provided as **ClientCIDR** while creating the stack.</br>If your cluster has security enabled, you must also specify the username and password as connection properties.
+	Your program (or JDBC client tool) should be running on a machine whose IP address is in the range you provided as **ClientCIDR** while creating the stack.</br>If your cluster has security enabled, then you must also specify the username and password as connection properties.
 
 
 ## Connecting to the EC2 Instance via SSH

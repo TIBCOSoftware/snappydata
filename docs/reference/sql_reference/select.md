@@ -67,7 +67,7 @@ The support for PIVOT clause in TIBCO ComputeDB parser deviates from Spark 2.4 s
 *	It only allows literals in the value **IN** list rather than named expressions. 
 *	On the contrary, TIBCO ComputeDB supports explicit GROUP BY columns with PIVOT instead of always doing implicit detection.
 
-Only TIBCO ComputeDB (and not Spark 2.4) supports the highlighted explicit GROUP BY clause in the following example. 
+Only TIBCO ComputeDB (and not Spark 2.4) supports the explicit GROUP BY clause in the following example. 
 
       select * from (
         select year(day) year, month(day) month, temp
