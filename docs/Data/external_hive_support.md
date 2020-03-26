@@ -132,21 +132,21 @@ If you set the property **spark.sql.catalogImplementation = in-memory**, you can
 
 ## Creating and Querying Hive Tables 
 
-To access, the hive tables, you must first create a database or schema in external hive catalog from TIBCO ComputeDB. Go to the Snappy Shell prompt and enter the following command:
+To create or access, the hive tables, you must first create a database or schema in the external hive catalog from TIBCO ComputeDB. Else, the default database **default** is used.  Go to the Snappy Shell prompt and enter the following command:
 
 		snappy> create database hivedb;
 
-After creating the database or schema, you can create hive tables,S load data into the hive tables, and run DDL queries on hive tables from TIBCO ComputeDB using one of the following methods:
+After creating the database or schema, you can create hive tables, load data into the hive tables, and run DDL queries on hive tables from TIBCO ComputeDB using one of the following methods:
 
 ### Method 1
 
 In this method, you must use the schema or database name before the table name as shown in the following example:	
 
     snappy> 
-	create table hivedb.hive_regions(RegionID int,RegionDescription string) row format delimited fields 	terminated by ',' tblproperties("skip.header.line.count"="1");
+    create table hivedb.hive_regions(RegionID int,RegionDescription string) row format delimited fields terminated by ',' tblproperties("skip.header.line.count"="1");
 
-	snappy> 
-	load data local inpath '/export/shared/QA_DATA/NW_1GB/regions.csv' overwrite into table 	hivedb.hive_regions;
+    snappy> 
+    load data local inpath '/export/shared/QA_DATA/NW_1GB/regions.csv' overwrite into table	hivedb.hive_regions;
 
 	snappy> select * from hivedb.hive_regions where RegionDescription <> 'RegionDescription';
 
@@ -165,8 +165,8 @@ In this method, you must use the schema or database name before the table name a
 In this method, you must first run the command `use <database-name>` as shown in the following example. If you use this method you need not mention the schema or database name.
 	
         snappy> use hivedb;
-        snappy> create table hive_employee_territories(EmployeeID int,TerritoryID string) row format 		  delimited fields terminated by ',';
-        snappy> load data local inpath '/export/shared/QA_DATA/NW_1GB/employee_territories.csv' 			  overwrite into table hive_employee_territories;
+        snappy> create table hive_employee_territories(EmployeeID int,TerritoryID string) row format delimited fields terminated by ',';
+        snappy> load data local inpath '/export/shared/QA_DATA/NW_1GB/employee_territories.csv' overwrite into table hive_employee_territories;
 
         snappy> select * from hive_employee_territories limit 10;
         EmployeeID |TerritoryID                                                                                                                     
@@ -314,7 +314,8 @@ snappy> SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID, o.OrderDa
 
 ## Troubleshooting
 
-Following are some issues that you may come across and their corresponding solutions and  workarounds:
+Following are some issues that you may come across and their corresponding solutions / workarounds:
+
 
 *	If the property **hive.execution.engine** is set  as Tez then the following exception is shown:
 

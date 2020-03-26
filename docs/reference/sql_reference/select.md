@@ -62,20 +62,23 @@ Assign an identifier to a window specification.
 Limit the number of rows returned.
 
 `PIVOT`</br>
-TIBCO ComputeDB parser support for PIVOT clause. It deviates from Spark 2.4 support in that it only allows literals in the value IN list rather than named expressions. On the contrary, it supports explicit GROUP BY columns with PIVOT instead of always doing implicit detection.
+The support for PIVOT clause in TIBCO ComputeDB parser deviates from Spark 2.4 support in the following two aspects: 
 
-Both the following examples are identical. Spark 2.4 does not support second variant:
+*	It only allows literals in the value **IN** list rather than named expressions. 
+*	On the contrary, TIBCO ComputeDB supports explicit GROUP BY columns with PIVOT instead of always doing implicit detection.
 
+Only TIBCO ComputeDB (and not Spark 2.4) supports the highlighted explicit GROUP BY clause in the following example. 
 
-        select * from (
-            select year(day) year, month(day) month, temp
-            from dayAvgTemp
-          )
-          PIVOT (
-            CAST(avg(temp) AS DECIMAL(5, 2))
-            FOR month IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
-          )
-          ORDER BY year DESC
+      select * from (
+        select year(day) year, month(day) month, temp
+        from dayAvgTemp
+      )
+      PIVOT (
+        CAST(avg(temp) AS DECIMAL(5, 2))
+        FOR month IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+      )
+      GROUP BY year
+      ORDER BY year DESC
 
 
 The **IN** clause only supports constants and not aliases.
@@ -91,7 +94,6 @@ The **IN** clause only supports constants and not aliases.
           )
           GROUP BY year
           ORDER BY year DESC
-
 
 ## Example
 
