@@ -46,12 +46,6 @@ class FailFastCastSuite extends SnappyFunSuite with BeforeAndAfter {
     Try(snc.sql("set snappydata.failFastTypeCasting=false"))
   }
 
-  before {
-    snc.sql(s"truncate table $tableName")
-    snc.sql(s"insert into $tableName values(1, 'abc', '01/02/1970', 12.345, 12.345, 12.345," +
-        s" '1970-01-02 00:00:00')")
-  }
-
   test("string to other types cast") {
     Seq(ByteType, ShortType, IntegerType, LongType, FloatType, DoubleType, BooleanType, DateType,
       TimestampType, DecimalType.SYSTEM_DEFAULT).foreach(numericType =>
