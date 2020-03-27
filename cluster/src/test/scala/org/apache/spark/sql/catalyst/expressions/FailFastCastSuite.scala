@@ -32,7 +32,7 @@ class FailFastCastSuite extends SnappyFunSuite with BeforeAndAfter {
   val tableName = "table1"
 
   override def beforeAll(): Unit = {
-    snc.sql("set snappydata.failFastTypeCasting=true")
+    snc.sql("set snappydata.failOnCastError=true")
     snc.sql(s"drop table if exists $tableName")
     snc.sql(s"create table $tableName (int_col int, string_col string, date_col date," +
         s" decimal_col decimal(5,3), float_col float, double_col double, timestamp_col timestamp)")
@@ -43,7 +43,7 @@ class FailFastCastSuite extends SnappyFunSuite with BeforeAndAfter {
 
   override def afterAll(): Unit = {
     Try(snc.sql(s"drop table if exists $tableName"))
-    Try(snc.sql("set snappydata.failFastTypeCasting=false"))
+    Try(snc.sql("set snappydata.failOnCastError=false"))
   }
 
   test("string to other types cast") {
