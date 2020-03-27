@@ -30,13 +30,13 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.Constant
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
-import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable, VM}
+import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, SerializableRunnable, VM}
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
 
 import org.apache.spark.SparkUtilsAccess
 import org.apache.spark.sql.types.{IntegerType, StructField}
-import org.apache.spark.sql.{ParseException, Row, SnappyContext, SnappySession, TableNotFoundException}
+import org.apache.spark.sql.{AnalysisException, ParseException, Row, SnappyContext, SnappySession}
 
 class SplitClusterDUnitSecurityTest(s: String)
     extends DistributedTestBase(s)
@@ -65,7 +65,6 @@ class SplitClusterDUnitSecurityTest(s: String)
   var user4Conn = null: Connection
   var snc = null: SnappyContext
 
-  private[this] var host: Host = _
   var vm0: VM = _
   var vm1: VM = _
   var vm2: VM = _
@@ -367,10 +366,10 @@ class SplitClusterDUnitSecurityTest(s: String)
       stmt.execute(s"drop table $smartColTab1")
       stmt.execute(s"drop table $smartRowTab1")
       assertTableDeleted(() => {
-        snc.sparkSession.catalog.refreshTable(smartColTab1)
+        snc.sql(s"select count(*) from $smartColTab1").collect()
       }, smartColTab1)
       assertTableDeleted(() => {
-        snc.sparkSession.catalog.refreshTable(smartRowTab1)
+        snc.sql(s"select count(*) from $smartRowTab1").collect()
       }, smartRowTab1)
     } finally {
       snc.sparkContext.stop()
@@ -382,9 +381,9 @@ class SplitClusterDUnitSecurityTest(s: String)
   private def assertTableDeleted(func: () => Unit, t: String): Unit = {
     try {
       func()
-      assert(false, s"Failed to drop $t")
+      assert(assertion = false, s"Should have failed in table operation after drop for $t")
     } catch {
-      case te: TableNotFoundException =>
+      case _: AnalysisException =>
     }
   }
 
@@ -787,15 +786,22 @@ class SplitClusterDUnitSecurityTest(s: String)
       f()
       assert(false, s"Should have failed: $s")
     } catch {
-      case sqle: SQLException =>
-        if (states.contains(sqle.getSQLState)) {
-          logInfo(s"Found expected error: $sqle")
-        } else {
-          logError(s"Found different SQLState: ${sqle.getSQLState}")
-          throw sqle
-        }
       case t: Throwable =>
         var okay = false
+        var cause = t
+        while (!okay && (cause ne null)) {
+          cause match {
+            case sqle: SQLException =>
+              if (states.contains(sqle.getSQLState)) {
+                logInfo(s"Found expected error: $sqle")
+                okay = true
+              } else {
+                logError(s"Found different SQLState: ${sqle.getSQLState}")
+                throw sqle
+              }
+            case _ => cause = cause.getCause
+          }
+        }
         states.foreach(state => {
           if (t.getMessage.contains(state)) {
             logInfo(s"Found expected error in: ${t.getClass.getName}, ${t.getMessage}")
@@ -1025,17 +1031,17 @@ class SplitClusterDUnitSecurityTest(s: String)
       override def accept(pathname: File): Boolean = {
         pathname.getName.contains("myudf") && pathname.getName.contains("jar")
       }
-    }).foreach(x => println(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    }).foreach(x => logInfo(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
     server1Dir.listFiles(new FileFilter {
       override def accept(pathname: File): Boolean = {
         pathname.getName.contains("myudf") && pathname.getName.contains("jar")
       }
-    }).foreach(x => println(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    }).foreach(x => logInfo(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
     server2Dir.listFiles(new FileFilter {
       override def accept(pathname: File): Boolean = {
         pathname.getName.contains("myudf") && pathname.getName.contains("jar")
       }
-    }).foreach(x => println(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    }).foreach(x => logInfo(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
 
 
     // Drop a function of jdbcUser2
@@ -1057,17 +1063,17 @@ class SplitClusterDUnitSecurityTest(s: String)
       override def accept(pathname: File): Boolean = {
         pathname.getName.contains("myudf") && pathname.getName.contains("jar")
       }
-    }).foreach(x => println(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    }).foreach(x => logInfo(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
     server1Dir.listFiles(new FileFilter {
       override def accept(pathname: File): Boolean = {
         pathname.getName.contains("myudf") && pathname.getName.contains("jar")
       }
-    }).foreach(x => println(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    }).foreach(x => logInfo(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
     server2Dir.listFiles(new FileFilter {
       override def accept(pathname: File): Boolean = {
         pathname.getName.contains("myudf") && pathname.getName.contains("jar")
       }
-    }).foreach(x => println(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    }).foreach(x => logInfo(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
 
     // Verify list jars
     stmt2.execute(s"list jars")
