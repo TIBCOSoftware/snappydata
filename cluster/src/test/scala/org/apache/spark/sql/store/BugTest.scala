@@ -1605,6 +1605,20 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("drop schema xy")
   }
 
+  test("SDENT-171") {
+    snc.sql("drop table if exists t1")
+    snc.sql("create table t1 using column as (select id, concat('sym', id%1000) " +
+      "as sym from range(1000))")
+
+    snc.sql("select * from (select id, sym from (select id, sym, " +
+      "rand() as some_rand from t1) t2  where t2.some_rand < 0.6 ) t3 limit 10")
+
+    val rs = snc.sql("select * from (select id, sym from (select id, sym, " +
+      "rand() as some_rand from t1) t2  where t2.some_rand < 0.6 and  " +
+      "t2.some_rand > 0.9) t3 limit 10")
+    assertEquals(0, rs.collect().length)
+  }
+
   test("SDENT-75-GetTypeInfo-Boolean-Test") {
     snc
     val serverHostPort = TestUtil.startNetServer()
