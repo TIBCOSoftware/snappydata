@@ -372,7 +372,7 @@ object PhysicalScan extends PredicateHelper {
         (Some(substitutedFields ++ nonDeterministicFields),
           filters, if (nonDeterministicFields.isEmpty) {other}
         else {
-          Project(substitutedFields ++ nonDeterministicFields, other)
+          Project(nonDeterministicFields, other)
         }, collectAliases(substitutedFields))
 
       case LFilter(condition, child) =>
