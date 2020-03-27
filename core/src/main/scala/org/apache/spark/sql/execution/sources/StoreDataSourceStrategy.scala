@@ -366,13 +366,15 @@ object PhysicalScan extends PredicateHelper {
       case Project(fields, child) =>
         val (_, filters, other, aliases) = collectProjectsAndFilters(child)
         val (deterministicFields, nonDeterministicFields) = fields.span(_.deterministic)
-        val substitutedFields = deterministicFields.
+        val substitutedDeterministicFields = deterministicFields.
           map(substitute(aliases)).asInstanceOf[Seq[NamedExpression]]
-        (Some(substitutedFields ++ nonDeterministicFields),
+        val substitutedNonDeterministicFields = nonDeterministicFields.
+          map(substitute(aliases)).asInstanceOf[Seq[NamedExpression]]
+        (Some(substitutedDeterministicFields ++ substitutedNonDeterministicFields),
           filters, if (nonDeterministicFields.isEmpty) {other}
         else {
-          Project(nonDeterministicFields, other)
-        }, collectAliases(substitutedFields))
+          Project(substitutedNonDeterministicFields, other)
+        }, collectAliases(substitutedDeterministicFields))
 
       case LFilter(condition, child) =>
         val (fields, filters, other, aliases) = collectProjectsAndFilters(child)
