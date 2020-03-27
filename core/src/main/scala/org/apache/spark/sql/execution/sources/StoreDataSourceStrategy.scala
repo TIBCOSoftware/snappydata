@@ -365,8 +365,7 @@ object PhysicalScan extends PredicateHelper {
     plan match {
       case Project(fields, child) =>
         val (_, filters, other, aliases) = collectProjectsAndFilters(child)
-        val deterministicFields = fields.filter(_.deterministic)
-        val nonDeterministicFields = fields.filter(!_.deterministic)
+        val (deterministicFields, nonDeterministicFields) = fields.span(_.deterministic)
         val substitutedFields = deterministicFields.
           map(substitute(aliases)).asInstanceOf[Seq[NamedExpression]]
         (Some(substitutedFields ++ nonDeterministicFields),
