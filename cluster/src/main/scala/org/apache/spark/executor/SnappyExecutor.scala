@@ -42,7 +42,7 @@ class SnappyExecutor(
     userClassPath: Seq[URL] = Nil,
     exceptionHandler: SnappyUncaughtExceptionHandler,
     isLocal: Boolean = false)
-    extends Executor(executorId, executorHostname, env, userClassPath, isLocal) {
+    extends Executor(executorId, executorHostname, env, userClassPath, isLocal, exceptionHandler) {
 
   {
     // set a thread-factory for the thread pool for cleanup
