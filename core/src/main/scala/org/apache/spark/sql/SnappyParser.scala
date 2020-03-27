@@ -1072,15 +1072,17 @@ class SnappyParser(session: SnappySession)
         }
         case _ => Project(expressions, withFilter(base))
       }
-      val withDistinct = d match {
-        case None => withProjection
-        case Some(_) => Distinct(withProjection)
-      }
+
       val withHaving = h match {
-        case None => withDistinct
-        case Some(expr) => Filter(expr.asInstanceOf[Expression], withDistinct)
+        case None => withProjection
+        case Some(expr) => Filter(expr.asInstanceOf[Expression], withProjection)
       }
-      q(withHaving)
+      val withDistinct = d match {
+        case None => withHaving
+        case Some(_) => Distinct(withHaving)
+      }
+
+      q(withDistinct)
     }
   }
 

@@ -1630,4 +1630,23 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     conn.close()
   }
+
+  test("SDENT-131") {
+    snc.sql("create table address_cache(state string, zip_code string) using column")
+
+    val rdd = snc.sparkContext.parallelize((1 to 5).map(i => AddressCacheData("AA" + i, "" + 30000)))
+    val df1 = snc.createDataFrame(rdd)
+    df1.write.insertInto("address_cache")
+    df1.write.insertInto("address_cache")
+
+    assert(snc.table("address_cache").count() == 10)
+
+    val df2 = snc.sql("select distinct state, sum(zip_code) from ADDRESS_CACHE R1 group" +
+        " by state having (sum(zip_code) < 100000 and sum(zip_code) > 50000)")
+    val res1 = df2.collect()
+    assert(res1.length == 5)
+    res1.foreach(println)
+
+  }
 }
+case class AddressCacheData(state: String, zip_code: String)
