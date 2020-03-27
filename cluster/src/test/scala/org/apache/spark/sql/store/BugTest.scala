@@ -1167,7 +1167,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     session.sql(s"set ${Property.UseOptimizedHashAggregateForSingleKey.name} = true")
 
     val numRows = 1000000
-    val sleepTime = 7000L
+    val sleepTime = 5000L
     session.sql("create table test1 (id long, data string) using column " +
         s"options (buckets '8') as select id, 'data_' || id from range($numRows)")
     val ds = session.sql(
@@ -1180,10 +1180,10 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     // last one should be the query above
     val queryUIData = sqlStore.executionsList().last
     val duration = queryUIData.completionTime.get.getTime - queryUIData.submissionTime
-    // never expect the query above to take more than 7 secs
+    // never expect the query above to take more than 5 secs
     assert(duration > 0L)
     assert(duration < sleepTime)
-    assert(queryUIData.jobs.count(_._2 == JobExecutionStatus.SUCCEEDED) === 1)
+    assert(queryUIData.jobs.count(_._2 == JobExecutionStatus.SUCCEEDED) === 2)
 
     val executionId = queryUIData.executionId
     val metrics = sqlStore.executionMetrics(executionId)

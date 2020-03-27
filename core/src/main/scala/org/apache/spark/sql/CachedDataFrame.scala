@@ -48,7 +48,6 @@ import org.apache.spark.sql.catalyst.expressions.{ParamLiteral, UnsafeProjection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
-import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
 import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructType
@@ -153,8 +152,9 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
 
   private[sql] def duplicate(): CachedDataFrame = {
     val cdf = new CachedDataFrame(snappySession, queryExecution, queryExecutionString,
-      queryPlanInfo, null, null, cachedRDD, shuffleDependencies, encoder, shuffleCleanups,
-      rddId, noSideEffects, queryHints, -1L, -1L, linkPart)
+      queryPlanInfo, currentQueryExecutionString = null, currentQueryPlanInfo = null, cachedRDD,
+      shuffleDependencies, encoder, shuffleCleanups, rddId, noSideEffects, queryHints,
+      currentExecutionId = -1L, planningTime = -1L, linkPart)
     cdf.log_ = log_
     cdf.levelFlags = levelFlags
     cdf._boundEnc = boundEnc // force materialize boundEnc which is commonly used
@@ -386,7 +386,8 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
               executeCollect().iterator.map(rowConverter))._1))
           }
 
-        case _: ExecutedCommandExec | _: LocalTableScanExec | _: ExecutePlan =>
+        case _ if executedPlan.isInstanceOf[LocalTableScanExec] ||
+            SnappySession.isCommandExec(executedPlan) =>
           if (skipUnpartitionedDataProcessing) {
             // no processing required
             executeCollect().iterator.asInstanceOf[Iterator[R]]

@@ -56,6 +56,7 @@ import org.apache.spark.sql.hive._
 import org.apache.spark.sql.sources.{BaseRelation, Filter, JdbcExtendedUtils, ResolveQueryHints}
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, OutputMode, StreamingQuery, StreamingQueryManager, Trigger}
 import org.apache.spark.sql.types.{DataType, StructType}
+import org.apache.spark.status.ElementTrackingStore
 import org.apache.spark.status.api.v1.RDDStorageInfo
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.SnappyStreamingContext
@@ -165,7 +166,8 @@ abstract class Spark23_4_Internals extends SparkInternals {
     state.statusStore.listener match {
       case Some(_: SnappySQLAppListener) => // already changed
       case Some(_: SQLAppStatusListener) =>
-        val newListener = new SnappySQLAppListener(sc)
+        val newListener = new SnappySQLAppListener(sc,
+          sc.statusStore.store.asInstanceOf[ElementTrackingStore])
         // update on ListenerBus
         sc.listenerBus.findListenersByClass[SQLAppStatusListener]().foreach(
           sc.removeSparkListener)

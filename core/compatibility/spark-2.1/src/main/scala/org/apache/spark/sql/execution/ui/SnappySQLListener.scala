@@ -19,8 +19,8 @@ package org.apache.spark.sql.execution.ui
 import scala.collection.mutable
 
 import org.apache.spark.scheduler.{SparkListenerEvent, SparkListenerJobStart}
-import org.apache.spark.sql.CachedDataFrame
 import org.apache.spark.sql.execution.{SQLExecution, SparkPlanInfo}
+import org.apache.spark.sql.{CachedDataFrame, SparkListenerSQLPlanExecutionEnd, SparkListenerSQLPlanExecutionStart}
 import org.apache.spark.{JobExecutionStatus, SparkConf}
 
 /**
@@ -112,13 +112,13 @@ class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
    * to create a rdd which is then used to create a CachedDataFrame.
    * In second phase, the CachedDataFrame is then used for further actions.
    * For accumulating the metrics for first phase,
-   * SparkListenerSQLExecutionStart is fired. This keeps the current
+   * SparkListenerSQLPlanExecutionStart is fired. This keeps the current
    * executionID in _executionIdToData but does not add it to the active
    * executions. This ensures that query is not shown in the UI but the
    * new jobs that are run while the plan is being executed are tracked
    * against this executionID. In the second phase, when the query is
-   * actually executed, SparkListenerSQLExecutionStart adds the execution
-   * data to the active executions. SparkListenerSQLExecutionEnd is
+   * actually executed, SparkListenerSQLPlanExecutionStart adds the execution
+   * data to the active executions. SparkListenerSQLPlanExecutionEnd is
    * then sent with the accumulated time of both the phases.
    */
   override def onOtherEvent(event: SparkListenerEvent): Unit = {
@@ -135,6 +135,19 @@ class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
           case Some(d) => d
         }
         baseActiveExecutions(executionId) = executionUIData
+      }
+
+      case SparkListenerSQLPlanExecutionStart(executionId, description, details,
+      physicalPlanDescription, sparkPlanInfo, time) =>
+        val executionUIData = newExecutionUIData(executionId, description, details,
+          physicalPlanDescription, sparkPlanInfo, time)
+        synchronized {
+          baseExecutionIdToData(executionId) = executionUIData
+          baseActiveExecutions(executionId) = executionUIData
+        }
+
+      case SparkListenerSQLPlanExecutionEnd(executionId, _) => synchronized {
+        baseActiveExecutions.remove(executionId)
       }
 
       case _ => super.onOtherEvent(event)

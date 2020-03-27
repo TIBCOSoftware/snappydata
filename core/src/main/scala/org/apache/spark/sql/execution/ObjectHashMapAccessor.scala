@@ -1240,7 +1240,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
     case None =>
       // no key/value assignments required
-      s"if ($entryVar == null) continue;\n$consumeResult"
+      s"if ($entryVar == null) continue;\n$inputCodes\n$consumeResult"
 
     case Some(ev) =>
       val breakLoop = ctx.freshName("breakLoop")
@@ -1278,7 +1278,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
     case None =>
       // success if no match for an anti-join (no value iteration)
-      s"if ($entryVar != null) continue;\n$consumeResult"
+      s"if ($entryVar != null) continue;\n$inputCodes\n$consumeResult"
 
     case Some(ev) =>
       val breakLoop = ctx.freshName("breakLoop")
@@ -1326,6 +1326,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     case None =>
       // only one match needed, so no value iteration
       s"""final boolean $existsVar = ($entryVar != null);
+        $inputCodes
         $consumeResult"""
 
     case Some(ev) =>

@@ -40,6 +40,7 @@ import org.eclipse.collections.impl.map.mutable.UnifiedMap
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.scheduler.SparkListenerEvent
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, UnresolvedStar}
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTable, CatalogTableType}
 import org.apache.spark.sql.catalyst.encoders._
@@ -59,7 +60,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{CreateTable, DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.BroadcastExchangeExec
 import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNestedLoopJoinExec}
-import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappySessionState}
 import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect, SessionState, SnappySessionCatalog, SnappySharedState, StaticSQLConf}
@@ -155,6 +156,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc)
   override private[sql] def cloneSession(): SnappySession = {
     val result = newSession()
     result.sessionState // force copy of SessionState
+    result.snappySessionState.initSnappyStrategies // force add strategies for StreamExecution
     result
   }
 
@@ -2138,18 +2140,22 @@ object SnappySession extends Logging {
     localProperties.remove(SQLExecution.EXECUTION_ID_KEY)
   }
 
+  private[sql] def isCommandExec(plan: SparkPlan): Boolean = plan match {
+    case _: ExecutedCommandExec | _: ExecutePlan | UnionCommands(_) => true
+    case _ => false
+  }
+
   /**
    * Snappy's execution happens in two phases. First phase the plan is executed
    * to create a rdd which is then used to create a CachedDataFrame.
    * In second phase, the CachedDataFrame is then used for further actions.
-   * For accumulating the metrics for first phase,
-   * SparkListenerSQLExecutionStart is fired. This keeps the current
-   * executionID in _executionIdToData but does not add it to the active
-   * executions. This ensures that query is not shown in the UI but the
-   * new jobs that are run while the plan is being executed are tracked
+   * For accumulating the metrics for first phase, SparkListenerSQLPlanExecutionStart
+   * is fired. This adds the query to the active executions like normal executions but
+   * notes it for future full execution if required. This ensures that query is shown
+   * in the UI and  new jobs that are run while the plan is being executed are tracked
    * against this executionID. In the second phase, when the query is
-   * actually executed, SparkListenerSQLExecutionStart adds the execution
-   * data to the active executions. SparkListenerSQLExecutionEnd is
+   * actually executed, SparkListenerSQLExecutionStart updates the execution
+   * data in the active executions from existing one. SparkListenerSQLExecutionEnd is
    * then sent with the accumulated time of both the phases.
    */
   private def planExecution(qe: QueryExecution, session: SnappySession, sqlShortText: String,
@@ -2174,7 +2180,7 @@ object SnappySession extends Logging {
       val postQueryExecutionStr = replaceParamLiterals(queryExecutionStr, paramLiterals, paramsId)
       val postQueryPlanInfo = PartitionedPhysicalScan.updatePlanInfo(queryPlanInfo,
         paramLiterals, paramsId)
-      context.listenerBus.post(SparkListenerSQLExecutionStart(
+      context.listenerBus.post(SparkListenerSQLPlanExecutionStart(
         executionId, CachedDataFrame.queryStringShortForm(sqlText),
         sqlText, postQueryExecutionStr, postQueryPlanInfo, startTime))
       val rdd = f
@@ -2185,14 +2191,16 @@ object SnappySession extends Logging {
     } finally {
       clearExecutionProperties(localProperties)
       if (endTime == -1L) endTime = System.currentTimeMillis()
-      if (!success) {
+      // post the end of SQL at the end of planning phase; this will be re-posted during
+      // execution with the submission time adjusted (by the planning time) in CachedDataFrame
+      if (success) {
+        context.listenerBus.post(SparkListenerSQLPlanExecutionEnd(executionId, endTime))
+      } else {
         // cleanups in case of failure
         SnappySession.cleanupBroadcasts(qe.executedPlan, blocking = true)
         session.snappySessionState.clearExecutionData()
+        context.listenerBus.post(SparkListenerSQLExecutionEnd(executionId, endTime))
       }
-      // post the end of SQL at the end of planning phase; this will be re-posted during
-      // execution with the submission time adjusted (by the planning time) in CachedDataFrame
-      context.listenerBus.post(SparkListenerSQLExecutionEnd(executionId, endTime))
     }
   }
 
@@ -2214,7 +2222,7 @@ object SnappySession extends Logging {
 
     val (cachedRDD, execution, origExecutionString, origPlanInfo, executionString, planInfo, rddId,
     noSideEffects, executionId, planningTime: Long) = executedPlan match {
-      case _: ExecutedCommandExec | _: ExecutePlan | UnionCommands(_) =>
+      case _ if isCommandExec(executedPlan) =>
         // TODO add caching for point updates/deletes; a bit of complication
         // because getPlan will have to do execution with all waits/cleanups
         // normally done in CachedDataFrame.collectWithHandler/withCallback
@@ -2593,6 +2601,21 @@ object CachedKey extends SparkSupport {
     new CachedKey(session, currschema, normalizedPlan, sqlText, session.queryHints.hashCode())
   }
 }
+
+/**
+ * A new event that is fired when a plan is executed to get an RDD.
+ */
+case class SparkListenerSQLPlanExecutionStart(
+    executionId: Long,
+    description: String,
+    details: String,
+    physicalPlanDescription: String,
+    sparkPlanInfo: SparkPlanInfo,
+    time: Long)
+    extends SparkListenerEvent
+
+case class SparkListenerSQLPlanExecutionEnd(executionId: Long, time: Long)
+    extends SparkListenerEvent
 
 private object UnionCommands {
   def unapply(plan: SparkPlan): Option[Boolean] = plan match {

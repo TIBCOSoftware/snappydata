@@ -24,7 +24,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
-import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.internal.CodeGenerationException
 import org.apache.spark.sql.{CachedDataFrame, SnappySession}
@@ -129,7 +128,7 @@ abstract case class CodegenSparkFallback(var child: SparkPlan,
     SnappySession.clearAllCache()
     // fail immediate for insert/update/delete, else retry entire query
     val action = plan.find {
-      case _: ExecutePlan | _: ExecutedCommandExec => true
+      case p if SnappySession.isCommandExec(p) => true
       case _ => false
     }
     if (action.isDefined) throw CachedDataFrame.catalogStaleFailure(t, session)
