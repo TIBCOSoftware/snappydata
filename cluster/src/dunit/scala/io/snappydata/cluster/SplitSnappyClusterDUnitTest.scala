@@ -931,7 +931,7 @@ object SplitSnappyClusterDUnitTest
         .set("snappydata.connection", connectionURL)
         .set("snapptdata.sql.planCaching", random.nextBoolean().toString)
         .set(Property.TestDisableCodeGenFlag.name, "false")
-    logInfo("Spark conf:" + conf.getAll.toString)
+    logInfo("Spark conf: " + conf.getAll.mkString(", "))
 
     val sc = SparkContext.getOrCreate(conf)
     //      sc.setLogLevel("DEBUG")
