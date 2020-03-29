@@ -144,4 +144,8 @@ class ExampleTestSuite extends SnappyTestRunner {
       Seq(s"data_resource_folder=$snappyHome/quickstart/data"))
   }
 
+  test("ExecScalaExample") {
+    RunExample("ExecScalaExample", "snappydata.ExecScalaExample")
+  }
+
 }
