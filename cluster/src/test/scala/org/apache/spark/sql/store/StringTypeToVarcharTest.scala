@@ -324,6 +324,21 @@ class StringTypeToVarcharTest extends SnappyFunSuite {
     st.execute("drop table if exists test2")
   }
 
+  test("datatype as varchar only") {
+    val conn = getSqlConnection
+    val st = conn.createStatement()
+    st.execute("drop table if exists test1")
+    st.execute("create table test1(id int,name varchar) using column")
+    st.execute("drop table if exists test1")
+    st.execute("create table test1(id int,name varchar) using row")
+    st.execute("drop table if exists test1")
+    snc.sql("create table test1(id int,name varchar) using column")
+    snc.sql("drop table if exists test1")
+    st.execute("drop table if exists test1")
+    snc.sql("create table test1(id int,name varchar) using row")
+    snc.sql("drop table if exists test1")
+  }
+
   test("row table created using CTAS from row table should NOT respect stringtype option") {
     val conn = getSqlConnection
     val st = conn.createStatement()
