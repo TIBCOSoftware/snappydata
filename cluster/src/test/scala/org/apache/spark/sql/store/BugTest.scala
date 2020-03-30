@@ -1644,4 +1644,19 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     conn.close()
   }
+
+  test("SDENT-189") {
+    testSDENT_189(true)
+  }
+
+  def testSDENT_189(isColumnTable: Boolean): Unit = {
+    snc.sql("drop table if exists t1")
+    val tableType = if (isColumnTable) "column" else "row"
+    snc.sql(s"create table t1 (cid int, c_bigint  bigint, c_numeric  int) using $tableType" )
+    snc.sql("insert into t1 values (52, 93800000000000, 2352315)")
+    val rs = snc.sql("select c_numeric * c_bigint from t1")
+    assertEquals(93800000000000L * 2352315, rs.collect()(0).getLong(0))
+    snc.sql("drop table if exists t1")
+  }
+
 }
