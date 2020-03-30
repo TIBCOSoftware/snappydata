@@ -24,12 +24,12 @@ import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.SparkException
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.types._
 
 class FailFastCastSuite extends SnappyFunSuite with BeforeAndAfter {
 
-  val tableName = "table1"
+  protected val tableName = "table1"
 
   override def beforeAll(): Unit = {
     snc.sql("set snappydata.failOnCastError=true")
@@ -51,7 +51,7 @@ class FailFastCastSuite extends SnappyFunSuite with BeforeAndAfter {
       TimestampType, DecimalType.SYSTEM_DEFAULT).foreach(numericType =>
       try {
         snc.sql(s"select cast(string_col as ${numericType.simpleString}) from $tableName").show()
-        fail(s"Should have failed with ${classOf[NumberFormatException].getName}")
+        fail("Should have failed due to cast failure.")
       } catch {
         case ex: SparkException if (ex.getCause.isInstanceOf[TypeCastException]) =>
           val expectedMessage = s"Can not cast ${StringType.simpleString} type value 'abc' to" +
@@ -61,25 +61,33 @@ class FailFastCastSuite extends SnappyFunSuite with BeforeAndAfter {
     )
   }
 
-  test("NaN, Infinity fractional type cast to timestamp") {
-    // testing this using spark temp table instead of snappy table as at gemfire layer we
-    // don't allow storing Float#PosititiveInfinity value.
-    val tmpTableName = "tmp_table"
+  test("NaN fractional type cast to timestamp") {
+    val tableName = "table2"
     val snappy = snc.snappySession
     import snappy.implicits._
-    val df: DataFrame = Seq(Double.NaN).toDF
-    df.createOrReplaceTempView(tmpTableName)
+    val doubleDf: DataFrame = Seq(Double.NaN).toDF
+    snc.sql(s"create table $tableName(value double) using column")
+    doubleDf.write.insertInto(tableName)
     try {
-      snc.sql(s"select cast(value as timestamp) from $tmpTableName").show()
+      snc.sql(s"select cast(value as timestamp) from $tableName").show()
       fail("Should have failed due to cast failure.")
     } catch {
       case ex: TypeCastException =>
         val expectedMessage = "Can not cast double type value 'NaN' to timestamp."
         assertResult(expectedMessage)(ex.getMessage)
+    } finally {
+      snc.sql(s"drop table is exists $tableName")
     }
+  }
 
-    val df1: DataFrame = Seq(Double.PositiveInfinity).toDF
-    df1.createOrReplaceTempView(tmpTableName)
+  // Testing this using spark temp table instead of snappy table as at gemfire layer we
+  // don't allow storing Float#PosititiveInfinity value.
+  test("Infinity fractional type cast to timestamp") {
+    val tmpTableName = "tmp_table"
+    val snappy = snc.snappySession
+    import snappy.implicits._
+    val doubleDf: DataFrame = Seq(Float.PositiveInfinity).toDF
+    doubleDf.createOrReplaceTempView(tmpTableName)
     try {
       snc.sql(s"select cast(value as timestamp) from $tmpTableName").show()
       fail("Should have failed due to cast failure.")
