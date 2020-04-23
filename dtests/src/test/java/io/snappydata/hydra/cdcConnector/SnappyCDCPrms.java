@@ -52,6 +52,12 @@ public class SnappyCDCPrms extends SnappyPrms {
   public static Long isCDCStream;
 
   /**
+   * Boolean value to determine if the test is run with ConflictingPersistenceDataException(CPDE) enabled
+   */
+  public static Long isCPDE;
+
+
+  /**
    * Boolean value to determine if the test is run with CDC enabled
    */
   public static Long isCDC;
@@ -70,6 +76,11 @@ public class SnappyCDCPrms extends SnappyPrms {
    * Boolean value to determine whether to only start the cluster or stop-start the cluster,default is only start
    */
   public static Long isStopStartCluster;
+
+  /**
+   * Boolean value to determine which cluster is up in CPDE test.
+   */
+  public static Long isFirstClusterForCPDE;
 
 
   /**
@@ -151,6 +162,9 @@ public class SnappyCDCPrms extends SnappyPrms {
    */
   public static Long isKeepOrgConf;
 
+  public static Long isResubmitApp;
+
+
   public static String getNodeInfoForHA() {
     String nodeInfo = tasktab().stringAt(nodeInfoForHA, tab().stringAt
         (nodeInfoForHA, null));
@@ -206,6 +220,15 @@ public class SnappyCDCPrms extends SnappyPrms {
     return name;
   }
 
+  public static boolean getIsCPDE() {
+    Long key = isCPDE;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsFirstClusterForCPDE() {
+    Long key = isFirstClusterForCPDE;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
 
   public static String getSqlServerInstance() {
     String name = tasktab().stringAt(sqlServerInstance, tab().stringAt
@@ -256,6 +279,11 @@ public class SnappyCDCPrms extends SnappyPrms {
 
   public static boolean getIsNewNodeFirst() {
     Long key = isNewNodeFirst;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsResubmitApp() {
+    Long key = isResubmitApp;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 

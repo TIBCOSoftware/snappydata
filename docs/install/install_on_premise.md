@@ -57,7 +57,7 @@ If all the machines in your cluster can share a path over an NFS or similar prot
 2. Extract the downloaded archive file and go to SnappyData home directory.
 
 		$ tar -xzf snappydata-<version-number>-bin.tar.gz
-		$ cd snappydata-<version-number>.-bin/
+		$ cd snappydata-<version-number>-bin/
 
 3. Configure the cluster as described in [Configuring the Cluster](../configuring_cluster/configuring_cluster.md).
 
@@ -115,3 +115,16 @@ In case the machines in your cluster do not share a common path as well as canno
 	*	`$SNAPPY_HOME/sbin/snappy-server.sh`
 	
 	*	`$SNAPPY_HOME/sbin/snappy-lead.sh`
+
+    **Start Examples**:
+    
+    	    $SNAPPY_HOME/sbin/snappy-locator.sh start -dir=/tmp/locator
+            $SNAPPY_HOME/sbin/snappy-server.sh  start -dir=/tmp/server -locators="localhost:10334"
+            $SNAPPY_HOME/sbin/snappy-lead.sh      start -dir=/tmp/lead      -locators="localhost:10334"
+        
+    **Stop Examples**:
+    
+    	    $SNAPPY_HOME/sbin/snappy-locator.sh stop -dir=/tmp/locator
+			$SNAPPY_HOME/sbin/snappy-server.sh  stop -dir=/tmp/server
+			$SNAPPY_HOME/sbin/snappy-lead.sh      stop -dir=/tmp/lead
+

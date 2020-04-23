@@ -62,6 +62,10 @@ class SnappySessionState(val snappySession: SnappySession)
   @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
 
+  // Holds job group id for currently running JDBC query. For JDCB query job group id is set to
+  // statement id. So this will be set only for SnappySession used for a JDBC connection.
+  var jdbcQueryJobGroupId : Option[String] = Option.empty
+
   val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
     case MarkerForCreateTableAsSelect(child) => PlanLater(child) :: Nil
     case BypassRowLevelSecurity(child) => PlanLater(child) :: Nil

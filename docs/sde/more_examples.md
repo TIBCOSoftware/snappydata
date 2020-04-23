@@ -1,6 +1,6 @@
 # More Examples
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 ## Example 1
 Create a sample table with qcs 'medallion' 
@@ -46,7 +46,7 @@ snc.table(basetable).groupBy("hack_license").count().withError(.6,.90,"do_nothin
 ```
 
 ## Example 3
-Create a sample table using function "hour(pickup_datetime) as QCS
+Create a sample table using function "hour(pickup_datetime) as QCS:
 
 ```pre
 

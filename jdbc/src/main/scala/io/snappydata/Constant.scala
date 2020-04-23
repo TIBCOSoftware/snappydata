@@ -127,7 +127,7 @@ object Constant {
   val MAX_VARCHAR_SIZE = 32672
 
   val MAX_CHAR_SIZE = 254
-
+  val STRING_TYPE_AS = "string_type_as"
   // allowed values for QueryHint.JoinType
   val JOIN_TYPE_BROADCAST = "broadcast"
   val JOIN_TYPE_HASH = "hash"

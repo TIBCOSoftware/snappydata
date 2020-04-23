@@ -16,13 +16,19 @@
  */
 package io.snappydata.externalstore
 
-import java.sql.PreparedStatement
+import java.sql.{PreparedStatement, SQLException}
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.{CountDownLatch, Executors, TimeoutException}
+
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
+import scala.util.Try
 
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
-import org.apache.spark.Logging
+import org.junit.Assert
 import org.junit.Assert.assertEquals
+
+import org.apache.spark.Logging
 
 
 // scalastyle:off println
@@ -444,5 +450,51 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     rscnt.next()
     assertEquals(0, rscnt.getInt(1))
     assertEquals(100, deletedRecords.get)
+  }
+
+  def testQueryCancellation(): Unit = {
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+    val table = "t4"
+    stmt.execute("drop table if exists " + table)
+    // Populating table with large amount of data so that the select query will run for
+    // significantly long duration.
+    stmt.execute(
+      s"""create table $table (col1 int, col2  int) using column as
+        |select id as col1, id as col2 from range(10000000)""".stripMargin)
+    try {
+      implicit val context: ExecutionContextExecutor =
+        ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+      val f = Future {
+        println("Firing select...")
+        try {
+          stmt.executeQuery(s"select avg(col1) from $table group by col2")
+          println("Firing select... Done.")
+          Assert.fail("The query execution should have cancelled.")
+        } catch {
+          case e: SQLException =>
+            val expectedMessage = "The statement has been cancelled due to a user request."
+            assert("XCL56".equals(e.getSQLState) && e.getMessage.contains(expectedMessage))
+        }
+      }
+      // wait for select query submission
+      Thread.sleep(3000)
+      println("Firing cancel")
+      stmt.cancel()
+      println("Firing cancel... Done")
+
+      import scala.concurrent.duration._
+      println("Awaiting result of the future.")
+      try {
+        Await.result(f, 10.seconds)
+      } catch {
+        case _: TimeoutException => Assert.fail("Query didn't get cancelled in stipulated time.")
+      }
+    } finally {
+      stmt.execute(s"drop table if exists $table")
+      Try(stmt.close())
+      conn.close()
+    }
   }
 }
