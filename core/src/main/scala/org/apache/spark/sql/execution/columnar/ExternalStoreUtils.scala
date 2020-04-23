@@ -459,6 +459,8 @@ object ExternalStoreUtils {
     // Spark execution engine is much faster at filter apply (though
     //   its possible that not all indexed columns will be used for
     //   index lookup still push down all to keep things simple)
+    case expressions.EqualTo(_: Attribute, _: Attribute) =>
+      None
     case expressions.EqualTo(a: Attribute, v) =>
       checkIndexedColumn(a, indexedCols).map(expressions.EqualTo(_, v))
     case expressions.EqualTo(v, a: Attribute) =>
