@@ -1,14 +1,14 @@
 # Running Queries
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 Queries can be executed directly on sample tables or on the base table. Any query executed on the sample directly will always result in an approximate answer. When queries are executed on the base table users can specify their error tolerance and additional behavior to permit approximate answers. The Engine will automatically figure out if the query can be executed by any of the available samples. If not, the query can be executed on the base table based on the behavior clause. 
 
 Here is the syntax:
 
 ```pre
-> > SELECT ... FROM .. WHERE .. GROUP BY ...<br>
-> > WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`
+SELECT ... FROM .. WHERE .. GROUP BY ...<br>
+WITH ERROR `<fraction> `[CONFIDENCE` <fraction>`] [BEHAVIOR `<string>]`
 ```
     
 * **WITH ERROR** - this is a mandatory clause. The values are  0 < value(double) < 1 . 
@@ -49,7 +49,7 @@ snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).orderBy( desc("Month_")).with
 ```
 
 ## Supporting BI Tools or Existing Apps
-To allow BI tools and existing Apps that say might be generating SQL, SDE also supports specifying these options through your SQL connection or using the Snappy SQLContext. 
+To allow BI tools and existing Apps that say might be generating SQL, AQP also supports specifying these options through your SQL connection or using the Snappy SQLContext. 
 
 ```pre
 snContext.sql(s"spark.sql.aqp.error=$error")
@@ -58,17 +58,17 @@ snContext.sql(s"set spark.sql.aqp.behavior=$behavior")
 ```
 These settings will apply to all queries executed via this SQLContext. Application can override this by also using the SQL extensions specified above.
 
-Applications or tools using JDBC/ODBC can set the following properties:
- 
+Applications or tools using JDBC/ODBC can set the following properties. 
+
 *	When using Apache Zeppelin JDBC interpreter or the Snappy SQL you can set the values as follows:
 
-    ```pre
-    set spark.sql.aqp.error=$error;
-    set spark.sql.aqp.confidence=$confidence;
-    set spark.sql.aqp.behavior=$behavior;
-    ```
-*	Setting AQP specific properties as a connection level property using JDBC:
+            set spark.sql.aqp.error=$error;
+            set spark.sql.aqp.confidence=$confidence;
+            set spark.sql.aqp.behavior=$behavior;
 
+    
+*	Setting AQP specific properties as a connection level property using JDBC:
+	    
           Properties prop = new Properties();
           prop.setProperty("spark.sql.aqp.error","0.3");
           prop.setProperty("spark.sql.aqp.behavior","local_omit");

@@ -72,7 +72,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.2.0'
+  version = '1.3.0-SNAPSHOT'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -928,6 +928,7 @@ task product(type: Zip) {
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:sparkProduct"
   dependsOn ':snappy-launcher:jar'
   dependsOn ':jdbcJar'
+  dependsOn ':copyShadowJars'
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def launcherProject = project(':snappy-launcher')
@@ -1090,7 +1091,7 @@ task product(type: Zip) {
         }
         copy {
           from "${jdbcConnectorProject.projectDir}/../tdv-connector/lib"
-          into "${snappyProductDir}/connectors"
+          into "${snappyProductDir}/jars"
           include "csjdbc8.jar"
         }
       }
@@ -1345,7 +1346,6 @@ task distInstallers {
 task distProduct {
   dependsOn product, distTar, distZip
   dependsOn distInstallers
-  dependsOn copyShadowJars
 }
 
 task generateSources {

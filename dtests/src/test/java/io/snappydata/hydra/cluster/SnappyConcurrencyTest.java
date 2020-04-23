@@ -99,8 +99,8 @@ public class SnappyConcurrencyTest extends SnappyTest {
       conn.createStatement().executeUpdate(query);
     }
     if (isStabilityTest) {
-      query = "set snappydata.sql.hashAggregateSize=-1";
-      conn.createStatement().executeUpdate(query);
+     // query = "set snappydata.sql.hashAggregateSize=-1";
+     // conn.createStatement().executeUpdate(query);
       /*query = "set spark.driver.maxResultSize=6g";
       conn.createStatement().executeUpdate(query);*/
     }
@@ -119,7 +119,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
           Log.getLogWriter().info("QueryExecutionTime for query:  " + queryNum + ":" + query + " is: " + queryExecutionTime / 1000 + " secs");
         }
       } catch (SQLException se) {
-        if (isStabilityTest && se.getMessage().contains("java.util.concurrent.TimeoutException: Futures timed out after"))
+        if (isStabilityTest && (se.getMessage().contains("Exception thrown in awaitResult:") || se.getMessage().contains("java.util.concurrent.TimeoutException: Futures timed out after")))
           Log.getLogWriter().info("Got exception while executing Analytical query:" + query, se);
         else
           throw new TestException("Got exception while executing Analytical query:" + query, se);
@@ -143,7 +143,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);
       } catch (SQLException se) {
-        if (isStabilityTest && se.getMessage().contains("java.util.concurrent.TimeoutException: Futures timed out after"))
+        if (isStabilityTest && (se.getMessage().contains("Exception thrown in awaitResult:") || se.getMessage().contains("java.util.concurrent.TimeoutException: Futures timed out after")))
           Log.getLogWriter().info("Got exception while executing Analytical query:" + query, se);
         else
           throw new TestException("Got exception while executing Analytical query:" + query, se);
@@ -239,8 +239,8 @@ public class SnappyConcurrencyTest extends SnappyTest {
   public static void createViewsAndDependantTablesForStabilityTest() throws SQLException {
     Connection conn = getLocatorConnection();
     String query;
-    query = "set snappydata.sql.hashAggregateSize=-1";
-    conn.createStatement().executeUpdate(query);
+  //  query = "set snappydata.sql.hashAggregateSize=-1";
+ //   conn.createStatement().executeUpdate(query);
     query = "set spark.driver.maxResultSize=6g";
     conn.createStatement().executeUpdate(query);
     query = "create or replace view revenue as select  l_suppkey as supplier_no, " +
