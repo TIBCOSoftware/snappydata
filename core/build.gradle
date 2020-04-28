@@ -240,8 +240,8 @@ def taskGetApacheSparkDist(String ver, String distName, String prodDir) {
 }
 
 task getApacheSparkDist {
-  dependsOn taskGetApacheSparkDist(sparkVersion, sparkDistName, sparkProductDir)
-  dependsOn taskGetApacheSparkDist(sparkCurrentVersion, sparkCurrentDistName, sparkCurrentProductDir)
+  dependsOn taskGetApacheSparkDist(sparkVersion, "spark-${sparkVersion}-bin-hadoop2.7", sparkProductDir)
+  dependsOn taskGetApacheSparkDist(sparkCurrentVersion, "spark-${sparkCurrentVersion}-bin-hadoop2.7", sparkCurrentProductDir)
 }
 
 test.dependsOn ':cleanJUnit'
