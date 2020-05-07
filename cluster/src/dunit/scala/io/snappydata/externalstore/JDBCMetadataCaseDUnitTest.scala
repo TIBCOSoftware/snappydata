@@ -32,7 +32,7 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
   val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
 
-  sysProps.put(METADATACASE_LOWER_PROP, "")
+  sysProps.put(METADATACASE_LOWER_PROP, "true")
 
   // using mixed case name to cover case insensitivity scenarios
   private val table1 = "tABle1"
@@ -67,7 +67,7 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
       // JDBC metadata APIs should return result in lower case when query routing is true
       // i.e. for external connections
-      testMetadataAPIs(dbmd, (s: String) => s.toLowerCase)
+      testMetadataAPIs(dbmd, (s: String) => s.toLowerCase, true)
 
     } finally {
       cleanup(conn)
@@ -108,8 +108,9 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
     }
   }
 
-  private def testMetadataAPIs(dbmd: DatabaseMetaData, matchFunction: String => String): Unit = {
-    testGetTables(dbmd, matchFunction)
+  private def testMetadataAPIs(dbmd: DatabaseMetaData, matchFunction: String => String,
+      checkShortTableType: Boolean = false): Unit = {
+    testGetTables(dbmd, matchFunction, checkShortTableType)
     testGetSchemas(dbmd, matchFunction)
     testGetColumns(dbmd, matchFunction)
     testGetTableTypes(dbmd, matchFunction)
@@ -206,7 +207,8 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
     assertEquals(1, resultSetSize)
   }
 
-  private def testGetTables(dbmd: DatabaseMetaData, matchFunction: String => String): Unit = {
+  private def testGetTables(dbmd: DatabaseMetaData, matchFunction: String => String,
+      checkShortTableType: Boolean = false): Unit = {
     // passing schema pattern in mixed case to ensure that schema pattern handling is
     // case-insensitive
     val tableRS = dbmd.getTables(null, schema, table1,
@@ -224,6 +226,8 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
       assertEquals(matchFunction(table1), tableName)
       assertEquals(matchFunction(schema), schemaName)
       assertEquals(matchFunction(tableType), tableType)
+      if (checkShortTableType) assertEquals(tableType, "table")
+      else assertEquals(matchFunction(tableType), "ROW TABLE")
       assertEquals(matchFunction(remarks), remarks)
 
       resultSetSize += 1
