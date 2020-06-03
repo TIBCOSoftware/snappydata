@@ -1667,18 +1667,26 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       "select * from table_pk where cid = 1",
       "select * from table_pk where c_numeric = 11",
       "select * from table_pk where cid = 10",
-      "select * from table_pk where c_numeric = 110")
+      "select * from table_pk where c_numeric = 110",
+      "select * from table_pk where cid < c_numeric",
+      "select * from table_pk where cid > c_numeric",
+      "select * from table_pk where cid <= c_numeric",
+      "select * from table_pk where cid >= c_numeric",
+      "select * from table_pk where cid < 10",
+      "select * from table_pk where cid > 10",
+      "select * from table_pk where cid <= 10",
+      "select * from table_pk where cid >= 10")
 
     snc.sql("insert into table_pk values (1, 11)")
-    var ev = Seq(0, 0, 1, 1, 0, 0)
+    var ev = Seq(0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0)
     queries.zip(ev).foreach(tup => assert(snc.sql(tup._1).collect().length == tup._2))
 
     snc.sql("insert into table_pk values (11, 11)")
-    ev = Seq(1, 1, 1, 2, 0, 0)
+    ev = Seq(1, 1, 1, 2, 0, 0, 1, 0, 2, 1, 1, 1, 1, 1)
     queries.zip(ev).foreach(tup => assert(snc.sql(tup._1).collect().length == tup._2))
 
     snc.sql("insert into table_pk values (10, 110)")
-    ev = Seq(1, 1, 1, 2, 1, 1)
+    ev = Seq(1, 1, 1, 2, 1, 1, 2, 0, 3, 1, 1, 1, 2, 2)
     queries.zip(ev).foreach(tup => assert(snc.sql(tup._1).collect().length == tup._2))
 
     snc.sql("drop table table_pk")
