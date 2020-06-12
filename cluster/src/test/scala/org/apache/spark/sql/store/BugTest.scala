@@ -1605,6 +1605,20 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("drop schema xy")
   }
 
+  test("SDENT-171") {
+    snc.sql("drop table if exists t1")
+    snc.sql("create table t1 using column as (select id, concat('sym', id%1000) " +
+      "as sym from range(1000))")
+
+    snc.sql("select * from (select id, sym from (select id, sym, " +
+      "rand() as some_rand from t1) t2  where t2.some_rand < 0.6 ) t3 limit 10")
+
+    val rs = snc.sql("select * from (select id, sym from (select id, sym, " +
+      "rand() as some_rand from t1) t2  where t2.some_rand < 0.6 and  " +
+      "t2.some_rand > 0.9) t3 limit 10")
+    assertEquals(0, rs.collect().length)
+  }
+
   test("SDENT-75-GetTypeInfo-Boolean-Test") {
     snc
     val serverHostPort = TestUtil.startNetServer()
@@ -1630,4 +1644,53 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     conn.close()
   }
+
+  test("SDENT-189") {
+    testSDENT_189(true)
+  }
+
+  def testSDENT_189(isColumnTable: Boolean): Unit = {
+    snc.sql("drop table if exists t1")
+    val tableType = if (isColumnTable) "column" else "row"
+    snc.sql(s"create table t1 (cid int, c_bigint  bigint, c_numeric  int) using $tableType" )
+    snc.sql("insert into t1 values (52, 93800000000000, 2352315)")
+    val rs = snc.sql("select c_numeric * c_bigint from t1")
+    assertEquals(93800000000000L * 2352315, rs.collect()(0).getLong(0))
+    snc.sql("drop table if exists t1")
+  }
+
+  test("SDENT-187 Wrong results returned by queries against partitioned ROW table") {
+    snc.sql("create table table_pk (CID INTEGER primary key,  C_NUMERIC INTEGER) using row options (partition_by 'CID')")
+
+    val queries = Seq("select * from table_pk where cid = c_numeric",
+      "select * from table_pk where c_numeric = cid",
+      "select * from table_pk where cid = 1",
+      "select * from table_pk where c_numeric = 11",
+      "select * from table_pk where cid = 10",
+      "select * from table_pk where c_numeric = 110",
+      "select * from table_pk where cid < c_numeric",
+      "select * from table_pk where cid > c_numeric",
+      "select * from table_pk where cid <= c_numeric",
+      "select * from table_pk where cid >= c_numeric",
+      "select * from table_pk where cid < 10",
+      "select * from table_pk where cid > 10",
+      "select * from table_pk where cid <= 10",
+      "select * from table_pk where cid >= 10")
+
+    snc.sql("insert into table_pk values (1, 11)")
+    var ev = Seq(0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0)
+    queries.zip(ev).foreach(tup => assert(snc.sql(tup._1).collect().length == tup._2))
+
+    snc.sql("insert into table_pk values (11, 11)")
+    ev = Seq(1, 1, 1, 2, 0, 0, 1, 0, 2, 1, 1, 1, 1, 1)
+    queries.zip(ev).foreach(tup => assert(snc.sql(tup._1).collect().length == tup._2))
+
+    snc.sql("insert into table_pk values (10, 110)")
+    ev = Seq(1, 1, 1, 2, 1, 1, 2, 0, 3, 1, 1, 1, 2, 2)
+    queries.zip(ev).foreach(tup => assert(snc.sql(tup._1).collect().length == tup._2))
+
+    snc.sql("drop table table_pk")
+  }
+
+
 }
