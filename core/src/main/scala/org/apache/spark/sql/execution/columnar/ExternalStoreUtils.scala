@@ -43,7 +43,7 @@ import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, DynamicInSet, Expression, TokenLiteral}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryComparison, BinaryExpression, DynamicInSet, Expression, TokenLiteral}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
@@ -459,6 +459,8 @@ object ExternalStoreUtils {
     // Spark execution engine is much faster at filter apply (though
     //   its possible that not all indexed columns will be used for
     //   index lookup still push down all to keep things simple)
+    case _ @ BinaryComparison(_: Attribute, _: Attribute) =>
+      None
     case expressions.EqualTo(a: Attribute, v) =>
       checkIndexedColumn(a, indexedCols).map(expressions.EqualTo(_, v))
     case expressions.EqualTo(v, a: Attribute) =>
