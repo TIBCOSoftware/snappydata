@@ -497,4 +497,29 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
       conn.close()
     }
   }
+
+  def testFailFastCast(): Unit = {
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+
+    val stmt = conn.createStatement()
+    val table = "t5"
+    try {
+      stmt.execute("set snappydata.failOnCastError=true")
+      stmt.execute(s"drop table if exists $table")
+      stmt.execute(s"create table $table (col1 int, col2  string)")
+      stmt.execute(s"insert into $table values(1, 'abc')")
+      try {
+        stmt.execute(s"select cast(col2 as int) from $table")
+      } catch {
+        case ex: SQLException =>
+          assert(ex.getMessage.contains("Can not cast string type value 'abc' to int."))
+      }
+    } finally {
+      Try(stmt.execute("set snappydata.failOnCastError=false"))
+      Try(stmt.execute(s"drop table if exists $table"))
+      Try(stmt.close())
+      conn.close()
+    }
+  }
 }
