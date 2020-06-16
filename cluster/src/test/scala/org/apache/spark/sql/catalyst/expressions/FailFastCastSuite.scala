@@ -76,7 +76,7 @@ class FailFastCastSuite extends SnappyFunSuite with BeforeAndAfter {
         val expectedMessage = "Can not cast double type value 'NaN' to timestamp."
         assertResult(expectedMessage)(ex.getMessage)
     } finally {
-      snc.sql(s"drop table is exists $tableName")
+      snc.sql(s"drop table if exists $tableName")
     }
   }
 
