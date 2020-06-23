@@ -157,7 +157,7 @@ class SnappySinkProviderDUnitTest(s: String)
 
   private val snappyProductDir = getEnvironmentVariable("SNAPPY_HOME")
 
-  private val sparkProductDir = getEnvironmentVariable("APACHE_SPARK_HOME")
+  private val sparkProductDir = getEnvironmentVariable("APACHE_SPARK_HOME").replaceAll("hadoop3.2", "hadoop2.7")
 
   def testStructuredStreaming(): Unit = {
     vm.invoke(getClass, "doTestStructuredStreaming",

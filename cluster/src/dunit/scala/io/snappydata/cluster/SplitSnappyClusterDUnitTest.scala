@@ -279,7 +279,7 @@ class SplitSnappyClusterDUnitTest(s: String)
   def testDeployPackageNameFormat(): Unit = {
     val sns = new SnappySession(sc)
     functionCheck(sns, "Jars/packages/UDFs not cleaned up from previous tests! ")
-    val jarPath = s"$sparkProductDir/jars/hadoop-client-2.7.7.jar"
+    val jarPath = s"$sparkProductDir/jars/hadoop-client-3.2.0.jar"
     sns.sql("deploy package  mongo_spark 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
     sns.sql("undeploy  mongo_spark")
     sns.sql("deploy package mongo-spark_v1.0  'org.mongodb.spark:mongo-spark-" +
