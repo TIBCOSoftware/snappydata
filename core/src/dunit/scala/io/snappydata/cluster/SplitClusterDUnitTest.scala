@@ -79,10 +79,10 @@ class SplitClusterDUnitTest(s: String)
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
   override protected val sparkProductDir: String =
-    testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
+    testObject.getEnvironmentVariable("APACHE_SPARK_HOME").replaceAll("hadoop3.2", "hadoop2.7")
 
   protected val currentProductDir: String =
-    testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME")
+    testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME").replaceAll("hadoop3.2", "hadoop2.7")
 
   override protected def locatorClientPort = { testObject.locatorNetPort }
 

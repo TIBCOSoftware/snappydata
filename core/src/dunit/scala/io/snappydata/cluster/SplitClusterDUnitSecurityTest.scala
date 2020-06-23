@@ -127,10 +127,10 @@ class SplitClusterDUnitSecurityTest(s: String)
   override val jobConfigFile = s"$snappyProductDir/conf/job.config"
 
   override protected val sparkProductDir: String =
-    testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
+    testObject.getEnvironmentVariable("APACHE_SPARK_HOME").replaceAll("hadoop3.2", "hadoop2.7")
 
   protected val currentProductDir: String =
-    testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME")
+    testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME").replaceAll("hadoop3.2", "hadoop2.7")
 
   override def locatorClientPort: Int = { SplitClusterDUnitSecurityTest.locatorNetPort }
 
