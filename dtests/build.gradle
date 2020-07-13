@@ -104,7 +104,7 @@ dependencies {
     testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
     testCompile project(':snappy-cluster_' + scalaBinaryVersion)
     testRuntime project(':snappy-cluster_' + scalaBinaryVersion)
-    if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
+    if (new File(rootDir, 'aqp/build.gradle').exists()) {
         testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
     }
     testCompile project(path: ':snappy-examples_' + scalaBinaryVersion, configuration: 'testOutput')
