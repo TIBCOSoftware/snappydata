@@ -249,10 +249,7 @@ dunitTest.dependsOn getApacheSparkDist
 dunitSecurityTest.dependsOn getApacheSparkDist
 // SplitClusterDUnitSecurityTest.testSnappyStreamingJob needs cluster tests
 dunitSecurityTest.dependsOn ":snappy-cluster_${scalaBinaryVersion}:testClasses"
-check.dependsOn test, scalaTest, dunitTest
-if (rootProject.hasProperty('snappydata.enterprise')) {
-  check.dependsOn dunitSecurityTest
-}
+check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
 
 
 archivesBaseName = 'snappydata-core_' + scalaBinaryVersion

@@ -155,7 +155,7 @@ dependencies {
   testCompile "it.unimi.dsi:fastutil:${fastutilVersion}"
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
-  if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
+  if (new File(rootDir, 'aqp/build.gradle').exists()) {
     testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
   }
   testRuntime files("${projectDir}/../tests/common/src/main/resources")
@@ -220,10 +220,7 @@ scalaTest {
     cleanIntermediateFiles(project.path)
   }
 }
-check.dependsOn test, scalaTest, dunitTest
-if (rootProject.hasProperty('snappydata.enterprise')) {
-    check.dependsOn dunitSecurityTest
-}
+check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
 if(rootProject.hasProperty('dataExtractor')) {
   check.dependsOn recoveryTest
 }
