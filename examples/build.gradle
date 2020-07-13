@@ -53,7 +53,7 @@ if (!(new File(rootDir, 'cluster/build.gradle').exists())) {
 
   compile project(":snappy-cluster_${scalaBinaryVersion}")
 
-  if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
+  if (new File(rootDir, 'aqp/build.gradle').exists()) {
     testRuntime project(":snappy-aqp_${scalaBinaryVersion}")
   }
 
