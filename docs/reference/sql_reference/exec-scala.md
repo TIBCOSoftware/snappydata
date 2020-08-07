@@ -2,13 +2,13 @@
 
 ## Description
 
-**exec scala** is an SQL feature that you can use to submit Scala code to the SnappyData cluster. This is a SQL construct from any JDBC/ODBC client and one of the ways in which you can submit the Scala code to the SnappyData cluster. You can submit a chunk of Scala code similar to a SQL query, which is submitted to a database on a JDBC/ODBC connection including hive thrift server SQL clients such as beeline.
+**exec scala** is an SQL feature that you can use to submit Scala code to the TIBCO ComputeDB cluster. This is a SQL construct from any JDBC/ODBC client and one of the ways in which you can submit the Scala code to the TIBCO ComputeDB cluster. You can submit a chunk of Scala code similar to a SQL query, which is submitted to a database on a JDBC/ODBC connection including hive thrift server SQL clients such as beeline.
 
-A parallel between a SQL query and a block of Scala code is brought about by using a fixed schema for the Scala code. Since, a select query's result set metadata is fixed, whereas there is no meaning of a fixed schema for a chunk of Scala code. Therefore, SnappyData provides a fixed schema to all the Scala code. This is elaborated in the following sections. 
+A parallel between a SQL query and a block of Scala code is brought about by using a fixed schema for the Scala code. Since, a select query's result set metadata is fixed, whereas there is no meaning of a fixed schema for a chunk of Scala code. Therefore, TIBCO ComputeDB provides a fixed schema to all the Scala code. This is elaborated in the following sections. 
 
 ### How Does it Work?
 
-All the code from **exec scala** is executed using the Scala REPL <TODO: Link> on the SnappyData Lead node. When Spark Dataframes are invoked this would automatically result in workload distribution across all the SnappyData 
+All the code from **exec scala** is executed using the Scala REPL <TODO: Link> on the TIBCO ComputeDB Lead node. When Spark Dataframes are invoked this would automatically result in workload distribution across all the TIBCO ComputeDB 
 servers. The Lead node manages a pool of REPL based interpreters. The user SQL activity is delegated to one of the interpreters from this pool. The pool is lazily created.  
 
 Any connection (JDBC or ODBC) results in the creation of a SnappySession within the CDB cluster. Moreover, the session remains associated with the connection until it is closed or dereferenced. 
@@ -45,7 +45,7 @@ Through the **returnDF** option, you can request the system to return the result
 
 ### Examples I
 
-Following are some examples to demonstrate the usage of **exec scala**. You can run these examples using [Snappy shell](../howto/use_snappy_shell.md).
+Following are some examples to demonstrate the usage of **exec scala**. You can run these examples using [Snappy shell](../../howto/use_snappy_shell.md).
 
 
 *	A simple Scala code to define a value **x** and print it.
@@ -90,7 +90,7 @@ Following are some examples to demonstrate the usage of **exec scala**. You can 
     
 ### Examples II
 
-*	Executing scala code snippet via JDBC or ODBC connection on to the SnappyData cluster.
+*	Executing scala code snippet via JDBC or ODBC connection on to the TIBCO ComputeDB cluster.
 
             // Note this is an SQL command... this is the text you will send using a JDBC or ODBC connection.
 
@@ -145,7 +145,7 @@ Here both **ds1** and **ds2** are created. However, the caller wants the output 
 
 The ability to run Scala code directly on a running cluster can be dangerous. This is because there are no checks on what code you can run. The submitted Scala code is executed on the lead node and has the potential to bring it down. It becomes essential to secure the use of this functionality.
 
-By default, in a secure cluster, only the database owner is allowed to run Scala code through **exec scala** SQL or even through snappy-scala shell. The database owner is the user who brings up the SnappyData cluster. If different credentials are used for different components of the SnappyData cluster, then the credentials with which the lead node is started becomes the database owner for this purpose. Ideally, every node should start with the same superuser credentials.
+By default, in a secure cluster, only the database owner is allowed to run Scala code through **exec scala** SQL or even through snappy-scala shell. The database owner is the user who brings up the TIBCO ComputeDB cluster. If different credentials are used for different components of the TIBCO ComputeDB cluster, then the credentials with which the lead node is started becomes the database owner for this purpose. Ideally, every node should start with the same superuser credentials.
 
 The superuser or the database owner, in turn, can grant the privilege of executing Scala code to other users and even to entire LDAP groups. Similarly, it is only the superuser who can revoke this privilege from any user or LDAP group.
 
@@ -203,3 +203,42 @@ val collectedNumbers = numbersRdd.map(_ * x).collect()
 
 This is because the closure is referring to **x**, which is defined outside the closure. 
 There are no issues if the closure has no dependency on any external variables.
+
+
+## Exceptions
+
+Following are some examples of exceptions that can occur in the code that is executed through **exec scala**. 
+
+!!! Attention 
+	Whenever an exception occurs in the code that is executed via exec scala, then the error code, as part of SQLEexception, is **SQLState=38000**. Hence, if you get an SQLException with an error code other than **SQLState=38000**, the exception is originated from another part of code and not from the snippet that is passed  via exec scala.
+    
+### Examples
+
+**Example 1**
+
+```
+execstr = "exe scala snappysession.sql(\"create table testtab (col1 int)\").show" 
+ 
+ java.sql.SQLException: (SQLState=42X01 Severity=20000) (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-9) Syntax error: Invalid input "exe ", expected select, insert, put, update, delete, ctes, dmlOperation, putValuesOperation or ddl (line 1, column 1):
+exe scala snappysession.sql("create table testtab (col1 int)").show
+^;.
+```
+
+**Example 2**
+
+```
+ execstr = "exec scala snappysession.sql(\"create table testtab (col1 int)\").show"
+  
+java.sql.SQLException: (SQLState=38000 Severity=20000) (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-9) The exception 'com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException: myID: 127.0.0.1(16536)<v1>:30591, caused by java.lang.RuntimeException: Got error while interpreting line  snappysession.sql("create table testtab (col1 int)").show and interpreter output = org.apache.spark.sql.AnalysisException: Table app.testtab already exists.;
+
+```
+
+**Example 3**
+
+```
+ execstr = "exec scala snappysession.sql(\"create ta testtab (col1 int)\").show"
+
+java.sql.SQLException: (SQLState=38000 Severity=20000) (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-9) The exception 'com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException: myID: 127.0.0.1(16536)<v1>:30591, caused by java.lang.RuntimeException: Got error while interpreting line  snappysession.sql("create ta testtab (col1 int)").show and interpreter output = org.apache.spark.sql.ParseException: Invalid input "ta ", expected TABLE, EXTERNAL, OR, globalOrTemporary, VIEW, SCHEMA, POLICY, STREAM, GLOBAL, UNIQUE, INDEX, TEMPORARY or FUNCTION (line 1, column 8):
+create ta testtab (col1 int)
+       ^;
+```

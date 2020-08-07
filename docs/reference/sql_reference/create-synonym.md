@@ -16,7 +16,7 @@ A synonym can be defined for a table/view that does not exist when you create th
 
 Nested synonym can be created(a synonym for another synonym), but any attempt to create a synonym that results in a circular reference will return an error message (SQLSTATE 42916).
 
-Synonyms cannot be defined in system schemas. All schemas starting with 'SYS' are considered system schemas and are reserved by SnappyData.
+Synonyms cannot be defined in system schemas. All schemas starting with 'SYS' are considered system schemas and are reserved by TIBCO ComputeDB.
 
 A synonym cannot be defined on a temporary table. Attempting to define a synonym on a temporary table will return an error message (SQLSTATE XCL51).
 

@@ -1,6 +1,6 @@
 # compact-all-disk-stores
 
-Perform online compaction of SnappyData disk stores.
+Perform online compaction of TIBCO ComputeDB disk stores.
 
 ## Syntax
 
@@ -24,12 +24,12 @@ The table describes options for `snappy compact-all-disk-stores`.
 |--------|--------|
 |-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
 |-bind-address    |The address to which this peer binds for receiving peer-to-peer messages. By default `snappy` uses the hostname, or localhost if the hostname points to a local loopback address.|
-|-prop-name</br> prop-value    |Any other SnappyData distributed system property.|
+|-prop-name</br> prop-value    |Any other TIBCO ComputeDB distributed system property.|
 |Authentication properties| Refer [Authentication Properites](/security/launching_the_cluster_in_secure_mode.md#authproperties).|
 
 ## Description
 
-When a CRUD operation is performed on a persistent/overflow table, the data is written to the log files. Any pre-existing operation record for the same row becomes obsolete, and SnappyData marks it as garbage. It compacts an old operation log by copying all non-garbage records into the current log and discarding the old files.
+When a CRUD operation is performed on a persistent/overflow table, the data is written to the log files. Any pre-existing operation record for the same row becomes obsolete, and TIBCO ComputeDB marks it as garbage. It compacts an old operation log by copying all non-garbage records into the current log and discarding the old files.
 
 Manual compaction can be done for online and offline disk stores. For the online disk store, the current operation log is not available for compaction, no matter how much garbage it contains.
 

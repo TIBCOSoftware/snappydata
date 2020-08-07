@@ -1,17 +1,17 @@
 <a id="howto-streams"></a>
 
-# How to use Stream Processing with SnappyData 
+# How to use Stream Processing with TIBCO ComputeDB 
 
-SnappyData supports both the older [Spark Streaming model (based on DStreams)](#dstreams) as well as the newer [Structured Streaming model](#structuredstreaming). Unlike the Spark streaming DStreams model, that is based on RDDs, SnappyData supports Spark SQL in both models.
+TIBCO ComputeDB supports <!---both the older [Spark Streaming model (based on DStreams)](#dstreams) as well as the newer---> [Structured Streaming model](#structuredstreaming). <!---Unlike the Spark streaming DStreams model, that is based on RDDs, TIBCO ComputeDB supports Spark SQL in both models.--->
 
 <a id= structuredstreaming> </a>
 ## Structured Streaming
 
-The SnappyData structured streaming programming model is the same as [Spark structured streaming](https://spark.apache.org/docs/2.1.1/structured-streaming-programming-guide.html). The only difference is support for ingesting streaming dataframes into SnappyData tables through a built-in **Sink**. 
+The TIBCO ComputeDB structured streaming programming model is the same as [Spark structured streaming](https://spark.apache.org/docs/2.1.1/structured-streaming-programming-guide.html). The only difference is support for ingesting streaming dataframes into TIBCO ComputeDB tables through a built-in **Sink**. 
 
-SnappyData provides a build-in output **Sink** which simplifies ingestion of streaming dataframes into SnappyData tables. The **Sink** supports idempotent writes, ensuring consistency of data when failures occur, as well as support for all mutation operations such as inserts, appends, updates, puts, and deletes. 
+TIBCO ComputeDB provides a build-in output **Sink** which simplifies ingestion of streaming dataframes into TIBCO ComputeDB tables. The **Sink** supports idempotent writes, ensuring consistency of data when failures occur, as well as support for all mutation operations such as inserts, appends, updates, puts, and deletes.
 
-The output data source name for SnappyData is `snappysink`. A minimal code example for structured streaming with socket source and **Snappy Sink** is available [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala). You can also refer to [Structured Streaming Quickstart guide](/quickstart/structucture_streamingquickstart.md). 
+The output data source name for SnappyData is `snappysink`. A minimal code example for structured streaming with socket source and **Snappy Sink** is available [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala). You can also refer to [Structured Streaming Quickstart guide](/quickstart/structucture_streamingquickstart.md). You can also refer to [Structured Streaming Quickstart guide](/quickstart/structucture_streamingquickstart.md). 
 
 For more examples, refer to [structured streaming examples](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming). The following examples are shown:
 
@@ -36,38 +36,37 @@ The topic included the following sections:
 * [Best Practices for Structured Streaming](#bestpracticesstruc)
 * [Limitations](#limitationsstruc)
 
-
 <a id= ssapi> </a>
-### Using SnappyData Structured Streaming API
+### Using TIBCO ComputeDB Structured Streaming API
 
-The following code snippet, from the example, explains the usage of SnappyData's ** Structured Streaming API**:
+The following code snippet, from the example, explains the usage of TIBCO ComputeDB's ** Structured Streaming API**:
 
 ```pre
     val streamingQuery = structDF
         .filter(_.signal > 10)      // so transformation on input dataframe 
         .writeStream
-        .format("snappysink")       // Required to ingest into SnappyData tables
-        .queryName("Devices")   // Required when using snappysink. Must be unique across the SnappyData cluster.
+        .format("snappysink")       // Required to ingest into TIBCO ComputeDB tables
+        .queryName("Devices")   // Required when using snappysink. Must be unique across the TIBCO ComputeDB cluster.
         .trigger(ProcessingTime("1 seconds"))
         .option("tableName", "devices")     // Required: name of the snappy table where data will be ingested.
         .option("checkpointLocation", checkpointDirectory)
         .start()
 ```
-#### SnappyData Specific options
+#### TIBCO ComputeDB Specific options
 
-The following are SnappyData specific options which can be configured for Structured Streaming:
+The following are TIBCO ComputeDB specific options which can be configured for Structured Streaming:
 
 | Options | Description |
 |--------|--------|
-|`tableName`|Name of the SnappyData table where the streaming data is ingested. The property is case-insensitive and is mandatory.|
-|`stateTableSchema`|Name of the schema under which SnappyData’s internal state table will be created. This table is used to track the progress of the streaming queries and enables snappy sink to behave in an idempotent manner when streaming query is restarted after abrupt failures or planned down time.</br>This is a mandatory property when security is enabled for the SnappyData cluster. When security is disabled, snappy sink uses APP schema by default to store the sink state table.|
+|`tableName`|Name of the TIBCO ComputeDB table where the streaming data is ingested. The property is case-insensitive and is mandatory.|
+|`stateTableSchema`|Name of the schema under which TIBCO ComputeDB’s internal state table will be created. This table is used to track the progress of the streaming queries and enables snappy sink to behave in an idempotent manner when streaming query is restarted after abrupt failures or planned down time.</br>This is a mandatory property when security is enabled for the TIBCO ComputeDB cluster. When security is disabled, snappy sink uses APP schema by default to store the sink state table.|
 |`conflation`|This is an optional boolean property with the default value set to `false`. Conflation is enabled only when you set this property to `true`. </br>If this property is set to `true` and if the incoming streaming batch contains multiple events on the same key, **Snappy Sink** automatically reduces this to a single operation. This is typically the last operation on any given key for the batch that is being processed. This property is only applicable when the `_eventType` column is available (see [below](#eventypecolumn)) and the target table has Keys defined. For more information, see [here](#conflationpro). |
 |<a id= snappycallback> </a>`sinkCallback`|This is an optional property which is used to override default **Snappy Sink** behavior. To override the default behavior, client codes should implement `SnappySinkCallback` trait and pass the fully qualified name of the implementing class against this property value.|
 
 <a id= haninsertupdatesdeletes> </a>
 ### Handling Inserts, Updates and Deletes
 
-A common use case for streaming is capturing writes into another store (Operational database such as RDB or NoSQL DB) and streaming the events through Kafka, applying Spark transformations, and ingesting into an analytics datastore such as SnappyData. This pattern is commonly referred to as **Change-Data-Capture (CDC)**.
+A common use case for streaming is capturing writes into another store (Operational database such as RDB or NoSQL DB) and streaming the events through Kafka, applying Spark transformations, and ingesting into an analytics datastore such as TIBCO ComputeDB. This pattern is commonly referred to as **Change-Data-Capture (CDC)**.
 
 <a id= eventypecolumn> </a>
 To support this use case, **Snappy Sink** supports events to signal if these are Inserts, Updates, or Deletes. The application is required to inject a column called `_eventType` as described below. 
@@ -84,10 +83,9 @@ To support **CDC**, the source DataFrame must have the following:
     !!!Note
     	Records which have `_eventType` value other than the above-mentioned ones are skipped.
 
-*	The target SnappyData table must have key columns defined for a column table or primary key defined for a row table.
+*	The target TIBCO ComputeDB table must have key columns defined for a column table or primary key defined for a row table.
 
 An example explaining the **CDC** use case is available [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CDCExample.scala).
-
 
 If the `_eventType` column is not provided as part of source dataframe, then the following is observed:</br> 
 
@@ -109,11 +107,13 @@ The writes occur by grouping the events in the following manner (for performance
 *	Processes all update events (applies PutInto operation)
 
 If the **_eventType** column is not provided as part of source dataframe, then the events are processed in the following manner:
+
 *	If key columns/primary keys are defined for the target table, then all the events are treated as update events and **put into** operation is performed for all events.
 *	If key columns/primary keys are not defined for the target table, then all the events are treated as insert events and insert operation is applied for all events.
 
 <a id= conflationpro> </a>
 If `conflation` property is set to `true`, **Snappy Sink** will first conflate the incoming batch independently by each partition. The conflation of events is performed in the following steps:
+
 *	Group all the events in the given partition by key.
 *	Convert inserts into **put into** operations if the event type of the last event for a key is of insert type and there are more than one events for the same key.
 *	Keep the last event for each key and drop remaining events.
@@ -123,13 +123,13 @@ This results in a batch, where there is at most a single entry per key.
 By default the `conflation` property is set to `false`. Therefore, the event processing semantics only ensures consistency when incoming events in a batch are for the unique key column(s).
 
 **For example:**</br>If an incoming batch contains an **Insert(key1)** event followed by a **Delete(key1)** event, the record for **key1** is shown in the target table after the batch is processed. This is because all the Delete events are processed before Insert events as per the event processing order explained [here](#abovementioned).
-In such cases, you should enable the Conflation by setting the **conflation** property to true. Now, if a batch contains **Insert(key1)** event followed by a Dele**te(key1)** event, then SnappyData Sink conflates these two events into a single event by selecting the last event which is **Delete(key1)** and only that event is processed for **key1**.
+In such cases, you should enable the Conflation by setting the **conflation** property to true. Now, if a batch contains **Insert(key1)** event followed by a **Delete(key1)** event, then SnappyData Sink conflates these two events into a single event by selecting the last event which is **Delete(key1)** and only that event is processed for **key1**.
 Processing **Delete(key1)** event without processing **Insert(key1)** event does not result in a failure, as Delete events are ignored if corresponding records do not exist in the target table.
 
 <a id= sinkstatetable> </a>
 ### Sink State Table
 
-A replicated row table with name **snappysys_internal____sink_state_table** is created by **Snappy Sink** under schema specified by the **stateTableSchema** option if the table does not exist. If the **stateTableSchema** is not specified then the sink state table is created under the **APP** schema. During the processing of each batch, this state is updated.
+A replicated row table with name **SNAPPYSYS_INTERNAL____SINK_STATE_TABLE** is created by **Snappy Sink** under schema specified by the **stateTableSchema** option if the table does not exist. If the **stateTableSchema** is not specified then the sink state table is created under the **APP** schema. During the processing of each batch, this state is updated.
 
 This table is used by **Snappy Sink** to maintain the state of the streaming queries. This state is important to maintain the idempotency of the sink In case of stream failures. The **Sink State** table contains the following fields:
 
@@ -138,13 +138,13 @@ This table is used by **Snappy Sink** to maintain the state of the streaming que
 |  stream_query_id      |  varchar(200)      |Primary Key. Name of the streaming query|
 |batch_id|long|Batch id of the most recent batch picked up for processing.|
 
-####  Behavior of Sink State Table in a Secure cluster
+#### Behavior of Sink State Table in a Secure cluster
 
 When security is enabled for the cluster, the **stateTableSchema** becomes a mandatory option. Also, when you submit the streaming job, you must have the necessary permissions on the schema specified by **stateTableSchema** option.
 
 #### Maintaining Idempotency In Case Of Stream Failures
 
-When stream execution fails, it is possible that streaming batch was half processed. Hence next time whenever the stream is started, Spark picks the half processed batch again for processing. This can lead to extraneous records in the target table if the batch contains insert events. To overcome this, Snappy Sink keeps the state of a stream query execution as part of the Sink State table. 
+When stream execution fails, it is possible that the streaming batch was half processed. Hence next time whenever the stream is started, Spark picks the half processed batch again for processing. This can lead to extraneous records in the target table if the batch contains insert events. To overcome this, Snappy Sink keeps the state of a stream query execution as part of the Sink State table. 
 
 !!! Note
 	The key columns in a column table are merely a hint (used to perform **put into** and **delete** operations) and does not enforce a unique constraint such as a primary key in case of a row table.
@@ -167,20 +167,24 @@ A duplicate batch might be picked up for processing in case of failure. In the c
 def process(snappySession: SnappySession, sinkProps: Map[String, String],
       batchId: Long, df: Dataset[Row], possibleDuplicate: Boolean = false): Unit
 ```
+
 <a id= resetstreamquery> </a>
 ### Resetting a Streaming Query
 
 Progress of a streaming query is saved as part of the checkpoint directory by Spark. On top of this **Snappy Sink** also maintains an internal state as part of the state table to ensure idempotency of the sink. 
 
-Hence to reset a streaming query, the following actions must be taken to clean te state of the streaming query: 
+
+Hence to reset a streaming query, the following actions must be taken to clean the state of the streaming query: 
+
 
 !!! Note
 	When you use the following steps you may permanently lose the state of the streaming query.
 
-1.	Delete the checkpoint directory. (or start streaming query with different checkpoint directory.)
-2.	Clear the state from the state table using following sql:
 
-		delete from [state_table_schema].snappysys_internal____sink_state_table where stream_query_id = <query_name>;
+1.	Delete the checkpoint directory. (or start streaming query with different checkpoint directory.)
+2.	Clear the state from the state table using following sql:</br>
+		
+        	delete from [state_table_schema].snappysys_internal____sink_state_table where stream_query_id = <query_name>;
 
 	*	`[state_table_schema]` is the schema passed as part of **stateTableSchema** option of snappy sink. It should be skipped if **stateTableSchema** option was not provided while defining snappy sink. 
 	*	`<query_name>` is the name of the query provided while defining the sink.
@@ -188,7 +192,7 @@ Hence to reset a streaming query, the following actions must be taken to clean t
 <a id= bestpracticesstruc> </a>
 ### Best Practices for Structured Streaming 
 
-Refer to the [Best Practices for Structured Streaming Considerations](/best_practices/structured_streaming_best_practices.md). 
+Refer to the [Best Practices for Structured Streaming](/best_practices/structured_streaming_best_practices.md). 
 
 <a id= limitationsstruc> </a>
 ### Limitations
@@ -200,16 +204,17 @@ Limitations of **Snappy Sink** are as follows:
 
 *	The default **Snappy Sink** implementation does not support partial records for updates. Which means that there is no support to merge updates on a few columns into the store. For all update events, the incoming records must provide values into all the columns of the target table.
 
+<!---
 <a id= dstreams> </a>
 ## Spark Streaming DStreams Model
 
-SnappyData’s streaming functionality builds on top of Spark Streaming and is primarily aimed at making it simpler to build streaming applications and to integrate with the built-in store. In SnappyData, you can define streams declaratively from any SQL client, register continuous queries on streams, mutate SnappyData tables based on the streaming data. For more information on streaming, refer to this [section](../programming_guide/stream_processing_using_sql.md).
+TIBCO ComputeDB’s streaming functionality builds on top of Spark Streaming and is primarily aimed at making it simpler to build streaming applications and to integrate with the built-in store. In TIBCO ComputeDB, you can define streams declaratively from any SQL client, register continuous queries on streams, mutate TIBCO ComputeDB tables based on the streaming data. For more information on streaming, refer to this [section](../programming_guide/stream_processing_using_sql.md).
 
 ### Code Sample
 
-Code example for streaming is in [StreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala). The code snippets in the following sections show how to declare a stream table, register continuous queries(CQ), and update SnappyData table using the stream data.
+Code example for streaming is in [StreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala). The code snippets in the following sections show how to declare a stream table, register continuous queries(CQ), and update TIBCO ComputeDB table using the stream data.
 
-### Using Stream Processing with SnappyData
+### Using Stream Processing with TIBCO ComputeDB
 
 **First get a SnappySession and a SnappyStreamingContext**: </br>
 Here SnappyStreamingContext is initialized in a batch duration of one second.
@@ -223,7 +228,7 @@ val spark: SparkSession = SparkSession
 val snsc = new SnappyStreamingContext(spark.sparkContext, Seconds(1))
 ```
 
-The example starts an embedded Kafka instance on which a few messages are published. SnappyData processes these message and updates a table based on the stream data.
+The example starts an embedded Kafka instance on which a few messages are published. TIBCO ComputeDB processes these message and updates a table based on the stream data.
 
 The SQL below shows how to declare a stream table using SQL. The rowConverter attribute specifies a class used to return Row objects from the received stream messages.
 ```pre
@@ -316,4 +321,4 @@ resultStream.foreachDataFrame(df => {
 
 ```pre
 snsc.snappySession.sql("select publisher, bidCount from publisher_bid_counts").show()
-```
+``` --->

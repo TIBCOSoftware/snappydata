@@ -1,10 +1,10 @@
-# Getting Information from SnappyData System Tables
+# Getting Information from TIBCO ComputeDB System Tables
 
-You can monitor many common aspects of SnappyData by using SQL commands (system procedures and simple queries) to collect and analyze data in SnappyData system tables.
+You can monitor many common aspects of TIBCO ComputeDB by using SQL commands (system procedures and simple queries) to collect and analyze data in TIBCO ComputeDB system tables.
 
 ## Distributed System Membership Information
 
-The SYS.MEMBERS table provides information about all peers and servers that make up the SnappyData system. You can use different queries to obtain details about individual members and their role in the cluster.
+The SYS.MEMBERS table provides information about all peers and servers that make up the TIBCO ComputeDB system. You can use different queries to obtain details about individual members and their role in the cluster.
 
 <a id="determine-cluster-membership"></a>
 ### Determining Cluster Membership
@@ -40,11 +40,11 @@ To view the members of cluster, query:
 
 ```pre
 snappy> show members;
-ID                            |HOST     |KIND          |STATUS |THRIFTSERVERS            |SERVERGROUPS
+ID                            |HOST     |KIND             |STATUS |THRIFTSERVERS            |SERVERGROUPS
 --------------------------------------------------------------------------------------------------------- 
-127.0.0.1(10749)<ec><v0>:51430|localhost|locator       |RUNNING|localhost/127.0.0.1[1527]|
-127.0.0.1(10889)<v1>:43634    |localhost|datastore     |RUNNING|localhost/127.0.0.1[1528]|
-127.0.0.1(11045)<v2>:19283    |localhost|primary lead  |RUNNING|                         |
+127.0.0.1(10749)<ec><v0>:51430|localhost|locator(normal)  |RUNNING|localhost/127.0.0.1[1527]|
+127.0.0.1(10889)<v1>:43634    |localhost|datastore(normal)|RUNNING|localhost/127.0.0.1[1528]|
+127.0.0.1(11045)<v2>:19283    |localhost|accessor(normal) |RUNNING|                         |IMPLICIT_LEADER_SERVERGROUP 
 
 3 rows selected
 ```
@@ -53,7 +53,7 @@ Data store members host data in the cluster, while accessor members do not host 
 
 ## Table and Data Storage Information
 
-The SYS.SYSTABLES table provides information about all tables that are created in the SnappyData system. You can use different queries to obtain details about tables and the server groups that host data for those tables.
+The SYS.SYSTABLES table provides information about all tables that are created in the TIBCO ComputeDB system. You can use different queries to obtain details about tables and the server groups that host data for those tables.
 
 -   [Displaying a List of Tables](#display-list-of-tables)
 -   [Determining Whether a Table Is Replicated or Partitioned](#determine-replica-partition)

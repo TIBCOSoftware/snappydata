@@ -1,8 +1,8 @@
 # Recovering Data During Cluster Failures
-In scenarios where the SnappyData cluster fails to come up due to some issues, the Data Extractor utility can be used to retrieve the data in a standard format along with the schema definitions.
+In scenarios where the TIBCO ComputeDB cluster fails to come up due to some issues, the Data Extractor utility can be used to retrieve the data in a standard format along with the schema definitions.
 
-Typically, the SnappyData cluster starts when all the instances of the servers, leads, and locators within the cluster are started. However, sometimes, the cluster does not come up. In such situations, there is a possibility that the data inside the cluster remains either entirely or partially unavailable.
-In such situations, you must first refer to the [Troubleshooting Common Problems](/troubleshooting/troubleshooting.md) section in the SnappyData product documentation, fix the corresponding issues, and bring up the cluster. Even after this, if the cluster cannot be started successfully, due to unforeseen circumstances, you can use the Data Extractor utility to start the cluster in Recovery mode and salvage the data.
+Typically, the TIBCO ComputeDB cluster starts when all the instances of the servers, leads, and locators within the cluster are started. However, sometimes, the cluster does not come up. In such situations, there is a possibility that the data inside the cluster remains either entirely or partially unavailable.
+In such situations, you must first refer to the [Troubleshooting Common Problems](/troubleshooting/troubleshooting.md) section in the TIBCO ComputeDB product documentation, fix the corresponding issues, and bring up the cluster. Even after this, if the cluster cannot be started successfully, due to unforeseen circumstances, you can use the Data Extractor utility to start the cluster in Recovery mode and salvage the data.
 
 Data Extractor utility is a read-only mode of the cluster. In this mode, you cannot make any changes to the data such as INSERT, UPDATE, DELETE, and CREATE/ALTER etc. Moreover, in this mode, the inter-dependencies between the nodes during the startup process is minimized. Therefore, reducing failures during startup. 
 
@@ -77,7 +77,7 @@ Here is an example of using the DataExtractor utility to salvage data from a fau
 
             snappy-sql
             
-            SnappyData version 1.2-SNAPSHOT
+            TIBCO ComputeDB version 1.2-SNAPSHOT
                 snappy-sql> connect client 'localhost:1527';
                 snappy-sql> create table customers(cid integer, name string, phone varchar(20));
                 snappy-sql> insert into customers values (0, 'customer1', '9988776655'), (0, 'customer1', '9988776654');
@@ -119,7 +119,7 @@ can run the SELECT queries or the provided procedures to export DDLs, Data of th
 
             snappy-sql
             
-            SnappyData version 1.2-SNAPSHOT 
+            TIBCO ComputeDB version 1.2-SNAPSHOT 
             snappy-sql>  connect client 'localhost:1527';
             snappy-sql> call sys.EXPORT_DDLS('/tmp/recovered/ddls');
             snappy-sql> exit;
@@ -132,7 +132,7 @@ can run the SELECT queries or the provided procedures to export DDLs, Data of th
            ## Next, run the procedure “EXPORT_DATA” to export the data of selected tables to selected location.
            
            	snappy-sql
-            SnappyData version 1.2-SNAPSHOT 
+            TIBCO ComputeDB version 1.2-SNAPSHOT 
             snappy-sql> connect client 'localhost:1527';
             snappy-sql> call sys.EXPORT_DATA('/tmp/recovered/data', 'csv', 'all', true);
             snappy-sql> exit;
@@ -175,7 +175,7 @@ can run the SELECT queries or the provided procedures to export DDLs, Data of th
               Starting hive thrift server (session=snappy)
               Starting job server on: 0.0.0.0[8090]
             snappy-sql
-            SnappyData version 1.2-SNAPSHOT 
+            TIBCO ComputeDB version 1.2-SNAPSHOT 
             snappy-sql> connect client 'localhost:1527';
             snappy-sql> run '/tmp/recovered/ddls_1576074336371/part-00000';
             snappy-sql> create table customers(cid integer, name string, phone varchar(20));
@@ -214,7 +214,7 @@ The cluster that you have started in the recovery mode with the flag, can get bu
 <a id= trouble> </a>
 ## Troubleshooting
 
-*	Your SnappyData cluster has tables with big schema or a large number of buckets and this cluster has stopped without any exceptions in the log.	
+*	Your TIBCO ComputeDB cluster has tables with big schema or a large number of buckets and this cluster has stopped without any exceptions in the log.	
     **Workaround**: Add the property, `-recovery-state-chunk-size` into the conf files of each server, and set the value lower than the current(default 30). This property is responsible for chunking the table information while moving across the network in recovery mode.
 	For example: `localhost -recovery-state-chunk-size=10` </br>	
 

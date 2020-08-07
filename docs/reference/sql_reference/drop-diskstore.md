@@ -1,13 +1,13 @@
 # DROP DISKSTORE
 
-Removes a disk store configuration from the SnappyData cluster.
+Removes a disk store configuration from the TIBCO ComputeDB cluster.
 
 ```pre
 DROP DISKSTORE [ IF EXISTS ] store-name
 ```
 
 **IF EXISTS** </br>
-Include the `IF EXISTS` clause to execute the statement only if the specified disk store exists in SnappyData.
+Include the `IF EXISTS` clause to execute the statement only if the specified disk store exists in TIBCO ComputeDB.
 
 **store-name**</br>
 User-defined name of the disk store configuration that you want to remove. The available names are stored in the [SYSDISKSTORES](../../reference/system_tables/sysdiskstores.md) system table.

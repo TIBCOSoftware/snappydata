@@ -1,10 +1,10 @@
 <a id="getting-started-with-docker-image"></a>
-# Building a Docker Image with SnappyData Binaries
+# Building a Docker Image with TIBCO ComputeDB Binaries
 
-The following instructions outline how to build a Docker image if you have the binaries of SnappyData.</br>
+The following instructions outline how to build a Docker image if you have the binaries of TIBCO ComputeDB.</br>
 
 !!!Note
-	SnappyData does not provide a Docker image. You must build it explicitly.
+	TIBCO ComputeDB does not provide a Docker image. You must build it explicitly.
 
 Before building the Docker image, ensure the following:
 
@@ -23,67 +23,16 @@ $ docker run hello-world
 ```
 
 <a id="build-your-docker"></a>
-## Building Docker Image of SnappyData</br>
+## Building Docker Image of TIBCO ComputeDB</br>
 
-You can use the Dockerfile that is provided and create your own Docker image of SnappyData. Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) script and place it into a directory. The Dockerfile contains a link to the latest SnappyData OSS version to build the image.
-
-!!!Note
-	To download the Dockerfile on Linux or MAC, use the wget command. </br>` wget https://raw.githubusercontent.com/SnappyDataInc/snappy-cloud-tools/master/docker/Dockerfile`
-
-Move into the directory containing the downloaded Dockerfile and then run the Docker build command with the required details to build the Docker image. You can create an image using any one of the following options:
-
-*	[Building Image from the Latest Version of SnappyData OSS](#builddockerimagesnappy)
-*	[Building Image from a URL Directing to SnappyData Binaries](#builddockerurl)
-*	[Building Image from Local Copy of SnappyData Product TAR file](#builddockerimageslocal)
-
-
-<a id="builddockerimagesnappy"></a>
-### Building Image from the Latest Version of SnappyData OSS
-
-By default, the Dockerfile creates a Docker image from the latest version of SnappyData OSS.
-
-```
-$ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] .
-```
+You can use the Dockerfile that is provided and create your own Docker image of TIBCO ComputeDB. Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) script and place it into a directory. The Dockerfile contains a link to the latest TIBCO ComputeDB OSS version to build the image.
 
 !!!Note
-	If you do not provide any argument to the Dockerfile, the latest version of the SnappyData OSS release is downloaded and a Docker image for the same is built.
+	To download the Dockerfile on Linux or MAC, use the wget command. </br>` wget https://raw.githubusercontent.com/SnappyDataInc/snappy-cloud-tools/master/docker/Dockerfile` 
 
-For example:
+Move into the directory containing the downloaded Dockerfile and then run the Docker build command with the required details to build the Docker image. 
 
-The following command builds an image with tag `latest`:
-
-```
-$ docker build -t myrepo/snappydata .
-```
-
-The following command builds an image with tag `1.2.0 `:
-
-```
-$ docker build -t myrepo/snappydata:1.2.0 .
-```
-
-<a id="builddockerurl"></a>
-### Building Image from a URL Directing to SnappyData Binaries
-
-If you want to create a Docker image from any of the previous versions of SnappyData, you can specify the URL of the tarfile in the build command.
-
-
-```
-$ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] . --build-arg TARFILE_LOC=<public-url>
-
-```
-
-For example:
-
-```
-$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=https://github.com/SnappyDataInc/snappydata/releases/download/v1.2.0/snappydata-1.2.0-bin.tar.gz
-```
-
-<a id="builddockerimageslocal"></a>
-### Building Image from Local Copy of SnappyData Product TAR file
-
-If you have already downloaded the SnappyData tarfile locally onto your machine, use the following steps to build an image from the downloaded binaries. To download SnappyData, refer to the [Provisioning SnappyData](https://snappydatainc.github.io/snappydata/install/) section in the product documentation.
+If you have already downloaded the TIBCO ComputeDB tarfile locally onto your machine, use the following steps to build an image from the downloaded binaries. To download TIBCO ComputeDB, refer to the [Provisioning TIBCO ComputeDB](https://snappydatainc.github.io/snappydata/install/) section in the product documentation.
 
 Copy the downloaded **tar.gz** file to the Docker folder where you have placed the Dockerfile and run the following command:
 
@@ -95,7 +44,7 @@ $ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] . --build-a
 For example:
 
 ```
-$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=snappydata-1.2.0-bin.tar.gz
+$ docker build -t myrepo/computedb . --build-arg TARFILE_LOC=computedb-1.2.0-bin.tar.gz
 ```
 
 
@@ -112,7 +61,7 @@ $ docker images
 
 ## Publishing Docker Image
 
-If you want to publish the Docker image onto the Docker Hub, login to the Docker account using `docker login` command, and provide your credentials. For more information on Docker login, visit [here](https://docs.docker.com/engine/reference/commandline/login). After a successful login, you can publish the Docker image using the `docker push` command.
+If you want to publish the Docker image onto the Docker Hub, log in to the Docker account using `docker login` command, and provide your credentials. For more information on Docker login, visit [here](https://docs.docker.com/engine/reference/commandline/login). After a successful login, you can publish the Docker image using the `docker push` command.
 
 ```
 $ docker push <your-docker-repo-name>/<image_name>[:<image-tag>]
@@ -122,18 +71,18 @@ Ensure to use the same name in the `docker push` that is used in `docker build`.
 For example:
 
 ```
-$ docker push myrepo/snappydata
+$ docker push myrepo/computedb
 ```
 !!!Note
 	This example only showcases how to push an image onto Docker Hub. You can also publish the image to other container registries such as [gcr.io](http://gcr.io). For publishing on gcr.io, you can refer [this document](https://cloud.google.com/container-registry/docs/pushing-and-pulling).
 
-## Launching SnappyData Container
+## Launching TIBCO ComputeDB Container
 
-The command to launch SnappyData container is different for Linux and macOS. 
+The command to launch the TIBCO ComputeDB container is different for Linux and macOS.
 
-### Launching SnappyData Container on Linux
+### Launching TIBCO ComputeDB Container on Linux
 
-In the command prompt, execute the following commands to launch the SnappyData cluster in a single container.
+In the command prompt, execute the following commands to launch the TIBCO ComputeDB cluster in a single container.
 
 ```
 $ docker run -itd --net=host --name <container-name> <your-docker-repo-name>/<image_name>[:<image-tag>] start all
@@ -146,32 +95,30 @@ $ docker run -itd --net=host --name <container-name> <your-docker-repo-name>/<im
 
 If the image is not available locally, this fetches the Docker image from the Docker registry, launches a default cluster consisting of one data node, one lead, and one locator in a container.
 
-
-
 ```
-$ docker run -itd --net=host --name snappydata myrepo/snappydata start all
+$ docker run -itd --net=host --name computedb myrepo/computedb start all
 
 ```
 
-### Launching SnappyData Container on macOS
+### Launching TIBCO ComputeDB Container on macOS
 
-If you are using macOS, you must redirect the ports manually using `-p` parameter. If you use `--net=host`, it may not work correctly on the macOS. You can use the following modified command for macOS:
+If you are using macOS, you must redirect the ports manually using the `-p` parameter. If you use `--net=host`, it may not work correctly on the macOS. You can use the following modified command for macOS:
 
 ```
-$ docker run -d --name=snappydata -p 5050:5050 -p 1527:1527 -p 1528:1528 myrepo/snappydata start all -hostname-for-clients=<Machine_IP/Public_IP>
+$ docker run -d --name=computedb -p 5050:5050 -p 1527:1527 -p 1528:1528 myrepo/computedb start all -hostname-for-clients=<Machine_IP/Public_IP>
 ```
 
-The `-hostname-for-clients` parameter sets the IP Address or Hostname that the server listens for client connections. The command may take few seconds to execute.
+The `-hostname-for-clients` parameter sets the IP Address or Hostname that the server listens for client connections. The command may take a few seconds to execute.
 
 
 ## Commonly used Docker Commands
 
 | Description| Docker Commands |
 |--------|--------|
-|      To check details of all the Docker containers.  |     `$ docker ps -a `  |
-|      To check the container logs.  |     `$ docker logs <container-name>`   |
-|      To launch Snappy Shell. |     `$ docker exec -it <container-name> ./bin/snappy`   |
-|     To launch Spark Shell.  |     `$ docker exec -it <container-name> ./bin/spark-shell `  |
+|      To check details of all the Docker containers  |     `$ docker ps -a `  |
+|      To check the Docker logs  |     `$ docker logs <container-name>`   |
+|      To launch Snappy Shell  |     `$ docker exec -it <container-name> ./bin/snappy`   |
+|     To launch a Spark Shell.|     `$ docker exec -it <container-name> ./bin/spark-shell `  |
 |      To stop the cluster.  |     `$ docker exec -it <container-name> ./sbin/snappy-stop-all.sh `  |
 |      To stop the container.  |     `$ docker stop <container-name> ` |
 |      To open bash shell inside the container. |     `$ docker exec -it <container-name> /bin/bash`  |

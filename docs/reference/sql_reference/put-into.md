@@ -3,7 +3,7 @@
 PUT INTO operates like a standard [INSERT](insert.md) statement.
 
 !!! Note
-	 Insert/PUT INTO with partial column specification is not supported in SnappyData.
+	 Insert/PUT INTO with partial column specification is not supported in TIBCO ComputeDB.
 
 ##	For Column Tables
 
@@ -31,7 +31,7 @@ PUT INTO <schema name>.<table name> VALUES (V1, V2,... ,Vn);
 <a id="columnsyntaxputinto"></a>
 **For SQL**
 
-```
+```pre
 // Insert into another table using a select statement for column tables with key columns
 
 PUT INTO TRADE.CUSTOMERS SELECT '1','2','hello';
@@ -41,11 +41,10 @@ PUT INTO TRADE.NEWCUSTOMERS SELECT * from CUSTOMERS;
 PUT INTO TRADE.NEWCUSTOMERS SELECT * from CUSTOMERS WHERE C_NAME='User 1';
 
 PUT INTO TRADE.NEWCUSTOMERS SELECT from CUSTOMERS WHERE C_NAME='User 1';
-```
 
-```pre
-PUT INTO TRADE.CUSTOMERS VALUES (1, 'User 1', '2001-10-12', 'SnappyData', 1);
-PUT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR ,TID) VALUES (1, 'User 1' , 'SnappyData', 1);
+PUT INTO TRADE.CUSTOMERS VALUES (1, 'User 1', '2001-10-12', 'ComputeDB', 1);
+
+PUT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR ,TID) VALUES (1, 'User 1' , 'ComputeDB', 1);
 
 ```
 
@@ -60,7 +59,7 @@ dataFrame.write.putInto("col_table")
 
 ##	For Row Tables
 
-PUT INTO uses a syntax similar to the INSERT statement, but SnappyData does not check the existing primary key values before executing the PUT INTO command. If a row with the same primary key exists in the table, PUT INTO overwrites the older row value. If no rows with the same primary key exist, PUT INTO operates like a standard INSERT. This behavior ensures that only the last primary key value inserted or updated remains in the system, which preserves the primary key constraint. Removing the primary key check speeds execution when importing bulk data.
+PUT INTO uses a syntax similar to the INSERT statement, but TIBCO ComputeDB does not check the existing primary key values before executing the PUT INTO command. If a row with the same primary key exists in the table, PUT INTO overwrites the older row value. If no rows with the same primary key exist, PUT INTO operates like a standard INSERT. This behavior ensures that only the last primary key value inserted or updated remains in the system, which preserves the primary key constraint. Removing the primary key check speeds execution when importing bulk data.
 
 The PUT INTO statement is similar to the "UPSERT" command or capability provided by other RDBMS to relax primary key checks. By default, the PUT INTO statement ignores only primary key constraints. <!--All other column constraints (unique, check, and foreign key) are honored unless you explicitly set the [skip-constraint-checks](../../reference/configuration_parameters/skip-constraint-checks.md) connection property.-->
 

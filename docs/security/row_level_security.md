@@ -1,7 +1,5 @@
 # Implementing  Row Level Security
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
-
 The following topics are covered in this section:
 
 *	[Overview of Row Level Security](#rlsoverview)
@@ -15,7 +13,7 @@ The following topics are covered in this section:
 
 <a id= rlsoverview> </a>
 ## Overview of Row Level Security
-Policy is a rule that is implemented by using a filter expression.  In SnappyData, you can apply security policies to a table at row level that can restrict, on a per-user basis, the rows that must be returned for normal queries by data modification commands. 
+Policy is a rule that is implemented by using a filter expression.  In TIBCO ComputeDB, you can apply security policies to a table at row level that can restrict, on a per-user basis, the rows that must be returned for normal queries by data modification commands. 
 For [activating this row level security](#actrowlevel), a system property must be added to the configuration files of servers, leads, and locators. 
 To restrict the permissions of a user at row level, [create a simple policy](#createpolicy) for a table that can be applied on a per user basis and then [enable the row level security](#enablerowlevelsecurity) for that table.
 
@@ -25,7 +23,7 @@ For activating Row Level Security, a system property `-J-Dsnappydata.enable-rls=
 If this property is not added, you cannot enable the Row Level Security and an exception is thrown when you attempt to create the policy.
 
 !!! Warning
-	When this property is set to **true**, the Smart Connector access to SnappyData will fail with `java.lang.IllegalStateException: Row level security (snappydata.enable-rls) does not allow smart connector mode` exception.
+	When this property is set to **true**, the Smart Connector access to TIBCO ComputeDB will fail with `java.lang.IllegalStateException: Row level security (snappydata.enable-rls) does not allow smart connector mode` exception.
 
 <a id= createpolicy> </a>
 ## Creating a Policy

@@ -1,5 +1,5 @@
 
-# Tables in SnappyData
+# Tables in TIBCO ComputeDB
 ## Row and Column Tables
 Column tables organize and manage data in memory in a compressed columnar form such that, modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
 
@@ -55,7 +55,7 @@ To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://
 
 ### Spark API for Managing Tables
 
-**Get a reference to [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession):**
+**Get a reference to [Snappy Session](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession):**
 
     val snappy: SnappySession = new SnappySession(spark.sparkContext)
 
@@ -71,7 +71,7 @@ Create a SnappyStore table using Spark APIs
     //or create a row format table
     snappy.createTable("row_table", "row", dataDF.schema, props)
 ```
-**Drop a SnappyStore table using Spark APIs**:
+**Drop a Snappy Store table using Spark APIs**:
 
     snappy.dropTable(tableName, ifExists = true)
     
@@ -152,7 +152,7 @@ snappy.delete(tableName, "ITEMREF = 3")
 
 Generally, the column table is used for analytical purpose. To this end, most of the operations (read or write) on it are bulk operations. Taking advantage of this fact the rows are compressed column wise and stored.
 
-In SnappyData, the column table consists of two components, delta row buffer and column store. SnappyData tries to support individual insert of a single row, as it is stored in a delta row buffer which is write optimized and highly available.
+In TIBCO ComputeDB, the column table consists of two components, delta row buffer and column store. TIBCO ComputeDB tries to support individual insert of a single row, as it is stored in a delta row buffer which is write optimized and highly available.
 
 Once the size of buffer reaches the COLUMN_BATCH_SIZE set by the user, the delta row buffer is compressed column wise and stored in the column store.
 Any query on column table also takes into account the row cached buffer. By doing this, it ensures that the query does not miss any data.

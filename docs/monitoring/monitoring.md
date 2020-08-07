@@ -1,17 +1,18 @@
-# SnappyData Monitoring Console
+# TIBCO ComputeDB Monitoring Console
 
-SnappyData Monitoring Console is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data.  This simple widget based view allows you to navigate easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
+TIBCO ComputeDB Monitoring Console is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data. This simple widget based view allows you to navigate easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
 All the usage details are automatically refreshed after every five seconds.
 
 !!! Note
-	SnappyData Monitoring Console is not yet tested and supported on Internet Explorer.
+	TIBCO ComputeDB Monitoring Console is not yet tested and supported on Internet Explorer.
 
-To access SnappyData Monitoring Console, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
+
+To access TIBCO ComputeDB Monitoring Console, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
 
 !!!Note
 	`<leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the **conf/leads** file.
 
-![Dashboard](../Images/MonitoringUI/SnappyData-UI-Dashboard.png)
+![Dashboard](../Images/MonitoringUI/TIBCO-ComputeDB-UI-Dashboard.png)
 
 The following topics are covered in this section:
 
@@ -21,8 +22,6 @@ The following topics are covered in this section:
 
 * [Jobs](#jobs)
 
-* [Structured Streaming](#structuredstream)
-
 * [Stages](#stages)
 
 * [Spark Cache](#spark_cache)
@@ -30,21 +29,19 @@ The following topics are covered in this section:
 * [Environment](#environment)
 
 * [Executors](#executors)
+* [Structured Streaming](#structuredstream)
 
 * [SQL](#sql)
 
 
 !!! Note
-	When connecting to a SnappyData cluster using Smart Connector, the information related to **SQL**, **Jobs**, and **Stages** are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about SnappyData Smart Connector Mode [here](../affinity_modes/connector_mode.md).
+	When connecting to a TIBCO ComputeDB cluster using Smart Connector, the information related to **SQL**, **Jobs**, and **Stages** are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about Smart Connector Mode [here](../affinity_modes/connector_mode.md).
+    
+On re-starting a TIBCO ComputeDB cluster, the TIBCO ComputeDB Monitoring Console loses the information about SQL queries, Spark jobs and stages. Therefore, you must turn on the [Spark History server](#historyserver) to enable historical analysis of past queries and their associated jobs, stages, and tasks.
 
-In cases where you cannot access the SnappyData Monitoring Console to analyse Jobs and tasks, you must turn on the [Spark History server](#historyserver).
+On the top-right side of the TIBCO ComputeDB Monitoring Console page, you can click the help icon to view the details of TIBCO ComputeDB.
 
-
-On the top-right side of the SnappyData Monitoring Console page, you can view the version details of SnappyData Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.
-
-On the top of the dashboard, the date and time details about when the cluster is started are displayed. The period till when the cluster is running is also shown.
-
-![](../Images/MonitoringUI/SnappyData-UI-About-Box1.png)
+![](../Images/MonitoringUI/TIBCO-ComputeDB-UI-About-Box.png)
 
 <a id="dashboard"></a>
 ## Dashboard
@@ -61,7 +58,7 @@ The **Dashboard** page displays the following sections:
 
 * [External Tables](#external-table)
 
-You can use the search and sort functionalities in any of the sections, except for the **Cluster** section.  Sorting is enabled to sort items in an ascending and descending order. Further, you can also set the number of items that must be listed in each of these sections.
+You can use the search and sort functionalities in any of the sections, except for the **Cluster** section. Sorting is enabled to sort items in an ascending and descending order. Further, you can also set the number of items that must be listed in each of these sections.
 
 <a id="cluster"></a>
 ### Cluster
@@ -72,7 +69,7 @@ In the **Cluster** section, you can view the following graphs which are automati
 On the Dashboard page, the **Cluster** section displays the date and time when the cluster was launched. It also displays the cluster's up-time since cluster was launched.
 
 You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
-![](../Images/CPU_cores.png)
+![](../Images/MonitoringUI/TotalCpuCores.png)
 
 |Graphs|Description|
 |--------|--------|
@@ -84,9 +81,9 @@ You can view the total number of physical CPU cores present in your cluster on t
 <a id="member"></a>
 ### Members
 In the **Members** section,  you can view, in a tabular format, the details of each locator, data server, and lead member within a cluster. The details are automatically refreshed after every five seconds.
-![Members](../Images/MonitoringUI/SnappyData-UI-Dashboard-Members.png)
+![Members](../Images/Dashboard-MembersList.png)
 
-This table provides member details in the following columns:
+This table provides member details in the following columns:s
 
 
 | Column | Description |
@@ -94,8 +91,8 @@ This table provides member details in the following columns:
 |  **Status**     |  Displays the status of the members, which can be either [Running or Stopped](#statusofmembers).    |
 |   **Member**       |   Displays a brief description of the member. Click the link in the column to view the [Member Details](#memberdetails) where the usage trends and statistics of the members are shown along with the [Member Logs](#memberlogs). Click the drop-down arrow to find information such as the IP address of the host, the current working directory, and the Process ID number.  |
 |     **Type**   |     Displays the type of the member. The type can be LEAD, LOCATOR, or DATA SERVER. The name of the active lead member is displayed in bold letters. |
-|     **CPU Usage**        |     Displays the CPU utilized by the member's host and it's trend over last 15 mins.  |
-|     **Memory Usage**       |      Displays the collective Heap and Off-Heap memory utilization of a cluster member and it's trend over last 15 mins.|
+|     **CPU Usage**        |      Displays the CPU utilized by the member's host.  |
+|     **Memory Usage**       |      Displays the collective Heap and Off-Heap memory utilization of a cluster member. |
 |  **Heap Memory**       | Displays the member's utilized Heap memory versus total Heap memory. Click the down arrow in this column to view the detailed distribution of the member's Heap Memory for storage, execution, and JVM. |
 |    **Off-Heap Memory**     |     Displays the member's used Off-Heap memory and total Off-Heap memory. Click the down arrow in this column to view the detailed distribution of the member's Off-Heap memory for storage and execution.  |
 
@@ -111,7 +108,7 @@ This table provides member details in the following columns:
 ### Tables
 The **Tables** section lists all the tables in the cluster along with their corresponding statistical details. All these details are automatically refreshed after every five seconds.
 
-![Tables](../Images/MonitoringUI/SnappyData-UI-Dashboard-Tables.png)
+![Tables](../Images/Dashboard-TablesList.png)
 
 The following columns are displayed in this section:
 
@@ -121,8 +118,7 @@ The following columns are displayed in this section:
 |   **Storage Model**     |    Displays the data storage model of the data table. Possible models are **ROW** and **COLUMN**.    |
 |   **Distribution Type**     |      Displays the data distribution type for the table. Possible values are: <ul><li>PARTITION</li><li>REPLICATE</li> </ul> |
 |   **Row Count**     |   Displays the row count, which is the number of records present in the data table.|
-|**In-Memory Size**    |    Displays the heap memory used by data table to store its data. If less than **Total Size** then the data is overflowing to disk.   |
-|**Spill-to-Disk Size**|Displays size of data overflown to disk|
+|**Memory Size**    |    Displays the heap memory used by data table to store its data. If less than **Total Size** then the data is overflowing to disk.   |
 |     **Total Size**   |     Displays the collective physical memory and disk overflow space used by the data table to store its data.   |
 |      **Buckets**  |  Displays the total number of buckets in the data table. If a number displayed in red here, it indicates that some of the buckets are offline.|
 |      **Redundancy**  |  Displays the number of redundant copies.  </br>Redundancy value **0** indicates that redundant copies are not configured. </br>Redundancy value **1** indicates that one redundant copy is configured. </br>Redundancy value **NA** indicates that redundancy is not applicable.|
@@ -143,11 +139,11 @@ The following columns are displayed in this section:
 
 <a id="memberdetails"></a>
 ## Member Details
-
-The **Member Details** view shows the usage trend and [statistics](#memberstat) of a specific cluster member. To check the **Member** **Details** view,  go to the [Members](#member) section and click the link in the **Member** column. Here you can also view the [Member Logs](#memberlogs) generated for a cluster member.
+Console
+The **Member Details** view shows the usage trend and [statistics](#memberstat) of a specific cluster member. To check the **Member** **Details** view,  go to the [Members](#member) section and click the link in the **Member** column. Here you can also view the [Member Logs](#memberlogs) generhistoryserverated for a cluster member.
 The usage trends and the statistics of a specific member are auto updated periodically after every five seconds. If you want to turn off the auto-refresh, use the **Auto Refresh** switch that is provided on the upper-right corner. You can view, on demand, the latest logs by clicking on the **Load New** button provided at the bottom of the logs. You can also click the **Load More** button to view the older logs.
 
-![Member Detail View](../Images/MonitoringUI/SnappyData-UI-MemberDetails.png)
+![Member Detail View](../Images/MonitoringUI/TIBCO-ComputeDB-UI-MemberDetails.png)
 
 
 <a id="memberstat"></a>
@@ -183,27 +179,37 @@ The following details are included:
 
 | Item | Description |
 |--------|--------|
-|   **Log File Location**     |    Displays the absolute path of the member's primary log file, which is on the host where the current member's processes are running.    |
+|   **Log File Location**     | Displays the absolute path of the member's primary log file, which is on the host where the current member's processes are running.    |
 |     **Log Details **  |     Displays details of the loaded logs such as  Loaded Bytes, Start and End Indexes of Loaded Bytes, and Total Bytes of logs content.   |
 |  **Logs**      | Displays the actual log entries from the log files. </br> It also displays the following buttons: </br> <ul><li>**Load New** - Loads the latest log entries from the log file, if generated, after logs were last loaded or updated.</li><li>**Load More** - Loads older log entries from log files, if available.</li></ul>  |
 
+<a id="jobs"></a>
+## Jobs
+The **Jobs** page lists all the Spark jobs. Each Spark action is translated as a Spark job. A job encapsulates the whole execution of an API or SQL. For example, `dataSet.count()` triggers a job.
 
-<a id="sql"></a>
-## SQL
-The SQL section shows all the queries and their corresponding details along with their execution plans and stagewise breakups.
+[comment]: <> (Need a brief introduction here.)
 
+* **Status**: Displays the status of the job.
 
-![](../Images/MonitoringUI/query_analysis_sql.png)
+* **Stages**: Click on the stage to view its details. The table displays the time taken for the completion of each stage. 
 
-| Item  | Description |
-|--------|--------|
-|  **Colocated**         |     When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions.   |
-|**Whole-Stage Code Generation** |  A whole stage code generation node compiles a sub-tree of plans that support code generation together into a single Java function, which helps improve execution performance.      |
-|    **Per node execution timing**    |   Displays the time required for the execution of each node. If there are too many rows that are not getting filtered or exchanged.     |
-|   **Pool Name**     | Default/Low Latency. Applications can explicitly configure the use of this pool using a SQL command `set snappydata.scheduler.pool=lowlatency`.       |
-|**Query Node Details**|   Hover over a component to view its details.     |
-|     **Filter**   |   Displays the number of rows that are filtered for each node.      |
-|    **Joins**    |   If HashJoin puts pressure on memory, you can change the HashJoin size to use SortMergeJoin to avoid on-heap memory pressure.      |
+!!! Tip
+	You can cancel a long running job, using the **Kill** option.
+
+<a id="stages"></a>
+## Stages
+The **Stages** page displays the stage details of a Spark Job. Each Spark job is segregated into one or more stages. Each stage is an execution boundary where data exchange between nodes is required.
+
+On this page, you can view the total time required for all the tasks in a job to complete. You can also view if any of the tasks got delayed for completion. This may occur in case of uneven data distribution.
+
+* **Scheduler Delay** indicates the waiting period for the task. Delays can be caused if there are too many concurrent jobs.
+
+* **Shuffle reads and writes**: Shuffles are written to disk and can take a lot of time to write and read. This can be avoided by using colocated and replicated tables. You can use high-performance SSD drives for temporary storage (spark.local.dir) to improve shuffle time.
+
+* **Number of parallel tasks**: Due to concurrency, multiple queries may take cores and a specific query can take longer. To fix this, you can create a new scheduler and [assign appropriate cores to it](../best_practices/setup_cluster.md).
+
+* **GC time**: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory, especially when you have row tables.
+
 
 <a id="spark_cache"></a>
 ## Spark Cache
@@ -227,37 +233,6 @@ The Environment page provides detailed configurations for Spark environment incl
 <a id="executors"></a>
 ## Executors
 Executors are the entities that perform the tasks within a Spark job. Each Spark job is divided into multiple stages which can have one or more tasks depending on the number of partitions to be processed. All these tasks are scheduled on executor nodes which actually run them.
-
-<a id="jobs"></a>
-## Jobs
-The **Jobs** page lists all the Spark jobs. Each Spark action is translated as a Spark job. A job encapsulates the whole execution of an API or SQL. For example, `dataSet.count()` triggers a job.
-
-[comment]: <> (Need a brief introduction here.)
-
-![](../Images/MonitoringUI/query_analysis_job.png)
-
-* **Status**: Displays the status of the job.
-
-* **Stages**: Click on the stage to view its details. The table displays the time taken for the completion of each stage. 
-
-!!! Tip
-	You can cancel a long running job, using the **Kill** option. </br>![kill](../Images/kill_job.png)
-
-<a id="stages"></a>
-## Stages
-The **Stages** page displays the stage details of a Spark Job. Each Spark job is segregated into one or more stages. Each stage is an execution boundary where data exchange between nodes is required.
-
-On this page, you can view the total time required for all the tasks in a job to complete. You can also view if any of the tasks got delayed for completion. This may occur in case of uneven data distribution.
-
-![](../Images/MonitoringUI/query_analysis_stage.png)
-
-* **Scheduler Delay** indicates the waiting period for the task. Delays can be caused if there are too many concurrent jobs.
-
-* **Shuffle reads and writes**: Shuffles are written to disk and can take a lot of time to write and read. This can be avoided by using colocated and replicated tables. You can use high-performance SSD drives for temporary storage (spark.local.dir) to improve shuffle time.
-
-* **Number of parallel tasks**: Due to concurrency, multiple queries may take cores and a specific query can take longer. To fix this, you can create a new scheduler and [assign appropriate cores to it](../best_practices/setup_cluster.md).
-
-* **GC time**: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory, especially when you have row tables.
 
 <a id="structuredstream"></a>
 ## Structured Streaming
@@ -285,7 +260,7 @@ The following details are shown on the **Structured Streaming** tab:
 |**Uptime**| Total time that has passed since the streaming has started.|
 |**Trigger** **Interval**| Time interval on which successive batch is expected to start it’s execution. Each event is fired on this interval but each event may or may not have batches to process.|
 |**Batches Processed**| Total number of batches processed since streaming query has been started.|  
-|**Status**| Status can be **Active** or **Inactive**.</br> *	**Active**: Query is running. </br> *	**Inactive**: Query has stopped or failed.|
+|**Status**| Status can be **Active** or **Inactive**.</br> *	**Active**: Query is running </br> *	**Inactive**: Query has stopped or failed|
 |**Total Input Records**| Total count of records received from the sources and processed since the streaming query has been started.|
 |**Current Input Rate**| Number of input records per second in a batch, which has been received in the current event trigger. This value is the number of records received between the start time of previous event and start time of current event and divided by the number of seconds between these two events.|
 |**Current Processing Rate**|Average input records processed per second. This value is number of input records processed per second between the start time and the end time of the current event.|
@@ -351,16 +326,15 @@ The SQL section shows all the queries and their corresponding details along with
 |     **Filter**   |   Displays the number of rows that are filtered for each node.      |
 |    **Joins**    |   If HashJoin puts pressure on memory, you can change the HashJoin size to use SortMergeJoin to avoid on-heap memory pressure.      |
 
-
 <a id="historyserver"></a>
 ## Spark History Server
-The Spark History server is a Spark UI extension. It is a web application that lets you analyze the running as well as completed SQL queries and the associated Spark jobs. The metadata collected in the form of event logs by the Spark History server can be shipped from a SnappyData cluster to another SnappyData cluster for further analysis.
+The Spark History server is a Spark UI extension. It is a web application that lets you analyze the running as well as completed SQL queries and the associated Spark jobs. The metadata collected in the form of event logs by the Spark History server can be shipped from a TIBCO ComputeDB cluster to another TIBCO ComputeDB cluster for further analysis.
 
-The first step in tuning query performance in SnappyData is to understand the query physical plan that is available through the SQL tab on the SnappyData Monitoring console. The detailed execution plan requires one to understand the jobs and tasks associated with the query. This is available in the Jobs/Tasks tab. However, if the SnappyData Monitoring console is not accessible to the investigator, it becomes a difficult exercise. To overcome this, it is recommended to turn on the History server for production applications.
+The first step in tuning query performance in TIBCO ComputeDB is to understand the query physical plan that is available through the SQL tab on the TIBCO ComputeDB Monitoring console. The detailed execution plan requires one to understand the jobs and tasks associated with the query. This is available in the Jobs/Tasks tab. However, if the TIBCO ComputeDB Monitoring console is not accessible to the investigator, it becomes a difficult exercise. To overcome this, TIBCO recommends to turn on the History server for production applications.
 
 To turn on the History server, do the following:
 
-1.	Ensure to provide a shared disk that can be accessed from all the SnappyData nodes. If you do not have the NFS access, use HDFS. Provide the necessary permissions to access a shared folder when you start SnappyData.
+1.	Ensure to provide a shared disk that can be accessed from all the TIBCO ComputeDB nodes. If you do not have the NFS access, use HDFS. Provide the necessary permissions to access a shared folder when you start TIBCO ComputeDB.
 2.	Enable event logging for the Spark jobs. For example, specify the following properties in **conf/lead**:
 
             -spark.eventLog.enabled=true -spark.eventLog.dir=hdfs://namenode/shared/spark-logs

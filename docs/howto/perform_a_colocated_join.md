@@ -1,7 +1,7 @@
 <a id="howto-colacatedJoin"></a>
 # How to Perform a Colocated Join
 
-When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData server. Colocating the data of two tables based on a partitioning column's value is a best practice if you frequently perform queries on those tables that join on that column.
+When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same TIBCO ComputeDB server. Colocating the data of two tables based on a partitioning column's value is a best practice if you frequently perform queries on those tables that join on that column.
 When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data.
 
 **Code Example: ORDERS table is colocated with CUSTOMER table**
@@ -9,7 +9,7 @@ When colocated tables are joined on the partitioning columns, the join happens l
 A partitioned table can be colocated with another partitioned table by using the "COLOCATE_WITH" attribute in the table options. <br/>
 For example, in the code snippet below, the ORDERS table is colocated with the CUSTOMER table. The complete source for this example can be found in the file [ColocatedJoinExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CollocatedJoinExample.scala)
 
-**Get a SnappySession**:
+**Get a Snappy Session**:
 
 ```pre
 val spark: SparkSession = SparkSession

@@ -1,11 +1,11 @@
 # Resolving Catalog Inconsistency Issues
 
-A SnappyData catalog internally maintains table metadata in two catalogs:
+A TIBCO ComputeDB catalog internally maintains table metadata in two catalogs:
 
-*	**Data dictionary** required by SnappyData store
+*	**Data dictionary** required by Snappy store
 *	**Hive metastore** required by Spark
 	
-In rare conditions, SnappyData catalog may become inconsistent, if an entry for the table exists only in one of the catalogs instead of exisiting in both.  One of the symptoms for such an inconsistency is that you get an error that indicates that the table you are creating already exists. However, when you drop the same table, the table is not found.
+In rare conditions, TIBCO ComputeDB catalog may become inconsistent, if an entry for the table exists only in one of the catalogs instead of exisiting in both.  One of the symptoms for such an inconsistency is that you get an error that indicates that the table you are creating already exists. However, when you drop the same table, the table is not found.
 
 For example:
 
@@ -26,7 +26,7 @@ The following parameters are accepted by the **SYS.REPAIR_CATALOG** procedure:
 
 ## Example: Resolving Catalog Inconsistency Issues
 
-When both parameters are set to **false**, the **SYS.REPAIR_CATALOG** procedure checks for any inconsistencies in the catalog and prints warning messages in the SnappyData system server log.
+When both parameters are set to **false**, the **SYS.REPAIR_CATALOG** procedure checks for any inconsistencies in the catalog and prints warning messages in the TIBCO ComputeDB system server log.
 
 ```
 snappy> call sys.repair_catalog('false', 'false');

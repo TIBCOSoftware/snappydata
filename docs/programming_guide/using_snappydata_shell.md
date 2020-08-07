@@ -1,9 +1,9 @@
-# Using SnappyData Shell
-The SnappyData SQL Shell (_snappy-sql_) provides a simple command line interface to the SnappyData cluster.
+# Using Snappy Shell
+The Snappy Shell (_snappy-sql_) provides a simple command line interface to the TIBCO ComputeDB cluster.
 It allows you to run interactive queries on the row and column stores, run administrative operations and run status commands on the cluster. 
-Internally, it uses JDBC to interact with the cluster. You can also use tools like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster) to interact with SnappyData.
+Internally, it uses JDBC to interact with the cluster. You can also use tools like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster) to interact with TIBCO ComputeDB.
 
-[Start the SnappyData cluster]() and enter the following:
+[Start the TIBCO ComputeDB cluster]() and enter the following:
 
 ```pre
 // From the SnappyData base directory  

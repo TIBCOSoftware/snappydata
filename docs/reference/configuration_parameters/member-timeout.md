@@ -2,7 +2,7 @@
 
 ## Description
 
-Interval, in milliseconds, between two attempts to determine whether another system member is alive. When another member appears to be gone, SnappyData tries to contact it twice before quitting.
+Interval, in milliseconds, between two attempts to determine whether another system member is alive. When another member appears to be gone, TIBCO ComputeDB tries to contact it twice before quitting.
 
 Valid values are in the range 1000..600000.
 

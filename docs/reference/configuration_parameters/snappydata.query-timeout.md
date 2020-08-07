@@ -2,7 +2,7 @@
 
 ## Description
 
-After a query has run for longer than the specified amount of time in seconds, SnappyData automatically cancels the query. 
+After a query has run for longer than the specified amount of time in seconds, TIBCO ComputeDB automatically cancels the query. 
 
 ## Default Value
 

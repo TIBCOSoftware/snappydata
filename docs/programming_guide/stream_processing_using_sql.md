@@ -1,5 +1,5 @@
 # Stream Processing using SQL
-SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and integration with the built-in store. 
+TIBCO ComputeDB’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and integration with the built-in store. 
 Here is a brief overview of [Spark streaming](http://spark.apache.org/docs/latest/streaming-programming-guide.html) from the Spark Streaming guide. 
 
 
@@ -19,7 +19,7 @@ Internally, it works as follows. Spark Streaming receives live input data stream
 
 Additional details on the Spark Streaming concepts and programming is covered [here](http://spark.apache.org/docs/latest/streaming-programming-guide.html).
 
-## SnappyData Streaming Extensions over Spark
+## TIBCO ComputeDB Streaming Extensions over Spark
 The following enhancements over Spark Streaming are provided: 
 
 1. __Manage Streams declaratively__: Similar to SQL Tables, Streams can be defined declaratively from any SQL client and managed as Tables in the persistent system catalog of SnappyStore. The declarative language follows the SQL language and provides access to any of the Spark Streaming streaming adapters such as Kafka or file input streams. Raw tuples arriving can be transformed into a proper structure through pluggable transformers providing the desired flexibility for custom filtering or type conversions. 
@@ -33,7 +33,7 @@ The following enhancements over Spark Streaming are provided:
 5. __Approximate stream analytics__: When the volumes are too high, a stream can be summarized using various forms of samples and sketches to enable fast time series analytics. This is particularly useful when applications are interested in trending patterns, for instance, rendering a set of trend lines in real time on user displays.
 
 ## Working with Stream Tables
-SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources.
+TIBCO ComputeDB supports creation of stream tables from Twitter, Kafka, Files, Sockets sources.
 
 ```pre
 // DDL for creating a stream table
@@ -94,7 +94,7 @@ For example to create a stream table using kafka source :
 The streamTable created in the above example can be accessed from snappy-sql and can be queried using ad-hoc SQL queries.
 
 ## Stream SQL through snappy-sql
-Start a SnappyData cluster and connect through snappy-sql :
+Start a TIBCO ComputeDB cluster and connect through snappy-sql :
 
 ```pre
 //create a connection

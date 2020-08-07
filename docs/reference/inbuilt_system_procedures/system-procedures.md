@@ -1,8 +1,8 @@
 # Built-in System Procedures and Built-in Functions
 
-SnappyData provides built-in system procedures to help you manage the distributed system. For example, you can use system procedures to install required JAR files.
+TIBCO ComputeDB provides built-in system procedures to help you manage the distributed system. For example, you can use system procedures to install required JAR files.
 
-SnappyData also supports built-in function, which lets you perform various kinds of data transformations directly in SELECT statements.
+TIBCO ComputeDB also supports built-in function, which lets you perform various kinds of data transformations directly in SELECT statements.
 
 It also provides the dsid() function built into it that are always available. 
 <!--
@@ -18,7 +18,6 @@ The following built-in procedures are available:
 * [SYS.SET_CRITICAL_HEAP_PERCENTAGE](set_critical_heap_percentage.md)
 
 * [SYS.SET_TRACE_FLAG](set-trace-flag.md)
-* [SYS.REMOVE_METASTORE_ENTRY](sys_remove_metastore_entry.md)
 
 The following built-in function is available:
 

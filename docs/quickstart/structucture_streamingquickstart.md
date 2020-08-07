@@ -1,7 +1,6 @@
-
 # Structured Streaming Quick Reference
 
-This quick start guide provides step-by-step instructions to perform structured streaming in SnappyData by using the Spark shell as well as through a Snappy job.
+This quick start guide provides step-by-step instructions to perform structured streaming in TIBCO ComputeDB by using the Spark shell as well as through a Snappy job.
 
 For detailed information, refer to  [Structured Streaming](/howto/use_stream_processing_with_snappydata.md#structuredstreaming).
 
@@ -9,7 +8,7 @@ For detailed information, refer to  [Structured Streaming](/howto/use_stream_pro
 
 Following are the steps to perform structured streaming using Spark shell:
 
-1.	Start Snappydata cluster using the following command.
+1.	Start TIBCO ComputeDB cluster using the following command.
 
 		./sbin/snappy-start-all
 
@@ -25,7 +24,7 @@ Following are the steps to perform structured streaming using Spark shell:
         {"id":"device2", "signal":20}
         {"id":"device3", "signal":30}
         
-4.	Open a new terminal window, go to Snappydata distribution directory and start Spark shell using the following command     :
+4.	Open a new terminal window, go to TIBCO ComputeDB distribution directory and start Spark shell using the following command     :
 
 		./bin/spark-shell --master local[*] --conf spark.snappydata.connection=localhost:1527
 
@@ -57,18 +56,18 @@ Following are the steps to perform structured streaming using Spark shell:
           selectExpr("jsonObject.*").
           writeStream.
           format("snappysink").
-          queryName("deviceStream").  // must be unique across the Snappydata cluster
+          queryName("deviceStream").  // must be unique across the TIBCO ComputeDB cluster
           trigger(ProcessingTime("1 seconds")).
           option("tableName", "devices").
-          option("checkpointLocation", "/tmp/checkpoint").
+          option("checkpointLocation", "/path/to/checkpointLocation").
           start()
         
 
-6.	Open a new terminal window, navigate to Snappydata distribution directory and start Snappy SQL:
+6.	Open a new terminal window, navigate to TIBCO ComputeDB distribution directory and start Snappy SQL:
 
 		./bin/snappy-sql
 
-7. 	Connect to running Snappydata cluster using the following command:
+7. 	Connect to running TIBCO ComputeDB cluster using the following command:
 
 		connect client 'localhost:1527';
 
@@ -84,7 +83,7 @@ Following are the steps to perform structured streaming using Spark shell:
 
 Assuming that your Kafka cluster is already setup and running, you can use the following steps to run a structured streaming query using Spark shell:
 
-1.	Start Snappydata cluster using following command.
+1.	Start TIBCO ComputeDB cluster using following command.
 
 		./sbin/snappy-start-all
 
@@ -104,7 +103,7 @@ Assuming that your Kafka cluster is already setup and running, you can use the f
         {"id":"device3", "signal":30}
         
 
-4.	Open a new terminal window, go to Snappydata distribution directory and start Spark shell using the following command:
+4.	Open a new terminal window, go to TIBCO ComputeDB distribution directory and start Spark shell using the following command:
 
 		./bin/spark-shell --master local[*] --conf spark.snappydata.connection=localhost:1527
 
@@ -138,16 +137,16 @@ Assuming that your Kafka cluster is already setup and running, you can use the f
           selectExpr("jsonObject.*").
           writeStream.
           format("snappysink").
-          queryName("deviceStream").  // must be unique across the Snappydata cluster
+          queryName("deviceStream").  // must be unique across the TIBCO ComputeDB cluster
           trigger(ProcessingTime("1 seconds")).
           option("tableName", "devices").
-          option("checkpointLocation", "/tmp/checkpoint").
+          option("checkpointLocation", "/path/to/checkpointLocation").
           start()
-6.	Open a new terminal window, navigate to Snappydata distribution directory and start Snappy SQL:
+6.	Open a new terminal window, navigate to TIBCO ComputeDB distribution directory and start Snappy SQL:
 
 		./bin/snappy-sql
 
-7.	Connect to the running Snappydata cluster using the following command:
+7.	Connect to the running TIBCO ComputeDB cluster using the following command:
 
 		connect client 'localhost:1527';
 
@@ -160,7 +159,7 @@ Assuming that your Kafka cluster is already setup and running, you can use the f
 
 ## Structured Streaming using Snappy Job
 
-Refer to [SnappyData Jobs]( https://snappydatainc.github.io/snappydata/programming_guide/snappydata_jobs/) for more information about Snappy Jobs.
+Refer to [TIBCO ComputeDB Jobs](../programming_guide/snappydata_jobs.md) for more information about Snappy Jobs.
 
 Following is a Snappy job code that contains similarly structured streaming query:
 
@@ -196,10 +195,10 @@ object Example extends SnappySQLJob {
       selectExpr("jsonObject.*").
       writeStream.
       format("snappysink").
-      queryName("deviceStream"). // must be unique across the Snappydata cluster
+      queryName("deviceStream"). // must be unique across the TIBCO ComputeDB cluster
       trigger(ProcessingTime("1 seconds")).
       option("tableName", "devices").
-      option("checkpointLocation", "/tmp/checkpoint").
+      option("checkpointLocation", "/path/to/checkpointLocation").
       start()
 
     streamingQuery.awaitTermination()
@@ -246,3 +245,6 @@ For more examples, refer to [structured streaming examples](https://github.com/S
 |   [JSONKafkaSourceExampleWithSnappySink.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/JSONKafkaSourceExampleWithSnappySink.scala)     |  An example of structured streaming depicting processing of JSON coming from Kafka source using Snappy Sink      |
 |    [SocketSourceExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExample.scala)    |    An example showing usage of structured streaming with console Sink.   |
 |      [SocketSourceExampleWithSnappySink.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala)  |   An example showing usage of structured streaming with SnappyData.    |
+
+
+

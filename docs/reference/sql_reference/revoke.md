@@ -67,7 +67,7 @@ The privileges revoked from PUBLIC and from individual users are independent pri
 <a id="cascading-object-dependencies"></a>
 ## Cascading Object Dependencies
 
-For views and constraints, if the privilege on which the object depends on is revoked, the object is automatically dropped. SnappyData does not try to determine if you have other privileges that can replace the privileges that are being revoked.
+For views and constraints, if the privilege on which the object depends on is revoked, the object is automatically dropped. TIBCO ComputeDB does not try to determine if you have other privileges that can replace the privileges that are being revoked.
 
 <a id="table-level-privilege-limitations"></a>
 ## Table-Level Privilege Limitations

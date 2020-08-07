@@ -1,24 +1,24 @@
-# Setting Up SnappyData JDBC Client and QlikView
+# Setting Up TIBCO ComputeDB JDBC Client and QlikView
 
 !!! Note
-	Before using SnappyData JDBC Client, make sure [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) is installed.
+	Before using TIBCO ComputeDB JDBC Client, make sure [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) is installed.
 
 The following topics are covered in this section:
 
-* [Step 1: Download SnappyData JDBC Client](#step-1)
+* [Step 1: Download TIBCO ComputeDB JDBC Client](#step-1)
 
 * [Step 2: Download and Install QlikView](#step-2)
 
 * [Step 3: Download and Install JDBCConnector for QlikView](#step-3)
 
-* [Step 4: Configure the JDBCConnector to connect to SnappyData](#step-4)
+* [Step 4: Configure the JDBCConnector to connect to TIBCO ComputeDB](#step-4)
 
-* [Step 5: Connecting from QlikView to SnappyData](#step-5)
+* [Step 5: Connecting from QlikView to TIBCO ComputeDB](#step-5)
 
 <a id= step-1> </a>
-## Step 1: Download SnappyData JDBC Client
+## Step 1: Download TIBCO ComputeDB JDBC Client
 
-*	[Download the SnappyData JDBC Client JAR](https://github.com/SnappyDataInc/snappydata/releases/latest).
+*	[Download the TIBCO ComputeDB JDBC Client JAR](https://github.com/SnappyDataInc/snappydata/releases/latest).
 	</br>See also: [How to connect using JDBC driver](/howto/connect_using_jdbc_driver.md)
 
 <a id= step-2> </a>
@@ -30,16 +30,16 @@ The following topics are covered in this section:
 <a id= step-3> </a>
 ## Step 3: Download and Install JDBCConnector for QlikView
 
-To connect to SnappyData using JDBC Client from QlikView application, install the JDBCConnector. This connector integrates into the QlikView application
+To connect to TIBCO ComputeDB using JDBC Client from QlikView application, install the JDBCConnector. This connector integrates into the QlikView application
 
 1. [Download JDBCConnector installer](https://www.tiq-solutions.de/en/products/qlikview/jdbc-connector/).
 
 2. Extract the contents of the compressed file, and double-clik on the installer to start the installation process. For installation instructions, refer to the documentation provided for the QlikView JDBC Connector. </br>You may need to activate the product.
 
 <a id= step-4> </a>
-## Step 4: Configure the JDBCConnector to Connect to SnappyData
+## Step 4: Configure the JDBCConnector to Connect to TIBCO ComputeDB
 
-After installing the JDBCConnector application, add the SnappyData profile in the JDBCConnector. 
+After installing the JDBCConnector application, add the TIBCO ComputeDB profile in the JDBCConnector. 
 
 !!! Tip
 	You can also create a profile from the QlikView application.
@@ -48,7 +48,7 @@ After installing the JDBCConnector application, add the SnappyData profile in th
 
 2. In the **Profiles** tab, click **Create Profile**.
 
-3. Enter a profile name. For example, SnappyData. 
+3. Enter a profile name. For example, ComputeDB. 
 
 4. Click **Set As Default** to set it as the default profile.
 
@@ -63,7 +63,7 @@ After installing the JDBCConnector application, add the SnappyData profile in th
 9. Click **OK** to save and apply your changes.
 
 <a id= step-5> </a>
-## Step 5: Connecting from QlikView to SnappyData
+## Step 5: Connecting from QlikView to TIBCO ComputeDB
 
 1. Open the QlikView desktop application.
 
@@ -80,7 +80,7 @@ After installing the JDBCConnector application, add the SnappyData profile in th
 
 6. Click **Connect**. The Connect through QlikView JDBC Connector window is displayed.
 
-	* In **URL** field enter the SnappyData JDBC URL in the format **jdbc:snappydata://<host>:<port>** </br> For example, jdbc:snappydata://192.168.1.200:1527. 
+	* In **URL** field enter the TIBCO ComputeDB JDBC URL in the format **jdbc:snappydata://<host>:<port>** </br> For example, jdbc:snappydata://192.168.1.200:1527. 
 
 	* Enter both the Username and Password as **app**.
 

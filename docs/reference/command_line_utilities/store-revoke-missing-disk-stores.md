@@ -1,5 +1,5 @@
 # revoke-missing-disk-store
-Instruct SnappyData members to stop waiting for a disk store to become available.
+Instruct TIBCO ComputeDB members to stop waiting for a disk store to become available.
 
 ## Syntax
 
@@ -25,7 +25,7 @@ The table describes options and arguments for snappy `revoke-missing-disk-store`
 |-disk-store-id|(Required.) Specifies the unique ID of the disk store to revoke.| 
 |-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the `peer-discovery-port` used when starting the cluster (default 10334). This is a mandatory field.|
 |-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
-|-prop-name|Any other SnappyData distributed system property.|
+|-prop-name|Any other TIBCO ComputeDB distributed system property.|
 |Authentication properties| Refer [Authentication Properites](/security/launching_the_cluster_in_secure_mode.md#authproperties).|
 
 

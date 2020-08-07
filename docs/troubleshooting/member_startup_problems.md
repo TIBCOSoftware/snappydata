@@ -19,7 +19,7 @@ To avoid delayed startup and recovery, the following actions are recommended:
 <a id= delayedstartup> </a>
 ## Delayed Startup Due to Unavailable Disk Stores
 
-When you start SnappyData members, startup delays can occur if specific disk store files on other members are unavailable. This is part of the normal startup behavior and is designed to help ensure data consistency. For example, consider the following startup message for a locator (**locator2**):
+When you start TIBCO ComputeDB members, startup delays can occur if specific disk store files on other members are unavailable. This is part of the normal startup behavior and is designed to help ensure data consistency. For example, consider the following startup message for a locator (**locator2**):
 
 ```pre
 SnappyData Locator pid: 23537 status: waiting

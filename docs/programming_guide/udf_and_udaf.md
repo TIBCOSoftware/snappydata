@@ -1,9 +1,9 @@
 # User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)
-Users can define a function and completely customize how SnappyData evaluates data and manipulates queries using UDF and UDAF functions across sessions. 
+Users can define a function and completely customize how TIBCO ComputeDB evaluates data and manipulates queries using UDF and UDAF functions across sessions. 
 The definition of the functions is stored in a persistent catalog, which enables it to be used after node restart as well.
 
 !!! Note
-	Support for UDF is available from SnappyData version release 0.8 onwards.
+	Support for UDF is available from TIBCO ComputeDB version release 0.8 onwards.
 
 ## Create User Defined Function
 
@@ -32,7 +32,7 @@ class StringLengthUDF extends UDF1[String, Int] {
 !!! Note
 	Place the jars used for creating persistent UDFs in a shared location (NFS, HDFS etc.) if you are configuring multiple leads for high availability. The same jar is used for DDL replay while the standby lead becomes the active lead.
     
-After defining a UDF you can bundle the UDF class in a JAR file and create the function by using `./bin/snappy-sql` of SnappyData. This creates a persistent entry in the catalog after which, you use the UDF.
+After defining a UDF you can bundle the UDF class in a JAR file and create the function by using `./bin/snappy-sql` of TIBCO ComputeDB. This creates a persistent entry in the catalog after which, you use the UDF.
 
 ```pre
 CREATE FUNCTION udf_name AS qualified_class_name RETURNS data_type USING JAR '/path/to/file/udf.jar'
@@ -52,7 +52,7 @@ You can write a JAVA or SCALA class to write a UDF implementation.
 
 **Return Types to UDF program type mapping**
 
-| SnappyData Type | UDF Type |
+| TIBCO ComputeDB Type | UDF Type |
 | --- | --- |
 |STRING|java.lang.String|
 |INTEGER|java.lang.Integer|
@@ -96,11 +96,11 @@ DROP FUNCTION IF EXISTS app.strnglen
 
 ## Create User Defined Aggregate Functions
 
-SnappyData uses the same interface as that of Spark to define a User Defined Aggregate Function  `org.apache.spark.sql.expressions.UserDefinedAggregateFunction`. For more information refer to this [document](https://databricks.com/blog/2015/09/16/apache-spark-1-5-dataframe-api-highlights.html).
+TIBCO ComputeDB uses the same interface as that of Spark to define a User Defined Aggregate Function  `org.apache.spark.sql.expressions.UserDefinedAggregateFunction`. For more information refer to this [document](https://databricks.com/blog/2015/09/16/apache-spark-1-5-dataframe-api-highlights.html).
 
 ## Known Limitations
-*	In the current version of the product, setting schema over a JDBC connection (using the `set schema` command) or SnappySession (using `SnappySession.setSchema` API) does not work in all scenarios. Even if the schema is set, the operations are occasionally performed in the default `APP` schema. 
+*	In the current version of the product, setting schema over a JDBC connection (using the `set schema` command) or Snappy Session (using `SnappySession.setSchema` API) does not work in all scenarios. Even if the schema is set, the operations are occasionally performed in the default `APP` schema. 
 As a workaround, you can qualify the schemaname with tablename. </br> 
 For example, to select all rows from table 't1' in schema 'schema1', use query `select * from schema1.t1`
 
-*	In the current version of the product, user defined functions are not displayed when you run the SHOW FUNCTIONS command in SnappyData shell. This will be available in the future releases.
+*	In the current version of the product, user defined functions are not displayed when you run the SHOW FUNCTIONS command in Snappy Shell. This will be available in the future releases.

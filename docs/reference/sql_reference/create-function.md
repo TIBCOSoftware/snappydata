@@ -6,7 +6,7 @@ CREATE FUNCTION udf_name AS qualified_class_name RETURNS data_type USING JAR '/p
 
 ## Description
 
-Creates a function. Users can define a function and completely customize how SnappyData evaluates data and manipulates queries using UDF and UDAF functions across sessions. The definition of the functions is stored in a persistent catalog, which enables it to be used after node restart as well.
+Creates a function. Users can define a function and completely customize how TIBCO ComputeDB evaluates data and manipulates queries using UDF and UDAF functions across sessions. The definition of the functions is stored in a persistent catalog, which enables it to be used after node restart as well.
 
 You can extend any one of the interfaces in the package `org.apache.spark.sql.api.java`. These interfaces can be included in your client application by adding `snappy-spark-sql_2.11-2.0.3-2.jar` to your classpath.
 
@@ -17,7 +17,7 @@ You can extend any one of the interfaces in the package `org.apache.spark.sql.ap
 
 **Return Types to UDF Program Type Mapping**
 
-| SnappyData Type | UDF Type |
+| TIBCO ComputeDB Type | UDF Type |
 | --- | --- |
 |STRING|java.lang.String|
 |INTEGER|java.lang.Integer|

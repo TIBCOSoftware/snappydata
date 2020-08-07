@@ -117,7 +117,7 @@ To disable the metrics collection for a specific Sink, edit the **metrics.proper
 
 ## Statistics
 
-The following statistics in SnappyData are collected when you Metrics monitoring is enabled. 
+The following statistics in TIBCO  ComputeDB are collected when you Metrics monitoring is enabled. 
 
 !!!Note
 	All memory statistics are published in MB units.
@@ -240,6 +240,5 @@ The following statistics in SnappyData are collected when you Metrics monitoring
 | offHeapExecutionUsageTrends | Off-heap execution usage trends in the cluster.  | Histogram |   |
 | aggrMemoryUsageTrends | Aggregate memory usage trends in the cluster.  | Histogram |   |
 | diskStoreDiskSpaceTrend | Disk store and space trends in the cluster.  | Histogram |   |
-
 
 

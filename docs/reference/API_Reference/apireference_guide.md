@@ -1,16 +1,16 @@
-# SnappyData Spark Extension API Reference Guide
+# TIBCO ComputeDB Spark Extension API Reference Guide
 
-This guide gives details of Spark extension APIs that are provided by SnappyData. The following APIs are included:
+This guide gives details of Spark extension APIs that are provided by TIBCO ComputeDB. The following APIs are included:
 
 
 | SnappySession APIs | DataFrameWriter APIs |SnappySessionCatalog APIs|
 |--------|--------|--------|
-|  [**sql**](#sqlapi)   </br> Query Using Cached Plan   |  [**putInto**](#putintoapi)</br>Put Dataframe Content into Table  | [**getKeyColumns**](#getkeycolumapi) </br>Get Key Columns of SnappyData table|
+|  [**sql**](#sqlapi)   </br> Query Using Cached Plan   |  [**putInto**](#putintoapi)</br>Put Dataframe Content into Table  | [**getKeyColumns**](#getkeycolumapi) </br>Get Key Columns of TIBCO ComputeDB table|
 |  [**sqlUncached**](#sqluncachedapi)</br>Query Using Fresh Plan   | [**deleteFrom**](#deletefromapi)</br>Delete DataFrame Content from Table |[**getKeyColumnsAndPositions**](#getkeycolumnspos) </br>Gets primary key or key columns with their position in the table. |
-|   [**createTable**](#createtableapi)</br>Create SnappyData Managed Table    |        ||
-|     [**createTable**](#createtable1)</br>Create SnappyData Managed JDBC Table |        ||
+|   [**createTable**](#createtableapi)</br>Create TIBCO ComputeDB Managed Table    |        ||
+|     [**createTable**](#createtable1)</br>Create TIBCO ComputeDB Managed JDBC Table |        ||
 |    [**truncateTable**](#truncateapi)</br> Empty Contents of Table    |        ||
-|    [**dropTable**](#droptableapi) </br>Drop SnappyData Table    |        ||
+|    [**dropTable**](#droptableapi) </br>Drop TIBCO ComputeDB Table    |        ||
 |  [**createSampleTable**](#createsampletableapi)</br>Create Stratified Sample Table      |        ||
 |   [**createApproxTSTopK**](#createaproxtstopkapi)</br>Create Structure to Query Top-K     |        ||
 |    [**setCurrentSchema**](#setschemaapi)</br>Set Current Database/schema    |        ||
@@ -90,7 +90,7 @@ snappySession.sqlUncached(“select * from t1”)
 <a id= createtableapi> </a>
 ### createTable
 
-Creates a SnappyData managed table. Any relation providers, that is the row, column etc., which are supported by SnappyData can be created here.
+Creates a TIBCO ComputeDB managed table. Any relation providers, that is the row, column etc., which are supported by TIBCO ComputeDB can be created here.
 
 **Syntax**
 
@@ -129,7 +129,7 @@ snappySession.createTable(tableName, "column", dataDF.schema, props)
 <a id= createtable1> </a>
 ### createTable
 
-Creates a SnappyData managed JDBC table which takes a free format DDL string. The DDL string should adhere to the syntax of the underlying JDBC store. SnappyData ships with an inbuilt JDBC store, which can be accessed by the data store of Row format. The options parameter can take connection details.
+Creates a TIBCO ComputeDB managed JDBC table which takes a free format DDL string. The DDL string should adhere to the syntax of the underlying JDBC store. TIBCO ComputeDB ships with an inbuilt JDBC store, which can be accessed by the data store of Row format. The options parameter can take connection details.
 
 **Syntax**
 
@@ -198,7 +198,7 @@ snappySession.truncateTable(“t1”, true)
 <a id= droptableapi> </a>
 ### dropTable
 
-Drop a SnappyData table created by a call to **SnappySession.createTable**, **Catalog.createExternalTable** or **Dataset.createOrReplaceTempView**. 
+Drop a TIBCO ComputeDB table created by a call to **SnappySession.createTable**, **Catalog.createExternalTable** or **Dataset.createOrReplaceTempView**. 
 
 **Syntax**
 
@@ -226,8 +226,9 @@ snappySession.dropTable(“t1”, true)
 
 Creates a stratified sample table.
 
-!!! Note 
+!!! Note
 	This API is not supported in the Smart Connector mode. 
+ 
 
 **Syntax**
 
@@ -262,8 +263,8 @@ snappySession.createSampleTable("airline_sample",   Some("airline"), Map("qcs" -
 
 Creates an approximate structure to query top-K with time series support.
 
-!!! Note 
-	This API is not supported in the Smart Connector mode.
+!!! Note
+	This API is not supported in the Smart Connector mode. 
 
 **Syntax**
 
@@ -437,7 +438,7 @@ delete(tableName: String, filterExpr: String)
 |Parameter	 | Description |
 |--------|--------|
 | tableName      | Name of the table. |
-|filterExpr|  SQL WHERE criteria to select rows that will be updated. | 
+|filterExpr|  SQL where criteria to select rows that will be updated. | 
 |Returns|Int|
 
 **Example **
@@ -451,8 +452,9 @@ snappySession.delete(“t1”, s"col1=$i"))
 
 Fetches the topK entries in the** Approx TopK** synopsis for the specified time interval. The time interval specified here should not be less than the minimum time interval used when creating the TopK synopsis.
 
+
 !!! Note
-	This API is not supported in the Smart Connector mode.
+	This API is not supported in the Smart Connector mode. 
 
 **Syntax**
 
@@ -517,11 +519,11 @@ df.write.putInto(“snappy_table”)
 ```
 <a id= deletefromapi> </a>
 ### deleteFrom
-The `deleteFrom` API deletes all those records from given snappy table which exists in the input Dataframe. Existence of the record is checked by comparing the key columns (or the primary keys) values. 
+The `deleteFrom` API deletes all those records from given Snappy table which exists in the input Dataframe. Existence of the record is checked by comparing the key columns (or the primary keys) values. 
 
-To use this API, key columns(for column table) or primary keys(for row tables) must be defined in the SnappyData table.
+To use this API, key columns(for column table) or primary keys(for row tables) must be defined in the TIBCO ComputeDB table.
 
-Also, the source DataFrame must contain all the key columns or primary keys (depending upon the type of snappy table). The column existence is checked using a case-insensitive match of column names. If the source DataFrame contains columns other than the key columns, it will be ignored by the `deleteFrom` API.
+Also, the source DataFrame must contain all the key columns or primary keys (depending upon the type of Snappy table). The column existence is checked using a case-insensitive match of column names. If the source DataFrame contains columns other than the key columns, it will be ignored by the `deleteFrom` API.
 
 
 **Syntax**
@@ -556,7 +558,7 @@ The following APIs are available for SnappySessionCatalog:
 
 <a id= getkeycolumapi> </a>
 ### getKeyColumns
-Gets primary key or key columns of a SnappyData table.
+Gets primary key or key columns of a TIBCO ComputeDB table.
 
 **Syntax**
 
@@ -577,8 +579,9 @@ getKeyColumns(tableName: String)
 snappySession.sessionCatalog.getKeyColumns("t1")
 ```
 
-<a id= getkeycolumnspos> </a>
 ### getKeyColumnsAndPositions
+<a id= getkeycolumnspos> </a>
+
 Gets primary key or key columns of a SnappyData table along with their position in the table.
 
 **Syntax**
@@ -592,7 +595,7 @@ getKeyColumnsAndPositions(tableName: String)
 |Parameter	 | Description |
 |--------|--------|
 | tableName	    |    Name of the table.|
-| Returns     |   Sequence of `scala.Tuple2` containing column and column's position in the table for each key columns (for column tables) or sequence of primary keys (for row tables).|
+| Returns     |  Sequence of `scala.Tuple2` containing column and column's position in the table for each key columns (for column tables) or sequence of primary keys (for row tables).|
 
 **Example **
 

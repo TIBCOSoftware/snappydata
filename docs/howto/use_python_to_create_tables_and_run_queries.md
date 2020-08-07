@@ -1,12 +1,12 @@
 <a id="howto-python"></a>
 # How to use Python to Create Tables and Run Queries
 
-Developers can write programs in Python to use SnappyData features. 
+Developers can write programs in Python to use TIBCO ComputeDB features. 
 
-**First create a SnappySession**:
+**First create a Snappy Session**:
 
 ```pre
- from pyspark.sql.snappy import SnappySession
+ from pyspark.sql.snappy import Snappy Session
  from pyspark import SparkContext, SparkConf
 
  conf = SparkConf().setAppName(appName).setMaster(master)
@@ -14,7 +14,7 @@ Developers can write programs in Python to use SnappyData features.
  snappy = SnappySession(sc)
 ```
 
-**Create table using SnappySession**:
+**Create table using Snappy Session**:
 
 ```pre
 # Creating partitioned table PARTSUPP using SQL

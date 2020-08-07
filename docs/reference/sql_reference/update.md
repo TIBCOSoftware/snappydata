@@ -7,10 +7,8 @@ UPDATE table-name
 SET column-name = value
 [, column-name = value ]*
 [ WHERE predicate ]
-
 value: 
 expression | DEFAULT
-
 ```
 
 ## Description
@@ -70,8 +68,8 @@ update users set age = cast ('45' as int)
 // Change the ADDRESS and SINCE  fields to null for all customers with ID greater than 10.
 UPDATE TRADE.CUSTOMERS SET ADDR=NULL, SINCE=NULL  WHERE CID > 10;
 
-// Set the ADDR of all customers to 'SnappyData' where the current address is NULL.
-UPDATE TRADE.CUSTOMERS SET ADDR = 'Snappydata' WHERE ADDR IS NULL;
+// Set the ADDR of all customers to 'ComputeDB' where the current address is NULL.
+UPDATE TRADE.CUSTOMERS SET ADDR = 'ComputeDB' WHERE ADDR IS NULL;
 
 // Increase the  QTY field by 10 for all rows of SELLORDERS table.
 UPDATE TRADE.SELLORDERS SET QTY = QTY+10;

@@ -1,6 +1,6 @@
 ## Troubleshooting Out-of-Memory(OOM)Errors
 
-Whenever SnappyData faces an Out-of-Memory(OOM) situation, the processes are killed. The pid files that are created in the SnappyData work directory are an indication that an OOM error has occured. Additional files can also be found based on the provided cluster configuration options. These files can be used for further analysis. 
+Whenever TIBCO ComputeDB faces an Out-of-Memory(OOM) situation, the processes are killed. The pid files that are created in the TIBCO ComputeDB work directory are an indication that an OOM error has occured. Additional files can also be found based on the provided cluster configuration options. These files can be used for further analysis. 
 
 You can use the following pointers to troubleshoot the OOM error:
 

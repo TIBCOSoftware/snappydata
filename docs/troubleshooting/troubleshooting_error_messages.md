@@ -1,5 +1,5 @@
 # Troubleshooting Error Messages
-Error messages provide information about problems that might occur when setting up the SnappyData cluster or when running queries. </br>You can use the following information to resolve such problems.
+Error messages provide information about problems that might occur when setting up the TIBCO ComputeDB cluster or when running queries. </br>You can use the following information to resolve such problems.
 
 <!-- --------------------------------------------------------------------------- -->
 
@@ -14,11 +14,13 @@ The following topics are covered in this section:
 * [Region {0} bucket {1} has persistent data that is no longer online stored at these locations: {2}](#persistent-data)
 
 * [ForcedDisconnectException Error: "No Data Store found in the distributed system for: {0}"](#no-data-store)
-* [Node went down or data no longer available while iterating the results](#queryfailiterate)
+* [Node went down or data no longer available while iterating the results](#queryfailiterate).
 * [SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.](#smartconnectorcatalog)
 * [Cannot parse config: String: 1: Expecting end of input or a comma, got ':'](#jobsubmitsnap)
 * [java.lang.IllegalStateException: Detected both log4j-over-slf4j.jar AND bound slf4j-log4j12.jar on the class path, preempting StackOverflowError](#javalangillegal)
 * [Bad `PutInto` performance even when input dataframe size is small.](#putintoperf)
+
+
 
 <a id="region0"></a>
 <error> **Error Message:** </error> 
@@ -36,7 +38,7 @@ The status of the member is displayed as *waiting* in such cases when you [check
 </diagnosis>
 
 <action> **Solution:** </br>
-The status of the waiting members change to online once all the members are online and the status of the waiting members is updated. Users can check whether the status is changed from *waiting* to *online* by using the `snappy-status-all.sh` command or by checking the [SnappyData Monitoring Console](../monitoring/monitoring.md).
+The status of the waiting members change to online once all the members are online and the status of the waiting members is updated. Users can check whether the status is changed from *waiting* to *online* by using the `snappy-status-all.sh` command or by checking the [TIBCO ComputeDB Monitoring Console](../monitoring/monitoring.md).
 </action>
 
 <!-- --------------------------------------------------------------------------- -->
@@ -126,7 +128,7 @@ This is expected behaviour where the product does not retry, since partial resul
 <error-text>
 SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.
 OR
-Table schema changed due to DROP/CREATE/ALTER operation. Please retry the operation.
+Table schema changed due to DROP/CREATE/ALTER operation. Please retry the operation
 </error-text>
 
 <diagnosis> **Diagnosis:**</br>
@@ -216,7 +218,7 @@ java.lang.IllegalStateException: Detected both log4j-over-slf4j.jar AND bound sl
 </error-text>
 
 <diagnosis> **Diagnosis:**</br>
-This error message can be seen if application uses SnappyData JDBC driver shadow jar and the application has a dependency on **log4j-over-slf4j** package/jar. This is because, the SnappyData JDBC driver
+This error message can be seen if application uses TIBCO ComputeDB JDBC driver shadow jar and the application has a dependency on **log4j-over-slf4j** package/jar. This is because, the TIBCO ComputeDB JDBC driver
 has a dependency on **slf4j-log4j12** which cannot co-exist with  'log4j-over-slf4j' package.
 </diagnosis>
 
@@ -224,11 +226,11 @@ has a dependency on **slf4j-log4j12** which cannot co-exist with  'log4j-over-sl
 
 To avoid getting **log4j** and **slf4j-log4j12** dependencies in the driver, you can link the **non-fat** JDBC client jar (**snappydata-store-client*.jar**) in your application and exclude **log4j** and **slf4j-log4j12** dependencies from it.
 
-Note that the **snappydata-store-client** jar does not contain some of the SnappyData extensions (Scala imiplicits) that are required when SnappyData Spark-JDBC connector is used. That is when accessing SnappyData from another Spark cluster using JDBC dataframes as mentioned [here].(https://snappydatainc.github.io/snappydata/programming_guide/spark_jdbc_connector/#using-sql-dml-to-execute-ad-hoc-sql)). If these SnappyData extensions are to be used, then in addition to above mentioned jar, **snappydata-jdbc*-only.jar** dependency will be required. This is available on maven repo and can be accessed using classifier: 'only' along with snappydata-jdbc cordinates.
+Note that the **snappydata-store-client** jar does not contain some of the TIBCO ComputeDB extensions (Scala imiplicits) that are required when TIBCO ComputeDB Spark-JDBC connector is used. That is when accessing TIBCO ComputeDB from another Spark cluster using JDBC dataframes as mentioned [here].(https://snappydatainc.github.io/snappydata/programming_guide/spark_jdbc_connector/#using-sql-dml-to-execute-ad-hoc-sql)). If these TIBCO ComputeDB extensions are to be used, then in addition to above mentioned jar, **snappydata-jdbc*-only.jar** dependency will be required. This is available on maven repo and can be accessed using classifier: 'only' along with snappydata-jdbc cordinates.
 
 Following is an example for adding this dependency using gradle:
 
-build.gradle example that uses **snappydata-store-client jar** and **snappydata-jdbc*only.jar**. The example uses 1.0.2.2 SnappyData version, replace it with the version required by the application.  
+build.gradle example that uses **snappydata-store-client jar** and **snappydata-jdbc*only.jar**. The example uses 1.0.2.2 product version, replace it with the version required by the application.  
 
 **Example**
 
@@ -255,6 +257,7 @@ build.gradle example that uses **snappydata-store-client jar** and **snappydata-
 
 ```
 </action>
+
 <!-- --------------------------------------------------------------------------- -->
 
 <a id="putintoperf"></a>

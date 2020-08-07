@@ -1,6 +1,6 @@
-# Collecting Logs, Stats, and Dumps using the collect-debug-artifacts script
+# Collecting Logs, Stats, and Dumps using the collect-debug-artifacts Script
 
-This section uses the term 'node' frequently. A node denotes a server or a locator member when a purely SnappyData system is there. In a SnappyData distributed system a node can mean server, locator or lead member.
+This section uses the term 'node' frequently. A node denotes a server or a locator member when a purely TIBCO ComputeDB system is there. In a TIBCO ComputeDB distributed system a node can mean server, locator or lead member.
 
 The script **collect-debug-artifacts** enables you to collect the debug information like logs and stats. It also has an option to dump stacks of the running system. Details of all the options and capabilities of the script can be found below. The main purpose of this is to ease the collection of these information. The script collects all the artifacts node wise and outputs a tar file which contains member wise information.
 
@@ -9,9 +9,9 @@ Pre-requisites for running the script:
 The script assumes certain conditions to be fulfilled before it is invoked. Please ensure that these requirements are fulfilled because the script does not validate these.
 The conditions are:
 
-1. This script is expected to be run by a user who has read and write permissions on the output directories of all the SnappyData nodes.
+1. This script is expected to be run by a user who has read and write permissions on the output directories of all the TIBCO ComputeDB nodes.
 
-2. The user should have one way passwordless ssh setup from one machine to the other machines where the SnappyData nodes are running.
+2. The user should have one way passwordless ssh setup from one machine to the other machines where the TIBCO ComputeDB nodes are running.
 
 Below is the usage of the script
 
@@ -66,5 +66,8 @@ Options:
 
            Timestamp format: YYYY-MM-DD HH:MM[:SS]
 
+Along with these options, if you want to filter unwanted lines from the logs, then you must specify **EGREP_INVERT_MATCH_PATTERNS** with a list of patterns in the **conf/debug.conf.template
+**. The lines that match those patterns will not be collected by the script.
+For example: `EGREP_INVERT_MATCH_PATTERNS='tid|gemfire'`
 
 For offline analysis, as the production logs can be pretty huge and not easily sharable, you can provide a list of patterns which can be excluded for collection. A list of patterns can be specified in the **conf** > **debug.conf** file. Before doing this, you must rename the **debug.conf.template** file to **debug.conf**. The lines matching those patterns will be ignored by the script and excluded for collection.

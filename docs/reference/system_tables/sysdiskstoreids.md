@@ -1,6 +1,6 @@
 # SYSDISKSTOREIDS
 
-Contains information about all disk stores IDs created in the SnappyData distributed system.
+Contains information about all disk stores IDs created in the TIBCO ComputeDB distributed system.
 
 | Column Name          | Type    | Length | Nullable | Contents|
 |----------------------|---------|--------|----------|--------------------------|

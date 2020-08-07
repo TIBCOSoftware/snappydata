@@ -6,7 +6,7 @@ The following best practices for Structured Streaming are explained in this sect
 *	[Limiting Batch Size](#limitbatchsize)
 *	[Limiting Default Incoming Data Frame Size](#limitdefaultincoming)
 *	[Running a Structured Streaming Query with Dedicated SnappySession Instance](#dedicatedsnappysession)
-*   [SnappySession used for Streaming Query should not be used by other Operations](#otherops)
+*	[SnappySession used for Streaming Query should not be used by other Operations](#otherops)
 
 <a id= sharefilesys> </a>
 ## Using Shared File System as Checkpoint Directory Location
@@ -19,7 +19,7 @@ A good practice is to limit the batch size of a streaming query such that it rem
 
 This gives the following advantages:
 
-*	**Snappy** **Sink** internally caches the incoming dataframe batch. If the batch size is too large, the cached dataframe might not fit in the memory and can start spilling over to the disk. This can lead to performance issues.
+*	**Snappy** **Sink** internally caches the incoming dataframe batch. If the batch size is too large, the cached dataframe might not fit in the memory and can start spilling over to the disk. This can lead to performance issues. 
 *	By limiting the batch size to **spark.sql.autoBroadcastJoinThreshold**, you can ensure that the **putInto** operation, that is performed as part of **Snappy** **Sink**, uses broadcast join which is significantly faster than sort merge join.
 
 The batch size can be restricted using one of the following options depending upon the source:

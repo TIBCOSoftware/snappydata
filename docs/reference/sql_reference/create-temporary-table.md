@@ -31,7 +31,7 @@ snappy> CREATE TEMPORARY TABLE STAGING_AIRLINE_TEMP2 AS SELECT CODE, DESCRIPTION
 ```
 
 !!! Note
-    When creating a temporary table, the SnappyData catalog is not referred, which means, a temporary table with the same name as that of an existing SnappyData table can be created. Two tables with the same name lead to ambiguity during query execution and can either cause the query to fail or return wrong results. </br>Ensure that you create temporary tables with a unique name.
+    When creating a temporary table, the TIBCO ComputeDB catalog is not referred, which means, a temporary table with the same name as that of an existing TIBCO ComputeDB table can be created. Two tables with the same name lead to ambiguity during query execution and can either cause the query to fail or return wrong results. </br>Ensure that you create temporary tables with a unique name.
     
 ## CREATE GLOBAL TEMPORARY TABLE
 

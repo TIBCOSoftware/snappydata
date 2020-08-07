@@ -15,13 +15,13 @@ undeploy <unique-alias-name>;
 
 The command removes the jars that are directly installed and the jars that are associated with a package, from the system. 
 
+
 ## Example 
 
 	
 ```
 undeploy spark_deep_learning_0_3_0; 
 ```
-
 
 
 **Related Topics**</br>

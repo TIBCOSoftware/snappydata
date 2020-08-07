@@ -1,11 +1,11 @@
 <a id="howto-startcluster"></a>
-# How to Start a SnappyData Cluster
+# How to Start a TIBCO ComputeDB Cluster
 
-## Starting SnappyData Cluster on a Single Machine
+## Starting TIBCO ComputeDB Cluster on a Single Machine
 
-If you have [downloaded and extracted](../install.md) the SnappyData product distribution, navigate to the SnappyData product root directory.
+If you have [downloaded and extracted](../install.md) the TIBCO ComputeDB product distribution, navigate to the TIBCO ComputeDB product root directory.
 
-**Start the Cluster**: Run the `./sbin/snappy-start-all.sh` script to start the SnappyData cluster on your single machine using default settings. This starts a lead node, a locator, and a data server. The Hive Thrift server also starts by default. 
+**Start the Cluster**: Run the `./sbin/snappy-start-all.sh` script to start the TIBCO ComputeDB cluster on your single machine using default settings. This starts a lead node, a locator, and a data server. The Hive Thrift server also starts by default. 
 
 ```pre
 $ ./sbin/snappy-start-all.sh
@@ -16,38 +16,38 @@ It may take 30 seconds or more to bootstrap the entire cluster on your local mac
 **Sample Output**: The sample output for `snappy-start-all.sh` is displayed as:
 
 ```pre
-Logs generated in /home/cbhatt/snappydata-1.2.0-bin/work/localhost-locator-1/snappylocator.log
+Logs generated in /home/cbhatt/TIB_compute_1.2.0_linux/work/localhost-locator-1/snappylocator.log
 SnappyData Locator pid: 10813 status: running
   Distributed system now has 1 members.
   Started Thrift locator (Compact Protocol) on: localhost/127.0.0.1[1527]
-Logs generated in /home/cbhatt/snappydata-1.2.0-bin/work/localhost-server-1/snappyserver.log
+Logs generated in /home/cbhatt/TIB_compute_1.2.0_linux/work/localhost-server-1/snappyserver.log
 SnappyData Server pid: 11018 status: running
   Distributed system now has 2 members.
   Started Thrift server (Compact Protocol) on: localhost/127.0.0.1[1528]
-Logs generated in /home/cbhatt/snappydata-1.2.0-bin/work/localhost-lead-1/snappyleader.log
+Logs generated in /home/cbhatt/TIB_compute_1.2.0_linux/work/localhost-lead-1/snappyleader.log
 SnappyData Leader pid: 11213 status: running
   Distributed system now has 3 members.
   Starting hive thrift server (session=snappy)
   Starting job server on: 0.0.0.0[8090]
 ```
 
-## Starting the SnappyData Cluster on Multiple Hosts
+## Starting the TIBCO ComputeDB Cluster on Multiple Hosts
 
 To start the cluster on multiple hosts:
 
-1. The easiest way to run SnappyData on multiple nodes is to use a shared file system such as NFS on all the nodes.</br> You can also extract the product distribution on each node of the cluster. If all nodes have NFS access, install SnappyData on any one of the nodes.
+1. The easiest way to run TIBCO ComputeDB on multiple nodes is to use a shared file system such as NFS on all the nodes.</br> You can also extract the product distribution on each node of the cluster. If all nodes have NFS access, install TIBCO ComputeDB on any one of the nodes.
 
 2. Create the configuration files using the templates provided in the **conf** folder. Copy the existing template files (**servers.template**, **locators.template** and **leads.template**) and rename them to **servers**, **locators**, **leads**.
 </br> Edit the files to include the hostnames on which to start the server, locator, and lead. Refer to the [configuration](../configuring_cluster/configuring_cluster.md) section for more information on properties.
 
-3. Start the cluster using `./sbin/snappy-start-all.sh`. SnappyData starts the cluster using SSH.
+3. Start the cluster using `./sbin/snappy-start-all.sh`. TIBCO ComputeDB starts the cluster using SSH.
 
 !!! Note
 	It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on [installation](../install/install_on_premise.md) and [cluster configuration](../configuring_cluster/configuring_cluster.md).
 
 ## Starting Individual Components
 
-Instead of starting SnappyData cluster using the `snappy-start-all.sh` script, individual components can be started on a system locally using the following commands:
+Instead of starting TIBCO ComputeDB cluster using the `snappy-start-all.sh` script, individual components can be started on a system locally using the following commands:
 
 !!! Tip
 	All [configuration parameters](../configuring_cluster/configuring_cluster.md) are provided as command line arguments rather than reading from a configuration file.
@@ -77,16 +77,16 @@ You can use the cluster-util.sh utility to execute a given command on selected m
 
  *	`-on-locators` </br>
 	If specified, the given command is executed on locators.
-
+ 
  *	`--on-servers `</br>
 	If specified, the given command is executed on servers.
-
+    
 *	`--on-leads` </br>
     If specified, the given command is executed on leads.
-
+    
 *	`--on-all `</br>
 	If specified, the given command is executed on all the member in the cluster.
-
+ 	 
 *	`-y`</br>
  	If specified, the script does not prompt for the confirmation to execute the command on each member node.
 
@@ -95,9 +95,9 @@ You can use the cluster-util.sh utility to execute a given command on selected m
     *	If these are absent in the destination member
     *	If their content is different.
     	In latter case, a backup of the file is taken in **conf/backup** directory, on the destination member, before copy.
-
+ 	
 *	`--run <cmd-to-run-on-selected-nodes>`
-	If specified, the given command(s) is executed on specified members. Command to be executed specified after --run`` must be in double-quotes.
+	If specified, the given command(s) is executed on specified members. Command to be executed specified after `--run ""` must be in double-quotes.
 
 ### Example
 
@@ -107,5 +107,4 @@ You can use the cluster-util.sh utility to execute a given command on selected m
 
 2.To run “ls” command on all servers with -y option
 “./sbin/cluster-util.sh --on-servers -y --run “ls”
-
 ```

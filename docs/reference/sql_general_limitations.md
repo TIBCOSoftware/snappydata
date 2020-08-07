@@ -1,4 +1,4 @@
-# Limitations
+# SQL General Limitations
 
 The following SQL general limitations are observed in SnappyData:
 

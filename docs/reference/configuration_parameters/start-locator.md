@@ -16,7 +16,7 @@ start-locator=port1
 
 * If you only specify the port, the address assigned to the member is used for the locator.
 
-* If not already there, this locator is automatically added to the list of locators in this set of SnappyData properties.
+* If not already there, this locator is automatically added to the list of locators in this set of TIBCO ComputeDB properties.
 
 <!--* If you set `start-locator`, do not also specify `mcast-port`. -->
 

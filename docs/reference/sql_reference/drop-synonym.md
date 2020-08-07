@@ -6,7 +6,7 @@ DROP SYNONYM [ IF EXISTS ] [schema-name.]synonym-name;
 
 ## Description
 
-Removes the specified synonym. Include the `IF EXISTS` clause to execute the statement only if the specified synonym exists in SnappyData. The *schema-name.* prefix is optional if you are currently using the schema that contains the synonym.
+Removes the specified synonym. Include the `IF EXISTS` clause to execute the statement only if the specified synonym exists in TIBCO ComputeDB. The *schema-name.* prefix is optional if you are currently using the schema that contains the synonym.
 
 ## Example
 

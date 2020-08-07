@@ -2,7 +2,7 @@
 
 ## Description
 
-Specifies the SnappyData home directory. Any relative paths in the system are accessed using this property value.
+Specifies the TIBCO ComputeDB home directory. Any relative paths in the system are accessed using this property value.
 
 ## Default Value
 

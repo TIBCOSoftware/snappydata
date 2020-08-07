@@ -7,7 +7,7 @@ Configure in-memory high availability for your partitioned table. Set other high
 Configure in-memory high availability for your partitioned table by specifying the number of secondary copies you want to maintain REDUNDANCY clause of [CREATE TABLE](../reference/sql_reference/create-table.md#redundancy).
 
 ## Configure Redundancy Zones for Members
-Group members into redundancy zones so that SnappyData places redundant data copies in different zones.
+Group members into redundancy zones so that TIBCO ComputeDB places redundant data copies in different zones.
 
 Understand how to set a member's **gemfirexd.properties** settings. [See Configuration Properties](../reference/configuration_parameters/config_parameters.md).
 Group the datastore members that host partitioned tables into redundancy zones by using the setting [redundancy-zone](../reference/configuration_parameters/redundancy-zone.md).
@@ -24,11 +24,11 @@ Each secondary copy would be hosted on the rack opposite the rack where its prim
 
 ## Set Enforce Unique Host
 
-Configure SnappyData to use only unique physical machines for redundant copies of partitioned table data.
+Configure TIBCO ComputeDB to use only unique physical machines for redundant copies of partitioned table data.
 
 Understand how to set a member's **gemfirexd.properties** settings. See [Configuration Properties](../reference/configuration_parameters/config_parameters.md).
 
-Configure your members so SnappyData always uses different physical machines for redundant copies of partitioned table data using the setting [enforce-unique-host](../reference/configuration_parameters/enforce-unique-host.md#enforce-unique-host). The default for this setting is **false**.
+Configure your members so TIBCO ComputeDB always uses different physical machines for redundant copies of partitioned table data using the setting [enforce-unique-host](../reference/configuration_parameters/enforce-unique-host.md#enforce-unique-host). The default for this setting is **false**.
 
 Example:
 ```pre

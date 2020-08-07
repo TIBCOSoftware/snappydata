@@ -11,7 +11,7 @@ In the syntax, you must provide the name of disk store to be validated and the p
 
 ## Description
 
-The SnappyData **validate-disk-store **command verifies the health of your offline disk store and gives you information about the following:
+The TIBCO ComputeDB **validate-disk-store **command verifies the health of your offline disk store and gives you information about the following:
 *	Tables that are using that disk store
 *	Total number of rows 
 *	Number of records that would be removed, if you have compacted the store.

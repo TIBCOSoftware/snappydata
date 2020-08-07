@@ -1,6 +1,6 @@
 # Snappy-SQL Shell Interactive Commands
 
-`snappy` implements an interactive command-line tool that is based on the Apache Derby `ij` tool. Use `snappy` to run scripts or interactive queries against a SnappyData cluster.
+`snappy` implements an interactive command-line tool that is based on the Apache Derby `ij` tool. Use `snappy` to run scripts or interactive queries against a TIBCO ComputeDB cluster.
 
 Start the interactive `snappy` command prompt by using the snappy script without supplying any other options:
 
@@ -32,10 +32,10 @@ Commands can span multiple lines without using any special escape character for 
 	Issues a `java.sql.Connection.commit` request.
 
 -   **[connect client](../../reference/interactive_commands/connect_client.md)**
-    Using the JDBC SnappyData thin client driver, connects to a SnappyData member indicated by the *host:port* values.
+    Using the JDBC TIBCO ComputeDB thin client driver, connects to a TIBCO ComputeDB member indicated by the *host:port* values.
     
 -   **[connect](../../reference/interactive_commands/connect.md)**
-    Using the JDBC SnappyData thin client driver, connects to a SnappyData member indicated by the *host:port* values.
+    Using the JDBC TIBCO ComputeDB thin client driver, connects to a TIBCO ComputeDB member indicated by the *host:port* values.
 
 -   **[describe](../../reference/interactive_commands/describe.md)**
     Provides a description of the specified table or view.

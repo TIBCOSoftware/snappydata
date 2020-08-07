@@ -2,7 +2,7 @@
 # Using SQL
 
 In this section, you can also connect to SQL using Snappy Session API. </br>
-You can use any SQL client tool (for example, Snappy shell). For an example, refer to the [How-to](../howto/use_snappy_shell.md) section.
+You can use any SQL client tool (for example, Snappy Shell). For an example, refer to the [How-to](../howto/use_snappy_shell.md) section.
 
 **Create a column table with a simple schema [Int, String] and default options**
 
@@ -56,7 +56,7 @@ scala>  snappy.sql("drop table if exists colTable ")
 scala> :q //Quit the Spark Shell
 ```
 
-Now that you have seen the basic working of SnappyData tables, let us run the [benchmark](../quickstart/performance_apache_spark.md) code to see the performance of SnappyData and compare it to Spark's native cache performance.
+Now that you have seen the basic working of TIBCO ComputeDB tables, let us run the [benchmark](../quickstart/performance_apache_spark.md) code to see the performance of TIBCO ComputeDB and compare it to Spark's native cache performance.
 
 ## More Information
 

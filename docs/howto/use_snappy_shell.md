@@ -1,9 +1,9 @@
 <a id="howto-snappyShell"></a>
-# How to Use Snappy SQL shell (snappy-sql)
-The Snappy SQL shell can be used to execute SQL on SnappyData cluster. In the background, `snappy-sql` uses JDBC connections to execute SQL.
+# How to Use Snappy Shell (snappy-sql)
+The Snappy Shell can be used to execute SQL on TIBCO ComputeDB cluster. In the background, `snappy-sql` uses JDBC connections to execute SQL.
 
-**Connect to a SnappyData Cluster**: </br>
-Use the `snappy-sql` and `connect client` commands on the Snappy SQL shell as follows:
+**Connect to a TIBCO ComputeDB Cluster**: </br>
+Use the `snappy-sql` and `connect client` commands on the Snappy Shell as follows:
 
 ```pre
 $ ./bin/snappy-sql
@@ -35,11 +35,11 @@ Use the `show members` command.
 
 ```pre
 snappy> show members;
-ID                            |HOST                          |KIND                  |STATUS              |NETSERVERS                    |SERVERGROUPS
----------------------------------------------------------------------------------------------------------------------------------------------------------------
-192.168.63.1(21412)<v1>:61964 |192.168.63.1                  |datastore             |RUNNING             |localhost/127.0.0.1[1528]     |
-192.168.63.1(21594)<v2>:29474 |192.168.63.1                  |primary lead          |RUNNING             |                              |
-localhost(21262)<v0>:22770    |localhost                     |locator               |RUNNING             |localhost/127.0.0.1[1527]     |
+ID                            |HOST                          |KIND                          |STATUS              |NETSERVERS                    |SERVERGROUPS                  
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+192.168.63.1(21412)<v1>:61964 |192.168.63.1                  |datastore(normal)             |RUNNING             |localhost/127.0.0.1[1528]     |                              
+192.168.63.1(21594)<v2>:29474 |192.168.63.1                  |accessor(normal)              |RUNNING             |                              |IMPLICIT_LEADER_SERVERGROUP   
+localhost(21262)<v0>:22770    |localhost                     |locator(normal)               |RUNNING             |localhost/127.0.0.1[1527]     |                              
 
 3 rows selected
 ```

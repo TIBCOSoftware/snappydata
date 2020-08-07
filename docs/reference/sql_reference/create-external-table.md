@@ -13,11 +13,11 @@ Refer to these sections for more information on [Creating Table](create-table.md
 
 **EXTERNAL**
 
-External tables point to external data sources. SnappyData supports all the data sources supported by Spark. You should use external tables to load data in parallel from any of the external sources. The table definition is persisted in the catalog and visible across all sessions. 
+External tables point to external data sources. TIBCO ComputeDB supports all the data sources supported by Spark. You should use external tables to load data in parallel from any of the external sources. The table definition is persisted in the catalog and visible across all sessions. 
 
 **USING <_data source_>**
 
-Specify the file format to use for this table. The data source may be one of TEXT, CSV, JSON, JDBC, PARQUET, ORC, and LIBSVM, or a fully qualified class name of a custom implementation of org.apache.spark.sql.sources.DataSourceRegister. </br>Note that most of the prominent datastores provide an implementation of 'DataSource' and accessible as a table. For instance, you can use the Cassandra spark package to create external tables pointing to Cassandra tables and directly run queries on them. You can mix any external table and SnappyData managed tables in your queries. 
+Specify the file format to use for this table. The data source may be one of TEXT, CSV, JSON, JDBC, PARQUET, ORC, and LIBSVM, or a fully qualified class name of a custom implementation of org.apache.spark.sql.sources.DataSourceRegister. </br>Note that most of the prominent datastores provide an implementation of 'DataSource' and accessible as a table. For instance, you can use the Cassandra spark package to create external tables pointing to Cassandra tables and directly run queries on them. You can mix any external table and TIBCO ComputeDB managed tables in your queries. 
 
 ## Example 
 
@@ -48,34 +48,34 @@ CREATE EXTERNAL TABLE NYCTAXI USING parquet OPTIONS(path 's3a://<AWS_SECRET_KEY>
 
 #### Specifying AWS credentials to access S3 buckets
 
-Providing AWS credentials explicitly in the path url may not be advisable. There are alternative ways users can specify these credentials:
+Providing AWS credentials explicitly in the path URL may not be advisable. There are alternative ways in which you can specify these credentials:
 
-1. Users can provide those as properties in `conf/leads` file at the time of launching the cluster.
+*	Provide the AWS credentials as properties in `conf/leads` file at the time of launching the cluster.
 
     For example, append these properties with appropriate values for each entry in your `conf/leads` file.
-    ```pre
-    -spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem  -spark.hadoop.fs.s3a.access.key=<access-key-id> -spark.hadoop.fs.s3a.secret.key=<secret-access-key>
-    ```
+    
+        -spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem  -spark.hadoop.fs.s3a.access.key=<access-key-id> -spark.hadoop.fs.s3a.secret.key=<secret-access-key>
+       
 
-2. One can also provide them as environment variables in `conf/spark-env.sh`. Simply add these two entries with appropriate values in that file before launching the cluster.
+*	Provide the AWS credentials as environment variables in `conf/spark-env.sh`. You can add these two entries with appropriate values in that file before launching the cluster.
 
-    ```pre
-    export AWS_ACCESS_KEY_ID=<access-key-id>
-    export AWS_SECRET_ACCESS_KEY=<secret-access-key>
-    ```
+        export AWS_ACCESS_KEY_ID=<access-key-id>
+        export AWS_SECRET_ACCESS_KEY=<secret-access-key>
+        
 
-3. This option is applicable only if your cluster is running on AWS EC2 instance(s). Also, this may not work if your S3 buckets are created in regions where [AWS signature version 2](https://docs.aws.amazon.com/general/latest/gr/s3.html) is not supported.
-
-    You can attach an IAM role with appropriate permissions to the instance(s) where the cluster is setup. To do this, go to EC2 dashboard page on AWS console, select your EC2 instance and right-click on it. Select *Instance Settings* and then *Attach/Replace IAM Role*. Then click on the drop-down list and select appropriate IAM role. If you do not see any IAM role in the list, you need to create one. Refer to AWS documentation for more details.
+*	Attach an IAM role with appropriate permissions to the instance(s) where the cluster is setup. To do this, go to EC2 dashboard page on AWS console, select and right-click your EC2 instance. Select **Instance Settings** > **Attach/Replace IAM Role**. From the drop-down list select the appropriate IAM role. If you do not see any IAM role in the list, you need to create one. Refer to AWS documentation for more details.
+	
+    !!!Note
+    	This option is applicable only if your cluster is running on AWS EC2 instance(s). Also, this may not work if your S3 buckets are created in regions where [AWS signature version 2](https://docs.aws.amazon.com/general/latest/gr/s3.html) is not supported.
 
     When you attach an IAM role to an instance, a temporary set of credentials are generated by AWS for the instance(s). These are then picked up by the cluster while accessing the S3 buckets.
 
-    Then provide below configuration in `conf/spark-defaults.conf` file before launching the cluster.
+    Then provide the following configuration in `conf/spark-defaults.conf` file before launching the cluster.
 
-    ```pre
-    spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
-    spark.hadoop.fs.s3a.aws.credentials.provider=com.amazonaws.auth.InstanceProfileCredentialsProvider
-    ```
+       
+        spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+        spark.hadoop.fs.s3a.aws.credentials.provider=com.amazonaws.auth.InstanceProfileCredentialsProvider
+        
 
 
 **Related Topics**

@@ -38,7 +38,7 @@ CREATE SAMPLE TABLE table_name ON base_table_name
     FRACTION 'population-fraction',  //Must be a double
     STRATARESERVOIRSIZE 'strata-initial-capacity',  // Default 50 Must be an integer.
     )
-
+    
 ```
 For more information on column-definition, refer to [Column Definition For Column Table](create-table.md#column-definition).
 
@@ -84,4 +84,4 @@ snappy>CREATE SAMPLE TABLE CUSTOMER_SAMPLE on CUSTOMER_BASE
 ```    
 
 !!! Note
-	Refer to [create sample tables in SDE section](/../../sde/working_with_stratified_samples.md#create-sample-tables) for more information on creating sample tables on datasets that can be sourced from any source supported in Spark/SnappyData.
+	Refer to [create sample tables in AQP section](../../sde/working_with_stratified_samples.md#create-sample-tables) for more information on creating sample tables on datasets that can be sourced from any source supported in Spark/TIBCO ComputeDB.
