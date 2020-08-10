@@ -51,8 +51,8 @@ Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](ht
 	|--------|--------|--------|
 	|default.url|jdbc:snappydata://localhost:1527/|Specify the JDBC URL for SnappyData cluster in the format `jdbc:snappydata://<locator_hostname>:1527`|
     |default.driver|io.snappydata.jdbc.ClientDriver|Specify the JDBC driver for SnappyData|
-    |default.password|user123|The JDBC user password|
-    |default.user|user1|The JDBC username|
+    |default.password|<password>|The JDBC user password|
+    |default.user|<username>|The JDBC username|
 
 3. **Dependency settings**</br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for SnappyData. The SnappyData Client (JDBC) JAR file (snappydata-jdbc-2.11_1.2.0.jar) is available on [the release page](https://github.com/SnappyDataInc/snappydata/releases/latest). </br>
 	The SnappyData Client (JDBC) JAR file (snappydata-jdbc_2.11-1.2.0.jar)can also be placed under **<ZEPPELIN_HOME>/interpreter/jdbc** before starting Zeppelin instead of providing it in the dependency setting.

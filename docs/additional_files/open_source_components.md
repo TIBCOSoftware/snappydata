@@ -21,7 +21,7 @@ The capabilities of the **Community Edition** and the additional capabilities of
 | Runtime deployment of packages and jars | X  | X |
 | Synopsis Data Engine for Approximate Querying |  | X |
 | ODBC Driver with High Concurrency |  | X |
-| Off-heap data storage for column tabes |  | X |
+| Off-heap data storage for column tables |  | X |
 | CDC Stream receiver for SQL Server into SnappyData |  | X |
 | GemFire/Apache Geode connector |  | X |
 |Row Level Security|  | X |
