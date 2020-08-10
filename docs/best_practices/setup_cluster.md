@@ -11,6 +11,7 @@ When the above conditions are not met, the request is routed to the ‘Lead’ n
 Each job is made up of one or more stages and the planning phase computes the number of  parallel tasks for the stage. Tasks from scheduled jobs are then allocated to the logical cores available until all cores are allocated. 
 A round-robin algorithm picks a task from Job1, a task from Job2 and so on. If more cores are available, the second task from Job1 is picked and the cycle continues. But, there are circumstances a single job can completely consume all cores.</br>
 For instance, when all cores are available, if a large loading job is scheduled it receives all available cores of which, each of the tasks can be long running. During this time, if other concurrent jobs are assigned, none of the executing tasks is preempted.
+
 So, with multiple concurrent users, it is best to avoid running such Jobs using the default high throughput pool. 
 
 !!! Note 
@@ -58,6 +59,7 @@ When you add more servers to SnappyData, the processing capacity of the system i
 
 ![Concurrency](../Images/core_concurrency.png)
 
+
 ## Configuring the Scheduler Pools for Concurrency
 SnappyData out of the box comes configured with two execution pools:
 
@@ -103,6 +105,7 @@ To disable hashJoin/hashAggregates for a particular session you can use the foll
 ```
 set snappydata.sql.hashAggregateSize=-1
 set snappydata.sql.hashJoinSize=-1
+
 ```
 
 To disable hashJoin/hashAggregates for every session, provide the same details in **lead.conf** file. 

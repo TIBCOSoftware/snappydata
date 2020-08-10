@@ -1,5 +1,5 @@
 <a id="howto-sde"></a>
-# How to use Approximate Query Processing to Run Approximate Queries
+# How to use Approximate Query Processing (AQP) to Run Approximate Queries
 
 Approximate Query Processing (AQP) uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire dataset. The approach trades off query accuracy for fast response time.
 For more information on  AQP, refer to [AQP documentation](../aqp.md).
