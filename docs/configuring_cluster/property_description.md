@@ -73,8 +73,8 @@ The following list of commonly used configuration properties can be set to confi
 |Property|Description|Components</br>|
 |-|-|-|
 |-DCHECK_EXTERNAL_TABLE_AUTHZ | Enable authorization of external tables by setting this system property to true when the cluster's security is enabled. System admin or the schema owner can grant or revoke the permissions on external tables to other users.|Lead|
-|-J-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.|Server</br>Lead</br>Locator
-|-J-Dsnappydata.RESTRICT_TABLE_CREATION|Applicable when security is enabled in the cluster. If true, users cannot execute queries (including DDLs and DMLs) even in their default or own schema unless cluster admin explicitly grants them the required permissions using GRANT command. The default is false. |Server</br>Lead</br>Locator|
+|-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.|Server</br>Lead</br>Locator
+|-Dsnappydata.RESTRICT_TABLE_CREATION|Applicable when security is enabled in the cluster. If true, users cannot execute queries (including DDLs and DMLs) even in their default or own schema unless cluster admin explicitly grants them the required permissions using GRANT command. The default is false. |Server</br>Lead</br>Locator|
 |-spark.ssl.enabled<a id="ssl_spark_enabled"></a>|Enables or disables Spark layer encryption. The default is false. |Lead|
 |-spark.ssl.keyPassword<a id="ssl_spark_password"></a>|The password to the private key in the key store. |Lead|
 |-spark.ssl.keyStore<a id="ssl_spark_keystore"></a>|Path to the key store file. The path can be absolute or relative to the directory in which the process is started.|Lead|
@@ -193,6 +193,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 |-snappydata.scheduler.pool|Use this property to define scheduler pool to either default or low latency. You can also assign queries to different pools.|
 |-snappydata.enable-experimental-features|Use this property to enable and disable experimental features. You can call out in case some features are completely broken and need to be removed from the product.|
 |-snappydata.sql.planCaching|Use this property to enable/disable plan caching. By default it is disabled. |Lead|
+|snappydata.recovery.enableTableCountInUI|In the recovery mode, by default, the table counts and sizes do not appear on the UI. To view the table counts, you should set this property to **true** in the lead's conf file. By default, the property is set to **false**, and the table count is shown as **-1**. ||
 |sync-commits| See [sync-commits](/reference/configuration_parameters/sync-commits.md)||
 
 <a id="aqp"></a>

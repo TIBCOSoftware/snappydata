@@ -1,5 +1,5 @@
 ## Core Components
-The following depicts the core components of SnappyData, where Spark’s original components are highlighted in gray. To simplify, standard components, such as security and monitoring have been omitted.
+The following figure depicts the core components of SnappyData, where Spark’s original components are highlighted in gray. To simplify, standard components, such as security and monitoring have been omitted.
 
 ![Core components](../CoreComponents.png)
 

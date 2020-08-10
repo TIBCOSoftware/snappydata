@@ -1,8 +1,11 @@
 <a id="ssh"></a>
 ## Configuring SSH Login without Password
 
+!!! Note
+	Before you begin, ensure that you have not configured SSH login without password.
+
 By default, Secure Socket Shell (SSH) requires a password for authentication on a remote server.
-But with some changes in the configuration, you can login to the remote host through the SSH protocol, without having to enter your SSH password multiple times.
+However, with some changes in the configuration, you can log in to the remote host through the SSH protocol, without having to enter your SSH password multiple times.
 
 This is specially helpful when using the cluster start/stop scripts like `snappy-start-all.sh` to launch the SnappyData cluster spanning multiple hosts.
 
