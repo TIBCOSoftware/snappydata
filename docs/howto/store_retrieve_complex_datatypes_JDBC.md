@@ -49,29 +49,6 @@ while (rs.next()) {
  // read the column as a String
  val res1 = rs.getString("col2")
  println(s"res1 = $res1")
- // Alternate way, read the same column as a Clob
- val res2 = rs.getClob("col2")
- println(s"res2 = " + res2.getSubString(1, res2.length.asInstanceOf[Int]))
-}
-
-// Reading array data as  BLOB and Bytes and then forming a Scala array
-val serializer = ComplexTypeSerializer.create(tableName, "col2", conn)
-rs = stmt.executeQuery(s"SELECT * FROM $tableName --+ complexTypeAsJson(0)")
-while (rs.next()) {
-  // Read the same column as a byte[] and then deserialize it into an Array
-  val res1 = serializer.deserialize(rs.getBytes("col2"))
-  println(s"res1 = $res1")
-  // alternate way, read the same column as a Blob an then deserialize it into an Array
-  val res2 = serializer.deserialize(rs.getBlob("col2"))
-  println(s"res2 = $res2")
-}
-
-
-var rs = stmt.executeQuery(s"SELECT * FROM $tableName")
-while (rs.next()) {
- // read the column as a String
- val res1 = rs.getString("col2")
- println(s"res1 = $res1")
  // alternate way, read the same column as a Clob
  val res2 = rs.getClob("col2")
  println(s"res2 = " + res2.getSubString(1, res2.length.asInstanceOf[Int]))
