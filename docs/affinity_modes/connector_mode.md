@@ -60,9 +60,9 @@ This opens a Scala Shell.
 
 **Step 3: Import any or all of the following:** 
 
+*	**SnappySession**
 *	**SQL Context**
 *	**SnappyContext**
-*	**SnappySession**
 
 ```
 import org.apache.spark.sql.{SQLContext,SnappyContext,SnappySession}

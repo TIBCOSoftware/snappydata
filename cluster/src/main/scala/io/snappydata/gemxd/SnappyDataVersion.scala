@@ -75,8 +75,8 @@ object SnappyDataVersion {
 
     // rowstore version
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
-    val product = if (GemFireVersion.isEnterpriseEdition) "TIBCO ComputeDB" else "SnappyData"
-    pw.println(product + platform)
+    // val product = if (GemFireVersion.isEnterpriseEdition) "TIBCO ComputeDB" else "SnappyData"
+    pw.println("SnappyData" + platform)
     pw.printf("%4s%s\n", " ", GemFireVersion.getProductName + " " +
         GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage)
 
@@ -147,9 +147,9 @@ object SnappyDataVersion {
     versionDetails.put("sourceRevision", GemFireVersion.getSourceRevision)
 
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
-    val productEditionType = if (GemFireVersion.isEnterpriseEdition) "Enterprise" else "Community"
+    // val productEditionType=if (GemFireVersion.isEnterpriseEdition) "Enterprise" else "Community"
 
-    versionDetails.put("editionType", productEditionType)
+    versionDetails.put("editionType", "Enterprise")
 
     versionDetails
   }

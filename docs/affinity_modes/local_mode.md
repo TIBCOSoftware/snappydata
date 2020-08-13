@@ -68,7 +68,7 @@ To start SnappyData store you need to create a SnappySession in your program:
   
 **Example**: **Launch Apache Spark shell and provide SnappyData dependency as a Spark package**:
 
-If you already have Spark2.0 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
+If you already have Spark 2.1.1 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
 
 ```pre
 ./bin/spark-shell --packages "SnappyDataInc:snappydata:1.2.0-s_2.11"
