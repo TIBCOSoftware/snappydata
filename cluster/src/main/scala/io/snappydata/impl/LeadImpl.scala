@@ -170,13 +170,13 @@ class LeadImpl extends ServerImpl with Lead
     val storeProperties = ServiceUtils.getStoreProperties(bootProperties.stringPropertyNames()
         .iterator().asScala.map(k => k -> bootProperties.getProperty(k)).toSeq)
 
-    val productName = {
-      if (SnappySession.isEnterpriseEdition) {
-        "TIBCO ComputeDB"
-      } else {
-        "SnappyData"
-      }
-    }
+    val productName = "SnappyData" // {
+//      if (SnappySession.isEnterpriseEdition) {
+//        "TIBCO ComputeDB"
+//      } else {
+//        "SnappyData"
+//      }
+//    }
 
     // initialize store and Spark in parallel (Spark will wait in
     // cluster manager start on internalStart)
