@@ -2280,9 +2280,9 @@ object SnappySession extends Logging {
     case _ => (plan, null)
   }
 
-  private[sql] def setExecutionProperties(localProperties: Properties,
+  private[sql] def setExecutionProperties(localProperties: Properties, executionId: String,
       jobGroupId: String, queryLongForm: String): Unit = {
-    localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, jobGroupId)
+    localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionId)
     // trim query string to 10K to keep its UTF8 form always < 32K which is the limit
     // for DataOutput.writeUTF used during task serialization
     localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION,
@@ -2320,7 +2320,7 @@ object SnappySession extends Logging {
     val context = session.sparkContext
     val localProperties = context.getLocalProperties
     val jobGroupId = session.sessionState.jdbcQueryJobGroupId.getOrElse(executionIdStr)
-    setExecutionProperties(localProperties, jobGroupId, sqlText)
+    setExecutionProperties(localProperties, executionIdStr, jobGroupId, sqlText)
     var success = false
     val start = System.currentTimeMillis()
     try {
