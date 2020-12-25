@@ -31,7 +31,7 @@ CREATE TABLE [IF NOT EXISTS] table_name
 	)
 	[AS select_statement];
 
-DROP TABLE [IF EXISTS] table_name
+DROP TABLE [IF EXISTS] table_name;
 ```
 
 Refer to the [Best Practices](../best_practices/design_schema.md) section for more information on partitioning and colocating data and [CREATE TABLE](../reference/sql_reference/create-table.md) for information on creating a row/column table.</br>
