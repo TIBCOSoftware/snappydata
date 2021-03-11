@@ -6,17 +6,13 @@
 
 ## Build all Components of SnappyData
  
-**Latest release branch**
-```pre
-> git clone https://github.com/SnappyDataInc/snappydata.git -b v<release-version> --recursive
-> cd snappydata
-> ./gradlew product
-```
 
 **Master**
 ```pre
-> git clone https://github.com/SnappyDataInc/snappydata.git --recursive
+> git clone https://github.com/TIBCOSoftware/snappydata.git --recursive
 > cd snappydata
+> git clone https://github.com/TIBCOSoftware/snappy-aqp.git aqp
+> git clone https://github.com/TIBCOSoftware/snappy-connectors.git
 > ./gradlew product
 ```
 
@@ -35,6 +31,10 @@ This component depends on _core_ and _store_. The code in the _cluster_ depends 
 - **store** - Fork of gemfirexd-oss with SnappyData additions on the snappy/master branch.
 
 - **spark-jobserver** - Fork of _spark-jobserver_ project with some additions to integrate with SnappyData.
+
+- **aqp** - Approximate Query Processing (AQP) module of SnappyData.
+
+- **snappy-connectors** - Connector for Apache Geode and a Change-Data-Capture (CDC) connector.
 
   The _spark_, _store_, and _spark-jobserver_ directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git submodules. When working with submodules, updating the repositories follows the normal [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). One can add some aliases in gitconfig to aid pull/push as follows:
 

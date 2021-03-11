@@ -121,4 +121,4 @@ object CDCExample{
   }
 }
 
-case class User(is: Long, name: String, age: Int, _eventType: Int)
+case class User(id: Long, name: String, age: Int, _eventType: Int)
