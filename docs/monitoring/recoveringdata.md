@@ -23,7 +23,7 @@ To bring up the cluster and salvage the data, do the following:
 <a id= launchclusterrecovery> </a>
 ### Launching a Cluster in Recovery Mode
 
-Launching a cluster in recovery mode is similar to launching it in the regular mode. To specify this mode, all one has to do is pass an extra argument `-r` or `--recovery` to the cluster start script as shown in the following example:
+Launching a cluster in recovery mode is similar to launching it in the regular mode. To specify this mode, all one has to do is pass an extra argument `-r` or `--recover` to the cluster start script as shown in the following example:
 
 ```
 snappy-start-all.sh -r
@@ -37,7 +37,7 @@ snappy-start-all.sh -r
 
 After you bring the cluster into recovery mode, you can retrieve the metadata and the table data in the cluster. The following system procedures are provided for this purpose:
 
-*	[EXPORT_DDLs](/reference/inbuilt_system_procedures/export_ddl.md)
+*	[EXPORT_DDLS](/reference/inbuilt_system_procedures/export_ddl.md)
 *	[EXPORT_DATA](/reference/inbuilt_system_procedures/export_data.md)
 
 Thus the table definitions and tables in a specific format can be exported and used later to launch a new cluster. 
