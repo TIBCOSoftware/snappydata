@@ -264,9 +264,9 @@ Bad `PutInto` performance even when input dataframe size is small.
 </error-text>
 
 <diagnosis> **Diagnosis:**</br>
-`PutInto` operation internally performs join. If the input dataframe size is small (less than `spark.sql.autoBroadcastJoinThreshold` which defaults to 10 MB) then the join should ideally result into broadcast join giving better performance than short merge join (which will be chose otherwise).
+`PutInto` operation internally performs join. If the input dataframe size is small (less than `spark.sql.autoBroadcastJoinThreshold` which defaults to 10 MB) then the join should ideally result into broadcast join giving better performance than sort merge join (which will be chosen otherwise).
 
-However, some sources doesn't provide size statistics and in that case the size of dataframe results into value of `spark.sql.defaultSizeInBytes` property which defaults to `Long.MaxValue`. In this case even if the actual size of the input dataframe is less than  that of `spark.sql.autoBroadcastJoinThreshold`, the `PutInto` operation will always end up using sort merge join resulting into poor performance.
+However, some sources don't provide size statistics and in that case the size of dataframe results into value of `spark.sql.defaultSizeInBytes` property which defaults to `Long.MaxValue`. In this case even if the actual size of the input dataframe is less than  that of `spark.sql.autoBroadcastJoinThreshold`, the `PutInto` operation will always end up using sort merge join resulting into poor performance.
 </diagnosis>
 
 <action> **Solution:** </br>

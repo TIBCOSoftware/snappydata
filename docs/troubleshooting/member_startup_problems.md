@@ -73,9 +73,9 @@ Error starting server process:
 InternalGemFireError: None of the previous persistent node is up. - See log file for details.
 SnappyData Server pid: 21582 status: waiting
 Member disk state is not the most current. Table __PR._B__APP_ADJUSTMENT_4 at location /home/xyz/snappy/snappydata/server1/snappy-internal-delta is waiting for disk recovery from following members: 
-[/127.0.0.1] [DiskId: 6190c93b-158f-40f1-8251-1e9c58e320c2, Location: /home/xyz/snappy/snappydata/server0/snappy-internal-delta]
+[/127.0.0.1] [DiskId: 9791b9ff-7df3-44e8-99c8-7d62a3387002, Location: /home/xyz/snappy/snappydata/server1/snappy-internal-delta]
 ```
-Execute the  `./bin/snappy list-missing-disk-stores locators=<host>:<port>` command to view all the disk stores that are missing and awaited upon by other servers in the cluster. Check the messages in the **start_snappyserver.log** file of the server which is waiting for the missing disk stores. 
+Execute the  `./bin/snappy list-missing-disk-stores -locators=<host>:<peer-discovery-port>` command to view all the disk stores that are missing and awaited upon by other servers in the cluster. Check the messages in the **start_snappyserver.log** file of the server which is waiting for the missing disk stores. 
 
 The following sample message is displayed in the **start_snappyserver.log** file for the servers:</br>
 ```Pre
@@ -95,8 +95,9 @@ Here it is shown that the diskID *93e7e9cf-a513-4c67-89c3-da7e94a08efb* of **ser
 
 
 Run the `unblock-disk-store` utility, in the following format, to unblock the waiting disk store:</br>
-`./bin/snappy unblock-disk-store <diskID of the waiting server>locators=localhost:10334`</br>
-For example, `./bin/snappy unblock-disk-store 93e7e9cf-a513-4c67-89c3-da7e94a08efb -locators=localhost:10334`
+`./bin/snappy unblock-disk-store <diskID of the waiting server> -locators=<host>:<peer-discovery-port>`</br>
+For example, <br/>
+`./bin/snappy unblock-disk-store 93e7e9cf-a513-4c67-89c3-da7e94a08efb -locators=localhost:10334`
 
 Restart the cluster and keep unblocking such disk stores that are displayed in the logs until all the servers reach the running status.
 

@@ -1,6 +1,5 @@
 # Overview of Synopsis Data Engine (SDE)
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 !!! Note
 	This feature is not supported in the Smart Connector mode.
