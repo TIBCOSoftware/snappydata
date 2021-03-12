@@ -1,6 +1,5 @@
 # Authentication - Connecting to a Secure Cluster
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 Authentication is the process of verifying someone's identity. When a user tries to log in, that request is forwarded to the specified LDAP directory to verify if the credentials are correct.
 There are a few different ways to connect to a secure cluster using either JDBC (Thin) Client, Smart Connector Mode and Snappy Jobs. Accessing a secure cluster requires users to provide their user credentials.

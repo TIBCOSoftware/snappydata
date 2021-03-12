@@ -1,6 +1,5 @@
 # Installing and Running VSD
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
 
 Start the VSD tool, load statistics files, and maintain the view you want on your statistics.
 

@@ -1,6 +1,5 @@
 #  Authorization
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 Authorization is the process of determining what access permissions the authenticated user has. Users are authorized to perform tasks based on their role assignments. TIBCO ComputeDB also supports LDAP group authorization.
 

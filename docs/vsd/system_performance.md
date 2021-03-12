@@ -1,6 +1,5 @@
 # Evaluating Statistics for the System
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
 
 SnappyData provides statistics for analyzing system performance. Any member of a distributed system, including SnappyData servers, locators, and peer clients, can collect and archive this statistical data.
 
