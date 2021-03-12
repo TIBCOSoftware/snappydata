@@ -55,7 +55,6 @@ Requirements for each host:
 
 <!---## VSD Requirements
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
 
 - Install 32-bit libraries on 64-bit Linux:</br>
 	`yum install glibc.i686 libX11.i686` on RHEL/CentOS</br>

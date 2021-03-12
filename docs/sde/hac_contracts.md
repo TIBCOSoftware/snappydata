@@ -1,6 +1,5 @@
 # High-level Accuracy Contracts (HAC)
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 
 TIBCO ComputeDB combines state-of-the-art approximate query processing techniques and a variety of data synopses to ensure interactive analytics over both, streaming and stored data. Using high-level accuracy contracts (HAC), TIBCO ComputeDB offers end users intuitive means for expressing their accuracy requirements, without overwhelming them with statistical concepts.

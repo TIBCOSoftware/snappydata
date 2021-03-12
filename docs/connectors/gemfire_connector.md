@@ -1,6 +1,5 @@
 # SnappyData GemFire Connector
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 ## Overview
 The SnappyData GemFire Connector allows SnappyData/Spark programs to read from data regions as well as write into data regions within GemFire clusters. You can connect the applications to one or more GemFire clusters, expose GemFire regions as SnappyData tables/Spark DataFrames, run complex SQL queries on data stored in GemFire and save SnappyData tables onto GemFire regions. The connector is designed to execute in a highly parallelized manner targeting GemFire partitioned datasets (buckets) for the highest possible performance.

@@ -1,6 +1,5 @@
 #  Memory Usage
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
 
 SnappyData provides statistics for system memory, JVM heap, garbage collection, and table sizes.
 
