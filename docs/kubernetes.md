@@ -138,7 +138,7 @@ The output displays the external IP address  of the *snappydata-locator-public* 
 
 2.	Use the external IP address and port of the **snappydata-locator-public** services to connect to SnappyData cluster using JDBC connections. For example, based on the above output, the JDBC URL to be used will be [jdbc:snappydata://104.198.47.162:1527/]()
 
-You can refer to [SnappyData documentation](http://snappydatainc.github.io/snappydata/howto/connect_using_jdbc_driver/) for an example of JDBC program and for instructions on how to obtain JDBC driver using Maven/SBT co-ordinates.
+You can refer to [SnappyData documentation](http://tibcosoftware.github.io/snappydata/howto/connect_using_jdbc_driver/) for an example of JDBC program and for instructions on how to obtain JDBC driver using Maven/SBT co-ordinates.
 
 <a id= querykubernetes> </a>
 ### Executing Queries Using SnappyData Shell
@@ -167,7 +167,7 @@ The output displays the external IP address of the **snappydata-locator-public**
 <a id= jobkubernetes> </a>
 ### Submitting a SnappyData Job
 
-Refer to the [How Tos section](http://snappydatainc.github.io/snappydata/howto/run_spark_job_inside_cluster/) in SnappyData documentation to understand how to submit SnappyData jobs.
+Refer to the [How Tos section](http://tibcosoftware.github.io/snappydata/howto/run_spark_job_inside_cluster/) in SnappyData documentation to understand how to submit SnappyData jobs.
 However, for submitting a SnappyData job in Kubernetes deployment, you need to use the **snappydata-leader-public** service that exposes port **8090** to run the jobs.
 
 **To submit a SnappyData job in Kubernetes deployment:**
@@ -240,7 +240,7 @@ servers:
   conf: "-heap-size=2048m"
 ```
 
-You can specify SnappyData [configuration parameters](https://snappydatainc.github.io/snappydata/configuring_cluster/configuring_cluster/#configuration-files) in the **servers.conf**, **locators.conf**, and **leaders.conf** attributes for servers, locators, and leaders respectively.
+You can specify SnappyData [configuration parameters](https://tibcosoftware.github.io/snappydata/configuring_cluster/configuring_cluster/#configuration-files) in the **servers.conf**, **locators.conf**, and **leaders.conf** attributes for servers, locators, and leaders respectively.
 
 <a id= kubernetesobjects> </a>
 ## Kubernetes Objects Used in SnappyData Chart

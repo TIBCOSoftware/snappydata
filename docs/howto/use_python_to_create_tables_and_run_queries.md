@@ -21,7 +21,7 @@ Developers can write programs in Python to use SnappyData features.
 snappy.sql("DROP TABLE IF EXISTS PARTSUPP")
 # "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
 # For complete list of table attributes refer the documentation
-# http://snappydatainc.github.io/snappydata/programming_guide
+# http://tibcosoftware.github.io/snappydata/programming_guide
 snappy.sql("CREATE TABLE PARTSUPP ( " +
       "PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY," +
       "PS_SUPPKEY     INTEGER NOT NULL," +
@@ -73,7 +73,7 @@ schema = StructType([StructField('PS_PARTKEY', IntegerType(), False),
 
  # "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY)
  # For complete list of table attributes refer the documentation at
- # http://snappydatainc.github.io/snappydata/programming_guide
+ # http://tibcosoftware.github.io/snappydata/programming_guide
  snappy.createTable('PARTSUPP', 'row', schema, False, PARTITION_BY = 'PS_PARTKEY')
 
  # Inserting data in PARTSUPP table using DataFrame
