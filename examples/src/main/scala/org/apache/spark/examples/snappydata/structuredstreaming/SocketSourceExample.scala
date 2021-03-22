@@ -41,7 +41,7 @@ import org.apache.spark.sql.{SnappySession, SparkSession}
  * </pre>
  *
  * For more details on streaming with SnappyData refer to:
- * http://snappydatainc.github.io/snappydata/programming_guide
+ * http://tibcosoftware.github.io/snappydata/programming_guide
  * /stream_processing_using_sql/#stream-processing-using-sql
  *
  */

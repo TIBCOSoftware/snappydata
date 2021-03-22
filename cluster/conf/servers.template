@@ -44,5 +44,5 @@
 # users do not have to specify them here explicitly.
 #
 # For more configuration options,
-# see http://snappydatainc.github.io/snappydata/configuration/#configuration
+# see http://tibcosoftware.github.io/snappydata/configuration/#configuration
 localhost

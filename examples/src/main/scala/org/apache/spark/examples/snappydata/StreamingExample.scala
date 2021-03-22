@@ -69,7 +69,7 @@ import scala.util.control.NonFatal
   * of storing and updating a state of streaming data)
   *
   * For more details on streaming with SnappyData refer to:
-  * http://snappydatainc.github.io/snappydata/programming_guide
+  * http://tibcosoftware.github.io/snappydata/programming_guide
   * /stream_processing_using_sql/#stream-processing-using-sql
   *
   */
@@ -114,7 +114,7 @@ object StreamingExample {
     // rowConverter attribute specifies a class that converts a
     // stream message into a Row object
     // for more details on stream tables refer to
-    // http://snappydatainc.github.io/snappydata/streamingWithSQL/
+    // http://tibcosoftware.github.io/snappydata/streamingWithSQL/
     snsc.sql(
       "create stream table adImpressionStream (" +
         " time_stamp timestamp," +

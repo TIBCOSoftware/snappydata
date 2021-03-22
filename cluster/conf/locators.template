@@ -62,5 +62,5 @@
 #     locator1 -dir=/tmp/data/locator -client-bind-address=locator1
 # 
 # For more configuration options, see
-# http://snappydatainc.github.io/snappydata/configuration/#configuration
+# http://tibcosoftware.github.io/snappydata/configuration/#configuration
 localhost

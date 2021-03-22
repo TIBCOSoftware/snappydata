@@ -152,7 +152,7 @@ The above trait contains a single method, which user needs to implement. A user 
       batchId: Long, df: Dataset[Row]): Unit
 ```
 
-The following examples illustrates how you can write into a [SnappyData table](http://snappydatainc.github.io/snappydata/programming_guide/building_snappydata_applications_using_spark_api/#building-snappydata-applications-using-spark-api):
+The following examples illustrates how you can write into a [SnappyData table](http://tibcosoftware.github.io/snappydata/programming_guide/building_snappydata_applications_using_spark_api/#building-snappydata-applications-using-spark-api):
 
 ```pre
 package io.snappydata.app;

@@ -83,7 +83,7 @@ $ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=https://github.com
 <a id="builddockerimageslocal"></a>
 ### Building Image from Local Copy of SnappyData Product TAR file
 
-If you have already downloaded the SnappyData tarfile locally onto your machine, use the following steps to build an image from the downloaded binaries. To download SnappyData, refer to the [Provisioning SnappyData](https://snappydatainc.github.io/snappydata/install/) section in the product documentation.
+If you have already downloaded the SnappyData tarfile locally onto your machine, use the following steps to build an image from the downloaded binaries. To download SnappyData, refer to the [Provisioning SnappyData](https://tibcosoftware.github.io/snappydata/install/) section in the product documentation.
 
 Copy the downloaded **tar.gz** file to the Docker folder where you have placed the Dockerfile and run the following command:
 

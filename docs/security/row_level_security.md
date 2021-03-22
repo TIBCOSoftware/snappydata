@@ -33,7 +33,7 @@ A policy, which is a rule, can be created for row tables, column tables, and ext
 !!!Note
 	Policies are restrictive by default.
 
-Here in the following example, a table named **clients** is [created](https://snappydatainc.github.io/snappydata/reference/sql_reference/create-table/#create-table) and access permissions are [granted](https://snappydatainc.github.io/snappydata/reference/sql_reference/grant/) to three users:
+Here in the following example, a table named **clients** is [created](https://tibcosoftware.github.io/snappydata/reference/sql_reference/create-table/#create-table) and access permissions are [granted](https://tibcosoftware.github.io/snappydata/reference/sql_reference/grant/) to three users:
 
 ```
 # Create table named clients.

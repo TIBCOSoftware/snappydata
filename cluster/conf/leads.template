@@ -39,5 +39,5 @@
 #
 #     lead1   -dir=/tmp/data/server -spark.ui.port=3333 -spark.executor.cores=16 -zeppelin.interpreter.enable=true
 #
-# For more options, see http://snappydatainc.github.io/snappydata/configuration/#configuration
+# For more options, see http://tibcosoftware.github.io/snappydata/configuration/#configuration
 localhost
