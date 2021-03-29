@@ -56,7 +56,7 @@ export RUN_IN_BACKGROUND
 
 # Check if --config is passed as an argument. It is an optional parameter.
 # Exit if the argument is not a directory.
-if [ "$1" == "--config" ]
+if [ "$1" = "--config" ]
 then
   shift
   conf_dir="$1"
@@ -244,8 +244,12 @@ function execute() {
     esac
   done
   THIS_HOST_IP=
-  if [ "$(echo `uname -s`)" == "Linux" ]; then
-    THIS_HOST_IP="$(echo `hostname -I` | grep "$host")"
+  if [ "$(uname -s)" = "Linux" ]; then
+    IPCMD="ifconfig"
+    if ! type ifconfig 2>/dev/null >/dev/null; then
+      IPCMD="ip addr"
+    fi
+    THIS_HOST_IP="$($IPCMD | sed -En 's/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p' | grep "$host")"
   fi
   if [ "$host" != "localhost" -a -z "$THIS_HOST_IP" ]; then
     if [ "$dirfolder" != "" ]; then
