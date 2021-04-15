@@ -4,7 +4,7 @@ site_description: Project documentation for SnappyData
 site_author: SnappyData Team
 site_favicon: favicon.ico
 
-repo_url: https://github.com/SnappyDataInc/snappydata
+repo_url: https://github.com/TIBCOSoftware/snappydata
 
 pages:
 # this file may just be the [toc] tag .. not sure if that works.

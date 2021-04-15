@@ -69,8 +69,8 @@ You can run the example programs as jobs in the SnappyData cluster using either 
   ```
   $SNAPPY_HOME/bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp \
   --master spark://<hostname>:7077 --conf snappydata.connection=localhost:1527 \
-  --packages SnappyDataInc:snappydata:1.1.0-HF-1-s_2.11 \
-  build/libs/snappydata-examples_2.11-1.1.0-HF-1.jar`
+  --packages TIBCOSoftware:snappydata:1.2.0-HF-1-s_2.11 \
+  build/libs/snappydata-examples_2.11-1.2.0-HF-1.jar`
   ```
 
 ## Sample Job

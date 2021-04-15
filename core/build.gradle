@@ -291,7 +291,7 @@ task sparkPackagePom(dependsOn: shadowJar) { doLast {
   file("${rootProject.buildDir}/distributions").mkdirs()
   pom {
     project {
-      groupId 'SnappyDataInc'
+      groupId 'TIBCOSoftware'
       artifactId 'snappydata'
       version "${version}-s_${scalaBinaryVersion}"
       licenses {
