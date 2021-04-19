@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS AIRLINE ;
 
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD PARQUET FORMATTED DATA -----
 CREATE EXTERNAL TABLE STAGING_AIRLINE
-     -- USING parquet OPTIONS(path 's3a://***REMOVED***:***REMOVED***@zeppelindemo/airlinedata_cleaned');
+     -- USING parquet OPTIONS(path 's3a://<aws_access_key_id>:<aws_secret_access_key>@zeppelindemo/airlinedata_cleaned');
       USING parquet OPTIONS(path '/export/shared/QA_DATA/airlinedata_cleaned');
 
 ----- CREATE COLUMN TABLE -----
@@ -19,7 +19,7 @@ DROP TABLE IF EXISTS AIRLINEREF;
 
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD PARQUET FORMATTED DATA -----
 CREATE EXTERNAL TABLE STAGING_AIRLINEREF
-     -- USING parquet OPTIONS(path 's3a://***REMOVED***:***REMOVED***@zeppelindemo/airportdata');
+     -- USING parquet OPTIONS(path 's3a://<aws_access_key_id>:<aws_secret_access_key>@zeppelindemo/airportdata');
       USING parquet OPTIONS(path '/export/shared/QA_DATA/airportdata');
 
 ----- CREATE ROW TABLE -----

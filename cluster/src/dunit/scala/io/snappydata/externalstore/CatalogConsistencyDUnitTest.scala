@@ -57,10 +57,10 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     snc.sql("create stream table tweetsTable (id long, text string, fullName string, " +
         "country string, retweets int, hashtag string) using twitter_stream options (" +
-        "consumerKey '***REMOVED***', " +
-        "consumerSecret '***REMOVED***', " +
-        "accessToken '***REMOVED***', " +
-        "accessTokenSecret '***REMOVED***', " +
+        "consumerKey '**REMOVED**', " +
+        "consumerSecret '**REMOVED**', " +
+        "accessToken '**REMOVED**', " +
+        "accessTokenSecret '**REMOVED**', " +
         "rowConverter 'io.snappydata.streaming.TweetToRowsConverter')")
   }
 
