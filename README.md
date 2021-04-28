@@ -1,3 +1,8 @@
+<span style="background-color:yellow">
+This repository is provided for legacy users and informational purposes only. It may contain security vulnerabilities in the code itself or its dependencies. TIBCO provides no updates, including security updates, to this code. Consistent with the terms of the Apache License 2.0 that apply to the TIBCO code in this repository, the code is provided on an "as is" basis, without any warranties or conditions of any kind and in no event and under no legal theory shall TIBCO be liable to you for damages arising as a result of the use or inability to use the code.
+</span>
+
+
 ## Introduction 
 SnappyData (aka TIBCO ComputeDB community edition) is a distributed, in-memory optimized analytics database. SnappyData delivers high throughput, low latency, and high concurrency for unified analytics workload. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources and stream processing all in one unified cluster.
 
@@ -102,7 +107,7 @@ SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency
 ```
 groupId: io.snappydata
 artifactId: snappydata-cluster_2.11
-version: 1.2.0
+version: 1.3.0
 ```
 
 ### Using SBT Dependency
@@ -110,13 +115,13 @@ version: 1.2.0
 If you are using SBT, add this line to your **build.sbt** for core SnappyData artifacts:
 
 ```
-libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.2.0"
+libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.3.0"
 ```
 
 For additions related to SnappyData cluster, use:
 
 ```
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.2.0"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.0"
 ```
 
 You can find more specific SnappyData artifacts [here](http://mvnrepository.com/artifact/io.snappydata)

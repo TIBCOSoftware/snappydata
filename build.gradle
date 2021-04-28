@@ -105,7 +105,7 @@ allprojects {
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.1.1'
-    snappySparkVersion = '2.1.1.8'
+    snappySparkVersion = '2.1.1.9'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop3.2"
     sparkCurrentVersion = '2.3.2'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop3.2"
@@ -1071,11 +1071,6 @@ task product(type: Zip) {
           from jdbcConnectorProject.jar.destinationDir
           into "${snappyProductDir}/connectors"
           include "*.jar"
-        }
-        copy {
-          from "${jdbcConnectorProject.projectDir}/../tdv-connector/lib"
-          into "${snappyProductDir}/jars"
-          include "csjdbc8.jar"
         }
       }
       if (hasGemFireConnectorProject) {
