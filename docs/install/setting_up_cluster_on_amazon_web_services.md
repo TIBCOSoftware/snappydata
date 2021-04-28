@@ -589,7 +589,7 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
 		* The public DNS/IP of the instance is available on the EC2 dashboard > **Instances** page. Select your EC2 instance and look for it in the lower half of the page.
 
-12. Download the required SnappyData distribution (.tar.gz) into the EC2 instance(s). You can find the latest SnappyData Community Edition (OSS) release [here](https://github.com/snappydatainc/snappydata/releases/latest).
+12. Download the required SnappyData distribution (.tar.gz) into the EC2 instance(s). You can find the latest SnappyData Community Edition (OSS) release [here](https://github.com/tibcosoftware/snappydata/releases/latest).
 
     * When we make the SnappyData AMI available on AWS in future, it will have the distribution pre-installed. In that case, you can jump to [step 4](#15step) below.
 
