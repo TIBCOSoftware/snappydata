@@ -57,6 +57,7 @@ allprojects {
   repositories {
     mavenCentral()
     maven { url 'https://dl.bintray.com/big-data/maven' }
+    maven { url 'https://repo.hortonworks.com/content/repositories/releases/' }
     maven { url "https://repo.spring.io/libs-release" }
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
     // maven { url 'http://repository.snappydata.io/repository/internal' }
@@ -127,7 +128,7 @@ allprojects {
     kryoVersion = '4.0.1'
     thriftVersion = '0.9.3'
     jacksonVersion = '2.9.5'
-    hiveVersion = '1.21.2.3.1.2.0-4'
+    hiveVersion = '1.21.2.3.1.2.2-1'
     metricsVersion = '4.0.3'
     metrics2Version = '2.2.0'
     janinoVersion = '3.0.8'
