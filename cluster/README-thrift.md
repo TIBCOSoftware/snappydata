@@ -90,12 +90,12 @@ Thrift Java API for the protocol.
 
 ## Thrift client
 
-The current thrift IDL file can be found [here](https://github.com/TIBCOSoftware/snappy-store/blob/snappy/master/gemfirexd/shared/src/main/java/io/snappydata/thrift/common/snappydata.thrift).
+The current thrift IDL file can be found [here](https://github.com/SnappyDataInc/snappy-store/blob/snappy/master/gemfirexd/shared/src/main/java/io/snappydata/thrift/common/snappydata.thrift).
 Client drivers can be generated from the IDL as described in its [documentation](https://thrift.apache.org/).
 A description of the thrift types etc can also be found there and [elsewhere](https://diwakergupta.github.io/thrift-missing-guide/).
 
 The _SnappyDataService_ provides the full set of operations that can be performed on the servers.
-Basic steps are given below. A complete Java Thrift client example can be found [here](https://github.com/TIBCOSoftware/snappy-store/blob/snappy/master/gemfirexd/tools/src/test/java/io/snappydata/app/TestThrift.java).
+Basic steps are given below. A complete Java Thrift client example can be found [here](https://github.com/SnappyDataInc/snappy-store/blob/snappy/master/gemfirexd/tools/src/test/java/io/snappydata/app/TestThrift.java).
 
 
 ### Open a connection

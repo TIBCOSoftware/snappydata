@@ -1126,7 +1126,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * @param schema        Table schema
    * @param options       Properties for table creation. See options list for different tables.
    *                      https://github
-   *                      .com/TIBCOSoftware/snappydata/blob/master/docs/rowAndColumnTables.md
+   *                      .com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
    * @param allowExisting When set to true it will ignore if a table with the same
    *                      name is present, else it will throw table exist exception
    * @return DataFrame for the table
@@ -1151,7 +1151,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * @param schema        Table schema
    * @param options       Properties for table creation. See options list for different tables.
    *                      https://github
-   *                      .com/TIBCOSoftware/snappydata/blob/master/docs/rowAndColumnTables.md
+   *                      .com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
    * @param allowExisting When set to true it will ignore if a table with the same
    *                      name is present, else it will throw table exist exception
    * @return DataFrame for the table
@@ -1190,7 +1190,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * @param schema        Table schema
    * @param options       Properties for table creation. See options list for different tables.
    *                      https://github
-   *                      .com/TIBCOSoftware/snappydata/blob/master/docs/rowAndColumnTables.md
+   *                      .com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
    * @param allowExisting When set to true it will ignore if a table with the same
    *                      name is present, else it will throw table exist exception
    * @return DataFrame for the table
@@ -1213,7 +1213,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * @param schema        Table schema
    * @param options       Properties for table creation. See options list for different tables.
    *                      https://github
-   *                      .com/TIBCOSoftware/snappydata/blob/master/docs/rowAndColumnTables.md
+   *                      .com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
    * @param allowExisting When set to true it will ignore if a table with the same
    *                      name is present, else it will throw table exist exception
    * @return DataFrame for the table
@@ -1268,7 +1268,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * @param schemaDDL     Table schema as a string interpreted by provider
    * @param options       Properties for table creation. See options list for different tables.
    *                      https://github
-   *                      .com/TIBCOSoftware/snappydata/blob/master/docs/rowAndColumnTables.md
+   *                      .com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
    * @param allowExisting When set to true it will ignore if a table with the same
    *                      name is present, else it will throw table exist exception
    * @return DataFrame for the table
@@ -1329,7 +1329,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    * @param schemaDDL     Table schema as a string interpreted by provider
    * @param options       Properties for table creation. See options list for different tables.
    *                      https://github
-   *                      .com/TIBCOSoftware/snappydata/blob/master/docs/rowAndColumnTables.md
+   *                      .com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
    * @param allowExisting When set to true it will ignore if a table with the same
    *                      name is present, else it will throw table exist exception
    * @return DataFrame for the table

@@ -1002,7 +1002,7 @@ Release 0.9
   [SNAP-1323] Support parameterized prepared statements for routed queries. Changes for improved
   execution of prepared statement on column table through JDBC route.
 
-  JDBC CDC Streaming support. (https://github.com/TIBCOSoftware/snappydata/pull/622)
+  JDBC CDC Streaming support. (https://github.com/SnappyDataInc/snappydata/pull/622)
 
   [SNAP-1655] Support for boolean in row table.
     
@@ -1010,7 +1010,7 @@ Release 0.9
 
   [SNAP-1698] Snappy Dashboard UI Enhancements
 
-  Multi-grid master (https://github.com/TIBCOSoftware/snappydata/pull/628)
+  Multi-grid master (https://github.com/SnappyDataInc/snappydata/pull/628)
     
   [SNAP-1545] Redesigned SnappyData Dashboard. Now displays detailed member description, heap and
   off-heap usage along with snappy storage and execution splits. It also displays cluster level
@@ -1094,7 +1094,7 @@ Release 0.9
   fix, passing a reasonable initial size for the encoder term.
 
   Pruning partitions for predicates based on partitioning columns.
-  (https://github.com/TIBCOSoftware/snappydata/pull/543)
+  (https://github.com/SnappyDataInc/snappydata/pull/543)
 
   [SNAP-1441] Limit query on column table gives less number of rows (JDBC).
 
