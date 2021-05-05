@@ -37,7 +37,7 @@ The SnappyData connector internally figures out the structure of the result set 
 ### Connecting to SnappyData using the JDBC Extension Connector
 Following is a sample of Spark JDBC Extension setup and usage:
 
-1.	Include the **snappydata-jdbc** package in the Spark job with spark-submit or spark-shell. You can download the same from [here](https://github.com/SnappyDataInc/snappydata/releases/download/v1.2.0/snappydata-jdbc_2.11-1.2.0.jar):
+1.	Include the **snappydata-jdbc** package in the Spark job with spark-submit or spark-shell. You can download the same from [here](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.2.0/snappydata-jdbc_2.11-1.2.0.jar):
 
 			$SPARK_HOME/bin/spark-shell --jars snappydata-jdbc-2.11_1.2.0.jar
   

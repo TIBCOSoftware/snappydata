@@ -84,8 +84,8 @@ import org.apache.spark.util.{Utils => SparkUtils}
  * User should use obtain reference to a SnappyContext instance as below
  * val snc: SnappyContext = SnappyContext.getOrCreate(sparkContext)
  *
- * @see https://github.com/SnappyDataInc/snappydata#step-1---start-the-snappydata-cluster
- * @see https://github.com/SnappyDataInc/snappydata#interacting-with-snappydata
+ * @see https://tibcosoftware.github.io/snappydata/quickstart/snappydataquick_start/
+ * @see https://github.com/TIBCOSoftware/snappydata
  * @todo document describing the Job server API
  * @todo Provide links to above descriptions
  *
@@ -413,7 +413,8 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
    * @param provider Provider name such as 'COLUMN', 'ROW', 'JDBC' etc.
    * @param schema   Table schema
    * @param options  Properties for table creation. See options list for different tables.
-   *              https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
+   *                 https://github.com/TIBCOSoftware/snappydata
+   *                 /blob/master/docs/programming_guide/tables_in_snappydata.md
    * @param allowExisting When set to true it will ignore if a table with the same
    *                      name is present, else it will throw table exist exception
    * @return DataFrame for the table
@@ -450,7 +451,8 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
    * @param provider Provider name such as 'COLUMN', 'ROW', 'JDBC' etc.
    * @param schema   Table schema
    * @param options  Properties for table creation. See options list for different tables.
-   * https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
+   *                 https://github.com/TIBCOSoftware/snappydata
+   *                 /blob/master/docs/programming_guide/tables_in_snappydata.md
    * @param allowExisting When set to true it will ignore if a table with the same
    *                      name is present, else it will throw table exist exception
    * @return DataFrame for the table
@@ -505,7 +507,8 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
    * @param provider  Provider name 'ROW' or 'JDBC'.
    * @param schemaDDL Table schema as a string interpreted by provider
    * @param options   Properties for table creation. See options list for different tables.
-   * https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
+   *                 https://github.com/TIBCOSoftware/snappydata
+   *                 /blob/master/docs/programming_guide/tables_in_snappydata.md
    * @param allowExisting When set to true it will ignore if a table with the same
    * name is present, else it will throw table exist exception
    * @return DataFrame for the table
@@ -559,7 +562,8 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
    * @param provider  Provider name 'ROW' or 'JDBC'.
    * @param schemaDDL Table schema as a string interpreted by provider
    * @param options   Properties for table creation. See options list for different tables.
-   * https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
+   *                 https://github.com/TIBCOSoftware/snappydata
+   *                 /blob/master/docs/programming_guide/tables_in_snappydata.md
    * @param allowExisting When set to true it will ignore if a table with the same
    * name is present, else it will throw table exist exception
    * @return DataFrame for the table

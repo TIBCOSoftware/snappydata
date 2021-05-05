@@ -34,7 +34,7 @@ Refer [here](concurrent_apache_zeppelin_access_to_secure_snappydata.md) for inst
 	![homepage](../Images/zeppelin_2.png)
 
 *	**I already have a Zeppelin installation, do I still need to install SnappyData’s Zeppelin separately?**
-	*	No. You may download the notebooks from [here](https://github.com/SnappyDataInc/zeppelin-interpreter/tree/master/examples/notebook) and import them into your Zeppelin.
+	*	No. You may download the notebooks from [here](https://github.com/TIBCOSoftware/zeppelin-interpreter/tree/master/examples/notebook) and import them into your Zeppelin.
 	*	Additionally, you must set up the JDBC interpreter to connect to SnappyData. [Configure JDBC Interpreter](concurrent_apache_zeppelin_access_to_secure_snappydata.md#configinterpreter).
 
 *	**Do these notebooks depend on specific Zeppelin version?**
@@ -56,7 +56,7 @@ Refer [here](concurrent_apache_zeppelin_access_to_secure_snappydata.md) for inst
 
     | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
 	|--------|--------|--------|
-    |[Version 0.7.3.6](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.6) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.2.0](https://edelivery.tibco.com)|
+    |[Version 0.7.3.6](https://github.com/TIBCOSoftware/zeppelin-interpreter/releases/tag/v0.7.3.6) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.2.0](https://edelivery.tibco.com)|
 
 2. [Configure the SnappyData Cluster](../configuring_cluster/configuring_cluster.md).
 
@@ -85,7 +85,7 @@ Refer [here](concurrent_apache_zeppelin_access_to_secure_snappydata.md) for inst
 
     In the `zeppelin.interpreters` property, add the following interpreter class names: `org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter`
 
-9. Download the predefined SnappyData notebooks [notebook.tar.gz](https://github.com/SnappyDataInc/zeppelin-interpreter/blob/notes/examples/notebook/notebook.tar.gz). </br> Extract and copy the contents of the notebook.tar.gz  compressed file to the **notebook** folder in the Zeppelin installation on your local machine.
+9. Download the predefined SnappyData notebooks [notebook.tar.gz](https://github.com/TIBCOSoftware/zeppelin-interpreter/blob/notes/examples/notebook/notebook.tar.gz). </br> Extract and copy the contents of the notebook.tar.gz  compressed file to the **notebook** folder in the Zeppelin installation on your local machine.
 
 10. Start the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`
 

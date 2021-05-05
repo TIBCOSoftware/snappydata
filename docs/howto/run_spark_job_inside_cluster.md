@@ -56,7 +56,7 @@ For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.
 **Running the Job**: 
 Once you create a jar file for SnappyData job, use the `./bin/snappy-job.sh` to submit the job in the SnappyData cluster, and then run the job. This is similar to `spark-submit` for any Spark application. 
 
-For example, to run the job implemented in [CreatePartitionedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala) you can use the following command. The command submits the job and runs it as:
+For example, to run the job implemented in [CreatePartitionedRowTable.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala) you can use the following command. The command submits the job and runs it as:
 
 ```pre
  # first change the directory to the SnappyData product directory

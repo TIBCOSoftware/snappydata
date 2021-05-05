@@ -46,14 +46,14 @@ For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.
 
 ## Dowloading SnappyData JDBC Driver Jar
 
-You can directly [download the SnappyData JDBC driver](https://github.com/SnappyDataInc/snappydata/releases/latest) from the latest SnappyData release page. Scroll down to download the SnappyData JDBC driver jar which is listed in the **Description of download Artifacts** > **Assets** section.
+You can directly [download the SnappyData JDBC driver](https://github.com/TIBCOSoftware/snappydata/releases/latest) from the latest SnappyData release page. Scroll down to download the SnappyData JDBC driver jar which is listed in the **Description of download Artifacts** > **Assets** section.
 
 
 ## Code Example
 
 **Connect to a SnappyData cluster using JDBC on default client port**
 
-The code snippet shows how to connect to a SnappyData cluster using JDBC on default client port 1527. The complete source code of the example is located at [JDBCExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala)
+The code snippet shows how to connect to a SnappyData cluster using JDBC on default client port 1527. The complete source code of the example is located at [JDBCExample.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala)
 
 ```pre
 val url: String = s"jdbc:snappydata://localhost:1527/"
@@ -92,12 +92,12 @@ preparedStmt1.close()
 ## Connecting with JDBC Client Pool Driver
 
 JDBC client pool driver provides built-in connection pooling and relies on the non-pooled [JDBC driver](/howto/connect_using_jdbc_driver.md). The driver initializes the pool when the first connection is created using this driver. Thereafter, for every request, the connection is returned from the pool instead of establishing a new connection with the server. 
-We recommend using the pooled driver for low latency operations such as point lookups and when using the Spark JDBC data source API (see example below). When you access TIBCO ComputeDB from Java frameworks such as Spring, we recommend using pooling provided in the framework and switch to using the non-pooled driver. 
+We recommend using the pooled driver for low latency operations such as point lookups and when using the Spark JDBC data source API (see example below). When you access SnappyData from Java frameworks such as Spring, we recommend using pooling provided in the framework and switch to using the non-pooled driver. 
 
 !!! Important
 	The underlying pool is uniquely associated with the set of properties that are passed while creating the connection. If any of the properties change, a new pool is created.
 
-**To connect to TIBCO ComputeDB Cluster using JDBC client pool driver**, use the url of the form: </br> `jdbc:snappydata:pool://<host>:<port>`</br>
+**To connect to SnappyData Cluster using JDBC client pool driver**, use the url of the form: </br> `jdbc:snappydata:pool://<host>:<port>`</br>
 Where `<host>` is the hostname of the node on which the locator is started and `<port>` is the port on which the locator accepts client connections (default 1527).
 
 The client pool driver class name is **io.snappydata.jdbc.ClientPoolDriver**.

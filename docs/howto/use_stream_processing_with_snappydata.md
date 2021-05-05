@@ -11,19 +11,19 @@ The SnappyData structured streaming programming model is the same as [Spark stru
 
 SnappyData provides a build-in output **Sink** which simplifies ingestion of streaming dataframes into SnappyData tables. The **Sink** supports idempotent writes, ensuring consistency of data when failures occur, as well as support for all mutation operations such as inserts, appends, updates, puts, and deletes. 
 
-The output data source name for SnappyData is `snappysink`. A minimal code example for structured streaming with socket source and **Snappy Sink** is available [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala). You can also refer to [Structured Streaming Quickstart guide](/quickstart/structucture_streamingquickstart.md). 
+The output data source name for SnappyData is `snappysink`. A minimal code example for structured streaming with socket source and **Snappy Sink** is available [here](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala). You can also refer to [Structured Streaming Quickstart guide](/quickstart/structucture_streamingquickstart.md). 
 
-For more examples, refer to [structured streaming examples](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming). The following examples are shown:
+For more examples, refer to [structured streaming examples](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming). The following examples are shown:
 
 | Example | Description |
 |--------|--------|
-|    [CDCExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CDCExample.scala)   |   An example explaining CDC (change data capture) use case with SnappyData streaming Sink. |
-|  [CSVFileSourceExampleWithSnappySink.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CSVFileSourceExampleWithSnappySink.scala)      |   An example of structured streaming depicting CSV file processing with Snappy Sink.    |
-|  [CSVKafkaSourceExampleWithSnappySink.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CSVKafkaSourceExampleWithSnappySink.scala)    | An example of structured streaming depicting processing of JSON coming from kafka source using snappy Sink.       |
-|   [JSONFileSourceExampleWithSnappySink.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/JSONFileSourceExampleWithSnappySink.scala)   |     An example of structured streaming depicting JSON file processing with Snappy Sink.   |
-|   [JSONKafkaSourceExampleWithSnappySink.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/JSONKafkaSourceExampleWithSnappySink.scala)     |  An example of structured streaming depicting processing of JSON coming from Kafka source using Snappy Sink      |
-|    [SocketSourceExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExample.scala)    |    An example showing usage of structured streaming with console Sink.   |
-|      [SocketSourceExampleWithSnappySink.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala)  |   An example showing usage of structured streaming with SnappyData.    |
+|    [CDCExample.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CDCExample.scala)   |   An example explaining CDC (change data capture) use case with SnappyData streaming Sink. |
+|  [CSVFileSourceExampleWithSnappySink.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CSVFileSourceExampleWithSnappySink.scala)      |   An example of structured streaming depicting CSV file processing with Snappy Sink.    |
+|  [CSVKafkaSourceExampleWithSnappySink.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CSVKafkaSourceExampleWithSnappySink.scala)    | An example of structured streaming depicting processing of JSON coming from kafka source using snappy Sink.       |
+|   [JSONFileSourceExampleWithSnappySink.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/JSONFileSourceExampleWithSnappySink.scala)   |     An example of structured streaming depicting JSON file processing with Snappy Sink.   |
+|   [JSONKafkaSourceExampleWithSnappySink.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/JSONKafkaSourceExampleWithSnappySink.scala)     |  An example of structured streaming depicting processing of JSON coming from Kafka source using Snappy Sink      |
+|    [SocketSourceExample.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExample.scala)    |    An example showing usage of structured streaming with console Sink.   |
+|      [SocketSourceExampleWithSnappySink.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala)  |   An example showing usage of structured streaming with SnappyData.    |
 
 The topic included the following sections:
 
@@ -86,7 +86,7 @@ To support **CDC**, the source DataFrame must have the following:
 
 *	The target SnappyData table must have key columns defined for a column table or primary key defined for a row table.
 
-An example explaining the **CDC** use case is available [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CDCExample.scala).
+An example explaining the **CDC** use case is available [here](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CDCExample.scala).
 
 
 If the `_eventType` column is not provided as part of source dataframe, then the following is observed:</br> 
@@ -207,7 +207,7 @@ SnappyData’s streaming functionality builds on top of Spark Streaming and is p
 
 ### Code Sample
 
-Code example for streaming is in [StreamingExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala). The code snippets in the following sections show how to declare a stream table, register continuous queries(CQ), and update SnappyData table using the stream data.
+Code example for streaming is in [StreamingExample.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StreamingExample.scala). The code snippets in the following sections show how to declare a stream table, register continuous queries(CQ), and update SnappyData table using the stream data.
 
 ### Using Stream Processing with SnappyData
 

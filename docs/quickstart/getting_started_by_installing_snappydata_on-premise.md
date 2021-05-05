@@ -1,6 +1,6 @@
 <a id="getting-started-by-installing-snappydata-on-premise"></a>
 # Getting Started by Installing SnappyData On-Premise
-Download the latest version of SnappyData from the [SnappyData Release Page](https://github.com/SnappyDataInc/snappydata/releases/), which lists the latest and previous releases of SnappyData.
+Download the latest version of SnappyData from the [SnappyData Release Page](https://github.com/TIBCOSoftware/snappydata/releases/), which lists the latest and previous releases of SnappyData.
 
 ```pre
 $ tar -xzf snappydata-1.2.0-bin.tar.gz

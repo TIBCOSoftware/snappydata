@@ -4,7 +4,7 @@ This repository is provided for legacy users and informational purposes only. It
 
 
 ## Introduction 
-SnappyData (aka TIBCO ComputeDB community edition) is a distributed, in-memory optimized analytics database. SnappyData delivers high throughput, low latency, and high concurrency for unified analytics workload. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources and stream processing all in one unified cluster.
+SnappyData (aka TIBCO ComputeDB) is a distributed, in-memory optimized analytics database. SnappyData delivers high throughput, low latency, and high concurrency for unified analytics workload. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources and stream processing all in one unified cluster.
 
 One common use case for SnappyData is to provide analytics at interactive speeds over large volumes of data with minimal or no pre-processing of the dataset. For instance, there is no need to often pre-aggregate/reduce or generate cubes over your large data sets for ad-hoc visual analytics. This is made possible by smartly managing data in-memory, dynamically generating code using vectorization optimizations and maximizing the potential of modern multi-core CPUs.
 SnappyData enables complex processing on large data sets in sub-second timeframes. 
@@ -53,7 +53,7 @@ When speed is essential, applications can selectively copy the external data int
 
 
 ## Downloading and Installing SnappyData
-You can download and install the latest version of SnappyData from [github](https://github.com/SnappyDataInc/snappydata/releases) or you can download the enterprise version that is TIBCO ComputeDB from [here](https://edelivery.tibco.com/storefront/index.ep).
+You can download and install the latest version of SnappyData from [github](https://github.com/TIBCOSoftware/snappydata/releases).
 Refer to the [documentation](docs//install.md) for installation steps.
 
 ## Getting Started
@@ -70,13 +70,13 @@ You can find more information on options for running SnappyData [here](docs/quic
 
 ## Quick Test to Measure Performance of SnappyData vs Apache Spark
 
-If you are already using Apache Spark, you can experience upto 20x speedup for your query performance with SnappyData. Try this [test](https://github.com/SnappyDataInc/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala) using the Spark Shell.
+If you are already using Apache Spark, you can experience upto 20x speedup for your query performance with SnappyData. Try this [test](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala) using the Spark Shell.
 
 ## Documentation
 To understand SnappyData and its features refer to the [documentation](http://tibcosoftware.github.io/snappydata/).
 
 ### Other Relevant content
-- [Paper](http://cidrdb.org/cidr2017/papers/p28-mozafari-cidr17.pdf) on Snappydata (Community Edition of TIBCO ComputeDB) at Conference on Innovative Data Systems Research (CIDR) - Info on key concepts and motivating problems.
+- [Paper](http://cidrdb.org/cidr2017/papers/p28-mozafari-cidr17.pdf) on Snappydata at Conference on Innovative Data Systems Research (CIDR) - Info on key concepts and motivating problems.
 - [Another early Paper](https://www.snappydata.io/snappy-industrial) that focuses on overall architecture, use cases, and benchmarks. ACM Sigmod 2016.
 - [TPC-H benchmark](https://www.snappydata.io/whitepapers/snappydata-tpch) comparing Apache Spark with SnappyData
 - Checkout the [SnappyData blog](https://www.snappydata.io/blog) for developer content
@@ -160,7 +160,7 @@ Apache Spark is turned into an in-memory operational database capable of transac
 
 
 ## Streaming Example - Ad Analytics
-Here is a stream + Transactions + Analytics use case example to illustrate the SQL as well as the Apache Spark programming approaches in SnappyData - [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc). Here is a [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData. The example also goes through a benchmark comparing SnappyData to a Hybrid in-memory database and Cassandra.
+Here is a stream + Transactions + Analytics use case example to illustrate the SQL as well as the Apache Spark programming approaches in SnappyData - [Ad Analytics code example](https://github.com/TIBCOSoftware/snappy-poc). Here is a [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData. The example also goes through a benchmark comparing SnappyData to a Hybrid in-memory database and Cassandra.
 
 ## Contributing to SnappyData
 

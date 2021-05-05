@@ -22,7 +22,7 @@ Do the following to connect TIBCO Data Virtulization (TDV) to SnappyData:
 <a id= copyjdbcdriver> </a>
 ## Copy the JDBC Driver
 
-1.	Download the JDBC driver from [here](https://github.com/SnappyDataInc/snappydata/releases/download/v1.2.0/snappydata-jdbc_2.11-1.2.0.jar).
+1.	Download the JDBC driver from [here](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.2.0/snappydata-jdbc_2.11-1.2.0.jar).
 2.	Copy the jar file to the Adapter location that is specified while creating the TDV Data Source Adapter. This location must default in a similar pattern to **C:/Program Files/TIBCO/TDV Server 8.1/conf/adapters/custom/tibco_computedb**.
 3.	Restart the TDV Server to load the JDBC driver.
 

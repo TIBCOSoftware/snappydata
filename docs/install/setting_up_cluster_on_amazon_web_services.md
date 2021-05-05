@@ -158,7 +158,7 @@ The SnappyData EC2 scripts enable you to launch and manage SnappyData clusters q
 
 The `snappy-ec2` script is the entry point for these EC2 scripts and is derived from the `spark-ec2` script available in [Apache Spark 1.6](https://github.com/apache/spark/tree/branch-1.6/ec2).
 
-The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also as a **.tar.gz** file on [the release page](https://github.com/SnappyDataInc/snappy-cloud-tools/releases) file.
+The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/TIBCOSoftware/snappy-cloud-tools/tree/master/aws/ec2) and also as a **.tar.gz** file on [the release page](https://github.com/TIBCOSoftware/snappy-cloud-tools/releases) file.
 
 !!! Note
 	The EC2 scripts are provided on an experimental basis. Feel free to try it out and provide your feedback as via GitHub issues.
@@ -192,7 +192,7 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
 ### Deploying SnappyData Cluster with EC2 Scripts
 
 In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the
-aws/ec2 directory where the [SnappyData cloud tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
+aws/ec2 directory where the [SnappyData cloud tools repository](https://github.com/TIBCOSoftware/snappy-cloud-tools) is cloned locally.
 
 **Syntax**
 

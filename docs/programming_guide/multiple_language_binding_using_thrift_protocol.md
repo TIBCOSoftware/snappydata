@@ -10,9 +10,9 @@ To explicitly start a DRDA server in SnappyData, you can use the `-drda-server-a
 
 Refer to the following documents for information on support provided by SnappyData:</br>
 
- * [**About SnappyData Thrift**]( https://github.com/SnappyDataInc/snappydata/blob/branch-0.9/cluster/README-thrift.md): Contains detailed information about the feature and its capabilities.
+ * [**About SnappyData Thrift**]( https://github.com/TIBCOSoftware/snappydata/blob/branch-0.9/cluster/README-thrift.md): Contains detailed information about the feature and its capabilities.
 
- * [**The Thrift Interface Definition Language (IDL)**](https://github.com/SnappyDataInc/snappy-store/blob/branch-1.5.4/gemfirexd/shared/src/main/java/io/snappydata/thrift/common/snappydata.thrift): This is a Thrift interface definition file for the SnappyData service.
+ * [**The Thrift Interface Definition Language (IDL)**](https://github.com/TIBCOSoftware/snappy-store/blob/branch-1.5.4/gemfirexd/shared/src/main/java/io/snappydata/thrift/common/snappydata.thrift): This is a Thrift interface definition file for the SnappyData service.
 
- * [**Example**](https://github.com/SnappyDataInc/snappy-store/blob/branch-1.5.4/gemfirexd/tools/src/test/java/io/snappydata/app/TestThrift.java):
+ * [**Example**](https://github.com/TIBCOSoftware/snappy-store/blob/branch-1.5.4/gemfirexd/tools/src/test/java/io/snappydata/app/TestThrift.java):
  Example of the Thrift definitions using the SnappyData Thrift IDL.
