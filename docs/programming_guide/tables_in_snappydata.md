@@ -48,7 +48,7 @@ col6 Struct<a: Int, b: String, c: Decimal(10,5)>
 ) USING column options(BUCKETS '8')" )
 ```
 
-To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala) for examples.
+To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala) for examples.
 
 !!! Note 
 	Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.

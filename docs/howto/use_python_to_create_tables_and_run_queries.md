@@ -96,7 +96,7 @@ snappy.delete("PARTSUPP", "PS_PARTKEY =400")
 snappy.sql("SELECT * FROM PARTSUPP").show()
 ```
 
-The complete source code for the above example is in [CreateTable.py](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/python/CreateTable.py)
+The complete source code for the above example is in [CreateTable.py](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/python/CreateTable.py)
 
 **Related Topics:**
 

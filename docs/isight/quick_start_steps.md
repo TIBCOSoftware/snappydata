@@ -157,7 +157,7 @@ For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section o
 
 SnappyData provides a script (`snappy-ec2`) that allows you to launch and manage SnappyData clusters on Amazon Elastic Compute Cloud (EC2).
 
-The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also on the [Release page](https://github.com/SnappyDataInc/snappy-cloud-tools/releases). The package is available in compressed files (**snappydata-ec2-`<version>`.tar.gz**). Extract the contents to a location on your computer.
+The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/TIBCOSoftware/snappy-cloud-tools/tree/master/aws/ec2) and also on the [Release page](https://github.com/TIBCOSoftware/snappy-cloud-tools/releases). The package is available in compressed files (**snappydata-ec2-`<version>`.tar.gz**). Extract the contents to a location on your computer.
 
 For more information on setting up the cluster using the EC2 script, refer to [Using SnappyData EC2 scripts](../install/setting_up_cluster_on_amazon_web_services.md#EC2).
 

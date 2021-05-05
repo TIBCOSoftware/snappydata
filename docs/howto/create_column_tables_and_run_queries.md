@@ -5,7 +5,7 @@ Column tables organize and manage data in a columnar form such that modern day C
 
 Refer to the [Row and column tables](../programming_guide/tables_in_snappydata.md) documentation for the complete list of attributes for column tables.
 
-Full source code, for example, to create and perform operations on column table can be found in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala)
+Full source code, for example, to create and perform operations on column table can be found in [CreateColumnTable.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala)
 
 ## Create a Column Table using DataFrame API
 

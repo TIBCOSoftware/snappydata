@@ -27,7 +27,7 @@ SnappyData Helm chart is used to deploy SnappyData on Kubernetes.  It uses Kuber
 **To deploy SnappyData on Kubernetes:**
 
 1.	Clone the **spark-on-k8s** repository and change to **charts** directory.</br>
-`git clone https://github.com/SnappyDataInc/spark-on-k8s`</br>
+`git clone https://github.com/TIBCOSoftware/spark-on-k8s`</br>
 `cd spark-on-k8s/charts`
 
 3.	Optionally, go to *snappydata* > *values.yaml*  file to edit the default configurations in SnappyData chart. Configurations can be specified in the respective attributes for locators, leaders, and servers in this file. Refer [List of Configuration Parameters for SnappyData Chart](../kubernetes.md#chartparameters)

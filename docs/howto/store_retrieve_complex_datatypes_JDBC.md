@@ -12,7 +12,7 @@ If you want to store/retrieve objects for complex data types (Array, Map and Str
 
 ## Code Example: Storing and Retrieving Array Data in a JDBC program
 
-The following scala code snippets show how to perform insert and select operations on columns of complex data types. Complete source code for example is available at [JDBCWithComplexTypes.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala) 
+The following scala code snippets show how to perform insert and select operations on columns of complex data types. Complete source code for example is available at [JDBCWithComplexTypes.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala) 
 
 ```
 // create a JDBC connection

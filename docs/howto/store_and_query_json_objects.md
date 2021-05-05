@@ -6,7 +6,7 @@ You can insert JSON data in SnappyData tables and execute queries on the tables.
 **Code Example: Loads JSON data from a JSON file into a column table and executes query**
 
 The code snippet loads JSON data from a JSON file into a column table and executes the query against it.
-The source code for JSON example is located at [WorkingWithJson.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala). After creating SnappySession, the JSON file is read using Spark API and loaded into a SnappyData table.
+The source code for JSON example is located at [WorkingWithJson.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala). After creating SnappySession, the JSON file is read using Spark API and loaded into a SnappyData table.
 
 **Get a SnappySession**:
 

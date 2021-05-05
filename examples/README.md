@@ -44,12 +44,12 @@ You can run the example programs as jobs in the SnappyData cluster using either 
 
 - The examples which can be run as a job in Embedded mode do extend one of `SnappySQLJob`, `SnappyStreamingJob` and `JavaSnappySQLJob`.
   Below command runs `CreateAndLoadAirlineDataJob` as a SnappyData job in Embedded mode.
-  Note that the jar `snappydata-examples_2.11-1.1.0-HF-1.jar` specified via `--app-jar` below is created by the gradle task `build` stated earlier.
+  Note that the jar `snappydata-examples_2.11-1.3.0.jar` specified via `--app-jar` below is created by the gradle task `build` stated earlier.
 
   This assumes that SnappyData cluster is running on localhost with default settings and `SNAPPY_HOME` points to your SnappyData installation directory.
 
   ```
-  $SNAPPY_HOME/bin/snappy-job.sh submit --lead localhost:8090 --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar build/libs/snappydata-examples_2.11-1.1.0-HF-1.jar
+  $SNAPPY_HOME/bin/snappy-job.sh submit --lead localhost:8090 --app-name CreateAndLoadAirlineDataJob --class io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar build/libs/snappydata-examples_2.11-1.3.0.jar
   ```
 
 - The example programs with `main(...)` method defined can be run via `bin/spark-submit`, which runs it in Smart Connector mode.
@@ -58,7 +58,7 @@ You can run the example programs as jobs in the SnappyData cluster using either 
   ```
   $SNAPPY_HOME/bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp \
   --master spark://<hostname>:7077 --conf snappydata.connection=localhost:1527 \
-  build/libs/snappydata-examples_2.11-1.1.0-HF-1.jar`
+  build/libs/snappydata-examples_2.11-1.3.0.jar`
   ```
 
   **NOTE:** The Spark cluster must have essential SnappyData classes in its classpath so that it can talk to SnappyData cluster in Smart Connector mode.
@@ -69,8 +69,8 @@ You can run the example programs as jobs in the SnappyData cluster using either 
   ```
   $SNAPPY_HOME/bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp \
   --master spark://<hostname>:7077 --conf snappydata.connection=localhost:1527 \
-  --packages SnappyDataInc:snappydata:1.1.0-HF-1-s_2.11 \
-  build/libs/snappydata-examples_2.11-1.1.0-HF-1.jar`
+  --packages TIBCOSoftware:snappydata:1.3.0-s_2.11 \
+  build/libs/snappydata-examples_2.11-1.3.0.jar`
   ```
 
 ## Sample Job
@@ -82,5 +82,5 @@ Users may follow steps mentioned below.
 2. Run `gradle build` on terminal from the base project directory(or use `build` task from Gradle Tool window). It will generate a jar named snappydata-examples_2.11-<version>.jar in `build/libs/`.
 3. Run
 ```
-$SNAPPY_HOME/bin/snappy-job.sh submit --lead localhost:8090 --app-name SnappyDataTesJob --class io.snappydata.examples.SnappyDataTestJob  --app-jar build/libs/snappydata-examples_2.11-1.1.0-HF-1.jar
+$SNAPPY_HOME/bin/snappy-job.sh submit --lead localhost:8090 --app-name SnappyDataTesJob --class io.snappydata.examples.SnappyDataTestJob  --app-jar build/libs/snappydata-examples_2.11-1.3.0.jar
 ```

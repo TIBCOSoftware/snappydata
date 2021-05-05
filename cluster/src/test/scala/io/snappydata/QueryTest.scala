@@ -109,7 +109,7 @@ class QueryTest extends SnappyFunSuite {
 
   /**
    * Distinct query failure in code generation reported on github
-   * (https://github.com/SnappyDataInc/snappydata/issues/534)
+   * (https://github.com/TIBCOSoftware/snappydata/issues/534)
    */
   test("GITHUB-534") {
     val session = SnappyContext(sc).snappySession

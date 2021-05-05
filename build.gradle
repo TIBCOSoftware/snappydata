@@ -695,9 +695,9 @@ subprojects {
             url 'http://www.snappydata.io'
 
             scm {
-              connection 'scm:git:https://github.com/SnappyDataInc/snappydata.git'
-              developerConnection 'scm:git:https://github.com/SnappyDataInc/snappydata.git'
-              url 'https://github.com/SnappyDataInc/snappydata'
+              connection 'scm:git:https://github.com/TIBCOSoftware/snappydata.git'
+              developerConnection 'scm:git:https://github.com/TIBCOSoftware/snappydata.git'
+              url 'https://github.com/TIBCOSoftware/snappydata'
             }
 
             licenses {

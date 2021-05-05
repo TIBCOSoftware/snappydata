@@ -98,12 +98,12 @@ val props1 = Map("PARTITION_BY" -> "C_CUSTKEY")
 customer_csv_DF.write.format("column").mode("append").options(props1).saveAsTable("CUSTOMER")
 ```
 
-The source code to load the data from a CSV/Parquet files is in [CreateColumnTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala). 
+The source code to load the data from a CSV/Parquet files is in [CreateColumnTable.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreateColumnTable.scala). 
 
 **Example - reading JSON documents**
 As mentioned before when dealing with JSON you have two challenges - (1) the data can be highly nested (2) the structure of the documents can keep changing. 
 
-Here is a simple example that loads multiple JSON records that show dealing with schema changes across documents -   [WorkingWithJson.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
+Here is a simple example that loads multiple JSON records that show dealing with schema changes across documents -   [WorkingWithJson.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithJson.scala)
 
 !!! Note
 

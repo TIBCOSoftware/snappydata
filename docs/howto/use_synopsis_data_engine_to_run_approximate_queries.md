@@ -5,7 +5,7 @@ Approximate Query Processing (AQP) uses statistical sampling techniques and prob
 For more information on  AQP, refer to [AQP documentation](../aqp.md).
 
 **Code Example**:
-The complete code example for AQP is in [SynopsisDataExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala). The code below creates a sample table and executes queries that run on the sample table.
+The complete code example for AQP is in [SynopsisDataExample.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala). The code below creates a sample table and executes queries that run on the sample table.
 
 **Get a SnappySession**:
 ```pre

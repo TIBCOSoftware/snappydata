@@ -304,14 +304,14 @@ The [SnappyContext](http://tibcosoftware.github.io/snappydata/apidocs/#org.apach
   will let the job execute, otherwise returning spark.jobserver.SnappyJobInvalid(reason) prevents
    the job from running and provides means to convey the reason of failure. In this case, the call immediately returns an HTTP/1.1 400 Bad Request status code. validate helps you preventing running jobs that will eventually fail due to missing or wrong configuration and save both time and resources.
 
-See [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) for Spark and spark streaming jobs. 
+See [examples](https://github.com/TIBCOSoftware/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) for Spark and spark streaming jobs. 
 
 SnappySQLJob trait extends the SparkJobBase trait. It provides users the singleton SnappyContext object that may be reused across jobs. SnappyContext singleton object creates one SQLContext per incoming SQL connection. Similarly SnappyStreamingJob provides users access to SnappyStreamingContext object that can be reused across jobs
 
 
 
 ### Submitting Jobs
-Following command submits [CreateAndLoadAirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala) from the [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) directory.   This job creates dataframes from parquet files, loads the data from dataframe into column tables and row tables and creates sample table on column table in its runJob method. The program is compiled into a jar file (quickstart.jar) and submitted to jobs server as shown below.
+Following command submits [CreateAndLoadAirlineDataJob](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala) from the [examples](https://github.com/TIBCOSoftware/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) directory.   This job creates dataframes from parquet files, loads the data from dataframe into column tables and row tables and creates sample table on column table in its runJob method. The program is compiled into a jar file (quickstart.jar) and submitted to jobs server as shown below.
 
 ```pre
 $ ./bin/snappy-job.sh submit  \
@@ -354,7 +354,7 @@ $ ./bin/snappy-job.sh status  \
   "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48"
 }
 ```
-Once the tables are created, they can be queried by firing another job. Please refer to [AirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala) from [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) for the implementation of the job. 
+Once the tables are created, they can be queried by firing another job. Please refer to [AirlineDataJob](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala) from [examples](https://github.com/TIBCOSoftware/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) for the implementation of the job. 
 ```pre
 $ ./bin/snappy-job.sh submit  \
     --lead localhost:8090  \
@@ -377,7 +377,7 @@ $ ./bin/spark-submit \
 
 An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying `--stream` as an option to the submit command. This option will cause creation of a new SnappyStreamingContext before the job is submitted. Alternatively, user may specify the name of an existing/pre-created streaming context as `--context <context-name>` with the submit command.
 
-For example, [TwitterPopularTagsJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) from the [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) directory can be submitted as follows. This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, top 10 popular tweets.
+For example, [TwitterPopularTagsJob](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) from the [examples](https://github.com/TIBCOSoftware/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) directory can be submitted as follows. This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, top 10 popular tweets.
 
 ```pre
 $ ./bin/snappy-job.sh submit  \

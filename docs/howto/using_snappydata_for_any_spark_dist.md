@@ -4,7 +4,7 @@ The **snappydat-jdbc Spark** package adds extensions to Spark’s inbuilt JDBC d
 
 Following is a sample of Spark JDBC extension setup and usage: 
 
-1. Include the **TIB_compute-jdbc** package in the Spark job with spark-submit or spark-shell:
+1. Include the **snappydata-jdbc** package in the Spark job with spark-submit or spark-shell:
 
 		$SPARK_HOME/bin/spark-shell --jars snappydata-jdbc-2.11_1.2.0.jar
     

@@ -104,7 +104,7 @@ The SnappyData team is pleased to announce the availability of version 1.0.1 of 
 
 ## Select bug fixes and performance related fixes
 
-A sample of bug fixes done as part of this release are noted below. For a more comprehensive list, see [ReleaseNotes.txt](https://github.com/SnappyDataInc/snappydata/blob/master/ReleaseNotes.txt).
+A sample of bug fixes done as part of this release are noted below. For a more comprehensive list, see [ReleaseNotes.txt](https://github.com/TIBCOSoftware/snappydata/blob/master/ReleaseNotes.txt).
 
 - Now only overflow-to-disk is allowed as eviction action for tables (SNAP-1501):
 

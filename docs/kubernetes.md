@@ -60,7 +60,7 @@ If you would like to deploy Kubernetes on-premises, you can use any of the follo
 **To deploy SnappyData on Kubernetes:**
 
 1.	Clone the **spark-on-k8s** repository and change to **charts** directory.</br>
-`git clone https://github.com/SnappyDataInc/spark-on-k8s`</br>
+`git clone https://github.com/TIBCOSoftware/spark-on-k8s`</br>
 `cd spark-on-k8s/charts`
 
 2.	Edit the **snappydata > values.yaml**  file to configure in the SnappyData chart. Specify the details of your SnappyData Docker image as mentioned in the example below. Replace values for image and tag appropriatly with your Dockerhub registry name, image name and tag .
@@ -143,7 +143,7 @@ You can refer to [SnappyData documentation](http://tibcosoftware.github.io/snapp
 <a id= querykubernetes> </a>
 ### Executing Queries Using SnappyData Shell
 
-You  can use SnappyData shell to connect to SnappyData and execute your queries. You can simply connect to one of the pods in the cluster and use the SnappyData Shell. Alternatively, you can download the SnappyData distribution from [SnappyData github releases](https://github.com/SnappyDataInc/snappydata/releases). SnappyData shell need not run within the Kubernetes cluster.
+You  can use SnappyData shell to connect to SnappyData and execute your queries. You can simply connect to one of the pods in the cluster and use the SnappyData Shell. Alternatively, you can download the SnappyData distribution from [SnappyData github releases](https://github.com/TIBCOSoftware/snappydata/releases). SnappyData shell need not run within the Kubernetes cluster.
 
 **To execute queries in Kubernetes deployment:**
 
@@ -311,7 +311,7 @@ $ ls
 <a id= notrunning> </a>
 ### Accessing Logs When SnappyData Cluster is not Running
 
-When SnappyData cluster is not running, you can access the volumes used in SnappyData with a utility script `snappy-debug-pod.sh` located in the **utils** directory of [Spark on k8s](https://github.com/SnappyDataInc/spark-on-k8s/tree/master/utils) repository.
+When SnappyData cluster is not running, you can access the volumes used in SnappyData with a utility script `snappy-debug-pod.sh` located in the **utils** directory of [Spark on k8s](https://github.com/TIBCOSoftware/spark-on-k8s/tree/master/utils) repository.
 This script launches a pod in the Kubernetes cluster with persistent volumes, specified via `--pvc` option, mounted on it and then returns a shell prompt. Volumes are mounted on the path starting with **/data0 (volume1 on /data0 and so on)**.
 
 <!-- The following example shows, how to access the logs when the SnappyData Cluster is not running: -->

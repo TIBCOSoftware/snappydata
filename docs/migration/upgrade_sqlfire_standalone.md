@@ -9,7 +9,7 @@ In this document, you can find information on how to manually upgrade SQLFire 1.
 <a id="pre-req"></a>
 # Prerequisites
 
--   Download the distribution file from the [SnappyData Release page (snappydata-1.0.0)](https://github.com/SnappyDataInc/snappydata/releases)
+-   Download the distribution file from the [SnappyData Release page (snappydata-1.0.0)](https://github.com/TIBCOSoftware/snappydata/releases)
 -   Ensure that before moving into production, you have tested your development systems thoroughly with the new version
 
 # Upgrade Process<a id="upgrade-process"></a>
@@ -112,7 +112,7 @@ Here `node1-server` and `node2-server` are the data directories of SQLFire serve
 
 <a id="Step2"></a>
 ## Step 2: Downloading and Extracting Product Distribution
-1. Download the distribution binary file (snappydata-1.0.0/RowStore1.6.0) from the [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases/) (if not done already), and extract the contents of the file to a suitable location on your computer.
+1. Download the distribution binary file (snappydata-1.0.0/RowStore1.6.0) from the [SnappyData Release page](https://github.com/TIBCOSoftware/snappydata/releases/) (if not done already), and extract the contents of the file to a suitable location on your computer.
 For example for Linux:
 
 	    $ unzip snappydata-1.0.0-bin.zip -d <path_to_product>
