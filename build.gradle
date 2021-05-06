@@ -176,7 +176,7 @@ allprojects {
     }
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
-    sparkJobServerVersion = '0.6.2.11'
+    sparkJobServerVersion = '0.6.2.12'
     eclipseCollectionsVersion = '9.2.0'
     fastutilVersion = '8.2.2'
     snappySparkMetricsLibVersion = '2.0.0.1'
