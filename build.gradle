@@ -237,8 +237,8 @@ if (!hasAqpProject) {
   throw new GradleException('Project repository snappy-aqp not found under aqp/.')
 }
 
-if (!hasJdbcConnectorProject || !hasGemFireConnectorProject) {
-  throw new GradleException('Project repository snappy-connectors not found.')
+if (!hasJdbcConnectorProject) {
+  throw new GradleException('Project JDBC Stream Connector inside repository snappy-connectors not found.')
 }
 
 
@@ -930,7 +930,9 @@ task product(type: Zip) {
   dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
   targetProject = aqpProject
   dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"
-  dependsOn ":gemfire-connector:product"
+  if (hasGemFireConnectorProject) {
+    dependsOn ":gemfire-connector:product"
+  }
 
 
   // create snappydata+spark combined python zip
@@ -1011,7 +1013,7 @@ task product(type: Zip) {
       into snappyProductDir
       include 'LICENSE'
       // if (!isEnterpriseProduct) {
-      //   include 'NOTICE'
+      include 'NOTICE'
       // }
       include 'README.md'
     }
@@ -1063,16 +1065,16 @@ task product(type: Zip) {
       }
 
       def jdbcConnectorProject = project(":snappy-jdbc-connector_${scalaBinaryVersion}")
-      def gemfireConnectorProject = project(":gemfire-connector")
-      def gfeConnectorProject = project(":gemfire-connector:connector_${scalaBinaryVersion}")
-      def gfeFunctionProject = project(":gemfire-connector:gfeFunctions")
-      if (hasJdbcConnectorProject) {
-        copy {
-          from jdbcConnectorProject.jar.destinationDir
-          into "${snappyProductDir}/connectors"
-          include "*.jar"
-        }
+      def gemfireConnectorProject = hasGemFireConnectorProject ? project(":gemfire-connector") : null
+      def gfeConnectorProject = hasGemFireConnectorProject ? project(":gemfire-connector:connector_${scalaBinaryVersion}") : null
+      def gfeFunctionProject = hasGemFireConnectorProject ? project(":gemfire-connector:gfeFunctions") : null
+
+      copy {
+        from jdbcConnectorProject.jar.destinationDir
+        into "${snappyProductDir}/connectors"
+        include "*.jar"
       }
+
       if (hasGemFireConnectorProject) {
         copy {
           from gfeConnectorProject.jar.destinationDir

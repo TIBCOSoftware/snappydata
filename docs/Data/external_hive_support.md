@@ -132,7 +132,10 @@ If you set the property **spark.sql.catalogImplementation = in-memory**, you can
 
 ## Creating and Querying Hive Tables 
 
-To create or access, the hive tables, you must first create a database or schema in the external hive catalog from SnappyData. Else, the default database **default** is used.  Go to the Snappy Shell prompt and enter the following command:
+To create or access, the hive tables, you must first create a database or schema in the external hive catalog from SnappyData. Else, the default database **default** is used.  Go to the Snappy Shell prompt and enter the following command.
+
+Note that a DDL will only be executed against the external hive if it uses hive-specific extensions in the CREATE TABLE like "row format" shown below. Or else when "using hive" is specifically mentioned after the table schema.
+In other words, it is not possible to create Spark format EXTERNAL tables (e.g. a parquet table) in the external hive metastore.
 
 		snappy> create database hivedb;
 

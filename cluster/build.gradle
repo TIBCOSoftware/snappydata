@@ -155,9 +155,7 @@ dependencies {
   testCompile "it.unimi.dsi:fastutil:${fastutilVersion}"
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
-  if (new File(rootDir, 'aqp/build.gradle').exists()) {
-    testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
-  }
+  testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
   testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
