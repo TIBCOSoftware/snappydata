@@ -226,7 +226,7 @@ This sets the property for the snappy SQL shell's session.
 <a id="connectionpro"></a>
 ## Connection Properties
 
-You can define connection properties directly in the JDBC connection URL, or in the Properties object while using JDBC API `DriverManager.getConnection(String url, java.util.Properties info)`. You can also define connection properties  in the `connect` command in an interactive TIBCO ComputeDB session using snappy shell. 
+You can define connection properties directly in the JDBC connection URL, or in the Properties object while using JDBC API `DriverManager.getConnection(String url, java.util.Properties info)`. You can also define connection properties  in the `connect` command in an interactive SnappyData session using snappy shell. 
 An example URL that defines a connection property is shown below. In the URL, replace the `property1=value1` string with appropriate property that you want to use. Multiple properties can be be specified by separating them with a semicolon.
 
 Example URL:

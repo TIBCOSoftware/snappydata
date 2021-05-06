@@ -1,5 +1,5 @@
 # Introduction 
-SnappyData™ (aka TIBCO ComputeDB™) is a distributed, in-memory optimized, analytics database. TIBCO ComputeDB delivers high throughput, low latency, and high concurrency for unified analytics workloads. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources/formats and stream processing all in one unified cluster.
+SnappyData™ (aka TIBCO ComputeDB™) is a distributed, in-memory optimized, analytics database. SnappyData delivers high throughput, low latency, and high concurrency for unified analytics workloads. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources/formats and stream processing all in one unified cluster.
 
 One common use case for SnappyData is to provide analytics at interactive speeds over large volumes of data with minimal or no pre-processing of the dataset. For instance, there is no need to often pre-aggregate/reduce or generate cubes over your large data sets for ad-hoc visual analytics. This is made possible by smartly managing data in-memory, dynamically generating code using vectorization optimizations and maximizing the potential of modern multi-core CPUs.
 SnappyData enables complex processing on large data sets in sub-second timeframes. 
@@ -99,7 +99,7 @@ SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency
 ```
 groupId: io.snappydata
 artifactId: snappydata-cluster_2.11
-version: 1.2.0
+version: 1.3.0
 ```
 
 ### Using SBT Dependency
@@ -107,13 +107,13 @@ version: 1.2.0
 If you are using SBT, add this line to your **build.sbt** for core SnappyData artifacts:
 
 ```
-libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.2.0"
+libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.3.0"
 ```
 
 For additions related to SnappyData cluster, use:
 
 ```
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.2.0"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.0"
 ```
 
 You can find more specific SnappyData artifacts [here](http://mvnrepository.com/artifact/io.snappydata)

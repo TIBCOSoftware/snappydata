@@ -62,12 +62,12 @@ Assign an identifier to a window specification.
 Limit the number of rows returned.
 
 `PIVOT`</br>
-The support for PIVOT clause in TIBCO ComputeDB parser deviates from Spark 2.4 support in the following two aspects: 
+The support for PIVOT clause in SnappyData parser deviates from Spark 2.4 support in the following two aspects: 
 
 *	It only allows literals in the value **IN** list rather than named expressions. 
-*	On the contrary, TIBCO ComputeDB supports explicit GROUP BY columns with PIVOT instead of always doing implicit detection.
+*	On the contrary, SnappyData supports explicit GROUP BY columns with PIVOT instead of always doing implicit detection.
 
-Only TIBCO ComputeDB (and not Spark 2.4) supports the explicit GROUP BY clause in the following example. 
+Only SnappyData (and not Spark 2.4) supports the explicit GROUP BY clause in the following example. 
 
       select * from (
         select year(day) year, month(day) month, temp

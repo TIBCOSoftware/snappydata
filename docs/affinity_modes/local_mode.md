@@ -28,7 +28,7 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 
@@ -36,7 +36,7 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
 
 ```pre
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.2.0"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.0"
 ```
 
 **Note**:</br>

@@ -130,8 +130,8 @@ Table schema changed due to DROP/CREATE/ALTER operation. Please retry the operat
 </error-text>
 
 <diagnosis> **Diagnosis:**</br>
-In the Smart Connector mode, this error message is seen in the logs if TIBCO ComputeDB catalog is changed due to a DDL operation such as CREATE/DROP/ALTER. 
-For performance reasons, TIBCO ComputeDB Smart Connector caches the catalog in the Smart Connector cluster. If there is a catalog change in TIBCO ComputeDB embedded cluster, this error is logged to prevent unexpected errors due to schema changes.
+In the Smart Connector mode, this error message is seen in the logs if SnappyData catalog is changed due to a DDL operation such as CREATE/DROP/ALTER. 
+For performance reasons, SnappyData Smart Connector caches the catalog in the Smart Connector cluster. If there is a catalog change in SnappyData embedded cluster, this error is logged to prevent unexpected errors due to schema changes.
 </diagnosis>
 
 <action> **Solution:** </br>

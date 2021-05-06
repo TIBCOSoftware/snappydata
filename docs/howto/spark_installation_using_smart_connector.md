@@ -51,7 +51,7 @@ Start a SnappyData cluster and create a table.
 $ ./sbin/snappy-start-all.sh
 
 $ ./bin/snappy
-SnappyData version 1.2.0
+SnappyData version 1.3.0
 snappy>  connect client 'localhost:1527';
 Using CONNECTION0
 snappy> CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;
@@ -77,7 +77,7 @@ Start a SnappyData cluster and create a table inside it.
 $ ./sbin/snappy-start-all.sh
 
 $ ./bin/snappy
-SnappyData version 1.2.0
+SnappyData version 1.3.0
 snappy>  connect client 'localhost:1527';
 Using CONNECTION0
 snappy> CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;

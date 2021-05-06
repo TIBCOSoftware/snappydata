@@ -1,6 +1,6 @@
 # How to Access SnappyData from Various SQL Client Tools
 
-You can use the following SQL client tools to access TIBCO ComputeDB:
+You can use the following SQL client tools to access SnappyData:
 
 *	[DbVisualizer](#dbvis)
 *	[SQL Workbench/J](#sqlworkbenchj)
@@ -9,7 +9,7 @@ You can use the following SQL client tools to access TIBCO ComputeDB:
 
 <a id= dbvis> </a>
 ## DbVisualizer
-DbVisualizer is a universal database tool for developers, DBAs and analysts to access databases. You can access TIBCO ComputeDB from DbVisualizer when you create a database connection using a database driver.
+DbVisualizer is a universal database tool for developers, DBAs and analysts to access databases. You can access SnappyData from DbVisualizer when you create a database connection using a database driver.
 
 To access SnappyData from DbVisualizer, do the following:
 
@@ -62,7 +62,7 @@ To connect SnappyData from SQL Workbench/J, do the following:
 4.	Click **Manage Drivers** from the bottom left. The **Manage driver** dialog box is displayed. 
 5.	Enter the following details:
 	*	**Name**: Provide a name for the driver. 
-	*	**Library**: Click the folder icon and select the JDBC Client jar. <br> You must download the JDBC Client jar (snappydata-jdbc_2.11-1.2.0.jar) from the SnappyData website to your local machine.
+	*	**Library**: Click the folder icon and select the JDBC Client jar. <br> You must download the JDBC Client jar (snappydata-jdbc_2.11-1.3.0.jar) from the SnappyData website to your local machine.
 	*	**Classname**: **io.snappydata.jdbc.ClientDriver**. 
 	*	**Sample** **URL**: jdbc:snappydata://server:port/
 6.	Click **OK**. The **Select Connection Profile** page is displayed.
@@ -124,7 +124,7 @@ To connect SnappyData from SQuirreL SQL Client, do the following:
 	*	website URL
 3.	Add the downloaded **snappydata jdbc jar** in the extra classpath tab and provide the class name to be used for the connection. <br>
 	```
-jdbc jar: https://mvnrepository.com/artifact/io.snappydata/snappydata-jdbc_2.11/1.2.0
+jdbc jar: https://mvnrepository.com/artifact/io.snappydata/snappydata-jdbc_2.11/1.3.0
 	jdbc class: io.snappydata.jdbc.ClientPoolDriver
 ```
 4.	Go to **Aliases** tab and then click **+** to add a new alias. </br> ![Images](../Images/sql_clienttools_images/squirrel2.png)
