@@ -133,7 +133,6 @@ class ColumnTableTest
     val viewName = "TEST_VIEW"
     snc.sql(s"CREATE TABLE $tableName (Col1 String, Col2 String) " +
         s" USING column " + options)
-    snc.sparkContext.getLocalProperties
 
     val data = Seq(("1.1", "2.2"), ("1", "2"), ("3.57", "3"), ("4.3", "4"), ("5.341", "5"))
     val rdd = sc.parallelize(data)
