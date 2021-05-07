@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Building SnappyData from Source files - SnappyData™ 1.2.0</title>
+  <title>Building SnappyData from Source files - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2201,7 +2201,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2215,7 +2215,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2234,15 +2234,11 @@
 <p>Building SnappyData requires JDK 8 installation (<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle Java SE</a>).</p>
 </div>
 <h2 id="build-all-components-of-snappydata">Build all Components of SnappyData</h2>
-<p><strong>Latest release branch</strong></p>
-<pre><code class="pre">&gt; git clone https://github.com/SnappyDataInc/snappydata.git -b v&lt;release-version&gt; --recursive
-&gt; cd snappydata
-&gt; ./gradlew product
-</code></pre>
-
 <p><strong>Master</strong></p>
-<pre><code class="pre">&gt; git clone https://github.com/SnappyDataInc/snappydata.git --recursive
+<pre><code class="pre">&gt; git clone https://github.com/TIBCOSoftware/snappydata.git --recursive
 &gt; cd snappydata
+&gt; git clone https://github.com/TIBCOSoftware/snappy-aqp.git aqp
+&gt; git clone https://github.com/TIBCOSoftware/snappy-connectors.git
 &gt; ./gradlew product
 </code></pre>
 
@@ -2266,6 +2262,12 @@
 </li>
 <li>
 <p><strong>spark-jobserver</strong> - Fork of <em>spark-jobserver</em> project with some additions to integrate with SnappyData.</p>
+</li>
+<li>
+<p><strong>aqp</strong> - Approximate Query Processing (AQP) module of SnappyData.</p>
+</li>
+<li>
+<p><strong>snappy-connectors</strong> - Connector for Apache Geode and a Change-Data-Capture (CDC) connector.</p>
 </li>
 </ul>
 <p>The <em>spark</em>, <em>store</em>, and <em>spark-jobserver</em> directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git submodules. When working with submodules, updating the repositories follows the normal <a href="https://git-scm.com/book/en/v2/Git-Tools-Submodules">git submodules</a>. One can add some aliases in gitconfig to aid pull/push as follows:</p>
@@ -2445,7 +2447,7 @@ Steps required for setting up SnappyData with all its components in IDEA are lis
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../../quickstart/getting_started_with_docker_image/" style="color: #fcfcfc;">&laquo; Previous</a></span>

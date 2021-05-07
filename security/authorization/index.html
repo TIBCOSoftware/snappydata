@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Authorization - SnappyData™ 1.2.0</title>
+  <title>Authorization - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -958,7 +958,7 @@
                 
                     <li><a class="toctree-l4" href="#adding-restrictions-in-default-schema">Adding Restrictions in Default Schema</a></li>
                 
-                    <li><a class="toctree-l4" href="#ldap-groups-in-tibco-computedb-authorization">LDAP Groups in TIBCO ComputeDB Authorization</a></li>
+                    <li><a class="toctree-l4" href="#ldap-groups-in-snappydata-authorization">LDAP Groups in SnappyData Authorization</a></li>
                 
             
             </ul>
@@ -2195,7 +2195,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2209,7 +2209,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2222,8 +2222,7 @@
             <div class="section">
               
                 <h1 id="authorization">Authorization</h1>
-<p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
-<p>Authorization is the process of determining what access permissions the authenticated user has. Users are authorized to perform tasks based on their role assignments. TIBCO ComputeDB also supports LDAP group authorization.</p>
+<p>Authorization is the process of determining what access permissions the authenticated user has. Users are authorized to perform tasks based on their role assignments. SnappyData also supports LDAP group authorization.</p>
 <p>The administrator can manage user permissions in a secure cluster using the <a href="../../reference/sql_reference/grant/">GRANT</a> and <a href="../../reference/sql_reference/revoke/">REVOKE</a> SQL statements which allow you to set permission for the user for specific database objects or for specific SQL actions. </p>
 <p>The <a href="../../reference/sql_reference/grant/">GRANT</a> statement is used to grant specific permissions to users. The <a href="../../reference/sql_reference/revoke/">REVOKE</a> statement is used to revoke permissions.</p>
 <div class="admonition note">
@@ -2238,7 +2237,7 @@
 </ul>
 </div>
 <h3 id="adding-restrictions-in-default-schema">Adding Restrictions in Default Schema</h3>
-<p>Users in TIBCO ComputeDB cluster have their own schema by default when they log into the cluster. They have full access within this schema.
+<p>Users in SnappyData cluster have their own schema by default when they log into the cluster. They have full access within this schema.
 But in some cases, cluster administrators may need to ensure controlled use of the cluster resources by its users and may need to enforce restrictions on them.</p>
 <p>This can be achieved by setting the system property <code>snappydata.RESTRICT_TABLE_CREATION</code> to true in <strong>conf</strong> files at the time of starting the cluster.
 This forbids the users to create tables in their default schema. Users also cannot execute queries on tables in the schema.</p>
@@ -2251,8 +2250,8 @@ localhost -auth-provider=LDAP -J-Dsnappydata.RESTRICT_TABLE_CREATION=true -user=
           -J-Dgemfirexd.auth-ldap-search-pw=user123
 </code></pre>
 
-<h2 id="ldap-groups-in-tibco-computedb-authorization">LDAP Groups in TIBCO ComputeDB Authorization</h2>
-<p>TIBCO ComputeDB extends the SQL GRANT statement to support LDAP Group names as Grantees.</p>
+<h2 id="ldap-groups-in-snappydata-authorization">LDAP Groups in SnappyData Authorization</h2>
+<p>SnappyData extends the SQL GRANT statement to support LDAP Group names as Grantees.</p>
 <p>Here is an example SQL to grant privileges to individual users on column/row tables:</p>
 <pre><code class="pre">GRANT SELECT ON TABLE t TO sam,bob;
 </code></pre>
@@ -2270,8 +2269,8 @@ GRANT INSERT ON Table t TO ldapGroup:&lt;groupName&gt;, bob;
 <pre><code class="pre">GRANT ALL ON EXT_T1 TO ldapGroup:&lt;groupName&gt;, bob;
 </code></pre>
 
-<p>TIBCO ComputeDB fetches the current list of members for the LDAP Group and grants each member privileges individually (stored in TIBCO ComputeDB). </br>
-Similarly, when a REVOKE SQL statement is executed TIBCO ComputeDB removes the privileges individually for all members that make up a group. To support changes to Group membership within the LDAP Server, there is an additional System procedure to refresh the privileges recorded in TIBCO ComputeDB.</p>
+<p>SnappyData fetches the current list of members for the LDAP Group and grants each member privileges individually (stored in SnappyData). </br>
+Similarly, when a REVOKE SQL statement is executed SnappyData removes the privileges individually for all members that make up a group. To support changes to Group membership within the LDAP Server, there is an additional System procedure to refresh the privileges recorded in SnappyData.</p>
 <pre><code class="pre">CALL SYS.REFRESH_LDAP_GROUP('&lt;GROUP NAME&gt;');
 </code></pre>
 
@@ -2286,7 +2285,7 @@ gemfirexd.group-ldap-member-attributes
 </code></pre>
 
 <p>If no <code>gemfirexd.group-ldap-search-base</code> property has been provided then the one used for authentication <code>gemfirexd.auth-ldap-search-base</code> is used. </br>
-If no search filter is specified then TIBCO ComputeDB uses the standard objectClass groupOfMembers (rfc2307) or groupOfNames with attribute as member, or objectClass groupOfUniqueMembers with attribute as uniqueMember.
+If no search filter is specified then SnappyData uses the standard objectClass groupOfMembers (rfc2307) or groupOfNames with attribute as member, or objectClass groupOfUniqueMembers with attribute as uniqueMember.
 To be precise, the default search filter is:</p>
 <pre><code class="pre">(&amp;(|(objectClass=group)(objectClass=groupOfNames)(objectClass=groupOfMembers)
   (objectClass=groupOfUniqueNames))(|(cn=%GROUP%)(name=%GROUP%)))
@@ -2348,7 +2347,7 @@ member: cn=group11,ou=group,dc=example,dc=com
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../authentication_connecting_to_a_secure_cluster/" style="color: #fcfcfc;">&laquo; Previous</a></span>

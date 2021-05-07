@@ -1,9 +1,9 @@
 <!DOCTYPE html >
 <html>
         <head>
-          <title>SnappySession - snappydata_2.11 1.2.0 API - org.apache.spark.sql.SnappySession</title>
-          <meta name="description" content="SnappySession - snappydata 2.11 1.2.0 API - org.apache.spark.sql.SnappySession" />
-          <meta name="keywords" content="SnappySession snappydata 2.11 1.2.0 API org.apache.spark.sql.SnappySession" />
+          <title>SnappySession - snappydata_2.11 1.3.0 API - org.apache.spark.sql.SnappySession</title>
+          <meta name="description" content="SnappySession - snappydata 2.11 1.3.0 API - org.apache.spark.sql.SnappySession" />
+          <meta name="keywords" content="SnappySession snappydata 2.11 1.3.0 API org.apache.spark.sql.SnappySession" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -773,8 +773,8 @@ ds.show()
 a set of options.</p><div class="fullcomment"><div class="comment cmt"><p>Create an external table from the given path based on a data source, a schema and
 a set of options. For inbuilt relation providers like row or column tables, use createTable.
 </p></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>Name of the table</p></dd><dt class="param">provider</dt><dd class="cmt"><p>Provider name such as 'CSV', 'PARQUET' etc.</p></dd><dt class="param">schema</dt><dd class="cmt"><p>Table schema</p></dd><dt class="param">options</dt><dd class="cmt"><p>Properties for table creation. See options list for different tables.
-                     https://github
-                     .com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md</p></dd><dt class="param">allowExisting</dt><dd class="cmt"><p>When set to true it will ignore if a table with the same
+                     https://github.com/TIBCOSoftware/snappydata
+                     /blob/master/docs/programming_guide/tables_in_snappydata.md</p></dd><dt class="param">allowExisting</dt><dd class="cmt"><p>When set to true it will ignore if a table with the same
                      name is present, else it will throw table exist exception</p></dd><dt>returns</dt><dd class="cmt"><p>DataFrame for the table</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#createExternalTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createExternalTable(tableName:String,provider:String,schema:org.apache.spark.sql.types.StructType,options:Map[String,String],allowExisting:Boolean):org.apache.spark.sql.DataFrame"></a>
@@ -796,8 +796,8 @@ a set of options. For inbuilt relation providers like row or column tables, use 
 a set of options.</p><div class="fullcomment"><div class="comment cmt"><p>Create an external table from the given path based on a data source, a schema and
 a set of options. For inbuilt relation providers like row or column tables, use createTable.
 </p></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>Name of the table</p></dd><dt class="param">provider</dt><dd class="cmt"><p>Provider name such as 'CSV', 'PARQUET' etc.</p></dd><dt class="param">schema</dt><dd class="cmt"><p>Table schema</p></dd><dt class="param">options</dt><dd class="cmt"><p>Properties for table creation. See options list for different tables.
-                     https://github
-                     .com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md</p></dd><dt class="param">allowExisting</dt><dd class="cmt"><p>When set to true it will ignore if a table with the same
+                     https://github.com/TIBCOSoftware/snappydata
+                     /blob/master/docs/programming_guide/tables_in_snappydata.md</p></dd><dt class="param">allowExisting</dt><dd class="cmt"><p>When set to true it will ignore if a table with the same
                      name is present, else it will throw table exist exception</p></dd><dt>returns</dt><dd class="cmt"><p>DataFrame for the table</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#createExternalTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createExternalTable(tableName:String,provider:String,options:java.util.Map[String,String],allowExisting:Boolean):org.apache.spark.sql.DataFrame"></a>
@@ -1002,8 +1002,8 @@ DataFrameWriter API.</p><p>e.g.</p><pre><span class="kw">case</span> <span class
 <span class="kw">val</span> rdd = sc.parallelize(data, data.length).map(s <span class="kw">=&gt;</span> <span class="kw">new</span> Data(s(<span class="num">0</span>), s(<span class="num">1</span>), s(<span class="num">2</span>)))
 <span class="kw">val</span> dataDF = snc.createDataFrame(rdd)
 dataDF.write.insertInto(<span class="lit">"jdbcTable"</span>)</pre></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>Name of the table</p></dd><dt class="param">provider</dt><dd class="cmt"><p>Provider name such as 'COLUMN', 'ROW' etc.</p></dd><dt class="param">schemaDDL</dt><dd class="cmt"><p>Table schema as a string interpreted by provider</p></dd><dt class="param">options</dt><dd class="cmt"><p>Properties for table creation. See options list for different tables.
-                     https://github
-                     .com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md</p></dd><dt class="param">allowExisting</dt><dd class="cmt"><p>When set to true it will ignore if a table with the same
+                     https://github.com/TIBCOSoftware/snappydata
+                     /blob/master/docs/programming_guide/tables_in_snappydata.md</p></dd><dt class="param">allowExisting</dt><dd class="cmt"><p>When set to true it will ignore if a table with the same
                      name is present, else it will throw table exist exception</p></dd><dt>returns</dt><dd class="cmt"><p>DataFrame for the table</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#createTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createTable(tableName:String,provider:String,schemaDDL:String,options:Map[String,String],allowExisting:Boolean):org.apache.spark.sql.DataFrame"></a>
@@ -1041,8 +1041,8 @@ DataFrameWriter API.</p><p>e.g.</p><pre><span class="kw">case</span> <span class
 <span class="kw">val</span> rdd = sc.parallelize(data, data.length).map(s <span class="kw">=&gt;</span> <span class="kw">new</span> Data(s(<span class="num">0</span>), s(<span class="num">1</span>), s(<span class="num">2</span>)))
 <span class="kw">val</span> dataDF = snc.createDataFrame(rdd)
 dataDF.write.insertInto(<span class="lit">"jdbcTable"</span>)</pre></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>Name of the table</p></dd><dt class="param">provider</dt><dd class="cmt"><p>Provider name such as 'COLUMN', 'ROW' etc.</p></dd><dt class="param">schemaDDL</dt><dd class="cmt"><p>Table schema as a string interpreted by provider</p></dd><dt class="param">options</dt><dd class="cmt"><p>Properties for table creation. See options list for different tables.
-                     https://github
-                     .com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md</p></dd><dt class="param">allowExisting</dt><dd class="cmt"><p>When set to true it will ignore if a table with the same
+                     https://github.com/TIBCOSoftware/snappydata
+                     /blob/master/docs/programming_guide/tables_in_snappydata.md</p></dd><dt class="param">allowExisting</dt><dd class="cmt"><p>When set to true it will ignore if a table with the same
                      name is present, else it will throw table exist exception</p></dd><dt>returns</dt><dd class="cmt"><p>DataFrame for the table</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#createTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createTable(tableName:String,provider:String,schema:org.apache.spark.sql.types.StructType,options:java.util.Map[String,String],allowExisting:Boolean):org.apache.spark.sql.DataFrame"></a>
@@ -1067,8 +1067,8 @@ dataDF.write.insertInto(<span class="lit">"jdbcTable"</span>)</pre></div><dl cla
 <span class="kw">val</span> rdd = sc.parallelize(data, data.length).map(s <span class="kw">=&gt;</span> <span class="kw">new</span> Data(s(<span class="num">0</span>), s(<span class="num">1</span>), s(<span class="num">2</span>)))
 <span class="kw">val</span> dataDF = snc.createDataFrame(rdd)
 snappyContext.createTable(tableName, <span class="lit">"column"</span>, dataDF.schema, props)</pre><p>For other external relation providers, use createExternalTable.</p></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>Name of the table</p></dd><dt class="param">provider</dt><dd class="cmt"><p>Provider name such as 'COLUMN', 'ROW' etc.</p></dd><dt class="param">schema</dt><dd class="cmt"><p>Table schema</p></dd><dt class="param">options</dt><dd class="cmt"><p>Properties for table creation. See options list for different tables.
-                     https://github
-                     .com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md</p></dd><dt class="param">allowExisting</dt><dd class="cmt"><p>When set to true it will ignore if a table with the same
+                     https://github.com/TIBCOSoftware/snappydata
+                     /blob/master/docs/programming_guide/tables_in_snappydata.md</p></dd><dt class="param">allowExisting</dt><dd class="cmt"><p>When set to true it will ignore if a table with the same
                      name is present, else it will throw table exist exception</p></dd><dt>returns</dt><dd class="cmt"><p>DataFrame for the table</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#createTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createTable(tableName:String,provider:String,schema:org.apache.spark.sql.types.StructType,options:Map[String,String],allowExisting:Boolean):org.apache.spark.sql.DataFrame"></a>
@@ -1093,8 +1093,8 @@ snappyContext.createTable(tableName, <span class="lit">"column"</span>, dataDF.s
 <span class="kw">val</span> rdd = sc.parallelize(data, data.length).map(s <span class="kw">=&gt;</span> <span class="kw">new</span> Data(s(<span class="num">0</span>), s(<span class="num">1</span>), s(<span class="num">2</span>)))
 <span class="kw">val</span> dataDF = snc.createDataFrame(rdd)
 snappyContext.createTable(tableName, <span class="lit">"column"</span>, dataDF.schema, props)</pre><p>For other external relation providers, use createExternalTable.</p></div><dl class="paramcmts block"><dt class="param">tableName</dt><dd class="cmt"><p>Name of the table</p></dd><dt class="param">provider</dt><dd class="cmt"><p>Provider name such as 'COLUMN', 'ROW' etc.</p></dd><dt class="param">schema</dt><dd class="cmt"><p>Table schema</p></dd><dt class="param">options</dt><dd class="cmt"><p>Properties for table creation. See options list for different tables.
-                     https://github
-                     .com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md</p></dd><dt class="param">allowExisting</dt><dd class="cmt"><p>When set to true it will ignore if a table with the same
+                     https://github.com/TIBCOSoftware/snappydata
+                     /blob/master/docs/programming_guide/tables_in_snappydata.md</p></dd><dt class="param">allowExisting</dt><dd class="cmt"><p>When set to true it will ignore if a table with the same
                      name is present, else it will throw table exist exception</p></dd><dt>returns</dt><dd class="cmt"><p>DataFrame for the table</p></dd></dl></div>
     </li><li name="org.apache.spark.sql.SnappySession#createTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="createTable(tableName:String,provider:String,options:java.util.Map[String,String],allowExisting:Boolean):org.apache.spark.sql.DataFrame"></a>

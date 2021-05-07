@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Member Startup Problems - SnappyData™ 1.2.0</title>
+  <title>Member Startup Problems - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2197,7 +2197,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2211,7 +2211,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2285,10 +2285,10 @@ Error starting server process:
 InternalGemFireError: None of the previous persistent node is up. - See log file for details.
 SnappyData Server pid: 21582 status: waiting
 Member disk state is not the most current. Table __PR._B__APP_ADJUSTMENT_4 at location /home/xyz/snappy/snappydata/server1/snappy-internal-delta is waiting for disk recovery from following members: 
-[/127.0.0.1] [DiskId: 6190c93b-158f-40f1-8251-1e9c58e320c2, Location: /home/xyz/snappy/snappydata/server0/snappy-internal-delta]
+[/127.0.0.1] [DiskId: 9791b9ff-7df3-44e8-99c8-7d62a3387002, Location: /home/xyz/snappy/snappydata/server1/snappy-internal-delta]
 </code></pre>
 
-<p>Execute the  <code>./bin/snappy list-missing-disk-stores locators=&lt;host&gt;:&lt;port&gt;</code> command to view all the disk stores that are missing and awaited upon by other servers in the cluster. Check the messages in the <strong>start_snappyserver.log</strong> file of the server which is waiting for the missing disk stores. </p>
+<p>Execute the  <code>./bin/snappy list-missing-disk-stores -locators=&lt;host&gt;:&lt;peer-discovery-port&gt;</code> command to view all the disk stores that are missing and awaited upon by other servers in the cluster. Check the messages in the <strong>start_snappyserver.log</strong> file of the server which is waiting for the missing disk stores. </p>
 <p>The following sample message is displayed in the <strong>start_snappyserver.log</strong> file for the servers:</br></p>
 <pre><code class="Pre">[info 2018/07/10 12:00:16.302 IST &lt;Recovery thread for bucket _B__APP_ADJUSTMENT_4&gt; tid=0x4c] Region /APP/SNAPPYSYS_INTERNAL____ADJUSTMENT_COLUMN_STORE_, bucket 4 has potentially stale data.  It is waiting for another member to recover the latest data.
   My persistent id:
@@ -2304,8 +2304,9 @@ Member disk state is not the most current. Table __PR._B__APP_ADJUSTMENT_4 at lo
 <p>In this sample log message, the diskID of <strong>server2</strong> is waiting upon the diskID of <strong>server1</strong>, which is missing. To start <strong>server2</strong>, the waiting disk store in that server must be unblocked.
 Here it is shown that the diskID <em>93e7e9cf-a513-4c67-89c3-da7e94a08efb</em> of <strong>server2</strong> is waiting upon the diskID <em>9791b9ff-7df3-44e8-99c8-7d62a3387002</em> of <strong>server1</strong>, which is missing.</p>
 <p>Run the <code>unblock-disk-store</code> utility, in the following format, to unblock the waiting disk store:</br>
-<code>./bin/snappy unblock-disk-store &lt;diskID of the waiting server&gt;locators=localhost:10334</code></br>
-For example, <code>./bin/snappy unblock-disk-store 93e7e9cf-a513-4c67-89c3-da7e94a08efb -locators=localhost:10334</code></p>
+<code>./bin/snappy unblock-disk-store &lt;diskID of the waiting server&gt; -locators=&lt;host&gt;:&lt;peer-discovery-port&gt;</code></br>
+For example, <br/>
+<code>./bin/snappy unblock-disk-store 93e7e9cf-a513-4c67-89c3-da7e94a08efb -locators=localhost:10334</code></p>
 <p>Restart the cluster and keep unblocking such disk stores that are displayed in the logs until all the servers reach the running status.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2355,7 +2356,7 @@ For example, <code>./bin/snappy unblock-disk-store 93e7e9cf-a513-4c67-89c3-da7e9
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../troubleshooting/" style="color: #fcfcfc;">&laquo; Previous</a></span>

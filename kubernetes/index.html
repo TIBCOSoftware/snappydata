@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Setting-up SnappyData Cluster on Kubernetes - SnappyData™ 1.2.0</title>
+  <title>Setting-up SnappyData Cluster on Kubernetes - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href=".." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2211,7 +2211,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">SnappyData™ 1.2.0</a>
+        <a href="..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2225,7 +2225,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2307,7 +2307,7 @@
 <ol>
 <li>
 <p>Clone the <strong>spark-on-k8s</strong> repository and change to <strong>charts</strong> directory.</br>
-<code>git clone https://github.com/SnappyDataInc/spark-on-k8s</code></br>
+<code>git clone https://github.com/TIBCOSoftware/spark-on-k8s</code></br>
 <code>cd spark-on-k8s/charts</code></p>
 </li>
 <li>
@@ -2391,10 +2391,10 @@ The output displays the external IP address  of the <em>snappydata-locator-publi
 <p>Use the external IP address and port of the <strong>snappydata-locator-public</strong> services to connect to SnappyData cluster using JDBC connections. For example, based on the above output, the JDBC URL to be used will be <a href="">jdbc:snappydata://104.198.47.162:1527/</a></p>
 </li>
 </ol>
-<p>You can refer to <a href="http://snappydatainc.github.io/snappydata/howto/connect_using_jdbc_driver/">SnappyData documentation</a> for an example of JDBC program and for instructions on how to obtain JDBC driver using Maven/SBT co-ordinates.</p>
+<p>You can refer to <a href="http://tibcosoftware.github.io/snappydata/howto/connect_using_jdbc_driver/">SnappyData documentation</a> for an example of JDBC program and for instructions on how to obtain JDBC driver using Maven/SBT co-ordinates.</p>
 <p><a id= querykubernetes> </a></p>
 <h3 id="executing-queries-using-snappydata-shell">Executing Queries Using SnappyData Shell</h3>
-<p>You  can use SnappyData shell to connect to SnappyData and execute your queries. You can simply connect to one of the pods in the cluster and use the SnappyData Shell. Alternatively, you can download the SnappyData distribution from <a href="https://github.com/SnappyDataInc/snappydata/releases">SnappyData github releases</a>. SnappyData shell need not run within the Kubernetes cluster.</p>
+<p>You  can use SnappyData shell to connect to SnappyData and execute your queries. You can simply connect to one of the pods in the cluster and use the SnappyData Shell. Alternatively, you can download the SnappyData distribution from <a href="https://github.com/TIBCOSoftware/snappydata/releases">SnappyData github releases</a>. SnappyData shell need not run within the Kubernetes cluster.</p>
 <p><strong>To execute queries in Kubernetes deployment:</strong></p>
 <ol>
 <li>
@@ -2418,7 +2418,7 @@ The output displays the external IP address of the <strong>snappydata-locator-pu
 
 <p><a id= jobkubernetes> </a></p>
 <h3 id="submitting-a-snappydata-job">Submitting a SnappyData Job</h3>
-<p>Refer to the <a href="http://snappydatainc.github.io/snappydata/howto/run_spark_job_inside_cluster/">How Tos section</a> in SnappyData documentation to understand how to submit SnappyData jobs.
+<p>Refer to the <a href="http://tibcosoftware.github.io/snappydata/howto/run_spark_job_inside_cluster/">How Tos section</a> in SnappyData documentation to understand how to submit SnappyData jobs.
 However, for submitting a SnappyData job in Kubernetes deployment, you need to use the <strong>snappydata-leader-public</strong> service that exposes port <strong>8090</strong> to run the jobs.</p>
 <p><strong>To submit a SnappyData job in Kubernetes deployment:</strong></p>
 <ol>
@@ -2573,7 +2573,7 @@ The output displays the external IP address of <strong>snappydata-leader-public<
   conf: &quot;-heap-size=2048m&quot;
 </code></pre>
 
-<p>You can specify SnappyData <a href="https://snappydatainc.github.io/snappydata/configuring_cluster/configuring_cluster/#configuration-files">configuration parameters</a> in the <strong>servers.conf</strong>, <strong>locators.conf</strong>, and <strong>leaders.conf</strong> attributes for servers, locators, and leaders respectively.</p>
+<p>You can specify SnappyData <a href="https://tibcosoftware.github.io/snappydata/configuring_cluster/configuring_cluster/#configuration-files">configuration parameters</a> in the <strong>servers.conf</strong>, <strong>locators.conf</strong>, and <strong>leaders.conf</strong> attributes for servers, locators, and leaders respectively.</p>
 <p><a id= kubernetesobjects> </a></p>
 <h2 id="kubernetes-objects-used-in-snappydata-chart">Kubernetes Objects Used in SnappyData Chart</h2>
 <p>This section provides details about the following Kubernetes objects that are used in SnappyData Chart:</p>
@@ -2633,7 +2633,7 @@ $ ls
 
 <p><a id= notrunning> </a></p>
 <h3 id="accessing-logs-when-snappydata-cluster-is-not-running">Accessing Logs When SnappyData Cluster is not Running</h3>
-<p>When SnappyData cluster is not running, you can access the volumes used in SnappyData with a utility script <code>snappy-debug-pod.sh</code> located in the <strong>utils</strong> directory of <a href="https://github.com/SnappyDataInc/spark-on-k8s/tree/master/utils">Spark on k8s</a> repository.
+<p>When SnappyData cluster is not running, you can access the volumes used in SnappyData with a utility script <code>snappy-debug-pod.sh</code> located in the <strong>utils</strong> directory of <a href="https://github.com/TIBCOSoftware/spark-on-k8s/tree/master/utils">Spark on k8s</a> repository.
 This script launches a pod in the Kubernetes cluster with persistent volumes, specified via <code>--pvc</code> option, mounted on it and then returns a shell prompt. Volumes are mounted on the path starting with <strong>/data0 (volume1 on /data0 and so on)</strong>.</p>
 <!-- The following example shows, how to access the logs when the SnappyData Cluster is not running: -->
 
@@ -2719,7 +2719,7 @@ $ cp spark-env.sh.template spark-env.sh
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../install/setting_up_cluster_on_amazon_web_services/" style="color: #fcfcfc;">&laquo; Previous</a></span>

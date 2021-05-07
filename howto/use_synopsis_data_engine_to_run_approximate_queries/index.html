@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>How to use Approximate Query Processing (AQP) to Run Approximate Queries - SnappyData™ 1.2.0</title>
+  <title>How to use Approximate Query Processing (AQP) to Run Approximate Queries - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -457,7 +457,7 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#how-to-use-approximate-query-processing-to-run-approximate-queries">How to use Approximate Query Processing to Run Approximate Queries</a></li>
+                <li class="toctree-l3"><a href="#how-to-use-approximate-query-processing-aqp-to-run-approximate-queries">How to use Approximate Query Processing (AQP) to Run Approximate Queries</a></li>
                 
             
             </ul>
@@ -2191,7 +2191,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2205,7 +2205,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2218,11 +2218,11 @@
             <div class="section">
               
                 <p><a id="howto-sde"></a></p>
-<h1 id="how-to-use-approximate-query-processing-to-run-approximate-queries">How to use Approximate Query Processing to Run Approximate Queries</h1>
+<h1 id="how-to-use-approximate-query-processing-aqp-to-run-approximate-queries">How to use Approximate Query Processing (AQP) to Run Approximate Queries</h1>
 <p>Approximate Query Processing (AQP) uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire dataset. The approach trades off query accuracy for fast response time.
 For more information on  AQP, refer to <a href="../../aqp/">AQP documentation</a>.</p>
 <p><strong>Code Example</strong>:
-The complete code example for AQP is in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala">SynopsisDataExample.scala</a>. The code below creates a sample table and executes queries that run on the sample table.</p>
+The complete code example for AQP is in <a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala">SynopsisDataExample.scala</a>. The code below creates a sample table and executes queries that run on the sample table.</p>
 <p><strong>Get a SnappySession</strong>:</p>
 <pre><code class="pre">val spark: SparkSession = SparkSession
     .builder
@@ -2319,7 +2319,7 @@ snSession.sql(&quot;CREATE TABLE AIRLINEREF USING row AS (SELECT CODE, &quot; +
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../use_transactions_isolation_levels/" style="color: #fcfcfc;">&laquo; Previous</a></span>

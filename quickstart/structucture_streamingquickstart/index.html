@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Structured Streaming - SnappyData™ 1.2.0</title>
+  <title>Structured Streaming - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2197,7 +2197,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2211,7 +2211,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2389,7 +2389,7 @@ val streamingQuery = df.
 </li>
 </ol>
 <h2 id="structured-streaming-using-snappy-job">Structured Streaming using Snappy Job</h2>
-<p>Refer to <a href="https://snappydatainc.github.io/snappydata/programming_guide/snappydata_jobs/">SnappyData Jobs</a> for more information about Snappy Jobs.</p>
+<p>Refer to <a href="https://tibcosoftware.github.io/snappydata/programming_guide/snappydata_jobs/">SnappyData Jobs</a> for more information about Snappy Jobs.</p>
 <p>Following is a Snappy job code that contains similarly structured streaming query:</p>
 <pre><code>package io.snappydata
 
@@ -2456,7 +2456,7 @@ object Example extends SnappySQLJob {
 <p>The job-id used for stopping the job is picked from the job submission response.</p>
 </div>
 <h2 id="examples">Examples</h2>
-<p>For more examples, refer to <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming">structured streaming examples</a>. The following examples are shown:</p>
+<p>For more examples, refer to <a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming">structured streaming examples</a>. The following examples are shown:</p>
 <table>
 <thead>
 <tr>
@@ -2466,31 +2466,31 @@ object Example extends SnappySQLJob {
 </thead>
 <tbody>
 <tr>
-<td><a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CDCExample.scala">CDCExample.scala</a></td>
+<td><a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CDCExample.scala">CDCExample.scala</a></td>
 <td>An example explaining CDC (change data capture) use case with SnappyData streaming Sink.</td>
 </tr>
 <tr>
-<td><a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CSVFileSourceExampleWithSnappySink.scala">CSVFileSourceExampleWithSnappySink.scala</a></td>
+<td><a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CSVFileSourceExampleWithSnappySink.scala">CSVFileSourceExampleWithSnappySink.scala</a></td>
 <td>An example of structured streaming depicting CSV file processing with Snappy Sink.</td>
 </tr>
 <tr>
-<td><a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CSVKafkaSourceExampleWithSnappySink.scala">CSVKafkaSourceExampleWithSnappySink.scala</a></td>
+<td><a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CSVKafkaSourceExampleWithSnappySink.scala">CSVKafkaSourceExampleWithSnappySink.scala</a></td>
 <td>An example of structured streaming depicting processing of JSON coming from kafka source using snappy Sink.</td>
 </tr>
 <tr>
-<td><a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/JSONFileSourceExampleWithSnappySink.scala">JSONFileSourceExampleWithSnappySink.scala</a></td>
+<td><a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/JSONFileSourceExampleWithSnappySink.scala">JSONFileSourceExampleWithSnappySink.scala</a></td>
 <td>An example of structured streaming depicting JSON file processing with Snappy Sink.</td>
 </tr>
 <tr>
-<td><a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/JSONKafkaSourceExampleWithSnappySink.scala">JSONKafkaSourceExampleWithSnappySink.scala</a></td>
+<td><a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/JSONKafkaSourceExampleWithSnappySink.scala">JSONKafkaSourceExampleWithSnappySink.scala</a></td>
 <td>An example of structured streaming depicting processing of JSON coming from Kafka source using Snappy Sink</td>
 </tr>
 <tr>
-<td><a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExample.scala">SocketSourceExample.scala</a></td>
+<td><a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExample.scala">SocketSourceExample.scala</a></td>
 <td>An example showing usage of structured streaming with console Sink.</td>
 </tr>
 <tr>
-<td><a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala">SocketSourceExampleWithSnappySink.scala</a></td>
+<td><a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala">SocketSourceExampleWithSnappySink.scala</a></td>
 <td>An example showing usage of structured streaming with SnappyData.</td>
 </tr>
 </tbody>
@@ -2526,7 +2526,7 @@ object Example extends SnappySQLJob {
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../using_sql/" style="color: #fcfcfc;">&laquo; Previous</a></span>

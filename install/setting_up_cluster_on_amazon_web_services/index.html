@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Setting-up SnappyData Cluster on AWS - SnappyData™ 1.2.0</title>
+  <title>Setting-up SnappyData Cluster on AWS - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2195,7 +2195,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2209,7 +2209,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2378,7 +2378,7 @@ For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section o
 <h2 id="snappydata-ec2-scripts">SnappyData EC2 Scripts</h2>
 <p>The SnappyData EC2 scripts enable you to launch and manage SnappyData clusters quickly on Amazon EC2 instances. They also allow you to provide custom configuration for the cluster via SnappyData configuration files, before launching the cluster.</p>
 <p>The <code>snappy-ec2</code> script is the entry point for these EC2 scripts and is derived from the <code>spark-ec2</code> script available in <a href="https://github.com/apache/spark/tree/branch-1.6/ec2">Apache Spark 1.6</a>.</p>
-<p>The scripts are available on GitHub in the <a href="https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2">snappy-cloud-tools repository</a> and also as a <strong>.tar.gz</strong> file on <a href="https://github.com/SnappyDataInc/snappy-cloud-tools/releases">the release page</a> file.</p>
+<p>The scripts are available on GitHub in the <a href="https://github.com/TIBCOSoftware/snappy-cloud-tools/tree/master/aws/ec2">snappy-cloud-tools repository</a> and also as a <strong>.tar.gz</strong> file on <a href="https://github.com/TIBCOSoftware/snappy-cloud-tools/releases">the release page</a> file.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The EC2 scripts are provided on an experimental basis. Feel free to try it out and provide your feedback as via GitHub issues.</p>
@@ -2414,7 +2414,7 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
 <p><a id="launchclusterec2script"></a></p>
 <h3 id="deploying-snappydata-cluster-with-ec2-scripts">Deploying SnappyData Cluster with EC2 Scripts</h3>
 <p>In the command prompt, go to the directory where the <strong>snappydata-ec2-<code>&lt;version&gt;</code>.tar.gz</strong> is extracted or to the
-aws/ec2 directory where the <a href="https://github.com/SnappyDataInc/snappy-cloud-tools">SnappyData cloud tools repository</a> is cloned locally.</p>
+aws/ec2 directory where the <a href="https://github.com/TIBCOSoftware/snappy-cloud-tools">SnappyData cloud tools repository</a> is cloned locally.</p>
 <p><strong>Syntax</strong></p>
 <pre><code class="pre">./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; &lt;action&gt; &lt;your-cluster-name&gt; [options]
 </code></pre>
@@ -2493,11 +2493,11 @@ option <code>--snappydata-tarball</code> to the <code>launch</code> command.
 The build can be present either on a local filesystem or as a resource on the web.</p>
 <p>For example, to use <strong>SnappyData Enterprise</strong> build to launch the cluster, download the build tarball from
 www.snappydata.io/download on your local machine and give its path as value to above option.</p>
-<pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball=&quot;/home/ec2-user/snappydata/distributions/snappydata-1.2.0-bin.tar.gz&quot; 
+<pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball=&quot;/home/ec2-user/snappydata/distributions/snappydata-1.3.0-bin.tar.gz&quot; 
 </code></pre>
 
 <p>Alternatively, you can also put your build file on a public web server and provide its URL to this option.</p>
-<pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball=&quot;https://s3-us-east-2.amazonaws.com/mybucket/distributions/snappydata-1.2.0-bin.tar.gz&quot; 
+<pre><code class="pre">./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball=&quot;https://s3-us-east-2.amazonaws.com/mybucket/distributions/snappydata-1.3.0-bin.tar.gz&quot; 
 </code></pre>
 
 <p>The build file should be in <strong>.tar.gz</strong> format.</p>
@@ -2809,7 +2809,7 @@ This section covers the following:</p>
 </code></pre>
 <ol>
 <li>
-<p>Download the required SnappyData distribution (.tar.gz) into the EC2 instance(s). You can find the latest SnappyData Community Edition (OSS) release <a href="https://github.com/snappydatainc/snappydata/releases/latest">here</a>.</p>
+<p>Download the required SnappyData distribution (.tar.gz) into the EC2 instance(s). You can find the latest SnappyData Community Edition (OSS) release <a href="https://github.com/tibcosoftware/snappydata/releases/latest">here</a>.</p>
 <ul>
 <li>When we make the SnappyData AMI available on AWS in future, it will have the distribution pre-installed. In that case, you can jump to <a href="#15step">step 4</a> below.</li>
 </ul>
@@ -2938,7 +2938,7 @@ Note that in such a case, any unknown user on the internet can connect to your c
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../install_on_premise/" style="color: #fcfcfc;">&laquo; Previous</a></span>

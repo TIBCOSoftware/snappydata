@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Connecting to External Hive Metastores - SnappyData™ 1.2.0</title>
+  <title>Connecting to External Hive Metastores - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -844,6 +844,10 @@
                     <li><a class="toctree-l4" href="#list-of-ecosystem-connectors">List of Ecosystem Connectors</a></li>
                 
                     <li><a class="toctree-l4" href="#accessing-hive-tables-from-snappydata-cluster">Accessing Hive Tables from SnappyData Cluster</a></li>
+                
+                    <li><a class="toctree-l4" href="#creating-and-querying-hive-tables">Creating and Querying Hive Tables</a></li>
+                
+                    <li><a class="toctree-l4" href="#creating-and-querying-snappydata-tables">Creating and Querying SnappyData Tables</a></li>
                 
                     <li><a class="toctree-l4" href="#troubleshooting">Troubleshooting</a></li>
                 
@@ -2203,7 +2207,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2217,7 +2221,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2389,6 +2393,170 @@
 </code></pre>
 </li>
 </ul>
+<h2 id="creating-and-querying-hive-tables">Creating and Querying Hive Tables</h2>
+<p>To create or access, the hive tables, you must first create a database or schema in the external hive catalog from SnappyData. Else, the default database <strong>default</strong> is used.  Go to the Snappy Shell prompt and enter the following command.</p>
+<p>Note that a DDL will only be executed against the external hive if it uses hive-specific extensions in the CREATE TABLE like "row format" shown below. Or else when "using hive" is specifically mentioned after the table schema.
+In other words, it is not possible to create Spark format EXTERNAL tables (e.g. a parquet table) in the external hive metastore.</p>
+<pre><code>    snappy&gt; create database hivedb;
+</code></pre>
+<p>After creating the database or schema, you can create hive tables, load data into the hive tables, and run DDL queries on hive tables from SnappyData using one of the following methods:</p>
+<h3 id="method-1">Method 1</h3>
+<p>In this method, you must use the schema or database name before the table name as shown in the following example:   </p>
+<pre><code>snappy&gt; 
+create table hivedb.hive_regions(RegionID int,RegionDescription string) row format delimited fields terminated by ',' tblproperties("skip.header.line.count"="1");
+
+snappy&gt; 
+load data local inpath '/export/shared/QA_DATA/NW_1GB/regions.csv' overwrite into table hivedb.hive_regions;
+
+snappy&gt; select * from hivedb.hive_regions where RegionDescription &lt;&gt; 'RegionDescription';
+
+    RegionID   |RegionDescription                                                                                                               
+    --------------------------------------------------------------------------------------------------------------------------------------------
+    1          |Eastern                                                                                                                         
+    2          |Western                                                                                                                         
+    3          |Northern                                                                                                                        
+    4          |Southern
+
+    4 rows selected
+</code></pre>
+<h3 id="method-2">Method 2</h3>
+<p>In this method, you must first run the command <code>use &lt;database-name&gt;</code> as shown in the following example. If you use this method you need not mention the schema or database name.</p>
+<pre><code>    snappy&gt; use hivedb;
+    snappy&gt; create table hive_employee_territories(EmployeeID int,TerritoryID string) row format delimited fields terminated by ',';
+    snappy&gt; load data local inpath '/export/shared/QA_DATA/NW_1GB/employee_territories.csv' overwrite into table hive_employee_territories;
+
+    snappy&gt; select * from hive_employee_territories limit 10;
+    EmployeeID |TerritoryID                                                                                                                     
+    --------------------------------------------------------------------------------------------------------------------------------------------
+    NULL       |TerritoryID                                                                                                                     
+    1          |06897                                                                                                                           
+    1          |19713                                                                                                                           
+    2          |01581                                                                                                                           
+    2          |01730                                                                                                                           
+    2          |01833                                                                                                                           
+    2          |02116                                                                                                                           
+    2          |02139                                                                                                                           
+    2          |02184                                                                                                                           
+    2          |40222
+
+    10 rows selected
+
+    snappy&gt; drop table hive_employee_territories;
+</code></pre>
+<h2 id="creating-and-querying-snappydata-tables">Creating and Querying SnappyData Tables</h2>
+<p>After the hive catalog is visible, you can create and access the SnappyData tables as well. For accessing the tables, the following two methods are available.</p>
+<h3 id="method-1_1">Method 1</h3>
+<ol>
+<li>Run the command <code>set spark.sql.catalogImplementation=in-memory</code>.</li>
+<li>
+<p>After this run the command <code>use &lt;database-name&gt;</code> or <code>use schema / &lt;database name used while creating the table&gt;</code>.</p>
+<p>After above two steps, the external hive catalog is not visible from SnappyData and hence all the tables that are created and accessed are SnappyData tables only.</p>
+</li>
+</ol>
+<p>The following examples demonstrates how to create and access SnappyData tables from an external hive catalog. </p>
+<pre><code>snappy&gt; set spark.sql.catalogImplementation=in-memory;
+
+snappy&gt; use app;
+
+snappy&gt; create table t1(id int) using column;
+
+snappy&gt; insert into t1 select id from range(1000);
+1000 rows inserted/updated/deleted
+
+snappy&gt; select * from t1 order by id limit 10;
+id         
+-----------
+0          
+1          
+2          
+3          
+4          
+5          
+6          
+7          
+8          
+9          
+
+10 rows selected
+
+
+
+
+snappy&gt; show tables in app;
+schemaName                                                          |tableName                                                                           |isTemporary
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------app                                                                             |t1                                                                                  |false      
+
+1 row selected
+
+snappy&gt; drop table t1;
+
+</code></pre>
+
+<pre><code>snappy&gt; set spark.sql.catalogImplementation=in-memory;
+
+snappy&gt; create table app.t1(id int) using column;
+
+snappy&gt; insert into app.t1 select id from range(10);
+10 rows inserted/updated/deleted
+
+snappy&gt; select * from app.t1;
+id         
+-----------
+4          
+2          
+6          
+1          
+3          
+0          
+7          
+5          
+9          
+8          
+10 rows selected
+snappy&gt; drop table app.t1;
+
+snappy&gt; show tables in app;
+schemaName                |tableName                                                       |isTemporary
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+0 rows selected
+</code></pre>
+
+<h3 id="method-2_1">Method 2</h3>
+<p>If you want to create and access the SnappyData tables, while keeping the hive catalog visible, then use the <code>&lt;schemaname&gt;.&lt;tablename&gt;</code> in the DDL / DML statements as shown in following examples:</p>
+<p>In case you have run the command <code>spark.sql.catalogImplementation=in-memory</code>,  then you can run the command that points to any hive catalog database. For Example: <code>use hivedb;</code></p>
+<pre><code>snappy&gt; set spark.sql.catalogImplementation=hive;
+
+snappy&gt; create table app.t1(id int,name String) using column;
+
+snappy&gt; show tables in app;
+schemaName                                           |tableName                                                    |isTemporary
+------------------------------------------------------------------------------------------------------------------------
+app                                                              |t1                                                                      |false      
+
+1 row selected
+
+
+snappy&gt; insert into app.t1 select id,concat('TIBCO_',id) from range(1000);
+1000 rows inserted/updated/deleted
+
+snappy&gt; select * from app.t1 where id &gt; 995 order by id;
+id         |name                                                                                                                            
+996        |TIBCO_996                                                                                                                       
+997        |TIBCO_997                                                                                                                       
+998        |TIBCO_998                                                                                                                       
+999        |TIBCO_999                                                                                                                       
+
+4 rows selected
+
+snappy&gt; drop table app.t1;
+
+</code></pre>
+
+<p>If you want to join the hive table and SnappyData table, then use the <code>&lt;schemaname&gt;.&lt;tablename&gt;</code> in the join query for both the hive table as well as for the SnappyData table.</p>
+<p><strong>Example</strong></p>
+<pre><code>snappy&gt; SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID, o.OrderDate FROM default.hive_employees emp JOIN app.snappy_orders o ON (emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderID;
+</code></pre>
+
 <h2 id="troubleshooting">Troubleshooting</h2>
 <p>Following are some issues that you may come across and their corresponding solutions / workarounds:</p>
 <ul>
@@ -2468,7 +2636,7 @@ java.sql.SQLException: Access denied for user 'APP'@'<hostname>' (using password
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../../connectors/access_cloud_data/" style="color: #fcfcfc;">&laquo; Previous</a></span>

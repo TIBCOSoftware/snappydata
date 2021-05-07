@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Working with Stratified Samples - SnappyData™ 1.2.0</title>
+  <title>Working with Stratified Samples - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2195,7 +2195,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2209,7 +2209,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2222,11 +2222,10 @@
             <div class="section">
               
                 <h1 id="working-with-stratified-samples">Working with Stratified Samples</h1>
-<p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
 <h2 id="create-sample-tables">Create Sample Tables</h2>
-<p>You can create sample tables on datasets that can be sourced from any source supported in Spark/TIBCO ComputeDB. For instance, these can be TIBCO ComputeDB in-memory tables, Spark DataFrames, or sourced from an external data source such as S3 or HDFS.
+<p>You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark DataFrames, or sourced from an external data source such as S3 or HDFS.
 Creation of sample table will implicitly sample the data from the base table.</p>
-<p>Here is an SQL based example to create a sample on tables locally available in the TIBCO ComputeDB cluster. </p>
+<p>Here is an SQL based example to create a sample on tables locally available in the SnappyData cluster. </p>
 <pre><code class="pre">CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI 
   OPTIONS (qcs 'hour(pickup_datetime)', fraction '0.01'); 
 
@@ -2329,7 +2328,7 @@ For instance, in the above example, taxi drivers that have very few records may 
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../key_concepts/" style="color: #fcfcfc;">&laquo; Previous</a></span>

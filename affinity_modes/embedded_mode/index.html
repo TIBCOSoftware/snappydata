@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Embedded SnappyData Store Mode - SnappyData™ 1.2.0</title>
+  <title>Embedded SnappyData Store Mode - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2191,7 +2191,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2205,7 +2205,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2219,38 +2219,38 @@
               
                 <p><a id="embeddedmode"></a></p>
 <h1 id="embedded-snappydata-store-mode">Embedded SnappyData Store Mode</h1>
-<p>In this mode, the Spark computations and in-memory data store run colocated in the same JVM. This is our out of the box configuration and suitable for most SnappyData real-time production environments. You launch SnappyData servers to bootstrap any data from disk, replicas or from external data sources.
+<p>In this mode, the Spark computations and in-memory data store run colocated in the same JVM. This is an out-of-the-box configuration and suitable for most SnappyData real-time production environments. You can launch SnappyData servers to bootstrap any data from disk, replicas or external data sources.
 Spark executors are dynamically launched when the first Spark Job arrives.</p>
 <p><strong>Some of the advantages of this mode are:</strong></p>
 <ul>
 <li>
-<p><strong>High performance</strong>: All your Spark applications access the table data locally, in-process. The query engine accesses all the data locally by reference and avoids copying (which can be very expensive when working with large volumes).</p>
+<p><strong>High performance</strong>: All your Spark applications access the table data locally, in-process. The query engine accesses all the data locally by reference and avoids copying which can be very expensive when working with large volumes.</p>
 </li>
 <li>
-<p><strong>Driver High Availability</strong>: When Spark jobs are submitted, they can now run in an HA configuration. The submitted job becomes visible to a redundant “lead” node that prevents the executors to go down when the Spark driver fails. Any submitted Spark job continues to run as long as there is at least one “lead” node running.</p>
+<p><strong>Driver High Availability</strong>: When Spark jobs are submitted, they can now run in an HA configuration. The submitted job becomes visible to a redundant “lead” node that prevents the executors from going down when the Spark driver fails. Any submitted Spark job continues to run as long as there is at least one “lead” node running.</p>
 </li>
 <li>
 <p><strong>Less complex</strong>: There is only a single cluster to start, monitor, debug and tune.</p>
 </li>
 </ul>
 <p><img alt="Embedded Mode" src="../../Images/SnappyEmbeddedMode.png" /></p>
-<p>In this mode, one can write Spark programs using jobs. For more details, refer to the <a href="../../programming_guide/snappydata_jobs/">SnappyData Jobs</a> section.</p>
+<p>In this mode, one can write Spark programs using jobs. For more details, refer to <a href="../../programming_guide/snappydata_jobs/">Snappy Jobs</a> section.</p>
 <p><strong>Example: Submit a Spark Job to the SnappyData Cluster</strong></p>
 <pre><code class="pre">./bin/snappy-job.sh submit --app-name JsonApp --class org.apache.spark.examples.snappydata.WorkingWithJson --app-jar examples/jars/quickstart.jar --lead [leadHost:port] --conf json_resource_folder=../../quickstart/src/main/resources
 </code></pre>
 
 <p>Also, you can use <a href="../../howto/use_snappy_shell/">SnappySQL</a> to create and query tables.</p>
 <p>You can either <a href="../../howto/start_snappy_cluster/">start SnappyData members</a> using the <code>snappy-start-all.sh</code> script or you can start them individually.</p>
-<p>Having the Spark computation embedded in the same JVM allows us to do a number of optimization at query planning level. For example:</p>
+<p>Having the Spark computation embedded in the same JVM allows us to do several optimizations at the query planning level. For example:</p>
 <ul>
 <li>
 <p>If the join expression matches the partitioning scheme of tables, a partition to partition join instead of a shuffle based join is done. </br> Moreover, if two tables are colocated (while defining the tables) costly data movement can be avoided.</p>
 </li>
 <li>
-<p>For replicated tables, that are present in all the data nodes, a simple local join (local look up)  is done instead of a broadcast join.</p>
+<p>For replicated tables, that are present in all the data nodes, a simple local join (local lookup) is done instead of a broadcast join.</p>
 </li>
 <li>
-<p>Similarly inserts to tables groups rows according to table partitioning keys, and route to the JVM hosting the partition. This results in higher ingestion rate.</p>
+<p>Similarly inserts to tables groups rows according to table partitioning keys, and route to the JVM hosting the partition. This results in a higher ingestion rate.</p>
 </li>
 </ul>
               
@@ -2284,7 +2284,7 @@ Spark executors are dynamically launched when the first Spark Job arrives.</p>
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../local_mode/" style="color: #fcfcfc;">&laquo; Previous</a></span>

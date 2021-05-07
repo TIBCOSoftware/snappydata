@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script - SnappyData™ 1.2.0</title>
+  <title>Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2191,7 +2191,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2205,7 +2205,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2272,6 +2272,9 @@ Usage: collect-debug-artifacts
   To extract the contents of the tar file.</p>
 <pre><code>       Timestamp format: YYYY-MM-DD HH:MM[:SS]
 </code></pre>
+<p>Along with these options, if you want to filter unwanted lines from the logs, then you must specify <strong>EGREP_INVERT_MATCH_PATTERNS</strong> with a list of patterns in the <strong>conf/debug.conf.template
+</strong>. The lines that match those patterns will not be collected by the script.
+For example: <code>EGREP_INVERT_MATCH_PATTERNS='tid|gemfire'</code></p>
 <p>For offline analysis, as the production logs can be pretty huge and not easily sharable, you can provide a list of patterns which can be excluded for collection. A list of patterns can be specified in the <strong>conf</strong> &gt; <strong>debug.conf</strong> file. Before doing this, you must rename the <strong>debug.conf.template</strong> file to <strong>debug.conf</strong>. The lines matching those patterns will be ignored by the script and excluded for collection.</p>
               
             </div>
@@ -2304,7 +2307,7 @@ Usage: collect-debug-artifacts
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../oom/" style="color: #fcfcfc;">&laquo; Previous</a></span>

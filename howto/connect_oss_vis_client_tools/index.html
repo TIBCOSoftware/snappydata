@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>How to Access SnappyData from Various SQL Client Tools - SnappyData™ 1.2.0</title>
+  <title>How to Access SnappyData from Various SQL Client Tools - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2201,7 +2201,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2215,7 +2215,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2228,7 +2228,7 @@
             <div class="section">
               
                 <h1 id="how-to-access-snappydata-from-various-sql-client-tools">How to Access SnappyData from Various SQL Client Tools</h1>
-<p>You can use the following SQL client tools to access TIBCO ComputeDB:</p>
+<p>You can use the following SQL client tools to access SnappyData:</p>
 <ul>
 <li><a href="#dbvis">DbVisualizer</a></li>
 <li><a href="#sqlworkbenchj">SQL Workbench/J</a></li>
@@ -2237,7 +2237,7 @@
 </ul>
 <p><a id= dbvis> </a></p>
 <h2 id="dbvisualizer">DbVisualizer</h2>
-<p>DbVisualizer is a universal database tool for developers, DBAs and analysts to access databases. You can access TIBCO ComputeDB from DbVisualizer when you create a database connection using a database driver.</p>
+<p>DbVisualizer is a universal database tool for developers, DBAs and analysts to access databases. You can access SnappyData from DbVisualizer when you create a database connection using a database driver.</p>
 <p>To access SnappyData from DbVisualizer, do the following:</p>
 <h3 id="create-a-database-driver">Create a Database Driver</h3>
 <p>To create a database driver, do the following:</p>
@@ -2286,7 +2286,7 @@
 <li>Click <strong>Manage Drivers</strong> from the bottom left. The <strong>Manage driver</strong> dialog box is displayed. </li>
 <li>Enter the following details:<ul>
 <li><strong>Name</strong>: Provide a name for the driver. </li>
-<li><strong>Library</strong>: Click the folder icon and select the JDBC Client jar. <br> You must download the JDBC Client jar (snappydata-jdbc_2.11-1.2.0.jar) from the SnappyData website to your local machine.</li>
+<li><strong>Library</strong>: Click the folder icon and select the JDBC Client jar. <br> You must download the JDBC Client jar (snappydata-jdbc_2.11-1.3.0.jar) from the SnappyData website to your local machine.</li>
 <li><strong>Classname</strong>: <strong>io.snappydata.jdbc.ClientDriver</strong>. </li>
 <li><strong>Sample</strong> <strong>URL</strong>: jdbc:snappydata://server:port/</li>
 </ul>
@@ -2348,7 +2348,7 @@
 </ul>
 </li>
 <li>Add the downloaded <strong>snappydata jdbc jar</strong> in the extra classpath tab and provide the class name to be used for the connection. <br>
-    <code>jdbc jar: https://mvnrepository.com/artifact/io.snappydata/snappydata-jdbc_2.11/1.2.0
+    <code>jdbc jar: https://mvnrepository.com/artifact/io.snappydata/snappydata-jdbc_2.11/1.3.0
     jdbc class: io.snappydata.jdbc.ClientPoolDriver</code></li>
 <li>Go to <strong>Aliases</strong> tab and then click <strong>+</strong> to add a new alias. </br> <img alt="Images" src="../../Images/sql_clienttools_images/squirrel2.png" /></li>
 <li>Provide the following details: <ul>
@@ -2424,7 +2424,7 @@
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../export_hdfs/" style="color: #fcfcfc;">&laquo; Previous</a></span>

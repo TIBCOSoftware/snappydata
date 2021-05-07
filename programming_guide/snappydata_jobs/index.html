@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Snappy Jobs - SnappyData™ 1.2.0</title>
+  <title>Snappy Jobs - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2197,7 +2197,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2211,7 +2211,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2276,17 +2276,17 @@
 <ul>
 <li>
 <p><code>runSnappyJob</code> contains the implementation of the Job.
-The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession">SnappySession</a>/<a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a> is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and is provided to the job through this method. This relieves the developer from configuration management that comes with the creation of a Spark job and allows the Job Server to manage and reuse contexts.</p>
+The <a href="http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession">SnappySession</a>/<a href="http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a> is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and is provided to the job through this method. This relieves the developer from configuration management that comes with the creation of a Spark job and allows the Job Server to manage and reuse contexts.</p>
 </li>
 <li>
 <p><code>isValidJob</code> allows for an initial validation of the context and any provided configuration.
     If the context and configuration can run the job, returning <code>spark.jobserver.SnappyJobValid</code> allows the job to execute, otherwise returning <code>spark.jobserver.SnappyJobInvalid&lt;reason&gt;</code> prevents the job from running and provides means to convey the reason for failure. In this case, the call immediately returns an "HTTP/1.1 400 Bad Request" status code. Validate helps you prevent running jobs that eventually fail due to a  missing or wrong configuration, and saves both time and resources.</p>
 </li>
 </ul>
-<p>See <a href="https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples">examples</a> for Spark and Spark streaming jobs. </p>
+<p>See <a href="https://github.com/TIBCOSoftware/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples">examples</a> for Spark and Spark streaming jobs. </p>
 <p>SnappySQLJob trait extends the SparkJobBase trait. It provides users the singleton SnappyContext object that may be reused across jobs. SnappyContext singleton object creates one SnappySession per job. Similarly, SnappyStreamingJob provides users access to SnappyStreamingContext object that can be reused across jobs.</p>
 <h2 id="submitting-jobs">Submitting Jobs</h2>
-<p>The following command submits <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala">CreateAndLoadAirlineDataJob</a>. This job creates DataFrames from parquet files, loads the data from DataFrame into column tables and row tables, and creates sample table on column table in its <code>runJob</code> method.</p>
+<p>The following command submits <a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala">CreateAndLoadAirlineDataJob</a>. This job creates DataFrames from parquet files, loads the data from DataFrame into column tables and row tables, and creates sample table on column table in its <code>runJob</code> method.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>When submitting concurrent jobs user must ensure that the <code>--app-name</code> parameter is different for each concurrent job. If two applications with the same name are submitted concurrently, the job fails and an error is reported, as the job server maintains a map of the application names and jar files used for that application.</p>
@@ -2343,7 +2343,7 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 }
 </code></pre>
 
-<p>Once the tables are created, they can be queried by running another job. Please refer to <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala">AirlineDataJob</a> for implementing the job. </p>
+<p>Once the tables are created, they can be queried by running another job. Please refer to <a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala">AirlineDataJob</a> for implementing the job. </p>
 <pre><code class="pre">$ ./bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
@@ -2355,7 +2355,7 @@ The <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark
 <h3 id="jar-dependencies-for-jobs">Jar Dependencies for Jobs</h3>
 <p>For writing jobs users need to include <a href="../../howto/run_spark_job_inside_cluster/">Maven/SBT dependencies for the latest released version of SnappyData</a> to their project dependencies. In case the project already includes dependency on Apache Spark and the user does not want to include snappy-spark dependencies, then, it is possible to explicitly exclude the snappy-spark dependencies.</p>
 <p>For example, gradle can be configured as:</p>
-<pre><code class="pre">compile('io.snappydata:snappydata-cluster_2.11:1.2.0') {
+<pre><code class="pre">compile('io.snappydata:snappydata-cluster_2.11:1.3.0') {
         exclude(group: 'io.snappydata', module: 'snappy-spark-unsafe_2.11')
         exclude(group: 'io.snappydata', module: 'snappy-spark-core_2.11')
         exclude(group: 'io.snappydata',module: 'snappy-spark-yarn_2.11')
@@ -2389,7 +2389,7 @@ For example <code>sudo apt-get install python-numpy</code></p>
 <h2 id="streaming-jobs">Streaming Jobs</h2>
 <p>An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying <code>--stream</code> as an option to the submit command. This option creates a new SnappyStreamingContext before the job is submitted. 
 Alternatively, you can specify the name of an existing/pre-created streaming context as <code>--context &lt;context-name&gt;</code> with the <code>submit</code> command.</p>
-<p>For example, <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala">TwitterPopularTagsJob</a> can be submitted as follows. 
+<p>For example, <a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala">TwitterPopularTagsJob</a> can be submitted as follows. 
 This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, and top 10 popular tweets.</p>
 <pre><code class="pre">$ ./bin/snappy-job.sh submit  \
     --lead localhost:8090  \
@@ -2422,7 +2422,7 @@ $ ./bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
 </code></pre>
 
 <p>You can import the examples into a separate independent gradle project as is and submit the jobs to the cluster.
-Refer to the instructions <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/README.md">here</a>. The link also contains instructions for importing and running examples from an IDE such as Intellij IDEA.</p>
+Refer to the instructions <a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/README.md">here</a>. The link also contains instructions for importing and running examples from an IDE such as Intellij IDEA.</p>
 <p><strong>Related Topic</strong>:</p>
 <ul>
 <li><a href="../../howto/use_python_to_create_tables_and_run_queries/">How to use Python to Create Tables and Run Queries</a></li>
@@ -2458,7 +2458,7 @@ Refer to the instructions <a href="https://github.com/SnappyDataInc/snappydata/b
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../sparksession_snappysession_and_snappystreamingcontext/" style="color: #fcfcfc;">&laquo; Previous</a></span>

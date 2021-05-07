@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>List of Properties - SnappyData™ 1.2.0</title>
+  <title>List of Properties - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2211,7 +2211,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2225,7 +2225,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2471,12 +2471,12 @@
 <td>Lead</td>
 </tr>
 <tr>
-<td>-J-Dsnappydata.enable-rls</td>
+<td>-Dsnappydata.enable-rls</td>
 <td>Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.</td>
 <td>Server</br>Lead</br>Locator</td>
 </tr>
 <tr>
-<td>-J-Dsnappydata.RESTRICT_TABLE_CREATION</td>
+<td>-Dsnappydata.RESTRICT_TABLE_CREATION</td>
 <td>Applicable when security is enabled in the cluster. If true, users cannot execute queries (including DDLs and DMLs) even in their default or own schema unless cluster admin explicitly grants them the required permissions using GRANT command. The default is false.</td>
 <td>Server</br>Lead</br>Locator</td>
 </tr>
@@ -2897,6 +2897,10 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <td>Use this property to enable/disable plan caching. By default it is disabled.</td>
 </tr>
 <tr>
+<td>snappydata.recovery.enableTableCountInUI</td>
+<td>In the recovery mode, by default, the table counts and sizes do not appear on the UI. To view the table counts, you should set this property to <strong>true</strong> in the lead's conf file. By default, the property is set to <strong>false</strong>, and the table count is shown as <strong>-1</strong>.</td>
+</tr>
+<tr>
 <td>sync-commits</td>
 <td>See <a href="../../reference/configuration_parameters/sync-commits/">sync-commits</a></td>
 </tr>
@@ -2949,7 +2953,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 </table>
 <p><a id="connectionpro"></a></p>
 <h2 id="connection-properties">Connection Properties</h2>
-<p>You can define connection properties directly in the JDBC connection URL, or in the Properties object while using JDBC API <code>DriverManager.getConnection(String url, java.util.Properties info)</code>. You can also define connection properties  in the <code>connect</code> command in an interactive TIBCO ComputeDB session using snappy shell. 
+<p>You can define connection properties directly in the JDBC connection URL, or in the Properties object while using JDBC API <code>DriverManager.getConnection(String url, java.util.Properties info)</code>. You can also define connection properties  in the <code>connect</code> command in an interactive SnappyData session using snappy shell. 
 An example URL that defines a connection property is shown below. In the URL, replace the <code>property1=value1</code> string with appropriate property that you want to use. Multiple properties can be be specified by separating them with a semicolon.</p>
 <p>Example URL:</p>
 <pre><code>jdbc:snappydata://locatorHostName:1527/property1=value1;property2=value2
@@ -3049,7 +3053,7 @@ An example URL that defines a connection property is shown below. In the URL, re
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../configuring_cluster/" style="color: #fcfcfc;">&laquo; Previous</a></span>

@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>SnappyData Smart Connector Mode - SnappyData™ 1.2.0</title>
+  <title>SnappyData Smart Connector Mode - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2191,7 +2191,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2205,7 +2205,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2261,7 +2261,7 @@ You can either start SnappyData members using the <code>snappy_start_all</code> 
 <p><strong>Step 2: Launch the Apache Spark program</strong></p>
 <p><strong><em><em>In the Local mode</em></em></strong></p>
 <pre><code class="pre">
-./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.2.0-s_2.11&quot;
+./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages &quot;TIBCOSoftware:snappydata:1.3.0-s_2.11&quot;
 </code></pre>
 
 <div class="admonition note">
@@ -2278,9 +2278,9 @@ You can either start SnappyData members using the <code>snappy_start_all</code> 
 <p>This opens a Scala Shell.</p>
 <p><strong>Step 3: Import any or all of the following:</strong> </p>
 <ul>
+<li><strong>SnappySession</strong></li>
 <li><strong>SQL Context</strong></li>
 <li><strong>SnappyContext</strong></li>
-<li><strong>SnappySession</strong></li>
 </ul>
 <pre><code>import org.apache.spark.sql.{SQLContext,SnappyContext,SnappySession}
 </code></pre>
@@ -2290,14 +2290,14 @@ You can either start SnappyData members using the <code>snappy_start_all</code> 
     $scala &gt; val snSession = new SnappySession(spark.sparkContext)
 </code></pre>
 
-<p>The code example for writing a Smart Connector application program is located in <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample</a></p>
+<p>The code example for writing a Smart Connector application program is located in <a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala">SmartConnectorExample</a></p>
 <p><strong><em><em>Using External Cluster Manager</em></em></strong></p>
 <p><strong>Cluster mode</strong></p>
-<pre><code class="pre">./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.2.0-s_2.11&quot;
+<pre><code class="pre">./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;TIBCOSoftware:snappydata:1.3.0-s_2.11&quot;
 </code></pre>
 
 <p><strong>Client mode</strong></p>
-<pre><code class="pre">./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;SnappyDataInc:snappydata:1.2.0-s_2.11&quot;
+<pre><code class="pre">./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages &quot;TIBCOSoftware:snappydata:1.3.0-s_2.11&quot;
 </code></pre>
 
 <p><strong><em><em>Using YARN as a Cluster Manager</em></em></strong></p>
@@ -2339,7 +2339,7 @@ You can either start SnappyData members using the <code>snappy_start_all</code> 
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../embedded_mode/" style="color: #fcfcfc;">&laquo; Previous</a></span>

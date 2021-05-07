@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Monitoring with Metrics - SnappyData™ 1.2.0</title>
+  <title>Monitoring with Metrics - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2199,7 +2199,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2213,7 +2213,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2226,13 +2226,13 @@
             <div class="section">
               
                 <h1 id="monitoring-with-metrics">Monitoring with Metrics</h1>
-<p>Metrics constitutes of the measurements of resource usage or behavior that can be observed and collected all over TIBCO ComputeDB clusters. Using the Metrics, you can monitor the cluster health and statistics.  Monitoring the clusters allows you to do the following:</p>
+<p>Metrics constitutes of the measurements of resource usage or behavior that can be observed and collected all over SnappyData clusters. Using the Metrics, you can monitor the cluster health and statistics.  Monitoring the clusters allows you to do the following:</p>
 <ul>
 <li>Increase availability by quickly detecting downtime/degradation.</li>
 <li>Facilitate performance monitoring by external tools. These external tools can handle functions such as metrics aggregation, alerting, and visualization.</li>
 </ul>
-<p>TIBCO ComputeDB uses the <a href="https://spark.apache.org/docs/latest/monitoring.html#metrics">Spark’s Metrics Subsystem</a> for metrics collection. This system allows you to publish the metrics to a variety of sinks that you can enable for metrics collection. 
-Spark supports the following sinks for Metrics. TIBCO ComputeDB can send metrics to all these sinks. However, MetricsServlet sink is enabled by default and all the metrics get published here.</p>
+<p>SnappyData uses the <a href="https://spark.apache.org/docs/latest/monitoring.html#metrics">Spark’s Metrics Subsystem</a> for metrics collection. This system allows you to publish the metrics to a variety of sinks that you can enable for metrics collection. 
+Spark supports the following sinks for Metrics. SnappyData can send metrics to all these sinks. However, MetricsServlet sink is enabled by default and all the metrics get published here.</p>
 <table>
 <thead>
 <tr>
@@ -2276,7 +2276,7 @@ Spark supports the following sinks for Metrics. TIBCO ComputeDB can send metrics
 <p class="admonition-title">Note</p>
 <p>Metrics are not published for Smart Connector mode. </p>
 </div>
-<p>The following type of metrics are made available for TIBCO ComputeDB:</p>
+<p>The following type of metrics are made available for SnappyData:</p>
 <ul>
 <li>
 <p><strong>Availability Metrics</strong></br>
@@ -2300,7 +2300,7 @@ Spark supports the following sinks for Metrics. TIBCO ComputeDB can send metrics
 </li>
 </ul>
 <h2 id="enabling-the-sinks-for-metrics-collection">Enabling the Sinks for Metrics collection</h2>
-<p>If you want to publish the TIBCO ComputeDB metrics using any of the sinks, you must enable these sinks in the <strong>metrics.properties</strong> file, which is located in the <strong>conf</strong> folder of the TIBCO ComputeDB installation directory. </p>
+<p>If you want to publish the SnappyData metrics using any of the sinks, you must enable these sinks in the <strong>metrics.properties</strong> file, which is located in the <strong>conf</strong> folder of the SnappyData installation directory. </p>
 <p>To enable a sink, do the following:</p>
 <ol>
 <li>
@@ -2330,7 +2330,7 @@ worker.sink.csv.unit=minutes
 </code></pre>
 </li>
 <li>
-<p>Start the cluster for the configurations to take effect by executing this command from the TIBCO ComputeDB installation folder:</p>
+<p>Start the cluster for the configurations to take effect by executing this command from the SnappyData installation folder:</p>
 <pre><code>    ./sbin/snappy-start-all.sh
 </code></pre>
 </li>
@@ -2340,7 +2340,7 @@ worker.sink.csv.unit=minutes
 <p>In case you make changes to <strong>metrics.properties</strong> file when the cluster is running, you must always restart the cluster for the configuration changes to reflect. </p>
 </div>
 <h2 id="accessing-metrics">Accessing Metrics</h2>
-<p>You can check the TIBCO ComputeDB metrics collected through <strong>MetricsServlet</strong>, which is enabled by default, at the following URL: <code>&lt;LeadNode-hostname&gt;:&lt;5050&gt;/metrics/json</code></p>
+<p>You can check the SnappyData metrics collected through <strong>MetricsServlet</strong>, which is enabled by default, at the following URL: <code>&lt;LeadNode-hostname&gt;:&lt;5050&gt;/metrics/json</code></p>
 <h3 id="accessing-metrics-from-jmxsink">Accessing Metrics from JmxSink</h3>
 <p>Do the following to access Metrics from JmxSink:</p>
 <ol>
@@ -2350,9 +2350,9 @@ worker.sink.csv.unit=minutes
 </code></pre>
 </li>
 <li>
-<p>Launch <strong>JConsole</strong> and connect to the host on which primary lead node is running, select the process ID of TIBCO ComputeDB primary lead process. </p>
+<p>Launch <strong>JConsole</strong> and connect to the host on which primary lead node is running, select the process ID of SnappyData primary lead process. </p>
 </li>
-<li>Go to <strong>MBeans</strong> &gt; <strong>metrics</strong>, to access the TIBCO ComputeDB Metrics. </li>
+<li>Go to <strong>MBeans</strong> &gt; <strong>metrics</strong>, to access the SnappyData Metrics. </li>
 </ol>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -3014,7 +3014,7 @@ worker.sink.csv.unit=minutes
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../configure_logging/" style="color: #fcfcfc;">&laquo; Previous</a></span>

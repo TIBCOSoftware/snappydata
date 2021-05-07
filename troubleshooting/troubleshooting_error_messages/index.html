@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Troubleshooting Error Messages - SnappyData™ 1.2.0</title>
+  <title>Troubleshooting Error Messages - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2191,7 +2191,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2205,7 +2205,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2335,8 +2335,8 @@ OR
 Table schema changed due to DROP/CREATE/ALTER operation. Please retry the operation.
 </error-text></p>
 <p><diagnosis> <strong>Diagnosis:</strong></br>
-In the Smart Connector mode, this error message is seen in the logs if TIBCO ComputeDB catalog is changed due to a DDL operation such as CREATE/DROP/ALTER. 
-For performance reasons, TIBCO ComputeDB Smart Connector caches the catalog in the Smart Connector cluster. If there is a catalog change in TIBCO ComputeDB embedded cluster, this error is logged to prevent unexpected errors due to schema changes.
+In the Smart Connector mode, this error message is seen in the logs if SnappyData catalog is changed due to a DDL operation such as CREATE/DROP/ALTER. 
+For performance reasons, SnappyData Smart Connector caches the catalog in the Smart Connector cluster. If there is a catalog change in SnappyData embedded cluster, this error is logged to prevent unexpected errors due to schema changes.
 </diagnosis></p>
 <p><action> <strong>Solution:</strong> </br>
 If a Select query encounters this error, that query is retried internally by the product up to ten times, and user intervention may not be necessary. However, after the ten retries, the query shows an exception, and the application needs to retry the query. Also, if the user application is performing DataFrame/DataSet operations, you must recreate the DataFrame/DataSet and retry the operation. In such cases, the application needs to catch exceptions of type <strong>org.apache.spark.sql.execution.CatalogStaleException</strong> and j<strong>ava.sql.SQLException</strong> (with SQLState=X0Z39) and retry the operation. Check the following code snippet to get a better understanding of how you can handle this scenario:</p>
@@ -2420,7 +2420,7 @@ has a dependency on <strong>slf4j-log4j12</strong> which cannot co-exist with  '
 </diagnosis></p>
 <p><action> <strong>Solution:</strong> </br></p>
 <p>To avoid getting <strong>log4j</strong> and <strong>slf4j-log4j12</strong> dependencies in the driver, you can link the <strong>non-fat</strong> JDBC client jar (<strong>snappydata-store-client*.jar</strong>) in your application and exclude <strong>log4j</strong> and <strong>slf4j-log4j12</strong> dependencies from it.</p>
-<p>Note that the <strong>snappydata-store-client</strong> jar does not contain some of the SnappyData extensions (Scala imiplicits) that are required when SnappyData Spark-JDBC connector is used. That is when accessing SnappyData from another Spark cluster using JDBC dataframes as mentioned [here].(https://snappydatainc.github.io/snappydata/programming_guide/spark_jdbc_connector/#using-sql-dml-to-execute-ad-hoc-sql)). If these SnappyData extensions are to be used, then in addition to above mentioned jar, <strong>snappydata-jdbc*-only.jar</strong> dependency will be required. This is available on maven repo and can be accessed using classifier: 'only' along with snappydata-jdbc cordinates.</p>
+<p>Note that the <strong>snappydata-store-client</strong> jar does not contain some of the SnappyData extensions (Scala imiplicits) that are required when SnappyData Spark-JDBC connector is used. That is when accessing SnappyData from another Spark cluster using JDBC dataframes as mentioned [here].(https://tibcosoftware.github.io/snappydata/programming_guide/spark_jdbc_connector/#using-sql-dml-to-execute-ad-hoc-sql)). If these SnappyData extensions are to be used, then in addition to above mentioned jar, <strong>snappydata-jdbc*-only.jar</strong> dependency will be required. This is available on maven repo and can be accessed using classifier: 'only' along with snappydata-jdbc cordinates.</p>
 <p>Following is an example for adding this dependency using gradle:</p>
 <p>build.gradle example that uses <strong>snappydata-store-client jar</strong> and <strong>snappydata-jdbc*only.jar</strong>. The example uses 1.0.2.2 SnappyData version, replace it with the version required by the application.  </p>
 <p><strong>Example</strong></p>
@@ -2454,8 +2454,8 @@ has a dependency on <strong>slf4j-log4j12</strong> which cannot co-exist with  '
 Bad <code>PutInto</code> performance even when input dataframe size is small.
 </error-text></p>
 <p><diagnosis> <strong>Diagnosis:</strong></br>
-<code>PutInto</code> operation internally performs join. If the input dataframe size is small (less than <code>spark.sql.autoBroadcastJoinThreshold</code> which defaults to 10 MB) then the join should ideally result into broadcast join giving better performance than short merge join (which will be chose otherwise).</p>
-<p>However, some sources doesn't provide size statistics and in that case the size of dataframe results into value of <code>spark.sql.defaultSizeInBytes</code> property which defaults to <code>Long.MaxValue</code>. In this case even if the actual size of the input dataframe is less than  that of <code>spark.sql.autoBroadcastJoinThreshold</code>, the <code>PutInto</code> operation will always end up using sort merge join resulting into poor performance.
+<code>PutInto</code> operation internally performs join. If the input dataframe size is small (less than <code>spark.sql.autoBroadcastJoinThreshold</code> which defaults to 10 MB) then the join should ideally result into broadcast join giving better performance than sort merge join (which will be chosen otherwise).</p>
+<p>However, some sources don't provide size statistics and in that case the size of dataframe results into value of <code>spark.sql.defaultSizeInBytes</code> property which defaults to <code>Long.MaxValue</code>. In this case even if the actual size of the input dataframe is less than  that of <code>spark.sql.autoBroadcastJoinThreshold</code>, the <code>PutInto</code> operation will always end up using sort merge join resulting into poor performance.
 </diagnosis></p>
 <p><action> <strong>Solution:</strong> </br>
 Solution for this issue is to override default value of <code>spark.sql.defaultSizeInBytes</code> by setting it as part of session configuration with the value matching the approximate size of the actual input dataframe.</p>
@@ -2497,7 +2497,7 @@ Solution for this issue is to override default value of <code>spark.sql.defaultS
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../collect_debug_artifacts/" style="color: #fcfcfc;">&laquo; Previous</a></span>

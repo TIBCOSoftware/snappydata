@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Specifying Encrypted Passwords in Conf Files or in Client Connections - SnappyData™ 1.2.0</title>
+  <title>Specifying Encrypted Passwords in Conf Files or in Client Connections - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2199,7 +2199,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2213,7 +2213,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2226,7 +2226,6 @@
             <div class="section">
               
                 <h1 id="specifying-encrypted-passwords-in-conf-files-or-in-client-connections">Specifying Encrypted Passwords in Conf Files or in Client Connections</h1>
-<p><ent>This feature is available only in the Enterprise version of SnappyData </br></ent></p>
 <p>SnappyData allows you to specify encrypted passwords, if you do not want to specify plain text passwords, in conf files or in JDBC/ODBC client connections URLs, while launching the SnappyData cluster in a secure mode. SnappyData provides an utility script called <strong>snappy-encrypt-password.sh</strong> to generate encrypted passwords of system users who launch the cluster.  This script is located under <strong>sbin</strong> directory of SnappyData product installation. </p>
 <p>You can generate encrypted passwords before starting the SnappyData cluster and use it in <strong>conf</strong> files of the SnappyData servers, locators and leads. </p>
 <p>You can also generate encrypted passwords for JDBC/ODBC client connections when SnappyData cluster is already started. For that case, using the <strong>SYS.ENCRYPT_PASSWORD</strong> system procedure is a preferable approach as mentioned in the following note.</p>
@@ -2252,7 +2251,7 @@ Logs generated in /home/xyz/&lt;snappydata_install_dir&gt;/work/localhost-locato
 SnappyData Locator pid: 2379 status: running
   Distributed system now has 1 members.
   Started DRDA server on: localhost/127.0.0.1[1527]
-SnappyData version 1.2.0 
+SnappyData version 1.3.0 
 snappy&gt; Using CONNECTION0
 snappy&gt; ENCRYPTED_PASSWORD                                                                                                              
 --------------------------------------------------------------------------------------------------------------------------------
@@ -2349,7 +2348,7 @@ Using CONNECTION1
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../launching_the_cluster_in_secure_mode/" style="color: #fcfcfc;">&laquo; Previous</a></span>

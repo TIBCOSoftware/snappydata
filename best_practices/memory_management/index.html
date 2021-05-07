@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Memory Management - SnappyData™ 1.2.0</title>
+  <title>Memory Management - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2203,7 +2203,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2217,7 +2217,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2230,16 +2230,16 @@
             <div class="section">
               
                 <h1 id="memory-management">Memory Management</h1>
-<div class="admonition attention">
-<p class="admonition-title">Attention</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>The following description and best practices are ONLY applicable to the data store cluster nodes that are the nodes that manage in-memory tables in SnappyData. When running in the <strong>connector</strong> mode, your Spark job runs in isolated JVMs and you will need to estimate its memory requirements.</p>
 </div>
 <p>You need to estimate and plan memory/disk for the following objects:</p>
 <ul>
-<li>In-memory row, column tables </li>
-<li>Execution memory for queries, jobs </li>
-<li>Shuffle disk space required by queries, jobs </li>
-<li>In-memory caching of Spark dataframes, temporary tables </li>
+<li>In-memory row, column tables. </li>
+<li>Execution memory for queries, jobs. </li>
+<li>Shuffle disk space required by queries, jobs. </li>
+<li>In-memory caching of Spark dataframes, temporary tables. </li>
 </ul>
 <p>Spark executors and SnappyData in-memory store share the same memory space. SnappyData extends the Spark's memory manager providing a unified space for spark storage, execution and SnappyData column and row tables. This Unified MemoryManager smartly keeps track of memory allocations across Spark execution and the Store, elastically expanding into the other if the room is available. Rather than a pre-allocation strategy where Spark memory is independent of the store, SnappyData uses a unified strategy where all allocations come from a common pool. Essentially, it optimizes the memory utilization to the extent possible.</p>
 <p>SnappyData also monitors the JVM memory pools and avoids running into out-of-memory conditions in most cases. You can configure the threshold for when data evicts to disk and the critical threshold for heap utilization. When the usage exceeds this critical threshold, memory allocations within SnappyData fail, and a LowMemoryException error is reported. This, however, safeguards the server from crashing due to OutOfMemoryException.</p>
@@ -2392,7 +2392,6 @@ Heap_Max_Storage_pool_Size =&gt; 17.4 * 0.85 = 14.7 ( 0.85 derived from eviction
 
 <p><a id="off-heap"></a></p>
 <h2 id="snappydata-off-heap-memory">SnappyData Off-Heap Memory</h2>
-<p><ent>This feature is available only in the Enterprise version of SnappyData. </br></ent></p>
 <p>In addition to heap memory, SnappyData can also be configured with off-heap memory. If configured, column table data, as well as many of the execution structures use off-heap memory. For a serious installation, the off-heap setting is recommended. However, several artifacts in the product need heap memory, so some minimum heap size is also required for this.</p>
 <table>
 <thead>
@@ -2477,7 +2476,7 @@ Max_Off_Heap_Storage_pool_Size =&gt; 16g * 0.9 = 14.4 ( 0.9 System default)
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../optimizing_query_latency/" style="color: #fcfcfc;">&laquo; Previous</a></span>

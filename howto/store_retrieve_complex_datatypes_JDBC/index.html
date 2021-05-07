@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>How to Store and Retrieve Complex Data Types in JDBC Programs - SnappyData™ 1.2.0</title>
+  <title>How to Store and Retrieve Complex Data Types in JDBC Programs - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2193,7 +2193,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2207,7 +2207,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2231,7 +2231,7 @@
 <p>Complex data types are supported only for column tables.</p>
 </div>
 <h2 id="code-example-storing-and-retrieving-array-data-in-a-jdbc-program">Code Example: Storing and Retrieving Array Data in a JDBC program</h2>
-<p>The following scala code snippets show how to perform insert and select operations on columns of complex data types. Complete source code for example is available at <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala">JDBCWithComplexTypes.scala</a> </p>
+<p>The following scala code snippets show how to perform insert and select operations on columns of complex data types. Complete source code for example is available at <a href="https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala">JDBCWithComplexTypes.scala</a> </p>
 <pre><code>// create a JDBC connection
 val url: String = s&quot;jdbc:snappydata://localhost:1527/&quot;
 val conn = DriverManager.getConnection(url)
@@ -2261,29 +2261,6 @@ pstmt.close()
 </ol>
 <h3 id="selecting-data">Selecting Data</h3>
 <pre><code>// Select array data as a JSON string
-
-var rs = stmt.executeQuery(s&quot;SELECT * FROM $tableName&quot;)
-while (rs.next()) {
- // read the column as a String
- val res1 = rs.getString(&quot;col2&quot;)
- println(s&quot;res1 = $res1&quot;)
- // Alternate way, read the same column as a Clob
- val res2 = rs.getClob(&quot;col2&quot;)
- println(s&quot;res2 = &quot; + res2.getSubString(1, res2.length.asInstanceOf[Int]))
-}
-
-// Reading array data as  BLOB and Bytes and then forming a Scala array
-val serializer = ComplexTypeSerializer.create(tableName, &quot;col2&quot;, conn)
-rs = stmt.executeQuery(s&quot;SELECT * FROM $tableName --+ complexTypeAsJson(0)&quot;)
-while (rs.next()) {
-  // Read the same column as a byte[] and then deserialize it into an Array
-  val res1 = serializer.deserialize(rs.getBytes(&quot;col2&quot;))
-  println(s&quot;res1 = $res1&quot;)
-  // alternate way, read the same column as a Blob an then deserialize it into an Array
-  val res2 = serializer.deserialize(rs.getBlob(&quot;col2&quot;))
-  println(s&quot;res2 = $res2&quot;)
-}
-
 
 var rs = stmt.executeQuery(s&quot;SELECT * FROM $tableName&quot;)
 while (rs.next()) {
@@ -2342,7 +2319,7 @@ while (rs.next()) {
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../using_snappydata_for_any_spark_dist/" style="color: #fcfcfc;">&laquo; Previous</a></span>

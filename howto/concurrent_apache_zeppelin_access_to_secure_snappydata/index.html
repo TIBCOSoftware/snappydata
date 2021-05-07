@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster - SnappyData™ 1.2.0</title>
+  <title>How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2197,7 +2197,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2211,7 +2211,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2307,20 +2307,20 @@ snappy&gt; GRANT UPDATE ON Table airline TO user4;
 </tr>
 <tr>
 <td>default.password</td>
-<td>user123</td>
+<td><password></td>
 <td>The JDBC user password</td>
 </tr>
 <tr>
 <td>default.user</td>
-<td>user1</td>
+<td><username></td>
 <td>The JDBC username</td>
 </tr>
 </tbody>
 </table>
 </li>
 <li>
-<p><strong>Dependency settings</strong></br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for SnappyData. The SnappyData Client (JDBC) JAR file (snappydata-jdbc-2.11_1.2.0.jar) is available on <a href="https://github.com/SnappyDataInc/snappydata/releases/latest">the release page</a>. </br>
-    The SnappyData Client (JDBC) JAR file (snappydata-jdbc_2.11-1.2.0.jar)can also be placed under <strong><ZEPPELIN_HOME>/interpreter/jdbc</strong> before starting Zeppelin instead of providing it in the dependency setting.</p>
+<p><strong>Dependency settings</strong></br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for SnappyData. The SnappyData Client (JDBC) JAR file (snappydata-jdbc-2.11_1.3.0.jar) is available on <a href="https://github.com/TIBCOSoftware/snappydata/releases/latest">the release page</a>. </br>
+    The SnappyData Client (JDBC) JAR file (snappydata-jdbc_2.11-1.3.0.jar)can also be placed under <strong><ZEPPELIN_HOME>/interpreter/jdbc</strong> before starting Zeppelin instead of providing it in the dependency setting.</p>
 </li>
 <li>
 <p>If required, edit other properties, and then click <strong>Save</strong> to apply your changes. </p>
@@ -2362,7 +2362,7 @@ snappy&gt; GRANT UPDATE ON Table airline TO user4;
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../use_apache_zeppelin_with_snappydata/" style="color: #fcfcfc;">&laquo; Previous</a></span>

@@ -8,7 +8,7 @@
   
   <meta name="author" content="SnappyData Team">
   
-  <title>Executing Spark Scala Code using SQL - SnappyData™ 1.2.0</title>
+  <title>Executing Spark Scala Code using SQL - SnappyData™ 1.3.0</title>
   
 
   <link rel="shortcut icon" href="../../favicon.ico">
@@ -52,7 +52,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData™ 1.2.0</a>
+        <a href="../.." class="icon icon-home"> SnappyData™ 1.3.0</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2199,7 +2199,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData™ 1.2.0</a>
+        <a href="../..">SnappyData™ 1.3.0</a>
       </nav>
 
       
@@ -2213,7 +2213,7 @@
 <!--    <li class="wy-breadcrumbs-aside">
       
         
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github"> Edit on GitHub</a>
         
       
     </li> !-->
@@ -2228,10 +2228,10 @@
                 <h1 id="executing-spark-scala-code-using-sql">Executing Spark Scala Code using SQL</h1>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>This is an experimental feature in the SnappyData 1.2.0 release.</p>
+<p>This is an experimental feature in the SnappyData 1.3.0 release.</p>
 </div>
-<p>Prior to the 1.2.0 release, any execution of a Spark scala program required the user to compile his Spark program, comply to specific callback API required by ComputeDB, package the classes into a JAR, and then submit the application using <strong>snappy-job</strong> tool. 
-While, this procedure may still be the right option for a production application, it is quite cumbersome for the developer or data scientist wanting to quickly run some Spark code within the ComputeDB store cluster and iterate. </p>
+<p>Prior to the 1.2.0 release, any execution of a Spark scala program required the user to compile his Spark program, comply to specific callback API required by SnappyData, package the classes into a JAR, and then submit the application using <strong>snappy-job</strong> tool. 
+While, this procedure may still be the right option for a production application, it is quite cumbersome for the developer or data scientist wanting to quickly run some Spark code within the SnappyData store cluster and iterate. </p>
 <p>With the introduction of the <a href="../../reference/sql_reference/exec-scala/"><strong>exec scala</strong> SQL command</a>, you can now get a JDBC or ODBC connection to the cluster and submit ad-hoc scala code for execution. The JDBC connection provides an ongoing session with the cluster so applications can maintain state and use/return this across multiple invocations.</p>
 <p>Beyond this developer productivity appeal, this feature also allows you to skip using the <a href="../../affinity_modes/connector_mode/"><strong>Smart Connector</strong></a> in several cases.
 Bespoke Spark applications using the smart connector are required to launch a client Spark application with its own executors and the store cluster is mostly providing parallel access to managed data. As the client is running queries this is additional capacity that you must budget. Moreover, the overall architecture is tough to understand. 
@@ -2365,7 +2365,7 @@ There are no issues if the closure has no dependency on any external variables.<
 <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/TIBCOSoftware/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../using_pyspark_shell/" style="color: #fcfcfc;">&laquo; Previous</a></span>
