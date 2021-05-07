@@ -1,6 +1,5 @@
 # Using the SnappyData Change Data Capture (CDC) Connector
 
-<ent>This feature is available only in the Enterprise version of SnappyData.</ent>
 
 As data keeps growing rapidly techniques like Change Data Capture (CDC) is crucial for handling and processing the data inflow.
 The CDC technology is used in a database to track changed data so that the identified changes can be used to keep target systems in sync with the changes made to the source systems.
@@ -153,7 +152,7 @@ The above trait contains a single method, which user needs to implement. A user 
       batchId: Long, df: Dataset[Row]): Unit
 ```
 
-The following examples illustrates how you can write into a [SnappyData table](http://snappydatainc.github.io/snappydata/programming_guide/building_snappydata_applications_using_spark_api/#building-snappydata-applications-using-spark-api):
+The following examples illustrates how you can write into a [SnappyData table](http://tibcosoftware.github.io/snappydata/programming_guide/building_snappydata_applications_using_spark_api/#building-snappydata-applications-using-spark-api):
 
 ```pre
 package io.snappydata.app;

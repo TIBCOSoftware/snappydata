@@ -1,6 +1,5 @@
 #  Transaction Performance
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
 
 SnappyData provides statistics for transaction commits, rollbacks, and failures You can monitor SnappyData transactions with VSD.
 

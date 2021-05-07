@@ -1,5 +1,5 @@
 # Unsupported Third-Party Modules 
-The following third-party modules are not supported by SnappyData 1.2.0 although it is shipped with the product:
+The following third-party modules are not supported by SnappyData 1.3.0 although it is shipped with the product:
 
 *	Spark RDD-based APIs:
 	*	**org.apache.spark.mllib**

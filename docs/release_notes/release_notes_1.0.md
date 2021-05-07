@@ -45,7 +45,7 @@ The SnappyData team is pleased to announce the availability of SnappyData Releas
 
 <heading2> Select bug fixes and performance related fixes</heading2>
 
-There have been numerous bug fixes done as part of this release. Some of these are included below. For a more comprehensive list, see [ReleaseNotes](https://github.com/SnappyDataInc/snappydata/blob/master/ReleaseNotes.txt).
+There have been numerous bug fixes done as part of this release. Some of these are included below. For a more comprehensive list, see [ReleaseNotes](https://github.com/TIBCOSoftware/snappydata/blob/master/ReleaseNotes.txt).
 
 | Issue | Description |
 |------|--------|

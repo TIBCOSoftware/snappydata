@@ -264,12 +264,12 @@ object SnappyUtilLauncher extends StoreCallback {
     // scalastyle:off println
     println()
     println("""Welcome to
-    ______                            __       ____  ____
-   / ____/___  ____ ___  ____  __  __/ /____  / __ \/ __ )
-  / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ / / / __  |
- / /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /_/ / /_/ /  version %s on Spark version %s
- \____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_____/_____/
-                     /_/""".format(version, SPARK_VERSION))
+    _____                               ____        __
+   / ___/____  ____ _____  ____  __  __/ __ \____ _/ /_____ _
+   \__ \/ __ \/ __ `/ __ \/ __ \/ / / / / / / __ `/ __/ __ `/
+  ___/ / / / / /_/ / /_/ / /_/ / /_/ / /_/ / /_/ / /_/ /_/ /  version %s on Spark version %s
+ /____/_/ /_/\__,_/ .___/ .___/\__, /_____/\__,_/\__/\__,_/
+                 /_/   /_/    /____/""".format(version, SPARK_VERSION))
     val welcomeMsg = "\nUsing Scala %s (%s, Java %s)".format(
       versionString, javaVmName, javaVersion)
     println(welcomeMsg)

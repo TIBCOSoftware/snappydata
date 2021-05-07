@@ -14,15 +14,16 @@ For more information on the capabilities of the Community Edition and Enterprise
 <heading2>Download SnappyData Community Edition</heading2>
 
 
-Download the [SnappyData 1.2.0 Community Edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
+Download the [SnappyData 1.3.0 Community Edition (Open Source)](https://github.com/TIBCOSoftware/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
 
-* [**SnappyData 1.2.0 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.2.0/snappydata-1.2.0-bin.tar.gz)
+* [**SnappyData 1.3.0 Release download link**](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.0/snappydata-1.3.0-bin.tar.gz)
 
 
+<!---
 <heading2>Download SnappyData Enterprise Edition</heading2> 
 
-
 You can download the Enterprise Edition from [TIBCO eDelivery website](https://edelivery.tibco.com).
+--->
 
 <a id= provisioningsnappy> </a>
 <heading2>SnappyData Provisioning Options</heading2>

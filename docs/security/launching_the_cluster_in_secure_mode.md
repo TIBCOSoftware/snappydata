@@ -1,6 +1,5 @@
 # Launching the Cluster in Secure Mode
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 SnappyData uses mutual authentication between the SnappyData locator and subsequent SnappyData members that boot and join the distributed system.
 

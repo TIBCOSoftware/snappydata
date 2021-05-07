@@ -27,7 +27,7 @@ The amount of disk space is about two times the memory space requirement.
 
 <a id="computeplan"></a>
 ### Estimating Computation Capacity
-TIBCO recommends to configure off-heap memory when using the Enterprise edition that is TIBCO ComputeDB. This option is not available in the community edition of SnappyData where all data must be managed in the JVM heap memory. Even if off-heap is configured, you must also configure enough JVM heap memory for Spark temporary caching, computations, and buffering when the data is loaded. 
+TIBCO recommends to configure off-heap memory. Even if off-heap is configured, you must also configure enough JVM heap memory for Spark temporary caching, computations, and buffering when the data is loaded. 
 
 !!!Note 
 	Only the columnar table data is managed in off-heap memory. Row tables are always in JVM heap.

@@ -1,11 +1,11 @@
 <a id="howto-sde"></a>
-# How to use Approximate Query Processing to Run Approximate Queries
+# How to use Approximate Query Processing (AQP) to Run Approximate Queries
 
 Approximate Query Processing (AQP) uses statistical sampling techniques and probabilistic data structures to answer analytic queries with sub-second latency. There is no need to store or process the entire dataset. The approach trades off query accuracy for fast response time.
 For more information on  AQP, refer to [AQP documentation](../aqp.md).
 
 **Code Example**:
-The complete code example for AQP is in [SynopsisDataExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala). The code below creates a sample table and executes queries that run on the sample table.
+The complete code example for AQP is in [SynopsisDataExample.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala). The code below creates a sample table and executes queries that run on the sample table.
 
 **Get a SnappySession**:
 ```pre

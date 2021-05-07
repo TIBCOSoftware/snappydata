@@ -29,7 +29,7 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 
@@ -37,7 +37,7 @@ To compile your job, use the Maven/SBT dependencies for the latest released vers
 
 ```pre
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.2.0"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.0"
 ```
 
 !!! Note
@@ -56,7 +56,7 @@ For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.
 **Running the Job**: 
 Once you create a jar file for SnappyData job, use the `./bin/snappy-job.sh` to submit the job in the SnappyData cluster, and then run the job. This is similar to `spark-submit` for any Spark application. 
 
-For example, to run the job implemented in [CreatePartitionedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala) you can use the following command. The command submits the job and runs it as:
+For example, to run the job implemented in [CreatePartitionedRowTable.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala) you can use the following command. The command submits the job and runs it as:
 
 ```pre
  # first change the directory to the SnappyData product directory

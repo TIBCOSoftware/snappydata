@@ -1,6 +1,5 @@
 # How to Connect TIBCO Spotfire® Desktop to TIBCO ComputeDB
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
 
 TIBCO Spotfire® Desktop allows users to easily author and update ad-hoc analytics, applications, and dashboards. 
 To connect TIBCO Spotfire® Desktop to TIBCO ComputeDB, setup and launch the TIBCO ComputeDB cluster. 

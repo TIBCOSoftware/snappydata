@@ -1,15 +1,15 @@
 # Memory Management
 
-!!! Attention
+!!! Note
 
 	The following description and best practices are ONLY applicable to the data store cluster nodes that are the nodes that manage in-memory tables in SnappyData. When running in the **connector** mode, your Spark job runs in isolated JVMs and you will need to estimate its memory requirements.
 
 You need to estimate and plan memory/disk for the following objects:
 
-- In-memory row, column tables 
-- Execution memory for queries, jobs 
-- Shuffle disk space required by queries, jobs 
-- In-memory caching of Spark dataframes, temporary tables 
+- In-memory row, column tables. 
+- Execution memory for queries, jobs. 
+- Shuffle disk space required by queries, jobs. 
+- In-memory caching of Spark dataframes, temporary tables. 
 
 Spark executors and SnappyData in-memory store share the same memory space. SnappyData extends the Spark's memory manager providing a unified space for spark storage, execution and SnappyData column and row tables. This Unified MemoryManager smartly keeps track of memory allocations across Spark execution and the Store, elastically expanding into the other if the room is available. Rather than a pre-allocation strategy where Spark memory is independent of the store, SnappyData uses a unified strategy where all allocations come from a common pool. Essentially, it optimizes the memory utilization to the extent possible.
 
@@ -115,7 +115,6 @@ Heap_Max_Storage_pool_Size => 17.4 * 0.85 = 14.7 ( 0.85 derived from eviction_he
 <a id="off-heap"></a>
 ## SnappyData Off-Heap Memory 
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 In addition to heap memory, SnappyData can also be configured with off-heap memory. If configured, column table data, as well as many of the execution structures use off-heap memory. For a serious installation, the off-heap setting is recommended. However, several artifacts in the product need heap memory, so some minimum heap size is also required for this.
 

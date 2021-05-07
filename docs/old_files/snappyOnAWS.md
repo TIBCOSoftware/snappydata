@@ -34,7 +34,7 @@ By default, the script starts one instance of locator, lead and server each. Bel
 
 **Specifying properties**
 
-If you want to configure each of the locator, lead or servers with specific properties, you can do so by specifying them in files named locators, leads or servers, respectively and placing these under product_dir/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](http://snappydatainc.github.io/snappydata/configuration/#configuration-files) for example on how to write these conf files.
+If you want to configure each of the locator, lead or servers with specific properties, you can do so by specifying them in files named locators, leads or servers, respectively and placing these under product_dir/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](http://tibcosoftware.github.io/snappydata/configuration/#configuration-files) for example on how to write these conf files.
 
 This is similar to how one would provide properties to snappydata cluster nodes while launching it via `sbin/snappy-start-all.sh` script.
 

@@ -66,5 +66,8 @@ Options:
 
            Timestamp format: YYYY-MM-DD HH:MM[:SS]
 
+Along with these options, if you want to filter unwanted lines from the logs, then you must specify **EGREP_INVERT_MATCH_PATTERNS** with a list of patterns in the **conf/debug.conf.template
+**. The lines that match those patterns will not be collected by the script.
+For example: `EGREP_INVERT_MATCH_PATTERNS='tid|gemfire'`
 
 For offline analysis, as the production logs can be pretty huge and not easily sharable, you can provide a list of patterns which can be excluded for collection. A list of patterns can be specified in the **conf** > **debug.conf** file. Before doing this, you must rename the **debug.conf.template** file to **debug.conf**. The lines matching those patterns will be ignored by the script and excluded for collection.

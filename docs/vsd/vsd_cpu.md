@@ -1,6 +1,5 @@
 # CPU Usage
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
 
 SnappyData provides host and JVM statistics for examining system load.
 

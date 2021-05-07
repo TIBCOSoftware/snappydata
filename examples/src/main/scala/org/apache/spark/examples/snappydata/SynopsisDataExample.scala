@@ -13,7 +13,7 @@ import org.apache.spark.sql.{SnappyJobInvalid, SnappyJobValid, SnappyJobValidati
  * An example that shows how to create sample tables in SnappyData
  * and execute approaximate queries using Synopsis Data Engine feature.
  *
- * Refer to http://snappydatainc.github.io/snappydata/aqp/ for more details on
+ * Refer to http://tibcosoftware.github.io/snappydata/aqp/ for more details on
  * Synopsis Data Engine
  *
  * <p></p>
@@ -89,7 +89,7 @@ object SynopsisDataExample extends SnappySQLJob {
     // stratification and attribute 'fraction' specifies how big the sample needs to be
     // (3% of the base table AIRLINE in this case).
     // For full details of various option related to Synopsis Data Engine
-    // refer to http://snappydatainc.github.io/snappydata/aqp/
+    // refer to http://tibcosoftware.github.io/snappydata/aqp/
     snSession.sql("CREATE SAMPLE TABLE AIRLINE_SAMPLE ON AIRLINE OPTIONS" +
         "(qcs 'UniqueCarrier, Year_, Month_', fraction '0.03')  " +
         "AS (SELECT Year_, Month_ , DayOfMonth, " +
@@ -118,7 +118,7 @@ object SynopsisDataExample extends SnappySQLJob {
     pw.println("Which airline had the most flights each year?")
     // the 'with error 0.20' clause in the query below signals query engine to execute the
     // query on the sample table instead of the base table and maximum 20% error is allowed,
-    // refer to http://snappydatainc.github.io/snappydata/aqp/#running-queries for more details
+    // refer to http://tibcosoftware.github.io/snappydata/aqp/#running-queries for more details
     var result = snSession.sql("select  count(*) flightRecCount, description AirlineName, " +
         "UniqueCarrier carrierCode ,Year_ from airline , airlineref where " +
         "airline.UniqueCarrier = airlineref.code group by " +

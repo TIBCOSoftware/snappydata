@@ -11,6 +11,7 @@ SELECT [DISTINCT] named_expression[, named_expression, ...]
     [SORT BY sort_expressions]
     [WINDOW named_window[, WINDOW named_window, ...]]
     [LIMIT num_rows]
+    [PIVOT_expressions]
 
 named_expression:
     : expression [AS alias]
@@ -26,7 +27,7 @@ sort_expressions:
     : expression [ASC|DESC][, expression [ASC|DESC], ...]
 ```
 
-For information on executing queries on Approximate Query Processing, refer to [AQP](/../../aqp.md).
+For information on executing queries on Approximate Query Processing (AQP), refer to [AQP](/../../aqp.md).
 ## Description
 
 Output data from one or more relations.
@@ -60,6 +61,39 @@ Assign an identifier to a window specification.
 `LIMIT`</br>
 Limit the number of rows returned.
 
+`PIVOT`</br>
+The support for PIVOT clause in SnappyData parser deviates from Spark 2.4 support in the following two aspects: 
+
+*	It only allows literals in the value **IN** list rather than named expressions. 
+*	On the contrary, SnappyData supports explicit GROUP BY columns with PIVOT instead of always doing implicit detection.
+
+Only SnappyData (and not Spark 2.4) supports the explicit GROUP BY clause in the following example. 
+
+      select * from (
+        select year(day) year, month(day) month, temp
+        from dayAvgTemp
+      )
+      PIVOT (
+        CAST(avg(temp) AS DECIMAL(5, 2))
+        FOR month IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+      )
+      GROUP BY year
+      ORDER BY year DESC
+
+
+The **IN** clause only supports constants and not aliases.
+
+
+          select * from (
+            select year(day) year, month(day) month, temp
+            from dayAvgTemp
+          )
+          PIVOT (
+            CAST(avg(temp) AS DECIMAL(5, 2))
+            FOR month IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+          )
+          GROUP BY year
+          ORDER BY year DESC
 
 ## Example
 

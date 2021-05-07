@@ -43,7 +43,7 @@ In the **Initial SQL** dialog box, type the following: </br>`set spark.sql.thrif
 <a id=odbcdritab></a>
 ## Connect Tableau using SnappyData ODBC Driver
 
-Get the latest version of SnappyData and SnappyData ODBC driver from [SnappyData Release page](https://github.com/SnappyDataInc/snappydata/releases). 
+Get the latest version of SnappyData and SnappyData ODBC driver from [SnappyData Release page](https://github.com/TIBCOSoftware/snappydata/releases). 
 
 Use the following instructions to connect Tableau using SnappyData ODBC driver:
 

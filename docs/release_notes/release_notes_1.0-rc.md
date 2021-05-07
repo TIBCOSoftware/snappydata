@@ -45,7 +45,7 @@ The SnappyData team is pleased to announce the availability of SnappyData versio
 * Several other performance improvements.
 
 ## Select bug fixes and performance related fixes
-Some of these are included below. For the complete list, see [ReleaseNotes.txt](https://github.com/SnappyDataInc/snappydata/blob/master/ReleaseNotes.txt).
+Some of these are included below. For the complete list, see [ReleaseNotes.txt](https://github.com/TIBCOSoftware/snappydata/blob/master/ReleaseNotes.txt).
 
 * Fixed data inconsistency issues when a new node is joining the cluster and at the same time write operations are going on. (SNAP-1756)
 

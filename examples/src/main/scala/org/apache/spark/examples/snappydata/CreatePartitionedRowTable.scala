@@ -96,7 +96,7 @@ object CreatePartitionedRowTable extends SnappySQLJob {
     // props1 map specifies the properties for the table to be created
     // "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY)
     // For complete list of table attributes refer the documentation
-    // http://snappydatainc.github.io/snappydata/programming_guide#tables-in-snappydata
+    // http://tibcosoftware.github.io/snappydata/programming_guide#tables-in-snappydata
     val props1 = Map("PARTITION_BY" -> "PS_PARTKEY")
     snSession.createTable("PARTSUPP", "row", schema, props1)
 
@@ -156,7 +156,7 @@ object CreatePartitionedRowTable extends SnappySQLJob {
     // Create the table using SQL command
     // "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
     // For complete list of table attributes refer the documentation
-    // http://snappydatainc.github.io/snappydata/programming_guide#tables-in-snappydata
+    // http://tibcosoftware.github.io/snappydata/programming_guide#tables-in-snappydata
     snSession.sql("CREATE TABLE PARTSUPP ( " +
         "PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY," +
         "PS_SUPPKEY     INTEGER NOT NULL," +

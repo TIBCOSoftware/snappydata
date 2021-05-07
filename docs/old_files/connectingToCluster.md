@@ -40,7 +40,7 @@ intensive Map-reduce machine learning algorithm that needs to iterate over a cac
 To support such scenarios it is also possible to run native Spark jobs that access a SnappyData cluster as a storage layer 
 in a parallel fashion. To connect to the SnappyData store spark.snappydata.connection property needs to be 
 provided while starting the spark-shell. To run all SnappyData functionalities you need to create 
-a [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession).
+a [SnappySession](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession).
 
 ```bash
 // from the SnappyData base directory  
@@ -82,7 +82,7 @@ Connection c = DriverManager.getConnection ("jdbc:snappydata://locatorHostName:1
 Spark applications access the SnappyStore using the new [Spark Data Source API](http://spark.apache.org/docs/latest/sql-programming-guide.html#jdbc-to-other-databases). 
 
 By default, SnappyData servers runs the Spark Executors colocated with the data store. And, the default store provider is SnappyData. 
-When the spark program connects to the cluster using a [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) (extends SQLContext), there is no need to configure the database URL and other options.  
+When the spark program connects to the cluster using a [SnappyContext](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) (extends SQLContext), there is no need to configure the database URL and other options.  
 
 ```scala
 // Here is an Scala example 

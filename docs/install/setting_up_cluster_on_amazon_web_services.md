@@ -158,7 +158,7 @@ The SnappyData EC2 scripts enable you to launch and manage SnappyData clusters q
 
 The `snappy-ec2` script is the entry point for these EC2 scripts and is derived from the `spark-ec2` script available in [Apache Spark 1.6](https://github.com/apache/spark/tree/branch-1.6/ec2).
 
-The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/aws/ec2) and also as a **.tar.gz** file on [the release page](https://github.com/SnappyDataInc/snappy-cloud-tools/releases) file.
+The scripts are available on GitHub in the [snappy-cloud-tools repository](https://github.com/TIBCOSoftware/snappy-cloud-tools/tree/master/aws/ec2) and also as a **.tar.gz** file on [the release page](https://github.com/TIBCOSoftware/snappy-cloud-tools/releases) file.
 
 !!! Note
 	The EC2 scripts are provided on an experimental basis. Feel free to try it out and provide your feedback as via GitHub issues.
@@ -192,7 +192,7 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
 ### Deploying SnappyData Cluster with EC2 Scripts
 
 In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the
-aws/ec2 directory where the [SnappyData cloud tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
+aws/ec2 directory where the [SnappyData cloud tools repository](https://github.com/TIBCOSoftware/snappy-cloud-tools) is cloned locally.
 
 **Syntax**
 
@@ -281,12 +281,12 @@ For example, to use **SnappyData Enterprise** build to launch the cluster, downl
 www.snappydata.io/download on your local machine and give its path as value to above option.
 
 ```pre
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="/home/ec2-user/snappydata/distributions/snappydata-1.2.0-bin.tar.gz" 
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="/home/ec2-user/snappydata/distributions/snappydata-1.3.0-bin.tar.gz" 
 ```
 
 Alternatively, you can also put your build file on a public web server and provide its URL to this option.
 ```pre
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="https://s3-us-east-2.amazonaws.com/mybucket/distributions/snappydata-1.2.0-bin.tar.gz" 
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="https://s3-us-east-2.amazonaws.com/mybucket/distributions/snappydata-1.3.0-bin.tar.gz" 
 ```
 
 The build file should be in **.tar.gz** format.
@@ -589,7 +589,7 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
 		* The public DNS/IP of the instance is available on the EC2 dashboard > **Instances** page. Select your EC2 instance and look for it in the lower half of the page.
 
-12. Download the required SnappyData distribution (.tar.gz) into the EC2 instance(s). You can find the latest SnappyData Community Edition (OSS) release [here](https://github.com/snappydatainc/snappydata/releases/latest).
+12. Download the required SnappyData distribution (.tar.gz) into the EC2 instance(s). You can find the latest SnappyData Community Edition (OSS) release [here](https://github.com/tibcosoftware/snappydata/releases/latest).
 
     * When we make the SnappyData AMI available on AWS in future, it will have the distribution pre-installed. In that case, you can jump to [step 4](#15step) below.
 

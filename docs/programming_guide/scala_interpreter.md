@@ -1,10 +1,10 @@
 # Executing Spark Scala Code using SQL  
 
 !!!Note
-	This is an experimental feature in the SnappyData 1.2.0 release.
+	This is an experimental feature in the SnappyData 1.3.0 release.
 
-Prior to the 1.2.0 release, any execution of a Spark scala program required the user to compile his Spark program, comply to specific callback API required by ComputeDB, package the classes into a JAR, and then submit the application using **snappy-job** tool. 
-While, this procedure may still be the right option for a production application, it is quite cumbersome for the developer or data scientist wanting to quickly run some Spark code within the ComputeDB store cluster and iterate. 
+Prior to the 1.2.0 release, any execution of a Spark scala program required the user to compile his Spark program, comply to specific callback API required by SnappyData, package the classes into a JAR, and then submit the application using **snappy-job** tool. 
+While, this procedure may still be the right option for a production application, it is quite cumbersome for the developer or data scientist wanting to quickly run some Spark code within the SnappyData store cluster and iterate. 
 
 With the introduction of the [**exec scala** SQL command](/reference/sql_reference/exec-scala.md), you can now get a JDBC or ODBC connection to the cluster and submit ad-hoc scala code for execution. The JDBC connection provides an ongoing session with the cluster so applications can maintain state and use/return this across multiple invocations.
 

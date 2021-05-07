@@ -38,7 +38,7 @@ apply plugin: 'distribution'
 apply plugin: 'nebula.ospackage-base'
 apply plugin: "nebula.ospackage"
 
-def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
+// def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
 
 allprojects {
   // We want to see all test results.  This is equivalent to setting --continue
@@ -73,7 +73,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.2.0-HF-1'
+  version = '1.3.0'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -100,16 +100,12 @@ allprojects {
   javadoc.options.charSet = 'UTF-8'
 
   ext {
-    if (isEnterpriseProduct) {
-      productName = 'TIBCO ComputeDB'
-    } else {
-      productName = 'SnappyData'
-    }
+    productName = 'SnappyData'
     vendorName = 'TIBCO Software Inc.'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.1.1'
-    snappySparkVersion = '2.1.1.8'
+    snappySparkVersion = '2.1.1.9'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop3.2"
     sparkCurrentVersion = '2.3.2'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop3.2"
@@ -158,7 +154,7 @@ allprojects {
     antlr2Version = '2.7.7'
 
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.5-HF-1'
+    snappyStoreVersion = '1.6.6'
     snappydataVersion = version
     pulseVersion = '1.5.1'
     zeppelinInterpreterVersion = '0.7.3.6'
@@ -180,7 +176,7 @@ allprojects {
     }
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
-    sparkJobServerVersion = '0.6.2.11'
+    sparkJobServerVersion = '0.6.2.12'
     eclipseCollectionsVersion = '9.2.0'
     fastutilVersion = '8.2.2'
     snappySparkMetricsLibVersion = '2.0.0.1'
@@ -233,15 +229,18 @@ allprojects {
 
 
 def hasAqpProject = new File(rootDir, 'aqp/build.gradle').exists()
-def aqpProject = isEnterpriseProduct ? project(":snappy-aqp_${scalaBinaryVersion}") : null
+def aqpProject = project(":snappy-aqp_${scalaBinaryVersion}")
 def hasJdbcConnectorProject = new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
 def hasGemFireConnectorProject = new File(rootDir, 'snappy-connectors/gemfire-connector/build.gradle').exists()
 
-if (isEnterpriseProduct) {
-  if (!hasJdbcConnectorProject || !hasGemFireConnectorProject) {
-    throw new GradleException('Project repository snappy-connectors not found.')
-  }
+if (!hasAqpProject) {
+  throw new GradleException('Project repository snappy-aqp not found under aqp/.')
 }
+
+if (!hasJdbcConnectorProject) {
+  throw new GradleException('Project JDBC Stream Connector inside repository snappy-connectors not found.')
+}
+
 
 def getProcessId() {
   String name = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
@@ -689,20 +688,16 @@ subprojects {
           }
 
           pom.project {
-            if (isEnterpriseProduct) {
-              name 'TIBCO ComputeDB'
-            } else {
-              name 'SnappyData'
-            }
+            name 'SnappyData'
             packaging 'jar'
             // optionally artifactId can be defined here
             description 'TIBCO ComputeDB distributed data store and execution engine'
             url 'http://www.snappydata.io'
 
             scm {
-              connection 'scm:git:https://github.com/SnappyDataInc/snappydata.git'
-              developerConnection 'scm:git:https://github.com/SnappyDataInc/snappydata.git'
-              url 'https://github.com/SnappyDataInc/snappydata'
+              connection 'scm:git:https://github.com/TIBCOSoftware/snappydata.git'
+              developerConnection 'scm:git:https://github.com/TIBCOSoftware/snappydata.git'
+              url 'https://github.com/TIBCOSoftware/snappydata'
             }
 
             licenses {
@@ -790,9 +785,7 @@ gradle.taskGraph.whenReady { graph ->
         } else if (test.name == 'dunitSecurityTest') {
           includes.clear()
           excludes.clear()
-          if (!rootProject.hasProperty('snappydata.enterprise')) {
-            excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/*DUnitTest.class', '**/*DUnit.class' ]
-          } else if (dunitSecSingle == null || dunitSecSingle.length() == 0) {
+          if (dunitSecSingle == null || dunitSecSingle.length() == 0) {
             def dunitSecurityTests = testClassesDirs.asFileTree.matching {
               includes = [ '**/*DUnitSecurityTest.class' ]
               excludes = [ '**/*Suite.class', '**/*DUnitTest.class', '**/*DUnit.class', '**/*DUnitRecoveryTest.class' ]
@@ -817,14 +810,13 @@ gradle.taskGraph.whenReady { graph ->
         } else if (test.name == 'recoveryTest') {
           includes.clear()
           excludes.clear()
-          if (!rootProject.hasProperty('snappydata.enterprise')) {
-            excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/*DUnitTest.class', '**/*DUnit.class' ]
-          } else if (recoverySingle == null || recoverySingle.length() == 0) {
+          if (recoverySingle == null || recoverySingle.length() == 0) {
             def recoveryTests = testClassesDirs.asFileTree.matching {
               includes = [ '**/*DUnitRecoveryTest.class' ]
               excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/*HDFS*DUnit*.class',
                            '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
-                           '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class', '**/*Suite.class', '**/*DUnitTest.class', '**/*DUnit.class' ]
+                           '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class',
+                           '**/pivotal/gemfirexd/wan/**/*DUnit.class', '**/*DUnitTest.class', '**/*DUnit.class' ]
             }
             FileTree includeTestFiles = recoveryTests
             include includeTestFiles.collect {f -> "**/" + f.name}
@@ -935,18 +927,11 @@ task product(type: Zip) {
   def launcherProject = project(':snappy-launcher')
   def targetProject = clusterProject
 
-  if (isEnterpriseProduct) {
-    if (hasAqpProject) {
-      dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
-      targetProject = aqpProject
-    }
-
-    if (hasJdbcConnectorProject){
-       dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"
-    }
-    if (hasGemFireConnectorProject){
-       dependsOn ":gemfire-connector:product"
-    }
+  dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
+  targetProject = aqpProject
+  dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"
+  if (hasGemFireConnectorProject) {
+    dependsOn ":gemfire-connector:product"
   }
 
 
@@ -1027,9 +1012,9 @@ task product(type: Zip) {
       from projectDir
       into snappyProductDir
       include 'LICENSE'
-      if (!isEnterpriseProduct) {
-        include 'NOTICE'
-      }
+      // if (!isEnterpriseProduct) {
+      include 'NOTICE'
+      // }
       include 'README.md'
     }
     copy {
@@ -1065,7 +1050,6 @@ task product(type: Zip) {
         exclude '.git*'
       }
     }
-    if (isEnterpriseProduct) {
       if (hasAqpProject) {
         // copy enterprise shared libraries for optimized JNI calls
         copy {
@@ -1081,21 +1065,16 @@ task product(type: Zip) {
       }
 
       def jdbcConnectorProject = project(":snappy-jdbc-connector_${scalaBinaryVersion}")
-      def gemfireConnectorProject = project(":gemfire-connector")
-      def gfeConnectorProject = project(":gemfire-connector:connector_${scalaBinaryVersion}")
-      def gfeFunctionProject = project(":gemfire-connector:gfeFunctions")
-      if (hasJdbcConnectorProject) {
-        copy {
-          from jdbcConnectorProject.jar.destinationDir
-          into "${snappyProductDir}/connectors"
-          include "*.jar"
-        }
-        copy {
-          from "${jdbcConnectorProject.projectDir}/../tdv-connector/lib"
-          into "${snappyProductDir}/jars"
-          include "csjdbc8.jar"
-        }
+      def gemfireConnectorProject = hasGemFireConnectorProject ? project(":gemfire-connector") : null
+      def gfeConnectorProject = hasGemFireConnectorProject ? project(":gemfire-connector:connector_${scalaBinaryVersion}") : null
+      def gfeFunctionProject = hasGemFireConnectorProject ? project(":gemfire-connector:gfeFunctions") : null
+
+      copy {
+        from jdbcConnectorProject.jar.destinationDir
+        into "${snappyProductDir}/connectors"
+        include "*.jar"
       }
+
       if (hasGemFireConnectorProject) {
         copy {
           from gfeConnectorProject.jar.destinationDir
@@ -1113,7 +1092,7 @@ task product(type: Zip) {
           include "persons.jar"
         }
       }
-    }
+
     copy {
       from "${examplesProject.buildDir}/libs"
       into "${snappyProductDir}/examples/jars"
@@ -1177,11 +1156,7 @@ if (rootProject.hasProperty('copyToDir')) {
 
 distributions {
   main {
-    if (isEnterpriseProduct) {
-      baseName = 'tib-compute'
-    } else {
-      baseName = 'snappydata'
-    }
+    baseName = 'snappydata'
     contents {
       from { snappyProductDir }
     }
@@ -1252,12 +1227,11 @@ buildDeb {
 }
 
 distTar {
-  // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.tar.gz'
-  if (isEnterpriseProduct) {
-    archiveName = 'TIB_compute' + devEdition + '_' + version + '_' + buildDateShort + osFamilyName + '.tar.gz'
-  } else {
+  // if (isEnterpriseProduct) {
+  //   archiveName = 'TIB_compute' + devEdition + '_' + version + '_' + buildDateShort + osFamilyName + '.tar.gz'
+  // } else {
     classifier 'bin'
-  }
+  // }
   dependsOn product
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
@@ -1270,12 +1244,7 @@ distTar {
 }
 
 distZip {
-  // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.zip'
-  if (isEnterpriseProduct) {
-    archiveName = 'TIB_compute' + devEdition + '_' + version + '_' + buildDateShort + osFamilyName + '.zip'
-  } else {
-    classifier 'bin'
-  }
+  classifier 'bin'
   dependsOn product
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
@@ -1305,9 +1274,6 @@ task jdbcJar {
   doLast {
     def jdbcProject = project(":snappy-jdbc_${scalaBinaryVersion}")
     String jdbcName = "snappydata-jdbc_${scalaBinaryVersion}-${version}.jar"
-    if (isEnterpriseProduct) {
-      jdbcName = "TIB_compute-jdbc-${scalaBinaryVersion}_${version}.jar"
-    }
     // copy the snappy-jdbc shadow jar into distributions
     copy {
       from jdbcProject.shadowJar.destinationDir
@@ -1325,9 +1291,6 @@ task copyShadowJars {
   doLast {
     def coreProject = project(":snappy-core_${scalaBinaryVersion}")
     String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
-    if (isEnterpriseProduct) {
-      coreName = "TIB_compute-core-${scalaBinaryVersion}_${version}.jar"
-    }
     copy {
       from coreProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"
@@ -1405,10 +1368,10 @@ task checkAll {
     dependsOn ":snappy-cluster_${scalaBinaryVersion}:check"
   }
   dependsOn ":snappy-examples_${scalaBinaryVersion}:check"
-  if (!rootProject.hasProperty('aqp.skip') && hasAqpProject && isEnterpriseProduct) {
+  if (!rootProject.hasProperty('aqp.skip')) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
-  if (!rootProject.hasProperty('connectors.skip') && hasGemFireConnectorProject && isEnterpriseProduct) {
+  if (!rootProject.hasProperty('connectors.skip') && hasGemFireConnectorProject) {
     dependsOn ":gemfire-connector:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {

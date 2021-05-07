@@ -17,9 +17,8 @@
 /**
  * This script demonstrate the performance difference between Spark and Snappydata.
  * To execute this script on spark you can use below command:
- * ./spark-shell --driver-memory 4g --master local[*] --packages "SnappyDataInc:snappydata:0.7
- * .2-s_2.11" -i Quickstart
- * .scala
+ * ./spark-shell --driver-memory 4g --master local[*] --packages "TIBCOSoftware:snappydata:1.3.0-s_2.11" \
+ * -i Quickstart.scala
  *
  * To execute this script on spark you can use same command as above without specifying packages
  * as follows:

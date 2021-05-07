@@ -48,14 +48,14 @@ col6 Struct<a: Int, b: String, c: Decimal(10,5)>
 ) USING column options(BUCKETS '8')" )
 ```
 
-To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala) for examples.
+To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCWithComplexTypes.scala) for examples.
 
 !!! Note 
 	Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.
 
 ### Spark API for Managing Tables
 
-**Get a reference to [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession):**
+**Get a reference to [SnappySession](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession):**
 
     val snappy: SnappySession = new SnappySession(spark.sparkContext)
 
@@ -102,7 +102,7 @@ TRUNCATE TABLE tablename1;
 ```
 
 ### API Extensions Provided in SnappyContext
-Several APIs have been added in [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL, these APIs can be used to manipulate tables.
+Several APIs have been added in [SnappySession](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL, these APIs can be used to manipulate tables.
 
 ```pre
 //  Applicable for both row and column tables

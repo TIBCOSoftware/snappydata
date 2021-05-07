@@ -22,7 +22,7 @@ def createPartitionedTableUsingSQL(snappy):
     # Create the table using SQL command
     # "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
     # For complete list of table attributes refer the documentation
-    # http://snappydatainc.github.io/snappydata/rowAndColumnTables/
+    # http://tibcosoftware.github.io/snappydata/rowAndColumnTables/
     snappy.sql("CREATE TABLE PARTSUPP ( " +
                   "PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY," +
                   "PS_SUPPKEY     INTEGER NOT NULL," +
@@ -66,7 +66,7 @@ def createPartitionedTableUsingAPI(snappy):
 
     # "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY)
     # For complete list of table attributes refer the documentation at
-    # http://snappydatainc.github.io/snappydata/rowAndColumnTables/
+    # http://tibcosoftware.github.io/snappydata/rowAndColumnTables/
     snappy.createTable('PARTSUPP', 'row', schema, False, PARTITION_BY = 'PS_PARTKEY')
 
     print

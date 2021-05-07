@@ -6,7 +6,7 @@ SnappyData comes with a Smart Connector that enables Spark applications to work 
 For more information on the various modes, refer to the [SnappyData Smart Connector](../affinity_modes/connector_mode.md) section of the documentation.
 
 ## Code Example
-The code example for this mode is in [SmartConnectorExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
+The code example for this mode is in [SmartConnectorExample.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
 
 **Configure a SnappySession**:</br>
 The code below shows how to initialize a SparkSession. Here the property `snappydata.connection` instructs the connector to acquire cluster connectivity, catalog metadata and register it locally in the Spark cluster. The values consists of *locator host* and *JDBC client port* on which the locator listens for connections (default 1527).
@@ -51,7 +51,7 @@ Start a SnappyData cluster and create a table.
 $ ./sbin/snappy-start-all.sh
 
 $ ./bin/snappy
-SnappyData version 1.2.0
+SnappyData version 1.3.0
 snappy>  connect client 'localhost:1527';
 Using CONNECTION0
 snappy> CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;
@@ -67,7 +67,7 @@ The Smart Connector Application can now connect to this SnappyData cluster. </br
 The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside the SnappyData cluster. </br>SnappyData package has to be specified along with the application jar to run the Smart Connector application.
 
 ```pre
-$ ./bin/spark-submit --master local[*] --conf snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample --packages SnappyDataInc:snappydata:1.2.0-s_2.11       $SNAPPY_HOME/examples/jars/quickstart.jar
+$ ./bin/spark-submit --master local[*] --conf snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample --packages TIBCOSoftware:snappydata:1.3.0-s_2.11       $SNAPPY_HOME/examples/jars/quickstart.jar
 ```
 
 ## Execute a Smart Connector Application
@@ -77,7 +77,7 @@ Start a SnappyData cluster and create a table inside it.
 $ ./sbin/snappy-start-all.sh
 
 $ ./bin/snappy
-SnappyData version 1.2.0
+SnappyData version 1.3.0
 snappy>  connect client 'localhost:1527';
 Using CONNECTION0
 snappy> CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;
@@ -91,5 +91,5 @@ exit;
 A Smart Connector Application can now connect to this SnappyData cluster. The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside SnappyData cluster. SnappyData package has to be specified along with the application jar to run the Smart Connector application. 
 
 ```pre
-$ ./bin/spark-submit --master local[*] --conf spark.snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample   --packages SnappyDataInc:snappydata:1.2.0-s_2.11 $SNAPPY_HOME/examples/jars/quickstart.jar
+$ ./bin/spark-submit --master local[*] --conf spark.snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample   --packages TIBCOSoftware:snappydata:1.3.0-s_2.11 $SNAPPY_HOME/examples/jars/quickstart.jar
 ```

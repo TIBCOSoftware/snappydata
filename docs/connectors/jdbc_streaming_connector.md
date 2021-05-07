@@ -25,7 +25,7 @@ SnappyData core and SnappyData jdbc streaming connector maven dependencies would
 <dependency>
   <groupId>io.snappydata</groupId>
   <artifactId>snappydata-core_2.11</artifactId>
-  <version>1.2.0</version>
+  <version>1.3.0</version>
   <scope>compile</scope>
 </dependency>    
 ```
@@ -104,4 +104,4 @@ return reader.writeStream()
 
 The above code needs to be in a jar though. 
 
-You can find the working code for a SnappyData Smart Connector Streaming application that sources data from a JDBC source [here](https://github.com/SnappyDataInc/snappy-poc/tree/jdbc-streaming). 
+You can find the working code for a SnappyData Smart Connector Streaming application that sources data from a JDBC source [here](https://github.com/TIBCOSoftware/snappy-poc/tree/jdbc-streaming). 

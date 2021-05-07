@@ -2,9 +2,7 @@
 
 ## Description
 
-Specifies whether load balancing is performed for the JDBC client connection. 
-
-With the default value ("true") clients are automatically connected to a less-loaded server if locators are used for member discovery. 
+Specifies whether load balancing is performed for the JDBC/ODBC client connection. With the default value ("true") clients are automatically connected to a less-loaded server if the locators are used for member discovery. 
 
 !!! Note 
 	- Load balancing is provided only for SnappyData distributed systems that use locators for member discovery.

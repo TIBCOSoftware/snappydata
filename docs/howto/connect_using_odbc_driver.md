@@ -1,7 +1,6 @@
 <a id="howto-odbc"></a>
 # How to Connect using ODBC Driver
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 You can connect to TIBCO ComputeDB Cluster using TIBCO ComputeDB ODBC Driver and can execute SQL queries by connecting to any of the servers in the cluster.
 

@@ -1,13 +1,13 @@
 [submodule "spark-jobserver"]
 	path = spark-jobserver
-	url = https://github.com/SnappyDataInc/spark-jobserver.git
+	url = https://github.com/TIBCOSoftware/snappy-spark-jobserver.git
 	branch = snappydata
 [submodule "snappy-store"]
 	path = store
-	url = https://github.com/SnappyDataInc/snappy-store.git
+	url = https://github.com/TIBCOSoftware/snappy-store.git
 	branch = snappy/master
 [submodule "spark"]
         path = spark
-        url = https://github.com/SnappyDataInc/spark.git
+        url = https://github.com/TIBCOSoftware/snappy-spark.git
         branch = snappy/branch-2.1 
 

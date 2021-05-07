@@ -1,6 +1,5 @@
 # User Names for Authentication, Authorization, and Membership <a id="user-names"></a>
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 ## User Names are Converted to Authorization Identifiers
 User names in the SnappyData system are known as authorization identifiers. The authorization identifier is a string that represents the name of the user if one was provided in the connection request. 

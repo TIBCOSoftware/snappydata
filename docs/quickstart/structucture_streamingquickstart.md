@@ -160,7 +160,7 @@ Assuming that your Kafka cluster is already setup and running, you can use the f
 
 ## Structured Streaming using Snappy Job
 
-Refer to [SnappyData Jobs]( https://snappydatainc.github.io/snappydata/programming_guide/snappydata_jobs/) for more information about Snappy Jobs.
+Refer to [SnappyData Jobs]( https://tibcosoftware.github.io/snappydata/programming_guide/snappydata_jobs/) for more information about Snappy Jobs.
 
 Following is a Snappy job code that contains similarly structured streaming query:
 
@@ -235,14 +235,14 @@ Use the following command to stop the running job:
 	The job-id used for stopping the job is picked from the job submission response.
 
 ## Examples
-For more examples, refer to [structured streaming examples](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming). The following examples are shown:
+For more examples, refer to [structured streaming examples](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming). The following examples are shown:
 
 | Example | Description |
 |--------|--------|
-|    [CDCExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CDCExample.scala)   |   An example explaining CDC (change data capture) use case with SnappyData streaming Sink. |
-|  [CSVFileSourceExampleWithSnappySink.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CSVFileSourceExampleWithSnappySink.scala)      |   An example of structured streaming depicting CSV file processing with Snappy Sink.    |
-|  [CSVKafkaSourceExampleWithSnappySink.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CSVKafkaSourceExampleWithSnappySink.scala)    | An example of structured streaming depicting processing of JSON coming from kafka source using snappy Sink.       |
-|   [JSONFileSourceExampleWithSnappySink.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/JSONFileSourceExampleWithSnappySink.scala)   |     An example of structured streaming depicting JSON file processing with Snappy Sink.   |
-|   [JSONKafkaSourceExampleWithSnappySink.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/JSONKafkaSourceExampleWithSnappySink.scala)     |  An example of structured streaming depicting processing of JSON coming from Kafka source using Snappy Sink      |
-|    [SocketSourceExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExample.scala)    |    An example showing usage of structured streaming with console Sink.   |
-|      [SocketSourceExampleWithSnappySink.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala)  |   An example showing usage of structured streaming with SnappyData.    |
+|    [CDCExample.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CDCExample.scala)   |   An example explaining CDC (change data capture) use case with SnappyData streaming Sink. |
+|  [CSVFileSourceExampleWithSnappySink.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CSVFileSourceExampleWithSnappySink.scala)      |   An example of structured streaming depicting CSV file processing with Snappy Sink.    |
+|  [CSVKafkaSourceExampleWithSnappySink.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CSVKafkaSourceExampleWithSnappySink.scala)    | An example of structured streaming depicting processing of JSON coming from kafka source using snappy Sink.       |
+|   [JSONFileSourceExampleWithSnappySink.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/JSONFileSourceExampleWithSnappySink.scala)   |     An example of structured streaming depicting JSON file processing with Snappy Sink.   |
+|   [JSONKafkaSourceExampleWithSnappySink.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/JSONKafkaSourceExampleWithSnappySink.scala)     |  An example of structured streaming depicting processing of JSON coming from Kafka source using Snappy Sink      |
+|    [SocketSourceExample.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExample.scala)    |    An example showing usage of structured streaming with console Sink.   |
+|      [SocketSourceExampleWithSnappySink.scala](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala)  |   An example showing usage of structured streaming with SnappyData.    |
