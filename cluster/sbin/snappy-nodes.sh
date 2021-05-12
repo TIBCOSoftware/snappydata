@@ -200,9 +200,14 @@ function execute() {
     preCommand="${preCommand}export SPARK_LOCAL_IP=$bindAddress; "
 
     # set the default client-bind-address and locator's peer-discovery-address
-    if [ -z "${clientBindAddress}" -a "${componentType}" != "lead" ]; then
-      preCommand="${preCommand}export IMPLICIT_CLIENT_BIND_ADDRESS=$host; "
-      export IMPLICIT_CLIENT_BIND_ADDRESS="${host}"
+    if [ "${componentType}" != "lead" ]; then
+      if [ -z "${clientBindAddress}" ]; then
+        preCommand="${preCommand}export IMPLICIT_CLIENT_BIND_ADDRESS=$host; "
+        export IMPLICIT_CLIENT_BIND_ADDRESS="${host}"
+      else
+        preCommand="${preCommand}export EXPLICIT_CLIENT_BIND_ADDRESS=$clientBindAddress; "
+        export EXPLICIT_CLIENT_BIND_ADDRESS="${clientBindAddress}"
+      fi
     fi
     if [ -z "$(echo $args $"${@// /\\ }" | grep 'peer-discovery-address=')" -a "${componentType}" = "locator" ]; then
       args="${args} -peer-discovery-address=${host}"
