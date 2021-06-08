@@ -392,6 +392,7 @@ subprojects {
     reports.html.destination = file("${workingDir}/html/${project.name}")
     reports.junitXml.destination = file(workingDir)
   }
+
   test {
     maxParallelForks = Runtime.getRuntime().availableProcessors()
     maxHeapSize '2g'
@@ -425,10 +426,54 @@ subprojects {
       progress << "${eol}${now} ========== STARTING JUNIT TEST SUITE FOR ${project.name} ==========${eol}${eol}"
     }
   }
+
+  task configureDUnitTest(dependsOn: testClasses) {
+    String dunitSingle = System.getProperty('dunit.single')
+    if (dunitSingle == null || dunitSingle.length() == 0) {
+      dunitSingle = rootProject.hasProperty('dunit.single') ?
+          rootProject.property('dunit.single') : null
+    }
+    doLast {
+      tasks.named('dunitTest').configure {
+        includes.clear()
+        excludes.clear()
+        if (dunitSingle == null || dunitSingle.length() == 0) {
+          def dunitTests = testClassesDirs.asFileTree.matching {
+            includes = [ '**/*DUnitTest.class', '**/*DUnit.class' ]
+            excludes = [
+                '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/*HDFS*DUnit*.class',
+                '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
+                '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class',
+                '**/pivotal/gemfirexd/wan/**/*DUnit.class', '**/*DUnitRecoveryTest.class'
+            ]
+          }
+          FileTree includeTestFiles = dunitTests
+          int dunitFrom = rootProject.hasProperty('dunit.from') ?
+              getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
+          int dunitTo = rootProject.hasProperty('dunit.to') ?
+              getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
+
+          int begin = dunitFrom != -1 ? dunitFrom : 0
+          int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
+          def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+          if (begin != 0 || end != includeTestFiles.size()) {
+            println("Picking DUNIT tests for ${project.path}")
+            filteredSet.each { a -> println(a) }
+          }
+          include filteredSet
+        } else {
+          include dunitSingle
+        }
+      }
+    }
+  }
+
   task dunitTest(type: Test) {
     dependsOn ':cleanDUnit'
     dependsOn ':product'
     dependsOn ':copyShadowJars'
+    dependsOn configureDUnitTest
+
     maxParallelForks = 1
     minHeapSize '1536m'
     maxHeapSize '1536m'
@@ -480,10 +525,40 @@ subprojects {
     }
   }
 
+  task configureRecoveryTest(dependsOn: testClasses) {
+    String recoverySingle = System.getProperty('recovery.single')
+    if (recoverySingle == null || recoverySingle.length() == 0) {
+      recoverySingle = rootProject.hasProperty('recovery.single') ?
+          rootProject.property('recovery.single') : null
+    }
+    doLast {
+      tasks.named('recoveryTest').configure {
+        includes.clear()
+        excludes.clear()
+        if (recoverySingle == null || recoverySingle.length() == 0) {
+          def recoveryTests = testClassesDirs.asFileTree.matching {
+            includes = [ '**/*DUnitRecoveryTest.class' ]
+            excludes = [
+                '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/*HDFS*DUnit*.class',
+                '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
+                '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class',
+                '**/pivotal/gemfirexd/wan/**/*DUnit.class', '**/*DUnitTest.class', '**/*DUnit.class'
+            ]
+          }
+          FileTree includeTestFiles = recoveryTests
+          include includeTestFiles.collect {f -> "**/" + f.name}
+        } else {
+          include recoverySingle
+        }
+      }
+    }
+  }
+
   task recoveryTest(type: Test) {
     dependsOn ':cleanRecoveryTest'
     dependsOn ':product'
     dependsOn ':copyShadowJars'
+    dependsOn configureRecoveryTest
 
     maxParallelForks = 1
     minHeapSize '4g'
@@ -536,10 +611,48 @@ subprojects {
     }
   }
 
+  task configureDUnitSecurityTest(dependsOn: testClasses) {
+    String dunitSecSingle = System.getProperty('dunitSecurity.single')
+    if (dunitSecSingle == null || dunitSecSingle.length() == 0) {
+      dunitSecSingle = rootProject.hasProperty('dunitSecurity.single') ?
+          rootProject.property('dunitSecurity.single') : null
+    }
+    doLast {
+      tasks.named('dunitSecurityTest').configure {
+        includes.clear()
+        excludes.clear()
+        if (dunitSecSingle == null || dunitSecSingle.length() == 0) {
+          def dunitSecurityTests = testClassesDirs.asFileTree.matching {
+            includes = [ '**/*DUnitSecurityTest.class' ]
+            excludes = [ '**/*Suite.class', '**/*DUnitTest.class', '**/*DUnit.class', '**/*DUnitRecoveryTest.class' ]
+          }
+          FileTree includeTestFiles = dunitSecurityTests
+          int dunitFrom = rootProject.hasProperty('dunitSecurity.from') ?
+              getLast(includeTestFiles, rootProject.property('dunitSecurity.from')) : 0
+          int dunitTo = rootProject.hasProperty('dunitSecurity.to') ?
+              getLast(includeTestFiles, rootProject.property('dunitSecurity.to')) : includeTestFiles.size()
+
+          int begin = dunitFrom != -1 ? dunitFrom : 0
+          int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
+          def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+          if (begin != 0 || end != includeTestFiles.size()) {
+            println("Picking SECURITY tests for ${project.path}")
+            filteredSet.each { a -> println(a) }
+          }
+          include filteredSet
+        } else {
+          include dunitSecSingle
+        }
+      }
+    }
+  }
+
   task dunitSecurityTest(type: Test) {
     dependsOn ':cleanSecurityDUnit'
     dependsOn ':product'
     dependsOn ':copyShadowJars'
+    dependsOn configureDUnitSecurityTest
+
     maxParallelForks = 1
     minHeapSize '1536m'
     maxHeapSize '1536m'
@@ -720,21 +833,6 @@ subprojects {
 // apply common test and misc configuration
 gradle.taskGraph.whenReady { graph ->
 
-  String dunitSingle = System.getProperty('dunit.single')
-  if (dunitSingle == null || dunitSingle.length() == 0) {
-    dunitSingle = rootProject.hasProperty('dunit.single') ?
-        rootProject.property('dunit.single') : null
-  }
-  String dunitSecSingle = System.getProperty('dunitSecurity.single')
-  if (dunitSecSingle == null || dunitSecSingle.length() == 0) {
-    dunitSecSingle = rootProject.hasProperty('dunitSecurity.single') ?
-        rootProject.property('dunitSecurity.single') : null
-  }
-  String recoverySingle = System.getProperty('recovery.single')
-  if (recoverySingle == null || recoverySingle.length() == 0) {
-    recoverySingle = rootProject.hasProperty('recovery.single') ?
-        rootProject.property('recovery.single') : null
-  }
   def allTasks = subprojects.collect { it.tasks }.flatten()
   allTasks.each { task ->
     if (task instanceof Tar) {
@@ -749,77 +847,6 @@ gradle.taskGraph.whenReady { graph ->
     } else if (task instanceof Test) {
       def test = (Test)task
       test.configure {
-
-        if (test.name == 'dunitTest') {
-          includes.clear()
-          excludes.clear()
-          if (dunitSingle == null || dunitSingle.length() == 0) {
-            def dunitTests = testClassesDirs.asFileTree.matching {
-              includes = [ '**/*DUnitTest.class', '**/*DUnit.class' ]
-              excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/*HDFS*DUnit*.class',
-                  '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
-                  '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class',
-                           '**/pivotal/gemfirexd/wan/**/*DUnit.class', '**/*DUnitRecoveryTest.class' ]
-            }
-            FileTree includeTestFiles = dunitTests
-            int dunitFrom = rootProject.hasProperty('dunit.from') ?
-                getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
-            int dunitTo = rootProject.hasProperty('dunit.to') ?
-                getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
-
-            int begin = dunitFrom != -1 ? dunitFrom : 0
-            int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
-            def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
-            if (begin != 0 || end != includeTestFiles.size()) {
-              println("Picking tests :")
-              filteredSet.each { a -> println(a) }
-            }
-            include filteredSet
-          } else {
-            include dunitSingle
-          }
-        } else if (test.name == 'dunitSecurityTest') {
-          includes.clear()
-          excludes.clear()
-          if (dunitSecSingle == null || dunitSecSingle.length() == 0) {
-            def dunitSecurityTests = testClassesDirs.asFileTree.matching {
-              includes = [ '**/*DUnitSecurityTest.class' ]
-              excludes = [ '**/*Suite.class', '**/*DUnitTest.class', '**/*DUnit.class', '**/*DUnitRecoveryTest.class' ]
-            }
-            FileTree includeTestFiles = dunitSecurityTests
-            int dunitFrom = rootProject.hasProperty('dunitSecurity.from') ?
-                getLast(includeTestFiles, rootProject.property('dunitSecurity.from')) : 0
-            int dunitTo = rootProject.hasProperty('dunitSecurity.to') ?
-                getLast(includeTestFiles, rootProject.property('dunitSecurity.to')) : includeTestFiles.size()
-
-            int begin = dunitFrom != -1 ? dunitFrom : 0
-            int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
-            def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
-            if (begin != 0 || end != includeTestFiles.size()) {
-              println("Picking tests :")
-              filteredSet.each { a -> println(a) }
-            }
-            include filteredSet
-          } else {
-            include dunitSecSingle
-          }
-        } else if (test.name == 'recoveryTest') {
-          includes.clear()
-          excludes.clear()
-          if (recoverySingle == null || recoverySingle.length() == 0) {
-            def recoveryTests = testClassesDirs.asFileTree.matching {
-              includes = [ '**/*DUnitRecoveryTest.class' ]
-              excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/*HDFS*DUnit*.class',
-                           '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
-                           '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class',
-                           '**/pivotal/gemfirexd/wan/**/*DUnit.class', '**/*DUnitTest.class', '**/*DUnit.class' ]
-            }
-            FileTree includeTestFiles = recoveryTests
-            include includeTestFiles.collect {f -> "**/" + f.name}
-          } else {
-            include recoverySingle
-          }
-        }
 
         String logLevel = System.getProperty('logLevel')
         if (logLevel != null && logLevel.length() > 0) {
