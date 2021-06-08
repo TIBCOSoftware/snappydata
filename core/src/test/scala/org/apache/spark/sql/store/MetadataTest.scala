@@ -624,7 +624,7 @@ object MetadataTest extends Assertions {
     executeSQL("insert into columnTable2 select id, 'data_' || id, id + 1.1 from range(1000)")
     if (jdbcStmt != null) {
       var numResults = 0
-      var resultSet = jdbcStmt.executeQuery("select * from rowTable1")
+      var resultSet = jdbcStmt.executeQuery("select * from rowTable1 order by id")
       while (resultSet.next()) {
         val expectedData = "data_" + numResults
         assert(resultSet.getInt(1) === numResults)
@@ -636,19 +636,19 @@ object MetadataTest extends Assertions {
         assert(resultSet.getInt("rowTable1.Id") === numResults)
 
         assert(resultSet.getString(2) === expectedData)
-        assert(resultSet.getInt("data") === expectedData)
-        assert(resultSet.getInt("DATA") === expectedData)
-        assert(resultSet.getInt("Data") === expectedData)
-        assert(resultSet.getInt("rowtable1.data") === expectedData)
-        assert(resultSet.getInt("ROWTABLE1.DATA") === expectedData)
-        assert(resultSet.getInt("rowTable1.Data") === expectedData)
+        assert(resultSet.getString("data") === expectedData)
+        assert(resultSet.getString("DATA") === expectedData)
+        assert(resultSet.getString("Data") === expectedData)
+        assert(resultSet.getString("rowtable1.data") === expectedData)
+        assert(resultSet.getString("ROWTABLE1.DATA") === expectedData)
+        assert(resultSet.getString("rowTable1.Data") === expectedData)
 
         numResults += 1
       }
       assert(numResults === 1000)
 
       numResults = 0
-      resultSet = jdbcStmt.executeQuery("select * from columnTable2")
+      resultSet = jdbcStmt.executeQuery("select * from columnTable2 order by id")
       while (resultSet.next()) {
         assert(resultSet.getInt(1) === numResults)
         assert(resultSet.getInt("id") === numResults)
@@ -660,14 +660,15 @@ object MetadataTest extends Assertions {
 
         val expectedData = "data_" + numResults
         assert(resultSet.getString(2) === expectedData)
-        assert(resultSet.getInt("data") === expectedData)
-        assert(resultSet.getInt("DATA") === expectedData)
-        assert(resultSet.getInt("Data") === expectedData)
-        assert(resultSet.getInt("columntable2.data") === expectedData)
-        assert(resultSet.getInt("COLUMNTABLE2.DATA") === expectedData)
-        assert(resultSet.getInt("columnTable2.Data") === expectedData)
+        assert(resultSet.getString("data") === expectedData)
+        assert(resultSet.getString("DATA") === expectedData)
+        assert(resultSet.getString("Data") === expectedData)
+        assert(resultSet.getString("columntable2.data") === expectedData)
+        assert(resultSet.getString("COLUMNTABLE2.DATA") === expectedData)
+        assert(resultSet.getString("columnTable2.Data") === expectedData)
 
-        val expectedData2 = new java.math.BigDecimal(numResults + 1.1)
+        val expectedData2 = new java.math.BigDecimal(numResults).add(
+          new java.math.BigDecimal("1.1")).setScale(18)
         assert(resultSet.getBigDecimal(3) === expectedData2)
         assert(resultSet.getBigDecimal("data2") === expectedData2)
         assert(resultSet.getBigDecimal("DATA2") === expectedData2)
