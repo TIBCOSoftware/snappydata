@@ -43,7 +43,7 @@ class MetadataTest extends SnappyFunSuite {
   test("DESCRIBE, SHOW and EXPLAIN") {
     val session = this.snc.snappySession
     val planCaching = io.snappydata.Property.PlanCaching.get(session.sessionState.conf)
-    MetadataTest.testDescribeShowAndExplain(session.sql, usingJDBC = false, planCaching)
+    MetadataTest.testDescribeShowAndExplain(session.sql, jdbcStmt = null, planCaching)
   }
 
   test("DSID joins with SYS tables") {
@@ -367,7 +367,7 @@ object MetadataTest extends Assertions {
   }
 
   def testDescribeShowAndExplain(executeSQL: String => Dataset[Row],
-      usingJDBC: Boolean, planCachingEnabled: Boolean): Unit = {
+      jdbcStmt: java.sql.Statement, planCachingEnabled: Boolean): Unit = {
     var ds: Dataset[Row] = null
     var expectedColumns: List[String] = null
     var rs: Array[Row] = null
@@ -618,6 +618,72 @@ object MetadataTest extends Assertions {
     rs = executeSQL("show tblproperties columnTable2").collect()
     checkTableProperties(rs, isRowTable = false)
 
+    // ----- check ResultSet metadata is case-insensitive (GITHUB #1559) -----
+
+    executeSQL("insert into rowTable1 select id, 'data_' || id from range(1000)")
+    executeSQL("insert into columnTable2 select id, 'data_' || id, id + 1.1 from range(1000)")
+    if (jdbcStmt != null) {
+      var numResults = 0
+      var resultSet = jdbcStmt.executeQuery("select * from rowTable1 order by id")
+      while (resultSet.next()) {
+        val expectedData = "data_" + numResults
+        assert(resultSet.getInt(1) === numResults)
+        assert(resultSet.getInt("id") === numResults)
+        assert(resultSet.getInt("ID") === numResults)
+        assert(resultSet.getInt("Id") === numResults)
+        assert(resultSet.getInt("rowtable1.id") === numResults)
+        assert(resultSet.getInt("ROWTABLE1.ID") === numResults)
+        assert(resultSet.getInt("rowTable1.Id") === numResults)
+
+        assert(resultSet.getString(2) === expectedData)
+        assert(resultSet.getString("data") === expectedData)
+        assert(resultSet.getString("DATA") === expectedData)
+        assert(resultSet.getString("Data") === expectedData)
+        assert(resultSet.getString("rowtable1.data") === expectedData)
+        assert(resultSet.getString("ROWTABLE1.DATA") === expectedData)
+        assert(resultSet.getString("rowTable1.Data") === expectedData)
+
+        numResults += 1
+      }
+      assert(numResults === 1000)
+
+      numResults = 0
+      resultSet = jdbcStmt.executeQuery("select * from columnTable2 order by id")
+      while (resultSet.next()) {
+        assert(resultSet.getInt(1) === numResults)
+        assert(resultSet.getInt("id") === numResults)
+        assert(resultSet.getInt("ID") === numResults)
+        assert(resultSet.getInt("Id") === numResults)
+        assert(resultSet.getInt("columntable2.id") === numResults)
+        assert(resultSet.getInt("COLUMNTABLE2.ID") === numResults)
+        assert(resultSet.getInt("columnTable2.Id") === numResults)
+
+        val expectedData = "data_" + numResults
+        assert(resultSet.getString(2) === expectedData)
+        assert(resultSet.getString("data") === expectedData)
+        assert(resultSet.getString("DATA") === expectedData)
+        assert(resultSet.getString("Data") === expectedData)
+        assert(resultSet.getString("columntable2.data") === expectedData)
+        assert(resultSet.getString("COLUMNTABLE2.DATA") === expectedData)
+        assert(resultSet.getString("columnTable2.Data") === expectedData)
+
+        val expectedData2 = new java.math.BigDecimal(numResults).add(
+          new java.math.BigDecimal("1.1")).setScale(18)
+        assert(resultSet.getBigDecimal(3) === expectedData2)
+        assert(resultSet.getBigDecimal("data2") === expectedData2)
+        assert(resultSet.getBigDecimal("DATA2") === expectedData2)
+        assert(resultSet.getBigDecimal("Data2") === expectedData2)
+        assert(resultSet.getBigDecimal("columnTable2.data2") === expectedData2)
+        assert(resultSet.getBigDecimal("COLUMNTABLE2.DATA2") === expectedData2)
+        assert(resultSet.getBigDecimal("columntable2.Data2") === expectedData2)
+
+        numResults += 1
+      }
+      assert(numResults === 1000)
+    }
+    executeSQL("delete from rowTable1")
+    executeSQL("delete from columnTable2")
+
     // ----- check EXPLAIN for row tables -----
 
     var plan: String = null
@@ -627,7 +693,7 @@ object MetadataTest extends Assertions {
     plan = rs(0).getString(0)
     // check schema of the returned Dataset which should be a single string column
     // for JDBC it should be a CLOB column
-    if (usingJDBC) {
+    if (jdbcStmt != null) {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
@@ -641,7 +707,7 @@ object MetadataTest extends Assertions {
     rs = ds.collect()
     assert(rs.length === 1)
     plan = rs(0).getString(0)
-    if (usingJDBC) {
+    if (jdbcStmt != null) {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
@@ -649,7 +715,7 @@ object MetadataTest extends Assertions {
     }
 
     def literalString(value: String): String = {
-      if (planCachingEnabled || usingJDBC) {
+      if (planCachingEnabled || jdbcStmt != null) {
         s"ParamLiteral:0,[0-9#]*,$value"
       } else {
         value
@@ -667,7 +733,7 @@ object MetadataTest extends Assertions {
     rs = ds.collect()
     assert(rs.length === 1)
     plan = rs(0).getString(0)
-    if (usingJDBC) {
+    if (jdbcStmt != null) {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = false,
         getMetadata("plan", 0, "CLOB")))))
       assert(plan.contains("stmt_id"))
@@ -684,7 +750,7 @@ object MetadataTest extends Assertions {
     rs = ds.collect()
     assert(rs.length === 1)
     plan = rs(0).getString(0)
-    if (usingJDBC) {
+    if (jdbcStmt != null) {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
@@ -704,7 +770,7 @@ object MetadataTest extends Assertions {
     rs = ds.collect()
     assert(rs.length === 1)
     plan = rs(0).getString(0)
-    if (usingJDBC) {
+    if (jdbcStmt != null) {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
@@ -719,7 +785,7 @@ object MetadataTest extends Assertions {
     rs = ds.collect()
     assert(rs.length === 1)
     plan = rs(0).getString(0)
-    if (usingJDBC) {
+    if (jdbcStmt != null) {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
@@ -739,7 +805,7 @@ object MetadataTest extends Assertions {
     rs = ds.collect()
     assert(rs.length === 1)
     plan = rs(0).getString(0)
-    if (usingJDBC) {
+    if (jdbcStmt != null) {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
@@ -817,7 +883,7 @@ object MetadataTest extends Assertions {
     plan = rs(0).getString(0)
     // check schema of the returned Dataset which should be a single string column
     // for JDBC it should be a CLOB column
-    if (usingJDBC) {
+    if (jdbcStmt != null) {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
@@ -831,7 +897,7 @@ object MetadataTest extends Assertions {
     rs = ds.collect()
     assert(rs.length === 1)
     plan = rs(0).getString(0)
-    if (usingJDBC) {
+    if (jdbcStmt != null) {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
@@ -848,7 +914,7 @@ object MetadataTest extends Assertions {
     rs = ds.collect()
     assert(rs.length === 1)
     plan = rs(0).getString(0)
-    if (usingJDBC) {
+    if (jdbcStmt != null) {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = false,
         getMetadata("plan", 0, "CLOB")))))
       assert(plan.contains("stmt_id"))
@@ -869,7 +935,7 @@ object MetadataTest extends Assertions {
     rs = ds.collect()
     assert(rs.length === 1)
     plan = rs(0).getString(0)
-    if (usingJDBC) {
+    if (jdbcStmt != null) {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {
@@ -883,7 +949,7 @@ object MetadataTest extends Assertions {
     rs = ds.collect()
     assert(rs.length === 1)
     plan = rs(0).getString(0)
-    if (usingJDBC) {
+    if (jdbcStmt != null) {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true,
         getMetadata("plan", 0, "CLOB")))))
     } else {

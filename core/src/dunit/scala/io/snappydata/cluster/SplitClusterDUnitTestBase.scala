@@ -318,7 +318,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     MetadataTest.testSYSTablesAndVTIs(session.sql,
       hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
     val planCaching = PlanCaching.get(session.sessionState.conf)
-    MetadataTest.testDescribeShowAndExplain(session.sql, usingJDBC = false, planCaching)
+    MetadataTest.testDescribeShowAndExplain(session.sql, jdbcStmt = null, planCaching)
     MetadataTest.testDSIDWithSYSTables(session.sql,
       netServers, locatorId, locatorNetServer, servers, leadId)
     // next test metadata using JDBC connection
@@ -326,7 +326,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     MetadataTest.testSYSTablesAndVTIs(SnappyFunSuite.resultSetToDataset(session, stmt),
       hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
     MetadataTest.testDescribeShowAndExplain(SnappyFunSuite.resultSetToDataset(session, stmt),
-      usingJDBC = true , planCaching)
+      stmt, planCaching)
     MetadataTest.testDSIDWithSYSTables(SnappyFunSuite.resultSetToDataset(session, stmt),
       netServers, locatorId, locatorNetServer, servers, leadId)
 
