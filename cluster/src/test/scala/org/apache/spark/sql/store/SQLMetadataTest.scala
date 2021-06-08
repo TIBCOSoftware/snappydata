@@ -60,7 +60,7 @@ class SQLMetadataTest extends SnappyFunSuite {
     try {
       val stmt = conn.createStatement()
       MetadataTest.testDescribeShowAndExplain(SnappyFunSuite.resultSetToDataset(session, stmt),
-        usingJDBC = true, PlanCaching.get(session.sessionState.conf))
+        stmt, PlanCaching.get(session.sessionState.conf))
       stmt.close()
     } finally {
       conn.close()
