@@ -24,7 +24,7 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath 'io.snappydata:gradle-scalatest:0.23'
+    classpath 'io.snappydata:gradle-scalatest:0.25'
     classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.9.0'
     classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.3'
     classpath 'de.undercouch:gradle-download-task:3.4.3'
@@ -343,20 +343,19 @@ subprojects {
   }
 
   task scalaTest(type: Test) {
-    def factory = new com.github.maiflai.BackwardsCompatibleJavaExecActionFactory(gradle.gradleVersion)
-    actions = [ new com.github.maiflai.ScalaTestAction(factory) ]
+    actions = [ new com.github.maiflai.ScalaTestAction() ]
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
     maxParallelForks = 1
     minHeapSize '4g'
     maxHeapSize '4g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=1g',
-            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
+            '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-Xss4m', '-XX:ReservedCodeCacheSize=1g'
     // for benchmarking
     // minHeapSize '12g'
     // maxHeapSize '12g'
     // jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=2g',
-    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
+    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled', '-Xss4m', '-XX:ReservedCodeCacheSize=1g'
 
     testLogging.exceptionFormat = TestExceptionFormat.FULL
     testLogging.events = TestLogEvent.values() as Set
@@ -1227,7 +1226,7 @@ distTar {
   // if (isEnterpriseProduct) {
   //   archiveName = 'TIB_compute' + devEdition + '_' + version + '_' + buildDateShort + osFamilyName + '.tar.gz'
   // } else {
-    classifier 'bin'
+  classifier 'bin'
   // }
   dependsOn product
   if (rootProject.hasProperty('enablePublish')) {
