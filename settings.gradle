@@ -169,13 +169,3 @@ if (new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').ex
   project(':snappy-jdbc-connector_' + scalaBinaryVersion).projectDir =
       "$rootDir/snappy-connectors/jdbc-stream-connector" as File
 }
-
-if (new File(rootDir, 'snappy-connectors/gemfire-connector/build.gradle').exists()) {
-  include ':gemfire-connector'
-  include ':gemfire-connector:connector_' + scalaBinaryVersion
-  include ':gemfire-connector:gfeFunctions'
-
-  project(':gemfire-connector').projectDir = "$rootDir/snappy-connectors/gemfire-connector" as File
-  project(':gemfire-connector:connector_' + scalaBinaryVersion).projectDir ="$rootDir/snappy-connectors/gemfire-connector/connector" as File
-  project(':gemfire-connector:gfeFunctions').projectDir ="$rootDir/snappy-connectors/gemfire-connector/gfeFunctions" as File
-}
