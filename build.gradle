@@ -237,6 +237,21 @@ if (!hasJdbcConnectorProject) {
   throw new GradleException('Project JDBC Stream Connector inside repository snappy-connectors not found.')
 }
 
+// set python2 for pyspark if python3 version is an unsupported one
+String sparkPython = 'python'
+def checkResult = exec {
+  ignoreExitValue = true
+  commandLine 'sh', '-c', 'python --version | grep -Eq "( 3\\.[0-7])|( 2\\.)"'
+}
+if (checkResult.exitValue != 0) {
+  checkResult = exec {
+    ignoreExitValue = true
+    commandLine 'sh', '-c', 'python2 --version >/dev/null 2>&1'
+  }
+  if (checkResult.exitValue == 0) {
+    sparkPython = 'python2'
+  }
+}
 
 def getProcessId() {
   String name = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
@@ -329,7 +344,7 @@ task cleanQuickstart { doLast {
 
 subprojects {
   // the run task for a selected sub-project
-  task run(type:JavaExec) {
+  task run(type: JavaExec) {
     if (!project.hasProperty('mainClass')) {
       main = 'io.snappydata.app.SparkSQLTest'
     } else {
@@ -861,6 +876,7 @@ gradle.taskGraph.whenReady { graph ->
         environment 'SNAPPY_HOME': snappyProductDir,
           'APACHE_SPARK_HOME': sparkProductDir,
           'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
+          'PYSPARK_PYTHON': sparkPython,
           'SPARK_TESTING': '1',
           'SNAPPY_DIST_CLASSPATH': test.classpath.asPath
 
@@ -1528,7 +1544,7 @@ task buildSqlFuncDocs(type: Exec) {
   commandLine "${rootProject.projectDir}/spark/sql/create-docs.sh"
 }
 
-task publishDocs(type:Exec) {
+task publishDocs(type: Exec) {
   dependsOn docs, buildSqlFuncDocs
   //on linux
   commandLine './publish-site.sh'
@@ -1537,7 +1553,7 @@ task publishDocs(type:Exec) {
 
 // It runs test script from product dir. Hence if running the target individually make sure
 // to run product target first
-task checkPython(type:Exec) {
+task checkPython(type: Exec) {
   String wdir = "${testResultsBase}/python"
   delete wdir
   file(wdir).mkdirs()
