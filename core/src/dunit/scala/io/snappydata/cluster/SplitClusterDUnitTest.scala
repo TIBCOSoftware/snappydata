@@ -79,10 +79,10 @@ class SplitClusterDUnitTest(s: String)
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
   override protected val sparkProductDir: String =
-    testObject.getEnvironmentVariable("APACHE_SPARK_HOME").replaceAll("hadoop3.2", "hadoop2.7")
+    testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
 
   protected val currentProductDir: String =
-    testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME").replaceAll("hadoop3.2", "hadoop2.7")
+    testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME")
 
   override protected def locatorClientPort = { testObject.locatorNetPort }
 
@@ -110,7 +110,10 @@ class SplitClusterDUnitTest(s: String)
       s"""localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg
           |localhost  -locators=localhost[$port] -client-port=$netPort3 $compressionArg
           |""".stripMargin, s"$confDir/servers")
-    (snappyProductDir + "/sbin/snappy-start-all.sh").!!
+    // stop any previous cluster and cleanup data
+    logInfo(((snappyProductDir + "/sbin/snappy-stop-all.sh") ###
+        ("rm -rf " + snappyProductDir + "/work") ###
+        (snappyProductDir + "/sbin/snappy-start-all.sh")).!!)
 
     vm3.invoke(getClass, "startSparkCluster", sparkProductDir)
   }

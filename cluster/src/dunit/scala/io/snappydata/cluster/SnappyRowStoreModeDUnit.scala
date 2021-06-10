@@ -57,7 +57,9 @@ class SnappyRowStoreModeDUnit (s: String) extends DistributedTestBase(s) with Lo
       s"""localhost  -locators=localhost[$port] -client-port=$netPort2
          |localhost  -locators=localhost[$port] -client-port=$netPort3
          |""".stripMargin, s"$confDir/servers")
-    (snappyProductDir + "/sbin/snappy-start-all.sh rowstore").!!
+    logInfo(((snappyProductDir + "/sbin/snappy-stop-all.sh") ###
+        ("rm -rf " + snappyProductDir + "/work") ###
+        (snappyProductDir + "/sbin/snappy-start-all.sh rowstore")).!!)
   }
 
   override def afterClass(): Unit = {

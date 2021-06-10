@@ -118,8 +118,9 @@ class SnappySinkProviderDUnitTest(s: String)
          |localhost  -locators=localhost[$port] -client-port=$netPort3 $compressionArg $ldapConf
          |""".stripMargin, s"$confDir/servers")
 
-    val op = (snappyProductDir + "/sbin/snappy-start-all.sh").!!
-    logInfo("snappy-start-all output:" + op)
+    logInfo(((snappyProductDir + "/sbin/snappy-stop-all.sh") ###
+        ("rm -rf " + snappyProductDir + "/work") ###
+        (snappyProductDir + "/sbin/snappy-start-all.sh")).!!)
 
     vm.invoke(getClass, "startSparkCluster", sparkProductDir)
 
@@ -157,7 +158,7 @@ class SnappySinkProviderDUnitTest(s: String)
 
   private val snappyProductDir = getEnvironmentVariable("SNAPPY_HOME")
 
-  private val sparkProductDir = getEnvironmentVariable("APACHE_SPARK_HOME").replaceAll("hadoop3.2", "hadoop2.7")
+  private val sparkProductDir = getEnvironmentVariable("APACHE_SPARK_HOME")
 
   def testStructuredStreaming(): Unit = {
     vm.invoke(getClass, "doTestStructuredStreaming",

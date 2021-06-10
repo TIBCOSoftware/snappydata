@@ -21,7 +21,6 @@ import java.nio.file.{Files, Paths}
 import java.sql.{Connection, SQLException, Statement}
 import java.util.Properties
 
-import scala.collection.mutable
 import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process._
 
@@ -35,9 +34,9 @@ import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
 
-import org.apache.spark.{SparkContext, SparkUtilsAccess}
-import org.apache.spark.sql.types.{IntegerType, StructField}
+import org.apache.spark.SparkUtilsAccess
 import org.apache.spark.sql._
+import org.apache.spark.sql.types.{IntegerType, StructField}
 
 class SplitClusterDUnitSecurityTest(s: String)
     extends DistributedTestBase(s)
@@ -127,10 +126,10 @@ class SplitClusterDUnitSecurityTest(s: String)
   override val jobConfigFile = s"$snappyProductDir/conf/job.config"
 
   override protected val sparkProductDir: String =
-    testObject.getEnvironmentVariable("APACHE_SPARK_HOME").replaceAll("hadoop3.2", "hadoop2.7")
+    testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
 
   protected val currentProductDir: String =
-    testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME").replaceAll("hadoop3.2", "hadoop2.7")
+    testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME")
 
   override def locatorClientPort: Int = { SplitClusterDUnitSecurityTest.locatorNetPort }
 
@@ -164,7 +163,9 @@ class SplitClusterDUnitSecurityTest(s: String)
       s"""localhost  -locators=localhost[$port] -client-port=$netPort1 $compressionArg $ldapConf
           |localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg $ldapConf
           |""".stripMargin, s"$confDir/servers")
-    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
+    logInfo(((snappyProductDir + "/sbin/snappy-stop-all.sh") ###
+        ("rm -rf " + snappyProductDir + "/work") ###
+        (snappyProductDir + "/sbin/snappy-start-all.sh")).!!)
 
     SplitClusterDUnitSecurityTest.startSparkCluster(sparkProductDir)
   }

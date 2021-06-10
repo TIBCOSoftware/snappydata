@@ -293,9 +293,10 @@ trait SplitClusterDUnitTestObject extends Logging {
     val jdbcConn = getConnection(locatorClientPort)
     var stmt = jdbcConn.createStatement()
 
-    val rs = stmt.executeQuery("select id, kind, netServers from sys.members")
+    val rs = stmt.executeQuery("select id, kind, netServers, host from sys.members")
     var locatorId = ""
     var leadId = ""
+    var hostName = ""
     val servers = new mutable.ArrayBuffer[String](2)
     val netServers = new mutable.ArrayBuffer[String](2)
     while (rs.next()) {
@@ -307,6 +308,7 @@ trait SplitClusterDUnitTestObject extends Logging {
         case "datastore" => servers += id; netServers += thriftServers
         case kind => assert(assertion = false, s"unexpected node type = $kind")
       }
+      hostName = rs.getString(4)
     }
     rs.close()
     stmt.close()
@@ -316,7 +318,7 @@ trait SplitClusterDUnitTestObject extends Logging {
 
     // first test metadata using session
     MetadataTest.testSYSTablesAndVTIs(session.sql,
-      hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
+      hostName, netServers, locatorId, locatorNetServer, servers, leadId)
     val planCaching = PlanCaching.get(session.sessionState.conf)
     MetadataTest.testDescribeShowAndExplain(session.sql, jdbcStmt = null, planCaching)
     MetadataTest.testDSIDWithSYSTables(session.sql,
@@ -324,7 +326,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     // next test metadata using JDBC connection
     stmt = jdbcConn.createStatement()
     MetadataTest.testSYSTablesAndVTIs(SnappyFunSuite.resultSetToDataset(session, stmt),
-      hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
+      hostName, netServers, locatorId, locatorNetServer, servers, leadId)
     MetadataTest.testDescribeShowAndExplain(SnappyFunSuite.resultSetToDataset(session, stmt),
       stmt, planCaching)
     MetadataTest.testDSIDWithSYSTables(SnappyFunSuite.resultSetToDataset(session, stmt),

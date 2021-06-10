@@ -1409,9 +1409,9 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
       stmt.execute("deploy package Sparkcassandra 'com.datastax" +
           ".spark:spark-cassandra-connector_2.11:2.0.7';")
       stmt.execute("deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
-          " repos 'http://clojars.org/repo/'")
+          " repos 'https://clojars.org/repo/'")
       stmt.execute("deploy package mysql 'clj-mysql:clj-mysql:0.1.0'" +
-          " repos 'http://clojars.org/repo/' path '/tmp/deploy_pkg_cache'")
+          " repos 'https://clojars.org/repo/' path '/tmp/deploy_pkg_cache'")
       stmt.execute(s"deploy jar snappyjar" +
           s" '${PrimaryDUnitRecoveryTest.snappyHome}/jars/zkclient-0.8.jar'")
       stmt.execute(s"deploy jar snappyjar2" +

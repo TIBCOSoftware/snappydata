@@ -65,12 +65,17 @@ class SnappyMetricsSystemDUnitTest(s: String)
         s"-dir=$snappyProductDir/work/lead2 -spark.ui.port=8090")
     pw1.close()
     val pw2 = new PrintWriter(new File(s"$confDir/servers"))
-    pw2.write(s"localhost -locators=localhost[$port] -dir=$snappyProductDir/work/server1 -client-port=$netPort2\n")
-    pw2.write(s"localhost -locators=localhost[$port] -dir=$snappyProductDir/work/server2 -client-port=$netPort3\n")
-    pw2.write(s"localhost -locators=localhost[$port] -dir=$snappyProductDir/work/server3 -client-port=$netPort4")
+    pw2.write(s"localhost -locators=localhost[$port] " +
+        s"-dir=$snappyProductDir/work/server1 -client-port=$netPort2\n")
+    pw2.write(s"localhost -locators=localhost[$port] " +
+        s"-dir=$snappyProductDir/work/server2 -client-port=$netPort3\n")
+    pw2.write(s"localhost -locators=localhost[$port] " +
+        s"-dir=$snappyProductDir/work/server3 -client-port=$netPort4")
     pw2.close()
     logInfo(s"Starting snappy cluster in $snappyProductDir/work")
-    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
+    logInfo(((snappyProductDir + "/sbin/snappy-stop-all.sh") ###
+        ("rm -rf " + snappyProductDir + "/work") ###
+        (snappyProductDir + "/sbin/snappy-start-all.sh")).!!)
     Thread.sleep(10000)
   }
 

@@ -43,8 +43,9 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
 
   private val URL_PATTERN = Pattern.compile("^" + Constant.POOLED_THIN_CLIENT_URL,
     Pattern.CASE_INSENSITIVE)
+  private val COMPLEX_TYPE_AS_JSON_HINT = s"${Constant.COMPLEX_TYPE_AS_JSON_HINT}\\s*\\(([^)]*)\\)"
   private val COMPLEX_TYPE_AS_JSON_HINT_PATTERN = Pattern.compile(
-    s"${Constant.COMPLEX_TYPE_AS_JSON_HINT}\\s*\\(([^)]*)\\)", Pattern.CASE_INSENSITIVE)
+    COMPLEX_TYPE_AS_JSON_HINT, Pattern.CASE_INSENSITIVE)
 
   def register(): Unit = {
     // no-op, all registration is done in the object constructor
@@ -83,10 +84,12 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
                 // releases where LocalRelation class primary constructor has changed signature
                 cons.newInstance(tableName, LocalRelation.apply(output: _*), None)
               } catch {
-                case _: Exception => // fallback to two argument constructor
-                  val cons = classOf[SubqueryAlias].getConstructor(classOf[String],
-                    classOf[LogicalPlan])
-                  cons.newInstance(tableName, LocalRelation.apply(output: _*))
+                case _: Exception => // fallback to two argument apply that works for both 2.3/2.4
+                  // class of companion class which is SubqueryAlias$ in bytecode
+                  val c = SubqueryAlias.getClass
+                  val m = c.getMethod("apply", classOf[String], classOf[LogicalPlan])
+                  m.invoke(c.getField("MODULE$").get(null),
+                    tableName, LocalRelation.apply(output: _*)).asInstanceOf[SubqueryAlias]
               }
             }
         }
