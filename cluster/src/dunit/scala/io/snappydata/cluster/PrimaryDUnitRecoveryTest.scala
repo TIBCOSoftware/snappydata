@@ -1407,7 +1407,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
       stmt.execute("deploy package SPARKREDSHIFT" +
           " 'com.databricks:spark-redshift_2.10:3.0.0-preview1' path '/tmp/deploy_pkg_cache'")
       stmt.execute("deploy package Sparkcassandra 'com.datastax" +
-          ".spark:spark-cassandra-connector_2.11:2.0.7';")
+          ".spark:spark-cassandra-connector_2.11:2.0.13';")
       stmt.execute("deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
           " repos 'https://clojars.org/repo/'")
       stmt.execute("deploy package mysql 'clj-mysql:clj-mysql:0.1.0'" +

@@ -228,6 +228,7 @@ allprojects {
 def hasAqpProject = new File(rootDir, 'aqp/build.gradle').exists()
 def aqpProject = project(":snappy-aqp_${scalaBinaryVersion}")
 def hasJdbcConnectorProject = new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
+def hasGemFireConnectorProject = new File(rootDir, 'snappy-connectors/gemfire-connector/build.gradle').exists()
 
 if (!hasAqpProject) {
   throw new GradleException('Project repository snappy-aqp not found under aqp/.')
@@ -968,6 +969,9 @@ task product(type: Zip) {
   dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
   targetProject = aqpProject
   dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:jar"
+  if (hasGemFireConnectorProject) {
+    dependsOn ":gemfire-connector:product"
+  }
 
   // create snappydata+spark combined python zip
   destinationDir = file("${snappyProductDir}/python/lib")
@@ -1099,10 +1103,32 @@ task product(type: Zip) {
     }
 
     def jdbcConnectorProject = project(":snappy-jdbc-connector_${scalaBinaryVersion}")
+    def gemfireConnectorProject = hasGemFireConnectorProject ? project(":gemfire-connector") : null
+    def gfeConnectorProject = hasGemFireConnectorProject ? project(":gemfire-connector:connector_${scalaBinaryVersion}") : null
+    def gfeFunctionProject = hasGemFireConnectorProject ? project(":gemfire-connector:gfeFunctions") : null
+
     copy {
       from jdbcConnectorProject.jar.destinationDir
       into "${snappyProductDir}/connectors"
       include "*.jar"
+    }
+
+    if (hasGemFireConnectorProject) {
+      copy {
+        from gfeConnectorProject.jar.destinationDir
+        into "${snappyProductDir}/connectors"
+        include "*.jar"
+      }
+      copy {
+        from gfeFunctionProject.jar.destinationDir
+        into "${snappyProductDir}/connectors"
+        include "*.jar"
+      }
+      copy {
+        from "${gemfireConnectorProject.projectDir}/examples/quickstart/data"
+        into "${snappyProductDir}/connectors"
+        include "persons.jar"
+      }
     }
 
     copy {
@@ -1382,6 +1408,9 @@ task checkAll {
   if (!rootProject.hasProperty('aqp.skip')) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
+  if (!rootProject.hasProperty('connectors.skip') && hasGemFireConnectorProject) {
+    dependsOn ":gemfire-connector:check"
+  }
   if (!rootProject.hasProperty('smoke.skip')) {
     dependsOn buildDtests, ":snappy-dtests_${scalaBinaryVersion}:check"
   }
@@ -1504,6 +1533,8 @@ task docs(type: ScalaDoc) {
   Set<String> allSource = []
   def docProjects = rootProject.subprojects.collectMany { project ->
     if ((project.plugins.hasPlugin('scala') || project.plugins.hasPlugin('java')) &&
+            // skip gemfire-connector
+            !project.path.contains('gemfire-connector') &&
             // jobserver depends on Apache Spark 1.5.x which causes conflicts
             !project.path.contains('snappy-store') &&
             !project.name.contains('jobserver') &&

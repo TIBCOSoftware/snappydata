@@ -75,7 +75,7 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
 
   public void deployPkg() {
 
-    String pkgName = "com.datastax.spark:spark-cassandra-connector_2.11:2.0.7";
+    String pkgName = "com.datastax.spark:spark-cassandra-connector_2.11:2.0.13";
     String pkgPath = SnappyPrms.getDataLocationList().get(0).toString();
     Connection conn = null;
     File pkgDir = new File(pkgPath);
@@ -93,7 +93,7 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
   }
 
   public void deployJar() {
-    String jarName = "com.datastax.spark_spark-cassandra-connector_2.11-2.0.7.jar";
+    String jarName = "com.datastax.spark_spark-cassandra-connector_2.11-2.0.13.jar";
     String jarPath = SnappyPrms.getDataLocationList().get(0).toString() + "/" + jarName;
     Connection conn = null;
     try {
