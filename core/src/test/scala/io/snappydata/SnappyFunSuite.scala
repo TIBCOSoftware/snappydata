@@ -22,9 +22,10 @@ import java.sql.Statement
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.shared.NativeCalls
+import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
 import io.snappydata.test.dunit.DistributedTestBase
-import io.snappydata.test.dunit.DistributedTestBase.{InitializeRun, WaitCriterion}
+import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.util.TestUtils
 import org.scalatest.Assertions
 
@@ -53,7 +54,7 @@ abstract class SnappyFunSuite
         with Serializable
         with Logging with Retries {
 
-  InitializeRun.setUp()
+  TestUtil.globalSetUp()
 
   private val nativeCalls = NativeCalls.getInstance()
   nativeCalls.setEnvironment("gemfire.bind-address", "localhost")

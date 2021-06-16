@@ -20,12 +20,15 @@ import java.io.PrintWriter
 import java.net.InetAddress
 import java.nio.file.{Files, Paths}
 import java.util.Properties
+import java.util.concurrent.CyclicBarrier
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.reflect.io.Path
 import scala.util.{Failure, Success, Try}
+
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.core.{TestData, TestData2}
@@ -33,6 +36,8 @@ import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import io.snappydata.util.TestUtils
 import io.snappydata.{ColumnUpdateDeleteTests, ConcurrentOpsTests, Property, SnappyTableStatsProviderService}
 import org.junit.Assert
+import org.scalatest.Assertions._
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
@@ -58,8 +63,9 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   val currentLocatorPort: Int = ClusterManagerTestBase.locPort
 
-  override protected val sparkProductDir: String =
-    testObject.getEnvironmentVariable("SNAPPY_HOME")
+  private val waitForSignal = new SerializableRunnable() {
+    override def run(): Unit = SplitSnappyClusterDUnitTest.opBarrier.await()
+  }
 
   override def beforeClass(): Unit = {
     // stop any existing SnappyContext to enable applying thrift-server properties
@@ -69,13 +75,13 @@ class SplitSnappyClusterDUnitTest(s: String)
     }
     super.beforeClass()
     startNetworkServers()
-    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", sparkProductDir)
+    startSparkCluster(Some(vm3))
   }
 
   override def afterClass(): Unit = {
     Array(vm2, vm1, vm0, vm3).foreach(_.invoke(getClass, "stopNetworkServers"))
     ClusterManagerTestBase.stopNetworkServers()
-    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", sparkProductDir)
+    stopSparkCluster(Some(vm3))
     super.afterClass()
   }
 
@@ -255,7 +261,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     if (jars.count() > 0) {
       var str = msg
       jars.collect().foreach(x => str += s"$x,")
-      assert(false, str)
+      fail(str)
     }
   }
 
@@ -317,7 +323,6 @@ class SplitSnappyClusterDUnitTest(s: String)
 
     assert(sns.sql("list packages").count() == 0)
 
-    import org.scalatest.Assertions._
     val thrown = intercept[Exception] {
       sns.sql("deploy package \"testsch\".mongo-###park_v1.5" +
           "  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2")
@@ -394,25 +399,24 @@ class SplitSnappyClusterDUnitTest(s: String)
     snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
         s" (key_columns 'col1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
 
-    import scala.concurrent.ExecutionContext.Implicits.global
     val future = Future {
       vm3.invoke(getClass, "doTestStaleCatalog", startArgs :+ Int.box(locatorClientPort))
     }
 
     try {
-      // wait till the smart connector job perform at-least one putInto operation
+      // wait for smart connector job to perform at least one putInto operation
       var count = 0
-      while (snc.table("T5").count() == 0 && count < 10) {
-        Thread.sleep(4000)
+      while (snc.table("T5").count() == 0 && count < 200) {
+        Thread.sleep(200)
         count += 1
       }
-      assert(count != 10, "Smart connector application not performing putInto as expected.")
+      assert(count < 200, "Smart connector application not performing putInto as expected.")
 
       // perform DDL
       snc.sql(s"CREATE TABLE T6(COL1 STRING, COL2 STRING) " +
           s"USING column OPTIONS (PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
 
-      Await.result(future, scala.concurrent.duration.Duration.apply(3, "min"))
+      Await.result(future, Duration(3, "min"))
     } finally {
       snc.sql("drop table if exists T6")
       snc.sql("drop table if exists T5")
@@ -422,7 +426,6 @@ class SplitSnappyClusterDUnitTest(s: String)
   def testStaleCatalogRetryForStreamingSink(): Unit = {
     val snc = SnappyContext(sc).newSession()
     snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
-    import scala.concurrent.ExecutionContext.Implicits.global
     val testTempDirectory = "/tmp/SplitSnappyClusterDUnitTest"
 
     def cleanUp(): Unit = {
@@ -438,11 +441,11 @@ class SplitSnappyClusterDUnitTest(s: String)
     }
     try {
       var attempts = 0
-      while (!Files.exists(Paths.get(testTempDirectory, "file0")) && attempts < 15) {
-        Thread.sleep(4000)
+      while (!Files.exists(Paths.get(testTempDirectory, "file0")) && attempts < 300) {
+        Thread.sleep(200)
         attempts += 1
       }
-      assert(attempts < 14, "No data ingested by streaming application.")
+      assert(attempts < 300, "No data ingested by streaming application.")
 
       // perform DDL leading to stale catalog in smart connector application
       snc.sql(s"CREATE TABLE SYNC_TABLE(COL1 STRING) " + s"USING column")
@@ -451,7 +454,7 @@ class SplitSnappyClusterDUnitTest(s: String)
         write("dummydata")
         close()
       }
-      Await.result(future, Duration(2, "min"))
+      Await.result(future, Duration(3, "min"))
     } finally {
       cleanUp()
     }
@@ -466,25 +469,23 @@ class SplitSnappyClusterDUnitTest(s: String)
     snc.sql("insert into t5 values('2', '2')")
     snc.sql("insert into t5 values('3', '3')")
 
-    import scala.concurrent.ExecutionContext.Implicits.global
     val future = Future {
       vm3.invoke(getClass, "doTestStaleCatalogForSNAP3024", startArgs :+ Int.box(locatorClientPort))
     }
 
     try {
-      // wait till the smart connector job perform at-least one putInto operation
-      var count = 0
-      while (snc.table("T5").count() == 3 && count < 10) {
-        Thread.sleep(4000)
-        count += 1
-      }
-      assert(count != 10, "Smart connector application not performing putInto as expected.")
+      // wait for smart connector job to perform the insert operation
+      vm3.invoke(waitForSignal)
+      assert(snc.table("T5").count() > 3,
+        "Smart connector application not performing insert as expected.")
 
       // perform DDL
       snc.sql(s"CREATE TABLE T6(COL1 STRING, COL2 STRING) " +
           s"USING column OPTIONS (PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+      // signal vm3 to proceed
+      vm3.invoke(waitForSignal)
 
-      Await.result(future, scala.concurrent.duration.Duration.apply(3, "min"))
+      Await.result(future, Duration(3, "min"))
     } finally {
       snc.sql("drop table if exists T6")
       snc.sql("drop table if exists T5")
@@ -500,25 +501,23 @@ class SplitSnappyClusterDUnitTest(s: String)
     snc.sql("insert into t5 values('2', '2')")
     snc.sql("insert into t5 values('3', '3')")
 
-    import scala.concurrent.ExecutionContext.Implicits.global
     val future = Future {
       vm3.invoke(getClass,
         "doTestSmartConnectorForBucketRebalance", startArgs :+ Int.box(locatorClientPort))
     }
 
     try {
-      // wait till the smart connector job perform at-least one putInto operation
-      var count = 0
-      while (snc.table("T5").count() == 3 && count < 10) {
-        Thread.sleep(4000)
-        count += 1
-      }
-      assert(count != 10, "Smart connector application not performing putInto as expected.")
+      // wait for smart connector job to perform the insert operation
+      vm3.invoke(waitForSignal)
+      assert(snc.table("T5").count() > 3,
+        "Smart connector application not performing insert as expected.")
 
       // rebalance the buckets
       snc.sql(s"CALL SYS.REBALANCE_ALL_BUCKETS()")
+      // signal vm3 to proceed
+      vm3.invoke(waitForSignal)
 
-      Await.result(future, scala.concurrent.duration.Duration.apply(3, "min"))
+      Await.result(future, Duration(3, "min"))
     } finally {
       snc.sql("drop table if exists T6")
       snc.sql("drop table if exists T5")
@@ -547,25 +546,23 @@ class SplitSnappyClusterDUnitTest(s: String)
     snc.sql("insert into t5 values('2', '2')")
     snc.sql("insert into t5 values('3', '3')")
 
-    import scala.concurrent.ExecutionContext.Implicits.global
     val future = Future {
       vm3.invoke(getClass, "doTestInsertAfterStaleCatalog",
         startArgs :+ Int.box(locatorClientPort))
     }
 
     try {
-      // wait till the smart connector job perform at-least one putInto operation
-      var count = 0
-      while (snc.table("T5").count() == 3 && count < 10) {
-        Thread.sleep(4000)
-        count += 1
-      }
-      assert(count != 10, "Smart connector application not performing insert as expected.")
+      // wait for smart connector job to perform the insert operation
+      vm3.invoke(waitForSignal)
+      assert(snc.table("T5").count() > 3,
+        "Smart connector application not performing insert as expected.")
 
       logInfo("testInsertQueryAfterStaleCatalog dropping table t5")
       // drop the table and create a table with same name and different schema
       // create a table with different schema
       snc.sql("drop table t5")
+      // signal vm3 waiting for drop to proceed
+      vm3.invoke(waitForSignal)
       if (tableType == "COLUMN") {
         snc.sql(s"CREATE TABLE T5(COL1 DATE, COL2 DATE) USING column OPTIONS" +
             s" ( PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
@@ -573,7 +570,7 @@ class SplitSnappyClusterDUnitTest(s: String)
         snc.sql(s"CREATE TABLE T5(COL1 DATE, COL2 DATE) USING row OPTIONS (partition_by 'col1')")
       }
 
-      Await.result(future, scala.concurrent.duration.Duration.apply(5, "min"))
+      Await.result(future, Duration(5, "min"))
     } finally {
       snc.sql("drop table if exists T5")
     }
@@ -588,28 +585,26 @@ class SplitSnappyClusterDUnitTest(s: String)
     snc.sql("insert into t6 values('2', '2')")
     snc.sql("insert into t6 values('3', '3')")
 
-    import scala.concurrent.ExecutionContext.Implicits.global
     val future = Future {
       vm3.invoke(getClass, "doTestDeleteAfterStaleCatalog",
         startArgs :+ Int.box(locatorClientPort))
     }
 
     try {
-      // wait till the smart connector job perform at-least one putInto operation
-      var count = 0
-      while (snc.table("T6").count() == 3 && count < 10) {
-        Thread.sleep(4000)
-        count += 1
-      }
-      assert(count != 10, "Smart connector application not performing delete as expected.")
+      // wait for smart connector job to perform the first delete operation
+      vm3.invoke(waitForSignal)
+      assert(snc.table("T6").count() < 3,
+        "Smart connector application not performing delete as expected.")
 
       logInfo("testDeleteAfterStaleCatalog dropping table t6")
       snc.sql("drop table t6")
+      // signal vm3 waiting for drop to proceed
+      vm3.invoke(waitForSignal)
       // create a table with different schema
       snc.sql(s"CREATE TABLE T6(COL1 DATE, COL2 DATE) USING column OPTIONS" +
           s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
 
-      Await.result(future, scala.concurrent.duration.Duration.apply(5, "min"))
+      Await.result(future, Duration(5, "min"))
     } finally {
       snc.sql("drop table if exists T6")
     }
@@ -624,25 +619,21 @@ class SplitSnappyClusterDUnitTest(s: String)
     snc.sql("insert into t7 values('2', '2')")
     snc.sql("insert into t7 values('3', '3')")
 
-    import scala.concurrent.ExecutionContext.Implicits.global
     val future = Future {
       vm3.invoke(getClass, "doTestUpdateAfterStaleCatalog",
         startArgs :+ Int.box(locatorClientPort))
     }
 
     try {
-      // wait till the smart connector job perform at-least one putInto operation
-      var count = 0
-      while (snc.table("T7").count() == 3 && count < 10) {
-        Thread.sleep(4000)
-        count += 1
-      }
-      assert(count != 10, "Smart connector application not performing delete as expected.")
+      // wait till the smart connector job perform the insert operation
+      vm3.invoke(waitForSignal)
+      assert(snc.table("T7").count() > 3,
+        "Smart connector application not performing update as expected.")
 
       snc.sql(s"CREATE TABLE T8(COL1 DATE, COL2 DATE) USING column OPTIONS" +
           s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
 
-      Await.result(future, scala.concurrent.duration.Duration.apply(5, "min"))
+      Await.result(future, Duration(5, "min"))
     } finally {
       snc.sql("drop table if exists T7")
       snc.sql("drop table if exists T8")
@@ -655,6 +646,8 @@ object SplitSnappyClusterDUnitTest
 
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
+  private val opBarrier = new CyclicBarrier(2)
+
   def sc: SparkContext = {
     val context = ClusterManagerTestBase.sc
     context
@@ -665,8 +658,7 @@ object SplitSnappyClusterDUnitTest
     val catalog = session.sessionCatalog
     try {
       catalog.lookupRelation(session.tableIdentifier(tableName))
-      assert(assertion = false, s"Table $tableName should not exist in the " +
-          s"cached Hive catalog")
+      fail(s"Table $tableName should not exist in the cached Hive catalog")
     } catch {
       // expected exception
       case _: org.apache.spark.sql.TableNotFoundException =>
@@ -921,7 +913,7 @@ object SplitSnappyClusterDUnitTest
         .setMaster(s"spark://$hostName:7077")
         .set("spark.executor.cores", TestUtils.defaultCoresForSmartConnector)
         .set("spark.executor.extraClassPath",
-          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+          ClusterUtils.getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("spark.testing.reservedMemory", "0")
         .set("spark.sql.autoBroadcastJoinThreshold", "-1")
         .set("snappydata.connection", connectionURL)
@@ -940,7 +932,7 @@ object SplitSnappyClusterDUnitTest
     val mode = SnappyContext.getClusterMode(snc.sparkContext)
     mode match {
       case ThinClientConnectorMode(_, _) => // expected
-      case _ => assert(assertion = false, "cluster mode is " + mode)
+      case _ => fail("cluster mode is " + mode)
     }
 
     snc
@@ -1222,24 +1214,17 @@ object SplitSnappyClusterDUnitTest
     val dataFrame = snc.createDataFrame(rdd, schema)
     import org.apache.spark.sql.snappy._
     try {
-      Thread.sleep(2000)
-      for (_ <- 1 to 10) {
+      for (_ <- 1 to 50) {
         dataFrame.write.putInto("T5")
+        Thread.sleep(200)
       }
       Assert.fail("Should have thrown CatalogStaleException.")
     } catch {
       case _: CatalogStaleException =>
-        // Waiting for some time before retrying as catalog version is updated twice for create
-        // table. First time to create table and the another alter table operation is performed
-        // to populate primary keys. See `org.apache.spark.sql.SnappySession.createTableInternal`
-        // Since these two operations are not atomic, it was causing this test to fail
-        // intermittently. Adding this wait time to make sure that both operation is completed
-        // before retry.
-        // In our trouble shooting guide we have given code example with multiple retries and hence
-        // this should not be an issue if multiple retries are performed.
-        Thread.sleep(2000)
-        // retrying putInto operation and it should pass
-        dataFrame.write.putInto("T5")
+        // retrying of the putInto operation should pass
+        retryOperation(5) {
+          dataFrame.write.putInto("T5")
+        }
     }
   }
 
@@ -1266,8 +1251,11 @@ object SplitSnappyClusterDUnitTest
     val dataFrame = snc.createDataFrame(rdd, schema)
 
     dataFrame.write.insertInto("T5")
+    // signal the calling process
+    opBarrier.await()
+
     // wait for the embedded mode to change the catalog or rebalance buckets
-    Thread.sleep(6000)
+    opBarrier.await()
     // should not throw an exception
     for (_ <- 1 to 5) {
       snc.sql("select * from t5").collect()
@@ -1286,6 +1274,8 @@ object SplitSnappyClusterDUnitTest
     val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
     snc.sql("insert into t5 values('4', '4')")
     logInfo("1. schema is = " + snc.table("T5").schema)
+    // signal the calling process
+    opBarrier.await()
 
     val schema2 = new StructType()
         .add(StructField("col1", DateType))
@@ -1298,20 +1288,17 @@ object SplitSnappyClusterDUnitTest
     )
     val dataFrame2 = snc.createDataFrame(rdd2, schema2)
 
-    logInfo("doTestInsertAfterStaleCatalog: Waiting 6 seconds to allow schema change")
-    Thread.sleep(6000)
+    // wait for table to be dropped
+    opBarrier.await()
     try {
-      for (_ <- 1 to 20) {
-        Thread.sleep(500)
-        logInfo("calling dataFrame.write.insertInto(\"T5\")")
-        logInfo("2. schema is = " + snc.table("T5").schema)
-        dataFrame2.write.insertInto("T5")
-      }
+      logInfo("calling dataFrame.write.insertInto(\"T5\")")
+      // logInfo("2. schema is = " + snc.table("T5").schema)
+      dataFrame2.write.insertInto("T5")
       Assert.fail("Should have thrown CatalogStaleException.")
     } catch {
       case _: CatalogStaleException =>
         logInfo("doTestInsertAfterStaleCatalog: Caught expected CatalogStaleException")
-        // retrying insertInto operation and it should pass
+        // retry of the insertInto operation should pass
         retryOperation(5) {
           dataFrame2.write.insertInto("T5")
         }
@@ -1337,6 +1324,20 @@ object SplitSnappyClusterDUnitTest
           } else {
             Thread.sleep(200)
           }
+        // Waiting for some time before retrying as catalog version is updated twice for create
+        // table. First time to create table and the another alter table operation is performed
+        // to populate primary keys. See `org.apache.spark.sql.SnappySession.createTableInternal`
+        // Since these two operations are not atomic, it was causing this test to fail
+        // intermittently. Adding this wait time to make sure that both operation is completed
+        // before retry.
+        // In our trouble shooting guide we have given code example with multiple retries and hence
+        // this should not be an issue if multiple retries are performed.
+        case t: Exception =>
+          if (retryCount == 0) {
+            Thread.sleep(2000)
+          } else {
+            throw t
+          }
       }
     }
   }
@@ -1346,19 +1347,18 @@ object SplitSnappyClusterDUnitTest
       locatorClientPort: Int): Unit = {
     val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
     snc.sql("delete from t6 where col1 like '1%'")
+    // signal the calling process
+    opBarrier.await()
 
-    logInfo("doTestDeleteAfterStaleCatalog: Waiting 6 seconds to allow schema change")
-    Thread.sleep(6000)
+    // wait for table to be dropped
+    opBarrier.await()
     try {
-      for (_ <- 1 to 20) {
-        Thread.sleep(500)
-        snc.sql("delete from t6 where col1 like '2%'")
-      }
+      snc.sql("delete from t6 where col1 like '2%'")
       Assert.fail("Should have thrown CatalogStaleException.")
     } catch {
       case _: CatalogStaleException =>
         logInfo("doTestDeleteAfterStaleCatalog: Caught expected CatalogStaleException")
-        // retrying delete from operation and it should pass
+        // retry of the delete operation should pass
         retryOperation(5) {
           snc.sql("delete from t6 where col1 like '2%'")
         }
@@ -1370,19 +1370,19 @@ object SplitSnappyClusterDUnitTest
       locatorClientPort: Int): Unit = {
     val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
     snc.sql("insert into t7 values('4', '4')")
+    // signal the calling process
+    opBarrier.await()
 
-    logInfo("doTestUpdateAfterStaleCatalog: Waiting 6 seconds to allow schema change")
-    Thread.sleep(6000)
     try {
-      for (_ <- 1 to 20) {
-        Thread.sleep(500)
+      for (_ <- 1 to 50) {
         snc.sql("update t7 set col2 = '22' where col1 = '2'")
+        Thread.sleep(200)
       }
       Assert.fail("Should have thrown CatalogStaleException.")
     } catch {
       case _: CatalogStaleException =>
         logInfo("doTestUpdateAfterStaleCatalog: Caught expected CatalogStaleException")
-        // retrying delete from operation and it should pass
+        // retry of the update operation should pass
         retryOperation(5) {
           snc.sql("update t7 set col2 = '22' where col1 = '2'")
         }
@@ -1438,12 +1438,12 @@ object SplitSnappyClusterDUnitTest
 
       // wait till DDL is fired on snappy cluster which will lead to stale smart-connector catalog
       var attempts = 0
-      while (!Files.exists(Paths.get(testTempDir, "file1")) && attempts < 15) {
-        Thread.sleep(4000)
+      while (!Files.exists(Paths.get(testTempDir, "file1")) && attempts < 150) {
+        Thread.sleep(500)
         attempts += 1
       }
 
-      assert(attempts < 14, "Waiting for stale catalog timed out")
+      assert(attempts < 150, "Waiting for stale catalog timed out")
 
       // produce second batch of data
       val dataBatch2 = Seq(Seq(3, "name3", 20))
@@ -1475,9 +1475,8 @@ object SplitSnappyClusterDUnitTest
         s"where stream_query_id = '$queryName'"
     val batchIdFromTable = snc.sql(sql).collect()
     if (batchIdFromTable.isEmpty || batchIdFromTable(0)(0) != batchId) {
-      Thread.sleep(1000)
+      Thread.sleep(500)
       waitTillTheBatchIsPickedForProcessing(snc, batchId, queryName, retries - 1)
     }
   }
 }
-

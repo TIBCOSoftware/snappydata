@@ -71,7 +71,7 @@ class TPCDSSuite extends SnappyFunSuite
       val sc = new SparkContext(conf)
       TPCDSQuerySnappyBenchmark.snappy = new SnappySession(sc)
       val dataLocation = "/export/shared/QA_DATA/TPCDS/data"
-      val snappyHome = System.getenv("SNAPPY_HOME")
+      val snappyHome = System.getProperty("SNAPPY_HOME")
       val snappyRepo = s"$snappyHome/../../.."
 
       TPCDSQuerySnappyBenchmark.execute(dataLocation,
@@ -87,7 +87,7 @@ class TPCDSSuite extends SnappyFunSuite
     if (runTPCDSSuite.equalsIgnoreCase("true")) {
       TPCDSQuerySnappyBenchmark.spark = SparkSession.builder.config(conf).getOrCreate()
       val dataLocation = "/export/shared/QA_DATA/TPCDS/data"
-      val snappyHome = System.getenv("SNAPPY_HOME")
+      val snappyHome = System.getProperty("SNAPPY_HOME")
       val snappyRepo = s"$snappyHome/../../..";
 
       TPCDSQuerySnappyBenchmark.execute(dataLocation,

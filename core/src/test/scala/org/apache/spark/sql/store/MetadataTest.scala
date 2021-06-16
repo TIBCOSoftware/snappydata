@@ -143,7 +143,7 @@ object MetadataTest extends Assertions {
         }
         assert(rs(0) === expectedRow)
       } else {
-        assert(rs.length === 2 + servers.length)
+        assert(rs.length === 2 + servers.length, rs.toSeq)
         if (forShow) {
           expectedRows = Row(locator, hostName, "locator", "RUNNING", locatorNetServer, "") +:
               Row(lead, hostName, "primary lead", "RUNNING", "", "") +:

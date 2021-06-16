@@ -18,14 +18,14 @@ package org.apache.spark.sql.test
 
 import java.io.File
 
-import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
-import org.scalatest.{Tag}
+import com.pivotal.gemfirexd.TestUtil
+import org.scalatest.Tag
 
 import org.apache.spark.SparkFunSuite
 
 trait SnappySparkTestUtil extends SparkFunSuite {
 
-  InitializeRun.setUp()
+  TestUtil.globalSetUp()
 
   def withDir(dirName: String)(f: => Unit): Unit = {
     new File(dirName).mkdir()

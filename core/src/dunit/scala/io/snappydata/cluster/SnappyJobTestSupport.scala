@@ -16,20 +16,22 @@
  */
 package io.snappydata.cluster
 
-import java.io.{File, FileFilter}
+import java.io.File
+
+import scala.sys.process._
 
 import io.snappydata.test.dunit.DistributedTestBase
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
+import org.apache.commons.lang.StringUtils
 
 import org.apache.spark.{Logging, TestPackageUtils}
-import scala.sys.process._
-
-import org.apache.commons.lang.StringUtils
 
 /**
  * A helper trait containing functions for managing snappy jobs.
  */
 trait SnappyJobTestSupport extends Logging {
+
+  val snappyHomeDir: String
 
   val snappyProductDir: String
 
@@ -100,7 +102,7 @@ trait SnappyJobTestSupport extends Logging {
   }
 
   private def getJobJar(className: String, packageStr: String = ""): String = {
-    val dir = new File(s"$snappyProductDir/../../../cluster/build-artifacts/scala-2.11/classes/"
+    val dir = new File(s"$snappyHomeDir/../../../cluster/build-artifacts/scala-2.11/classes/"
         + s"scala/test/$packageStr")
 
     assert(dir.exists() && dir.isDirectory, s"snappy-cluster scala tests not compiled. Directory " +

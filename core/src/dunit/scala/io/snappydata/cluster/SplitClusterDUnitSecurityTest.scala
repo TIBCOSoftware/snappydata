@@ -32,7 +32,6 @@ import io.snappydata.Constant
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
-import org.apache.commons.io.FileUtils
 
 import org.apache.spark.SparkUtilsAccess
 import org.apache.spark.sql._
@@ -121,15 +120,11 @@ class SplitClusterDUnitSecurityTest(s: String)
   def startArgs: Array[AnyRef] = Array(
     SplitClusterDUnitSecurityTest.locatorPort, bootProps).asInstanceOf[Array[AnyRef]]
 
-  override val snappyProductDir = testObject.getEnvironmentVariable("SNAPPY_HOME")
-
   override val jobConfigFile = s"$snappyProductDir/conf/job.config"
 
-  override protected val sparkProductDir: String =
-    testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
+  override protected val sparkProductDir: String = System.getProperty("APACHE_SPARK_HOME")
 
-  protected val currentProductDir: String =
-    testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME")
+  protected val currentProductDir: String = System.getProperty("APACHE_SPARK_CURRENT_HOME")
 
   override def locatorClientPort: Int = { SplitClusterDUnitSecurityTest.locatorNetPort }
 
@@ -140,10 +135,12 @@ class SplitClusterDUnitSecurityTest(s: String)
   override def beforeClass(): Unit = {
     super.beforeClass()
 
+    // stop any previous cluster and cleanup data
+    stopSnappyCluster()
+
     setSecurityProps()
     SplitClusterDUnitSecurityTest.bootExistingAuthModule(ldapProperties)
 
-    logInfo(s"Starting snappy cluster in $snappyProductDir/work")
     // create locators, leads and servers files
     val port = SplitClusterDUnitSecurityTest.locatorPort
     val netPort = SplitClusterDUnitSecurityTest.locatorNetPort
@@ -163,11 +160,9 @@ class SplitClusterDUnitSecurityTest(s: String)
       s"""localhost  -locators=localhost[$port] -client-port=$netPort1 $compressionArg $ldapConf
           |localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg $ldapConf
           |""".stripMargin, s"$confDir/servers")
-    logInfo(((snappyProductDir + "/sbin/snappy-stop-all.sh") ###
-        ("rm -rf " + snappyProductDir + "/work") ###
-        (snappyProductDir + "/sbin/snappy-start-all.sh")).!!)
+    startSnappyCluster()
 
-    SplitClusterDUnitSecurityTest.startSparkCluster(sparkProductDir)
+    startSparkCluster()
   }
 
   def getLdapConf: String = {
@@ -183,19 +178,9 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   override def afterClass(): Unit = {
     super.afterClass()
-    SplitClusterDUnitSecurityTest.stopSparkCluster(sparkProductDir)
-
-    logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
-    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
-
+    stopSparkCluster()
+    stopSnappyCluster()
     stopLdapTestServer()
-
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
-    FileUtils.moveDirectory(new File(s"$snappyProductDir/work"), new File
-    (s"$snappyProductDir/work-snap-1957"))
   }
 
   def stopLdapTestServer(): Unit = {
@@ -222,7 +207,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    SplitClusterDUnitTest.invokeSparkShell(snappyProductDir, sparkProductDir,
+    SplitClusterDUnitTest.runSparkShellTest(snappyProductDir, sparkProductDir,
       locatorClientPort, props)
   }
 
@@ -231,8 +216,17 @@ class SplitClusterDUnitSecurityTest(s: String)
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    SplitClusterDUnitTest.invokeSparkShellCurrent(snappyProductDir, sparkProductDir,
-      currentProductDir, locatorClientPort, props, vm = null /* SparkContext in current VM */)
+
+    // stop the previous spark cluster else the new one will fail to start due to port conflicts
+    stopSparkCluster()
+    startSparkCluster(productDir = currentProductDir)
+    try {
+      SplitClusterDUnitTest.runSparkShellCurrentTest(snappyProductDir, currentProductDir,
+        locatorClientPort, props, vm = null /* SparkContext in current VM */)
+    } finally {
+      stopSparkCluster(productDir = currentProductDir)
+      startSparkCluster()
+    }
   }
 
   def testPreparedStatements(): Unit = {
@@ -671,13 +665,12 @@ class SplitClusterDUnitSecurityTest(s: String)
     adminConn.close()
     adminConn = null
     snc.sparkContext.stop()
-    logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
-    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
+    stopSnappyCluster(deleteData = false)
     var waitSeconds = 30
     var status = "stopped"
 
     val wc = new WaitCriterion {
-      override def done() = {
+      override def done(): Boolean = {
         val output = (snappyProductDir + "/sbin/snappy-status-all.sh").!!
         logInfo(s"Status output: \n$output")
         getCount(output, status) == 4
@@ -687,8 +680,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     }
     DistributedTestBase.waitForCriterion(wc, waitSeconds * 1000, 1000, true)
 
-    logInfo(s"Starting snappy cluster in $snappyProductDir/work")
-    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
+    startSnappyCluster()
     waitSeconds = 60
     status = "running"
     DistributedTestBase.waitForCriterion(wc, waitSeconds * 1000, 1000, true)
@@ -1174,18 +1166,17 @@ class SplitClusterDUnitSecurityTest(s: String)
       override def accept(pathname: File): Boolean = {
         pathname.getName.contains("myudf") && pathname.getName.contains("jar")
       }
-    }).foreach(x => println(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    }).foreach(x => logInfo(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
     server1Dir.listFiles(new FileFilter {
       override def accept(pathname: File): Boolean = {
         pathname.getName.contains("myudf") && pathname.getName.contains("jar")
       }
-    }).foreach(x => println(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    }).foreach(x => logInfo(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
     server2Dir.listFiles(new FileFilter {
       override def accept(pathname: File): Boolean = {
         pathname.getName.contains("myudf") && pathname.getName.contains("jar")
       }
-    }).foreach(x => println(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
-
+    }).foreach(x => logInfo(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
 
     // Drop a function of jdbcUser2
     executeSQL(stmt2, s"drop function myUDF")
@@ -1206,17 +1197,17 @@ class SplitClusterDUnitSecurityTest(s: String)
       override def accept(pathname: File): Boolean = {
         pathname.getName.contains("myudf") && pathname.getName.contains("jar")
       }
-    }).foreach(x => println(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    }).foreach(x => logInfo(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
     server1Dir.listFiles(new FileFilter {
       override def accept(pathname: File): Boolean = {
         pathname.getName.contains("myudf") && pathname.getName.contains("jar")
       }
-    }).foreach(x => println(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    }).foreach(x => logInfo(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
     server2Dir.listFiles(new FileFilter {
       override def accept(pathname: File): Boolean = {
         pathname.getName.contains("myudf") && pathname.getName.contains("jar")
       }
-    }).foreach(x => println(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    }).foreach(x => logInfo(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
 
     // Verify list jars
     stmt2.execute(s"list jars")
@@ -1232,9 +1223,8 @@ class SplitClusterDUnitSecurityTest(s: String)
     }
     assert(rows == 1, s"Expected just 1 UDF, but found $rows")
 
-    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
-
-    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
+    stopSnappyCluster(deleteData = false)
+    startSnappyCluster()
 
     user1Conn = getConn(jdbcUser1)
     // Select with the existing UDF
@@ -1453,18 +1443,6 @@ object SplitClusterDUnitSecurityTest extends SplitClusterDUnitTestObject {
 
   private val locatorPort = AvailablePortHelper.getRandomAvailableUDPPort
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
-
-  def startSparkCluster(productDir: String): Unit = {
-    logInfo(s"Starting spark cluster in $productDir/work")
-    logInfo((productDir + "/sbin/start-all.sh") !!)
-  }
-
-  def stopSparkCluster(productDir: String): Unit = {
-    val sparkContext = SnappyContext.globalSparkContext
-    logInfo(s"Stopping spark cluster in $productDir/work")
-    if (sparkContext != null) sparkContext.stop()
-    logInfo((productDir + "/sbin/stop-all.sh") !!)
-  }
 
   def bootExistingAuthModule(props: Properties): Unit = {
     val bootAuth = new SerializableRunnable() {

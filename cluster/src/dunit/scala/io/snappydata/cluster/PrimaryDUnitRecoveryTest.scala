@@ -16,16 +16,14 @@
  */
 package io.snappydata.cluster
 
-import java.io.{BufferedOutputStream, BufferedWriter, ByteArrayOutputStream, File, FileWriter,
-  PrintStream, PrintWriter}
-import java.sql.{Connection, DriverManager, ResultSet, Statement, Timestamp}
+import java.io.{BufferedOutputStream, ByteArrayOutputStream, File, PrintStream}
+import java.sql.{Connection, DriverManager, ResultSet, Statement}
 import java.util.Properties
 
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
-import scala.sys.process.{Process, ProcessLogger, stderr, stdout, _}
+import scala.sys.process._
 import scala.util.Try
-import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
@@ -40,7 +38,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 
 class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
-    with Logging {
+    with ClusterUtils with Logging {
 
   val adminUser1 = "gemfire10"
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
@@ -63,8 +61,6 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
    * start LDAP server in beforeAll
    */
   override def beforeClass(): Unit = {
-
-    PrimaryDUnitRecoveryTest.snappyHome = System.getenv("SNAPPY_HOME")
     // start LDAP server
     logInfo("Starting LDAP server")
     // starts LDAP server and sets LDAP properties to be passed to conf files
@@ -86,6 +82,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
     // 1. stop  ldap cluster.
     stopLdapTestServer()
     // 2. delete all
+    stopCluster(deleteData = true)
   }
 
   def stopLdapTestServer(): Unit = {
@@ -111,16 +108,12 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
   }
 
   def startSnappyCluster(): Unit = {
-    val (out, _) =
-      PrimaryDUnitRecoveryTest.executeCommand(s"${PrimaryDUnitRecoveryTest.snappyHome}" +
-        s"/sbin/snappy-start-all.sh --config $confDirPath")
-
+    val out = startSnappyCluster(startArgs = s"--config $confDirPath")
     // TODO need a better way to ensure the cluster has started
     if (!out.contains("Distributed system now")) {
-      throw new Exception(s"Failed to start Snappy cluster.")
+      throw new RuntimeException("Failed to start Snappy cluster.")
     }
   }
-
 
   def basicOperationSetSnappyCluster(stmt: Statement, defaultSchema: String = "APP"): Unit = {
     // covers case: data only in row buffers
@@ -220,16 +213,12 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
         " options(path '/tmp/test1_exttab1.csv')")
   }
 
-  def stopCluster(): Unit = {
-    // TODO need a way to ensure the cluster has stopped
-    PrimaryDUnitRecoveryTest.executeCommand(s"${PrimaryDUnitRecoveryTest.snappyHome}" +
-        s"/sbin/snappy-stop-all.sh --config $confDirPath")
+  def stopCluster(deleteData: Boolean = false): Unit = {
+    stopSnappyCluster(stopArgs = s"--config $confDirPath", deleteData = deleteData)
   }
 
   def startSnappyRecoveryCluster(): Unit = {
-    val (out, _) =
-      PrimaryDUnitRecoveryTest.executeCommand(s"${PrimaryDUnitRecoveryTest.snappyHome}" +
-        s"/sbin/snappy-start-all.sh --recover --config $confDirPath")
+    val out = startSnappyCluster(startArgs = s"--recover --config $confDirPath")
     // TODO need a better way to ensure the cluster has started
     if (!out.contains("Distributed system now")) {
       throw new Exception(s"Failed to start Snappy cluster in recovery mode.")
@@ -299,7 +288,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
         case _ => stringBuilder ++= s"${resultSet.getObject(colCount)}"
       }
       // todo: can be improved using batching 100 rows
-      writeToFile(stringBuilder.toString(), filePathOrg, true)
+      writeToFile(stringBuilder.append('\n').toString(), filePathOrg, append = true)
     }
     null
   }
@@ -333,7 +322,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
             }
             case blob: ClientBlob => {
               stringBuilder ++= s"${
-                scala.io.Source.fromInputStream(resultSet.getBlob(i).getBinaryStream).mkString
+                scala.io.Source.fromInputStream(blob.getBinaryStream).mkString
               },"
             }
             case _ =>
@@ -348,14 +337,14 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
           }
           case blob: ClientBlob => {
             stringBuilder ++= s"${
-              scala.io.Source.fromInputStream(resultSet.getBlob(colCount).getBinaryStream).mkString
+              scala.io.Source.fromInputStream(blob.getBinaryStream).mkString
             }"
           }
           case _ =>
             stringBuilder ++= s"${resultSet.getObject(colCount)}"
         }
         // todo: can be improved using batching 100 rows
-        writeToFile(stringBuilder.toString(), filePathOrg, true)
+        writeToFile(stringBuilder.append('\n').toString(), filePathOrg, append = true)
       }
     } else {
       val colCount: Int = resultSet.getMetaData.getColumnCount
@@ -370,7 +359,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
             }
             case blob: ClientBlob => {
               stringBuilder ++= s"${
-                scala.io.Source.fromInputStream(resultSet.getBlob(i).getBinaryStream).mkString
+                scala.io.Source.fromInputStream(blob.getBinaryStream).mkString
               },"
             }
             case _ =>
@@ -385,7 +374,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
           }
           case blob: ClientBlob => {
             stringBuilder ++= s"${
-              scala.io.Source.fromInputStream(resultSet.getBlob(colCount).getBinaryStream).mkString
+              scala.io.Source.fromInputStream(blob.getBinaryStream).mkString
             }"
           }
           case _ =>
@@ -393,7 +382,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
         }
 
         // todo: can be improved using batching 100 rows
-        writeToFile(stringBuilder.toString(), filePathRec, true)
+        writeToFile(stringBuilder.append('\n').toString(), filePathRec, append = true)
       }
       val cmd = s"comm --nocheck-order -3 $filePathOrg $filePathRec"
       var diffRes: String = ""
@@ -409,41 +398,6 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
 
         case scala.util.Failure(exception) =>
           logInfo(s"Error comparing output files.\n$exception")
-      }
-    }
-  }
-
-
-  def writeToFile(str: String, filePath: String, append: Boolean = false): Unit = {
-    var pw: PrintWriter = null
-    if (append) {
-      val fileWriter = new FileWriter(filePath, append)
-      val bufferedWriter = new BufferedWriter(fileWriter)
-      pw = new PrintWriter(bufferedWriter)
-      pw.println(str)
-      pw.close()
-      bufferedWriter.close()
-      fileWriter.close()
-    } else {
-      pw = new PrintWriter(filePath)
-      pw.write(str)
-      pw.flush()
-      pw.close()
-      // wait until file becomes available (e.g. running on NFS)
-      var matched = false
-      while (!matched) {
-        Thread.sleep(100)
-        try {
-          val source = scala.io.Source.fromFile(filePath)
-          val lines = try {
-            source.mkString
-          } finally {
-            source.close()
-          }
-          matched = lines == str
-        } catch {
-          case NonFatal(_) =>
-        }
       }
     }
   }
@@ -468,7 +422,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
   def test1(): Unit = {
     try {
       // set separate work directory and conf directory
-      confDirPath = createConfDir("test1");
+      confDirPath = createConfDir("test1")
       val leadsNum = 1
       val locatorsNum = 1
       val serversNum = 1
@@ -482,15 +436,13 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
 
       val locNetPort = locatorNetPort
       val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
-      val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
       val ldapConf = PrimaryDUnitRecoveryTest.getLdapConf
       writeToFile(s"localhost  -peer-discovery-port=$locatorPort -dir=$workDirPath/locator-1" +
           s" -client-port=$locNetPort $ldapConf", s"$confDirPath/locators")
       writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
           s" $waitForInit $ldapConf", s"$confDirPath/leads")
-      writeToFile(
-        s"""localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf
-           |""".stripMargin, s"$confDirPath/servers")
+      writeToFile(s"localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-1" +
+          s" -client-port=$netPort2 $ldapConf", s"$confDirPath/servers")
 
       startSnappyCluster()
 
@@ -512,7 +464,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
       val connRec = getConn(locNetPort, "gemfire10", "gemfire10")
       val stmtRec = connRec.createStatement()
       // reused below multiple times; clear before using str
-      var str: StringBuilder = new StringBuilder
+      val str = new StringBuilder
       var tempTab = ""
       val arrBuf: ArrayBuffer[String] = ArrayBuffer.empty
       var i = 0
@@ -579,7 +531,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
       while (rs.next()) {
         str ++= s"${rs.getString(1)}\t"
       }
-      //todo need to find a better way to assert the result
+      // TODO need to find a better way to assert the result
       assert(str.toString().toUpperCase().contains("CREATE "))
       rs.close()
 
@@ -755,13 +707,16 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
 
       // todo: test with 2 locators
 
-      writeToFile(s"localhost  -peer-discovery-port=$locatorPort -recovery-state-chunk-size=20 -dir=$workDirPath/locator-1" +
-          s" -client-port=$locNetPort $ldapConf", s"$confDirPath/locators")
+      writeToFile(s"localhost  -peer-discovery-port=$locatorPort -recovery-state-chunk-size=20" +
+          s" -dir=$workDirPath/locator-1 -client-port=$locNetPort $ldapConf",
+        s"$confDirPath/locators")
       writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
           s" $waitForInit $ldapConf", s"$confDirPath/leads")
       writeToFile(
-        s"""localhost  -locators=localhost[$locatorPort] -recovery-state-chunk-size=50 -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf
-           |localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-2 -client-port=$netPort3 $ldapConf
+        s"""localhost  -locators=localhost[$locatorPort] -recovery-state-chunk-size=50 \\
+           |           -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf
+           |localhost  -locators=localhost[$locatorPort] -dir=$workDirPath/server-2 \\
+           |           -client-port=$netPort3 $ldapConf
            |""".stripMargin, s"$confDirPath/servers")
 
       startSnappyCluster()
@@ -1113,7 +1068,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
 
       var connRec: Connection = null: Connection
       var stmtRec: Statement = null: Statement
-      var str = new mutable.StringBuilder()
+      val str = new StringBuilder()
       val arrBuf: ArrayBuffer[String] = ArrayBuffer.empty
       var i = 0
 
@@ -1135,13 +1090,13 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
 
       rs = stmtRec.executeQuery("select col1, col2, col3, col4," +
           " col5 from gemfire10.test3tab3 ORDER BY col5")
+      // scalastyle:off println
       println("select * from test3tab3 =======================")
       resetBuffer
 
       arrBuf ++= ArrayBuffer("a,b,1,adsf,123", "aa,bb,11,adsfg,1234", "aaa,bbb,1111,adsfgh," +
           "12345", "asdf,bnm,1111111,adsfghi,123456")
       while (rs.next()) {
-        // scalastyle:off println
         println(s"${rs.getBlob(1)},${rs.getClob(2)},${rs.getBlob(3)}," +
             s"${rs.getString(4)},${rs.getInt(5)}")
         assert(s"${scala.io.Source.fromInputStream(rs.getBlob(1).getBinaryStream).mkString}," +
@@ -1150,6 +1105,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
             s"${rs.getString(4)},${rs.getInt(5)}" == arrBuf(i))
         i += 1
       }
+      // scalastyle:on println
 
       rs = stmtRec.executeQuery("select col1, col2, col3 from" +
           " gemfire10.test3_coltab4 ORDER BY col1")
@@ -1328,16 +1284,14 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
       val locatorPort = AvailablePortHelper.getRandomAvailableUDPPort
       val locNetPort = locatorNetPort
       val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
-      val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
       val ldapConf = PrimaryDUnitRecoveryTest.getLdapConf
 
       writeToFile(s"localhost  -peer-discovery-port=$locatorPort -dir=$workDirPath/locator-1" +
           s" -client-port=$locNetPort $ldapConf", s"$confDirPath/locators")
       writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
           s" $waitForInit $ldapConf", s"$confDirPath/leads")
-      writeToFile(
-        s"""localhost  -locators=localhost[$locatorPort] -recovery-state-chunk-size=20 -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf
-           |""".stripMargin, s"$confDirPath/servers")
+      writeToFile(s"localhost  -locators=localhost[$locatorPort] -recovery-state-chunk-size=20" +
+          s" -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf", s"$confDirPath/servers")
 
       startSnappyCluster()
       var conn: Connection = null: Connection
@@ -1516,21 +1470,19 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
       val locatorPort = AvailablePortHelper.getRandomAvailableUDPPort
       val locNetPort = locatorNetPort
       val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
-      val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
       val ldapConf = PrimaryDUnitRecoveryTest.getLdapConf
       writeToFile(s"localhost  -peer-discovery-port=$locatorPort -dir=$workDirPath/locator-1" +
           s" -client-port=$locNetPort $ldapConf", s"$confDirPath/locators")
       writeToFile(s"localhost  -locators=localhost[$locatorPort]  -dir=$workDirPath/lead-1" +
           s" $waitForInit $ldapConf", s"$confDirPath/leads")
-      writeToFile(
-        s"localhost  -locators=localhost[$locatorPort] -recovery-state-chunk-size=40 -dir=$workDirPath/server-1 " +
-            s"-client-port=$netPort2 $ldapConf".stripMargin, s"$confDirPath/servers")
+      writeToFile(s"localhost  -locators=localhost[$locatorPort] -recovery-state-chunk-size=40" +
+          s" -dir=$workDirPath/server-1 -client-port=$netPort2 $ldapConf".stripMargin,
+        s"$confDirPath/servers")
 
       startSnappyCluster()
 
       val conn = getConn(locNetPort, "gemfire10", "gemfire10")
       val stmt = conn.createStatement()
-      val defaultSchema = "gemfire10"
       var fqtn: String = null
 
       // todo: Add nested complex data types tests
@@ -1754,8 +1706,6 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
 
       var connRec: Connection = null
       var stmtRec: Statement = null
-      var str = new mutable.StringBuilder()
-      val arrBuf: ArrayBuffer[String] = ArrayBuffer.empty
 
       logInfo("============ Recovery mode ============")
       connRec = getConn(locNetPort, "gemfire10", "gemfire10")
@@ -1763,7 +1713,7 @@ class PrimaryDUnitRecoveryTest(s: String) extends DistributedTestBase(s)
       Thread.sleep(3000)
 
       def getRecFromResultSet(rs: ResultSet, schemaStr: String): ListBuffer[Array[Any]] = {
-        var result = new ListBuffer[Array[Any]]()
+        val result = new ListBuffer[Array[Any]]()
         while (rs.next()) {
           var i = 1
           val recArr = schemaStr.split(",").map(_.toLowerCase).map(f => {
@@ -2000,7 +1950,7 @@ object PrimaryDUnitRecoveryTest extends Logging {
   def getJdbcConnection(netPort: Int): Connection = {
     val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
-    var url: String = "jdbc:snappydata://localhost:" + netPort + "/"
+    val url: String = "jdbc:snappydata://localhost:" + netPort + "/"
     DriverManager.getConnection(url)
   }
 

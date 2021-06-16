@@ -16,7 +16,6 @@
  */
 package io.snappydata.cluster
 
-import java.io.PrintWriter
 import java.net.InetAddress
 import java.sql.{Connection, DriverManager, Timestamp}
 import java.util.Properties
@@ -25,15 +24,15 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
 import scala.util.Random
-import scala.util.control.NonFatal
+
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Property.PlanCaching
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
-import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
 import io.snappydata.{ColumnUpdateDeleteTests, ConcurrentOpsTests, Constant, SnappyFunSuite}
 import org.junit.Assert
+
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.store.{MetadataTest, StoreUtils}
@@ -46,7 +45,7 @@ case class OrderData(ref: Int, description: String, amount: Long)
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
  */
-trait SplitClusterDUnitTestBase extends Logging {
+trait SplitClusterDUnitTestBase extends ClusterUtils with Logging {
 
   def vm0: VM
 
@@ -67,37 +66,9 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def props: Map[String, String] = testObject.props
 
-  protected def sparkProductDir: String
-
   protected def locatorClientPort: Int
 
   protected def startNetworkServers(): Unit
-
-  protected def writeToFile(str: String, fileName: String): Unit = {
-    val pw = new PrintWriter(fileName)
-    try {
-      pw.write(str)
-      pw.flush()
-    } finally {
-      pw.close()
-    }
-    // wait until file becomes available (e.g. running on NFS)
-    var matched = false
-    while (!matched) {
-      Thread.sleep(100)
-      try {
-        val source = scala.io.Source.fromFile(fileName)
-        val lines = try {
-          source.mkString
-        } finally {
-          source.close()
-        }
-        matched = lines == str
-      } catch {
-        case NonFatal(_) =>
-      }
-    }
-  }
 
   def doTestColumnTableCreation(): Unit = {
     // Embedded Cluster Operations
@@ -288,7 +259,8 @@ trait SplitClusterDUnitTestObject extends Logging {
     TestUtils.dropAllSchemas(session)
 
     // first check metadata queries using session and JDBC connection
-    val locatorNetServer = s"localhost/127.0.0.1[$locatorClientPort]"
+    var locatorNetServer = s"localhost/127.0.0.1[$locatorClientPort]"
+    val locatorNetServerAlt = s"127.0.0.1/127.0.0.1[$locatorClientPort]"
     // get member IDs using JDBC connection
     val jdbcConn = getConnection(locatorClientPort)
     var stmt = jdbcConn.createStatement()
@@ -303,7 +275,12 @@ trait SplitClusterDUnitTestObject extends Logging {
       val id = rs.getString(1)
       val thriftServers = rs.getString(3)
       rs.getString(2) match {
-        case "locator" => assert(thriftServers == locatorNetServer); locatorId = id
+        case "locator" =>
+          if (thriftServers != locatorNetServer) {
+            assert(thriftServers == locatorNetServerAlt)
+            locatorNetServer = locatorNetServerAlt
+          }
+          locatorId = id
         case "primary lead" => assert(thriftServers.isEmpty); leadId = id
         case "datastore" => servers += id; netServers += thriftServers
         case kind => assert(assertion = false, s"unexpected node type = $kind")
@@ -401,7 +378,7 @@ trait SplitClusterDUnitTestObject extends Logging {
         .setMaster(s"spark://$hostName:7077")
         .set("spark.executor.cores", TestUtils.defaultCoresForSmartConnector)
         .set("spark.executor.extraClassPath",
-          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+          ClusterUtils.getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", connectionURL)
         .set("snapptdata.sql.planCaching", random.nextBoolean().toString)
       .set(io.snappydata.Property.TestDisableCodeGenFlag.name, "false")
@@ -416,18 +393,18 @@ trait SplitClusterDUnitTestObject extends Logging {
       }
     }
 
-      val sc = SparkContext.getOrCreate(conf)
+    val sc = SparkContext.getOrCreate(conf)
 //      sc.setLogLevel("DEBUG")
 //      Logger.getLogger("org").setLevel(Level.DEBUG)
 //      Logger.getLogger("akka").setLevel(Level.DEBUG)
-      val snc = SnappyContext(sc)
+    val snc = SnappyContext(sc)
 
-      val mode = SnappyContext.getClusterMode(snc.sparkContext)
-      mode match {
-        case ThinClientConnectorMode(_, _) => // expected
-        case _ => assert(assertion = false, "cluster mode is " + mode)
-      }
-      snc
+    val mode = SnappyContext.getClusterMode(snc.sparkContext)
+    mode match {
+      case ThinClientConnectorMode(_, _) => // expected
+      case _ => assert(assertion = false, "cluster mode is " + mode)
+    }
+    snc
   }
 
   def createTableUsingDataSourceAPI(snc: SnappyContext,
@@ -542,13 +519,6 @@ trait SplitClusterDUnitTestObject extends Logging {
     data
   }
 
-  def getEnvironmentVariable(env: String): String = {
-    val value = scala.util.Properties.envOrElse(env, null)
-    if (env == null) {
-      throw new TestException(s"Environment variable $env is not defined")
-    }
-    value
-  }
   def validateNoActiveSnapshotTX(): Unit = {
     val cache = Misc.getGemFireCacheNoThrow
     if (cache eq null) return

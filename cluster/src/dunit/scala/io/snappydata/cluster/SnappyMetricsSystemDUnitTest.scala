@@ -16,35 +16,35 @@
  */
 package io.snappydata.cluster
 
-import java.io.{File, PrintWriter}
-import java.nio.file.{Files, Paths}
 import java.sql.{Connection, DriverManager, Statement}
-
-import io.snappydata.Constant
-import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
-import org.apache.spark.Logging
-import org.json4s.jackson.JsonMethods._
-import org.junit.Assert.assertEquals
-import org.json4s.DefaultFormats
 
 import scala.collection.mutable
 import scala.sys.process._
 
-class SnappyMetricsSystemDUnitTest(s: String)
-    extends DistributedTestBase(s) with Logging {
+import io.snappydata.Constant
+import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
+import org.json4s.DefaultFormats
+import org.json4s.jackson.JsonMethods._
+import org.junit.Assert.assertEquals
 
+import org.apache.spark.Logging
+
+class SnappyMetricsSystemDUnitTest(s: String)
+    extends DistributedTestBase(s) with ClusterUtils with Logging {
 
   val port = AvailablePortHelper.getRandomAvailableTCPPort
   val netPort = AvailablePortHelper.getRandomAvailableTCPPort
   val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
   val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
   val netPort4 = AvailablePortHelper.getRandomAvailableTCPPort
-  val snappyProductDir = System.getenv("SNAPPY_HOME")
-  private var conn: Connection = null
-  private var stmt: Statement = null
+
+  private var conn: Connection = _
+  private var stmt: Statement = _
 
   override def beforeClass(): Unit = {
     super.beforeClass()
+    // stop any previous cluster and cleanup data
+    stopSnappyCluster()
     logInfo(s"Starting snappy cluster in $snappyProductDir/work with locator client port $netPort")
     (s"mkdir -p $snappyProductDir/work/locator" +
         s" $snappyProductDir/work/lead1" +
@@ -53,39 +53,26 @@ class SnappyMetricsSystemDUnitTest(s: String)
         s" $snappyProductDir/work/server2" +
         s" $snappyProductDir/work/server3").!!
     val confDir = s"$snappyProductDir/conf"
-    val sobj = new SplitClusterDUnitTest(s)
-    val pw = new PrintWriter(new File(s"$confDir/locators"))
-    pw.write(s"localhost -dir=$snappyProductDir/work/locator" +
-        s" -peer-discovery-port=$port -client-port=$netPort")
-    pw.close()
-    val pw1 = new PrintWriter(new File(s"$confDir/leads"))
-    pw1.write(s"localhost -locators=localhost[$port] " +
-        s"-dir=$snappyProductDir/work/lead1 -spark.ui.port=9090\n")
-    pw1.write(s"localhost -locators=localhost[$port] " +
-        s"-dir=$snappyProductDir/work/lead2 -spark.ui.port=8090")
-    pw1.close()
-    val pw2 = new PrintWriter(new File(s"$confDir/servers"))
-    pw2.write(s"localhost -locators=localhost[$port] " +
-        s"-dir=$snappyProductDir/work/server1 -client-port=$netPort2\n")
-    pw2.write(s"localhost -locators=localhost[$port] " +
-        s"-dir=$snappyProductDir/work/server2 -client-port=$netPort3\n")
-    pw2.write(s"localhost -locators=localhost[$port] " +
-        s"-dir=$snappyProductDir/work/server3 -client-port=$netPort4")
-    pw2.close()
-    logInfo(s"Starting snappy cluster in $snappyProductDir/work")
-    logInfo(((snappyProductDir + "/sbin/snappy-stop-all.sh") ###
-        ("rm -rf " + snappyProductDir + "/work") ###
-        (snappyProductDir + "/sbin/snappy-start-all.sh")).!!)
-    Thread.sleep(10000)
+    writeToFile(s"localhost -dir=$snappyProductDir/work/locator" +
+        s" -peer-discovery-port=$port -client-port=$netPort", s"$confDir/locators")
+    writeToFile(
+      s"""localhost -locators=localhost[$port] -dir=$snappyProductDir/work/lead1 -spark.ui.port=9090
+         |localhost -locators=localhost[$port] -dir=$snappyProductDir/work/lead2 -spark.ui.port=8090
+         |""".stripMargin, s"$confDir/leads")
+    writeToFile(
+      s"""localhost -locators=localhost[$port] -dir=$snappyProductDir/work/server1 \\
+         |          -client-port=$netPort2
+         |localhost -locators=localhost[$port] -dir=$snappyProductDir/work/server2 \\
+         |          -client-port=$netPort3
+         |localhost -locators=localhost[$port] -dir=$snappyProductDir/work/server3 \\
+         |          -client-port=$netPort4
+         |""".stripMargin, s"$confDir/servers")
+    startSnappyCluster()
   }
 
   override def afterClass(): Unit = {
     super.afterClass()
-    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
-    s"rm -rf $snappyProductDir/work".!!
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
+    stopSnappyCluster()
   }
 
   def jsonStrToMap(jsonStr: String): Map[String, AnyVal] = {
@@ -135,7 +122,7 @@ class SnappyMetricsSystemDUnitTest(s: String)
   }
 
   def doTestMetricsWhenClusterStarted(): Unit = {
-    var map = collectJsonStats()
+    val map = collectJsonStats()
     for ((k, v) <- map) {
       if (containsWords(k, Array("MemberMetrics", "connectorCount"))) {
         assertEquals(scala.math.BigInt(0), v)}

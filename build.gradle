@@ -120,7 +120,7 @@ allprojects {
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.1'
     thriftVersion = '0.9.3'
-    jacksonVersion = '2.9.5'
+    jacksonVersion = '2.9.9'
     hiveVersion = '1.21.2.3.1.2.1-1'
     metricsVersion = '4.0.3'
     metrics2Version = '2.2.0'
@@ -254,12 +254,12 @@ if (checkResult.exitValue != 0) {
   }
 }
 
-def getProcessId() {
+static def getProcessId() {
   String name = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
   return name[0..name.indexOf('@') - 1]
 }
 
-def getStackTrace(def t) {
+static def getStackTrace(def t) {
   java.io.StringWriter sw = new java.io.StringWriter()
   java.io.PrintWriter pw = new java.io.PrintWriter(sw)
   org.codehaus.groovy.runtime.StackTraceUtils.sanitize(t).printStackTrace(pw)
@@ -285,7 +285,7 @@ configure(subprojects.findAll {!(it.name ==~ /snappy-spark.*/ ||
   }
 }
 
-def cleanIntermediateFiles(def projectName) {
+def cleanIntermediateFiles(String projectName) {
   def projDir = "${project(projectName).projectDir}"
   delete "${projDir}/metastore_db"
   delete "${projDir}/warehouse"
@@ -295,7 +295,7 @@ def cleanIntermediateFiles(def projectName) {
   }
 }
 
-def now() {
+static def now() {
   return new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
 }
 
@@ -344,6 +344,11 @@ task cleanQuickstart { doLast {
 } }
 
 subprojects {
+
+  int maxWorkers = project.hasProperty('org.gradle.workers.max') ?
+                   project.property('org.gradle.workers.max') as int :
+                   Runtime.getRuntime().availableProcessors()
+
   // the run task for a selected sub-project
   task run(type: JavaExec) {
     if (!project.hasProperty('mainClass')) {
@@ -409,7 +414,7 @@ subprojects {
   }
 
   test {
-    maxParallelForks = Runtime.getRuntime().availableProcessors()
+    maxParallelForks = maxWorkers
     maxHeapSize '2g'
     jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC',
             '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
@@ -489,6 +494,7 @@ subprojects {
     dependsOn ':copyShadowJars'
     dependsOn configureDUnitTest
 
+    // maxParallelForks = Math.max(Math.sqrt(maxWorkers + 1) + 1 as int, 2)
     maxParallelForks = 1
     minHeapSize '1536m'
     maxHeapSize '1536m'
@@ -668,6 +674,7 @@ subprojects {
     dependsOn ':copyShadowJars'
     dependsOn configureDUnitSecurityTest
 
+    // maxParallelForks = Math.max(Math.sqrt(maxWorkers + 1) + 1 as int, 2)
     maxParallelForks = 1
     minHeapSize '1536m'
     maxHeapSize '1536m'
@@ -714,7 +721,7 @@ subprojects {
         'Manifest-Version'  : '1.0',
         'Created-By'        : createdBy,
         'Title'             : rootProject.name,
-        'Version'           : version,
+        'Version'           : archiveVersion.get(),
         'Vendor'            : vendorName
       )
     }
@@ -758,15 +765,17 @@ subprojects {
       "org.apache.hadoop:hadoop-yarn-server-web-proxy:${hadoopVersion}"
     exclude(group: 'org.mortbay.jetty', module: 'servlet-api')
   }
+  /*
   configurations.testRuntime {
     // below is included indirectly by hadoop deps and conflicts with embedded 1.5.7 apacheds
     exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
     exclude(group: 'org.apache.directory.server', module: 'apacheds-i18n')
   }
+  */
 
   task packageTests(type: Jar, dependsOn: testClasses) {
     description 'Assembles a jar archive of test classes.'
-    classifier = 'tests'
+    archiveClassifier.set('tests')
   }
   artifacts {
     testOutput packageTests
@@ -787,11 +796,11 @@ subprojects {
   apply plugin: 'signing'
 
   task packageSources(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
+    archiveClassifier.set('sources')
     from sourceSets.main.allSource
   }
   task packageDocs(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
+    archiveClassifier.set('javadoc')
     from javadoc
   }
   if (rootProject.hasProperty('enablePublish')) {
@@ -815,8 +824,8 @@ subprojects {
             name 'SnappyData'
             packaging 'jar'
             // optionally artifactId can be defined here
-            description 'TIBCO ComputeDB distributed data store and execution engine'
-            url 'http://www.snappydata.io'
+            description 'SnappyData distributed data store and execution engine'
+            url 'https://github.com/TIBCOSoftware/snappydata'
 
             scm {
               connection 'scm:git:https://github.com/TIBCOSoftware/snappydata.git'
@@ -853,7 +862,7 @@ gradle.taskGraph.whenReady { graph ->
     if (task instanceof Tar) {
       def tar = (Tar)task
       tar.compression = Compression.GZIP
-      tar.extension = 'tar.gz'
+      tar.archiveExtension.set('tar.gz')
     } else if (task instanceof Jar) {
       def pack = (Jar)task
       if (pack.name == 'packageTests') {
@@ -874,12 +883,12 @@ gradle.taskGraph.whenReady { graph ->
                            'securityLogLevel'            : logLevel
         }
 
-        environment 'SNAPPY_HOME': snappyProductDir,
-          'APACHE_SPARK_HOME': sparkProductDir,
-          'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
-          'PYSPARK_PYTHON': sparkPython,
-          'SPARK_TESTING': '1',
-          'SNAPPY_DIST_CLASSPATH': test.classpath.asPath
+        systemProperties 'SNAPPY_HOME': snappyProductDir,
+            'APACHE_SPARK_HOME': sparkProductDir,
+            'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir
+        environment 'PYSPARK_PYTHON': sparkPython,
+            'SPARK_TESTING': '1',
+            'SNAPPY_DIST_CLASSPATH': test.classpath.asPath
 
         def failureCount = new java.util.concurrent.atomic.AtomicInteger(0)
         def progress = new File(workingDir, 'progress.txt')
@@ -974,8 +983,8 @@ task product(type: Zip) {
   }
 
   // create snappydata+spark combined python zip
-  destinationDir = file("${snappyProductDir}/python/lib")
-  archiveName = 'pyspark.zip'
+  destinationDirectory.set(file("${snappyProductDir}/python/lib"))
+  archiveFileName.set('pyspark.zip')
   from("${project(':snappy-spark').projectDir}/python") {
     include 'pyspark/**/*'
   }
@@ -1038,10 +1047,10 @@ task product(type: Zip) {
     }
 
     if (rootProject.hasProperty('hadoop-provided')) {
-      releaseFile.append("TIBCO ComputeDB ${version}${gitRevision} " +
+      releaseFile.append("SnappyData ${archiveVersion.get()}${gitRevision} " +
               "built with Hadoop ${hadoopVersion} but hadoop not bundled.\n")
     } else {
-      releaseFile.append("TIBCO ComputeDB ${version}${gitRevision} built for Hadoop ${hadoopVersion}.\n")
+      releaseFile.append("SnappyData ${archiveVersion.get()}${gitRevision} built for Hadoop ${hadoopVersion}.\n")
     }
     releaseFile.append("Build flags:${buildFlags}\n")
 
@@ -1170,9 +1179,9 @@ task product(type: Zip) {
       }
 
       exec {
-        environment "SPARK_HOME", snappyProductDir
-        environment "NO_TESTS", "1"
-        environment "CLEAN_INSTALL", "1"
+        environment 'SPARK_HOME', snappyProductDir,
+            'NO_TESTS', '1',
+            'CLEAN_INSTALL', '1'
         workingDir targetRDir
         commandLine "${targetRDir}/check-cran.sh"
       }
@@ -1188,9 +1197,6 @@ if (rootProject.hasProperty('copyToDir')) {
     into copyToDir
   }
 }
-
-// TODO: right now just copying over the product contents.
-// Can flip it around and let distribution do all the work.
 
 distributions {
   main {
@@ -1275,7 +1281,7 @@ distTar {
     dependsOn ':packageZeppelinInterpreter'
   }
   compression = Compression.GZIP
-  extension = 'tar.gz'
+  archiveExtension.set('tar.gz')
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
   }
@@ -1354,7 +1360,7 @@ task generateSources {
   // copy all resource files into build classes path because new versions of IDEA
   // do not include separate resources path in CLASSPATH if output path has been customized
   doLast {
-    subprojects.collect { proj ->
+    subprojects.forEach { proj ->
       String resourcesDir = proj.sourceSets.main.output.resourcesDir
       if (file(resourcesDir).exists()) {
         def projOutDir = file("${proj.projectDir}/src/main/scala").exists()
@@ -1429,7 +1435,7 @@ gradle.taskGraph.whenReady { graph ->
   tasks.getByName('allReports').reportOn rootProject.subprojects.collect{ it.tasks.withType(Test) }.flatten()
 }
 
-def writeProperties(def parent, def name, def comment, def propsMap) {
+static void writeProperties(File parent, String name, def comment, def propsMap) {
   parent.exists() || parent.mkdirs()
   def writer = new File(parent, name).newWriter()
   def props = new Properties()
@@ -1442,7 +1448,7 @@ def writeProperties(def parent, def name, def comment, def propsMap) {
   }
 }
 
-int getLast(includeTestFiles, pattern) {
+static int getLast(includeTestFiles, pattern) {
   includeTestFiles.findLastIndexOf {
     File f -> f.name.indexOf(pattern) >= 0
   }

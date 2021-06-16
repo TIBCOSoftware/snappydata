@@ -20,7 +20,8 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import java.net.InetAddress
 
 import io.snappydata.benchmark.TPCHColumnPartitionedTable
-import io.snappydata.test.util.TestException
+import io.snappydata.cluster.ClusterUtils
+
 import org.apache.spark.rdd.ZippedPartitionsPartition
 import org.apache.spark.sql.catalyst.plans.physical.SinglePartition
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
@@ -62,20 +63,15 @@ object SmartConnectorFunctions {
     TPCHUtils.createAndLoadTables(snc, isSnappy = true)
   }
 
-  def getEnvironmentVariable(env: String): String = {
-    val value = scala.util.Properties.envOrElse(env, null)
-    if (env == null) {
-      throw new TestException(s"Environment variable $env is not defined")
-    }
-    value
-  }
+  def getEnvironmentVariable(name: String): String = ClusterUtils.getEnvironmentVariable(name)
+
   def nwQueryValidationOnConnector(locatorNetPort: Int, tableType: String): Unit = {
     val hostName = InetAddress.getLocalHost.getHostName
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
         .set("spark.executor.extraClassPath",
-          SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", s"localhost:$locatorNetPort")
 
     val sc = SparkContext.getOrCreate(conf)

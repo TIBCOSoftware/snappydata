@@ -16,9 +16,8 @@
  */
 package org.apache.spark.memory
 
-
 import com.gemstone.gemfire.internal.cache.LocalRegion
-import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
+import com.pivotal.gemfirexd.TestUtil
 
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
@@ -29,7 +28,7 @@ case class Data1(col1: Int, col2: Int, col3: Int)
 
 class SnappyStorageEvictorSuite extends MemoryFunSuite {
 
-  InitializeRun.setUp()
+  TestUtil.globalSetUp()
 
   private val struct = new StructType()
     .add(StructField("col1", IntegerType))

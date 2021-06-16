@@ -18,21 +18,18 @@ package org.apache.spark.sql
 
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.math.BigDecimal
-import java.nio.file.{Files, Paths}
 import java.sql.{Date, Timestamp}
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
-import scala.io.Source
 import scala.language.postfixOps
 
 import io.snappydata.SnappyFunSuite
+import org.junit.Assert._
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.NorthWindDUnitTest.writeToFile
 import org.apache.spark.sql.types._
-import org.junit.Assert._
 
 class SQLFunctionsTestSuite extends SnappyFunSuite
     with Logging
@@ -49,7 +46,7 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
    * If your test needs CodegenFallback, then override the newConf function
    * & clear the flag from the conf of the test locally.
    */
-  val sparkSession = SparkSession.builder().
+  private val sparkSession = SparkSession.builder().
     config(io.snappydata.Property.TestDisableCodeGenFlag.name, "true").
     config(io.snappydata.Property.UseOptimizedHashAggregateForSingleKey.name, "true").
     config(io.snappydata.Property.TestCodeSplitThresholdInSHA.name, "5").

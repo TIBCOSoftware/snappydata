@@ -18,11 +18,9 @@ package io.snappydata.externalstore
 
 import java.sql.{Connection, DatabaseMetaData}
 
-import scala.util.Try
-
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedDatabaseMetaData.METADATACASE_LOWER_PROP
 import io.snappydata.cluster.ClusterManagerTestBase
-import io.snappydata.test.dunit.AvailablePortHelper
+import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, SerializableRunnable}
 import org.junit.Assert.assertEquals
 
 import org.apache.spark.Logging
@@ -32,17 +30,26 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
   val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
 
-  sysProps.put(METADATACASE_LOWER_PROP, "true")
-
   // using mixed case name to cover case insensitivity scenarios
   private val table1 = "tABle1"
   private val table2 = "tABle2"
   private val table3 = "tABle3"
   val schema = "Schema1"
 
+  override def beforeClass(): Unit = {
+    super.beforeClass()
+    System.setProperty(METADATACASE_LOWER_PROP, "true")
+    DistributedTestBase.invokeInEveryVM(new SerializableRunnable() {
+      override def run(): Unit = System.setProperty(METADATACASE_LOWER_PROP, "true")
+    })
+  }
+
   override def afterClass(): Unit = {
     super.afterClass()
-    sysProps.remove(METADATACASE_LOWER_PROP)
+    System.clearProperty(METADATACASE_LOWER_PROP)
+    DistributedTestBase.invokeInEveryVM(new SerializableRunnable() {
+      override def run(): Unit = System.clearProperty(METADATACASE_LOWER_PROP)
+    })
   }
 
   def testJDBCMetadataCase_queryRoutingOn(): Unit = {
@@ -51,10 +58,6 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
     try {
       val stmt = conn.createStatement()
       try {
-        stmt.execute("drop table if exists " + table1)
-        stmt.execute("drop table if exists " + table2)
-        stmt.execute("drop table if exists " + table3)
-        stmt.execute("drop schema if exists " + schema)
         stmt.execute("create schema " + schema)
         stmt.execute("create table " + schema + "." + table1 +
             "(id integer primary key, col1 string, col2 long)")
@@ -67,7 +70,7 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
       // JDBC metadata APIs should return result in lower case when query routing is true
       // i.e. for external connections
-      testMetadataAPIs(dbmd, (s: String) => s.toLowerCase, true)
+      testMetadataAPIs(dbmd, (s: String) => s.toLowerCase, checkShortTableType = true)
 
     } finally {
       cleanup(conn)
@@ -84,12 +87,7 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
     try {
       val stmt = conn.createStatement()
       try {
-//        stmt.execute("drop schema if exists " + schema)
-        Try(stmt.execute("drop table " + table1))
-
-        Try(stmt.execute("drop table " + table2))
-        Try(stmt.execute("drop table " + table3))
-        Try(stmt.execute("create schema " + schema))
+        stmt.execute("create schema " + schema)
         stmt.execute("create table " + schema + "." + table1 +
             "(id integer primary key, col1 string, col2 long)")
         stmt.execute("create table " + schema + "." + table2 + "(id integer , fs string)")
@@ -127,7 +125,7 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
       val createParams = typeInfoRS.getString("CREATE_PARAMS")
       val localTypeName = typeInfoRS.getString("LOCAL_TYPE_NAME")
 
-      println(s"Type info - typeName:$typeName, literalPrefix:$literalPrefix," +
+      logInfo(s"Type info - typeName:$typeName, literalPrefix:$literalPrefix," +
           s" literalSuffix:$literalSuffix, createParam:$createParams," +
           s" localTypeName:$localTypeName")
 
@@ -168,7 +166,7 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
       val isAutoIncrement = columnsRS.getString("IS_AUTOINCREMENT")
       val isNullable = columnsRS.getString("IS_AUTOINCREMENT")
 
-      println(s"Column details - columnName:$columnName, tableName:$tableName," +
+      logInfo(s"Column details - columnName:$columnName, tableName:$tableName," +
           s" schemaName:$schemaName, typeName:$typeName," +
           s" isAutoIncrement:$isAutoIncrement, isNullable:$isNullable ")
 
@@ -241,10 +239,11 @@ class JDBCMetadataCaseDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
   private def cleanup(conn: Connection): Unit = {
     val stmt = conn.createStatement()
-    Try(stmt.execute("drop table " + table1))
-    Try(stmt.execute("drop table " + table2))
-    Try(stmt.execute("drop table " + table3))
-    Try(stmt.execute("drop schema " + schema))
+    stmt.execute(s"drop table if exists $schema.$table1")
+    stmt.execute(s"drop table if exists $schema.$table2")
+    stmt.execute(s"drop table if exists $table3")
+    // executed with and without query-routing=false, hence explicit "restrict"
+    stmt.execute(s"drop schema if exists $schema restrict")
     stmt.close()
     conn.close()
   }

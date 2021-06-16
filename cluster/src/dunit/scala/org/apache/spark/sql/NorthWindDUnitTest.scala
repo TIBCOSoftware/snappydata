@@ -21,7 +21,7 @@ import java.sql.{ResultSet, Statement}
 
 import scala.io.Source
 
-import io.snappydata.cluster.ClusterManagerTestBase
+import io.snappydata.cluster.{ClusterManagerTestBase, ClusterUtils}
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.TaskContext
@@ -32,17 +32,15 @@ import org.apache.spark.sql.execution.joins._
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.{FilterExec, ProjectExec}
 
-class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) with ClusterUtils {
 
   override val locatorNetPort: Int = AvailablePortHelper.getRandomAvailableTCPPort
-  protected val productDir: String = SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_HOME")
   override val stopNetServersInTearDown = false
-
 
   override def beforeClass(): Unit = {
     super.beforeClass()
     startNetworkServersOnAllVMs()
-    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
+    startSparkCluster(Some(vm3))
   }
 
   override def afterClass(): Unit = {
@@ -51,7 +49,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     super.afterClass()
     Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
       "validateNoActiveSnapshotTX"))
-    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
+    stopSparkCluster(Some(vm3))
   }
 
   def testReplicatedTableQueries(): Unit = {

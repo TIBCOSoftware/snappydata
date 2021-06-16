@@ -109,9 +109,11 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
   }
 
   private def cleanTestResources(): Unit = {
-    val snc = SnappyContext(sc).newSession()
-    snc.dropTable(col_table, ifExists = true)
-    snc.dropTable(rr_table, ifExists = true)
+    val snc = SnappyContext(sc)
+    if (snc ne null) {
+      snc.dropTable(col_table, ifExists = true)
+      snc.dropTable(rr_table, ifExists = true)
+    }
     resetMemoryManagers
   }
 

@@ -25,10 +25,10 @@ import scala.actors.Futures._
 
 import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, LocalRegion}
+import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.externalstore.Data
-import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
 
 import org.apache.spark.sql.catalyst.expressions.{SpecificInternalRow, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.types._
@@ -36,11 +36,9 @@ import org.apache.spark.sql.{CachedDataFrame, Row, SnappyContext, SnappySession}
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{SparkEnv, TaskContextImpl}
 
-
 class SnappyMemoryAccountingSuite extends MemoryFunSuite {
 
-  InitializeRun.setUp()
-
+  TestUtil.globalSetUp()
 
   val struct = (new StructType())
       .add(StructField("col1", IntegerType, true))
