@@ -602,8 +602,8 @@ subprojects {
 
     workingDir = "${testResultsBase}/recoveryTest"
     systemProperties 'java.net.preferIPv4Stack': 'true',
-        'SNAPPY_HOME': snappyProductDir,
-        'RECOVERY_TEST_DIR': workingDir
+                     'SNAPPY_HOME': snappyProductDir,
+                     'RECOVERY_TEST_DIR': workingDir
 
     binResultsDir = file("${workingDir}/binary/${project.name}")
     reports.html.destination = file("${workingDir}/html/${project.name}")
@@ -674,7 +674,6 @@ subprojects {
     dependsOn ':copyShadowJars'
     dependsOn configureDUnitSecurityTest
 
-    // maxParallelForks = Math.max(Math.sqrt(maxWorkers + 1) + 1 as int, 2)
     maxParallelForks = 1
     minHeapSize '1536m'
     maxHeapSize '1536m'

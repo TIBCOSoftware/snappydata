@@ -19,8 +19,10 @@ package io.snappydata.cluster
 
 import java.io.{BufferedWriter, FileWriter, PrintWriter}
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
+import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.collection.JavaConverters._
+import scala.io.{Codec, Source}
 import scala.sys.process._
 import scala.util.control.NonFatal
 
@@ -35,7 +37,10 @@ trait ClusterUtils extends Logging {
 
   val snappyHomeDir: String = System.getProperty("SNAPPY_HOME")
 
-  lazy val snappyProductDir: String = createClusterDirectory(snappyHomeDir, isSnappy = true)
+  lazy val snappyProductDir: String = {
+    if (snappyHomeDir ne null) createClusterDirectory(snappyHomeDir, isSnappy = true)
+    else "<undefined>"
+  }
 
   protected def sparkProductDir: String = snappyHomeDir
 
@@ -63,33 +68,8 @@ trait ClusterUtils extends Logging {
     clusterDir
   }
 
-  def writeToFile(str: String, filePath: String, append: Boolean = false): Unit = {
-    val fileWriter = new FileWriter(filePath, append)
-    val bufferedWriter = new BufferedWriter(fileWriter)
-    val pw = new PrintWriter(bufferedWriter)
-    try {
-      pw.write(str)
-      pw.flush()
-    } finally {
-      pw.close()
-    }
-    // wait until file becomes available (e.g. running on NFS)
-    var matched = append
-    while (!matched) {
-      Thread.sleep(100)
-      try {
-        val source = scala.io.Source.fromFile(filePath)
-        val lines = try {
-          source.mkString
-        } finally {
-          source.close()
-        }
-        matched = lines == str
-      } catch {
-        case NonFatal(_) =>
-      }
-    }
-  }
+  def writeToFile(str: String, filePath: String, append: Boolean = false): Unit =
+    ClusterUtils.writeToFile(str, filePath, append)
 
   def startSparkCluster(vm: Option[VM] = None, productDir: String = sparkProductDir): String = {
     val clusterDir = createClusterDirectory(productDir, isSnappy = false)
@@ -108,11 +88,12 @@ trait ClusterUtils extends Logging {
     }
   }
 
-  def startSnappyCluster(vm: Option[VM] = None, startArgs: String = ""): String = vm match {
-    case None => ClusterUtils.startSnappyCluster(snappyProductDir, startArgs)
+  def startSnappyCluster(vm: Option[VM] = None, enableHiveServer: Boolean = false,
+      startArgs: String = ""): String = vm match {
+    case None => ClusterUtils.startSnappyCluster(snappyProductDir, enableHiveServer, startArgs)
     case Some(v) =>
       v.invoke(ClusterUtils, "startSnappyCluster",
-        Array(snappyProductDir: AnyRef, startArgs)).toString
+        Array(snappyProductDir, enableHiveServer.asInstanceOf[AnyRef], startArgs)).toString
   }
 
   def stopSnappyCluster(vm: Option[VM] = None, stopArgs: String = "",
@@ -129,6 +110,8 @@ object ClusterUtils extends Serializable with Logging {
   private val snappyProductDir = getClusterDirectory("snappy")
   private val copyDirs = Set("bin", "conf", "python", "sbin")
   private val skipDirs = Set("logs", "work")
+
+  private[this] val snappyStartFailed = new AtomicBoolean(false)
 
   private[this] def getClusterDirectory(suffix: String): String =
     s"${System.getProperty("user.dir")}/$suffix"
@@ -160,6 +143,34 @@ object ClusterUtils extends Serializable with Logging {
   def getSparkClusterDirectory(productDir: String): String =
     getClusterDirectory(Paths.get(productDir), isSnappy = false)
 
+  def writeToFile(str: String, filePath: String, append: Boolean): Unit = {
+    val fileWriter = new FileWriter(filePath, append)
+    val bufferedWriter = new BufferedWriter(fileWriter)
+    val pw = new PrintWriter(bufferedWriter)
+    try {
+      pw.write(str)
+      pw.flush()
+    } finally {
+      pw.close()
+    }
+    // wait until file becomes available (e.g. running on NFS)
+    var matched = append
+    while (!matched) {
+      Thread.sleep(100)
+      try {
+        val source = Source.fromFile(filePath)(Codec.UTF8)
+        val lines = try {
+          source.mkString
+        } finally {
+          source.close()
+        }
+        matched = lines == str
+      } catch {
+        case NonFatal(_) =>
+      }
+    }
+  }
+
   def startSparkCluster(clusterDir: String): String = {
     logInfo(s"Starting spark cluster in $clusterDir/work")
     val output = s"$clusterDir/sbin/start-all.sh".!!
@@ -173,12 +184,20 @@ object ClusterUtils extends Serializable with Logging {
     logInfo(s"$clusterDir/sbin/stop-all.sh".!!)
   }
 
-  def startSnappyCluster(clusterDir: String, startArgs: String): String = {
-    logInfo(s"Starting SnappyData cluster in $clusterDir/work [startArgs=$startArgs]")
+  def startSnappyCluster(clusterDir: String, enableHiveServer: Boolean,
+      startArgs: String): String = {
+    logInfo(s"Starting SnappyData cluster in $clusterDir/work " +
+        s"[enableHiveServer=$enableHiveServer startArgs=$startArgs]")
+    if (!enableHiveServer) {
+      writeToFile(
+        "\nLEAD_STARTUP_OPTIONS=\"$LEAD_STARTUP_OPTIONS -snappydata.hiveServer.enabled=false\"",
+        s"$clusterDir/conf/snappy-env.sh", append = true)
+    }
     val output =
       if (startArgs.isEmpty) s"$clusterDir/sbin/snappy-start-all.sh".!!
       else s"$clusterDir/sbin/snappy-start-all.sh $startArgs".!!
     logInfo(output)
+    snappyStartFailed.set(output.contains("stopped") || output.contains("Exception"))
     output
   }
 
@@ -187,7 +206,17 @@ object ClusterUtils extends Serializable with Logging {
     logInfo(s"Stopping SnappyData cluster in $clusterDir/work [stopArgs=$stopArgs]")
     if (stopArgs.isEmpty) logInfo(s"$clusterDir/sbin/snappy-stop-all.sh".!!)
     else logInfo(s"$clusterDir/sbin/snappy-stop-all.sh $stopArgs".!!)
-    if (deleteData) deleteClusterRuntimeData(clusterDir)
+    if (deleteData) {
+      // preserve the output if startup had failed
+      if (snappyStartFailed.compareAndSet(true, false)) {
+        val workDir = Paths.get(clusterDir, "work")
+        if (Files.exists(workDir)) {
+          Files.move(workDir, Paths.get(clusterDir, "work-" + System.currentTimeMillis()))
+        }
+      }
+      deleteClusterRuntimeData(clusterDir)
+    }
+    snappyStartFailed.compareAndSet(true, false)
   }
 
   def stopSpark(): Unit = {

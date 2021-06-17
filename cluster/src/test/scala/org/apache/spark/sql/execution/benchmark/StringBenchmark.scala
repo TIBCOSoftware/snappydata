@@ -20,7 +20,7 @@ package org.apache.spark.sql.execution.benchmark
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
-import scala.io.Source
+import scala.io.{Codec, Source}
 
 import io.snappydata.SnappyFunSuite
 import it.unimi.dsi.fastutil.longs.LongArrayList
@@ -63,6 +63,15 @@ class StringBenchmark extends SnappyFunSuite {
     System.runFinalization()
     System.gc()
     System.runFinalization()
+  }
+
+  private def readLines(file: String): Iterator[String] = {
+    val source = Source.fromFile(file)(Codec.UTF8)
+    try {
+      source.getLines()
+    } finally {
+      source.close()
+    }
   }
 
   private def runUTF8StringCompareTo(numElements: Int, numDistinct: Int,
@@ -131,7 +140,7 @@ class StringBenchmark extends SnappyFunSuite {
     val numLoads = 1500
     val numIters = 20
 
-    val sdata = (1 to numLoads).flatMap(_ => Source.fromFile(customerFile).getLines()).toArray
+    val sdata = (1 to numLoads).flatMap(_ => readLines(customerFile)).toArray
     val numElements = sdata.length
     val data = sdata.map(UTF8String.fromString)
     val udata = sdata.map(toDirectUTF8String)

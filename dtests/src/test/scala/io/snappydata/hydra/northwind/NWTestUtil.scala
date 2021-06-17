@@ -17,8 +17,9 @@
 package io.snappydata.hydra.northwind
 
 import java.io.{File, PrintWriter}
+
 import io.snappydata.hydra.SnappyTestUtils
-import scala.io.Source
+import scala.io.{Codec, Source}
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql._
@@ -144,10 +145,12 @@ object NWTestUtil {
       writeToFile(sparkDF, sparkDest, snc)
       pw.println(s"${queryNum} Result Collected in file $sparkDest")
     }
-    val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
-    val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
-    val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
-    val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines
+    val expectedFiles = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val actualFiles = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val expectedSources = expectedFiles.toIterator.map(Source.fromFile(_)(Codec.UTF8))
+    val actualSources = actualFiles.toIterator.map(Source.fromFile(_)(Codec.UTF8))
+    val expectedLineSet = expectedSources.flatMap(_.getLines())
+    val actualLineSet = actualSources.flatMap(_.getLines())
     var numLines = 0
     while (expectedLineSet.hasNext && actualLineSet.hasNext) {
       val expectedLine = expectedLineSet.next()
@@ -174,6 +177,9 @@ object NWTestUtil {
         s"observed: Expected=$numRows, Got=$numLines")
     pw.flush()
     // scalastyle:on println
+
+    expectedSources.foreach(_.close())
+    actualSources.foreach(_.close())
   }
 
   def createAndLoadReplicatedTables(snc: SnappyContext): Unit = {

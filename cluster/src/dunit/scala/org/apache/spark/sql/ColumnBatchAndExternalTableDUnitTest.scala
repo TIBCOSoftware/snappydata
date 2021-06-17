@@ -346,21 +346,21 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     activeTasks = 0
     stmt.execute("select avg(depDelay) from airline")
     // should not deviate much though in rare cases few tasks can start/end slightly out of order
-    assert(maxTasksStarted < sparkCores * 2)
-    assert(maxTasksStarted > sparkCores / 2)
+    assertMaxTasksStarted(maxTasksStarted, sparkCores * 2)
+    assertMinTasksStarted(maxTasksStarted, sparkCores / 2)
     maxTasksStarted = 0
     activeTasks = 0
     stmt.execute("select avg(depDelay) from airline")
-    assert(maxTasksStarted < sparkCores * 2)
-    assert(maxTasksStarted > sparkCores / 2)
+    assertMaxTasksStarted(maxTasksStarted, sparkCores * 2)
+    assertMinTasksStarted(maxTasksStarted, sparkCores / 2)
 
     // now check that max tasks are reduced with the session setting
     stmt.execute("set spark.task.cpus = 2")
     maxTasksStarted = 0
     activeTasks = 0
     stmt.execute("select avg(depDelay) from airline")
-    assert(maxTasksStarted < sparkCores)
-    assert(maxTasksStarted > sparkCores / 4)
+    assertMaxTasksStarted(maxTasksStarted, sparkCores)
+    assertMinTasksStarted(maxTasksStarted, sparkCores / 4)
 
     // ---- Check implicit spark.task.cpus get set for file scans/inserts ----
     logInfo(s"Expected implicit spark.task.cpus = $implicitCpusToTasks")
@@ -368,27 +368,27 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     maxTasksStarted = 0
     activeTasks = 0
     stmt.execute("select avg(depDelay) from airline")
-    assert(maxTasksStarted < sparkCores * 2)
-    assert(maxTasksStarted > sparkCores / 2)
+    assertMaxTasksStarted(maxTasksStarted, sparkCores * 2)
+    assertMinTasksStarted(maxTasksStarted, sparkCores / 2)
 
     maxTasksStarted = 0
     activeTasks = 0
     stmt.execute("select avg(depDelay) from airline_staging")
-    assert(maxTasksStarted < sparkCores * 2 / implicitCpusToTasks)
-    assert(maxTasksStarted > sparkCores / (2 * implicitCpusToTasks))
+    assertMaxTasksStarted(maxTasksStarted, sparkCores * 2 / implicitCpusToTasks)
+    assertMinTasksStarted(maxTasksStarted, sparkCores / (2 * implicitCpusToTasks))
     maxTasksStarted = 0
     activeTasks = 0
     stmt.execute("select avg(depDelay) from airline_staging")
-    assert(maxTasksStarted < sparkCores * 2 / implicitCpusToTasks)
-    assert(maxTasksStarted > sparkCores / (2 * implicitCpusToTasks))
+    assertMaxTasksStarted(maxTasksStarted, sparkCores * 2 / implicitCpusToTasks)
+    assertMinTasksStarted(maxTasksStarted, sparkCores / (2 * implicitCpusToTasks))
 
     // ---- Check explicit spark.task.cpus overrides implicit spark.task.cpus ----
     stmt.execute("set spark.task.cpus = 1")
     maxTasksStarted = 0
     activeTasks = 0
     stmt.execute("select avg(depDelay) from airline_staging")
-    assert(maxTasksStarted < sparkCores * 2)
-    assert(maxTasksStarted > sparkCores / 2)
+    assertMaxTasksStarted(maxTasksStarted, sparkCores * 2)
+    assertMinTasksStarted(maxTasksStarted, sparkCores / 2)
 
     stmt.execute("drop table airline_staging")
     stmt.execute("drop table airline")
@@ -397,6 +397,19 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
 
     stmt.close()
     conn.close()
+  }
+
+  private def assertMaxTasksStarted(max: Int, expected: Int): Unit = {
+    // occasionally a few tasks more than expected might get started due to gap between
+    // notification and job submissions
+    assert(max - expected <= TestUtils.defaultCores / 2,
+      s"Upper limit of concurrent tasks = $expected, actual = $max")
+  }
+
+  private def assertMinTasksStarted(max: Int, expected: Int): Unit = {
+    // lower limit might get violated due to the gap between notification and job submissions
+    assert(expected - max <= TestUtils.defaultCores / 2,
+      s"Lower limit of concurrent tasks = $expected, actual = $max")
   }
 }
 

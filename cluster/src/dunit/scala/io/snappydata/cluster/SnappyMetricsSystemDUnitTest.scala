@@ -75,23 +75,23 @@ class SnappyMetricsSystemDUnitTest(s: String)
     stopSnappyCluster()
   }
 
-  def jsonStrToMap(jsonStr: String): Map[String, AnyVal] = {
+  def jsonStrToMap(jsonStr: String): Map[String, AnyRef] = {
     implicit val formats: DefaultFormats = org.json4s.DefaultFormats
-    parse(jsonStr).extract[Map[String, AnyVal]]
+    parse(jsonStr).extract[Map[String, AnyRef]]
   }
 
-  def collectJsonStats(): mutable.Map[String, AnyVal] = {
+  def collectJsonStats(): mutable.Map[String, AnyRef] = {
     val url = "http://localhost:9090/metrics/json/"
     // val json = scala.io.Source.fromURL(url).mkString
     val json = s"curl $url".!!
     val data = jsonStrToMap(json)
     val rs = data.-("counters", "meters", "histograms", "timers", "version")
-    val map = scala.collection.mutable.Map[String, AnyVal]()
+    val map = scala.collection.mutable.Map[String, AnyRef]()
     for ((k, v) <- rs) {
       if (k == "gauges") {
-        val data1 = v.asInstanceOf[Map[String, AnyVal]]
+        val data1 = v.asInstanceOf[Map[String, AnyRef]]
         for ((k, v) <- data1) {
-          val data2 = v.asInstanceOf[Map[String, AnyVal]].get("value")
+          val data2 = v.asInstanceOf[Map[String, AnyRef]].get("value")
           map.put(k, data2.get)
         }
       }
@@ -131,7 +131,7 @@ class SnappyMetricsSystemDUnitTest(s: String)
       if (containsWords(k, Array("MemberMetrics", "locatorCount"))) {
         assertEquals(scala.math.BigInt(1), v)}
       if (containsWords(k, Array("MemberMetrics", "leadCount"))) {
-        assertEquals(scala.math.BigInt(2), v)}
+        assert(scala.math.BigInt(2) == v || scala.math.BigInt(1) == v)}
       if (containsWords(k, Array("MemberMetrics", "totalMembersCount"))) {
         assertEquals(scala.math.BigInt(6), v)}
       if (containsWords(k, Array("TableMetrics", "embeddedTablesCount"))) {
