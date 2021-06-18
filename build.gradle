@@ -266,11 +266,10 @@ static def getStackTrace(def t) {
   return sw.toString()
 }
 
-// Skip snappy-spark, snappy-aqp and spark-jobserver that have their own
+// Skip snappy-spark and spark-jobserver that have their own
 // scalaStyle configuration. Skip snappy-store that will not use it.
 configure(subprojects.findAll {!(it.name ==~ /snappy-spark.*/ ||
       it.name ==~ /snappy-store.*/ ||
-      it.name ==~ /snappy-aqp.*/ ||
       it.name ==~ /spark-jobserver.*/)}) {
   scalaStyle {
     configLocation = "${rootProject.projectDir}/scalastyle-config.xml"
@@ -1102,12 +1101,6 @@ task product(type: Zip) {
         from aqpProject.projectDir.path + '/lib'
         into "${snappyProductDir}/jars"
       }
-      copy {
-        from aqpProject.projectDir
-        into snappyProductDir
-        include 'NOTICE'
-        include '*EULA*'
-      }
     }
 
     def jdbcConnectorProject = project(":snappy-jdbc-connector_${scalaBinaryVersion}")
@@ -1535,6 +1528,8 @@ task docs(type: ScalaDoc) {
   scalaDocOptions.additionalParameters = [ '-J-Xmx7g', '-J-XX:ReservedCodeCacheSize=512m', '-J-Djava.net.preferIPv4Stack=true' ]
 
   dependsOn deleteDocsDir
+  mustRunAfter buildAll
+
   Set<String> allSource = []
   def docProjects = rootProject.subprojects.collectMany { project ->
     if ((project.plugins.hasPlugin('scala') || project.plugins.hasPlugin('java')) &&
