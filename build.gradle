@@ -1391,6 +1391,8 @@ task buildDtests {
   dependsOn "snappy-dtests_${scalaBinaryVersion}:buildDtests"
 }
 task checkAll {
+  dependsOn ":snappy-aqp_${scalaBinaryVersion}:scalaStyle"
+  dependsOn ":snappy-jdbc-connector_${scalaBinaryVersion}:scalaStyle"
   dependsOn ':snappy-spark:scalaStyle'
   if (rootProject.hasProperty('store')) {
     dependsOn ':snappy-store:check'
@@ -1406,7 +1408,7 @@ task checkAll {
   if (!rootProject.hasProperty('aqp.skip')) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
-  if (!rootProject.hasProperty('connectors.skip') && hasGemFireConnectorProject) {
+  if (hasGemFireConnectorProject && !rootProject.hasProperty('connectors.skip')) {
     dependsOn ":gemfire-connector:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {
