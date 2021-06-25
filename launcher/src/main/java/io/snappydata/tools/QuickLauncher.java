@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Properties;
-import java.util.regex.Pattern;
 
 import com.gemstone.gemfire.internal.cache.Status;
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils;
@@ -215,6 +214,8 @@ class QuickLauncher extends LauncherBase {
     }
 
     // finally launch the main process
+    assert startLogFileName != null;
+    assert pidFileName != null;
     final Path startLogFile = this.workingDir.resolve(startLogFileName);
     final Path pidFile = this.workingDir.resolve(pidFileName);
     Files.deleteIfExists(startLogFile);
@@ -268,14 +269,16 @@ class QuickLauncher extends LauncherBase {
 
     // determine the current state of the node
     readStatus(false, statusFile);
-    if (this.status != null) {
+    Status status = this.status;
+    if (status != null) {
       // upon reading the status file, request the Cache Server to shutdown
       // if it has not already...
-      if (this.status.state != Status.SHUTDOWN) {
+      if (status.state != Status.SHUTDOWN) {
         // copy server PID and not use own PID; see bug #39707
-        this.status = Status.create(this.baseName, Status.SHUTDOWN_PENDING,
-            this.status.pid, statusFile);
-        this.status.write();
+        status = Status.create(this.baseName, Status.SHUTDOWN_PENDING,
+            status.pid, statusFile);
+        status.write();
+        this.status = status;
       }
 
       // poll the Cache Server for a response to our shutdown request

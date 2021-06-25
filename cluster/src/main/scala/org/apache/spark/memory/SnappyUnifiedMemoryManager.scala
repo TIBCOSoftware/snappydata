@@ -386,6 +386,7 @@ class SnappyUnifiedMemoryManager private[memory](
       if (SnappyMemoryUtils.isCriticalUp) {
         logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
             s"No memory allocated to thread ${Thread.currentThread()}")
+        logStats("CRITICAL_UP:")
         return false
       }
     }

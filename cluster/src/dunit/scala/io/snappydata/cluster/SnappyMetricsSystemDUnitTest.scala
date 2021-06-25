@@ -86,7 +86,7 @@ class SnappyMetricsSystemDUnitTest(s: String)
     val json = s"curl $url".!!
     val data = jsonStrToMap(json)
     val rs = data.-("counters", "meters", "histograms", "timers", "version")
-    val map = scala.collection.mutable.Map[String, AnyRef]()
+    val map = scala.collection.mutable.LinkedHashMap[String, AnyRef]()
     for ((k, v) <- rs) {
       if (k == "gauges") {
         val data1 = v.asInstanceOf[Map[String, AnyRef]]
@@ -123,6 +123,7 @@ class SnappyMetricsSystemDUnitTest(s: String)
 
   def doTestMetricsWhenClusterStarted(): Unit = {
     val map = collectJsonStats()
+    var leadCount = scala.math.BigInt(2)
     for ((k, v) <- map) {
       if (containsWords(k, Array("MemberMetrics", "connectorCount"))) {
         assertEquals(scala.math.BigInt(0), v)}
@@ -131,9 +132,13 @@ class SnappyMetricsSystemDUnitTest(s: String)
       if (containsWords(k, Array("MemberMetrics", "locatorCount"))) {
         assertEquals(scala.math.BigInt(1), v)}
       if (containsWords(k, Array("MemberMetrics", "leadCount"))) {
-        assert(scala.math.BigInt(2) == v || scala.math.BigInt(1) == v)}
+        if (v != leadCount) {
+          leadCount = scala.math.BigInt(1)
+          assertEquals(leadCount, v)
+        }
+      }
       if (containsWords(k, Array("MemberMetrics", "totalMembersCount"))) {
-        assertEquals(scala.math.BigInt(6), v)}
+        assertEquals(scala.math.BigInt(4) + leadCount, v)}
       if (containsWords(k, Array("TableMetrics", "embeddedTablesCount"))) {
         assertEquals(scala.math.BigInt(0), v)}
       if (containsWords(k, Array("TableMetrics", "externalTablesCount"))) {

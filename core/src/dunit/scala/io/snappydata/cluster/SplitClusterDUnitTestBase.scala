@@ -260,7 +260,8 @@ trait SplitClusterDUnitTestObject extends Logging {
 
     // first check metadata queries using session and JDBC connection
     var locatorNetServer = s"localhost/127.0.0.1[$locatorClientPort]"
-    val locatorNetServerAlt = s"127.0.0.1/127.0.0.1[$locatorClientPort]"
+    val locatorNetServers = Set(s"localhost[$locatorClientPort]",
+      s"127.0.0.1/127.0.0.1[$locatorClientPort]", s"127.0.0.1[$locatorClientPort]")
     // get member IDs using JDBC connection
     val jdbcConn = getConnection(locatorClientPort)
     var stmt = jdbcConn.createStatement()
@@ -277,8 +278,8 @@ trait SplitClusterDUnitTestObject extends Logging {
       rs.getString(2) match {
         case "locator" =>
           if (thriftServers != locatorNetServer) {
-            assert(thriftServers == locatorNetServerAlt)
-            locatorNetServer = locatorNetServerAlt
+            assert(locatorNetServers.contains(thriftServers))
+            locatorNetServer = thriftServers
           }
           locatorId = id
         case "primary lead" => assert(thriftServers.isEmpty); leadId = id

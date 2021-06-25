@@ -635,13 +635,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def releaseLock(lock: Any): Unit = {
-    logInfo(s"Releasing the lock : $lock")
+    logDebug(s"Releasing the lock : $lock")
     lock match {
       case lock: RegionLock =>
         if (lock != null) {
-          logInfo(s"Going to unlock the lock object bulkOp $lock and " +
+          logDebug(s"Going to unlock the lock object bulkOp $lock and " +
             s"app ${sqlContext.sparkContext.appName}")
-          lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
+          lock.unlock()
         }
       case (conn: Connection, id: TableIdentifier) =>
         var unlocked = false

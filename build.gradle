@@ -885,6 +885,7 @@ gradle.taskGraph.whenReady { graph ->
             'APACHE_SPARK_HOME': sparkProductDir,
             'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir
         environment 'PYSPARK_PYTHON': sparkPython,
+            'PYSPARK_DRIVER_PYTHON': sparkPython,
             'SPARK_TESTING': '1',
             'SNAPPY_DIST_CLASSPATH': test.classpath.asPath
 
