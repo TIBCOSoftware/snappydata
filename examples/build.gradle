@@ -58,7 +58,7 @@ if (!(new File(rootDir, 'cluster/build.gradle').exists())) {
 
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
   testCompile "commons-io:commons-io:2.6"
-  testCompile "io.snappydata:gemfire-core:1.6.3"
+  testCompile project(':snappy-store:gemfire-core')
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 

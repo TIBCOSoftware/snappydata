@@ -111,6 +111,7 @@ allprojects {
     junitVersion = '4.12'
     mockitoVersion = '1.10.19'
     hadoopVersion = '3.2.0'
+    awsSdkVersion = '1.11.375'
     gcsHadoop2ConnectorVersion = 'hadoop2-2.0.0'
     gcsHadoop3ConnectorVersion = 'hadoop3-2.0.0'
     sparkAvroVersion = '4.0.0'
@@ -242,7 +243,7 @@ if (!hasJdbcConnectorProject) {
 String sparkPython = 'python'
 def checkResult = exec {
   ignoreExitValue = true
-  commandLine 'sh', '-c', 'python --version | grep -Eq "( 3\\.[0-7])|( 2\\.)"'
+  commandLine 'sh', '-c', 'python --version 2>/dev/null | grep -Eq "( 3\\.[0-7])|( 2\\.)"'
 }
 if (checkResult.exitValue != 0) {
   checkResult = exec {
