@@ -117,7 +117,9 @@ object MetadataTest extends Assertions {
 
   def testSYSTablesAndVTIs(executeSQL: String => Dataset[Row],
       hostName: String = ClientSharedUtils.getLocalHost.getCanonicalHostName,
-      netServers: Seq[String] = Seq(""), locator: String = "", locatorNetServer: String = "",
+      netServers: Seq[String] = Seq(""), locatorId: String = "",
+      locatorHost: String = ClientSharedUtils.getLocalHost.getCanonicalHostName,
+      locatorNetServer: String = "",
       servers: Seq[String] = Nil, lead: String = ""): Unit = {
     var ds: Dataset[Row] = null
     var expectedColumns: List[String] = null
@@ -134,7 +136,7 @@ object MetadataTest extends Assertions {
 
     // check for the single VM case or else the provided nodes
     def checkMembers(rs: Array[Row], forShow: Boolean): Unit = {
-      if (locator.isEmpty) {
+      if (locatorId.isEmpty) {
         assert(rs.length === 1)
         if (forShow) {
           expectedRow = Row(myId, hostName, "loner", "RUNNING", netServers.head, "")
@@ -145,12 +147,12 @@ object MetadataTest extends Assertions {
       } else {
         assert(rs.length === 2 + servers.length, rs.toSeq)
         if (forShow) {
-          expectedRows = Row(locator, hostName, "locator", "RUNNING", locatorNetServer, "") +:
+          expectedRows = Row(locatorId, locatorHost, "locator", "RUNNING", locatorNetServer, "") +:
               Row(lead, hostName, "primary lead", "RUNNING", "", "") +:
               servers.zip(netServers).map(p => Row(p._1, hostName, "datastore",
                 "RUNNING", p._2, ""))
         } else {
-          expectedRows = Row(locator, "locator", "RUNNING", false, true, locatorNetServer, "") +:
+          expectedRows = Row(locatorId, "locator", "RUNNING", false, true, locatorNetServer, "") +:
               Row(lead, "primary lead", "RUNNING", false, false, "", "") +:
               servers.zip(netServers).map(p => Row(p._1, "datastore",
                 "RUNNING", true, false, p._2, ""))
@@ -201,7 +203,7 @@ object MetadataTest extends Assertions {
 
     rs = executeSQL("select * from sys.diskStoreIds").collect()
     // datadictionary, delta and "default" diskStores are created by default
-    if (locator.isEmpty) {
+    if (locatorId.isEmpty) {
       assert(rs.length === 3)
       assert(rs.map(r => r.getString(0) -> r.getString(1)).sorted === Array(
         myId -> "GFXD-DD-DISKSTORE", myId -> "GFXD-DEFAULT-DISKSTORE",
@@ -210,7 +212,7 @@ object MetadataTest extends Assertions {
       // expect default disk stores on all the nodes (2 on locator, 1 on lead and 3 on server)
       assert(rs.length === 3 + 3 * servers.length)
       assert(rs.map(r => r.getString(0) -> r.getString(1)).toSeq.sorted === (Seq(
-        locator -> "GFXD-DD-DISKSTORE", locator -> "GFXD-DEFAULT-DISKSTORE",
+        locatorId -> "GFXD-DD-DISKSTORE", locatorId -> "GFXD-DEFAULT-DISKSTORE",
         lead -> "GFXD-DEFAULT-DISKSTORE") ++
           servers.flatMap(s => Seq(s -> "GFXD-DD-DISKSTORE", s -> "GFXD-DEFAULT-DISKSTORE",
             s -> "SNAPPY-INTERNAL-DELTA"))).sorted)

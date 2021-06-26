@@ -269,6 +269,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     val rs = stmt.executeQuery("select id, kind, netServers, host from sys.members")
     var locatorId = ""
     var leadId = ""
+    var locatorHost = ""
     var hostName = ""
     val servers = new mutable.ArrayBuffer[String](2)
     val netServers = new mutable.ArrayBuffer[String](2)
@@ -282,11 +283,14 @@ trait SplitClusterDUnitTestObject extends Logging {
             locatorNetServer = thriftServers
           }
           locatorId = id
+          locatorHost = rs.getString(4)
         case "primary lead" => assert(thriftServers.isEmpty); leadId = id
-        case "datastore" => servers += id; netServers += thriftServers
+        case "datastore" =>
+          servers += id
+          netServers += thriftServers
+          hostName = rs.getString(4)
         case kind => assert(assertion = false, s"unexpected node type = $kind")
       }
-      hostName = rs.getString(4)
     }
     rs.close()
     stmt.close()
@@ -296,7 +300,7 @@ trait SplitClusterDUnitTestObject extends Logging {
 
     // first test metadata using session
     MetadataTest.testSYSTablesAndVTIs(session.sql,
-      hostName, netServers, locatorId, locatorNetServer, servers, leadId)
+      hostName, netServers, locatorId, locatorHost, locatorNetServer, servers, leadId)
     val planCaching = PlanCaching.get(session.sessionState.conf)
     MetadataTest.testDescribeShowAndExplain(session.sql, jdbcStmt = null, planCaching)
     MetadataTest.testDSIDWithSYSTables(session.sql,
@@ -304,7 +308,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     // next test metadata using JDBC connection
     stmt = jdbcConn.createStatement()
     MetadataTest.testSYSTablesAndVTIs(SnappyFunSuite.resultSetToDataset(session, stmt),
-      hostName, netServers, locatorId, locatorNetServer, servers, leadId)
+      hostName, netServers, locatorId, locatorHost, locatorNetServer, servers, leadId)
     MetadataTest.testDescribeShowAndExplain(SnappyFunSuite.resultSetToDataset(session, stmt),
       stmt, planCaching)
     MetadataTest.testDSIDWithSYSTables(SnappyFunSuite.resultSetToDataset(session, stmt),
