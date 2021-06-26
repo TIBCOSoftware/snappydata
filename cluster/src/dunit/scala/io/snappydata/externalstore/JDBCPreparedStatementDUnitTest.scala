@@ -18,7 +18,7 @@ package io.snappydata.externalstore
 
 import java.sql.{PreparedStatement, SQLException}
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{CountDownLatch, Executors, TimeoutException}
+import java.util.concurrent.{CountDownLatch, CyclicBarrier, Executors, TimeoutException}
 
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.Try
@@ -463,23 +463,26 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     stmt.execute(
       s"""create table $table (col1 int, col2  int) using column as
         |select id as col1, id as col2 from range(10000000)""".stripMargin)
+    val barrier = new CyclicBarrier(2)
     try {
       implicit val context: ExecutionContextExecutor =
         ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
       val f = Future {
         println("Firing select...")
         try {
-          stmt.executeQuery(s"select avg(col1) from $table group by col2")
+          barrier.await()
+          stmt.executeQuery(s"select avg(col1) from $table group by col2 order by col2")
           println("Firing select... Done.")
-          Assert.fail("The query execution should have cancelled.")
+          // Assert.fail("The query execution should have cancelled.")
         } catch {
           case e: SQLException =>
             val expectedMessage = "The statement has been cancelled due to a user request."
             assert("XCL56".equals(e.getSQLState) && e.getMessage.contains(expectedMessage))
         }
       }
+      barrier.await()
       // wait for select query submission
-      Thread.sleep(3000)
+      Thread.sleep(1000)
       println("Firing cancel")
       stmt.cancel()
       println("Firing cancel... Done")
@@ -487,7 +490,7 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
       import scala.concurrent.duration._
       println("Awaiting result of the future.")
       try {
-        Await.result(f, 10.seconds)
+        Await.result(f, 60.seconds)
       } catch {
         case _: TimeoutException => Assert.fail("Query didn't get cancelled in stipulated time.")
       }

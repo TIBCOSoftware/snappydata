@@ -2,7 +2,7 @@ SnappyData OSS Edition
 Copyright 2018 and onwards SnappyData Inc.
 
 
-This is a comprehensive list of software libraries used by SnappyData in version 1.0.
+This is a comprehensive list of software libraries used by SnappyData in version 1.3.0.
 More details on license types, license versions, and contributors can be found further down in this file
 
 HikariCP-2.7.9.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
@@ -186,6 +186,10 @@ libgemfirexd.dylib				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 libgemfirexd.so					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 libgemfirexd64.dylib				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 libgemfirexd64.so				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+libnative.dylib					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+libnative.so					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+libnative64.dylib				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+libnative64.so					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 libthrift-0.9.3.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 liquidFillGauge.js				BSD:		http://choosealicense.com/licenses/bsd-2-clause
 log4j-1.2.17.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
@@ -259,6 +263,7 @@ snappy-spark-streaming_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licens
 snappy-spark-tags_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 snappy-spark-unsafe_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 snappy-spark-yarn_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-aqp_2.11-1.0.2.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 snappydata-cluster_2.11-1.0.2.1.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 snappydata-core_2.11-1.0.2.1.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 snappydata-jdbc_2.11-1.0.2.1-only.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
@@ -1005,7 +1010,7 @@ SECTION 1: BSD-STYLE, MIT-STYLE, OR SIMILAR STYLE LICENSES
 
 SECTION 2: Apache License, V2.0
 
-   >>> hadoop-common-2.7.3
+   >>> hadoop-common-2.7.7
    >>> swagger-ui-2.0.17
 
 
@@ -1175,7 +1180,7 @@ Copyright (C) 2006-2009 Dustin Sallings
 Apache License, V2.0 is applicable to the following component(s).
 
 
->>> hadoop-common-2.7.3
+>>> hadoop-common-2.7.7
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.

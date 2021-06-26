@@ -18,10 +18,10 @@ package io.snappydata.hydra
 
 import java.io.File
 
-import io.snappydata.SnappyTestRunner
 import scala.sys.process._
 
 import hydra.HostHelper
+import io.snappydata.SnappyTestRunner
 
 /**
  * Class extending can mix match methods like searchExceptions
@@ -31,11 +31,11 @@ class SnappyHydraTestRunner extends SnappyTestRunner {
   var SNAPPYDATA_SOURCE_DIR = ""
 
   override def beforeAll(): Unit = {
-    snappyHome = System.getenv("SNAPPY_HOME")
-    SNAPPYDATA_SOURCE_DIR = s"$snappyHome/../../.."
+    snappyHome = Option(System.getenv("SNAPPY_HOME")).getOrElse(System.getProperty("SNAPPY_HOME"))
     if (snappyHome == null) {
-      throw new Exception("SNAPPY_HOME should be set as an environment variable")
+      throw new Exception("SNAPPY_HOME should be set as an environment variable or system property")
     }
+    SNAPPYDATA_SOURCE_DIR = s"$snappyHome/../../.."
     currWorkingDir = System.getProperty("user.dir")
   }
 

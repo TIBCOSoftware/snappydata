@@ -26,8 +26,6 @@ sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala',
 sourceSets.main.java.srcDirs = []
 sourceSets.test.java.srcDirs = []
 
-def osName = org.gradle.internal.os.OperatingSystem.current()
-
 dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
@@ -180,7 +178,7 @@ dependencies {
 }
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
-  classifier = 'javadoc'
+  archiveClassifier.set('javadoc')
   from scaladoc
 }
 if (rootProject.hasProperty('enablePublish')) {
@@ -240,13 +238,15 @@ def taskGetApacheSparkDist(String ver, String distName, String prodDir) {
 }
 
 task getApacheSparkDist {
-  dependsOn taskGetApacheSparkDist(sparkVersion, "spark-${sparkVersion}-bin-hadoop2.7", sparkProductDir)
-  dependsOn taskGetApacheSparkDist(sparkCurrentVersion, "spark-${sparkCurrentVersion}-bin-hadoop2.7", sparkCurrentProductDir)
+  dependsOn taskGetApacheSparkDist(sparkVersion, sparkDistName, sparkProductDir)
+  dependsOn taskGetApacheSparkDist(sparkCurrentVersion, sparkCurrentDistName, sparkCurrentProductDir)
 }
 
 test.dependsOn ':cleanJUnit'
 dunitTest.dependsOn getApacheSparkDist
 dunitSecurityTest.dependsOn getApacheSparkDist
+// SnappyJobTestSupport.getJobJar needs cluster tests
+dunitTest.dependsOn ":snappy-cluster_${scalaBinaryVersion}:testClasses"
 // SplitClusterDUnitSecurityTest.testSnappyStreamingJob needs cluster tests
 dunitSecurityTest.dependsOn ":snappy-cluster_${scalaBinaryVersion}:testClasses"
 check.dependsOn test, scalaTest, dunitTest, dunitSecurityTest
@@ -304,13 +304,13 @@ task sparkPackagePom(dependsOn: shadowJar) { doLast {
   copy {
     from "${buildDir}/libs"
     into "${rootProject.buildDir}/distributions"
-    include "${shadowJar.archiveName}"
+    include "${shadowJar.archiveFileName.get()}"
     rename { filename -> "${sparkPackageName}.jar" }
   }
 } }
 task sparkPackage(type: Zip, dependsOn: sparkPackagePom) {
   archiveName "${sparkPackageName}.zip"
-  destinationDir = file("${rootProject.buildDir}/distributions")
+  destinationDirectory.set(file("${rootProject.buildDir}/distributions"))
   outputs.upToDateWhen { false }
 
   from ("${rootProject.buildDir}/distributions") {

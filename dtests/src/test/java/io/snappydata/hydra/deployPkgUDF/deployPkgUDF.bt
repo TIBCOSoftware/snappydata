@@ -49,7 +49,7 @@ io/snappydata/hydra/deployPkgUDF/deployPkgUDFPkg.conf
   A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
-  cassPath="/home/supriya/snappy/apache-cassandra-2.1.21"
+  cassPath="/home/supriya/snappy/apache-cassandra-2.1.22"
   pkgPath="$GEMFIRE/../../../dtests/src/resources/scripts/deployPkgUDF/deployedPkg"
   scriptPath="$GEMFIRE/../../../dtests/src/resources/scripts/deployPkgUDF/createCassandraTableAndLoadData"
 

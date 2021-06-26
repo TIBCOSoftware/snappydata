@@ -16,15 +16,14 @@
  */
 package org.apache.spark.memory
 
-import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
+import com.pivotal.gemfirexd.TestUtil
 
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.{SnappySession, SparkSession}
 
-
 class MemoryManagerStatsSuite extends MemoryFunSuite {
 
-  InitializeRun.setUp()
+  TestUtil.globalSetUp()
 
   test("Test heap stats") {
     val offHeap = false

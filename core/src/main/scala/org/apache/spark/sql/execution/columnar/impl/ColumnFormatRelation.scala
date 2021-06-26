@@ -17,9 +17,7 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, PreparedStatement}
-import java.util
 
-import scala.collection.AbstractIterator
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
@@ -159,7 +157,7 @@ abstract class BaseColumnFormatRelation(
     val (rdd, projection) = scanTable(table, requiredColumns, filters, () => -1)
     val rowRDD = buildRowBufferRDD(() => rdd.partitions, requiredColumns, filters,
       useResultSet = true, projection)
-    (rdd.asInstanceOf[RDD[Any]], rowRDD.asInstanceOf[RDD[Any]], Nil)
+    (rdd, rowRDD, Nil)
   }
 
   def buildRowBufferRDD(partitionEvaluator: () => Array[Partition],
@@ -210,7 +208,7 @@ abstract class BaseColumnFormatRelation(
 
   override def getBasicInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    withTableWriteLock() { () =>
+    withTableWriteLock { () =>
       new ColumnInsertExec(child, partitionColumns, partitionExpressions(relation),
         this, externalColumnTableName)
     }
@@ -238,7 +236,7 @@ abstract class BaseColumnFormatRelation(
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
-    withTableWriteLock() { () =>
+    withTableWriteLock { () =>
       ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
         partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
         updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
@@ -251,7 +249,7 @@ abstract class BaseColumnFormatRelation(
    */
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
-    withTableWriteLock() { () =>
+    withTableWriteLock { () =>
       ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
         partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
         this, keyColumns, connProperties, onExecutor = false)
@@ -275,10 +273,12 @@ abstract class BaseColumnFormatRelation(
     // use bulk insert directly into column store for large number of rows
 
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val lockOption = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
-      SnappySession.PUTINTO_LOCK) match {
-      case None if (Property.SerializeWrites.get(snc.sessionState.conf)) =>
-        snc.grabLock(table, schemaName, connProperties)
+    val lockOption = snc.getContextObject(SnappySession.PUTINTO_LOCK) match {
+      case None if Property.SerializeWrites.get(snc.sessionState.conf) =>
+        snc.getContextObject(SnappySession.BULKWRITE_LOCK) match {
+          case None => snc.grabLock(table, schemaName, connProperties)
+          case _ => None // BulkWrite lock already acquired
+        }
       case _ => None // Do nothing as putInto will release lock
     }
     try {
@@ -304,22 +304,20 @@ abstract class BaseColumnFormatRelation(
     }
     finally {
       lockOption match {
-        case Some(lock) => {
+        case Some(lock) =>
           logDebug(s"Releasing the $lock object in InsertRows")
           snc.releaseLock(lock)
-        }
         case None => // do Nothing
       }
     }
   }
 
-  def withTableWriteLock()(f: () => SparkPlan): SparkPlan = {
+  def withTableWriteLock(f: () => SparkPlan): SparkPlan = {
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
     logDebug(s"WithTable WriteLock ${SnappyContext.executorAssigned}")
 
-    val lockOption = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
-      SnappySession.PUTINTO_LOCK) match {
-      case None if (Property.SerializeWrites.get(snc.sessionState.conf)) =>
+    val lockOption = snc.getContextObject(SnappySession.PUTINTO_LOCK) match {
+      case None if Property.SerializeWrites.get(snc.sessionState.conf) =>
         snc.grabLock(table, schemaName, connProperties)
       case _ => None // Do nothing as putInto will release lock
     }
@@ -328,11 +326,10 @@ abstract class BaseColumnFormatRelation(
     }
     finally {
       lockOption match {
-        case Some(lock) => {
+        case Some(lock) =>
           logDebug(s"Added the $lock object to the context for $table")
           snc.addContextObject(
             SnappySession.BULKWRITE_LOCK, lock)
-        }
         case None => // do nothing
       }
     }

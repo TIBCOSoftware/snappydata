@@ -20,7 +20,6 @@ import java.sql.{Connection, DriverManager}
 import java.util.Properties
 
 import scala.language.postfixOps
-import scala.sys.process._
 import scala.util.Random
 
 import com.gemstone.gemfire.internal.shared.NativeCalls
@@ -33,9 +32,9 @@ import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import org.slf4j.LoggerFactory
 
-import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkContext}
 /**
  * Base class for tests using Snappy ClusterManager. New utility methods
@@ -368,18 +367,6 @@ object ClusterManagerTestBase extends Logging {
     }
     DistributedTestBase.waitForCriterion(criterion, ms, interval,
       throwOnTimeout)
-  }
-
-  def startSparkCluster(productDir: String): Unit = {
-    logInfo(s"Starting spark cluster in $productDir/work")
-    (productDir + "/sbin/start-all.sh") !!
-  }
-
-  def stopSparkCluster(productDir: String): Unit = {
-    val sparkContext = SnappyContext.globalSparkContext
-    logInfo(s"Stopping spark cluster in $productDir/work")
-    if (sparkContext != null) sparkContext.stop()
-    (productDir + "/sbin/stop-all.sh") !!
   }
 
   def validateNoActiveSnapshotTX(): Unit = {

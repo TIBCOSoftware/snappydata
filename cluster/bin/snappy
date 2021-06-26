@@ -112,7 +112,9 @@ elif [ -z "$SNAPPY_NO_QUICK_LAUNCH" -a $# -ge 2 \
           HOSTNAME_FOR_CLIENTS="-hostname-for-clients=${IMPLICIT_CLIENT_BIND_ADDRESS}"
           export SPARK_PUBLIC_DNS="${IMPLICIT_CLIENT_BIND_ADDRESS}"
         fi
-      elif [ -n "$EXPLICIT_CLIENT_BIND_ADDRESS" -a -z "$SPARK_PUBLIC_DNS" ]; then
+      elif [ -n "$EXPLICIT_CLIENT_BIND_ADDRESS" -a -z "$SPARK_PUBLIC_DNS" \
+             -a "$EXPLICIT_CLIENT_BIND_ADDRESS" != "0.0.0.0" \
+             -a "$EXPLICIT_CLIENT_BIND_ADDRESS" != "::0" ]; then
         HOSTNAME_FOR_CLIENTS="-hostname-for-clients=${EXPLICIT_CLIENT_BIND_ADDRESS}"
         export SPARK_PUBLIC_DNS="${EXPLICIT_CLIENT_BIND_ADDRESS}"
       fi

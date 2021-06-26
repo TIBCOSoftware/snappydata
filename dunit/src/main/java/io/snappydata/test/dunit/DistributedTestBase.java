@@ -133,6 +133,10 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     }
   }
 
+  static {
+    InitializeRun.setUp();
+  }
+
   ///////////////////////  Utility Methods  ///////////////////////
 
   /**

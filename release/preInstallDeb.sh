@@ -11,5 +11,5 @@ if ! getent group $SNAPPY_GROUP > /dev/null; then
 fi
 if ! getent passwd $SNAPPY_USER > /dev/null; then
   adduser --system $quiet --home $SNAPPY_HOME --no-create-home --shell /bin/bash \
-      --ingroup $SNAPPY_GROUP --gecos "TIBCO ComputeDB cluster owner" $SNAPPY_USER
+      --ingroup $SNAPPY_GROUP --gecos "SnappyData cluster owner" $SNAPPY_USER
 fi

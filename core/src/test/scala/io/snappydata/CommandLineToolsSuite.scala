@@ -31,7 +31,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
 
   override def clusterSuccessString: String = "Distributed system now has 3 members"
 
-  private val snappyProductDir = System.getenv("SNAPPY_HOME")
+  private val snappyProductDir = System.getProperty("SNAPPY_HOME")
   private val snappyNativeTestDir = s"$snappyProductDir/../../../store/native/tests"
 
   test("exec scala") {

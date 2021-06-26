@@ -10,4 +10,9 @@
         path = spark
         url = https://github.com/TIBCOSoftware/snappy-spark.git
         branch = snappy/branch-2.1 
-
+[submodule "aqp"]
+	path = aqp
+	url = https://github.com/TIBCOSoftware/snappy-aqp.git
+[submodule "snappy-connectors"]
+	path = snappy-connectors
+	url = https://github.com/TIBCOSoftware/snappy-connectors.git

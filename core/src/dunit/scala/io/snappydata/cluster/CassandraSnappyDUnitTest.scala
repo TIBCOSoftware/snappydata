@@ -17,9 +17,8 @@
 package io.snappydata.cluster
 
 import java.io._
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Paths, StandardCopyOption}
 import java.sql.{Connection, DriverManager, ResultSet, SQLException, Statement}
-import java.util
 
 import scala.language.postfixOps
 import scala.sys.process._
@@ -27,21 +26,25 @@ import scala.sys.process._
 import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.filefilter.{IOFileFilter, TrueFileFilter, WildcardFileFilter}
 
 import org.apache.spark.Logging
 
 class CassandraSnappyDUnitTest(val s: String)
-    extends DistributedTestBase(s) with SnappyJobTestSupport with Logging {
-  // scalastyle:off println
+    extends DistributedTestBase(s) with ClusterUtils with SnappyJobTestSupport with Logging {
 
   def getConnection(netPort: Int): Connection =
     DriverManager.getConnection(s"${Constant.DEFAULT_THIN_CLIENT_URL}localhost:$netPort")
 
-  override val snappyProductDir = System.getenv("SNAPPY_HOME")
+  val scriptPath = s"$snappyHomeDir/../../../cluster/src/test/resources/scripts"
+  val downloadPath = s"$snappyHomeDir/../../../dist"
 
-  val scriptPath = s"$snappyProductDir/../../../cluster/src/test/resources/scripts"
-  val downloadPath = s"$snappyProductDir/../../../dist"
+  private[this] val cassandraVersion = "2.1.22"
+  private[this] val cassandraConnVersion = System.getenv("SPARK_CONNECTOR_VERSION") match {
+    case null => "2.0.13"
+    case v if v.startsWith("2.4") => "2.4.3"
+    case v if v.startsWith("2.3") => "2.3.3"
+    case _ => "2.0.13"
+  }
 
   lazy val downloadLoc = {
     val path = if (System.getenv().containsKey("GRADLE_USER_HOME")) {
@@ -70,8 +73,11 @@ class CassandraSnappyDUnitTest(val s: String)
   def snappyShell: String = s"$snappyProductDir/bin/snappy-sql"
 
   override def beforeClass(): Unit = {
-
     super.beforeClass()
+
+    // stop any previous cluster and cleanup data
+    stopSnappyCluster()
+
     logInfo(s"Starting snappy cluster in $snappyProductDir/work with locator client port $netPort")
 
     val confDir = s"$snappyProductDir/conf"
@@ -82,10 +88,9 @@ class CassandraSnappyDUnitTest(val s: String)
       s"$confDir/leads")
     sobj.writeToFile(s"""localhost  -locators=localhost[$port] -client-port=$netPort2
          |""".stripMargin, s"$confDir/servers")
-    logInfo(s"Starting snappy cluster in $snappyProductDir/work")
+    startSnappyCluster()
 
-    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
-    Thread.sleep(10000)
+    // Thread.sleep(10000)
     logInfo("Download Location : " + downloadLoc)
 
     logInfo(s"Creating $downloadPath")
@@ -93,29 +98,29 @@ class CassandraSnappyDUnitTest(val s: String)
     new File(snappyProductDir, "books.xml").createNewFile()
     sparkXmlJarPath = downloadURI("https://repo1.maven.org/maven2/com/databricks/" +
         "spark-xml_2.11/0.4.1/spark-xml_2.11-0.4.1.jar")
-    val cassandraJarLoc = getLoc(downloadLoc)
-    cassandraConnectorJarLoc =
-      getUserAppJarLocation("spark-cassandra-connector_2.11-2.0.7.jar", downloadLoc)
-    if (cassandraJarLoc.nonEmpty && cassandraConnectorJarLoc != null) {
-      cassandraClusterLoc = cassandraJarLoc.head
-    } else {
-      ("curl -OL http://www-us.apache.org/dist/cassandra/" +
-          s"2.1.21/apache-cassandra-2.1.21-bin.tar.gz").!!
-      ("curl -OL https://repo1.maven.org/maven2/com/datastax/spark/" +
-          "spark-cassandra-connector_2.11/2.0.7/" +
-          "spark-cassandra-connector_2.11-2.0.7.jar").!!
-      val jarLoc = getUserAppJarLocation("apache-cassandra-2.1.21-bin.tar.gz", currDir)
-      val connectorJarLoc =
-        getUserAppJarLocation("spark-cassandra-connector_2.11-2.0.7.jar", currDir)
-      ("tar xvf " + jarLoc).!!
-      val loc = getLoc(currDir).head
-      if (downloadLoc.nonEmpty) {
-        s"rm -rf $downloadLoc/*"
+    val cassandraClusterDir = s"apache-cassandra-$cassandraVersion"
+    val cassandraConnectorJar = s"spark-cassandra-connector_2.11-$cassandraConnVersion.jar"
+    cassandraClusterLoc = s"$downloadLoc/$cassandraClusterDir"
+    cassandraConnectorJarLoc = s"$downloadLoc/$cassandraConnectorJar"
+    var downloadFiles = true
+    if (Files.exists(Paths.get(cassandraClusterLoc))) {
+      if (Files.exists(Paths.get(cassandraConnectorJarLoc))) {
+        downloadFiles = false
+      } else {
+        FileUtils.deleteQuietly(new File(cassandraClusterLoc))
       }
-      s"cp -r $loc $downloadLoc".!!
-      s"mv $connectorJarLoc $downloadLoc".!!
-      cassandraClusterLoc = s"$downloadLoc/apache-cassandra-2.1.21"
-      cassandraConnectorJarLoc = s"$downloadLoc/spark-cassandra-connector_2.11-2.0.7.jar"
+    }
+    if (downloadFiles) {
+      val cassandraTarball = s"apache-cassandra-$cassandraVersion-bin.tar.gz"
+      s"curl -OL http://www-us.apache.org/dist/cassandra/$cassandraVersion/$cassandraTarball".!!
+      ("curl -OL https://repo1.maven.org/maven2/com/datastax/spark/" +
+          s"spark-cassandra-connector_2.11/$cassandraConnVersion/$cassandraConnectorJar").!!
+      ("tar xf " + cassandraTarball).!!
+      Files.createDirectories(Paths.get(downloadLoc))
+      val locDir = Paths.get(cassandraClusterDir)
+      ClusterUtils.copyDirectory(locDir, locDir, Paths.get(cassandraClusterLoc))
+      Files.move(Paths.get(cassandraConnectorJar), Paths.get(cassandraConnectorJarLoc),
+        StandardCopyOption.REPLACE_EXISTING)
     }
     logInfo("CassandraClusterLocation : " + cassandraClusterLoc +
         " CassandraConnectorJarLoc : " + cassandraConnectorJarLoc)
@@ -126,26 +131,13 @@ class CassandraSnappyDUnitTest(val s: String)
   override def afterClass(): Unit = {
     super.afterClass()
 
-    logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
-    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
-
-    s"rm -rf $snappyProductDir/work".!!
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
+    stopSnappyCluster()
 
     logInfo("Stopping cassandra cluster")
     val p = Runtime.getRuntime.exec("pkill -f cassandra")
     p.waitFor()
     p.exitValue() == 0
     logInfo("Cassandra cluster stopped successfully")
-  }
-
-  def getLoc(path: String): List[String] = {
-    val cmd = Seq("find", path, "-name", "apache-cassandra-2.1.21", "-type", "d")
-    val res = cmd.lineStream_!.toList
-    logInfo("Cassandra folder location : " + res)
-    res
   }
 
   private def downloadURI(url: String): String = {
@@ -164,32 +156,6 @@ class CassandraSnappyDUnitTest(val s: String)
     jar.getAbsolutePath
   }
 
-  protected def getUserAppJarLocation(jarName: String, jarPath: String) = {
-    var userAppJarPath: String = null
-    if (new File(jarName).exists) jarName
-    else {
-      val baseDir: File = new File(jarPath)
-      try {
-        val filter: IOFileFilter = new WildcardFileFilter(jarName)
-        val files: util.List[File] = FileUtils.listFiles(baseDir, filter,
-          TrueFileFilter.INSTANCE).asInstanceOf[util.List[File]]
-        logInfo("Jar file found: " + util.Arrays.asList(files))
-        import scala.collection.JavaConverters._
-        for (file1: File <- files.asScala) {
-          if (!file1.getAbsolutePath.contains("/work/") ||
-              !file1.getAbsolutePath.contains("/scala-2.11/")) {
-            userAppJarPath = file1.getAbsolutePath
-          }
-        }
-      }
-      catch {
-        case _: Exception =>
-          logInfo("Unable to find " + jarName + " jar at " + jarPath + " location.")
-      }
-      userAppJarPath
-    }
-  }
-
   implicit class X(in: Seq[String]) {
     def pipe(cmd: String): Stream[String] =
       cmd #< new ByteArrayInputStream(in.mkString("\n").getBytes) lineStream
@@ -200,7 +166,9 @@ class CassandraSnappyDUnitTest(val s: String)
       new FileOutputStream(commandOutput, true))))
     try {
       sqlCommand pipe snappyShell foreach (s => {
+        // scalastyle:off println
         writer.println(s)
+        // scalastyle:on println
         if (s.toString.contains("ERROR") || s.toString.contains("Failed")) {
           throw new Exception(s"Failed to run Query: $s")
         }
@@ -249,7 +217,8 @@ class CassandraSnappyDUnitTest(val s: String)
     logInfo("Running testDeployPackageWithExternalTableInSnappyShell")
     SnappyShell("CreateExternalTable",
       Seq(s"connect client 'localhost:$netPort';",
-        "deploy package cassandraJar 'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7';",
+        "deploy package cassandraJar " +
+            s"'com.datastax.spark:spark-cassandra-connector_2.11:$cassandraConnVersion';",
         "drop table if exists customer2;",
         "create external table customer2 using org.apache.spark.sql.cassandra" +
             " options (table 'customer', keyspace 'test'," +
@@ -263,7 +232,7 @@ class CassandraSnappyDUnitTest(val s: String)
   def doTestDeployPackageWithExternalTable(): Unit = {
     logInfo("Running testDeployPackageWithExternalTable")
     stmt1.execute("deploy package cassandraJar " +
-        "'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7'")
+        s"'com.datastax.spark:spark-cassandra-connector_2.11:$cassandraConnVersion'")
     stmt1.execute("drop table if exists customer2")
     stmt1.execute("create external table customer2 using org.apache.spark.sql.cassandra options" +
         " (table 'customer', keyspace 'test', spark.cassandra.input.fetch.size_in_rows '200000'," +
@@ -293,19 +262,19 @@ class CassandraSnappyDUnitTest(val s: String)
       case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
     }
     stmt1.execute("deploy package cassandraJar " +
-        "'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7'")
+        s"'com.datastax.spark:spark-cassandra-connector_2.11:$cassandraConnVersion'")
     stmt1.execute("deploy package GoogleGSONAndAvro " +
         "'com.google.code.gson:gson:2.8.5,com.databricks:spark-avro_2.11:4.0.0' " +
         s"path '$snappyProductDir/testdeploypackagepath'")
     stmt1.execute("deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
-        " repos 'http://clojars.org/repo/'")
+        " repos 'https://clojars.org/repo/'")
     stmt1.execute("list packages")
     assert(getCount(stmt1.getResultSet) == 3)
 
     logInfo("Restarting the cluster for " +
         "CassandraSnappyDUnitTest.doTestDeployPackageWithExternalTable()")
-    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
-    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
+    stopSnappyCluster(deleteData = false)
+    startSnappyCluster()
 
     user1Conn = getConnection(netPort)
     stmt1 = user1Conn.createStatement()
@@ -347,8 +316,8 @@ class CassandraSnappyDUnitTest(val s: String)
 
     logInfo("Restarting the cluster for " +
         "CassandraSnappyDUnitTest.doTestDeployJarWithExternalTable()")
-    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
-    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
+    stopSnappyCluster(deleteData = false)
+    startSnappyCluster()
 
     user1Conn = getConnection(netPort)
     stmt1 = user1Conn.createStatement()
@@ -414,7 +383,7 @@ class CassandraSnappyDUnitTest(val s: String)
   def doTestDeployPackageWithSnappyJob(): Unit = {
     logInfo("Running testDeployPackageWithSnappyJob")
     stmt1.execute("deploy package cassandraJar " +
-        "'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7'")
+        s"'com.datastax.spark:spark-cassandra-connector_2.11:$cassandraConnVersion'")
     stmt1.execute("drop table if exists customer")
     submitAndWaitForCompletion("io.snappydata.cluster.jobs.CassandraSnappyConnectionJob" ,
       "--conf spark.cassandra.connection.host=localhost")
@@ -443,10 +412,10 @@ class CassandraSnappyDUnitTest(val s: String)
     stmt1.execute("list packages")
     assert(getCount(stmt1.getResultSet) == 0)
     stmt1.execute(s"deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
-        s" repos 'http://clojars.org/repo/' path '$snappyProductDir/mssqlJar1'")
+        s" repos 'https://clojars.org/repo/' path '$snappyProductDir/mssqlJar1'")
     try {
       stmt1.execute("deploy package MSSQL1 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
-          s" repos 'http://clojars.org/repo/' path '$snappyProductDir/mssqlJar';")
+          s" repos 'https://clojars.org/repo/' path '$snappyProductDir/mssqlJar';")
       assert(assertion = false, s"Expected an exception!")
     } catch {
       case sqle: SQLException if sqle.getSQLState == "38000" => // expected
@@ -464,7 +433,7 @@ class CassandraSnappyDUnitTest(val s: String)
     assert(getCount(stmt1.getResultSet) == 0)
 
     stmt1.execute("deploy package MSSQL1 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
-        s" repos 'http://clojars.org/repo/' path '$snappyProductDir/mssqlJar';")
+        s" repos 'https://clojars.org/repo/' path '$snappyProductDir/mssqlJar';")
 
     stmt1.execute("list packages")
     assert(getCount(stmt1.getResultSet) == 1)

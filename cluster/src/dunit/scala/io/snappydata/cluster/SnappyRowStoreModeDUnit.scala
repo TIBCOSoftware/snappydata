@@ -16,23 +16,16 @@
  */
 package io.snappydata.cluster
 
-import java.io.PrintWriter
-import java.nio.file.{Files, Paths}
 import java.sql.{Connection, DriverManager, SQLException}
 
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
-import io.snappydata.test.util.TestException
-import scala.sys.process._
-
-import com.pivotal.gemfirexd.TestUtil
 import org.junit.Assert
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 
-class SnappyRowStoreModeDUnit (s: String) extends DistributedTestBase(s) with Logging {
-
-  private val snappyProductDir = getEnvironmentVariable("SNAPPY_HOME")
+class SnappyRowStoreModeDUnit (s: String) extends DistributedTestBase(s)
+    with ClusterUtils with Logging {
 
   val port: Int = AvailablePortHelper.getRandomAvailableTCPPort
   val netPort1: Int = AvailablePortHelper.getRandomAvailableTCPPort
@@ -41,14 +34,13 @@ class SnappyRowStoreModeDUnit (s: String) extends DistributedTestBase(s) with Lo
 
   override def beforeClass(): Unit = {
     super.beforeClass()
+
+    // stop any previous cluster and cleanup data
+    stopSnappyCluster()
+
     logInfo(s"Starting snappy rowstore cluster" +
         s" in $snappyProductDir/work with locator client port $netPort1")
 
-    // delete any old work directory
-    val workDir = new java.io.File(s"$snappyProductDir/work")
-    if (workDir.exists()) {
-      TestUtil.deleteDir(workDir)
-    }
     // create locators and servers files
     val confDir = s"$snappyProductDir/conf"
     writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort1",
@@ -57,34 +49,12 @@ class SnappyRowStoreModeDUnit (s: String) extends DistributedTestBase(s) with Lo
       s"""localhost  -locators=localhost[$port] -client-port=$netPort2
          |localhost  -locators=localhost[$port] -client-port=$netPort3
          |""".stripMargin, s"$confDir/servers")
-    (snappyProductDir + "/sbin/snappy-start-all.sh rowstore").!!
+    startSnappyCluster(startArgs = "rowstore")
   }
 
   override def afterClass(): Unit = {
     super.afterClass()
-
-    logInfo(s"Stopping snappy rowstore cluster in $snappyProductDir/work")
-    (snappyProductDir + "/sbin/snappy-stop-all.sh").!!
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
-  }
-
-  def getEnvironmentVariable(env: String): String = {
-    val value = scala.util.Properties.envOrElse(env, null)
-    if (env == null) {
-      throw new TestException(s"Environment variable $env is not defined")
-    }
-    value
-  }
-
-  private def writeToFile(str: String, fileName: String): Unit = {
-    val pw = new PrintWriter(fileName)
-    try {
-      pw.write(str)
-    } finally {
-      pw.close()
-    }
+    stopSnappyCluster()
   }
 
   def getANetConnection(netPort: Int): Connection = {

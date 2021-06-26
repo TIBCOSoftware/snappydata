@@ -135,6 +135,7 @@ public class DUnitLauncher {
       return false;
     }
   }
+
   /**
    * Launch DUnit. If the unit test was launched through
    * the hydra framework, leave the test alone.
@@ -145,7 +146,7 @@ public class DUnitLauncher {
       return;
     }
 
-    if(!isHydra() &&!isLaunched()) {
+    if (!isHydra() && !isLaunched()) {
       try {
         launch();
       } catch (Exception e) {

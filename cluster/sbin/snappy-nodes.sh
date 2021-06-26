@@ -276,7 +276,7 @@ function execute() {
          mkdir -p "$dirfolder"
       fi
     fi
-    launchcommand="${@// /\\ } ${args} ${postArgs} < /dev/null 2>&1"
+    launchcommand="${preCommand}${@// /\\ } ${args} ${postArgs} < /dev/null 2>&1"
     eval $launchcommand &
     LAST_PID="$!"
   fi

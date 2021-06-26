@@ -22,16 +22,14 @@ import java.sql.DriverManager
 import com.gemstone.gemfire.internal.cache.LocalRegion
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyTableStatsProviderService
-import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
 
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
 
-
 class SnappyLocalIndexAccountingSuite extends MemoryFunSuite {
 
-  InitializeRun.setUp()
+  TestUtil.globalSetUp()
 
   val struct = (new StructType())
       .add(StructField("col1", IntegerType, true))

@@ -16,25 +16,21 @@
  */
 package org.apache.spark.sql.test
 
-import java.io.File
-
+import com.pivotal.gemfirexd.internal.engine.GfxdConstants
 import io.snappydata.test.dunit.DistributedTestBase.InitializeRun
-import org.scalatest.{Tag}
+import org.scalatest.Tag
 
 import org.apache.spark.SparkFunSuite
 
 trait SnappySparkTestUtil extends SparkFunSuite {
 
   InitializeRun.setUp()
-
-  def withDir(dirName: String)(f: => Unit): Unit = {
-    new File(dirName).mkdir()
-  }
+  System.setProperty(GfxdConstants.SYS_PERSISTENT_DIR_PROP, System.getProperty("user.dir"))
 
   def excluded: Seq[String] = Nil
   def ignored: Seq[String] = Nil
 
-  override protected def test(testName: String, testTags: Tag*)(testFun: => Unit) = {
+  override protected def test(testName: String, testTags: Tag*)(testFun: => Unit): Unit = {
     if (!excluded.contains(testName)) {
       if (ignored.contains(testName)) {
         super.ignore(testName, testTags: _*)(testFun)

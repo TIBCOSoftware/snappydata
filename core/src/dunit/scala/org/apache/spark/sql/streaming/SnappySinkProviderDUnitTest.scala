@@ -17,24 +17,19 @@
 
 package org.apache.spark.sql.streaming
 
-import java.io.PrintWriter
 import java.net.InetAddress
-import java.nio.file.{Files, Paths}
 import java.sql.Connection
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.reflect.io.Path
-import scala.sys.process._
-import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.Constant
-import io.snappydata.cluster.SplitClusterDUnitTest
+import io.snappydata.cluster.{ClusterUtils, SplitClusterDUnitTest}
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
-import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
 import org.junit.Assert
 
@@ -50,9 +45,7 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
  * Contains tests for streaming sink in smart connector mode
  */
 class SnappySinkProviderDUnitTest(s: String)
-    extends DistributedTestBase(s)
-        with Logging
-        with Serializable {
+    extends DistributedTestBase(s) with ClusterUtils with Logging with Serializable {
 
   // reduce minimum compression size so that it happens for all the values for testing
   private def compressionMinSize = "128"
@@ -94,6 +87,9 @@ class SnappySinkProviderDUnitTest(s: String)
   override def beforeClass(): Unit = {
     super.beforeClass()
 
+    // stop any previous cluster and cleanup data
+    stopSnappyCluster()
+
     setSecurityProps()
 
     // create locators, leads and servers files
@@ -118,10 +114,9 @@ class SnappySinkProviderDUnitTest(s: String)
          |localhost  -locators=localhost[$port] -client-port=$netPort3 $compressionArg $ldapConf
          |""".stripMargin, s"$confDir/servers")
 
-    val op = (snappyProductDir + "/sbin/snappy-start-all.sh").!!
-    logInfo("snappy-start-all output:" + op)
+    startSnappyCluster()
 
-    vm.invoke(getClass, "startSparkCluster", sparkProductDir)
+    startSparkCluster(Some(vm))
 
     var connection: Connection = null
     try {
@@ -144,20 +139,12 @@ class SnappySinkProviderDUnitTest(s: String)
 
   override def afterClass(): Unit = {
     super.afterClass()
-    vm.invoke(getClass, "stopSparkCluster", sparkProductDir)
+    stopSparkCluster(Some(vm))
     stopLdapTestServer()
-    logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
-    (snappyProductDir + "/sbin/snappy-stop-all.sh").!!
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
-    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
-    Files.move(Paths.get(snappyProductDir, "work"), Paths.get(snappyProductDir,
-      "work-SnappySinkProviderDUnitTest"))
+    stopSnappyCluster()
   }
 
-  private val snappyProductDir = getEnvironmentVariable("SNAPPY_HOME")
-
-  private val sparkProductDir = getEnvironmentVariable("APACHE_SPARK_HOME").replaceAll("hadoop3.2", "hadoop2.7")
+  override protected val sparkProductDir = System.getProperty("APACHE_SPARK_HOME")
 
   def testStructuredStreaming(): Unit = {
     vm.invoke(getClass, "doTestStructuredStreaming",
@@ -182,40 +169,6 @@ class SnappySinkProviderDUnitTest(s: String)
   def testAllowOnlyOneSnappySinkQueryPerSession(): Unit = {
     vm.invoke(getClass, "doTestAllowOnlyOneSnappySinkQueryPerSession",
       Int.box(locatorNetPort))
-  }
-
-  private def writeToFile(str: String, fileName: String): Unit = {
-    val pw = new PrintWriter(fileName)
-    try {
-      pw.write(str)
-      pw.flush()
-    } finally {
-      pw.close()
-    }
-    // wait until file becomes available (e.g. running on NFS)
-    var matched = false
-    while (!matched) {
-      Thread.sleep(100)
-      try {
-        val source = scala.io.Source.fromFile(fileName)
-        val lines = try {
-          source.mkString
-        } finally {
-          source.close()
-        }
-        matched = lines == str
-      } catch {
-        case NonFatal(_) =>
-      }
-    }
-  }
-
-  def getEnvironmentVariable(env: String): String = {
-    val value = scala.util.Properties.envOrElse(env, null)
-    if (env == null) {
-      throw new TestException(s"Environment variable $env is not defined")
-    }
-    value
   }
 }
 
@@ -252,26 +205,6 @@ object SnappySinkProviderDUnitTest extends Logging {
     Path(checkpointDirectory).deleteRecursively()
 
     kafkaTestUtils.teardown()
-  }
-
-  def getEnvironmentVariable(env: String): String = {
-    val value = scala.util.Properties.envOrElse(env, null)
-    if (env == null) {
-      throw new TestException(s"Environment variable $env is not defined")
-    }
-    value
-  }
-
-  def startSparkCluster(productDir: String): Unit = {
-    logInfo(s"Starting spark cluster in $productDir/work")
-    (productDir + "/sbin/start-all.sh").!!
-  }
-
-  def stopSparkCluster(productDir: String): Unit = {
-    val sparkContext = SnappyContext.globalSparkContext
-    logInfo(s"Stopping spark cluster in $productDir/work")
-    if (sparkContext != null) sparkContext.stop()
-    (productDir + "/sbin/stop-all.sh").!!
   }
 
   def doTestStructuredStreaming(locatorClientPort: Int): Unit = {
@@ -517,7 +450,7 @@ object SnappySinkProviderDUnitTest extends Logging {
         .setMaster(s"spark://$hostName:7077")
         .set("spark.executor.cores", TestUtils.defaultCoresForSmartConnector)
         .set("spark.executor.extraClassPath",
-          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+          ClusterUtils.getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", connectionURL)
 
     conf.set(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, user)

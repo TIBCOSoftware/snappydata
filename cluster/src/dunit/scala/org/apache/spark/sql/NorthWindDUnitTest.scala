@@ -19,9 +19,9 @@ package org.apache.spark.sql
 import java.io.{File, FileOutputStream, PrintWriter}
 import java.sql.{ResultSet, Statement}
 
-import scala.io.Source
+import scala.io.{Codec, Source}
 
-import io.snappydata.cluster.ClusterManagerTestBase
+import io.snappydata.cluster.{ClusterManagerTestBase, ClusterUtils}
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.TaskContext
@@ -32,17 +32,15 @@ import org.apache.spark.sql.execution.joins._
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.{FilterExec, ProjectExec}
 
-class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) with ClusterUtils {
 
   override val locatorNetPort: Int = AvailablePortHelper.getRandomAvailableTCPPort
-  protected val productDir: String = SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_HOME")
   override val stopNetServersInTearDown = false
-
 
   override def beforeClass(): Unit = {
     super.beforeClass()
     startNetworkServersOnAllVMs()
-    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
+    startSparkCluster(Some(vm3))
   }
 
   override def afterClass(): Unit = {
@@ -51,7 +49,7 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     super.afterClass()
     Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
       "validateNoActiveSnapshotTX"))
-    vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
+    stopSparkCluster(Some(vm3))
   }
 
   def testReplicatedTableQueries(): Unit = {
@@ -770,10 +768,10 @@ object NorthWindDUnitTest {
       writeToFile(sparkDF, sparkFile, snc)
       pw.println(s"$queryNum Result Collected in files with prefix $sparkFile")
     }
-    val expectedFiles = getSortedFiles(sparkFile).toIterator
-    val actualFiles = getSortedFiles(snappyFile).toIterator
-    val expectedLineSet = expectedFiles.flatMap(Source.fromFile(_).getLines())
-    val actualLineSet = actualFiles.flatMap(Source.fromFile(_).getLines())
+    val expectedSources = getSortedFiles(sparkFile).toIterator.map(Source.fromFile(_)(Codec.UTF8))
+    val actualSources = getSortedFiles(snappyFile).toIterator.map(Source.fromFile(_)(Codec.UTF8))
+    val expectedLineSet = expectedSources.flatMap(_.getLines())
+    val actualLineSet = actualSources.flatMap(_.getLines())
     var numLines = 0
     while (expectedLineSet.hasNext && actualLineSet.hasNext) {
       val expectedLine = expectedLineSet.next()
@@ -798,6 +796,9 @@ object NorthWindDUnitTest {
         s"observed: Expected=$numRows, Got=$numLines")
     // scalastyle:on println
     pw.flush()
+
+    expectedSources.foreach(_.close())
+    actualSources.foreach(_.close())
   }
 
   def assertJoinFullResultSet(snc: SnappyContext, sqlString: String, numRows: Int,

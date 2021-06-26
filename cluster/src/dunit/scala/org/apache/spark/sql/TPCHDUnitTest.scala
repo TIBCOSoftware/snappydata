@@ -24,32 +24,29 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import io.snappydata.benchmark.TPCH_Queries.createQuery
 import io.snappydata.benchmark.snappy.tpch.QueryExecutor
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable, TPCH_Queries}
-import io.snappydata.cluster.ClusterManagerTestBase
+import io.snappydata.cluster.{ClusterManagerTestBase, ClusterUtils}
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.{Logging, SparkContext}
 
-class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
-    with Logging {
+class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s) with ClusterUtils with Logging {
 
   override val locatorNetPort: Int = TPCHUtils.locatorNetPort
+
   val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
     "20", "21", "22")
   override val stopNetServersInTearDown = false
 
-  protected val productDir =
-    SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_HOME")
-
   override def beforeClass(): Unit = {
-    vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", productDir)
+    startSparkCluster(Some(vm3))
     super.beforeClass()
     startNetworkServersOnAllVMs()
   }
 
   override def afterClass(): Unit = {
     try {
-      vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", productDir)
+      stopSparkCluster(Some(vm3))
       Array(vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
       ClusterManagerTestBase.stopNetworkServers()
     } finally {
@@ -561,7 +558,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
       }
       result += row
     }
-    println(s"Number of rows : $count")
+    logInfo(s"Number of rows : $count")
 
     val expectedFile = sc.textFile(getClass.getResource(
       s"/TPCH/RESULT/Snappy_10.out").getPath)

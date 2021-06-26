@@ -18,10 +18,10 @@ package io.snappydata.hydra
 
 import java.io.{File, PrintWriter}
 
+import scala.io.{Codec, Source}
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-
-import scala.io.Source
 
 
 object SnappyTestUtils {
@@ -165,10 +165,12 @@ object SnappyTestUtils {
       writeToFile(sparkDF, sparkDest, snc)
       pw.println(s"${queryNum} Result Collected in file $sparkDest")
     }
-    val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
-    val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
-    val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
-    val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines
+    val expectedFiles = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val actualFiles = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val expectedSources = expectedFiles.toIterator.map(Source.fromFile(_)(Codec.UTF8))
+    val actualSources = actualFiles.toIterator.map(Source.fromFile(_)(Codec.UTF8))
+    val expectedLineSet = expectedSources.flatMap(_.getLines())
+    val actualLineSet = actualSources.flatMap(_.getLines())
     // var numLines = 0
     while (expectedLineSet.hasNext && actualLineSet.hasNext) {
       val expectedLine = expectedLineSet.next()
@@ -193,8 +195,11 @@ object SnappyTestUtils {
       pw.flush()
       // assert(assertion = false, s"\nFor $queryNum result count mismatch observed")
     }
-    // scalastyle:on println
     pw.flush()
+    // scalastyle:off println
+
+    expectedSources.foreach(_.close())
+    actualSources.foreach(_.close())
   }
 
   def assertQueryFullResultSet(snc: SnappyContext, snDF : DataFrame,
@@ -224,10 +229,12 @@ object SnappyTestUtils {
       writeToFile(sparkDF, sparkDest, snc)
       pw.println(s"${queryNum} Result Collected in file $sparkDest")
     }
-    val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
-    val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
-    val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
-    val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines
+    val expectedFiles = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val actualFiles = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val expectedSources = expectedFiles.toIterator.map(Source.fromFile(_)(Codec.UTF8))
+    val actualSources = actualFiles.toIterator.map(Source.fromFile(_)(Codec.UTF8))
+    val expectedLineSet = expectedSources.flatMap(_.getLines())
+    val actualLineSet = actualSources.flatMap(_.getLines())
     while (expectedLineSet.hasNext && actualLineSet.hasNext) {
       val expectedLine = expectedLineSet.next()
       val actualLine = actualLineSet.next()
@@ -248,11 +255,15 @@ object SnappyTestUtils {
     pw.println()
     // scalastyle:on println
     pw.flush()
+
+    expectedSources.foreach(_.close())
+    actualSources.foreach(_.close())
   }
 
   def assertQueryFullResultSet(snc: SnappyContext, snDF : DataFrame,
                                spDF : DataFrame, queryNum: String,
-                               tableType: String, pw: PrintWriter, sqlContext: SQLContext, isJoin : Boolean ): Any = {
+                               tableType: String, pw: PrintWriter,
+                               sqlContext: SQLContext, isJoin : Boolean ): Any = {
     var snappyDF: DataFrame = snDF
     var sparkDF = spDF
     val snappyQueryFileName = s"Snappy_${queryNum}.out"
@@ -287,10 +298,12 @@ object SnappyTestUtils {
       writeToFile(sparkDF, sparkDest, snc)
       pw.println(s"${queryNum} Result Collected in file $sparkDest")
     }
-    val expectedFile = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
-    val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
-    val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
-    val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines
+    val expectedFiles = sparkFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val actualFiles = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
+    val expectedSources = expectedFiles.toIterator.map(Source.fromFile(_)(Codec.UTF8))
+    val actualSources = actualFiles.toIterator.map(Source.fromFile(_)(Codec.UTF8))
+    val expectedLineSet = expectedSources.flatMap(_.getLines())
+    val actualLineSet = actualSources.flatMap(_.getLines())
     while (expectedLineSet.hasNext && actualLineSet.hasNext) {
       val expectedLine = expectedLineSet.next()
       val actualLine = actualLineSet.next()
@@ -310,5 +323,8 @@ object SnappyTestUtils {
     pw.println()
     // scalastyle:on println
     pw.flush()
+
+    expectedSources.foreach(_.close())
+    actualSources.foreach(_.close())
   }
 }

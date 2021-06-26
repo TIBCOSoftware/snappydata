@@ -19,16 +19,17 @@ package io.snappydata
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import io.snappydata.core.TestData
-import org.apache.spark.Logging
-import org.apache.spark.sql.SnappySession
-import org.scalatest.Assertions
-
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-object ConcurrentOpsTests extends Assertions with Logging {
+import io.snappydata.core.TestData
+import org.scalatest.Assertions
 
+import org.apache.spark.Logging
+import org.apache.spark.sql.SnappySession
+
+object ConcurrentOpsTests extends Assertions with Logging {
 
   def testSimpleLockInsert(session: SnappySession): Unit = {
     val tableName = "ColumnTable"
@@ -114,7 +115,6 @@ object ConcurrentOpsTests extends Assertions with Logging {
     dataDF.write.putInto(tableName)
     dataDF.write.deleteFrom(tableName)
 
-
     val t = new Thread(new Runnable {
       override def run(): Unit = {
         val snc = new SnappySession(session.sparkContext)
@@ -175,7 +175,6 @@ object ConcurrentOpsTests extends Assertions with Logging {
       "KEY_COLUMNS 'Key1'," +
       "BUCKETS '1')")
 
-    import scala.concurrent.ExecutionContext.Implicits.global
     val doPut = () => Future {
       val newSnc = new SnappySession(snc.sparkContext)
       val rdd = newSnc.sparkContext.parallelize(
@@ -222,8 +221,6 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val r2 = result.collect
     assert(r2.length == 2000)
 
-    import scala.concurrent.ExecutionContext.Implicits.global
-
     val doUpdate = () => Future {
       val snc = new SnappySession(session.sparkContext)
       val rdd = snc.sparkContext.parallelize(
@@ -261,7 +258,6 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val r2 = result.collect
     assert(r2.length == 2000)
 
-    import scala.concurrent.ExecutionContext.Implicits.global
     val doDelete = () => Future {
       val snc = new SnappySession(session.sparkContext)
       snc.sql("delete FROM " + tableName)
@@ -291,7 +287,6 @@ object ConcurrentOpsTests extends Assertions with Logging {
       "KEY_COLUMNS 'Key1'," +
       "BUCKETS '1')")
 
-    import scala.concurrent.ExecutionContext.Implicits.global
     val doPut = () => Future {
       val snc = new SnappySession(session.sparkContext)
       val rdd = snc.sparkContext.parallelize(
@@ -333,8 +328,6 @@ object ConcurrentOpsTests extends Assertions with Logging {
       "PARTITION_BY 'Key1'," +
       "KEY_COLUMNS 'Key1'," +
       "BUCKETS '1')")
-
-    import scala.concurrent.ExecutionContext.Implicits.global
 
     val doInsert = () => Future {
       val snc = new SnappySession(session.sparkContext)
@@ -436,7 +429,6 @@ object ConcurrentOpsTests extends Assertions with Logging {
       "KEY_COLUMNS 'Key1'," +
       "BUCKETS '1')")
 
-    import scala.concurrent.ExecutionContext.Implicits.global
     val doPut = (table: String) => Future {
       val snc = new SnappySession(session.sparkContext)
       val rdd = snc.sparkContext.parallelize(
@@ -507,20 +499,20 @@ object ConcurrentOpsTests extends Assertions with Logging {
       "KEY_COLUMNS 'Key1'," +
       "BUCKETS '1')")
 
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val doPut = (table: String) => Future {
+    val doInsert = (table: String) => Future {
       val snc = new SnappySession(session.sparkContext)
       val rdd = session.sparkContext.parallelize(
         (1 to 2000).map(i => TestData(i, i.toString)))
       val dataDF = snc.createDataFrame(rdd)
       import org.apache.spark.sql.snappy._
-      dataDF.write.putInto(table)
+      dataDF.write.insertInto(table)
       val result = snc.sql("SELECT * FROM " + table)
-      val r2 = result.collect
+      val r2 = result.collect()
       assert(r2.length == 2000)
     }
 
-    Seq(tableName, tableName2, tableName3, tableName4).foreach(doPut(_))
+    val inserts = Seq(tableName, tableName2, tableName3, tableName4).map(doInsert(_))
+    inserts.foreach(Await.result(_, Duration.Inf))
 
     var counter = new AtomicInteger(0)
 
@@ -534,10 +526,9 @@ object ConcurrentOpsTests extends Assertions with Logging {
       dataDF.filter(s"key1 <= $maxKey").write.deleteFrom(table)
 
       val result = snc.sql("SELECT * FROM " + table)
-      val r2 = result.collect
+      val r2 = result.collect()
       logInfo(s"SKSK The size of $table is ${r2.length}")
     }
-
 
     val delTasks = Array.fill(5)(doDelete(tableName, counter.addAndGet(500)))
     counter = new AtomicInteger(0)
@@ -546,7 +537,6 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val delTasks3 = Array.fill(5)(doDelete(tableName3, counter.addAndGet(500)))
     counter = new AtomicInteger(0)
     val delTasks4 = Array.fill(5)(doDelete(tableName4, counter.addAndGet(500)))
-
 
     delTasks.foreach(Await.result(_, Duration.Inf))
     delTasks2.foreach(Await.result(_, Duration.Inf))

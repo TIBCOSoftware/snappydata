@@ -21,7 +21,7 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 
 import scala.collection.JavaConverters._
-import scala.io.Source
+import scala.io.{Codec, Source}
 
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import org.apache.commons.io.FileUtils
@@ -55,7 +55,7 @@ object LocalDirectoryCleanupUtil extends Logging {
   def clean(): Unit = synchronized {
     val listFilePath = Paths.get(listFile)
     if (Files.exists(listFilePath)) {
-      val fileSource = Source.fromFile(listFile, "UTF-8")
+      val fileSource = Source.fromFile(listFile)(Codec.UTF8)
       try {
         fileSource.getLines().map(Paths.get(_)).foreach(delete)
       } finally {
