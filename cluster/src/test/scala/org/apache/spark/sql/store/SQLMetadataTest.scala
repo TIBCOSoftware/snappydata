@@ -47,7 +47,7 @@ class SQLMetadataTest extends SnappyFunSuite {
     try {
       val stmt = conn.createStatement()
       MetadataTest.testSYSTablesAndVTIs(SnappyFunSuite.resultSetToDataset(session, stmt),
-        netServers = Seq(s"127.0.0.1/127.0.0.1[$netPort]"))
+        netServers = Seq(s"127.0.0.1/127.0.0.1[$netPort]", s"localhost/127.0.0.1[$netPort]"))
       stmt.close()
     } finally {
       conn.close()
@@ -73,7 +73,7 @@ class SQLMetadataTest extends SnappyFunSuite {
     try {
       val stmt = conn.createStatement()
       MetadataTest.testDSIDWithSYSTables(SnappyFunSuite.resultSetToDataset(session, stmt),
-        Seq(s"127.0.0.1/127.0.0.1[$netPort]"))
+        Seq(s"127.0.0.1/127.0.0.1[$netPort]", s"localhost/127.0.0.1[$netPort]"))
       stmt.close()
     } finally {
       conn.close()

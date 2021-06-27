@@ -138,12 +138,15 @@ object MetadataTest extends Assertions {
     def checkMembers(rs: Array[Row], forShow: Boolean): Unit = {
       if (locatorId.isEmpty) {
         assert(rs.length === 1)
-        if (forShow) {
-          expectedRow = Row(myId, hostName, "loner", "RUNNING", netServers.head, "")
-        } else {
-          expectedRow = Row(myId, "loner", "RUNNING", true, true, netServers.head, "")
+        val result = netServers.find { netServer =>
+          if (forShow) {
+            expectedRow = Row(myId, hostName, "loner", "RUNNING", netServer, "")
+          } else {
+            expectedRow = Row(myId, "loner", "RUNNING", true, true, netServer, "")
+          }
+          rs(0) == expectedRow
         }
-        assert(rs(0) === expectedRow)
+        if (result.isEmpty) assert(rs(0) === expectedRow)
       } else {
         assert(rs.length === 2 + servers.length, rs.toSeq)
         if (forShow) {
@@ -992,7 +995,9 @@ object MetadataTest extends Assertions {
     }
     rs = executeSQL("select m.id, netservers from sys.members m where m.id = dsid()").collect()
     if (locator.isEmpty) {
-      assert(rs === Array(Row(myId, netServers.head)))
+      if (!netServers.exists(netServer => rs(0) == Row(myId, netServer))) {
+        assert(rs(0) === Row(myId, netServers.head))
+      }
     }
 
     // create a table and do group by queries to see data distribution
@@ -1016,7 +1021,9 @@ object MetadataTest extends Assertions {
         "select count(*) cnt, dsid() id from columnTable1 group by dsid()) t " +
         "inner join sys.members m on (t.id = m.id)").collect()
     if (locator.isEmpty) {
-      assert(rs === Array(Row(numRows, myId, netServers.head)))
+      if (!netServers.exists(netServer => rs(0) == Row(numRows, myId, netServer))) {
+        assert(rs(0) === Row(numRows, myId, netServers.head))
+      }
     } else {
       assert(rs.map(_.getLong(0)).sum === numRows)
       assert(rs.map(_.getString(1)).forall(servers.contains),
@@ -1031,7 +1038,9 @@ object MetadataTest extends Assertions {
         "select count(*) cnt, dsid() id from columnTable1 group by dsid()) t " +
         "left join sys.members m on (t.id = m.id)").collect()
     if (locator.isEmpty) {
-      assert(rs === Array(Row(numRows, myId, netServers.head)))
+      if (!netServers.exists(netServer => rs(0) == Row(numRows, myId, netServer))) {
+        assert(rs(0) === Row(numRows, myId, netServers.head))
+      }
     } else {
       assert(rs.map(_.getLong(0)).sum === numRows)
       assert(rs.map(_.getString(1)).forall(servers.contains),
