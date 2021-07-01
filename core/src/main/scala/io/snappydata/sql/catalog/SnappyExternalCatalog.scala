@@ -26,6 +26,7 @@ import com.gemstone.gemfire.internal.cache.LocalRegion
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.diag.SysVTIs
+import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
@@ -331,9 +332,20 @@ object SnappyExternalCatalog {
    * the inbuilt SYS schema is skipped.
    */
   def getAllTables(catalog: ExternalCatalog, skipSchemas: Seq[String]): Seq[CatalogTable] = {
-    catalog.listDatabases().flatMap(schema =>
-      if (skipSchemas.nonEmpty && skipSchemas.contains(schema)) Nil
-      else catalog.listTables(schema).flatMap(table => catalog.getTableOption(schema, table)))
+    val deferred = GfxdDataDictionary.SKIP_CATALOG_OPS.get()
+    deferred.deferCloseStatement = true
+    try {
+      catalog.listDatabases().flatMap(schema =>
+        if (skipSchemas.nonEmpty && skipSchemas.contains(schema)) Nil
+        else catalog.listTables(schema).flatMap(table => catalog.getTableOption(schema, table)))
+    } finally {
+      deferred.deferCloseStatement = false
+      val msg = deferred.deferredCloseStatementMessage
+      if (msg ne null) {
+        deferred.deferredCloseStatementMessage = null
+        msg.executeFunction(false, false, null, false, false)
+      }
+    }
   }
 
   def schemaNotFoundException(schema: String): AnalysisException = {

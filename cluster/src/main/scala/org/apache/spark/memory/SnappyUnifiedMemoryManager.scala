@@ -23,7 +23,7 @@ import java.util.function.BiConsumer
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.distributed.internal.DistributionConfig
+import com.gemstone.gemfire.distributed.internal.{DistributionConfig, DistributionManager}
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.shared.{BufferAllocator, LauncherBase}
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
@@ -164,7 +164,7 @@ class SnappyUnifiedMemoryManager private[memory](
     // go to Boot Manager
     MemoryManagerCallback.resetMemoryManager()
     synchronized {
-      logInfo(s" Closing Memory Manager ${this}")
+      logInfo(s"Closing Memory Manager $this")
       val bootManager = MemoryManagerCallback.bootMemoryManager
           .asInstanceOf[SnappyUnifiedMemoryManager]
 
@@ -214,7 +214,7 @@ class SnappyUnifiedMemoryManager private[memory](
   private def logMemoryConfiguration(): Unit = {
     val memoryLog = new StringBuilder
     val separator = "\n\t\t"
-    memoryLog.append(s"$managerId ${this} configuration:")
+    memoryLog.append(s"$managerId $this configuration:")
 
     memoryLog.append(separator).append("Total Usable Heap = ")
         .append(Utils.bytesToString(maxHeapMemory))
@@ -283,7 +283,7 @@ class SnappyUnifiedMemoryManager private[memory](
   def logStats(tag: String): Unit = synchronized {
     val memoryLog = new StringBuilder
     val separator = "\n\t\t"
-    memoryLog.append(s"$tag$managerId ${this} stats:")
+    memoryLog.append(s"$tag$managerId $this stats:")
     memoryLog.append(separator).append("Storage Used = ")
         .append(onHeapStorageMemoryPool.memoryUsed)
         .append(" (size=").append(onHeapStorageMemoryPool.poolSize).append(')')
@@ -859,11 +859,7 @@ object SnappyUnifiedMemoryManager extends Logging {
 
   private val DEFAULT_STORAGE_FRACTION = 0.5
 
-  private def getMaxHeapMemory: Long = {
-    val maxMemory = Runtime.getRuntime.maxMemory()
-    if (maxMemory > 0 && maxMemory != Long.MaxValue) maxMemory
-    else Runtime.getRuntime.totalMemory()
-  }
+  private def getMaxHeapMemory: Long = DistributionManager.getMaxHeapMemory
 
   /**
    * The maximum limit of heap size till which an explicit GC will be

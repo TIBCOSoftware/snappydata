@@ -17,7 +17,6 @@
 package io.snappydata.sql.catalog.impl
 
 import java.sql.SQLException
-import java.util.Collections
 import java.util.concurrent.{Callable, ExecutionException, ExecutorService, Executors, Future, TimeUnit}
 import java.util.{Collections, List => JList}
 
@@ -348,7 +347,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           toUpperCase(table.database) -> toUpperCase(table.identifier.table)
       }.asInstanceOf[R]
 
-      case GET_ALL_HIVE_ENTRIES => {
+      case GET_ALL_HIVE_ENTRIES =>
         val dbList = externalCatalog.listDatabases("*").filter(dbName =>
           !(dbName.equals("SYS") || dbName.equals("DEFAULT")))
         val allSchemas = dbList.map(externalCatalog.getDatabase(_))
@@ -365,7 +364,6 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           case db: CatalogDatabase => ConnectorExternalCatalog.convertFromCatalogDatabase(db)
           case func: CatalogFunction => ConnectorExternalCatalog.convertFromCatalogFunction(func)
         }.asInstanceOf[R]
-      }
 
       case REMOVE_TABLE_IF_EXISTS => try {
         externalCatalog.dropTable(formattedSchema, formattedTable,
