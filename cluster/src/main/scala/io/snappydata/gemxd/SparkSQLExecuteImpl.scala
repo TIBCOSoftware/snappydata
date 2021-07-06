@@ -58,7 +58,8 @@ class SparkSQLExecuteImpl(
     val schema: String,
     val ctx: LeadNodeExecutionContext,
     senderVersion: Version,
-    pvs: Option[ParameterValueSet]) extends SparkSQLExecute with Logging {
+    pvs: Option[ParameterValueSet],
+    pvsTypes: Array[Int]) extends SparkSQLExecute with Logging {
 
   // spark context will be constructed by now as this will be invoked when
   // DRDA queries will reach the lead node
@@ -80,6 +81,7 @@ class SparkSQLExecuteImpl(
   Utils.setCurrentSchema(session, schema, createIfNotExists = true)
 
   session.setPreparedQuery(preparePhase = false, pvs)
+  session.setPreparedParamsTypeInfo(pvsTypes)
 
   session.sessionState.jdbcQueryJobGroupId = Option(ctx.getStatementId.toString)
 

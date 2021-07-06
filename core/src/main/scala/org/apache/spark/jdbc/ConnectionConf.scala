@@ -135,7 +135,7 @@ class ConnectionConfBuilder(session: SnappySession) {
       connSettings.put("poolProperties", poolProperties)
     }
 
-    val connProps = ExternalStoreUtils.validateAndGetAllProps(Some(session),
+    val connProps = ExternalStoreUtils.validateAndGetAllProps(Option(session),
       new CaseInsensitiveMutableHashMap(connSettings))
     new ConnectionConf(connProps)
   }
