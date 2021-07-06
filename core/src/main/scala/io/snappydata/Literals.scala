@@ -279,6 +279,11 @@ object Property extends Enumeration {
           "join with incoming Dataset is of size less " +
           "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some("100m"))
 
+  val PutIntoInnerJoinLocalCache: SQLValue[Boolean] =
+    SQLVal[Boolean](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinLocalCache",
+      "Cache the putInto inner join locally at the driver node. Use only if the " +
+          "size of the putInto data is a few MB. Default is false.", Some(false))
+
   val TestExplodeComplexDataTypeInSHA: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.explodeStructInSHA",
     "Explodes the Struct or Array Field in Group By Keys even if the struct object is " +

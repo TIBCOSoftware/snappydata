@@ -21,7 +21,7 @@ import io.snappydata.Property
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, AttributeSet, EqualTo, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
+import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LocalRelation, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -65,11 +65,13 @@ object ColumnTableBulkOps {
         val cacheSize = ExternalStoreUtils.sizeAsBytes(
           Property.PutIntoInnerJoinCacheSize.get(session.sqlContext.conf),
           Property.PutIntoInnerJoinCacheSize.name, -1, Long.MaxValue)
+        val localCache = Property.PutIntoInnerJoinLocalCache.get(session.sqlContext.conf)
 
         val updatePlan = Update(table, updateSubQuery, Nil,
           updateColumns, updateExpressions)
         val updateDS = new Dataset(session, updatePlan, RowEncoder(updatePlan.schema))
-        var analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
+        val analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
+        var updateOrSkip: LogicalPlan = analyzedUpdate
         updateSubQuery = analyzedUpdate.child
 
         // explicitly project out only the updated expression references and key columns
@@ -80,20 +82,33 @@ object ColumnTableBulkOps {
           updateReferences.contains(a) || keyColumns.contains(a.name) ||
               putKeys.exists(k => analyzer.resolver(a.name, k))), updateSubQuery)
 
-        val insertChild = session.cachePutInto(
+        val insertChild = session.cachePutInto(localCache,
           subQuery.statistics.sizeInBytes <= cacheSize, updateSubQuery, mutable.table) match {
-          case None => subQuery
+          case None =>
+            // no update is required
+            updateOrSkip = DummyUpdate()
+            subQuery
           case Some(newUpdateSubQuery) =>
             if (updateSubQuery ne newUpdateSubQuery) {
-              analyzedUpdate = analyzedUpdate.copy(child = newUpdateSubQuery)
+              updateOrSkip = analyzedUpdate.copy(child = newUpdateSubQuery)
+              newUpdateSubQuery match {
+                case r : LocalRelation =>
+                  // create a copy for anti-join so that original is used for the UPDATE
+                  val newRelation = r.newInstance()
+                  Join(subQuery, newRelation, LeftAnti,
+                    prepareCondition(session, subQuery, newRelation, putKeys))
+                case _ =>
+                  Join(subQuery, newUpdateSubQuery, LeftAnti, condition)
+              }
+            } else {
+              Join(subQuery, updateSubQuery, LeftAnti, condition)
             }
-            Join(subQuery, newUpdateSubQuery, LeftAnti, condition)
         }
         val insertPlan = new Insert(table, Map.empty[String,
             Option[String]], Project(subQuery.output, insertChild),
           OverwriteOptions(enabled = false), ifNotExists = false)
 
-        transFormedPlan = PutIntoColumnTable(table, insertPlan, analyzedUpdate)
+        transFormedPlan = PutIntoColumnTable(table, insertPlan, updateOrSkip)
       case _ => // Do nothing, original putInto plan is enough
     }
     transFormedPlan
@@ -201,7 +216,7 @@ object ColumnTableBulkOps {
 }
 
 case class PutIntoColumnTable(table: LogicalPlan,
-    insert: Insert, update: Update) extends BinaryNode {
+    insert: Insert, update: LogicalPlan) extends BinaryNode {
 
   override lazy val output: Seq[Attribute] = AttributeReference(
     "count", LongType)() :: Nil

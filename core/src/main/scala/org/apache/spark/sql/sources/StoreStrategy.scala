@@ -174,6 +174,17 @@ case class Update(table: LogicalPlan, child: LogicalPlan,
 }
 
 /**
+ * Used to skip the [[Update]] in PutInto when no rows are to be updated.
+ */
+case class DummyUpdate() extends RunnableCommand {
+
+  override lazy val output: Seq[Attribute] = AttributeReference(
+    "count", LongType)() :: Nil
+
+  override def run(sparkSession: SparkSession): Seq[Row] = Nil
+}
+
+/**
  * Plan for delete from a column or row table.
  */
 case class Delete(table: LogicalPlan, child: LogicalPlan,

@@ -645,7 +645,8 @@ object CachedDataFrame
       val executionIdStr = java.lang.Long.toString(executionId)
       val jobGroupId = snappySession.sessionState.jdbcQueryJobGroupId
           .getOrElse(java.lang.Long.toString(executionId))
-      SnappySession.setExecutionProperties(localProperties, executionIdStr, jobGroupId, queryLongForm)
+      SnappySession.setExecutionProperties(localProperties, executionIdStr,
+        jobGroupId, queryLongForm)
 
       val startTime = System.currentTimeMillis()
       var endTime = -1L
