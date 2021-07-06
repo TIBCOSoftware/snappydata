@@ -1119,6 +1119,58 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
+
+  test("SNAP-3332") {
+    val serverHostPort = TestUtil.startNetServer()
+    // scalastyle:off classforname
+    Class.forName("io.snappydata.jdbc.ClientPoolDriver")
+    // scalastyle:on classforname
+    val conn = DriverManager.getConnection("jdbc:snappydata:pool://" + serverHostPort)
+    val stmt = conn.createStatement()
+
+    stmt.execute("drop table if exists testPS")
+    stmt.execute("create table testPS (id long, data decimal(12,3)) using column " +
+        "as select id, id * 2 from range(100000)")
+
+    val pstmt1 = conn.prepareStatement("update testPS set data = ? where id = ?")
+    pstmt1.setString(1, "200.2")
+    pstmt1.setLong(2, 100)
+    assert(pstmt1.executeUpdate() === 1)
+
+    val pstmt2 = conn.prepareStatement("select * from testPS where id = ?")
+    pstmt2.setLong(1, 100)
+    var rs = pstmt2.executeQuery()
+    assert(rs.next())
+    assert(rs.getString(1) === "100")
+    assert(rs.getString(2) === "200.200")
+    assert(!rs.next())
+
+    // try again on the same connection
+    pstmt1.setString(1, "222.4")
+    pstmt1.setLong(2, 100)
+    assert(pstmt1.executeUpdate() == 1)
+
+    rs = pstmt2.executeQuery()
+    assert(rs.next())
+    assert(rs.getLong(1) === 100L)
+    assert(rs.getBigDecimal(2) === new java.math.BigDecimal("222.400"))
+    assert(!rs.next())
+
+    // also try with a new PreparedStatement on the same connection
+    val pstmt3 = conn.prepareStatement("update testPS set data = ? where id = ?")
+    pstmt3.setBigDecimal(1, new java.math.BigDecimal("-317.2241"))
+    pstmt3.setLong(2, 100)
+    assert(pstmt3.executeUpdate() === 1)
+
+    rs = pstmt2.executeQuery()
+    assert(rs.next())
+    assert(rs.getLong(1) === 100L)
+    assert(rs.getBigDecimal(2) === new java.math.BigDecimal("-317.224"))
+    assert(!rs.next())
+
+    conn.close()
+    TestUtil.stopNetServer()
+  }
 }
 
 object PreparedQueryRoutingSingleNodeSuite extends Assertions with Logging {
