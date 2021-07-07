@@ -241,7 +241,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     // New Code : Stats rows are written as UnsafeRow. Unsafe row irrespective
     // of nullability keeps nullbits.
     // So if 100 columns are  there stats row will contain 100 * 3 and UnsafeRow will contain
-    // 300 nullbits plus bits required for 8 bytes word allignment. Hence setting unused columns
+    // 300 nullbits plus bits required for 8 bytes word alignment. Hence setting unused columns
     // as null does not really saves much.
 
     // These nullbits are set based on platform endianness. SD ColumnFormatValue

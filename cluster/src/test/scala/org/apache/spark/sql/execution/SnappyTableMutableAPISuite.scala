@@ -22,10 +22,12 @@ import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 
 case class DataWithMultipleKeys(pk1: Int, col1: Int, pk2: String, col2: Long)
 case class DataDiffCol(column1: Int, column2: Int, column3: Int)
@@ -1242,5 +1244,170 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
         "tt.R1 >= 3 AND tt.R1 < 5;").collect()
     assert(df2.length == 1)
     assert(df2.contains(Row(3, 3, 3, 3)))
+  }
+
+  private def createDataFrame(session: SnappySession, useLocalRelation: Boolean, rows: Seq[Row],
+      encoder: Encoder[Row]): DataFrame = {
+    if (useLocalRelation) session.createDataset(rows)(encoder)
+    else session.createDataset(sc.parallelize(rows))(encoder)
+  }
+
+  /**
+   * split rows to create multiple DataFrames for the given 3 different encoders to test
+   * different combinations: no-projection, projection with casts, simple alias projection
+   */
+  private def splitRowDFs(session: SnappySession, useLocalRelation: Boolean, rows: Seq[Row],
+      encoders: Array[Encoder[Row]]): Seq[DataFrame] = {
+    assert(encoders.length === 3)
+    val splitRows = rows.grouped(rows.length / 3 + 1).toArray
+    assert(splitRows.length === 3)
+    splitRows(1) = splitRows(1).map(r => Row(r.getLong(0), r.getString(1), r.getLong(2).toString))
+    splitRows.indices.map(i => createDataFrame(session, useLocalRelation,
+      splitRows(i), encoders(i)))
+  }
+
+  private def testOptimizedLocalRelationPutInto(session: SnappySession, tableName: String,
+      useLocalRelation: Boolean, useLocalCaching: Boolean): Unit = {
+    val encoder1 = RowEncoder(StructType(Array(StructField("id", LongType),
+      StructField("name", StringType), StructField("seq", LongType))))
+    val encoder2 = RowEncoder(StructType(Array(StructField("id", LongType),
+      StructField("name", StringType), StructField("seq", StringType))))
+    val encoder3 = RowEncoder(StructType(Array(StructField("id3", LongType),
+      StructField("otherName", StringType), StructField("seq", LongType))))
+    val encoders = Array[Encoder[Row]](encoder1, encoder2, encoder3)
+
+    val startId = 28791254
+    val startNameId = 387751092
+    val initialSize = 100000
+    val numPuts = 100
+    val numPuts_2 = numPuts / 2
+    val lastIdDelta = startId - numPuts_2 * 3
+    val lastNameIdDelta = startNameId - numPuts_2 * 3
+
+    session.conf.set("snappydata.cache.putIntoInnerJoinLocalCache", useLocalCaching)
+
+    // clear table and do the initial inserts
+    session.sql(s"truncate table $tableName")
+    session.sql(s"insert into $tableName " +
+        s"select id + $startId, 'name_' || (id + $startNameId), id from range($initialSize)")
+    assert(session.sql(
+      s"select * from $tableName where id < $startId").count() === 0)
+    assert(session.sql(
+      s"select * from $tableName where id >= $startId and id = seq + $startId").count() ===
+        initialSize)
+
+    // check putInto with no updates
+    var rows = for (seq <- 0L until numPuts) yield {
+      Row(seq + startId - numPuts * 2, "name_" + seq, seq)
+    }
+    var dfs = splitRowDFs(session, useLocalRelation, rows, encoders)
+    assert(dfs.foldLeft(0L)(_ + _.write.putInto(tableName)) === numPuts)
+    assert(session.table(tableName).count() === initialSize + numPuts)
+    assert(session.sql(
+      s"select * from $tableName where id < $startId").count() === numPuts)
+    assert(session.sql(
+      s"select * from $tableName where id < $startId and substr(name, 6) = seq").count() ===
+        numPuts)
+    assert(session.sql(
+      s"select * from $tableName where id < $startId and substr(name, 6) <> seq").count() === 0)
+    assert(session.sql(
+      s"select * from $tableName where id >= $startId and id = seq + $startId").count() ===
+        initialSize)
+
+    // check putInto with no inserts
+    rows = for (seq <- 0L until numPuts) yield {
+      Row(seq + startId + numPuts, "name_" + (seq + startNameId + numPuts), seq)
+    }
+    dfs = splitRowDFs(session, useLocalRelation, rows, encoders)
+    assert(dfs.foldLeft(0L)(_ + _.write.putInto(tableName)) === numPuts)
+    assert(session.table(tableName).count() === initialSize + numPuts)
+    assert(session.sql(
+      s"select * from $tableName where id < $startId").count() === numPuts)
+    assert(session.sql(
+      s"select * from $tableName where id < $startId and substr(name, 6) = seq").count() ===
+        numPuts)
+    assert(session.sql(
+      s"select * from $tableName where id < $startId and substr(name, 6) <> seq").count() === 0)
+    assert(session.sql(
+      s"select * from $tableName where id >= $startId and id < ${startId + numPuts * 3}")
+        .count() === numPuts * 3)
+    assert(session.sql(
+      s"select * from $tableName where id >= $startId and id < ${startId + numPuts * 3} " +
+          s"and seq <> id - ${startId + numPuts}").count() === numPuts * 2)
+    assert(session.sql(
+      s"select * from $tableName where id >= ${startId + numPuts} and " +
+          s"id < ${startId + numPuts * 2} and seq <> id - ${startId + numPuts}").count() === 0)
+    assert(session.sql(
+      s"select * from $tableName where id >= $startId and id = seq + $startId").count() ===
+        initialSize - numPuts)
+
+    // check putInto with partial updates for both the inserted and updated rows above
+    rows = for (seq <- 0L until (numPuts * 3)) yield {
+      // update half of those inserted and updated previously
+      if (seq < numPuts_2) {
+        Row(seq + lastIdDelta, "name_" + (seq + numPuts_2), seq)
+      } else {
+        Row(seq + lastIdDelta, "name_" + (seq + lastNameIdDelta), seq)
+      }
+    }
+    dfs = splitRowDFs(session, useLocalRelation, rows, encoders)
+    assert(dfs.foldLeft(0L)(_ + _.write.putInto(tableName)) === numPuts * 3)
+    assert(session.table(tableName).count() === initialSize + numPuts * 2)
+    assert(session.sql(
+      s"select * from $tableName where id < $startId").count() === numPuts * 2)
+    assert(session.sql(
+      s"select * from $tableName where id < $startId and substr(name, 6) = seq").count() ===
+        numPuts_2)
+    assert(session.sql(
+      s"select * from $tableName where id < $startId and substr(name, 6) = seq + $numPuts_2")
+        .count() === numPuts_2)
+    assert(session.sql(
+      s"select * from $tableName where id < $startId and substr(name, 6) = seq + $lastNameIdDelta")
+        .count() === numPuts)
+    assert(session.sql(
+      s"select * from $tableName where id >= $startId and id < ${startId + numPuts * 3}")
+        .count() === numPuts * 3)
+    assert(session.sql(
+      s"select * from $tableName where id >= $startId and id < ${startId + numPuts * 3} " +
+          s"and seq <> id - ${startId + numPuts}").count() === numPuts_2 * 5)
+    assert(session.sql(
+      s"select * from $tableName where id >= ${startId + numPuts} and " +
+          s"id < ${startId + numPuts * 2} and seq <> id - ${startId + numPuts}").count() ===
+        numPuts_2)
+    assert(session.sql(
+      s"select * from $tableName where id >= ${startId + numPuts} and " +
+          s"id < ${startId + numPuts * 2} and seq = id - $lastIdDelta").count() === numPuts_2)
+    assert(session.sql(
+      s"select * from $tableName where id >= $startId and " +
+          s"id < ${startId + numPuts} and seq = id - $lastIdDelta").count() === numPuts)
+
+    session.conf.unset("snappydata.cache.putIntoInnerJoinLocalCache")
+  }
+
+  private def cont(f: => Unit): Unit = {
+    try {
+      f
+    } catch {
+      case t: Throwable => t.printStackTrace()
+    }
+  }
+
+  test("optimized LocalRelation putInto") {
+    val session = new SnappySession(sc)
+    val tableName = "testSmallPutIntoOptimization"
+    session.sql(s"drop table if exists $tableName")
+    session.sql(s"create table $tableName (id long, name string, seq long) " +
+        "using column options(key_columns 'id, name')")
+
+    testOptimizedLocalRelationPutInto(session, tableName,
+      useLocalRelation = true, useLocalCaching = true)
+    testOptimizedLocalRelationPutInto(session, tableName,
+      useLocalRelation = false, useLocalCaching = true)
+    testOptimizedLocalRelationPutInto(session, tableName,
+      useLocalRelation = true, useLocalCaching = false)
+    testOptimizedLocalRelationPutInto(session, tableName,
+      useLocalRelation = false, useLocalCaching = false)
+
+    session.sql(s"drop table $tableName")
   }
 }

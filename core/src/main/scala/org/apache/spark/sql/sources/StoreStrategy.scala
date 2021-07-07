@@ -174,9 +174,9 @@ case class Update(table: LogicalPlan, child: LogicalPlan,
 }
 
 /**
- * Used to skip the [[Update]] in PutInto when no rows are to be updated.
+ * Used to skip the [[Insert]] or [[Update]] in PutInto when no rows are to be inserted or updated.
  */
-case class DummyUpdate() extends RunnableCommand {
+case class EmptyDML() extends RunnableCommand {
 
   override lazy val output: Seq[Attribute] = AttributeReference(
     "count", LongType)() :: Nil

@@ -508,7 +508,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           execution.executedPlan.executeCollect()
         }._1
         if (data.length != 0) {
-          newUpdateSubQuery = Some(LocalRelation(updateSubQuery.output, data))
+          newUpdateSubQuery = Some(LocalRelation(execution.executedPlan.output, data))
         }
       } else if (doCache) {
         val tableName = s"snappyDataInternalTempPutIntoCache${tempCacheIndex.incrementAndGet()}"
