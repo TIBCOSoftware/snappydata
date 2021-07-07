@@ -230,7 +230,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     val numRows = ctx.freshName("numRows")
     ctx.addMutableState("int", numRows, "")
     val filterFunction = ColumnTableScan.generateStatPredicate(ctx, isColumnTable = true,
-      schemaAttrs, batchFilterExprs, numRows, metricTerm = null, metricAdd = null)
+      schemaAttrs, batchFilterExprs, numRows, metricTerm = null, metricAdd = null,
+      deltaStatsFilter = false)
     val filterPredicate = if (filterFunction.isEmpty) null
     else {
       val codeComment = ctx.registerComment(

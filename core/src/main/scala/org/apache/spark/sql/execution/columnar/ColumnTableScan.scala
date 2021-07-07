@@ -38,7 +38,7 @@ package org.apache.spark.sql.execution.columnar
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
-import io.snappydata.ResultSetWithNull
+import io.snappydata.{Property, ResultSetWithNull}
 
 import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.SnappySession
@@ -492,10 +492,14 @@ private[sql] final case class ColumnTableScan(
       bufferInitCode.toString()
     }
 
+    val deltaStatsFilter = session match {
+      case Some(s) => Property.DeltaStatsFiltering.get(s.sessionState.conf)
+      case None => Property.DeltaStatsFiltering.defaultValue.get
+    }
     // for smart connector, the filters are pushed down in the procedure sent to stores
     val filterFunction = if (embedded) ColumnTableScan.generateStatPredicate(ctx,
       relation.isInstanceOf[BaseColumnFormatRelation], schemaAttributes,
-      allFilters, numBatchRows, metricTerm, metricAdd) else ""
+      allFilters, numBatchRows, metricTerm, metricAdd, deltaStatsFilter) else ""
     val statsRow = ctx.freshName("statsRow")
     val deltaStatsRow = ctx.freshName("deltaStatsRow")
     val colNextBytes = ctx.freshName("colNextBytes")
@@ -825,7 +829,8 @@ object ColumnTableScan extends Logging {
 
   def generateStatPredicate(ctx: CodegenContext, isColumnTable: Boolean,
       schemaAttrs: Seq[AttributeReference], allFilters: Seq[Expression], numRowsTerm: String,
-      metricTerm: (CodegenContext, String) => String, metricAdd: String => String): String = {
+      metricTerm: (CodegenContext, String) => String, metricAdd: String => String,
+      deltaStatsFilter: Boolean): String = {
 
     if ((allFilters eq null) || allFilters.isEmpty) {
       return ""
@@ -952,10 +957,12 @@ object ColumnTableScan extends Logging {
       s"$columnBatchesSkipped.${metricAdd("1")};"
     } else ""
     val filterFunction = ctx.freshName("columnBatchFilter")
+    val skipDeltaStatsFilter = if (deltaStatsFilter) "" else "if (isDelta) return true;"
     ctx.addNewFunction(filterFunction,
       s"""
          |private boolean $filterFunction(UnsafeRow $statsRow, int $numRowsTerm,
          |    boolean isLastStatsRow, boolean isDelta) {
+         |  $skipDeltaStatsFilter
          |  // Skip the column batches based on the predicate
          |  ${predicateEval.code}
          |  if (isDelta && (${predicateEval.isNull} || ${predicateEval.value})) {

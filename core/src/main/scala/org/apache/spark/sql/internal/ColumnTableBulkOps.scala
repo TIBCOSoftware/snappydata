@@ -72,7 +72,15 @@ object ColumnTableBulkOps {
         val cacheSize = ExternalStoreUtils.sizeAsBytes(
           Property.PutIntoInnerJoinCacheSize.get(session.sqlContext.conf),
           Property.PutIntoInnerJoinCacheSize.name, -1, Long.MaxValue)
-        val localCache = Property.PutIntoInnerJoinLocalCache.get(session.sqlContext.conf)
+        val doCache = subQuery.statistics.sizeInBytes <= cacheSize
+        val localCache = if (session.conf.contains(Property.PutIntoInnerJoinLocalCache.name)) {
+          Property.PutIntoInnerJoinLocalCache.get(session.sqlContext.conf)
+        } else subQuery match {
+          // check if incoming data is a LocalRelation
+          case _: LocalRelation => doCache
+          case Project(_, _: LocalRelation) => doCache
+          case _ => false
+        }
 
         val updatePlan = Update(table, updateSubQuery, Nil,
           updateColumns, updateExpressions)
@@ -90,7 +98,7 @@ object ColumnTableBulkOps {
               putKeys.exists(k => analyzer.resolver(a.name, k))), updateSubQuery)
 
         val insertChild = session.cachePutInto(localCache,
-          subQuery.statistics.sizeInBytes <= cacheSize, updateSubQuery, mutable.table) match {
+          doCache, updateSubQuery, mutable.table) match {
           case None =>
             // no update is required
             updateOrSkip = EmptyDML()

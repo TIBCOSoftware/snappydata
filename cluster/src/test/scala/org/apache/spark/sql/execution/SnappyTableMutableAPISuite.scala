@@ -1384,14 +1384,6 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     session.conf.unset("snappydata.cache.putIntoInnerJoinLocalCache")
   }
 
-  private def cont(f: => Unit): Unit = {
-    try {
-      f
-    } catch {
-      case t: Throwable => t.printStackTrace()
-    }
-  }
-
   test("optimized LocalRelation putInto") {
     val session = new SnappySession(sc)
     val tableName = "testSmallPutIntoOptimization"

@@ -189,6 +189,13 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.planCaching",
     "Property to set/unset plan caching", Some(false))
 
+  // TODO: This property has been added due to some issues seen by users
+  // in specific update scenarios causing valid data to be skipped by stats.
+  // Remove once the issue is reproduced and root cause is fixed.
+  val DeltaStatsFiltering: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.deltaStatsFilter",
+    "Property to enable/disable filtering using delta stats", Some(false))
+
   val SerializeWrites: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.serializeWrites",
     "Property to set/unset serialized writes on column table." +
@@ -282,7 +289,9 @@ object Property extends Enumeration {
   val PutIntoInnerJoinLocalCache: SQLValue[Boolean] =
     SQLVal[Boolean](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinLocalCache",
       "Cache the putInto inner join locally at the driver node. Use only if the " +
-          "size of the putInto data is a few MB. Default is false.", Some(false))
+          "size of the putInto data is a few MB. Default is do local caching only if the " +
+          "data being put is a local relation created from a list of Rows and its size " +
+          s"is within the limit specified by ${PutIntoInnerJoinCacheSize.name}.", Some(false))
 
   val TestExplodeComplexDataTypeInSHA: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.explodeStructInSHA",
