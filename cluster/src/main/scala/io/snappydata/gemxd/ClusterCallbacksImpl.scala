@@ -17,11 +17,9 @@
 package io.snappydata.gemxd
 
 import java.io.{File, InputStream}
+import java.util.{Iterator => JIterator}
 import java.{lang, util}
-import java.util.{List, Iterator => JIterator}
 
-import scala.collection.mutable.ArrayBuffer
-import scala.util.Try
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 
@@ -41,12 +39,12 @@ import io.snappydata.recovery.RecoveryService
 import io.snappydata.remote.interpreter.SnappyInterpreterExecute
 import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
 
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.collection.ToolsCallbackInit
-import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
+import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -96,11 +94,11 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def getSQLExecute(df: AnyRef, sql: String, schema: String, ctx: LeadNodeExecutionContext,
       v: Version, isPreparedStatement: Boolean, isPreparedPhase: Boolean,
-      pvs: ParameterValueSet): SparkSQLExecute = {
+      pvs: ParameterValueSet, pvsTypes: Array[Int]): SparkSQLExecute = {
     if (isPreparedStatement && isPreparedPhase) {
       new SparkSQLPrepareImpl(sql, schema, ctx, v)
     } else {
-      new SparkSQLExecuteImpl(df, sql, schema, ctx, v, Option(pvs))
+      new SparkSQLExecuteImpl(df, sql, schema, ctx, v, Option(pvs), pvsTypes)
     }
   }
 
