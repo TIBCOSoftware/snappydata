@@ -2170,7 +2170,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val (storePrecision, storeScale) = dvd match {
       case _: stypes.SQLDecimal =>
         // try to normalize parameter value into target column's scale/precision
-        val index = (questionMarkCounter - 1) * 4 + 1
+        val index = (questionMarkCounter - 1) * 3 + 1
         // actual scale of the target column
         val scale = preparedParamsTypesInfo.map(a => a(index + 2)).getOrElse(0)
 
