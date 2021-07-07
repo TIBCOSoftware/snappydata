@@ -320,8 +320,12 @@ object ExternalStoreUtils {
         true
       case SnappyStoreClientDialect =>
         SnappyStoreClientDialect.addExtraDriverProperties(isLoner, connProps)
-        connProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
-        executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
+        val routeQuery = parameters.get(ClientAttribute.ROUTE_QUERY) match {
+          case Some(v) => v
+          case None => "false"
+        }
+        connProps.setProperty(ClientAttribute.ROUTE_QUERY, routeQuery)
+        executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, routeQuery)
         // increase the lob-chunk-size to match/exceed column batch size
         val batchSize = parameters.get(COLUMN_BATCH_SIZE) match {
           case Some(s) => sizeAsBytes(s, COLUMN_BATCH_SIZE)
