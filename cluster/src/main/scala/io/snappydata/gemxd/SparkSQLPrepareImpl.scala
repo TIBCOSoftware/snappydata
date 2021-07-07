@@ -115,17 +115,16 @@ class SparkSQLPrepareImpl(val sql: String,
       if (paramCount != questionMarkCounter) {
         throw Util.generateCsSQLException(SQLState.NOT_FOR_PREPARED_STATEMENT, sql)
       }
-      val types = new Array[Int](paramCount * 4 + 1)
+      val types = new Array[Int](paramCount * 3 + 1)
       types(0) = paramCount
       (0 until paramCount) foreach (i => {
         assert(paramLiteralsAtPrepare(i).pos == i + 1)
-        val index = i * 4 + 1
+        val index = i * 3 + 1
         val dType = paramLiteralsAtPrepare(i).dataType
         val sqlType = getSQLType(dType)
         types(index) = sqlType._1
         types(index + 1) = sqlType._2
         types(index + 2) = sqlType._3
-        types(index + 3) = if (paramLiteralsAtPrepare(i).value.asInstanceOf[Boolean]) 1 else 0
       })
       session.setPreparedParamsTypeInfo(types)
       DataSerializer.writeIntArray(types, hdos)
