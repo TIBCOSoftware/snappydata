@@ -189,13 +189,6 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.planCaching",
     "Property to set/unset plan caching", Some(false))
 
-  // TODO: This property has been added due to some issues seen by users
-  // in specific update scenarios causing valid data to be skipped by stats.
-  // Remove once the issue is reproduced and root cause is fixed.
-  val DeltaStatsFiltering: SQLValue[Boolean] = SQLVal[Boolean](
-    s"${Constant.PROPERTY_PREFIX}sql.deltaStatsFilter",
-    "Property to enable/disable filtering using delta stats", Some(false))
-
   val SerializeWrites: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.serializeWrites",
     "Property to set/unset serialized writes on column table." +

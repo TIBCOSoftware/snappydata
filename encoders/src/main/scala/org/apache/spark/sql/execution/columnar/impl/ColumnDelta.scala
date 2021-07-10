@@ -27,7 +27,7 @@ import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
-import org.apache.spark.sql.catalyst.expressions.{Add, AttributeReference, BoundReference, GenericInternalRow, UnsafeProjection}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, BoundReference, GenericInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.util.TypeUtils
 import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding, ColumnStatsSchema}
@@ -94,7 +94,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
         val columnIndex = key.asInstanceOf[ColumnFormatKey].columnIndex
         // TODO: SW: if old value itself is returned, then avoid any put at GemFire layer
         // (perhaps throw some exception that can be caught and ignored in virtualPut)
-        if (columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
+        if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX) {
           // ignore if either of the buffers is empty (old placeholder of 4 bytes
           // while UnsafeRow based data can never be less than 8 bytes)
           if (existingBuffer.limit() <= 4 || newBuffer.limit() <= 4) {
@@ -109,6 +109,9 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
               oldValue
             }
           }
+        } else if (columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
+          // ignore delta stats row puts from old smart connector
+          oldValue
         } else {
           val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex) - 1
           val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
@@ -125,21 +128,25 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
     }
   }
 
+  /**
+   * Merge original column batch statistics with those of the delta put.
+   */
   private def mergeStats(oldBuffer: ByteBuffer, newBuffer: ByteBuffer,
       schema: StructType): ByteBuffer = {
     val numColumnsInStats = ColumnStatsSchema.numStatsColumns(schema.length)
     val oldStatsRow = SharedUtils.toUnsafeRow(oldBuffer, numColumnsInStats)
     val newStatsRow = SharedUtils.toUnsafeRow(newBuffer, numColumnsInStats)
-    val oldCount = oldStatsRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
-    val newCount = newStatsRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
 
+    val countIndex = ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA
     val values = new Array[Any](numColumnsInStats)
-    val statsSchema = new Array[StructField](numColumnsInStats)
-    val nullCountField = StructField("nullCount", IntegerType)
-    values(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA) = oldCount + newCount
-    statsSchema(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA) =
-        StructField("count", IntegerType, nullable = false)
-    var hasChange = false
+    val statsExprs = new Array[BoundReference](numColumnsInStats)
+    val oldCount = oldStatsRow.getInt(countIndex)
+    // this tells us the number of updated values
+    val newCount = newStatsRow.getInt(countIndex)
+    // write batchCount as negative to indicate the presence of delta updates
+    values(countIndex) = -math.abs(oldCount)
+    statsExprs(countIndex) = BoundReference(countIndex, IntegerType, nullable = false)
+    var hasChange = oldCount > 0 // positive value means this is the first delta for this batch
     // non-generated code for evaluation since this is only for one row
     // (besides binding to two separate rows will need custom code)
     for (i <- schema.indices) {
@@ -147,15 +154,15 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
       val dataType = schema(i).dataType
       val lowerExpr = BoundReference(statsIndex, dataType, nullable = true)
       val upperExpr = BoundReference(statsIndex + 1, dataType, nullable = true)
-      val nullCountExpr = BoundReference(statsIndex + 2, IntegerType, nullable = true)
+      val nullCountExpr = BoundReference(statsIndex + 2, IntegerType, nullable = false)
       val ordering = TypeUtils.getInterpretedOrdering(dataType)
 
       val oldLower = lowerExpr.eval(oldStatsRow)
       val newLower = lowerExpr.eval(newStatsRow)
       val oldUpper = upperExpr.eval(oldStatsRow)
       val newUpper = upperExpr.eval(newStatsRow)
-      val oldNullCount = nullCountExpr.eval(oldStatsRow)
-      val newNullCount = nullCountExpr.eval(newStatsRow)
+      val oldNullCount = nullCountExpr.eval(oldStatsRow).asInstanceOf[Int]
+      val newNullCount = nullCountExpr.eval(newStatsRow).asInstanceOf[Int]
 
       // Unlike normal < or > semantics, comparison against null on either
       // side should return the non-null value or null if both are null.
@@ -186,21 +193,30 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
           newUpper
         }
         else oldUpper
-      val nullCount = new AddStats(nullCountExpr).eval(newNullCount, oldNullCount)
+      // Determine the new nullCount conservatively by assuming that all the new non-null
+      // values have overridden values that were previously null; this works since this is just
+      // a stat not required to be absolutely accurate so such a value ensures that IsNull
+      // and IsNotNull predicate filters will be conservatively correct (though latter might
+      //   return true even when in the best case it should have been false). In a nutshell,
+      // the nullCount stat is only a tri-state (= 0, = batchCount, something in middle) which
+      // is also not accurate without doing a full scan of base data + delta.
+      assert(newCount >= newNullCount)
+      var nullCount = math.max(oldNullCount - (newCount - newNullCount), newNullCount)
+      if (nullCount <= 0 && oldNullCount > 0) {
+        nullCount = 1
+      }
       if (!hasChange && nullCount != oldNullCount) hasChange = true
 
       values(statsIndex) = lower
-      // shared name in StructField for all columns is fine because UnsafeProjection
-      // code generation uses only the dataType and doesn't care for the name here
-      statsSchema(statsIndex) = StructField("lowerBound", dataType, nullable = true)
+      statsExprs(statsIndex) = lowerExpr
       values(statsIndex + 1) = upper
-      statsSchema(statsIndex + 1) = StructField("upperBound", dataType, nullable = true)
+      statsExprs(statsIndex + 1) = upperExpr
       values(statsIndex + 2) = nullCount
-      statsSchema(statsIndex + 2) = nullCountField
+      statsExprs(statsIndex + 2) = nullCountExpr
     }
     if (!hasChange) return null // indicates caller to return old column value
     // generate InternalRow to UnsafeRow projection
-    val projection = UnsafeProjection.create(statsSchema.map(_.dataType))
+    val projection = UnsafeProjection.create(statsExprs)
     val statsRow = projection.apply(new GenericInternalRow(values))
     SharedUtils.createStatsBuffer(statsRow.getBytes, GemFireCacheImpl.getCurrentBufferAllocator)
   }
@@ -326,18 +342,5 @@ object ColumnDelta {
     }
     // lastly the delete delta row itself
     destroyKey(key.withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX))
-  }
-}
-
-/**
- * Unlike the "Add" operator that follows SQL semantics of returning null
- * if either of the expressions is, this will return the non-null value
- * if either is null or add if both are non-null (like the "sum" aggregate).
- */
-final class AddStats(attr: BoundReference) extends Add(attr, attr) {
-  def eval(leftVal: Any, rightVal: Any): Any = {
-    if (leftVal == null) rightVal
-    else if (rightVal == null) leftVal
-    else nullSafeEval(leftVal, rightVal)
   }
 }

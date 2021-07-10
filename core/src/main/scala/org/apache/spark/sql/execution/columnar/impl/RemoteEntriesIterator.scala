@@ -31,18 +31,28 @@ import com.pivotal.gemfirexd.internal.engine.sql.execute.GemFireResultSet
 import org.eclipse.collections.api.block.procedure.Procedure
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry._
 
 /**
  * A [[ClusteredColumnIterator]] that fetches entries from a remote bucket.
  */
 final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
-    pr: PartitionedRegion, tx: TXStateInterface) extends ClusteredColumnIterator {
+    pr: PartitionedRegion, tx: TXStateInterface) extends ClusteredColumnIterator with Logging {
 
   private type BatchStatsRows = (ColumnFormatKey, AnyRef, AnyRef)
 
   private val statsRows: Iterator[BatchStatsRows] = {
     val statsKeys = pr.getBucketKeys(bucketId, StatsFilter, false, tx).toArray
+
+    if (isDebugEnabled) {
+      val numDeltaStats = statsKeys.count(
+        _.asInstanceOf[ColumnFormatKey].columnIndex == DELTA_STATROW_COL_INDEX)
+      val deltaStatsMsg = if (numDeltaStats == 0) "" else s" and $numDeltaStats old delta stats"
+      log.debug(s"Opened remote entries iterator for bucket $bucketId in ${pr.getFullPath} " +
+          s"having ${statsKeys.length - numDeltaStats} statistics rows$deltaStatsMsg")
+    }
+
     // bring both the stats rows together for all batches
     val comparator = new Comparator[AnyRef] {
       override def compare(o1: AnyRef, o2: AnyRef): Int = {

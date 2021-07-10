@@ -131,15 +131,12 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
 
   def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
       columnIndex: Int): UpdatedColumnDecoderBase = {
-    if (currentDeltaStats eq null) null
-    else {
-      val deltaPosition = ColumnDelta.deltaColumnIndex(columnIndex, 0)
-      val delta1 = getColumnBuffer(deltaPosition, throwIfMissing = false)
-      val delta2 = getColumnBuffer(deltaPosition - 1, throwIfMissing = false)
-      if ((delta1 ne null) || (delta2 ne null)) {
-        UpdatedColumnDecoder(decoder, field, delta1, delta2)
-      } else null
-    }
+    val deltaPosition = ColumnDelta.deltaColumnIndex(columnIndex, 0)
+    val delta1 = getColumnBuffer(deltaPosition, throwIfMissing = false)
+    val delta2 = getColumnBuffer(deltaPosition - 1, throwIfMissing = false)
+    if ((delta1 ne null) || (delta2 ne null)) {
+      UpdatedColumnDecoder(decoder, field, delta1, delta2)
+    } else null
   }
 
   def getDeletedColumnDecoder: ColumnDeleteDecoder = {

@@ -28,6 +28,7 @@ import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types.StructType
 
@@ -39,9 +40,9 @@ trait ExternalStore extends Serializable with Logging {
 
   def withTable(tableName: String, numPartitions: Int): ExternalStore
 
-  def storeColumnBatch(tableName: String, batch: ColumnBatch,
-      partitionId: Int, batchId: Long, maxDeltaRows: Int,
-      compressionCodecId: Int, conn: Option[Connection]): Unit
+  def storeColumnBatch(tableName: String, batch: ColumnBatch, partitionId: Int, batchId: Long,
+      maxDeltaRows: Int, compressionCodecId: Int, changesToDeltaBuffer: SQLMetric,
+      numColumnBatches: SQLMetric, changesToColumnStore: SQLMetric, conn: Option[Connection]): Unit
 
   def storeDelete(tableName: String, buffer: ByteBuffer, partitionId: Int,
       batchId: Long, compressionCodecId: Int, conn: Option[Connection]): Unit

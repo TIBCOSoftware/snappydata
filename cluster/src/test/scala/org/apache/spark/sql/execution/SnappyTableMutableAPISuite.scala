@@ -18,6 +18,8 @@ package org.apache.spark.sql.execution
 
 import java.sql.DriverManager
 
+import scala.util.Random
+
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
@@ -1400,6 +1402,61 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     testOptimizedLocalRelationPutInto(session, tableName,
       useLocalRelation = false, useLocalCaching = false)
 
+    session.sql(s"drop table $tableName")
+  }
+
+  test("null to non-null delta updates") {
+    val session = new SnappySession(sc)
+    val tableName = "testNullToNonNullUpdates"
+    val dataCount = 10000
+
+    // track change count in an array
+    val changeCounts = Array.fill(dataCount)(1)
+
+    session.sql(s"drop table if exists $tableName")
+    session.sql(s"create table $tableName (id long, change int, name string, " +
+        "data1 string, data2 string, data3 string, data4 string, data5 string) using column " +
+        "options (key_columns 'id', column_batch_size '1k')")
+    session.sql(s"insert into $tableName select id, 1, 'name_' || id, null, 'data2_' || id, " +
+        s"'data3_' || id, null, null from range($dataCount)")
+
+    def checkUpdate(sqlText: String, expectedCount: Long = 1L): Unit = {
+      assert(session.sql(sqlText).collect().foldLeft(0L)(_ + _.getLong(0)) === expectedCount)
+    }
+
+    // iterations to run
+    for (_ <- 1 to 10) {
+      // each iteration will update some values from null and back some number of times
+      val startId = Random.nextInt(dataCount - 13)
+      for (i <- 1 to 3) {
+        for (id <- (startId + i) to (startId + i + 9)) {
+          val c = changeCounts(id)
+          checkUpdate(s"update $tableName set data1 = 'data1_$id', data2 = null, " +
+              s"data3 = null, data4 = 'data4_$id', data5 = null where id = $id and " +
+              s"name = 'name_$id' and change = $c and data1 is null and data2 = 'data2_$id' and " +
+              s"data3 = 'data3_$id' and data4 is null and data5 is null")
+          checkUpdate(s"update $tableName set data1 = 'data1_$id', data2 = 'data2_$id', " +
+              s"data3 = 'data3_$id', data4 = 'data4_$id', data5 = 'data5_$id' where id = $id and " +
+              s"name = 'name_$id' and change = $c and data1 = 'data1_$id' and data2 is null " +
+              s"and data3 is null and data4 = 'data4_$id' and data5 is null")
+          checkUpdate(s"update $tableName set change = ${c + 1}, data1 = null, " +
+              s"data2 = 'data2_$id', data3 = 'data3_$id', data4 = null, data5 = null " +
+              s"where id = $id and name = 'name_$id' and change = $c and data1 = 'data1_$id' and " +
+              s"data2 = 'data2_$id' and data3 = 'data3_$id' and data4 = 'data4_$id' and " +
+              s"data5 = 'data5_$id'")
+          changeCounts(id) += 1
+        }
+      }
+    }
+    // compare the change counts at the end
+    import session.implicits._
+    val df = session.createDataset(changeCounts.indices.map(i => i -> changeCounts(i)))
+    df.createTempView("changeCounts")
+    val result = session.sql(s"select id, change from $tableName order by id " +
+        "EXCEPT select * from changeCounts").collect()
+    assert(result.length === 0)
+
+    session.dropView("changeCounts")
     session.sql(s"drop table $tableName")
   }
 }

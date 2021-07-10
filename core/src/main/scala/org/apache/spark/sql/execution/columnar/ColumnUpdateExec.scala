@@ -145,7 +145,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     val deltaIndexes = ctx.addReferenceObj("deltaIndexes", updateIndexes, "int[]")
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val tableName = ctx.addReferenceObj("columnTable", columnTable, "java.lang.String")
-    updateMetric = if (onExecutor) null else metricTerm(ctx, "numUpdateColumnBatchRows")
+    updateMetric = if (onExecutor) "null" else metricTerm(ctx, "numUpdateColumnBatchRows")
 
     val numColumns = updateColumns.length
     val deltaEncoderClass = classOf[ColumnDeltaEncoder].getName
@@ -239,10 +239,10 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     // 100 column table will be ~38 bytes).
 
     // New Code : Stats rows are written as UnsafeRow. Unsafe row irrespective
-    // of nullability keeps nullbits.
-    // So if 100 columns are  there stats row will contain 100 * 3 and UnsafeRow will contain
-    // 300 nullbits plus bits required for 8 bytes word alignment. Hence setting unused columns
-    // as null does not really saves much.
+    // of nullability keeps nullbits (except for null count field which is not nullable).
+    // So if 100 columns are  there stats row will contain 100 * 2 and UnsafeRow will contain
+    // 200 nullbits plus bits required for 8 bytes word alignment. Hence setting unused columns
+    // as null does not really save much.
 
     // These nullbits are set based on platform endianness. SD ColumnFormatValue
     // assumes LITTLE_ENDIAN bytes. However, Unsafe row itself does not force any endianness
@@ -254,14 +254,13 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     // Hence setting each 3rd bit( null count stats) with not null flag. This will never cause
     // the word to be read as negative number.
     val allNullsExprs = Seq(ExprCode("", "true", ""),
-      ExprCode("", "true", ""), ExprCode("", "false", "-1"))
+      ExprCode("", "true", ""), ExprCode("", "false", "0"))
     val (statsSchema, stats) = tableSchema.indices.map { i =>
       val field = tableSchema(i)
       tableToUpdateIndex.get(i) match {
         case null =>
           // write null for unchanged columns apart from null count field (by this update)
-          (ColumnStatsSchema(field.name, field.dataType,
-            nullCountNullable = false).schema, allNullsExprs)
+          (ColumnStatsSchema(field.name, field.dataType).schema, allNullsExprs)
         case u => ColumnWriter.genCodeColumnStats(ctx, field,
           s"$deltaEncoders[$u].getRealEncoder()")
       }
@@ -269,7 +268,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     // GenerateUnsafeProjection will automatically split stats expressions into separate
     // methods if required so no need to add separate functions explicitly.
     // Count is hardcoded as zero which will change for "insert" index deltas.
-    val statsEv = ColumnWriter.genStatsRow(ctx, "0", stats, statsSchema)
+    val statsEv = ColumnWriter.genStatsRow(ctx, batchOrdinal, stats, statsSchema)
     ctx.addNewFunction(finishUpdate,
       s"""
          |private void $finishUpdate(long batchId, int bucketId, int numRows) {
@@ -293,9 +292,9 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |        $batchOrdinal, buffers, ${statsEv.value}.getBytes(), $deltaIndexes);
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
          |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch, $lastBucketId,
-         |        $lastColumnBatchId, -1, ${compressionCodec.id}, new scala.Some($connTerm));
+         |        $lastColumnBatchId, -1, ${compressionCodec.id}, null, null, $updateMetric,
+         |        new scala.Some($connTerm));
          |    $result += $batchOrdinal;
-         |    ${if (updateMetric eq null) "" else s"$updateMetric.${metricAdd(batchOrdinal)};"}
          |    $initializeEncoders();
          |    $lastColumnBatchId = batchId;
          |    $lastBucketId = bucketId;

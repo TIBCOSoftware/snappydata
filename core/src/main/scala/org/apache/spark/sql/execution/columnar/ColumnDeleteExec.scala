@@ -66,6 +66,8 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
   @transient protected var txId: String = _
   @transient protected var success: String = _
 
+  override protected def delayRollover: Boolean = true
+
   override protected def doProduce(ctx: CodegenContext): String = {
     val sql = new StringBuilder
     sql.append("DELETE FROM ").append(quotedName(resolvedName, escapeQuotes = true))

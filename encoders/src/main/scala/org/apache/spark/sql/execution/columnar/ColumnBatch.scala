@@ -171,7 +171,6 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
 
   def getUpdatedColumnDecoder(decoder: ColumnDecoder, field: StructField,
                               columnIndex: Int): UpdatedColumnDecoderBase = {
-    if (currentDeltaStats eq null) return null
     val buffers = colBuffers
     val deltaPosition = ColumnDelta.deltaColumnIndex(columnIndex, 0)
     val delta1 = buffers.get(deltaPosition)
