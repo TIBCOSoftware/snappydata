@@ -16,12 +16,18 @@
  */
 package org.apache.spark.sql.internal
 
-import io.snappydata.Property
+import scala.collection.mutable.ArrayBuffer
 
-import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import io.snappydata.Property
+import org.eclipse.collections.api.block.HashingStrategy
+import org.eclipse.collections.impl.set.strategy.mutable.UnifiedSetWithHashingStrategy
+
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.{And, Attribute, AttributeReference, AttributeSet, EqualTo, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LogicalPlan, OverwriteOptions, Project}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, BindReferences, EqualTo, Expression, JoinedRow, Murmur3Hash, UnsafeProjection}
+import org.apache.spark.sql.catalyst.optimizer.SimplifyCasts
+import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LocalRelation, LogicalPlan, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -40,7 +46,8 @@ object ColumnTableBulkOps {
   def transformPutPlan(session: SnappySession, originalPlan: PutIntoTable): LogicalPlan = {
     validateOp(originalPlan)
     val table = originalPlan.table
-    val subQuery = originalPlan.child
+    var subQuery = originalPlan.child
+    val subQueryOutput = subQuery.output
     var transFormedPlan: LogicalPlan = originalPlan
 
     table.collectFirst {
@@ -55,7 +62,7 @@ object ColumnTableBulkOps {
         val keyColumns = getKeyColumns(table)
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
         val updateColumns = table.output.filterNot(a => keyColumns.contains(a.name))
-        val updateExpressions = subQuery.output.filterNot(a => keyColumns.contains(a.name))
+        val updateExpressions = subQueryOutput.filterNot(a => keyColumns.contains(a.name))
         if (updateExpressions.isEmpty) {
           throw new AnalysisException(
             s"PutInto is attempted without any column which can be updated." +
@@ -65,11 +72,21 @@ object ColumnTableBulkOps {
         val cacheSize = ExternalStoreUtils.sizeAsBytes(
           Property.PutIntoInnerJoinCacheSize.get(session.sqlContext.conf),
           Property.PutIntoInnerJoinCacheSize.name, -1, Long.MaxValue)
+        val doCache = subQuery.statistics.sizeInBytes <= cacheSize
+        val localCache = if (session.conf.contains(Property.PutIntoInnerJoinLocalCache.name)) {
+          Property.PutIntoInnerJoinLocalCache.get(session.sqlContext.conf)
+        } else subQuery match {
+          // check if incoming data is a LocalRelation
+          case _: LocalRelation => doCache
+          case Project(_, _: LocalRelation) => doCache
+          case _ => false
+        }
 
         val updatePlan = Update(table, updateSubQuery, Nil,
           updateColumns, updateExpressions)
         val updateDS = new Dataset(session, updatePlan, RowEncoder(updatePlan.schema))
-        var analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
+        val analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
+        var updateOrSkip: LogicalPlan = analyzedUpdate
         updateSubQuery = analyzedUpdate.child
 
         // explicitly project out only the updated expression references and key columns
@@ -80,23 +97,111 @@ object ColumnTableBulkOps {
           updateReferences.contains(a) || keyColumns.contains(a.name) ||
               putKeys.exists(k => analyzer.resolver(a.name, k))), updateSubQuery)
 
-        val insertChild = session.cachePutInto(
-          subQuery.statistics.sizeInBytes <= cacheSize, updateSubQuery, mutable.table) match {
-          case None => subQuery
+        val insertChild = session.cachePutInto(localCache,
+          doCache, updateSubQuery, mutable.table) match {
+          case None =>
+            // no update is required
+            updateOrSkip = EmptyDML()
+            subQuery
           case Some(newUpdateSubQuery) =>
+            // project on just the join columns so that its broadcast/exchange size can be reduced
             if (updateSubQuery ne newUpdateSubQuery) {
-              analyzedUpdate = analyzedUpdate.copy(child = newUpdateSubQuery)
+              updateOrSkip = analyzedUpdate.copy(child = newUpdateSubQuery)
+              // the original condition is commutative so it still good to use as is even though
+              // the "subQuery" is now on the left side of the anti-join
+              newUpdateSubQuery match {
+                case joinData: LocalRelation =>
+                  subQuery = SimplifyCasts(subQuery)
+                  // optimize to do a local anti-join if the data being put is also LocalRelation
+                  if (condition.isEmpty) joinData
+                  else subQuery match {
+                    case LocalRelation(_, putData) =>
+                      localAntiJoin(session, joinData, putData.iterator,
+                        subQueryOutput, condition.get, putKeys)
+                    case Project(exprs, lr: LocalRelation) =>
+                      // if projection is a simple one-to-one alias, then pass data as is
+                      if (exprs.length == lr.output.length &&
+                          exprs.zip(lr.output).forall(p => p._1.exprId == p._2.exprId ||
+                              (p._1.isInstanceOf[Alias] &&
+                                  p._1.asInstanceOf[Alias].child.isInstanceOf[Attribute] &&
+                                  p._1.asInstanceOf[Alias].child.asInstanceOf[Attribute].exprId ==
+                                      p._2.exprId))) {
+                        localAntiJoin(session, joinData, lr.data.iterator,
+                          subQueryOutput, condition.get, putKeys)
+                      } else {
+                        val proj = UnsafeProjection.create(exprs, lr.output)
+                        localAntiJoin(session, joinData, lr.data.iterator.map(proj),
+                          subQueryOutput, condition.get, putKeys)
+                      }
+                    case _ =>
+                      // create a copy for anti-join so that original is used for the UPDATE
+                      // while the condition has to be re-evaluated since ExprIds will change
+                      val newData = joinData.newInstance()
+                      Join(subQuery, projectJoinKeys(analyzer, newData, putKeys), LeftAnti,
+                        prepareCondition(session, subQuery, newData, putKeys))
+                  }
+                case _ =>
+                  Join(subQuery, projectJoinKeys(analyzer, newUpdateSubQuery, putKeys), LeftAnti,
+                    condition)
+              }
+            } else {
+              Join(subQuery, projectJoinKeys(analyzer, updateSubQuery, putKeys), LeftAnti,
+                condition)
             }
-            Join(subQuery, newUpdateSubQuery, LeftAnti, condition)
         }
-        val insertPlan = new Insert(table, Map.empty[String,
-            Option[String]], Project(subQuery.output, insertChild),
-          OverwriteOptions(enabled = false), ifNotExists = false)
+        val insertPlan = insertChild match {
+          case _: EmptyDML => insertChild
+          case _ => new Insert(table, Map.empty[String, Option[String]], Project(subQueryOutput,
+            insertChild), OverwriteOptions(enabled = false), ifNotExists = false)
+        }
 
-        transFormedPlan = PutIntoColumnTable(table, insertPlan, analyzedUpdate)
+        transFormedPlan = PutIntoColumnTable(table, insertPlan, updateOrSkip)
       case _ => // Do nothing, original putInto plan is enough
     }
     transFormedPlan
+  }
+
+  private def localAntiJoin(sparkSession: SparkSession, joinData: LocalRelation,
+      putData: Iterator[InternalRow], putAttrs: Seq[Attribute], condition: Expression,
+      putKeys: Seq[String]): LogicalPlan = {
+    if (joinData.data.isEmpty) return LocalRelation(putAttrs, putData.map(_.copy()).toSeq)
+
+    val joinOut = joinData.output
+    val joinKeys = findJoinKeys(sparkSession.sessionState.analyzer, joinData, putKeys, "JOIN").map(
+      BindReferences.bindReference[Expression](_, joinOut))
+    // when populating the table, joinData will be compared against itself so the position of the
+    // columns is adjusted in putAttr as per the size of joinData
+    val dummyCol = AttributeReference("", LongType)()
+    var checkCondition = BindReferences.bindReference(condition,
+      putAttrs ++ Seq.fill(joinOut.length - putAttrs.length)(dummyCol) ++ joinOut)
+    // the original condition is commutative so it still good to use as is even though
+    // the "subQuery" is now on the left side of the anti-join; moreover the joinData
+    // *should* be on the right side since it also contains the same columns as putAttrs
+    // at the end, hence bindReference will resolve to all its columns if its on the left
+    // (and then the condition.eval will obviously be always true)
+    val resolvedCondition = BindReferences.bindReference(condition, putAttrs ++ joinOut)
+    val hashingStrategy = new HashingStrategy[InternalRow] {
+
+      private[this] val hashFunction = Murmur3Hash(joinKeys, 42)
+      private[this] val joinedRow = new JoinedRow()
+
+      override def computeHashCode(row: InternalRow): Int = {
+        hashFunction.eval(row).asInstanceOf[Int]
+      }
+
+      override def equals(joinRow: InternalRow, putRow: InternalRow): Boolean = {
+        checkCondition.eval(joinedRow(putRow, joinRow)) == Boolean.box(true)
+      }
+    }
+    val map = new UnifiedSetWithHashingStrategy[InternalRow](hashingStrategy,
+      math.min(128, joinData.data.length))
+    joinData.data.foreach(map.put)
+    // use comparison of joinRow to putRow for the anti-join
+    // (no rehash is possible so identity comparisons are not required)
+    checkCondition = resolvedCondition
+    val insertData = new ArrayBuffer[InternalRow]()
+    putData.foreach(row => if (!map.contains(row)) insertData += row.copy())
+    if (insertData.isEmpty) EmptyDML() else LocalRelation(putAttrs, insertData)
   }
 
   def validateOp(originalPlan: PutIntoTable) {
@@ -115,29 +220,31 @@ object ColumnTableBulkOps {
     }
   }
 
+  private def projectJoinKeys(analyzer: Analyzer, plan: LogicalPlan,
+      columnNames: Seq[String]): LogicalPlan = {
+    Project(findJoinKeys(analyzer, plan, columnNames, "JOIN"), plan)
+  }
+
+  private def findJoinKeys(analyzer: Analyzer, plan: LogicalPlan,
+      columnNames: Seq[String], side: String): Seq[Attribute] = {
+    columnNames.map { keyName =>
+      plan.output.find(attr => analyzer.resolver(attr.name, keyName)) match {
+        case Some(attr) => attr
+        case _ =>
+          throw new AnalysisException(s"PUT column `$keyName` cannot be resolved on " +
+              s"the $side side of the operation. The $side-side columns: " +
+              s"[${plan.output.map(_.name).mkString(", ")}]")
+      }
+    }
+  }
+
   private def prepareCondition(sparkSession: SparkSession,
       table: LogicalPlan,
       child: LogicalPlan,
       columnNames: Seq[String]): Option[Expression] = {
     val analyzer = sparkSession.sessionState.analyzer
-    val leftKeys = columnNames.map { keyName =>
-      table.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
-        throw new AnalysisException(s"key column `$keyName` cannot be resolved on the left " +
-            s"side of the operation. The left-side columns: [${
-              table.
-                  output.map(_.name).mkString(", ")
-            }]")
-      }
-    }
-    val rightKeys = columnNames.map { keyName =>
-      child.output.find(attr => analyzer.resolver(attr.name, keyName)).getOrElse {
-        throw new AnalysisException(s"USING column `$keyName` cannot be resolved on the right " +
-            s"side of the operation. The right-side columns: [${
-              child.
-                  output.map(_.name).mkString(", ")
-            }]")
-      }
-    }
+    val leftKeys = findJoinKeys(analyzer, table, columnNames, "left")
+    val rightKeys = findJoinKeys(analyzer, child, columnNames, "right")
     val joinPairs = leftKeys.zip(rightKeys)
     val newCondition = joinPairs.map(EqualTo.tupled).reduceOption(And)
     newCondition
@@ -201,7 +308,7 @@ object ColumnTableBulkOps {
 }
 
 case class PutIntoColumnTable(table: LogicalPlan,
-    insert: Insert, update: Update) extends BinaryNode {
+    insert: LogicalPlan, update: LogicalPlan) extends BinaryNode {
 
   override lazy val output: Seq[Attribute] = AttributeReference(
     "count", LongType)() :: Nil

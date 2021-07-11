@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar
 
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.{Constant, Property}
@@ -31,6 +32,7 @@ import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, Seria
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
+import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.{SparkPlan, TableExec, WholeStageCodegenExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.CompressionCodecId
@@ -60,6 +62,9 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   @transient private var maxDeltaRowsTerm: String = _
   @transient private var batchSizeTerm: String = _
   @transient private var defaultBatchSizeTerm: String = _
+  @transient private var numInsertRowsMetric: String = _
+  @transient private var numColumnBatchesMetric: String = _
+  @transient private var numInsertColumnStoreMetric: String = _
   @transient private var numInsertions: String = _
   @transient private var schemaTerm: String = _
   @transient private var storeColumnBatch: String = _
@@ -91,6 +96,19 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(batchParams._3)
 
   override protected def opType: String = "Inserted"
+
+  override def nodeName: String = "ColumnInsert"
+
+  override lazy val metrics: Map[String, SQLMetric] = {
+    if (onExecutor) Map.empty
+    else Map(
+      "columnBatchesCreated" -> SQLMetrics.createMetric(sparkContext,
+        "column batches created"),
+      "numInsertColumnBatchRows" -> SQLMetrics.createMetric(sparkContext,
+        "number of inserts in column batches"),
+      "numInsertRows" -> SQLMetrics.createMetric(sparkContext,
+        "number of inserts in row buffer"))
+  }
 
   override protected def isInsert: Boolean = true
 
@@ -157,8 +175,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   private def doProduceWideTable(ctx: CodegenContext): String = {
     val encodingClass = ColumnEncoding.encodingClassName
     val encoderClass = classOf[ColumnEncoder].getName
-    val numInsertedRowsMetric = if (onExecutor) null
-    else metricTerm(ctx, "numInsertedRows")
+    numInsertRowsMetric = if (onExecutor) "null" else metricTerm(ctx, "numInsertRows")
+    numColumnBatchesMetric = if (onExecutor) "null" else metricTerm(ctx, "columnBatchesCreated")
+    numInsertColumnStoreMetric =
+      if (onExecutor) "null" else metricTerm(ctx, "numInsertColumnBatchRows")
     schemaTerm = ctx.addReferenceObj("schema", tableSchema,
       classOf[StructType].getName)
 
@@ -267,8 +287,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |  $batchSizeTerm = 0;
        |}
        |$closeForNoContext
-       |${if (numInsertedRowsMetric eq null) ""
-        else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
        |success = true;
        |}
@@ -311,8 +329,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     }
     val encodingClass = ColumnEncoding.encodingClassName
     val encoderClass = classOf[ColumnEncoder].getName
-    val numInsertedRowsMetric = if (onExecutor) null
-    else metricTerm(ctx, "numInsertedRows")
+    numInsertRowsMetric = if (onExecutor) "null" else metricTerm(ctx, "numInsertRows")
+    numColumnBatchesMetric = if (onExecutor) "null" else metricTerm(ctx, "columnBatchesCreated")
+    numInsertColumnStoreMetric =
+      if (onExecutor) "null" else metricTerm(ctx, "numInsertColumnBatchRows")
     schemaTerm = ctx.addReferenceObj("schema", tableSchema,
       classOf[StructType].getName)
     encoderCursorTerms = tableSchema.map { _ =>
@@ -412,8 +432,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |  $batchSizeTerm = 0;
        |}
        |$closeForNoContext
-       |${if (numInsertedRowsMetric eq null) ""
-          else s"$numInsertedRowsMetric.${metricAdd(numInsertions)};"}
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
        |success = true;
        |}
@@ -439,12 +457,11 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     * Generate multiple methods in java class based
     * on the size and returns the calling code to invoke them
     */
+  // noinspection SameParameterValue
   private def genMethodsColumnWriter(ctx: CodegenContext,
                                      methodName: String,
-                                     size: Int,
                                      code: IndexedSeq[String],
-                                     inputs: Seq[ExprCode],
-                                     row: String = ""): String = {
+                                     inputs: Seq[ExprCode]): String = {
 
 
     val blocks = new ArrayBuffer[String]()
@@ -489,6 +506,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   /**
    * Returns the code to update a column in Row for a given DataType.
    */
+  @tailrec
   private def setColumn(ctx: CodegenContext, row: String, dataType: DataType,
       ordinal: Int, value: String): String = {
     val jt = ctx.javaType(dataType)
@@ -501,8 +519,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     }
   }
 
-  private def doConsumeWideTables(ctx: CodegenContext, input: Seq[ExprCode],
-                                  row: ExprCode): String = {
+  private def doConsumeWideTables(ctx: CodegenContext, input: Seq[ExprCode]): String = {
     val schema = tableSchema
     val buffers = ctx.freshName("buffers")
     val columnBatch = ctx.freshName("columnBatch")
@@ -596,7 +613,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
          |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
-         |      ${compressionCodec.id}, $conn);
+         |      ${compressionCodec.id}, $numInsertRowsMetric, $numColumnBatchesMetric,
+         |      $numInsertColumnStoreMetric, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
@@ -628,7 +646,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     storeColumnBatchArgs = s"$batchSizeTerm, $cursorArrayTerm"
 
     val writeColumns = genMethodsColumnWriter(ctx, "writeToEncoder",
-      MAX_CURSOR_DECLARATIONS, columnWrite, rowReadExprs, mutableRow)
+      columnWrite, rowReadExprs)
 
     s"""
        |if ($columnBatchSize > 0 && ($batchSizeTerm & $checkMask) == 0 &&
@@ -678,7 +696,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       row: ExprCode): String = {
 
     if (tableSchema.length > MAX_CURSOR_DECLARATIONS) {
-      return doConsumeWideTables(ctx, input, row)
+      return doConsumeWideTables(ctx, input)
     }
     val schema = tableSchema
 
@@ -751,7 +769,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
          |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
-         |      ${compressionCodec.id}, $conn);
+         |      ${compressionCodec.id}, $numInsertRowsMetric, $numColumnBatchesMetric,
+         |      $numInsertColumnStoreMetric, $conn);
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
@@ -835,8 +854,8 @@ object ColumnWriter {
     BooleanType, ByteType, ShortType, IntegerType, LongType, DateType, TimestampType,
     StringType, FloatType, DoubleType): _*))
 
-  def genCodeColumnStats(ctx: CodegenContext, field: StructField, encoder: String,
-      nullCountNullable: Boolean = false): (Seq[Attribute], Seq[ExprCode]) = {
+  def genCodeColumnStats(ctx: CodegenContext, field: StructField,
+      encoder: String): (Seq[Attribute], Seq[ExprCode]) = {
     val lower = ctx.freshName("lower")
     val upper = ctx.freshName("upper")
     var lowerIsNull = "false"
@@ -879,7 +898,7 @@ object ColumnWriter {
           s"$uCode\nfinal boolean $upperIsNull = $upper == null;")
     } else (lCode, uCode)
 
-    (ColumnStatsSchema(field.name, field.dataType, nullCountNullable).schema, Seq(
+    (ColumnStatsSchema(field.name, field.dataType).schema, Seq(
       ExprCode(lowerCode, lowerIsNull, lower),
       ExprCode(upperCode, upperIsNull, upper),
       ExprCode(s"final int $nullCount = $encoder.nullCount();", "false", nullCount)))
@@ -892,7 +911,7 @@ object ColumnWriter {
         .zipWithIndex.map { case (a, i) =>
       a.dataType match {
         // some types will always be null so avoid unnecessary generated code
-        case _ if statsVars(i).isNull == "true" => Literal(null, NullType)
+        case _ if statsVars(i).isNull == "true" => Literal(null, a.dataType)
         case _ => BoundReference(i, a.dataType, a.nullable)
       }
     }

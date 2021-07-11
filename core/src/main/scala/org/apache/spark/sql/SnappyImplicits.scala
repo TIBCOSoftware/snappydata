@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql
 
+import scala.annotation.tailrec
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
@@ -60,6 +61,7 @@ object snappy extends Serializable {
     AQPDataFrame(df.sparkSession.asInstanceOf[SnappySession], df.queryExecution)
   }
 
+  @tailrec
   def unwrapSubquery(plan: LogicalPlan): LogicalPlan = {
     plan match {
       case SubqueryAlias(_, child, _) => unwrapSubquery(child)
@@ -201,7 +203,7 @@ object snappy extends Serializable {
 
       df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
         session.tableIdentifier(tableName)), input)).executedPlan.
-          executeCollect().foldLeft(0)(_ + _.getInt(0))
+          executeCollect().foldLeft(0L)(_ + _.getLong(0))
     }
 
     def deleteFrom(tableName: String): Unit = {

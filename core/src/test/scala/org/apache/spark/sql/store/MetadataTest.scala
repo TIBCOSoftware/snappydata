@@ -125,7 +125,8 @@ object MetadataTest extends Assertions {
     var expectedColumns: List[String] = null
     var rs: Array[Row] = null
     var expectedRow: Row = null
-    var expectedRows: Seq[Row] = null
+    var expectedRows1: Seq[Row] = null
+    var expectedRows2: Seq[Row] = null
     lazy val myId = Misc.getMyId.toString
 
     // ----- check querying on SYS.MEMBERS and SHOW MEMBERS -----
@@ -149,18 +150,34 @@ object MetadataTest extends Assertions {
         if (result.isEmpty) assert(rs(0) === expectedRow)
       } else {
         assert(rs.length === 2 + servers.length, rs.toSeq)
+        // localhost sometimes gets replaced by 127.0.0.1 and vice-versa
+        val servers2 = if (servers.exists(_.contains("127.0.0.1"))) {
+          servers.map(_.replaceAllLiterally("127.0.0.1", "localhost"))
+        } else {
+          servers.map(_.replaceAllLiterally("localhost", "127.0.0.1"))
+        }
         if (forShow) {
-          expectedRows = Row(locatorId, locatorHost, "locator", "RUNNING", locatorNetServer, "") +:
+          expectedRows1 = Row(locatorId, locatorHost, "locator", "RUNNING", locatorNetServer, "") +:
               Row(lead, hostName, "primary lead", "RUNNING", "", "") +:
               servers.zip(netServers).map(p => Row(p._1, hostName, "datastore",
                 "RUNNING", p._2, ""))
+          expectedRows2 = Row(locatorId, locatorHost, "locator", "RUNNING", locatorNetServer, "") +:
+              Row(lead, hostName, "primary lead", "RUNNING", "", "") +:
+              servers2.zip(netServers).map(p => Row(p._1, hostName, "datastore",
+                "RUNNING", p._2, ""))
         } else {
-          expectedRows = Row(locatorId, "locator", "RUNNING", false, true, locatorNetServer, "") +:
+          expectedRows1 = Row(locatorId, "locator", "RUNNING", false, true, locatorNetServer, "") +:
               Row(lead, "primary lead", "RUNNING", false, false, "", "") +:
               servers.zip(netServers).map(p => Row(p._1, "datastore",
                 "RUNNING", true, false, p._2, ""))
+          expectedRows2 = Row(locatorId, "locator", "RUNNING", false, true, locatorNetServer, "") +:
+              Row(lead, "primary lead", "RUNNING", false, false, "", "") +:
+              servers2.zip(netServers).map(p => Row(p._1, "datastore",
+                "RUNNING", true, false, p._2, ""))
         }
-        assert(rs.sortBy(_.getString(0)) === expectedRows.sortBy(_.getString(0)))
+        val rsSorted = rs.sortBy(_.getString(0))
+        assert(rsSorted === expectedRows1.sortBy(_.getString(0)) ||
+            rsSorted === expectedRows2.sortBy(_.getString(0)))
       }
     }
 

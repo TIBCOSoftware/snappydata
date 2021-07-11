@@ -1012,14 +1012,13 @@ object ColumnEncoding {
 /**
  * Full stats row has "nullCount" as non-nullable while delta stats row has it as nullable.
  */
-case class ColumnStatsSchema(fieldName: String,
-    dataType: DataType, nullCountNullable: Boolean) {
+case class ColumnStatsSchema(fieldName: String, dataType: DataType) {
   val lowerBound: AttributeReference = AttributeReference(
     fieldName + ".lowerBound", dataType)()
   val upperBound: AttributeReference = AttributeReference(
     fieldName + ".upperBound", dataType)()
   val nullCount: AttributeReference = AttributeReference(
-    fieldName + ".nullCount", IntegerType, nullCountNullable)()
+    fieldName + ".nullCount", IntegerType, nullable = false)()
 
   val schema = Seq(lowerBound, upperBound, nullCount)
 

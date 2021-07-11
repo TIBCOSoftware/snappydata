@@ -352,23 +352,27 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
  * @param otherPlan     optional. otherRDD can be used instead of this.
  * @param otherPartKeys right partitioner expression
  */
-private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
+private[sql] final case class ZipPartitionScan(basePlan: SparkPlan,
     basePartKeys: Seq[Expression],
     otherPlan: SparkPlan,
     otherPartKeys: Seq[Expression]) extends SparkPlan with CodegenSupport {
 
   private var consumedCode: String = _
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
-  private val inputCode = basePlan.asInstanceOf[CodegenSupport]
+  private lazy val inputCode = basePlan.asInstanceOf[CodegenSupport]
 
-  private val withShuffle = ShuffleExchange(HashPartitioning(
-    ClusteredDistribution(otherPartKeys)
-        .clustering, inputCode.inputRDDs().head.getNumPartitions), otherPlan)
+  private val withShuffle =
+    if (otherPartKeys.isEmpty) otherPlan else ShuffleExchange(HashPartitioning(
+      ClusteredDistribution(otherPartKeys)
+          .clustering, inputCode.inputRDDs().head.getNumPartitions), otherPlan)
 
   override def children: Seq[SparkPlan] = basePlan :: withShuffle :: Nil
 
+  private def clusteredDistribution(keys: Seq[Expression]): Distribution =
+    if (keys.isEmpty) UnspecifiedDistribution else ClusteredDistribution(keys)
+
   override def requiredChildDistribution: Seq[Distribution] =
-    ClusteredDistribution(basePartKeys) :: ClusteredDistribution(otherPartKeys) :: Nil
+    clusteredDistribution(basePartKeys) :: clusteredDistribution(otherPartKeys) :: Nil
 
   override def inputRDDs(): Seq[RDD[InternalRow]] =
     inputCode.inputRDDs ++ Some(withShuffle.execute())

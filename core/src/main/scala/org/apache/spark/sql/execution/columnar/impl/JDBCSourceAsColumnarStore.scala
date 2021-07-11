@@ -46,6 +46,7 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.execution.row.{ResultSetTraversal, RowFormatScanRDD, RowInsertExec}
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
@@ -97,20 +98,22 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     }
   }
 
-  override def storeColumnBatch(columnTableName: String, batch: ColumnBatch,
-      partitionId: Int, batchId: Long, maxDeltaRows: Int,
-      compressionCodecId: Int, conn: Option[Connection]): Unit = {
+  override def storeColumnBatch(columnTableName: String, batch: ColumnBatch, partitionId: Int,
+      batchId: Long, maxDeltaRows: Int, compressionCodecId: Int, changesToDeltaBuffer: SQLMetric,
+      numColumnBatches: SQLMetric, changesToColumnStore: SQLMetric,
+      conn: Option[Connection]): Unit = {
     // check for task cancellation before further processing
     checkTaskCancellation()
+    logDebug(s"Storing column batch having ${batch.numRows} rows, partitionId = $partitionId")
     if (partitionId >= 0) {
       doInsertOrPut(columnTableName, batch, batchId, partitionId, maxDeltaRows,
-        compressionCodecId, conn)
+        compressionCodecId, changesToDeltaBuffer, numColumnBatches, changesToColumnStore, conn)
     } else {
       val (bucketId, br, batchSize) = getPartitionID(columnTableName,
         () => batch.buffers.foldLeft(0L)(_ + _.capacity()))
       try {
         doInsertOrPut(columnTableName, batch, batchId, bucketId, maxDeltaRows,
-          compressionCodecId, conn)
+          compressionCodecId, changesToDeltaBuffer, numColumnBatches, changesToColumnStore, conn)
       } finally br match {
         case None =>
         case Some(bucket) => bucket.updateInProgressSize(-batchSize)
@@ -312,7 +315,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               rs.close()
               // add the stats rows
               addKeyToBatch(ColumnFormatEntry.STATROW_COL_INDEX)
-              addKeyToBatch(ColumnFormatEntry.DELTA_STATROW_COL_INDEX)
+              addKeyToBatch(ColumnFormatEntry.DELTA_STATROW_COL_INDEX) // for old persisted data
               // add column values and deltas
               for (columnIndex <- 1 to numColumns) {
                 addKeyToBatch(columnIndex)
@@ -381,10 +384,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
    * batches for now.
    */
   private def doSnappyInsertOrPut(region: LocalRegion, batch: ColumnBatch,
-      batchId: Long, partitionId: Int, maxDeltaRows: Int, compressionCodecId: Int): Unit = {
+      batchId: Long, partitionId: Int, compressionCodecId: Int): Unit = {
     val deltaUpdate = batch.deltaIndexes ne null
-    val statRowIndex = if (deltaUpdate) ColumnFormatEntry.DELTA_STATROW_COL_INDEX
-    else ColumnFormatEntry.STATROW_COL_INDEX
+    val statRowIndex = ColumnFormatEntry.STATROW_COL_INDEX
     var index = 1
     try {
       // add key-values pairs for each column (linked map to ensure stats row is last)
@@ -419,7 +421,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     } catch {
       case NonFatal(e) =>
         // no explicit rollback needs to be done with snapshot
-        logInfo(s"Region insert/put failed with exception $e")
+        val op = if (deltaUpdate) "put" else "insert"
+        logError(s"Column store region ${region.getFullPath} $op failed with exception", e)
         throw e
     }
   }
@@ -431,16 +434,14 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
    * batches for now.
    */
   private def doGFXDInsertOrPut(columnTableName: String, batch: ColumnBatch,
-      batchId: Long, partitionId: Int, maxDeltaRows: Int,
-      compressionCodecId: Int): Connection => Unit = {
+      batchId: Long, partitionId: Int, compressionCodecId: Int): Connection => Unit = {
     {
       connection: Connection => {
         val deltaUpdate = batch.deltaIndexes ne null
         // we are using the same connection on which tx was started.
         val rowInsertStr = getRowInsertOrPutStr(columnTableName, deltaUpdate)
         val stmt = connection.prepareStatement(rowInsertStr)
-        val statRowIndex = if (deltaUpdate) ColumnFormatEntry.DELTA_STATROW_COL_INDEX
-        else ColumnFormatEntry.STATROW_COL_INDEX
+        val statRowIndex = ColumnFormatEntry.STATROW_COL_INDEX
         var index = 1
         var blobs: Array[ClientBlob] = null
         try {
@@ -564,13 +565,17 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
   private def doInsertOrPut(columnTableName: String, batch: ColumnBatch, batchId: Long,
       partitionId: Int, maxDeltaRows: Int, compressionCodecId: Int,
-      conn: Option[Connection] = None): Unit = {
+      changesToDeltaBuffer: SQLMetric, numColumnBatches: SQLMetric,
+      changesToColumnStore: SQLMetric, conn: Option[Connection] = None): Unit = {
     // split the batch and put into row buffer if it is small
     if (maxDeltaRows > 0 && batch.numRows < math.min(maxDeltaRows,
       math.max(maxDeltaRows >>> 1, SystemProperties.SNAPPY_MIN_COLUMN_DELTA_ROWS))) {
+      logDebug(s"Splitting column batch with ${batch.numRows} rows, " +
+          s"partitionId = $partitionId into delta buffer")
       // noinspection RedundantDefaultArgument
       tryExecute(tableName, closeOnSuccessOrFailure = false /* batch.deltaIndexes ne null */ ,
         onExecutor = true)(doRowBufferPut(batch, partitionId))(conn)
+      if (changesToDeltaBuffer ne null) changesToDeltaBuffer.add(batch.numRows)
     } else {
       connectionType match {
         case ConnectionType.Embedded =>
@@ -579,15 +584,18 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           // create UUID if not present using the row buffer region because
           // all other callers (ColumnFormatEncoder, BucketRegion) use the same
           val uuid = if (BucketRegion.isValidUUID(batchId)) batchId
-          else region.getColocatedWithRegion.newUUID(false)
-          doSnappyInsertOrPut(region, batch, uuid, partitionId, maxDeltaRows, compressionCodecId)
+          else region.getColocatedWithRegion.newUUID(
+            !BucketRegion.ALLOW_COLUMN_STORE_UUID_OVERWRITE_ON_OVERFLOW)
+          doSnappyInsertOrPut(region, batch, uuid, partitionId, compressionCodecId)
 
         case _ =>
           // noinspection RedundantDefaultArgument
           tryExecute(tableName, closeOnSuccessOrFailure = false /* batch.deltaIndexes ne null */ ,
             onExecutor = true)(doGFXDInsertOrPut(columnTableName, batch, batchId, partitionId,
-            maxDeltaRows, compressionCodecId))(conn)
+            compressionCodecId))(conn)
       }
+      if (numColumnBatches ne null) numColumnBatches.add(1L)
+      if (changesToColumnStore ne null) changesToColumnStore.add(batch.numRows)
     }
   }
 

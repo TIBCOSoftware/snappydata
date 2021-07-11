@@ -54,7 +54,7 @@ import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, AttributeReference, Descending, Exists, ExprId, Expression, GenericRow, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SortDirection, TokenLiteral}
-import org.apache.spark.sql.catalyst.plans.logical.{Command, Filter, LogicalPlan, Union}
+import org.apache.spark.sql.catalyst.plans.logical.{Command, Filter, LocalRelation, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.{DefinedByConstructorParams, InternalRow, ScalaReflection, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, WrappedInternalRow}
 import org.apache.spark.sql.execution._
@@ -485,8 +485,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] def getHashVar(ctx: CodegenContext,
       keyVars: Seq[String]): Option[String] = getContextObject(ctx, "H", keyVars)
 
-  private[sql] def cachePutInto(doCache: Boolean, updateSubQuery: LogicalPlan,
+  private[sql] def cachePutInto(localCache: Boolean, doCache: Boolean, updateSubQuery: LogicalPlan,
       table: String): Option[LogicalPlan] = {
+    clearPutInto()
     // first acquire the global lock for putInto
     val (schemaName: String, _) =
       JdbcExtendedUtils.getTableWithSchema(table, conn = null, Some(sqlContext.sparkSession))
@@ -496,7 +497,20 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
     var newUpdateSubQuery: Option[LogicalPlan] = None
     try {
-      val cachedTable = if (doCache) {
+      if (localCache) {
+        val commandString =
+          if (currentKey ne null) s"LOCAL FETCH FOR (${currentKey.sqlText})"
+          else s"LOCAL FETCH FOR (PUT INTO $table <plan>)"
+        val execution = sessionState.executePlan(updateSubQuery)
+        val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(execution.executedPlan)
+        val data = CachedDataFrame.withNewExecutionId(self, commandString, commandString,
+          execution.toString(), planInfo) {
+          execution.executedPlan.executeCollect()
+        }._1
+        if (data.length != 0) {
+          newUpdateSubQuery = Some(LocalRelation(execution.executedPlan.output, data))
+        }
+      } else if (doCache) {
         val tableName = s"snappyDataInternalTempPutIntoCache${tempCacheIndex.incrementAndGet()}"
         val tableIdent = new TableIdentifier(tableName)
         val cacheCommandString = if (currentKey ne null) s"CACHE FOR (${currentKey.sqlText})"
@@ -505,25 +519,22 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         val count = SnappyCacheTableCommand(tableIdent, cacheCommandString, Some(updateSubQuery),
           isLazy = false).run(this).head.getLong(0)
         if (count > 0) {
-          newUpdateSubQuery = Some(this.table(tableIdent).logicalPlan)
-          Some(tableIdent)
+          addContextObject(SnappySession.CACHED_PUTINTO_LOGICAL_PLAN, tableIdent)
+          newUpdateSubQuery = Some(sessionState.catalog.lookupRelation(tableIdent))
         } else {
           dropPutIntoCacheTable(tableIdent)
-          None
         }
       } else {
         // assume that there are updates
         newUpdateSubQuery = Some(updateSubQuery)
-        None
       }
-      addContextObject(SnappySession.CACHED_PUTINTO_LOGICAL_PLAN, cachedTable)
       newUpdateSubQuery
     } finally {
       lockOption match {
-        case Some(lock) => {
+        case Some(lock) if newUpdateSubQuery.isDefined =>
           logDebug(s"Adding the lock object $lock to the context")
           addContextObject(SnappySession.PUTINTO_LOCK, lock)
-        }
+        case Some(lock) => releaseLock(lock) // release immediately if no UPDATE
         case None => // do nothing
       }
     }
@@ -541,10 +552,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     contextObjects.remove(SnappySession.CACHED_PUTINTO_LOGICAL_PLAN) match {
       case null =>
-      case cachedTable: Option[_] =>
-        if (cachedTable.isDefined) {
-          dropPutIntoCacheTable(cachedTable.get.asInstanceOf[TableIdentifier])
-        }
+      case cachedTable: TableIdentifier => dropPutIntoCacheTable(cachedTable)
     }
   }
 

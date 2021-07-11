@@ -113,7 +113,6 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
       re: AbstractRegionEntry, numColumnsInTable: Int): Int = {
     val currentBucketRegion = bucketRegion.getHostedBucketRegion
     if ((columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
-        columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX ||
         columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX) &&
         !re.isDestroyedOrRemoved) {
       val statsOrDeleteVal = re.getValue(currentBucketRegion)
@@ -123,11 +122,10 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
         val buffer = statsOrDelete.getBuffer
         try {
           if (buffer.remaining() > 0) {
-            if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
-                columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
+            if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX) {
               val numColumns = ColumnStatsSchema.numStatsColumns(numColumnsInTable)
               val unsafeRow = SharedUtils.toUnsafeRow(buffer, numColumns)
-              unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
+              math.abs(unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA))
             } else {
               val allocator = ColumnEncoding.getAllocator(buffer)
               // decrement by deleted row count
@@ -427,10 +425,9 @@ class ColumnFormatValue extends SerializedDiskBuffer
         // processors like gateway event processors will not expect it.
       } finally {
         dr.releaseReadLock()
-        if (transformValue) return transformValueRetain(incReference = false, fetchRequest)
       }
     }
-    this
+    if (transformValue) transformValueRetain(incReference = false, fetchRequest) else this
   }
 
   private def transformValueRetain(incReference: Boolean,

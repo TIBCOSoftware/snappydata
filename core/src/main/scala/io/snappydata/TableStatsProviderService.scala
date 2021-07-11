@@ -58,7 +58,7 @@ trait TableStatsProviderService extends Logging {
 
   protected def aggregateStats(): Unit = synchronized {
     try {
-      // TODO: Need to be addressed - Disabling aggregateStats as a temporary fix.
+      // TODO: Need to be addressed for recovery - Disabling aggregateStats as a temporary fix.
       val cache = Misc.getGemFireCacheNoThrow
       if (doRun && cache != null ) {
         val prevTableSizeInfo = tableSizeInfo
@@ -69,10 +69,7 @@ trait TableStatsProviderService extends Logging {
           indexesInfo = indexStats // populating indexes stats
           externalTableSizeInfo = extTableStats
 
-          // Commenting this call to avoid periodic refresh of members stats
-          // get members details
-          // fillAggregatedMemberStatsOnDemand()
-          val memInfo = getMembersStatsOnDemand
+          getMembersStatsOnDemand
 
         } finally {
           running = false

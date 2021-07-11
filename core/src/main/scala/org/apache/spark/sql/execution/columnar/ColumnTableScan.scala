@@ -266,9 +266,8 @@ private[sql] final case class ColumnTableScan(
     val rowDecoderClass = classOf[UnsafeRowDecoder].getName
     val deletedDecoderClass = classOf[ColumnDeleteDecoder].getName
     val batch = ctx.freshName("batch")
+    val hasUpdates = s"${batch}HasUpdates"
     val numBatchRows = s"${batch}NumRows"
-    val numFullRows = s"${batch}NumFullRows"
-    val numDeltaRows = s"${batch}NumDeltaRows"
     val batchIndex = s"${batch}Index"
     val buffers = s"${batch}Buffers"
     val numRows = ctx.freshName("numRows")
@@ -281,6 +280,7 @@ private[sql] final case class ColumnTableScan(
     var deletedCountCheck = ""
 
     ctx.addMutableState("java.nio.ByteBuffer", buffers, "")
+    ctx.addMutableState("boolean", hasUpdates, "")
     ctx.addMutableState("int", numBatchRows, "")
     ctx.addMutableState("int", batchIndex, "")
     ctx.addMutableState(deletedDecoderClass, deletedDecoder, "")
@@ -397,8 +397,8 @@ private[sql] final case class ColumnTableScan(
            |  $decoder = $encodingClass.getColumnDecoder($buffer,
            |      $planSchema.apply($index));
            |  // check for updated column
-           |  $updatedDecoder = $colInput.getUpdatedColumnDecoder(
-           |      $decoder, $planSchema.apply($index), $baseIndex);
+           |  $updatedDecoder = $hasUpdates ? $colInput.getUpdatedColumnDecoder(
+           |      $decoder, $planSchema.apply($index), $baseIndex) : null;
            |  if ($updatedDecoder != null) {
            |    $incrementUpdatedColumnCount
            |  }
@@ -495,9 +495,8 @@ private[sql] final case class ColumnTableScan(
     // for smart connector, the filters are pushed down in the procedure sent to stores
     val filterFunction = if (embedded) ColumnTableScan.generateStatPredicate(ctx,
       relation.isInstanceOf[BaseColumnFormatRelation], schemaAttributes,
-      allFilters, numBatchRows, metricTerm, metricAdd) else ""
+      allFilters, numBatchRows, metricTerm, metricAdd, simpleString) else ""
     val statsRow = ctx.freshName("statsRow")
-    val deltaStatsRow = ctx.freshName("deltaStatsRow")
     val colNextBytes = ctx.freshName("colNextBytes")
     val numTableColumns = if (relationSchema.exists(
       _.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))) {
@@ -516,20 +515,17 @@ private[sql] final case class ColumnTableScan(
     val columnBatchesSeen = metricTerm(ctx, "columnBatchesSeen")
     val incrementBatchCount = if (columnBatchesSeen eq null) ""
     else s"$columnBatchesSeen.${metricAdd("1")};"
-    val countIndexInSchema = ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA
     val batchAssign =
       s"""
         final java.nio.ByteBuffer $colNextBytes = (java.nio.ByteBuffer)$colInput.next();
         UnsafeRow $statsRow = ${SharedUtils.getClass.getName}.MODULE$$.toUnsafeRow(
           $colNextBytes, $numColumnsInStatBlob);
-        UnsafeRow $deltaStatsRow = ${SharedUtils.getClass.getName}.MODULE$$.toUnsafeRow(
-          $colInput.getCurrentDeltaStats(), $numColumnsInStatBlob);
-        final int $numFullRows = $statsRow.getInt($countIndexInSchema);
-        int $numDeltaRows = $deltaStatsRow != null ? $deltaStatsRow.getInt(
-          $countIndexInSchema) : 0;
-        $numBatchRows = $numFullRows + $numDeltaRows;
-        // TODO: don't have the update count here (only insert count)
-        $numDeltaRows = $numBatchRows;
+        $hasUpdates = $colInput.getCurrentDeltaStats() != null; // old delta stats row
+        $numBatchRows = $statsRow.getInt(${ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA});
+        if ($numBatchRows < 0) { // indicates delta updates
+          $hasUpdates = true;
+          $numBatchRows = -$numBatchRows;
+        }
         $incrementBatchCount
         $buffers = $colNextBytes;
       """
@@ -537,11 +533,9 @@ private[sql] final case class ColumnTableScan(
       s"""
         while (true) {
           $batchAssign
-          // check the delta stats after full stats (null columns will be treated as failure
-          // which is what is required since it means that only full stats check should be done)
-          if ($filterFunction($statsRow, $numFullRows, $deltaStatsRow == null, false) ||
-              ($deltaStatsRow != null && $filterFunction($deltaStatsRow,
-               $numDeltaRows, true, true))) {
+          // skip filtering if old format delta stats row containing obsolete data is present
+          if ($colInput.getCurrentDeltaStats() != null ||
+              $filterFunction($statsRow, $numBatchRows)) {
             break;
           }
           if (!$colInput.hasNext()) return false;
@@ -825,17 +819,15 @@ object ColumnTableScan extends Logging {
 
   def generateStatPredicate(ctx: CodegenContext, isColumnTable: Boolean,
       schemaAttrs: Seq[AttributeReference], allFilters: Seq[Expression], numRowsTerm: String,
-      metricTerm: (CodegenContext, String) => String, metricAdd: String => String): String = {
+      metricTerm: (CodegenContext, String) => String, metricAdd: String => String,
+      simpleString: String = ""): String = {
 
     if ((allFilters eq null) || allFilters.isEmpty) {
       return ""
     }
     val numBatchRows = NumBatchRows(numRowsTerm)
     val (columnBatchStatsMap, columnBatchStats) = if (isColumnTable) {
-      val allStats = schemaAttrs.map(a => a ->
-          // nullCount as nullable works for both full stats and delta stats
-          // though former will never be null (latter can be for non-updated columns)
-          ColumnStatsSchema(a.name, a.dataType, nullCountNullable = false))
+      val allStats = schemaAttrs.map(a => a -> ColumnStatsSchema(a.name, a.dataType))
       (AttributeMap(allStats),
           ColumnStatsSchema.COUNT_ATTRIBUTE +: allStats.flatMap(_._2.schema))
     } else (null, Nil)
@@ -948,25 +940,21 @@ object ColumnTableScan extends Logging {
     val columnBatchesSkipped = if (metricTerm ne null) {
       metricTerm(ctx, "columnBatchesSkipped")
     } else null
-    val addBatchMetric = if (columnBatchesSkipped ne null) {
+    val addSkippedBatchMetric = if (columnBatchesSkipped ne null) {
       s"$columnBatchesSkipped.${metricAdd("1")};"
     } else ""
     val filterFunction = ctx.freshName("columnBatchFilter")
+    logDebug(s"ColumnTableScan: using statistics predicate $predicate for $simpleString")
     ctx.addNewFunction(filterFunction,
       s"""
-         |private boolean $filterFunction(UnsafeRow $statsRow, int $numRowsTerm,
-         |    boolean isLastStatsRow, boolean isDelta) {
+         |private boolean $filterFunction(UnsafeRow $statsRow, int $numRowsTerm) {
          |  // Skip the column batches based on the predicate
          |  ${predicateEval.code}
-         |  if (isDelta && (${predicateEval.isNull} || ${predicateEval.value})) {
-         |    return true;
-         |  } else if (!${predicateEval.isNull} && ${predicateEval.value}) {
+         |  if (${predicateEval.isNull} || ${predicateEval.value}) {
          |    return true;
          |  } else {
          |    // add to skipped metric only if both stats say so
-         |    if (isLastStatsRow) {
-         |      $addBatchMetric
-         |    }
+         |    $addSkippedBatchMetric
          |    return false;
          |  }
          |}

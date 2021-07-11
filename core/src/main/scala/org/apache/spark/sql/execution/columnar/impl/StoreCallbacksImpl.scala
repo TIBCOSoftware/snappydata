@@ -256,11 +256,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
             ${ctx.declareAddedFunctions()}
 
-            public boolean check($rowClass statsRow, boolean isLastStatsRow, boolean isDelta) {
-              // TODO: don't have the update count for delta row (only insert count)
-              // so adding the delta "insert" count to full count read in previous call
-              $numRows += statsRow.getInt(${ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA});
-              return $filterFunction(statsRow, $numRows, isLastStatsRow, isDelta);
+            public boolean check($rowClass statsRow) {
+              $numRows = Math.abs(statsRow.getInt(${ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA}));
+              return $filterFunction(statsRow, $numRows);
             }
          }
       """
@@ -292,13 +290,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           else if (filterPredicate ne null) {
             // first check the full stats
             val statsRow = SharedUtils.toUnsafeRow(batchIterator.currentVal, numColumnsInStatBlob)
-            val deltaStatsRow = SharedUtils.toUnsafeRow(batchIterator.getCurrentDeltaStats,
-              numColumnsInStatBlob)
-            // check the delta stats after full stats (null columns will be treated as failure
-            // which is what is required since it means that only full stats check should be done)
-            if (filterPredicate.check(statsRow, deltaStatsRow eq null, isDelta = false) ||
-                ((deltaStatsRow ne null) && filterPredicate.check(deltaStatsRow,
-                  isLastStatsRow = true, isDelta = true))) {
+            // skip filtering if old format delta stats row containing obsolete data is present
+            if ((batchIterator.getCurrentDeltaStats ne null) || filterPredicate.check(statsRow)) {
               return
             }
             batchIterator.moveNext()
@@ -608,9 +601,7 @@ trait StoreCallback extends Serializable {
 
 /**
  * The type of the generated class used by column stats check for a column batch.
- * Since there can be up-to two stats rows (full stats and delta stats), this has
- * an additional argument for the same to determine whether to update metrics or not.
  */
 trait StatsPredicate {
-  def check(row: UnsafeRow, isLastStatsRow: Boolean, isDelta: Boolean): Boolean
+  def check(row: UnsafeRow): Boolean
 }
