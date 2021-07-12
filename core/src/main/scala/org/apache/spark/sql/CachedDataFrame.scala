@@ -841,7 +841,6 @@ object CachedDataFrame
         case sqle: SQLException
           if SQLState.SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH.equals(sqle.getSQLState) =>
           return true
-        case _: CatalogStaleException => return true
         case e: Error =>
           if (SystemFailure.isJVMFailureError(e)) {
             SystemFailure.initiateFailure(e)

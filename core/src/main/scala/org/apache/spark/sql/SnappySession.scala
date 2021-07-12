@@ -496,6 +496,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     } else None
 
     var newUpdateSubQuery: Option[LogicalPlan] = None
+    var cachedTableIdent: Option[TableIdentifier] = None
     try {
       if (localCache) {
         val commandString =
@@ -513,16 +514,17 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       } else if (doCache) {
         val tableName = s"snappyDataInternalTempPutIntoCache${tempCacheIndex.incrementAndGet()}"
         val tableIdent = new TableIdentifier(tableName)
+        cachedTableIdent = Some(tableIdent)
         val cacheCommandString = if (currentKey ne null) s"CACHE FOR (${currentKey.sqlText})"
         else s"CACHE FOR (PUT INTO $table <plan>)"
         // use cache table command to display full plan
         val count = SnappyCacheTableCommand(tableIdent, cacheCommandString, Some(updateSubQuery),
           isLazy = false).run(this).head.getLong(0)
         if (count > 0) {
-          addContextObject(SnappySession.CACHED_PUTINTO_LOGICAL_PLAN, tableIdent)
           newUpdateSubQuery = Some(sessionState.catalog.lookupRelation(tableIdent))
         } else {
           dropPutIntoCacheTable(tableIdent)
+          cachedTableIdent = None
         }
       } else {
         // assume that there are updates
@@ -530,6 +532,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       }
       newUpdateSubQuery
     } finally {
+      cachedTableIdent match {
+        case Some(tableIdent) =>
+          addContextObject(SnappySession.CACHED_PUTINTO_LOGICAL_PLAN, tableIdent)
+        case _ =>
+      }
       lockOption match {
         case Some(lock) =>
           logDebug(s"Adding the lock object $lock to the context")
@@ -540,8 +547,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private def dropPutIntoCacheTable(tableIdent: TableIdentifier): Unit = {
-    UncacheTableCommand(tableIdent, ifExists = false).run(this)
-    dropTable(tableIdent, ifExists = false, isView = false)
+    UncacheTableCommand(tableIdent, ifExists = true).run(this)
+    dropTable(tableIdent, ifExists = true, isView = true)
   }
 
   private[sql] def clearPutInto(): Unit = {

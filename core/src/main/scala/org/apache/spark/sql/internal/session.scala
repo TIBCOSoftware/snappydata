@@ -34,7 +34,7 @@ import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfig
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Contains, EndsWith, EqualTo, Expression, Like, Literal, StartsWith, TokenLiteral}
-import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, InsertIntoTable, LocalRelation, LogicalPlan, OneRowRelation, OverwriteOptions, Project, UnaryNode, Filter => LogicalFilter}
+import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, InsertIntoTable, Join, LocalRelation, LogicalPlan, OverwriteOptions, Project, UnaryNode, Filter => LogicalFilter}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -565,7 +565,12 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
 
   private def conf: SQLConf = state.conf
 
-  def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+  def apply(plan: LogicalPlan): LogicalPlan = {
+    val hasJoin = plan.find(_.isInstanceOf[Join]).isDefined
+    doApply(plan, hasJoin)
+  }
+
+  private def doApply(plan: LogicalPlan, hasJoin: Boolean): LogicalPlan = plan transformDown {
 
     // Add dbtable property for create table. While other routes can add it in
     // SnappySession.createTable, the DataFrameWriter path needs to be handled here.
@@ -677,12 +682,12 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
     case i@InsertIntoTable(table, _, child, _, _)
       if table.resolved && child.resolved => PreprocessTableInsertion(conf).apply(i)
 
-    case lr: LocalRelation if lr.data.length == 1 =>
+    case lr: LocalRelation if hasJoin && lr.data.length == 1 && lr.output.nonEmpty =>
       val row = lr.data.head
       Project(lr.output.zipWithIndex.map { case (a, i) =>
         Alias(new TokenLiteral(row.get(i, a.dataType), a.dataType), a.name)(
           a.exprId, a.qualifier, isGenerated = a.isGenerated)
-      }, OneRowRelation)
+      }, LocalRelation(Nil, lr.data))
   }
 
   /**

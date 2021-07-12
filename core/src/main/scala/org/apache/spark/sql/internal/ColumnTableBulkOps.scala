@@ -123,11 +123,8 @@ object ColumnTableBulkOps {
           case t: Throwable if CachedDataFrame.isConnectorCatalogStaleException(t, session) =>
             session.externalCatalog.invalidateAll()
             SnappySession.clearAllCache()
-            val result = CachedDataFrame.retryOnStaleCatalogException(snappySession = session)(
-              session.cachePutInto(localCache, cacheSize < 0 || subquerySize <= cacheSize,
-                updateSubQuery, mutable.table))
-            success = true
-            result
+            // throw failure immediately to keep it consistent with insert/update/delete
+            throw CachedDataFrame.catalogStaleFailure(t, session)
         } finally {
           if (!success) session.clearPutInto()
         }

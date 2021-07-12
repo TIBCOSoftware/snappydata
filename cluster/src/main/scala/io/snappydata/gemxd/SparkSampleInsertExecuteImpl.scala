@@ -31,6 +31,7 @@ import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQL
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.SamplingRelation
@@ -75,6 +76,7 @@ class SparkSampleInsertExecuteImpl(val baseTable: String,
     val catalog = session.sessionState.catalog
     val baseTableMetadata = catalog.getTableMetadata(ti)
     val schema = baseTableMetadata.schema
+    val encoder = RowEncoder(schema)
    /* val internalRows = rows.map(encoder.toRow(_).copy)
     val localRDD = new RDD[InternalRow](session.sparkContext, Seq.empty) {
       def compute(split: Partition, context: TaskContext): Iterator[InternalRow] =
@@ -84,7 +86,7 @@ class SparkSampleInsertExecuteImpl(val baseTable: String,
       })
     }
     val ds = session.internalCreateDataFrame(localRDD, schema) */
-    val ds = session.createDataFrame(rows, schema)
+    val ds = session.internalCreateDataFrame(rows.map(encoder.toRow(_).copy()), schema)
     SparkSampleInsertExecuteImpl.insertIntoSampletables(ti, ds, catalog)
     // get sample tables tracked in catalog
 
