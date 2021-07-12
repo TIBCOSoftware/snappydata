@@ -817,11 +817,11 @@ object CachedDataFrame
       name: String)(action: DataFrame => (U, Long)): U = {
     try {
       val (result, elapsed) = action(df)
-      session.listenerManager.onSuccess(name, queryExecution, elapsed)
+      if (queryExecution ne null) session.listenerManager.onSuccess(name, queryExecution, elapsed)
       result
     } catch {
       case e: Exception =>
-        session.listenerManager.onFailure(name, queryExecution, e)
+        if (queryExecution ne null) session.listenerManager.onFailure(name, queryExecution, e)
         throw e
     }
   }
@@ -841,6 +841,7 @@ object CachedDataFrame
         case sqle: SQLException
           if SQLState.SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH.equals(sqle.getSQLState) =>
           return true
+        case _: CatalogStaleException => return true
         case e: Error =>
           if (SystemFailure.isJVMFailureError(e)) {
             SystemFailure.initiateFailure(e)

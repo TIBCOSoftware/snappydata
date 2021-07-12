@@ -21,21 +21,22 @@ package io.snappydata.remote.interpreter
 import java.io.Serializable
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import com.pivotal.gemfirexd.{Attribute, Constants}
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException
+import com.pivotal.gemfirexd.internal.iapi.util.StringUtil
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.InterpreterExecute
+import com.pivotal.gemfirexd.{Attribute, Constants}
 import io.snappydata.Constant
 import io.snappydata.gemxd.SnappySessionPerConnection
 import org.apache.log4j.Logger
-import org.apache.spark.Logging
-import org.apache.spark.sql.execution.{GrantRevokeOnExternalTable, InterpretCodeCommand}
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import com.pivotal.gemfirexd.internal.iapi.util.StringUtil
+import org.apache.spark.Logging
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.{GrantRevokeOnExternalTable, InterpretCodeCommand}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Dataset, Row, SnappySession}
 
@@ -59,6 +60,7 @@ class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExe
     try {
       interpreterHelper.interpret(lp.code.split("\n"), lp.options)
     } finally {
+      // noinspection ScalaDeprecation
       scala.Console.setOut(System.out)
     }
   }
@@ -74,7 +76,7 @@ object SnappyInterpreterExecute {
 
   private var INITIALIZED = false
 
-  lazy val dbOwner = {
+  lazy val dbOwner: String = {
     Misc.getMemStore.getDatabase.getDataDictionary.getAuthorizationDatabaseOwner.toLowerCase()
   }
 
@@ -108,7 +110,7 @@ object SnappyInterpreterExecute {
           else removeAUserAndCleanup(u)
         }
       })
-      updatePersistentState
+      updatePersistentState()
     } finally {
       if (lockTaken) intpRWLock.writeLock().unlock()
     }
@@ -154,7 +156,8 @@ object SnappyInterpreterExecute {
     allAuthKeys.foreach(k => {
       val p = r.get(k)
       if (p != null) {
-        p.asInstanceOf[PermissionChecker].addLdapGroup(getNameWithLDAPPrefix(group), true)
+        p.asInstanceOf[PermissionChecker].addLdapGroup(getNameWithLDAPPrefix(group),
+          updateOnly = true)
       }
     })
   }
@@ -165,7 +168,7 @@ object SnappyInterpreterExecute {
     else g
   }
 
-  private def updatePersistentState = {
+  private def updatePersistentState(): Unit = {
     Misc.getMemStore.getMetadataCmdRgn.put(Constant.GRANT_REVOKE_KEY, permissions)
   }
 
@@ -224,16 +227,14 @@ object SnappyInterpreterExecute {
     val id: Long = session.getUniqueIdForExecScala()
     val intpHelper = SnappyInterpreterExecute.getOrCreateStateHolder(id, user, authToken, group)
     try {
-      val ret = intpHelper.interpret(code.split("\n"), options)
-      if (ret.isInstanceOf[Array[String]]) {
-        import scala.collection.JavaConversions._
-        val structType = StructType(Seq(StructField("C0", StringType)))
-        session.createDataFrame(ret.asInstanceOf[Array[String]].map(
-          x => Row.fromSeq(Seq(x))).toList, structType)
-      } else {
-        ret.asInstanceOf[Dataset[Row]]
+      intpHelper.interpret(code.split("\n"), options) match {
+        case arr: Array[String] =>
+          val structType = StructType(Array(StructField("C0", StringType)))
+          session.createDataFrame(arr.map(x => Row.fromSeq(x :: Nil)), structType)
+        case df => df.asInstanceOf[Dataset[Row]]
       }
     } finally {
+      // noinspection ScalaDeprecation
       scala.Console.setOut(System.out)
     }
   }

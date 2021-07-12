@@ -20,6 +20,8 @@ package org.apache.spark.sql.streaming
 import java.sql.{DriverManager, SQLException}
 import java.util.NoSuchElementException
 
+import scala.annotation.tailrec
+
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.{LOGIN_FAILED, SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH}
 import io.snappydata.Property._
 import io.snappydata.util.ServiceUtils
@@ -160,6 +162,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
     }
   }
 
+  @tailrec
   private def processBatchWithRetries(batchId: Long, data: Dataset[Row], queryName: String,
       totalAttempts: Int = 10, attempt: Int = 0): Unit = {
     try {
@@ -176,6 +179,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
     }
   }
 
+  @tailrec
   private def isRetriableException(ex: Throwable): Boolean = {
     if ((ex.isInstanceOf[SQLException] &&
         SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH.equals(ex.asInstanceOf[SQLException].getSQLState))

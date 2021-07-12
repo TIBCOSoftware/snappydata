@@ -259,15 +259,16 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
     Array.concat(rows: _*)
   }
 
+  private[sql] var clearSession: Boolean = true
+
   protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val sc = session.sparkContext
     // Insert operations shouldn't retry.
     child.collectFirst {
-      case _: ColumnInsertExec | _: RowInsertExec => {
+      case _: ColumnInsertExec | _: RowInsertExec =>
         sc.setLocalProperty(io.snappydata.Property.MaxRetryAttemptsForWrite.name
           , io.snappydata.Property.MaxRetryAttemptsForWrite.get(session.sessionState.conf).toString)
-      }
     }
 
     try {
@@ -307,10 +308,12 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
       result
     }
     finally {
-      logDebug(s" Unlocking the table in execute of ExecutePlan:" +
-        s" ${child.treeString(false)}")
-      sc.setLocalProperty(io.snappydata.Property.MaxRetryAttemptsForWrite.name, null)
-      session.clearWriteLockOnTable()
+      if (clearSession) {
+        session.sessionState.clearExecutionData()
+        logDebug(s"Unlocked the table in execute of ExecutePlan:" +
+            s" ${child.treeString(false)}")
+        sc.setLocalProperty(io.snappydata.Property.MaxRetryAttemptsForWrite.name, null)
+      }
     }
   }
 

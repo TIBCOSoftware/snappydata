@@ -21,14 +21,15 @@ import java.sql.SQLWarning
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
+
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, Version}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.execution.LeadNodeExecutionObject
+import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdHeapDataOutputStream, SnappyResultHolder}
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
@@ -39,12 +40,13 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.remote.interpreter.SnappyInterpreterExecute
 import io.snappydata.{Constant, Property, QueryHint}
+
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
-import org.apache.spark.sql._
 import org.apache.spark.storage.RDDBlockId
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkEnv}
@@ -504,14 +506,22 @@ object SnappySessionPerConnection {
   private[this] val connectionIdMap =
     new java.util.concurrent.ConcurrentHashMap[java.lang.Long, SnappySession]()
 
-  def getSnappySessionForConnection(connId: Long): SnappySession = {
-    val session = connectionIdMap.
-      computeIfAbsent(Long.box(connId), CreateNewSession)
-    if (session.sparkContext.isStopped) {
-      connectionIdMap.remove(Long.box(connId))
-      connectionIdMap.computeIfAbsent(Long.box(connId), CreateNewSession)
-    } else {
-      session
+  def getSnappySessionForConnection(id: Long): SnappySession = {
+    val connId = Long.box(id)
+    // not using computeIfAbsent since CreateNewSession() is a potentially blocking
+    // call that can lead to a deadlock when lead node's catalogs are still initializing
+    connectionIdMap.get(connId) match {
+      case session if (session ne null) && !session.sparkContext.isStopped => session
+      case oldSession =>
+        if (oldSession ne null) {
+          connectionIdMap.remove(connId, oldSession)
+          oldSession.clear()
+        }
+        val newSession = CreateNewSession(connId)
+        connectionIdMap.putIfAbsent(connId, newSession) match {
+          case null => newSession
+          case existing => newSession.clear(); existing
+        }
     }
   }
 

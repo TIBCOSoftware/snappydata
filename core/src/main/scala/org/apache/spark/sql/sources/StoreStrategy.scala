@@ -174,17 +174,6 @@ case class Update(table: LogicalPlan, child: LogicalPlan,
 }
 
 /**
- * Used to skip the [[Insert]] or [[Update]] in PutInto when no rows are to be inserted or updated.
- */
-case class EmptyDML() extends RunnableCommand {
-
-  override lazy val output: Seq[Attribute] = AttributeReference(
-    "count", LongType)() :: Nil
-
-  override def run(sparkSession: SparkSession): Seq[Row] = Nil
-}
-
-/**
  * Plan for delete from a column or row table.
  */
 case class Delete(table: LogicalPlan, child: LogicalPlan,

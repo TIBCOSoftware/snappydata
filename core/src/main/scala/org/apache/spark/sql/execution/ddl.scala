@@ -21,40 +21,36 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 import java.util.Map.Entry
 import java.util.function.Consumer
-import java.util.regex.Pattern
 
 import scala.collection.mutable.ArrayBuffer
+
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.iapi.reference.{Property => GemXDProperty}
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.{Constant, Property}
 import io.snappydata.util.ServiceUtils
+import io.snappydata.{Constant, Property}
+
 import org.apache.spark.SparkContext
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Cast, Expression, GenericRow, SortDirection}
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTable, CatalogTableType}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Cast, Expression, GenericInternalRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
 import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, SetCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.functions._
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, ContextJarUtils, StaticSQLConf}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
-import org.apache.spark.unsafe.types.CalendarInterval
-
-import scala.tools.nsc.{GenericRunnerSettings, Settings}
-import scala.tools.nsc.interpreter.IMain
 
 
 /**
@@ -98,7 +94,7 @@ case class GrantRevokeIntpCommand(
     val tcb = ToolsCallbackInit.toolsCallback
     if (tcb == null) {
       throw new AnalysisException("Granting/Revoking" +
-        " of INTP not supported from smart connector mode");
+        " of INTP not supported from smart connector mode")
     }
     val session = sparkSession.asInstanceOf[SnappySession]
     val user = session.conf.get(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR)
@@ -115,7 +111,7 @@ case class GrantRevokeOnExternalTable(
     val tcb = ToolsCallbackInit.toolsCallback
     if (tcb == null) {
       throw new AnalysisException("Granting/Revoking" +
-        " on external table not supported from smart connector mode");
+        " on external table not supported from smart connector mode")
     }
     val session = sparkSession.asInstanceOf[SnappySession]
     val ct = session.sessionCatalog.getTableMetadata(table)
@@ -346,7 +342,7 @@ case class SnappyStreamingActionsCommand(action: Int,
         val ssc = SnappyStreamingContext.getInstance()
         ssc match {
           case Some(x) => x.start()
-          case None => throw Utils.analysisException(
+          case None => throw new AnalysisException(
             "Streaming Context has not been initialized")
         }
       case 2 =>
@@ -354,7 +350,7 @@ case class SnappyStreamingActionsCommand(action: Int,
         ssc match {
           case Some(strCtx) => strCtx.stop(stopSparkContext = false,
             stopGracefully = true)
-          case None => // throw Utils.analysisException(
+          case None => // throw new AnalysisException(
           // "There is no running Streaming Context to be stopped")
         }
     }
@@ -414,10 +410,22 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
         val memoryPlan = df.queryExecution.executedPlan.collectFirst {
           case plan: InMemoryTableScanExec => plan.relation
         }.get
-        val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(cachedExecution.executedPlan)
+        // cachedExecution can be null if query was already cached
+        val (cachedPlan, cachedPlanStr) =
+          if (cachedExecution ne null) cachedExecution.executedPlan -> cachedExecution.toString
+          else {
+            val executedPlan = session.sharedState.cacheManager().lookupCachedData(df.logicalPlan)
+                .getOrElse(throw new AnalysisException(s"Cached data for [ $queryString ] after " +
+                    "successful persist() call no longer present.")).cachedRepresentation.child
+            executedPlan ->
+                s"""== Physical Plan previously cached ==
+                   |${executedPlan.treeString(verbose = false)}
+                """.stripMargin.trim
+          }
+        val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(cachedPlan)
         Row(CachedDataFrame.withCallback(session, df = null, cachedExecution, "cache")(_ =>
           CachedDataFrame.withNewExecutionId(session, queryShortString, queryString,
-            cachedExecution.toString(), planInfo)({
+            cachedPlanStr, planInfo)({
             val start = System.nanoTime()
             // Dummy op to materialize the cache. This does the minimal job of count on
             // the actual cached data (RDD[CachedBatch]) to force materialization of cache
@@ -685,7 +693,10 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
         override def accept(t: Entry[String, Object]): Unit = {
           val alias1 = t.getKey
           if (alias == alias1) {
-            value = if (t.getValue.isInstanceOf[String]) t.getValue.asInstanceOf[String] else null
+            value = t.getValue match {
+              case s: String => s
+              case _ => null
+            }
           }
         }
       })
@@ -718,70 +729,69 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
   }
 }
 
-case class PutIntoValuesColumnTable(db: String, tableName: String,
+case class PutIntoValuesColumnTable(table: CatalogTable,
     colNames: Option[Seq[String]],
-    values: Seq[Expression])
+    values: Seq[Seq[Expression]])
     extends RunnableCommand {
 
-  def convertTypes(value: String, struct: StructField): Any = struct.dataType match {
-    case BooleanType => value.toBoolean
-    case BinaryType => value.toCharArray.map(ch => ch.toByte)
-    case ByteType => value.toByte
-    case DoubleType => value.toDouble
-    case FloatType => value.toFloat
-    case ShortType => value.toShort
-    case IntegerType => value.toInt
-    case LongType => value.toLong
-    case DateType => java.sql.Date.valueOf(value)
-    case TimestampType => java.sql.Timestamp.valueOf(value)
-    case CalendarIntervalType => CalendarInterval.fromString(value)
-    case t: DecimalType =>
-      val d = Decimal(value)
-      assert(d.changePrecision(t.precision, t.scale))
-      d
-    case _ => value
+  if (values.isEmpty) {
+    throw new IllegalArgumentException(s"PUT: empty value list passed")
   }
 
   override lazy val output: Seq[Attribute] = AttributeReference("count", LongType)() :: Nil
 
-  override def run(sparkSession: SparkSession): Seq[Row] = {
-
-    val snc = sparkSession.asInstanceOf[SnappySession]
-    val sc = sparkSession.sparkContext
-    val tableWithDB = db + "." + tableName
-    val v1 = values.zipWithIndex.map { case (e, _) =>
-      if (e != null) Cast(e, StringType).eval() else null
+  private def cast(from: Expression, to: StructField): Expression = {
+    val fromType = from.dataType
+    val toType = to.dataType
+    if (fromType == toType) from
+    else if (Cast.canCast(fromType, toType)) {
+      Cast(from, toType)
+    } else if (Cast.canCast(StringType, toType)) {
+      Cast(Cast(from, StringType), toType)
+    } else {
+      throw new AnalysisException(
+        s"Cannot cast '$from' to target type '${toType.sql}' for column '${to.name}'")
     }
-    val schema = sparkSession.sharedState
-        .externalCatalog.getTable(db, tableName).schema
+  }
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val snc = sparkSession.asInstanceOf[SnappySession]
+    val tableName = table.identifier.unquotedString
+    val schema = table.schema
     import snappy._
-    var rowRdd = List.empty[Any]
-    val valuesList = v1.toList
     if (colNames.isEmpty) {
-      rowRdd = valuesList.zip(schema)
-          .map { case (value, struct) =>
-            if (value != null) convertTypes(value.toString, struct) else null
-          }
-      val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
-      val someDF1 = snc.createDataFrame(rdd1, schema)
-      Seq(Row(someDF1.write.putInto(tableWithDB)))
+      val rows = values.zipWithIndex.map { case (exprs, i) =>
+        if (exprs.length != schema.length) {
+          throw new AnalysisException(
+            s"PUT: mismatch in the length of value list and table schema at index $i")
+        }
+        new GenericInternalRow(
+          exprs.zip(schema).map(p => cast(p._1, p._2).eval()).toArray)
+      }
+      Row(snc.internalCreateDataFrame(rows, schema).write.putInto(tableName)) :: Nil
     }
     else {
-      val colSchema = StructType(colNames.head.toList
-          .map(column => schema.fields.find(_.name
-              .equalsIgnoreCase(column)).getOrElse(throw Utils.analysisException(
-            s"Field $column does not exist in $tableWithDB with schema=$schema."))))
-      rowRdd = valuesList.zip(colSchema)
-          .map { case (value, struct) =>
-            if (value != null) convertTypes(value.toString, struct) else null
-          }
-      val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
-      val someDF = snc.createDataFrame(rdd1, colSchema)
-      val nonKeyCols = schema.fields.filterNot(f => colNames.head.contains(f.name))
-      val df2 = nonKeyCols.foldLeft(someDF)((df, c) =>
-        df.withColumn(c.name, lit(null).cast(c.dataType)))
-      Seq(Row(df2.write.putInto(tableWithDB)))
+      val columnNames = colNames.get
+      val resolver = snc.sessionState.analyzer.resolver
+      val indexMapping = columnNames.map { column =>
+        val index = schema.fields.indexWhere(f => resolver(f.name, column))
+        if (index == -1) {
+          throw new AnalysisException(s"Field '$column' does not exist in " +
+              s"${table.identifier.quotedString} with schema=${schema.map(_.name)}")
+        }
+        index
+      }
+      val rows = values.zipWithIndex.map { case (exprs, i) =>
+        if (exprs.length != columnNames.length) {
+          throw new AnalysisException(
+            s"PUT: mismatch in the length of value list and column names at index $i")
+        }
+        val rowData = new Array[Any](schema.length)
+        exprs.zip(indexMapping).foreach(p =>
+          rowData(p._2) = cast(p._1, schema(p._2)).eval())
+        new GenericInternalRow(rowData)
+      }
+      Row(snc.internalCreateDataFrame(rows, schema).write.putInto(tableName)) :: Nil
     }
   }
 }
-

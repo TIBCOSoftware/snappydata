@@ -20,7 +20,6 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.Connection
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
@@ -88,13 +87,11 @@ trait ColumnExec extends RowExec {
   }
 
   override protected def doExecute(): RDD[InternalRow] = {
+    // [sumedh] old code released write lock here which is incorrect which should be done only
+    // after a collect() operation or equivalent and is already handled in ExecutePlan
+
     // don't expect code generation to fail
-    try {
-      WholeStageCodegenExec(this).execute()
-    }
-    finally {
-      sqlContext.sparkSession.asInstanceOf[SnappySession].clearWriteLockOnTable()
-    }
+    WholeStageCodegenExec(this).execute()
   }
 
 }

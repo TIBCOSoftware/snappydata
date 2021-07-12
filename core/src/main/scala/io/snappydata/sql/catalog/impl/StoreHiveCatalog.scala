@@ -95,7 +95,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   override def waitForInitialization(): Boolean = {
     // skip for call from within initHMC
     !Thread.currentThread().getThreadGroup.getName.equals(
-      THREAD_GROUP_NAME) && GemFireStore.handleCatalogInit(this.initFuture)
+      THREAD_GROUP_NAME) && GemFireStore.handleCatalogInit(this.initFuture, 60)
   }
 
   override def isColumnTable(schema: String, tableName: String, skipLocks: Boolean): Boolean = {

@@ -25,16 +25,16 @@ import org.eclipse.collections.impl.set.strategy.mutable.UnifiedSetWithHashingSt
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, BindReferences, EqualTo, Expression, JoinedRow, Murmur3Hash, UnsafeProjection}
-import org.apache.spark.sql.catalyst.optimizer.SimplifyCasts
-import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LocalRelation, LogicalPlan, OverwriteOptions, Project}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, Attribute, AttributeReference, AttributeSet, BindReferences, EmptyRow, EqualTo, Expression, JoinedRow, Murmur3Hash, UnsafeProjection}
+import org.apache.spark.sql.catalyst.optimizer.{CollapseProject, RemoveRedundantProject, SimplifyCasts}
+import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, Join, LocalRelation, LogicalPlan, OneRowRelation, OverwriteOptions, Project}
 import org.apache.spark.sql.catalyst.plans.{Inner, LeftAnti}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DataType, LongType, StructType}
-import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappySession, SparkSession}
+import org.apache.spark.sql.{AnalysisException, CachedDataFrame, Dataset, JoinStrategy, Row, SnappySession, SparkSession}
 
 /**
  * Helper object for PutInto operations for column tables.
@@ -69,18 +69,32 @@ object ColumnTableBulkOps {
                 s" Provide some columns apart from key column(s)")
         }
 
+        val sqlConf = session.sqlContext.conf
         val cacheSize = ExternalStoreUtils.sizeAsBytes(
-          Property.PutIntoInnerJoinCacheSize.get(session.sqlContext.conf),
+          Property.PutIntoInnerJoinCacheSize.get(sqlConf),
           Property.PutIntoInnerJoinCacheSize.name, -1, Long.MaxValue)
-        val doCache = subQuery.statistics.sizeInBytes <= cacheSize
+        val subquerySize = subQuery.statistics.sizeInBytes
         val localCache = if (session.conf.contains(Property.PutIntoInnerJoinLocalCache.name)) {
-          Property.PutIntoInnerJoinLocalCache.get(session.sqlContext.conf)
-        } else subQuery match {
-          // check if incoming data is a LocalRelation
-          case _: LocalRelation => doCache
-          case Project(_, _: LocalRelation) => doCache
-          case _ => false
-        }
+          Property.PutIntoInnerJoinLocalCache.get(sqlConf)
+        } else if (subQuery.find(l => l.isInstanceOf[LocalRelation]
+            || l == OneRowRelation).isDefined) {
+          // simplify projections and then check against the cases used for automatic local caching
+          val maxIterations = sqlConf.optimizerMaxIterations
+          var i = 0
+          var samePlan = false
+          while (!samePlan && i < maxIterations) {
+            val newSubQuery = RemoveRedundantProject(SimplifyCasts(CollapseProject(subQuery)))
+            samePlan = newSubQuery.fastEquals(subQuery)
+            subQuery = newSubQuery
+            i += 1
+          }
+          // check if incoming data is from a simple LocalRelation/OneRowRelation
+          subQuery match {
+            case _: LocalRelation | Project(_, _: LocalRelation | OneRowRelation) =>
+              subquerySize <= JoinStrategy.getMaxHashJoinSize(sqlConf)
+            case _ => false
+          }
+        } else false
 
         val updatePlan = Update(table, updateSubQuery, Nil,
           updateColumns, updateExpressions)
@@ -97,11 +111,30 @@ object ColumnTableBulkOps {
           updateReferences.contains(a) || keyColumns.contains(a.name) ||
               putKeys.exists(k => analyzer.resolver(a.name, k))), updateSubQuery)
 
-        val insertChild = session.cachePutInto(localCache,
-          doCache, updateSubQuery, mutable.table) match {
+        // higher level CodegenSparkFallback/CachedDataFrame will never retry DML operations on
+        // stale catalog, so explicitly retry just the caching if it fails
+        var success = false
+        val cachedChild = try {
+          val result = session.cachePutInto(localCache,
+            cacheSize < 0 || subquerySize <= cacheSize, updateSubQuery, mutable.table)
+          success = true
+          result
+        } catch {
+          case t: Throwable if CachedDataFrame.isConnectorCatalogStaleException(t, session) =>
+            session.externalCatalog.invalidateAll()
+            SnappySession.clearAllCache()
+            val result = CachedDataFrame.retryOnStaleCatalogException(snappySession = session)(
+              session.cachePutInto(localCache, cacheSize < 0 || subquerySize <= cacheSize,
+                updateSubQuery, mutable.table))
+            success = true
+            result
+        } finally {
+          if (!success) session.clearPutInto()
+        }
+        val insertChild = cachedChild match {
           case None =>
             // no update is required
-            updateOrSkip = EmptyDML()
+            updateOrSkip = LocalRelation(analyzedUpdate.output)
             subQuery
           case Some(newUpdateSubQuery) =>
             // project on just the join columns so that its broadcast/exchange size can be reduced
@@ -111,7 +144,6 @@ object ColumnTableBulkOps {
               // the "subQuery" is now on the left side of the anti-join
               newUpdateSubQuery match {
                 case joinData: LocalRelation =>
-                  subQuery = SimplifyCasts(subQuery)
                   // optimize to do a local anti-join if the data being put is also LocalRelation
                   if (condition.isEmpty) joinData
                   else subQuery match {
@@ -133,6 +165,10 @@ object ColumnTableBulkOps {
                         localAntiJoin(session, joinData, lr.data.iterator.map(proj),
                           subQueryOutput, condition.get, putKeys)
                       }
+                    case Project(exprs, OneRowRelation) =>
+                      val proj = UnsafeProjection.create(exprs)
+                      localAntiJoin(session, joinData, Iterator(proj(EmptyRow)),
+                        subQueryOutput, condition.get, putKeys)
                     case _ =>
                       // create a copy for anti-join so that original is used for the UPDATE
                       // while the condition has to be re-evaluated since ExprIds will change
@@ -150,7 +186,8 @@ object ColumnTableBulkOps {
             }
         }
         val insertPlan = insertChild match {
-          case _: EmptyDML => insertChild
+          case lr: LocalRelation if lr.data.isEmpty =>
+            LocalRelation(AttributeReference("count", LongType)() :: Nil)
           case _ => new Insert(table, Map.empty[String, Option[String]], Project(subQueryOutput,
             insertChild), OverwriteOptions(enabled = false), ifNotExists = false)
         }
@@ -201,7 +238,7 @@ object ColumnTableBulkOps {
     checkCondition = resolvedCondition
     val insertData = new ArrayBuffer[InternalRow]()
     putData.foreach(row => if (!map.contains(row)) insertData += row.copy())
-    if (insertData.isEmpty) EmptyDML() else LocalRelation(putAttrs, insertData)
+    LocalRelation(putAttrs, insertData)
   }
 
   def validateOp(originalPlan: PutIntoTable) {
@@ -286,9 +323,7 @@ object ColumnTableBulkOps {
       schema: StructType, resolvedName: String, putInto: Boolean): Int = {
     val session = sparkSession.asInstanceOf[SnappySession]
     val tableIdent = session.tableIdentifier(resolvedName)
-    val encoder = RowEncoder(schema)
-    val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
-      rows.map(encoder.toRow)), schema)
+    val ds = session.createDataFrame(rows, schema)
     val plan = if (putInto) {
       PutIntoTable(
         table = UnresolvedRelation(tableIdent),

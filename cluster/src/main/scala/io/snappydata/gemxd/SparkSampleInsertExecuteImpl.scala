@@ -20,24 +20,22 @@ import java.io.DataOutput
 import java.util
 
 import com.gemstone.gemfire.DataSerializer
-import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
+import com.gemstone.gemfire.internal.ByteArrayDataInput
 import com.gemstone.gemfire.internal.shared.Version
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.distributed.{DVDIOUtil, SnappyResultHolder}
 import com.pivotal.gemfirexd.internal.engine.distributed.execution.LeadNodeExecutionObject
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
+import com.pivotal.gemfirexd.internal.engine.distributed.{DVDIOUtil, SnappyResultHolder}
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row, SnappySession}
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.Logging
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.SamplingRelation
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.util.SnappyUtils
-import org.apache.spark.{Logging, Partition, TaskContext}
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -77,7 +75,6 @@ class SparkSampleInsertExecuteImpl(val baseTable: String,
     val catalog = session.sessionState.catalog
     val baseTableMetadata = catalog.getTableMetadata(ti)
     val schema = baseTableMetadata.schema
-    val encoder = RowEncoder(schema)
    /* val internalRows = rows.map(encoder.toRow(_).copy)
     val localRDD = new RDD[InternalRow](session.sparkContext, Seq.empty) {
       def compute(split: Partition, context: TaskContext): Iterator[InternalRow] =
@@ -87,8 +84,7 @@ class SparkSampleInsertExecuteImpl(val baseTable: String,
       })
     }
     val ds = session.internalCreateDataFrame(localRDD, schema) */
-   val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
-          rows.map(encoder.toRow(_).copy())), schema)
+    val ds = session.createDataFrame(rows, schema)
     SparkSampleInsertExecuteImpl.insertIntoSampletables(ti, ds, catalog)
     // get sample tables tracked in catalog
 

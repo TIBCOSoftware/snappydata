@@ -1219,20 +1219,17 @@ class SnappyParser(session: SnappySession)
 
   protected def putValuesOperation: Rule1[LogicalPlan] = rule {
     capture(PUT ~ INTO) ~ tableIdentifier ~
-        capture(('(' ~ ws ~ (identifier * commaSep) ~ ')' ~ ws ).? ~
-        VALUES ~ ('(' ~ ws ~ (expression * commaSep) ~ ')').* ~ ws) ~>
+        capture(('(' ~ ws ~ (identifier * commaSep) ~ ')' ~ ws).? ~
+        VALUES ~ (('(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws) + commaSep)) ~>
         ((c: String, r: TableIdentifier, identifiers: Any, valueExpr: Any, s: String)
         => {
           val colNames = identifiers.asInstanceOf[Option[Seq[String]]]
           val valueExpr1 = valueExpr.asInstanceOf[Seq[Seq[Expression]]]
           val catalog = session.sessionState.catalog
           val table = catalog.getTableMetadata(r)
-          val tableName = table.identifier.identifier
-          val db = table.database
-          val tableType = CatalogObjectType.getTableType(session.externalCatalog.getTable(
-            db, tableName)).toString
-          if (tableType == CatalogObjectType.Column.toString) {
-            PutIntoValuesColumnTable(db, tableName, colNames, valueExpr1.head)
+          val tableType = CatalogObjectType.getTableType(table)
+          if (tableType == CatalogObjectType.Column) {
+            PutIntoValuesColumnTable(table, colNames, valueExpr1)
           }
           else {
             DMLExternalTable(UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s")

@@ -17,10 +17,9 @@
 package org.apache.spark.sql.execution.columnar
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, UnsafeRow}
-import org.apache.spark.sql.execution.{BinaryExecNode, SparkPlan}
+import org.apache.spark.sql.execution.{BinaryExecNode, ExecutePlan, SparkPlan}
 import org.apache.spark.sql.types.LongType
 
 
@@ -40,14 +39,15 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
   }
 
   override def executeCollect(): Array[InternalRow] = {
-    try {
-      collectResults()
-    } finally {
-      sqlContext.sparkSession.asInstanceOf[SnappySession].clearPutInto()
+    // mark the child plans to skip releasing the locks which is only done by the top-level putInto
+    updatePlan.foreach {
+      case exec: ExecutePlan => exec.clearSession = false
+      case _ =>
     }
-  }
-
-  private def collectResults(): Array[InternalRow] = {
+    insertPlan.foreach {
+      case exec: ExecutePlan => exec.clearSession = false
+      case _ =>
+    }
     // First update the rows which are present in the table
     val u = updatePlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
     // Then insert the rows which are not there in the table

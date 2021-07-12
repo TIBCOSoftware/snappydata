@@ -276,15 +276,15 @@ object Property extends Enumeration {
   val PutIntoInnerJoinCacheSize: SQLValue[String] =
     SQLVal[String](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinResultSize",
       "The putInto inner join would be cached if the result of " +
-          "join with incoming Dataset is of size less " +
-          "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some("100m"))
+          "join with incoming Dataset is of size less than this limit (value is in bytes or " +
+          "k/m/g/t suffixes for unit). Default value is -1 which indicates no limit.", Some("-1"))
 
   val PutIntoInnerJoinLocalCache: SQLValue[Boolean] =
     SQLVal[Boolean](s"${Constant.PROPERTY_PREFIX}cache.putIntoInnerJoinLocalCache",
       "Cache the putInto inner join locally at the driver node. Use only if the " +
-          "size of the putInto data is a few MB. Default is do local caching only if the " +
-          "data being put is a local relation created from a list of Rows and its size " +
-          s"is within the limit specified by ${PutIntoInnerJoinCacheSize.name}.", Some(false))
+          "size of the putInto data and the resulting updates is small. Default is do local " +
+          "caching only if the data being put is a local relation created from a list of Rows " +
+          s"and its size is within the limit specified by ${HashJoinSize.name}.", Some(false))
 
   val TestExplodeComplexDataTypeInSHA: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.explodeStructInSHA",

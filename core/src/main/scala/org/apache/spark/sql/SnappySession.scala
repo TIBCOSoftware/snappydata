@@ -531,10 +531,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       newUpdateSubQuery
     } finally {
       lockOption match {
-        case Some(lock) if newUpdateSubQuery.isDefined =>
+        case Some(lock) =>
           logDebug(s"Adding the lock object $lock to the context")
           addContextObject(SnappySession.PUTINTO_LOCK, lock)
-        case Some(lock) => releaseLock(lock) // release immediately if no UPDATE
         case None => // do nothing
       }
     }
@@ -808,6 +807,15 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         classOf[DefinedByConstructorParams].isAssignableFrom(c))
     val plan = new EncoderPlan[T](data, encoder, isFlat, output, self)
     Dataset[T](self, plan)
+  }
+
+  @DeveloperApi
+  def createDataFrame(rows: Seq[Row], schema: StructType): DataFrame = {
+    Dataset.ofRows(self, LocalRelation.fromExternalRows(schema.toAttributes, rows))
+  }
+
+  def internalCreateDataFrame(catalystRows: Seq[InternalRow], schema: StructType): DataFrame = {
+    Dataset.ofRows(self, LocalRelation(schema.toAttributes, catalystRows))
   }
 
   /**
@@ -1118,9 +1126,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *
    * case class Data(col1: Int, col2: Int, col3: Int)
    * val props = Map.empty[String, String]
-   * val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-   * val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-   * val dataDF = snc.createDataFrame(rdd)
+   * val data = Seq(Data(1, 2, 3), Data(7, 8, 9), Data(9, 2, 3), Data(4, 2, 3), Data(5, 6, 7))
+   * val dataDF = snc.createDataset(data)(Encoders.product)
    * snappyContext.createTable(tableName, "column", dataDF.schema, props)
    *
    * }}}
@@ -1182,9 +1189,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *
    *    case class Data(col1: Int, col2: Int, col3: Int)
    *    val props = Map.empty[String, String]
-   *    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-   *    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-   *    val dataDF = snc.createDataFrame(rdd)
+   *    val data = Seq(Data(1, 2, 3), Data(7, 8, 9), Data(9, 2, 3), Data(4, 2, 3), Data(5, 6, 7))
+   *    val dataDF = snc.createDataset(data)(Encoders.product)
    *    snappyContext.createTable(tableName, "column", dataDF.schema, props)
    *
    * }}}
@@ -1264,9 +1270,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *
    * case class Data(col1: Int, col2: Int, col3: Int)
    *
-   * val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-   * val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-   * val dataDF = snc.createDataFrame(rdd)
+   * val data = Seq(Data(1, 2, 3), Data(7, 8, 9), Data(9, 2, 3), Data(4, 2, 3), Data(5, 6, 7))
+   * val dataDF = snc.createDataset(data)(Encoders.product)
    * dataDF.write.insertInto("jdbcTable")
    *
    * }}}
@@ -1325,9 +1330,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
    *
    * case class Data(col1: Int, col2: Int, col3: Int)
    *
-   * val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-   * val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-   * val dataDF = snc.createDataFrame(rdd)
+   * val data = Seq(Data(1, 2, 3), Data(7, 8, 9), Data(9, 2, 3), Data(4, 2, 3), Data(5, 6, 7))
+   * val dataDF = snc.createDataset(data)(Encoders.product)
    * dataDF.write.insertInto("jdbcTable")
    *
    * }}}
@@ -2401,6 +2405,7 @@ object SnappySession extends Logging {
           case ExecutedCommandExec(c: CreateDataSourceTableAsSelectCommand) =>
             handleCTAS(CatalogObjectType.getTableType(c.table))
           case ExecutedCommandExec(c: SnappyCacheTableCommand) if !c.isLazy => true -> false
+          case ExecutedCommandExec(_: PutIntoValuesColumnTable) => true -> false
           // other commands may have their own withNewExecutionId but still post GUI
           // plans to see the command with proper SQL string in the GUI
           case _: ExecutedCommandExec => true -> true

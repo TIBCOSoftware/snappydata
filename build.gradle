@@ -1382,6 +1382,7 @@ task cleanAll {
   dependsOn getTasksByName('clean', true).collect { it.path }
 }
 task buildAll {
+  dependsOn product, distTar
   dependsOn getTasksByName('assemble', true).collect { it.path }
   dependsOn getTasksByName('product', true).collect { it.path }
   dependsOn getTasksByName('testClasses', true).collect { it.path }

@@ -33,8 +33,8 @@ import org.apache.spark.SparkConf
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.{EliminateSubqueryAliases, UnresolvedRelation}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Contains, EndsWith, EqualTo, Expression, Like, Literal, StartsWith}
-import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, InsertIntoTable, LogicalPlan, OverwriteOptions, Project, UnaryNode, Filter => LogicalFilter}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Cast, Contains, EndsWith, EqualTo, Expression, Like, Literal, StartsWith, TokenLiteral}
+import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, InsertIntoTable, LocalRelation, LogicalPlan, OneRowRelation, OverwriteOptions, Project, UnaryNode, Filter => LogicalFilter}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -557,6 +557,10 @@ trait SQLAltName[T] extends AltName[T] {
   }
 }
 
+/**
+ * This rule checks the schema for insert/update/put/delete and casts the data if required.
+ * It also turns a single row LocalRelation into a set of expressions to allow predicate push-down.
+ */
 private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule[LogicalPlan] {
 
   private def conf: SQLConf = state.conf
@@ -672,6 +676,13 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
     // other cases handled like in PreprocessTableInsertion
     case i@InsertIntoTable(table, _, child, _, _)
       if table.resolved && child.resolved => PreprocessTableInsertion(conf).apply(i)
+
+    case lr: LocalRelation if lr.data.length == 1 =>
+      val row = lr.data.head
+      Project(lr.output.zipWithIndex.map { case (a, i) =>
+        Alias(new TokenLiteral(row.get(i, a.dataType), a.dataType), a.name)(
+          a.exprId, a.qualifier, isGenerated = a.isGenerated)
+      }, OneRowRelation)
   }
 
   /**
