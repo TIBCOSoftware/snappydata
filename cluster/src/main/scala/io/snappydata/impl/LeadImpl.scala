@@ -26,6 +26,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
@@ -50,14 +51,13 @@ import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
+
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.SecurityUtils
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.util.LocalDirectoryCleanupUtil
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
-
-import scala.collection.mutable.ArrayBuffer
 
 class LeadImpl extends ServerImpl with Lead
     with ProtocolOverrides with Logging {
@@ -336,10 +336,8 @@ class LeadImpl extends ServerImpl with Lead
 
       // If recovery mode then initialize the recovery service
       if (Misc.getGemFireCache.isSnappyRecoveryMode) {
-        if (enableTableCountInUI.equalsIgnoreCase("true"))
-          RecoveryService.collectViewsAndPrepareCatalog(true)
-        else
-          RecoveryService.collectViewsAndPrepareCatalog(false)
+        RecoveryService.collectViewsAndPrepareCatalog(
+          enableTableCountInUI.equalsIgnoreCase("true"))
       }
 
       if (jobServerWait) {

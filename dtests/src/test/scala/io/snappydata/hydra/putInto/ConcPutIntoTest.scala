@@ -26,10 +26,12 @@ import scala.concurrent.{Await, Future}
 
 object ConcPutIntoTest {
 
-  def concPutInto(primaryLocatorHost: String, primaryLocatorPort: String, numThreads: Integer): Any = {
+  def concPutInto(primaryLocatorHost: String, primaryLocatorPort: String,
+      numThreads: Integer): Any = {
     val globalId = new AtomicInteger()
     val doPut = () => Future {
-      val conn = DriverManager.getConnection("jdbc:snappydata://" + primaryLocatorHost + ":" + primaryLocatorPort)
+      val conn = DriverManager.getConnection(
+        "jdbc:snappydata://" + primaryLocatorHost + ":" + primaryLocatorPort)
       val stmt = conn.createStatement()
       val myId = globalId.getAndIncrement()
       val blockSize = 100000L
@@ -60,7 +62,8 @@ object ConcPutIntoTest {
     queryTasks.foreach(Await.result(_, Duration.Inf))
   }
 
-  def conSelect(primaryLocatorHost: String, primaryLocatorPort: String, numThreads: Integer): Any = {
+  def conSelect(primaryLocatorHost: String, primaryLocatorPort: String,
+      numThreads: Integer): Any = {
     val globalId = new AtomicInteger()
     val doQuery = () => Future {
       val conn = DriverManager.getConnection("jdbc:snappydata://localhost:1527")
