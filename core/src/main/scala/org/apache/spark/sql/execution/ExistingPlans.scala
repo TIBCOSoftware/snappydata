@@ -287,7 +287,7 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
             .getSparkPlanInfo(this, paramLiterals, paramsId))
         }
         CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
-          queryStr, queryExecStr, planInfo) {
+          queryStr, queryExecStr, planInfo, this, removeBroadcastsFromDriver = true) {
           preAction()
           val rdd = child.execute()
           val shuffleIds = SnappySession.findShuffleDependencies(rdd)

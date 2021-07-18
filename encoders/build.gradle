@@ -46,8 +46,7 @@ dependencies {
     compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
   }
 
-  compile "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}"
-  compile "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
+  compile "it.unimi.dsi:fastutil-core:${fastutilVersion}"
   compile "org.apache.tomcat:tomcat-jdbc:${tomcatJdbcVersion}"
   compile "com.zaxxer:HikariCP:${hikariCPVersion}"
 
@@ -70,7 +69,7 @@ scalaTest {
 }
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
-  classifier = 'javadoc'
+  archiveClassifier.set('javadoc')
   from scaladoc
 }
 

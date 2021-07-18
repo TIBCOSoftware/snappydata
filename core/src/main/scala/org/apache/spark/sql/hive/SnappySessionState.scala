@@ -769,7 +769,7 @@ class SnappySessionState(val snappySession: SnappySession)
             // to minimize exchange
             conf.setExecutionShufflePartitions(region.getTotalNumberOfBuckets)
           }
-          StoreUtils.getPartitionsPartitionedTable(snappySession, pr,
+          StoreUtils.getPartitionsPartitionedTable(pr,
             linkPartitionsToBuckets, preferPrimaries)
         }
       })

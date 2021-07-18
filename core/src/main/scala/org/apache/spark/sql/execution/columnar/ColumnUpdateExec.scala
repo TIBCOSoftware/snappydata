@@ -17,7 +17,7 @@
 
 package org.apache.spark.sql.execution.columnar
 
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
@@ -65,14 +65,15 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     Utils.fieldIndex(schemaAttributes, a.name,
       sqlContext.conf.caseSensitiveAnalysis), hierarchyDepth = 0)).toArray
 
-  @transient private var _tableToUpdateIndex: IntObjectHashMap[Integer] = _
+  @transient private var _tableToUpdateIndex: Int2IntOpenHashMap = _
 
   /**
    * Map from table column (0 based) to index in updateColumns.
    */
-  private def tableToUpdateIndex: IntObjectHashMap[Integer] = {
+  private def tableToUpdateIndex: Int2IntOpenHashMap = {
     if (_tableToUpdateIndex ne null) return _tableToUpdateIndex
-    val m = new IntObjectHashMap[Integer](updateIndexes.length)
+    val m = new Int2IntOpenHashMap(updateIndexes.length)
+    m.defaultReturnValue(-1)
     for (i <- updateIndexes.indices) {
       m.put(ColumnDelta.tableColumnIndex(updateIndexes(i)) - 1, i)
     }
@@ -258,7 +259,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     val (statsSchema, stats) = tableSchema.indices.map { i =>
       val field = tableSchema(i)
       tableToUpdateIndex.get(i) match {
-        case null =>
+        case -1 =>
           // write null for unchanged columns apart from null count field (by this update)
           (ColumnStatsSchema(field.name, field.dataType).schema, allNullsExprs)
         case u => ColumnWriter.genCodeColumnStats(ctx, field,

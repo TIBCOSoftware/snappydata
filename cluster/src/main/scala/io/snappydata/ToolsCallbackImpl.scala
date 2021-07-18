@@ -22,10 +22,9 @@ import java.net.{URI, URLClassLoader}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
+
 import com.gemstone.gemfire.cache.EntryExistsException
-import com.pivotal.gemfirexd.{Attribute, Constants}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
@@ -33,22 +32,20 @@ import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.{ExtendibleURLClassLoader, LeadImpl}
 import io.snappydata.remote.interpreter.SnappyInterpreterExecute
 import io.snappydata.remote.interpreter.SnappyInterpreterExecute.PermissionChecker
+
 import org.apache.spark.executor.SnappyExecutor
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTable
-import org.apache.spark.sql.execution.GrantRevokeOnExternalTable
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.execution.ui.SQLTab
+import org.apache.spark.sql.execution.{GrantRevokeOnExternalTable, SparkPlan}
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
 import org.apache.spark.sql.internal.ContextJarUtils
 import org.apache.spark.ui.{JettyUtils, SnappyDashboardTab}
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkCallbacks, SparkContext, SparkFiles}
-
-import scala.collection.immutable.HashSet
-import scala.collection.mutable.ArrayBuffer
 
 object ToolsCallbackImpl extends ToolsCallback with Logging {
 
@@ -335,5 +332,9 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
 
   override def closeAndClearScalaInterpreter(uniqueId: Long): Unit = {
     SnappyInterpreterExecute.closeRemoteInterpreter(uniqueId)
+  }
+
+  override def clearBroadcasts(plan: SparkPlan, removeFromDriver: Boolean): Unit = {
+    plan.clearBroadcasts(removeFromDriver)
   }
 }

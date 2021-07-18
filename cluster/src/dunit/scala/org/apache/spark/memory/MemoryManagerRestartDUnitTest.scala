@@ -17,10 +17,10 @@
 package org.apache.spark.memory
 
 import java.util.Properties
+import java.util.function.BiConsumer
 
 import io.snappydata.cluster.{ClusterManagerTestBase, ExecutorInitiator}
 import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
-import org.eclipse.collections.api.block.procedure.primitive.ObjectLongProcedure
 
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.SnappyContext
@@ -189,8 +189,8 @@ object MemoryManagerRestartDUnitTest {
     val mMap = memoryManager.memoryForObject
     memoryManager.logStats()
     var sum = 0L
-    mMap.forEachKeyValue(new ObjectLongProcedure[MemoryOwner] {
-      override def value(key: MemoryOwner, value: Long): Unit = {
+    mMap.forEach(new BiConsumer[MemoryOwner, java.lang.Long] {
+      override def accept(key: MemoryOwner, value: java.lang.Long): Unit = {
         if (key.owner.toLowerCase().contains(tableName.toLowerCase())) {
           sum += value
         }

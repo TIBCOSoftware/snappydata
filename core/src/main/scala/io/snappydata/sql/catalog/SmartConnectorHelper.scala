@@ -31,7 +31,7 @@ import com.pivotal.gemfirexd.internal.iapi.types.HarmonySerialBlob
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.thrift.{BucketOwners, CatalogMetadataDetails, CatalogMetadataRequest}
 import io.snappydata.{Constant, Property}
-import org.eclipse.collections.impl.map.mutable.UnifiedMap
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.collection.{SharedUtils, SmartExecutorBucketPartition, Utils}
@@ -210,8 +210,8 @@ object SmartConnectorHelper {
     }
   }
 
-  private def getNetUrl(server: String, preferHost: Boolean, urlPrefix: String,
-      urlSuffix: String, availableNetUrls: UnifiedMap[String, String]): (String, String) = {
+  private def getNetUrl(server: String, preferHost: Boolean, urlPrefix: String, urlSuffix: String,
+      availableNetUrls: Object2ObjectOpenHashMap[String, String]): (String, String) = {
     val hostAddressPort = returnHostPortFromServerString(server)
     val hostName = hostAddressPort._1
     val host = if (preferHost) hostName else hostAddressPort._2
@@ -233,7 +233,7 @@ object SmartConnectorHelper {
       }
       var orphanBuckets: ArrayBuffer[Int] = null
       val allNetUrls = new Array[ArrayBuffer[(String, String)]](numBuckets)
-      val availableNetUrls = new UnifiedMap[String, String](4)
+      val availableNetUrls = new Object2ObjectOpenHashMap[String, String](4)
       for (bucket <- buckets.asScala) {
         val bucketId = bucket.getBucketId
         // use primary so that DMLs are routed optimally
@@ -304,7 +304,7 @@ object SmartConnectorHelper {
     java.util.regex.Pattern.compile("([^,/]*)(/[^,\\[]+)?\\[([\\d]+)\\](\\{[^}]+\\})?")
 
   private def returnHostPortFromServerString(serverStr: String): (String, String, String) = {
-    if (serverStr == null || serverStr.length == 0) {
+    if (serverStr == null || serverStr.isEmpty) {
       return null
     }
     val matcher: java.util.regex.Matcher = addrPattern.matcher(serverStr)

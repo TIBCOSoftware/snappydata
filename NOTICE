@@ -70,9 +70,8 @@ datanucleus-api-jdo-3.2.8.jar			Apache V2:	http://www.apache.org/licenses/LICENS
 datanucleus-core-3.2.15.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 datanucleus-rdbms-3.2.13.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 derby-10.14.2.0.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-eclipse-collections-api-9.2.0.jar		EPL-1.0:	https://www.eclipse.org/legal/epl-v10.html
-eclipse-collections-9.2.0.jar			EPL-1.0:	https://www.eclipse.org/legal/epl-v10.html
 eigenbase-properties-1.1.5.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+fastutil-core-8.5.4.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 flyway-core-3.2.1.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 gemfire-core-1.6.2.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 gemfire-jgroups-1.6.2.1.jar			LGPL2.1:	http://www.opensource.org/licenses/lgpl-2.1.php
@@ -353,7 +352,6 @@ Eclipse Public License 1.0
 The following components are provided under the Eclipse Public License 1.0. See project links for details.
 
      (Eclipse Public License v1.0) Eclipse JDT Core (org.eclipse.jdt:core:3.1.1 - http://www.eclipse.org/jdt/)
-     (Eclipse Public License v1.0) Eclipse Collections (org.eclipse.collections:9.2.0 - https://github.com/eclipse/eclipse-collections/blob/9.2.0/LICENSE-EPL-1.0.txt)
 
 ========================================================================
 Mozilla Public License 1.0

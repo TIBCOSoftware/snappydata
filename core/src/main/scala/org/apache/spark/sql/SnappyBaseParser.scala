@@ -20,9 +20,9 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.xml.bind.DatatypeConverter
 
 import com.gemstone.gemfire.internal.shared.SystemProperties
+import com.pivotal.gemfirexd.internal.shared.common.reference.Limits.{DB2_VARCHAR_MAXWIDTH => VARCHAR_MAXWIDTH}
 import io.snappydata.QueryHint
-import org.eclipse.collections.impl.map.mutable.UnifiedMap
-import org.eclipse.collections.impl.set.mutable.UnifiedSet
+import it.unimi.dsi.fastutil.objects.{Object2ObjectOpenHashMap, ObjectOpenHashSet}
 import org.parboiled2._
 
 import org.apache.spark.sql.catalyst.parser.ParserUtils
@@ -32,7 +32,6 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils.{toLowerCase => lower, toUpperCase => upper}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
-import com.pivotal.gemfirexd.internal.shared.common.reference.Limits.{DB2_VARCHAR_MAXWIDTH => VARCHAR_MAXWIDTH}
 
 /**
  * Base parsing facilities for all SnappyData SQL parsers.
@@ -388,9 +387,9 @@ object SnappyParserConsts {
     CharPredicate('D', 'd', 'F', 'f', 'L', 'l', 'B', 'b', 'S', 's', 'Y', 'y')
   final val plural: CharPredicate = CharPredicate('s', 'S')
 
-  final val reservedKeywords: UnifiedSet[String] = new UnifiedSet[String]
+  final val reservedKeywords: ObjectOpenHashSet[String] = new ObjectOpenHashSet[String]
 
-  final val allKeywords: UnifiedSet[String] = new UnifiedSet[String]
+  final val allKeywords: ObjectOpenHashSet[String] = new ObjectOpenHashSet[String]
 
   final val optimizableLikePattern: java.util.regex.Pattern =
     java.util.regex.Pattern.compile("(%?[^_%]*[^_%\\\\]%?)|([^_%]*[^_%\\\\]%[^_%]*)")
@@ -404,7 +403,7 @@ object SnappyParserConsts {
   // -10 in sequence will mean all arguments, -1 will mean all odd argument and
   // -2 will mean all even arguments. -3 will mean all arguments except those listed after it.
   // Empty argument array means plan caching has to be disabled. Indexes are 0-based.
-  final val FOLDABLE_FUNCTIONS: UnifiedMap[String, Array[Int]] = Utils.toOpenHashMap(Map(
+  final val FOLDABLE_FUNCTIONS: Object2ObjectOpenHashMap[String, Array[Int]] = Utils.compactMap(Map(
     "round" -> Array(1), "bround" -> Array(1), "percentile" -> Array(1), "stack" -> Array(0),
     "ntile" -> Array(0), "str_to_map" -> Array(1, 2), "named_struct" -> Array(-2),
     "reflect" -> Array(0, 1), "java_method" -> Array(0, 1), "xpath" -> Array(1),

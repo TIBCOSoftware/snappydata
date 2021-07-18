@@ -19,8 +19,8 @@ package org.apache.spark.sql.internal
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.Property
-import org.eclipse.collections.api.block.HashingStrategy
-import org.eclipse.collections.impl.set.strategy.mutable.UnifiedSetWithHashingStrategy
+import it.unimi.dsi.fastutil.Hash.Strategy
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, UnresolvedRelation}
@@ -214,22 +214,24 @@ object ColumnTableBulkOps {
     // at the end, hence bindReference will resolve to all its columns if its on the left
     // (and then the condition.eval will obviously be always true)
     val resolvedCondition = BindReferences.bindReference(condition, putAttrs ++ joinOut)
-    val hashingStrategy = new HashingStrategy[InternalRow] {
+    val hashingStrategy = new Strategy[InternalRow] {
 
       private[this] val hashFunction = Murmur3Hash(joinKeys, 42)
       private[this] val joinedRow = new JoinedRow()
 
-      override def computeHashCode(row: InternalRow): Int = {
+      override def hashCode(row: InternalRow): Int = {
         hashFunction.eval(row).asInstanceOf[Int]
       }
 
-      override def equals(joinRow: InternalRow, putRow: InternalRow): Boolean = {
-        checkCondition.eval(joinedRow(putRow, joinRow)) == Boolean.box(true)
+      override def equals(putRow: InternalRow, joinRow: InternalRow): Boolean = {
+        // ObjectOpenCustomHashSet explicitly checks incoming key against null
+        if (joinRow eq null) putRow eq null
+        else checkCondition.eval(joinedRow(putRow, joinRow)) == Boolean.box(true)
       }
     }
-    val map = new UnifiedSetWithHashingStrategy[InternalRow](hashingStrategy,
-      math.min(128, joinData.data.length))
-    joinData.data.foreach(map.put)
+    val map = new ObjectOpenCustomHashSet[InternalRow](
+      math.min(128, joinData.data.length), hashingStrategy)
+    joinData.data.foreach(map.add)
     // use comparison of joinRow to putRow for the anti-join
     // (no rehash is possible so identity comparisons are not required)
     checkCondition = resolvedCondition

@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
+import java.util.function.{Consumer, LongFunction}
+
 import com.gemstone.gemfire.cache.RegionDestroyedException
 import com.gemstone.gemfire.internal.cache.DiskBlockSortManager.DiskBlockSorter
 import com.gemstone.gemfire.internal.cache.DistributedRegion.{DiskEntryPage, DiskPosition}
@@ -24,10 +26,7 @@ import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
 import com.gemstone.gemfire.internal.concurrent.CustomEntryConcurrentHashMap
 import com.google.common.primitives.Ints
 import com.pivotal.gemfirexd.internal.iapi.util.ReuseFactory
-import org.eclipse.collections.api.block.function.primitive.LongToObjectFunction
-import org.eclipse.collections.api.block.procedure.Procedure
-import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
+import it.unimi.dsi.fastutil.longs.{Long2ObjectMap, Long2ObjectOpenHashMap}
 
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.execution.columnar.encoding.BitSet
@@ -81,8 +80,8 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
     } else ReuseFactory.getZeroLenLongArray
   }
 
-  private val newMapCreator = new LongToObjectFunction[LongObjectHashMapWithState[AnyRef]] {
-    override def valueOf(uuid: Long): LongObjectHashMapWithState[AnyRef] =
+  private val newMapCreator = new LongFunction[LongObjectHashMapWithState[AnyRef]] {
+    override def apply(uuid: Long): LongObjectHashMapWithState[AnyRef] =
       new LongObjectHashMapWithState[AnyRef](projection.length *
           // + 2 due to RegionEntry also being put
           (ColumnDelta.USED_MAX_DEPTH + 2) - DELETE_MASK_COL_INDEX)
@@ -202,7 +201,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
        * When all columns provided in the projectionBitSet have been marked as [[inMemoryBatches]]
        * or sent to [[currentDiskSorter]], then the batch is cleared from the map.
        */
-      val activeBatches = new LongObjectHashMap[LongObjectHashMapWithState[AnyRef]](4)
+      val activeBatches = new Long2ObjectOpenHashMap[LongObjectHashMapWithState[AnyRef]](4)
 
       // iterate till next map index since all columns of the same batch
       // are guaranteed to be in the same index
@@ -222,7 +221,7 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
           // note that the map used below uses value==0 to indicate free, so the
           // column indexes have to be 1-based (and negative for deltas/meta-data)
           // and so the same values as that stored in ColumnFormatKey are used
-          val uuidMap = activeBatches.getIfAbsentPutWithKey(key.uuid, newMapCreator)
+          val uuidMap = activeBatches.computeIfAbsent(key.uuid, newMapCreator)
           // set the stats entry in the state
           if (columnIndex == STATROW_COL_INDEX) {
             if (uuidMap.getGlobalState eq null) uuidMap.setGlobalState(entry)
@@ -258,11 +257,11 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
       // while entries that are fully in memory are stored and returned
       if (activeBatches.size() > 0) {
         if (canOverflow) {
-          activeBatches.forEachValue(new Procedure[LongObjectHashMapWithState[AnyRef]] {
-            override def value(map: LongObjectHashMapWithState[AnyRef]): Unit = {
+          activeBatches.values.forEach(new Consumer[LongObjectHashMapWithState[AnyRef]] {
+            override def accept(map: LongObjectHashMapWithState[AnyRef]): Unit = {
               // check if map has overflowed entries
               if (map.getGlobalState eq None) {
-                val statsEntry = map.removeKey((1L << 32) | (STATROW_COL_INDEX & 0xffffffffL))
+                val statsEntry = map.remove((1L << 32) | (STATROW_COL_INDEX & 0xffffffffL))
                 // skip if stats row for the batch is missing from snapshot iterator
                 if (statsEntry eq null) return
                 val diskBatch = new DiskMultiColumnBatch(statsEntry.asInstanceOf[RegionEntry],
@@ -270,11 +269,11 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
                 // collect all the overflowed entries and push those into diskBatch
                 // which will sort them to find the minimum oplog+offset and also
                 // use the same for iteration order for best performance
-                map.forEachKeyValue(new LongObjectProcedure[AnyRef] {
-                  override def value(columnIndex: Long, entry: AnyRef): Unit = {
+                map.long2ObjectEntrySet.fastForEach(new Consumer[Long2ObjectMap.Entry[AnyRef]] {
+                  override def accept(e: Long2ObjectMap.Entry[AnyRef]): Unit = {
                     // skip ColumnValues
-                    if ((columnIndex & 0xffffffff00000000L) != 0L) {
-                      diskBatch.addEntry(diskPosition, entry.asInstanceOf[RegionEntry])
+                    if ((e.getLongKey & 0xffffffff00000000L) != 0L) {
+                      diskBatch.addEntry(diskPosition, e.getValue.asInstanceOf[RegionEntry])
                     }
                   }
                 })
@@ -290,8 +289,8 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
             }
           })
         } else {
-          activeBatches.forEachValue(new Procedure[LongObjectHashMapWithState[AnyRef]] {
-            override def value(map: LongObjectHashMapWithState[AnyRef]): Unit = {
+          activeBatches.values.forEach(new Consumer[LongObjectHashMapWithState[AnyRef]] {
+            override def accept(map: LongObjectHashMapWithState[AnyRef]): Unit = {
               if (map.getGlobalState ne null) inMemoryBatches.add(map)
             }
           })
@@ -397,8 +396,8 @@ private final class DiskMultiColumnBatch(_statsEntry: RegionEntry, _region: Loca
     closing = true
     val entryMap = this.entryMap
     if ((entryMap ne null) && entryMap.size() > 0) {
-      if (GemFireCacheImpl.hasNewOffHeap) entryMap.forEachValue(new Procedure[AnyRef] {
-        override def value(v: AnyRef): Unit = {
+      if (GemFireCacheImpl.hasNewOffHeap) entryMap.values.forEach(new Consumer[AnyRef] {
+        override def accept(v: AnyRef): Unit = {
           v match {
             case s: SerializedDiskBuffer => s.release()
             case _ =>
@@ -411,7 +410,7 @@ private final class DiskMultiColumnBatch(_statsEntry: RegionEntry, _region: Loca
 }
 
 final class LongObjectHashMapWithState[V](expectedSize: Int)
-    extends LongObjectHashMap[V](expectedSize) {
+    extends Long2ObjectOpenHashMap[V](expectedSize) {
 
   private var globalState: AnyRef = _
 

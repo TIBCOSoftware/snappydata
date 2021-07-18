@@ -41,7 +41,7 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.engine.ui._
 import io.snappydata.Constant._
 import io.snappydata.sql.catalog.CatalogObjectType
-import org.eclipse.collections.impl.map.mutable.UnifiedMap
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.collection.Utils
@@ -137,7 +137,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
       val itr = memStats.iterator()
 
-      val members = new UnifiedMap[String, MemberStatistics](8)
+      val members = new Object2ObjectOpenHashMap[String, MemberStatistics](8)
       while (itr.hasNext) {
         val o = itr.next().asInstanceOf[ListResultCollectorValue]
         val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]

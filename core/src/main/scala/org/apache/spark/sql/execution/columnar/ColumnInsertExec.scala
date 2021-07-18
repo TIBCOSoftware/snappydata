@@ -20,7 +20,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.{Constant, Property}
-import org.eclipse.collections.impl.set.mutable.UnifiedSet
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet
 
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
@@ -850,7 +850,7 @@ object ColumnWriter {
    * Supported types for which column statistics are maintained and can be used
    * for statistics checks. Excludes DecimalType that should be checked explicitly.
    */
-  val SUPPORTED_STATS_TYPES = new UnifiedSet[DataType](java.util.Arrays.asList(Array(
+  val SUPPORTED_STATS_TYPES = new ObjectOpenHashSet[DataType](java.util.Arrays.asList(Array(
     BooleanType, ByteType, ShortType, IntegerType, LongType, DateType, TimestampType,
     StringType, FloatType, DoubleType): _*))
 

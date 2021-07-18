@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution.columnar
 
 import java.nio.{ByteBuffer, ByteOrder}
 import java.sql.{Connection, ResultSet, Statement}
+import java.util.function.Consumer
 
 import scala.util.control.NonFatal
 
@@ -26,8 +27,7 @@ import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.thrift.common.BufferedBlob
-import org.eclipse.collections.api.block.procedure.Procedure
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
 import org.apache.spark.memory.MemoryManagerCallback.releaseExecutionMemory
 import org.apache.spark.sql.execution.BucketsBasedIterator
@@ -121,7 +121,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   // upto three deltas for each column and a deleted mask
   private val totalColumns = (projection.length * (ColumnDelta.MAX_DEPTH + 1)) + 1
   private val allocator = GemFireCacheImpl.getCurrentBufferAllocator
-  private var colBuffers: IntObjectHashMap[ByteBuffer] = _
+  private var colBuffers: Int2ObjectOpenHashMap[ByteBuffer] = _
   private var currentStats: ByteBuffer = _
   private var currentDeltaStats: ByteBuffer = _
   private var rsHasNext: Boolean = rs.next()
@@ -201,8 +201,8 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     val buffers = colBuffers
     // not null check in case constructor itself fails due to low memory
     if ((buffers ne null) && buffers.size() > 0) {
-      buffers.forEachValue(new Procedure[ByteBuffer] {
-        override def value(buffer: ByteBuffer): Unit = {
+      buffers.values.forEach(new Consumer[ByteBuffer] {
+        override def accept(buffer: ByteBuffer): Unit = {
           // release previous set of buffers immediately
           if (buffer ne null) {
             // release from accounting if decompressed buffer
@@ -239,7 +239,7 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     if (rsHasNext) {
       currentUUID = rs.getLong(1)
       // create a new map instead of clearing old one to help young gen GC
-      colBuffers = new IntObjectHashMap[ByteBuffer](totalColumns + 1)
+      colBuffers = new Int2ObjectOpenHashMap[ByteBuffer](totalColumns + 1)
       // keep reading next till its still part of current column batch; if UUID changes
       // then next call to "moveNext" will read from incremented cursor position
       // else all rows may have been read which is indicated by "rsHasNext"

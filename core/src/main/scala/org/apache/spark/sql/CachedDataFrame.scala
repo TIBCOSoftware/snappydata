@@ -45,7 +45,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment
 import org.apache.spark.sql.catalyst.expressions.{ParamLiteral, UnsafeProjection, UnsafeRow}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
@@ -295,7 +295,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       didPrepare = prepareForCollect()
       val (result, elapsedMillis) = CachedDataFrame.withNewExecutionId(snappySession,
         queryShortString, queryString, currentQueryExecutionString, currentQueryPlanInfo,
-        currentExecutionId, planStartTime, planEndTime)(body)
+        queryExecution.executedPlan, currentExecutionId, planEndTime)(body)
       (result, elapsedMillis * 1000000L)
     } finally {
       if (isCached) {
@@ -630,10 +630,13 @@ object CachedDataFrame
    *
    * Custom method to allow passing in cached SparkPlanInfo and queryExecution string.
    */
+  // scalastyle:off
   def withNewExecutionId[T](snappySession: SnappySession, queryShortForm: String,
       queryLongForm: String, queryExecutionStr: String, queryPlanInfo: SparkPlanInfo,
-      currentExecutionId: Long = -1L, planStartTime: Long = -1L, planEndTime: Long = -1L,
-      postGUIPlans: Boolean = true)(body: => T): (T, Long) = {
+      plan: SparkPlan, currentExecutionId: Long = -1L,
+      planEndTime: Long = -1L, postGUIPlans: Boolean = true,
+      removeBroadcastsFromDriver: Boolean = false)(body: => T): (T, Long) = {
+    // scalastyle:on
     val sc = snappySession.sparkContext
     val localProperties = sc.getLocalProperties
     val oldExecutionId = localProperties.getProperty(SQLExecution.EXECUTION_ID_KEY)
@@ -666,7 +669,12 @@ object CachedDataFrame
             endTime -= (startTime - planEndTime)
           }
           // add the time of plan execution to the end time.
-          if (postGUIPlans) sc.listenerBus.post(SparkListenerSQLExecutionEnd(executionId, endTime))
+          if (postGUIPlans) {
+            sc.listenerBus.post(SparkListenerSQLExecutionEnd(executionId, endTime))
+            if ((plan ne null) && (ToolsCallbackInit.toolsCallback ne null)) {
+              ToolsCallbackInit.toolsCallback.clearBroadcasts(plan, removeBroadcastsFromDriver)
+            }
+          }
         } finally {
           SnappySession.clearExecutionProperties(localProperties)
         }

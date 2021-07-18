@@ -425,7 +425,8 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
         val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(cachedPlan)
         Row(CachedDataFrame.withCallback(session, df = null, cachedExecution, "cache")(_ =>
           CachedDataFrame.withNewExecutionId(session, queryShortString, queryString,
-            cachedPlanStr, planInfo)({
+            cachedPlanStr, planInfo, if (cachedExecution ne null) cachedPlan else null,
+            removeBroadcastsFromDriver = true)({
             val start = System.nanoTime()
             // Dummy op to materialize the cache. This does the minimal job of count on
             // the actual cached data (RDD[CachedBatch]) to force materialization of cache

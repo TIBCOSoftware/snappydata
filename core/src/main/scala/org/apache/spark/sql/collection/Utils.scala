@@ -37,8 +37,8 @@ import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import io.snappydata.{Constant, ToolsCallback}
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 import org.apache.commons.math3.distribution.NormalDistribution
-import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark._
 import org.apache.spark.executor.InputMetrics
@@ -639,8 +639,8 @@ object Utils extends Logging {
     override def get(key: A): Option[B] = map.get(key)
   }
 
-  def toOpenHashMap[K, V](map: scala.collection.Map[K, V]): UnifiedMap[K, V] = {
-    val m = new UnifiedMap[K, V](map.size)
+  def compactMap[K, V](map: scala.collection.Map[K, V]): Object2ObjectOpenHashMap[K, V] = {
+    val m = new Object2ObjectOpenHashMap[K, V](map.size)
     map.foreach(p => m.put(p._1, p._2))
     m
   }

@@ -19,12 +19,13 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import com.gemstone.gemfire.internal.shared.ClientResolverUtils
-
 import scala.collection.JavaConverters._
+
+import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 import com.pivotal.gemfirexd.Attribute
 import io.snappydata.{Constant, SnappyTableStatsProviderService}
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap
+
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -111,11 +112,11 @@ abstract case class JDBCAppendableRelation(
   def scanTable(tableName: String, requiredColumns: Array[String],
       filters: Array[Expression], prunePartitions: () => Int): (RDD[Any], Array[Int]) = {
 
-    val fieldNames = new ObjectLongHashMap[String](schema.length)
+    val fieldNames = new Object2LongOpenHashMap[String](schema.length)
     (0 until schema.length).foreach(i =>
       fieldNames.put(Utils.toLowerCase(schema(i).name), i + 1))
     val projection = requiredColumns.map { c =>
-      val index = fieldNames.get(Utils.toLowerCase(c))
+      val index = fieldNames.getLong(Utils.toLowerCase(c))
       if (index == 0) Utils.analysisException(s"Column $c does not exist in $tableName")
       index.toInt
     }
@@ -198,12 +199,11 @@ abstract case class JDBCAppendableRelation(
 
   override def equals(that: Any): Boolean = {
     that match {
-      case r: JDBCAppendableRelation => {
+      case r: JDBCAppendableRelation =>
         (this eq r) || (
           hashCode() == r.hashCode()
             && r.schemaName.equalsIgnoreCase(schemaName)
             && r.tableName.equalsIgnoreCase(tableName))
-      }
       case _ => false
     }
   }

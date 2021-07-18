@@ -25,7 +25,7 @@ import scala.collection.mutable
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
-import org.eclipse.collections.impl.map.mutable.UnifiedMap
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 import org.json4s.JsonAST.JField
 
 import org.apache.spark.memory.{MemoryMode, TaskMemoryManager}
@@ -248,7 +248,7 @@ case class ParamLiteral(var value: Any, var dataType: DataType,
     @transient private[sql] var valueEquals: Boolean = false)
     extends TokenizedLiteral with KryoSerializable {
 
-  override def nullable: Boolean = dataType eq NullType
+  override def nullable: Boolean = dataType.isInstanceOf[NullType]
 
   override def eval(input: InternalRow): Any = value
 
@@ -428,7 +428,7 @@ trait ParamLiteralHolder {
   @transient
   private final val parameterizedConstants = new mutable.ArrayBuffer[ParamLiteral](4)
   @transient
-  private final var paramConstantMap: UnifiedMap[(DataType, Any), ParamLiteral] = _
+  private final var paramConstantMap: Object2ObjectOpenHashMap[(DataType, Any), ParamLiteral] = _
   @transient
   protected final var paramListId = 0
 
@@ -446,7 +446,7 @@ trait ParamLiteralHolder {
     if (numConstants >= 4) {
       if (paramConstantMap eq null) {
         // populate the map while checking for a match
-        paramConstantMap = UnifiedMap.newMap(8)
+        paramConstantMap = new Object2ObjectOpenHashMap(8)
         var i = 0
         var existing: Option[ParamLiteral] = None
         while (i < numConstants) {

@@ -24,6 +24,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql.{Dataset, Row, SnappySession}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTable
+import org.apache.spark.sql.execution.SparkPlan
 
 trait ToolsCallback {
 
@@ -98,4 +99,6 @@ trait ToolsCallback {
     snappySession: SnappySession, options: Map[String, String]): Dataset[Row]
 
   def closeAndClearScalaInterpreter(uniqueId: Long): Unit
+
+  def clearBroadcasts(plan: SparkPlan, removeFromDriver: Boolean): Unit
 }

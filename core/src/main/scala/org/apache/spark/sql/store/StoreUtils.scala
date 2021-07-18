@@ -26,7 +26,7 @@ import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, Partitione
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.sql.catalog.SnappyExternalCatalog
-import org.eclipse.collections.impl.map.mutable.UnifiedMap
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 
 import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Attribute, SortOrder}
@@ -102,8 +102,6 @@ object StoreUtils {
 
   val ROWID_COLUMN_NAME = "SNAPPYDATA_INTERNAL_ROWID"
 
-  val ROWID_COLUMN_FIELD = StructField("SNAPPYDATA_INTERNAL_ROWID", LongType, nullable = false)
-
   val ROWID_COLUMN_DEFINITION = s"$ROWID_COLUMN_NAME bigint generated always as identity"
 
   val PRIMARY_KEY_PATTERN: Pattern = Pattern.compile("\\WPRIMARY\\s+KEY\\W",
@@ -178,13 +176,13 @@ object StoreUtils {
     distMembers.asScala
   }
 
-  private[sql] def getPartitionsPartitionedTable(session: SnappySession,
+  private[sql] def getPartitionsPartitionedTable(
       region: PartitionedRegion, linkBucketsToPartitions: Boolean,
       preferPrimaries: Boolean): Array[Partition] = {
 
     val callbacks = ToolsCallbackInit.toolsCallback
     if (!linkBucketsToPartitions && callbacks != null && !TEST_RANDOM_BUCKETID_ASSIGNMENT) {
-      allocateBucketsToPartitions(session, region, preferPrimaries)
+      allocateBucketsToPartitions(region, preferPrimaries)
     } else {
       val numPartitions = region.getTotalNumberOfBuckets
 
@@ -218,11 +216,11 @@ object StoreUtils {
     partitions
   }
 
-  private def allocateBucketsToPartitions(session: SnappySession,
+  private def allocateBucketsToPartitions(
       region: PartitionedRegion, preferPrimaries: Boolean): Array[Partition] = {
 
     val numTotalBuckets = region.getTotalNumberOfBuckets
-    val serverToBuckets = new UnifiedMap[InternalDistributedMember,
+    val serverToBuckets = new Object2ObjectOpenHashMap[InternalDistributedMember,
         (Option[BlockAndExecutorId], mutable.ArrayBuffer[Int])](4)
     val adviser = region.getRegionAdvisor
     for (p <- 0 until numTotalBuckets) {

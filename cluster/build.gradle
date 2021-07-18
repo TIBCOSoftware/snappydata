@@ -177,7 +177,7 @@ dependencies {
   compile(group:'com.google.cloud.bigdataoss', name:'gcs-connector', version: gcsHadoop3ConnectorVersion, classifier: 'shaded')
 
   testCompile project(':dunit')
-  testCompile "it.unimi.dsi:fastutil:${fastutilVersion}"
+  testCompile "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
   testRuntime project(':snappy-aqp_' + scalaBinaryVersion)

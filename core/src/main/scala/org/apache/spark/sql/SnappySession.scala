@@ -43,7 +43,7 @@ import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatId
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
-import org.eclipse.collections.impl.map.mutable.UnifiedMap
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
@@ -505,7 +505,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         val execution = sessionState.executePlan(updateSubQuery)
         val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(execution.executedPlan)
         val data = CachedDataFrame.withNewExecutionId(self, commandString, commandString,
-          execution.toString(), planInfo) {
+          execution.toString(), planInfo, execution.executedPlan,
+          removeBroadcastsFromDriver = true) {
           execution.executedPlan.executeCollect()
         }._1
         if (data.length != 0) {
@@ -2352,8 +2353,7 @@ object SnappySession extends Logging {
       val postQueryPlanInfo = PartitionedPhysicalScan.updatePlanInfo(queryPlanInfo,
         paramLiterals, paramsId)
       context.listenerBus.post(SparkListenerSQLPlanExecutionStart(
-        executionId, CachedDataFrame.queryStringShortForm(sqlText),
-        sqlText, postQueryExecutionStr, postQueryPlanInfo, start))
+        executionId, sqlShortText, sqlText, postQueryExecutionStr, postQueryPlanInfo, start))
       val rdd = f
       success = true
       (rdd, queryExecutionStr, queryPlanInfo, postQueryExecutionStr, postQueryPlanInfo,
@@ -2367,6 +2367,9 @@ object SnappySession extends Logging {
         // post the end of SQL since body of `f` failed
         context.listenerBus.post(SparkListenerSQLExecutionEnd(
           executionId, System.currentTimeMillis()))
+        if (ToolsCallbackInit.toolsCallback ne null) {
+          ToolsCallbackInit.toolsCallback.clearBroadcasts(qe.executedPlan, removeFromDriver = true)
+        }
       }
     }
   }
@@ -2424,7 +2427,7 @@ object SnappySession extends Logging {
 
         // post final execution immediately (collect for these plans will post nothing)
         CachedDataFrame.withNewExecutionId(session, sqlShortText, sqlText, executionStr, planInfo,
-          postGUIPlans = postGUIPlans) {
+          executedPlan, postGUIPlans = postGUIPlans, removeBroadcastsFromDriver = true) {
           // create new LogicalRDD plan so that plan does not get re-executed
           // (e.g. just toRdd is not enough since further operators like show will pass
           //   around the LogicalPlan and not the executedPlan; it works for plans using
@@ -2481,7 +2484,7 @@ object SnappySession extends Logging {
       val numHints = session.queryHints.size()
       val hints = if (numHints == 0) java.util.Collections.emptyMap[String, String]()
       else {
-        val m = new UnifiedMap[String, String](numHints)
+        val m = new Object2ObjectOpenHashMap[String, String](numHints)
         m.putAll(session.queryHints)
         m
       }
@@ -2562,6 +2565,7 @@ object SnappySession extends Logging {
     CacheBuilder.newBuilder().maximumSize(cacheSize).build[CachedKey, CachedDataFrame]()
   }
 
+  // noinspection UnstableApiUsage
   def getPlanCache: Cache[CachedKey, CachedDataFrame] = planCache
 
   def sqlPlan(session: SnappySession, sqlText: String): CachedDataFrame = {

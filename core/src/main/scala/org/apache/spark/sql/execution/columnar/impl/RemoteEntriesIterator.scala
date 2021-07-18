@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.util.Comparator
-import java.util.function.Predicate
+import java.util.function.{Consumer, Predicate}
 
 import scala.collection.AbstractIterator
 import scala.collection.JavaConverters._
@@ -28,8 +28,7 @@ import com.gemstone.gemfire.internal.cache.{NonLocalRegionEntry, PartitionedRegi
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.message.GetAllExecutorMessage
 import com.pivotal.gemfirexd.internal.engine.sql.execute.GemFireResultSet
-import org.eclipse.collections.api.block.procedure.Procedure
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry._
@@ -160,7 +159,7 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
   private var currentStatsKey: ColumnFormatKey = _
   private var currentStatsValue: AnyRef = _
   private var currentDeltaStats: AnyRef = _
-  private val currentValueMap = new IntObjectHashMap[AnyRef](8)
+  private val currentValueMap = new Int2ObjectOpenHashMap[AnyRef](8)
 
   private def fetchUsingGetAll(keys: Array[AnyRef]): Seq[(AnyRef, AnyRef)] = {
     val msg = new GetAllExecutorMessage(pr, keys, null, null, null, null,
@@ -179,8 +178,8 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
 
   private def releaseValues(): Unit = {
     if (!currentValueMap.isEmpty) {
-      currentValueMap.forEachValue(new Procedure[AnyRef] {
-        override def value(v: AnyRef): Unit = {
+      currentValueMap.values.forEach(new Consumer[AnyRef] {
+        override def accept(v: AnyRef): Unit = {
           releaseBuffer(v)
         }
       })

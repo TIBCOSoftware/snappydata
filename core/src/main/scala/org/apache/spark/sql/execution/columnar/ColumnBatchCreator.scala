@@ -22,7 +22,7 @@ import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, PartitionedRe
 import com.pivotal.gemfirexd.internal.engine.access.heap.MemHeapScanController
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
-import org.eclipse.collections.impl.set.mutable.UnifiedSet
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -45,7 +45,7 @@ final class ColumnBatchCreator(
 
   def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
       batchID: Long, bucketID: Int,
-      dependents: Seq[ExternalTableMetaData]): UnifiedSet[AnyRef] = {
+      dependents: Seq[ExternalTableMetaData]): ObjectOpenHashSet[AnyRef] = {
     var connectedExternalStore: ConnectedExternalStore = null
     var success: Boolean = false
     try {
@@ -60,7 +60,7 @@ final class ColumnBatchCreator(
       }
       val memHeapScanController = sc.asInstanceOf[MemHeapScanController]
       memHeapScanController.setAddRegionAndKey()
-      val keySet = new UnifiedSet[AnyRef]
+      val keySet = new ObjectOpenHashSet[AnyRef]
       // noinspection TypeAnnotation
       val execRows = new AbstractIterator[AbstractCompactExecRow] {
 
