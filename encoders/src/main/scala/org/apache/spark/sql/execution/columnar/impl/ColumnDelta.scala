@@ -22,16 +22,20 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.cache.{EntryEvent, EntryNotFoundException, Region}
 import com.gemstone.gemfire.internal.cache.delta.Delta
 import com.gemstone.gemfire.internal.cache.versions.{VersionSource, VersionTag}
-import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl, GemFireCacheImpl}
+import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl, GemFireCacheImpl, PartitionedRegion}
+import com.gemstone.gemfire.internal.concurrent.QueryKeyedObjectPool
 import com.gemstone.gemfire.internal.shared.FetchRequest
-import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
+import com.pivotal.gemfirexd.internal.engine.{GfxdSerializable, Misc}
+import org.apache.commons.pool2.impl.DefaultPooledObject
+import org.apache.commons.pool2.{BaseKeyedPooledObjectFactory, PooledObject}
 
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, BoundReference, GenericInternalRow, UnsafeProjection}
+import org.apache.spark.sql.catalyst.expressions.codegen.GenerateUnsafeProjection
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, BoundReference, Expression, GenericInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.util.TypeUtils
 import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding, ColumnStatsSchema}
-import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
+import org.apache.spark.sql.types.{DataType, IntegerType, LongType, StructField, StructType}
 
 /**
  * Encapsulates a delta for update to be applied to column table and also
@@ -97,7 +101,11 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
         if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX) {
           // ignore if either of the buffers is empty (old placeholder of 4 bytes
           // while UnsafeRow based data can never be less than 8 bytes)
-          if (existingBuffer.limit() <= 4 || newBuffer.limit() <= 4) {
+          if (!existingBuffer.hasRemaining) {
+            // entry has been removed from the region
+            SharedUtils.logWarning(s"Statistics entry for $key to apply ColumnDelta removed!")
+            null
+          } else if (existingBuffer.limit() <= 4 || newBuffer.limit() <= 4) {
             // returned value should be the original and not oldColValue which may be a temp copy
             oldValue
           } else {
@@ -112,7 +120,13 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
         } else if (columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
           // ignore delta stats row puts from old smart connector
           oldValue
+        } else if (!existingBuffer.hasRemaining) {
+          // entry has been removed from the region
+          SharedUtils.logWarning(s"Entry for $key to apply ColumnDelta removed!")
+          null
         } else {
+          // currently only delta to delta merges are supported
+          assert(columnIndex < ColumnFormatEntry.DELETE_MASK_COL_INDEX)
           val tableColumnIndex = ColumnDelta.tableColumnIndex(columnIndex) - 1
           val encoder = new ColumnDeltaEncoder(ColumnDelta.deltaHierarchyDepth(columnIndex))
           new ColumnFormatValue(encoder.merge(newBuffer, existingBuffer,
@@ -216,9 +230,13 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
     }
     if (!hasChange) return null // indicates caller to return old column value
     // generate InternalRow to UnsafeRow projection
-    val projection = UnsafeProjection.create(statsExprs)
-    val statsRow = projection.apply(new GenericInternalRow(values))
-    SharedUtils.createStatsBuffer(statsRow.getBytes, GemFireCacheImpl.getCurrentBufferAllocator)
+    val projection = ColumnDelta.unsafeProjectionPool.borrowObject(statsExprs)
+    try {
+      val statsRow = projection.apply(new GenericInternalRow(values))
+      SharedUtils.createStatsBuffer(statsRow.getBytes, GemFireCacheImpl.getCurrentBufferAllocator)
+    } finally {
+      ColumnDelta.unsafeProjectionPool.returnObject(statsExprs, projection)
+    }
   }
 
   /** first delta update for a column will be put as is into the region */
@@ -241,7 +259,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
   override protected def className: String = "ColumnDelta"
 }
 
-object ColumnDelta {
+object ColumnDelta extends Enumeration {
 
   /**
    * The initial size of delta column (the smallest delta in the hierarchy).
@@ -252,6 +270,8 @@ object ColumnDelta {
    * The maximum depth of the hierarchy of deltas for column starting with
    * smallest delta, which is merged with larger delta, then larger, ...
    * till the full column value.
+   *
+   * As of now only one-level of depth is used and deltas always merged immediately.
    */
   val MAX_DEPTH = 3
 
@@ -262,22 +282,60 @@ object ColumnDelta {
   val USED_MAX_DEPTH = 2
 
   val mutableKeyNamePrefix = "snappydata_internal_column_"
+
   /**
-   * These are the virtual columns that are injected in the select plan for
+   * Extension to standard enumeration value to hold the StructField.
+   * Also exposes the name as "name" field rather than having to use toString.
+   */
+  final class MutableColumn(i: Int, val name: String, dataType: DataType, nullable: Boolean)
+      extends ColumnDelta.Val(i, name) {
+    val field: StructField = StructField(name, dataType, nullable)
+  }
+
+  type Type = MutableColumn
+
+  private def Value(i: Int, name: String, dataType: DataType,
+      nullable: Boolean = false): MutableColumn = new MutableColumn(i, name, dataType, nullable)
+  /**
+   * These enumeration values are the virtual columns that are injected in the select plan for
    * update/delete so that those operations can actually apply the changes.
    */
-  val mutableKeyNames: Seq[String] = Seq(
-    mutableKeyNamePrefix + "row_ordinal",
-    mutableKeyNamePrefix + "batch_id",
-    mutableKeyNamePrefix + "bucket_ordinal",
-    mutableKeyNamePrefix + "batch_numrows"
-  )
-  val mutableKeyFields: Seq[StructField] = Seq(
-    StructField(mutableKeyNames.head, LongType, nullable = false),
-    StructField(mutableKeyNames(1), LongType, nullable = false),
-    StructField(mutableKeyNames(2), IntegerType, nullable = false),
-    StructField(mutableKeyNames(3), IntegerType, nullable = false)
-  )
+  val RowOrdinal: Type = Value(0, mutableKeyNamePrefix + "row_ordinal", LongType)
+  val BatchId: Type = Value(1, mutableKeyNamePrefix + "batch_id", LongType)
+  val BucketId: Type = Value(2, mutableKeyNamePrefix + "bucket_ordinal", IntegerType)
+  val BatchNumRows: Type = Value(3, mutableKeyNamePrefix + "batch_numrows", IntegerType)
+
+  private[this] val mutableKeyList: IndexedSeq[Type] =
+    this.values.toIndexedSeq.sortBy(_.id).asInstanceOf[IndexedSeq[Type]]
+
+  val mutableKeyMap: Map[String, Type] = mutableKeyList.map(v => v.toString -> v).toMap
+  val mutableKeyNames: IndexedSeq[String] = mutableKeyList.map(_.name)
+  val mutableKeyFields: IndexedSeq[StructField] = mutableKeyList.map(_.field)
+
+  private lazy val unsafeProjectionPool = {
+    val keyPooledFactory = new BaseKeyedPooledObjectFactory[Seq[Expression], UnsafeProjection] {
+      override def create(exprs: Seq[Expression]): UnsafeProjection = {
+        val start = System.nanoTime()
+        val result = GenerateUnsafeProjection.generate(exprs)
+        val elapsed = (System.nanoTime() - start).toDouble / 1000000.0
+        SharedUtils.logDebug(s"ColumnDelta: UnsafeProjection code generated in $elapsed ms")
+        result
+      }
+
+      override def wrap(value: UnsafeProjection): PooledObject[UnsafeProjection] =
+        new DefaultPooledObject[UnsafeProjection](value)
+    }
+    val pool = new QueryKeyedObjectPool[Seq[Expression], UnsafeProjection](keyPooledFactory,
+      Misc.getGemFireCache.getCancelCriterion)
+    // basic configuration for the pool including max per-key limits, idle time etc
+    val maxPerKey = math.max(8, Runtime.getRuntime.availableProcessors() * 2)
+    pool.setMaxTotalPerKey(maxPerKey)
+    pool.setMaxIdlePerKey(maxPerKey)
+    pool.setMaxTotal(1000)
+    pool.setTimeBetweenEvictionRunsMillis(60000L)
+    pool.setMinEvictableIdleTimeMillis(10L * 60000L) // 10 minutes
+    pool
+  }
 
   def mutableKeyAttributes: Seq[AttributeReference] = StructType(mutableKeyFields).toAttributes
 
@@ -316,24 +374,23 @@ object ColumnDelta {
    * Delete entire batch from column store for the batchId and partitionId
    * matching those of given key.
    */
-  private[columnar] def deleteBatch(key: ColumnFormatKey, columnRegion: Region[_, _],
-      columnTableName: String): Unit = {
+  private[columnar] def deleteBatch(key: ColumnFormatKey, columnRegion: PartitionedRegion,
+      numTableColumns: Int): Unit = {
 
     // delete all the rows with matching batchId
     def destroyKey(key: ColumnFormatKey): Unit = {
       try {
-        columnRegion.destroy(key)
+        columnRegion.destroy(key, null)
       } catch {
         case _: EntryNotFoundException => // ignore
       }
     }
 
-    val numColumns = key.getNumColumnsInTable(columnTableName)
     // delete the stats rows first
-    destroyKey(key.withColumnIndex(ColumnFormatEntry.STATROW_COL_INDEX))
+    destroyKey(key.toStatsRowKey)
     destroyKey(key.withColumnIndex(ColumnFormatEntry.DELTA_STATROW_COL_INDEX))
     // column values and deltas next
-    for (columnIndex <- 1 to numColumns) {
+    for (columnIndex <- 1 to numTableColumns) {
       destroyKey(key.withColumnIndex(columnIndex))
       for (depth <- 0 until MAX_DEPTH) {
         destroyKey(key.withColumnIndex(deltaColumnIndex(

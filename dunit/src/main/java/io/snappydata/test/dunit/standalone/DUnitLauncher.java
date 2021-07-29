@@ -113,6 +113,8 @@ public class DUnitLauncher {
       "securityLogLevel", "config");
   public static final String WORKSPACE_DIR_PARAM = "WORKSPACE_DIR";
   public static final boolean LOCATOR_LOG_TO_DISK = Boolean.getBoolean("locatorLogToDisk");
+  static final String CHILD_HEAPSIZE = System.getProperty(
+      "gemfire.DUnitLauncher.CHILD_HEAPSIZE", "1g");
 
   static final String MASTER_PARAM = "DUNIT_MASTER";
   static final String RMI_PORT_PARAM = "gemfire.DUnitLauncher.RMI_PORT";

@@ -45,6 +45,7 @@ import org.apache.log4j.{Level, LogManager}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogStorageFormat, CatalogTable}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.DataSource
@@ -297,7 +298,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
             // exclude policies also from the list of hive tables
             val metaData = new ExternalTableMetaData(table.identifier.table,
               table.database, tableType.toString, null, -1,
-              -1, null, null, null, null,
+              -1, null, Utils.EMPTY_STRING_ARRAY, null, null, null,
               tblDataSourcePath, driverClass, hasDependentSampleTables)
             metaData.provider = table.provider match {
               case None => ""
@@ -419,6 +420,10 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
               if (CatalogObjectType.isColumnTable(tableType)) Constant.DEFAULT_CODEC else "NA"
             case Some(c) => c
           }
+          val partitioningColumns = parameters.get(ExternalStoreUtils.PARTITION_BY) match {
+            case None => Utils.EMPTY_STRING_ARRAY
+            case Some(c) => c.split(',').map(_.trim)
+          }
           val tblDataSourcePath = getDataSourcePath(parameters, table.storage)
           val driverClass = parameters.get("driver") match {
             case None => ""
@@ -426,9 +431,9 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           }
           new ExternalTableMetaData(qualifiedName, schema, tableType.toString,
             ExternalStoreUtils.getExternalStoreOnExecutor(parameters, partitions, qualifiedName,
-              schema), columnBatchSize, columnMaxDeltaRows, compressionCodec, baseTable, dmls,
-            dependentRelations, tblDataSourcePath, driverClass, hasSampleTableAsDependents).
-            asInstanceOf[R]
+              schema), columnBatchSize, columnMaxDeltaRows, compressionCodec, partitioningColumns,
+            baseTable, dmls, dependentRelations, tblDataSourcePath, driverClass,
+            hasSampleTableAsDependents).asInstanceOf[R]
       }
 
       case GET_METADATA =>

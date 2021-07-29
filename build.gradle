@@ -130,7 +130,7 @@ allprojects {
     metrics2Version = '2.2.0'
     janinoVersion = '3.0.8'
     derbyVersion = '10.14.2.0'
-    parboiledVersion = '2.1.5'
+    parboiledVersion = '2.1.8'
     tomcatJdbcVersion = '8.5.37'
     hikariCPVersion = '2.7.9'
     twitter4jVersion = '4.0.7'
@@ -506,8 +506,8 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea',
                '-Dspark.sql.codegen.cacheSize=1000',
-               '-Dspark.ui.retainedStages=500',
-               '-Dspark.ui.retainedJobs=500',
+               '-Dspark.ui.retainedStages=1000',
+               '-Dspark.ui.retainedJobs=1000',
                '-Dspark.sql.ui.retainedExecutions=500',
                '-Dio.netty.allocator.pageSize=8192',
                '-Dio.netty.allocator.maxOrder=10',
@@ -592,8 +592,8 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea',
                '-Dspark.sql.codegen.cacheSize=1000',
-               '-Dspark.ui.retainedStages=500',
-               '-Dspark.ui.retainedJobs=500',
+               '-Dspark.ui.retainedStages=1000',
+               '-Dspark.ui.retainedJobs=1000',
                '-Dspark.sql.ui.retainedExecutions=500',
                '-Dio.netty.allocator.pageSize=8192',
                '-Dio.netty.allocator.maxOrder=10',
@@ -685,8 +685,8 @@ subprojects {
                '-XX:CMSInitiatingOccupancyFraction=50',
                '-XX:+CMSClassUnloadingEnabled', '-ea',
                '-Dspark.sql.codegen.cacheSize=1000',
-               '-Dspark.ui.retainedStages=500',
-               '-Dspark.ui.retainedJobs=500',
+               '-Dspark.ui.retainedStages=1000',
+               '-Dspark.ui.retainedJobs=1000',
                '-Dspark.sql.ui.retainedExecutions=500',
                '-Dio.netty.allocator.pageSize=8192',
                '-Dio.netty.allocator.maxOrder=10',
@@ -884,7 +884,8 @@ gradle.taskGraph.whenReady { graph ->
 
         systemProperties 'SNAPPY_HOME': snappyProductDir,
             'APACHE_SPARK_HOME': sparkProductDir,
-            'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir
+            'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
+            'gemfire.DUnitLauncher.CHILD_HEAPSIZE': '2g'
         environment 'PYSPARK_PYTHON': sparkPython,
             'PYSPARK_DRIVER_PYTHON': sparkPython,
             'SPARK_TESTING': '1',

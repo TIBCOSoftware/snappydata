@@ -168,8 +168,8 @@ abstract class ColumnDecoder(columnDataRef: AnyRef, startCursor: Long,
     throw new UnsupportedOperationException(s"readStruct for $toString")
 
   /**
-   * Close and relinquish all resources of this encoder.
-   * The encoder may no longer be usable after this call.
+   * Close and relinquish all resources of this decoder.
+   * The decoder may no longer be usable after this call.
    */
   def close(): Unit = {}
 }

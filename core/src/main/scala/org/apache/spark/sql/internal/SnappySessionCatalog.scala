@@ -354,7 +354,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
       case Some((id, false)) => s""" AUTHORIZATION "$id""""
       case Some((id, true)) => s""" AUTHORIZATION ldapGroup: "$id""""
     }
-    val conn = snappySession.defaultPooledConnection(schema)
+    val conn = snappySession.defaultPooledConnection(SnappyExternalCatalog.SYS_SCHEMA)
     try {
       val stmt = conn.createStatement()
       val storeSchema = Utils.toUpperCase(schema)
@@ -378,7 +378,11 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
         throw err
       case t: Throwable =>
         // drop from catalog
-        dropDatabase(schema, ignoreIfNotExists = true, cascade = false)
+        try {
+          dropDatabase(schema, ignoreIfNotExists = true, cascade = false)
+        } catch {
+          case e: Exception => t.addSuppressed(e)
+        }
         // Whenever you catch Error or Throwable, you must also
         // check for fatal JVM error (see above).  However, there is
         // _still_ a possibility that you are dealing with a cascading
@@ -467,14 +471,14 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     if (schemaName == defaultSchemaName) {
       throw new AnalysisException(s"Cannot drop own schema $schemaName")
     }
-    validateSchemaName(formatDatabaseName(schemaName), checkForDefault = true)
+    validateSchemaName(schemaName, checkForDefault = true)
     dropAllSchemaObjects(schemaName, ignoreIfNotExists, cascade)
 
     super.dropDatabase(schemaName, ignoreIfNotExists, cascade)
 
     // drop the schema from store (no cascade required since catalog drop will take care)
     val checkIfExists = if (ignoreIfNotExists) " IF EXISTS" else ""
-    val conn = snappySession.defaultPooledConnection(schema)
+    val conn = snappySession.defaultPooledConnection(SnappyExternalCatalog.SYS_SCHEMA)
     try {
       val stmt = conn.createStatement()
       stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "${Utils.toUpperCase(schema)}" RESTRICT""")

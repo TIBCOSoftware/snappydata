@@ -110,8 +110,10 @@ private[sql] abstract class PartitionedPhysicalScan(
       SinglePartition
     } else if (partitionColumns.nonEmpty) {
       HashPartitioning(partitionColumns, if (linkPart) numBuckets else numPartitions)
-    } else super.outputPartitioning
+    } else baseOutputPartitioning
   }
+
+  protected def baseOutputPartitioning: Partitioning = super.outputPartitioning
 
   override lazy val simpleString: String = {
     val s = "Partitioned Scan " + extraInformation +

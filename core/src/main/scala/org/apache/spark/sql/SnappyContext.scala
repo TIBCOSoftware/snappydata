@@ -27,8 +27,8 @@ import javax.annotation.concurrent.GuardedBy
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 
@@ -53,7 +53,7 @@ import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.joins.HashedObjectCache
-import org.apache.spark.sql.execution.{ConnectionPool, DeployCommand, DeployJarCommand, RefreshMetadata}
+import org.apache.spark.sql.execution.{CommonUtils, ConnectionPool, DeployCommand, DeployJarCommand, RefreshMetadata}
 import org.apache.spark.sql.hive.{HiveExternalCatalog, SnappyHiveExternalCatalog, SnappySessionState}
 import org.apache.spark.sql.internal.{ContextJarUtils, SharedState, SnappySharedState, StaticSQLConf}
 import org.apache.spark.sql.store.CodeGeneration
@@ -1256,7 +1256,7 @@ object SnappyContext extends Logging {
           val closeHive = Future(SnappyHiveExternalCatalog.close())
           // wait for a while else fail for connection to close else it is likely that
           // there is some trouble in initialization itself so don't block shutdown
-          Await.ready(closeHive, Duration(10, TimeUnit.SECONDS))
+          CommonUtils.awaitResult(closeHive, Duration(10, TimeUnit.SECONDS))
           if (mode.isInstanceOf[LocalMode]) {
             val props = sc.conf.getOption(Constant.STORE_PROPERTY_PREFIX +
                 Attribute.USERNAME_ATTR) match {

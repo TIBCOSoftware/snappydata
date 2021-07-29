@@ -34,7 +34,7 @@ import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallb
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext, SnappySession}
+import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SnappyContext, SnappySession}
 
 
 object StoreUtils {
@@ -307,10 +307,6 @@ object StoreUtils {
     partitions
   }
 
-  def removeCachedObjects(sqlContext: SQLContext, table: String): Unit = {
-    ExternalStoreUtils.removeCachedObjects(sqlContext, table)
-  }
-
   def appendClause(sb: mutable.StringBuilder,
       getClause: () => String): Unit = {
     val clause = getClause.apply()
@@ -527,11 +523,11 @@ object StoreUtils {
     }
   }
 
-  def getColumnUpdateDeleteOrdering(batchIdColumn: Attribute): SortOrder = {
+  def getColumnUpdateDeleteOrdering(attr: Attribute): SortOrder = {
     // this always sets ascending order though no particular ordering is required rather
-    // just grouping on batchId column, but does not matter so table scan should also
+    // just grouping on the column, but does not matter so table scan should also
     // set the same to not introduce any extra sorting for simple updates/deletes
-    SortOrder(batchIdColumn, Ascending)
+    SortOrder(attr, Ascending)
   }
 
   def validateConnProps(parameters: CaseInsensitiveMutableHashMap[String]): Unit = {

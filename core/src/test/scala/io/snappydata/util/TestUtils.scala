@@ -25,9 +25,9 @@ import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
 object TestUtils extends Logging {
 
   // factor of 2 like in product by default
-  val defaultCores: Int = math.min(8, Runtime.getRuntime.availableProcessors()) * 2
+  val defaultCores: Int = math.max(8, Runtime.getRuntime.availableProcessors()) * 2
 
-  def defaultCoresForSmartConnector: String = (defaultCores / 2).toString
+  def defaultCoresForSmartConnector: String = defaultCores.toString
 
   def dropAllSchemas(session: SnappySession): Unit = {
     val sc = SnappyContext.globalSparkContext

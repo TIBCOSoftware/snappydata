@@ -17,10 +17,14 @@
 
 package org.apache.spark.sql.execution
 
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Awaitable, ExecutionContext}
+
 import io.snappydata.Constant
 
-import org.apache.spark.sql.{SnappyParser, SnappySession}
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.types.{CharType, DataType, MetadataBuilder, StringType, StructType, VarcharType}
+import org.apache.spark.util.ThreadUtils
 
 
 object CommonUtils {
@@ -63,6 +67,11 @@ object CommonUtils {
         sf
       }))
     }).getOrElse(schema)
-
   }
+
+  def awaitResult[T](awaitable: Awaitable[T], atMost: Duration): T =
+    ThreadUtils.awaitResult(awaitable, atMost)
+
+  val waiterExecutionContext: ExecutionContext = ExecutionContext.fromExecutorService(
+    ThreadUtils.newDaemonCachedThreadPool("snappydata-waiter", 128))
 }

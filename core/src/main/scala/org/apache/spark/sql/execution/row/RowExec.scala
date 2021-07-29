@@ -38,6 +38,7 @@ trait RowExec extends TableExec {
   @transient protected var stmt: String = _
   @transient protected var rowCount: String = _
   @transient protected var result: String = _
+  @transient protected var numOpRowsMetric: String = _
 
 
   def resolvedName: String
@@ -127,8 +128,7 @@ trait RowExec extends TableExec {
     result = ctx.freshName("result")
     stmt = ctx.freshName("statement")
     rowCount = ctx.freshName("rowCount")
-    val numOpRowsMetric = if (onExecutor) null
-    else metricTerm(ctx, s"num${opType}Rows")
+    numOpRowsMetric = if (onExecutor) null else metricTerm(ctx, s"num${opType}Rows")
     val numOperations = ctx.freshName("numOperations")
     val childProduce = doChildProduce(ctx)
     val mutateTable = ctx.freshName("mutateTable")
@@ -183,8 +183,7 @@ trait RowExec extends TableExec {
       s"$schemaFields = $schemaTerm.fields();")
     val batchSize = connProps.executorConnProps
         .getProperty("batchsize", "1000").toInt
-    val numOpRowsMetric = if (onExecutor) null
-    else metricTerm(ctx, s"num${opType}Rows")
+    assert(onExecutor || (numOpRowsMetric ne null))
     val numOperations = ctx.freshName("numOperations")
 
     val inputCode = evaluateVariables(input)

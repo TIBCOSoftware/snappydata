@@ -30,7 +30,9 @@ case class RowDeleteExec(child: SparkPlan, resolvedName: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
     numBuckets: Int, isPartitioned: Boolean, tableSchema: StructType,
     relation: Option[DestroyRelation], keyColumns: Seq[Attribute],
-    connProps: ConnectionProperties, onExecutor: Boolean) extends RowExec {
+    connProps: ConnectionProperties) extends RowExec {
+
+  override def onExecutor: Boolean = false
 
   override protected def opType: String = "Delete"
 

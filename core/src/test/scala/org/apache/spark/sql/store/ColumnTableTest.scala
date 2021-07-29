@@ -1481,7 +1481,7 @@ class ColumnTableTest
     snc.sql(s"insert into t1 values(3,'test3')")
     val df = snc.sql("select * from t1")
     df.collect()
-    val tempPath = System.getProperty("user.dir") + System.currentTimeMillis()
+    val tempPath = System.getProperty("user.dir") + '/' + System.currentTimeMillis()
 
     assert(df.count() == 3)
     df.write.option("header", "true").csv(tempPath)

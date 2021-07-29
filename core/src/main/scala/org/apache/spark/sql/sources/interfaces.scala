@@ -29,18 +29,61 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
-import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.aqp.SampleInsertExec
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JDBCRDD}
+import org.apache.spark.sql.execution.{ConnectionPool, SparkPlan}
 import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.types.{StructField, StructType}
 
 @DeveloperApi
-trait RowInsertableRelation extends SingleRowInsertableRelation {
+trait NativeTableRelation extends DestroyRelation {
+
+  protected val connFactory: () => Connection
+
+  protected def dialect: JdbcDialect
+
+  def connProperties: ConnectionProperties
+
+  def isRowTable: Boolean
+
+  /** Name of this table as stored in catalog. */
+  val table: String
+
+  /**
+   * Execute a DML SQL and return the number of rows affected.
+   */
+  def executeUpdate(sql: String, defaultSchema: String): Int = {
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
+      connProperties.poolProps, connProperties.connProps,
+      connProperties.hikariCP)
+    var currentSchema: String = null
+    try {
+      if (defaultSchema ne null) {
+        currentSchema = connection.getSchema
+        if (defaultSchema != currentSchema) {
+          connection.setSchema(defaultSchema)
+        } else {
+          currentSchema = null
+        }
+      }
+      val stmt = connection.prepareStatement(sql)
+      val result = stmt.executeUpdate()
+      stmt.close()
+      result
+    } finally {
+      if (currentSchema ne null) connection.setSchema(currentSchema)
+      connection.commit()
+      connection.close()
+    }
+  }
+}
+
+@DeveloperApi
+trait RowInsertableRelation extends NativeTableRelation {
 
   /**
    * Insert a sequence of rows into the table represented by this relation.
@@ -52,14 +95,14 @@ trait RowInsertableRelation extends SingleRowInsertableRelation {
   def insert(rows: Seq[Row]): Int
 }
 
-trait PlanInsertableRelation extends DestroyRelation with InsertableRelation {
+trait PlanInsertableRelation extends NativeTableRelation with InsertableRelation {
 
   /**
    * Get a spark plan for insert. The result of SparkPlan execution should
    * be a count of number of inserted rows.
    */
   def getInsertPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan = {
-    val baseTableInsert = getBasicInsertPlan(relation, child);
+    val baseTableInsert = getBasicInsertPlan(relation, child)
     val catalog = child.sqlContext.sessionState.catalog.asInstanceOf[SnappySessionCatalog]
     val fqn = resolvedName
     val dot = fqn.indexOf('.')
@@ -81,7 +124,7 @@ trait PlanInsertableRelation extends DestroyRelation with InsertableRelation {
   def resolvedName: String
 }
 
-trait RowPutRelation extends DestroyRelation {
+trait RowPutRelation extends NativeTableRelation {
 
   /**
    * If the row is already present, it gets updated otherwise it gets
@@ -101,9 +144,7 @@ trait RowPutRelation extends DestroyRelation {
   def getPutPlan(relation: LogicalRelation, child: SparkPlan): SparkPlan
 }
 
-trait BulkPutRelation extends DestroyRelation {
-
-  def table: String
+trait BulkPutRelation extends NativeTableRelation {
 
   def getPutKeys(session: SnappySession): Option[Seq[String]]
 
@@ -115,24 +156,13 @@ trait BulkPutRelation extends DestroyRelation {
   def getPutPlan(insertPlan: SparkPlan, updatePlan: SparkPlan): SparkPlan
 }
 
-@DeveloperApi
-trait SingleRowInsertableRelation {
-  /**
-   * Execute a DML SQL and return the number of rows affected.
-   */
-  def executeUpdate(sql: String, defaultSchema: String): Int
-}
-
 /**
  * ::DeveloperApi
  *
  * API for updates and deletes to a relation.
  */
 @DeveloperApi
-trait MutableRelation extends DestroyRelation {
-
-  /** Name of this mutable table as stored in catalog. */
-  def table: String
+trait MutableRelation extends NativeTableRelation {
 
   /**
    * Get the "key" columns for the table that need to be projected out by
@@ -229,7 +259,7 @@ trait SamplingRelation extends BaseRelation with SchemaInsertableRelation {
 }
 
 @DeveloperApi
-trait UpdatableRelation extends MutableRelation with SingleRowInsertableRelation {
+trait UpdatableRelation extends MutableRelation with NativeTableRelation {
 
   /**
    * Update a set of rows matching given criteria.
@@ -330,18 +360,8 @@ trait RowLevelSecurityRelation {
 }
 
 @DeveloperApi
-trait NativeTableRowLevelSecurityRelation extends DestroyRelation with RowLevelSecurityRelation {
-
-  protected val connFactory: () => Connection
-
-  protected def dialect: JdbcDialect
-
-  def connProperties: ConnectionProperties
-
-  protected def isRowTable: Boolean
-
-  val sqlContext: SQLContext
-  val table: String
+trait NativeTableRowLevelSecurityRelation
+    extends NativeTableRelation with RowLevelSecurityRelation {
 
   override def enableOrDisableRowLevelSecurity(tableIdent: TableIdentifier,
       enableRowLevelSecurity: Boolean): Unit = {

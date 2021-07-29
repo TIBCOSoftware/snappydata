@@ -393,13 +393,13 @@ object ValidateMVCCDUnitTest {
 
     override def waitOnTestLock(): Unit = {
       lockForTest.synchronized {
-        lockForTest.wait(60000)
+        lockForTest.wait(10000)
       }
     }
 
     override def waitOnOperationLock(): Unit = {
       operationLock.synchronized {
-        operationLock.wait(60000)
+        operationLock.wait(10000)
       }
     }
   }

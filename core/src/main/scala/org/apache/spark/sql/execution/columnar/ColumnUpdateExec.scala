@@ -41,7 +41,7 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     isPartitioned: Boolean, tableSchema: StructType, externalStore: ExternalStore,
     columnRelation: BaseColumnFormatRelation, updateColumns: Seq[Attribute],
     updateExpressions: Seq[Expression], keyColumns: Seq[Attribute],
-    connProps: ConnectionProperties, onExecutor: Boolean) extends ColumnExec {
+    connProps: ConnectionProperties) extends ColumnExec {
 
   assert(updateColumns.length == updateExpressions.length)
 
@@ -165,12 +165,12 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     ctx.addMutableState("int", lastBucketId, "")
     ctx.addMutableState("int", lastNumRows, "")
 
-    // last three columns in keyColumns should be internal ones
+    // last four columns in keyColumns should be internal ones
     val keyCols = keyColumns.takeRight(4)
-    assert(keyCols.head.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))
-    assert(keyCols(1).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
-    assert(keyCols(2).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(2)))
-    assert(keyCols(3).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(3)))
+    assert(keyCols.head.name.equalsIgnoreCase(ColumnDelta.RowOrdinal.name))
+    assert(keyCols(1).name.equalsIgnoreCase(ColumnDelta.BatchId.name))
+    assert(keyCols(2).name.equalsIgnoreCase(ColumnDelta.BucketId.name))
+    assert(keyCols(3).name.equalsIgnoreCase(ColumnDelta.BatchNumRows.name))
 
     // bind the update expressions
     ctx.INPUT_ROW = null

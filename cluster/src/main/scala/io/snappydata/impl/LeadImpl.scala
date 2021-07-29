@@ -22,10 +22,11 @@ import java.security.Permission
 import java.sql.SQLException
 import java.util.{Properties, UUID}
 
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 
 import akka.actor.ActorSystem
 import com.gemstone.gemfire.CancelException
@@ -53,7 +54,7 @@ import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
 import spray.routing.authentication.UserPass
 
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.execution.SecurityUtils
+import org.apache.spark.sql.execution.{CommonUtils, SecurityUtils}
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.util.LocalDirectoryCleanupUtil
@@ -348,7 +349,7 @@ class LeadImpl extends ServerImpl with Lead
 
     try {
       internalStart(() => storeProperties)
-      Await.result(initServices, Duration.Inf)
+      CommonUtils.awaitResult(initServices, Duration.Inf)
       // mark status as RUNNING at the end in any case
       markRunning()
     } catch {
@@ -545,6 +546,7 @@ class LeadImpl extends ServerImpl with Lead
 
   private[snappydata] def initStartupArgs(conf: SparkConf, sc: SparkContext = null) = {
 
+    @tailrec
     def changeOrAppend(attr: String, value: String,
         overwrite: Boolean = false, ignoreIfPresent: Boolean = false,
         sparkPrefix: String = null): Unit = {

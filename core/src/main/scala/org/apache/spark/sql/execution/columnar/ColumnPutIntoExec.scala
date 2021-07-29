@@ -34,11 +34,15 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
   override def right: SparkPlan = updatePlan
 
   override protected def doExecute(): RDD[InternalRow] = {
-    val resultRow = executeCollect()
-    sqlContext.sparkContext.parallelize(resultRow, 1)
+    sqlContext.sparkContext.parallelize(sideEffectResult, 1)
   }
 
-  override def executeCollect(): Array[InternalRow] = {
+  override def executeCollect(): Array[InternalRow] = sideEffectResult
+
+  override def executeTake(limit: Int): Array[InternalRow] =
+    sideEffectResult.take(limit)
+
+  protected lazy val sideEffectResult: Array[InternalRow] = {
     // mark the child plans to skip releasing the locks which is only done by the top-level putInto
     updatePlan.foreach {
       case exec: ExecutePlan => exec.clearSession = false
@@ -48,7 +52,10 @@ case class ColumnPutIntoExec(insertPlan: SparkPlan,
       case exec: ExecutePlan => exec.clearSession = false
       case _ =>
     }
-    // First update the rows which are present in the table
+    // First update the rows which are present in the table. This is necessary because
+    // inserts can cause rollover causing updates to fail (or need to add delayed rollover
+    // to ColumnInsertExec though that can be done only for partitioned tables else rollover
+    // in one bucket can cause another parallel update task on the same bucket to fail).
     val u = updatePlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)
     // Then insert the rows which are not there in the table
     val i = insertPlan.executeCollect().map(_.getLong(0)).toSeq.foldLeft(0L)(_ + _)

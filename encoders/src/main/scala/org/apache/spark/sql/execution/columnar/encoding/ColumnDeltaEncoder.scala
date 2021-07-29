@@ -22,8 +22,9 @@ import java.nio.{ByteBuffer, ByteOrder}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.google.common.cache.{CacheBuilder, CacheLoader}
-import org.apache.spark.Logging
 import org.codehaus.janino.CompilerFactory
+
+import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatValue}
@@ -46,15 +47,15 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
  *   |   |
  *   |   |   .---------------- Null bitset longs (8 x N bytes,
  *   |   |   |                                    empty if null count is zero)
- *   |   |   |  .------------- Positions in full column value
- *   |   |   |  |
- *   |   |   |  |    .-------- Encoded non-null elements
- *   |   |   |  |    |
- *   V   V   V  V    V
- *   +---+---+--+--- +--------------+
- *   |   |   |  |    |   ...   ...  |
- *   +---+---+--+----+--------------+
- *    \-----/ \--------------------/
+ *   |   |   |  .------------- Number of base column rows
+ *   |   |   |  |  .---------- Number of positions of delta updates
+ *   |   |   |  |  |  .------- Positions in full column value
+ *   |   |   |  |  |  |   .--- Encoded non-null elements
+ *   V   V   V  V  V  V   V
+ *   +---+---+--+--+--+---+--------------+
+ *   |   |   |  |  |  |   |   ...  ...   |
+ *   +---+---+--+----+-------------------+
+ *    \-----/ \--------------------------/
  *     header           body
  * }}}
  *
@@ -668,8 +669,8 @@ object DeltaWriter extends Logging {
    * Code generated cache for ease of maintenance of similar DeltaWriter code
    * for most data types.
    */
-  private val cache = CacheBuilder.newBuilder().maximumSize(100).build(
-    new CacheLoader[DataType, DeltaWriterFactory]() {
+  private val cache = CacheBuilder.newBuilder().maximumSize(100).build[
+      DataType, DeltaWriterFactory](new CacheLoader[DataType, DeltaWriterFactory]() {
       override def load(dataType: DataType): DeltaWriterFactory = {
         val evaluator = new CompilerFactory().newScriptEvaluator()
         evaluator.setClassName("io.snappydata.execute.GeneratedDeltaWriterFactory")

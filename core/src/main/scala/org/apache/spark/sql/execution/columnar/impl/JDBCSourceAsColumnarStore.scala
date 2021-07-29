@@ -31,13 +31,12 @@ import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache.{BucketRegion, CachePerfStats, GemFireCacheImpl, LocalRegion, PartitionedRegion, TXManagerImpl}
 import com.gemstone.gemfire.internal.shared.{BufferAllocator, SystemProperties}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
 import io.snappydata.impl.SmartConnectorRDDHelper
 import io.snappydata.sql.catalog.SmartConnectorHelper
 import io.snappydata.thrift.StatementAttrs
-import io.snappydata.thrift.internal.{ClientBlob, ClientPreparedStatement, ClientStatement}
+import io.snappydata.thrift.internal.{ClientBlob, ClientConnection, ClientPreparedStatement, ClientStatement}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.{ConnectionPropertiesSerializer, KryoSerializerPool, StructTypeSerializer}
@@ -188,10 +187,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       try {
         connectionType match {
           case ConnectionType.Embedded =>
-            // if rollover was marked as delayed, then do the rollover before commit
-            if (delayRollover) {
-              GfxdSystemProcedures.flushLocalBuckets(tableName, false)
-            }
             val rgn = Misc.getRegionForTable(
               JdbcExtendedUtils.toUpperCase(tableName), true).asInstanceOf[LocalRegion]
             try {
@@ -274,13 +269,13 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     connectionType match {
       case ConnectionType.Embedded =>
         val region = Misc.getRegionForTable[ColumnFormatKey, ColumnFormatValue](
-          columnTableName, true)
+          columnTableName, true).asInstanceOf[PartitionedRegion]
         val key = new ColumnFormatKey(batchId, partitionId,
           ColumnFormatEntry.DELETE_MASK_COL_INDEX)
 
         // check for full batch delete
         if (ColumnDelta.checkBatchDeleted(buffer)) {
-          ColumnDelta.deleteBatch(key, region, columnTableName)
+          ColumnDelta.deleteBatch(key, region, key.getNumColumnsInTable(columnTableName))
           return
         }
         region.put(key, value)
@@ -824,22 +819,23 @@ final class SmartConnectorColumnRDD(
     } finally {
       if (context ne null) {
         context.addTaskCompletionListener { _ =>
-          logDebug(s"The txid going to be committed is $txId " + tableName)
-
-          // if ((txId ne null) && !txId.equals("null")) {
-          val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
-          ps.setString(1, if (txId ne null) txId else "")
-          ps.setString(2, if (delayRollover) tableName else "")
-          ps.executeUpdate()
-          logDebug(s"The txid being committed is $txId")
-          ps.close()
-          SmartConnectorHelper.snapshotTxIdForRead.set(null)
-          logDebug(s"closed connection for task from listener $partitionId")
           try {
+            logDebug(s"The txid going to be committed is $txId " + tableName)
+
+            // if ((txId ne null) && !txId.equals("null")) {
+            val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
+            ps.setString(1, if (txId ne null) txId else "")
+            ps.setString(2, if (delayRollover) tableName else "")
+            ps.executeUpdate()
+            logDebug(s"The txid being committed is $txId")
+            ps.close()
+            logDebug(s"closed statement for task from listener $partitionId")
+          } catch {
+            case NonFatal(e) => logWarning("Exception committing transaction", e)
+          } finally {
+            SmartConnectorHelper.snapshotTxIdForRead.set(null)
             conn.close()
             logDebug("closed connection for task " + context.partitionId())
-          } catch {
-            case NonFatal(e) => logWarning("Exception closing connection", e)
           }
           // }
         }
@@ -958,11 +954,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
     if (context ne null) {
       context.addTaskCompletionListener { _ =>
         try {
-          val statement = conn.createStatement()
-          statement match {
-            case stmt: ClientStatement => stmt.getConnection.setCommonStatementAttributes(null)
-          }
-          statement.close()
+          conn.unwrap(classOf[ClientConnection]).setCommonStatementAttributes(null)
         } catch {
           case NonFatal(e) => logWarning("Exception resetting commonStatementAttributes", e)
         }
@@ -977,29 +969,14 @@ class SmartConnectorRowRDD(_session: SnappySession,
     val bucketPartition = thePart.asInstanceOf[SmartExecutorBucketPartition]
     logDebug(s"Scanning row buffer for $tableName,partId=${bucketPartition.index}," +
         s" bucketId = ${bucketPartition.bucketId}")
-    val statement = conn.createStatement()
-    val thriftConn = statement match {
-      case clientStmt: ClientStatement =>
-        val clientConn = clientStmt.getConnection
-        if (isPartitioned) {
-          clientConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
-            new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
-            tableName, true).setCatalogVersion(catalogSchemaVersion))
-        } else {
-          clientConn.setCommonStatementAttributes(
-            new StatementAttrs().setCatalogVersion(catalogSchemaVersion))
-        }
-        clientConn
-      case _ => null
-    }
-    if (isPartitioned && (thriftConn eq null)) {
-      val ps = conn.prepareStatement("call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ?)")
-      ps.setString(1, tableName)
-      val bucketString = bucketPartition.bucketId.toString
-      ps.setString(2, bucketString)
-      ps.setLong(3, catalogSchemaVersion)
-      ps.executeUpdate()
-      ps.close()
+    val clientConn = conn.unwrap(classOf[ClientConnection])
+    if (isPartitioned) {
+      clientConn.setCommonStatementAttributes(ClientStatement.setLocalExecutionBucketIds(
+        new StatementAttrs(), Collections.singleton(Int.box(bucketPartition.bucketId)),
+        tableName, true).setCatalogVersion(catalogSchemaVersion))
+    } else {
+      clientConn.setCommonStatementAttributes(
+        new StatementAttrs().setCatalogVersion(catalogSchemaVersion))
     }
     val sqlText = s"SELECT $columnList FROM ${quotedName(tableName)}$filterWhereClause"
 
@@ -1013,14 +990,7 @@ class SmartConnectorRowRDD(_session: SnappySession,
       stmt.setFetchSize(fetchSize.toInt)
     }
 
-    if (thriftConn ne null) {
-      stmt.asInstanceOf[ClientPreparedStatement].setSnapshotTransactionId(txId)
-    } else if (txId != null) {
-      if (!txId.isEmpty) {
-        statement.execute(
-          s"call sys.USE_SNAPSHOT_TXID('$txId')")
-      }
-    }
+    stmt.unwrap(classOf[ClientPreparedStatement]).setSnapshotTransactionId(txId)
 
     val rs = stmt.executeQuery()
 

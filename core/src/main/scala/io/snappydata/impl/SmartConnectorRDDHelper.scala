@@ -19,13 +19,16 @@ package io.snappydata.impl
 import java.sql.{Connection, PreparedStatement, ResultSet, SQLException}
 import java.util.Collections
 
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
+
 import com.gemstone.gemfire.internal.SocketCreator
 import com.pivotal.gemfirexd.internal.iapi.types.HarmonySerialBlob
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.sql.catalog.SmartConnectorHelper
 import io.snappydata.thrift.internal.ClientPreparedStatement
+
 import org.apache.spark.sql.SnappyStoreClientDialect
 import org.apache.spark.sql.collection.SmartExecutorBucketPartition
 import org.apache.spark.sql.execution.ConnectionPool
@@ -76,6 +79,7 @@ final class SmartConnectorRDDHelper {
     }
   }
 
+  @tailrec
   private def createConnection(connProperties: ConnectionProperties,
       hostList: Seq[(String, String)], preferHost: Boolean): Connection = {
     val useLocatorURL = hostList.isEmpty

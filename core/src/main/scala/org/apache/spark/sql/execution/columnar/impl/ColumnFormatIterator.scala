@@ -184,12 +184,12 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
   private def setValue(entry: RegionEntry, columnIndex: Int,
       uuidMap: LongObjectHashMapWithState[AnyRef]): Unit = {
     var v = entry.getValue(currentRegion)
-    if (v eq null) {
+    if (!valueIsValid(v)) {
       checkRegion(currentRegion)
       // try once more
       v = entry.getValue(currentRegion)
     }
-    if (v ne null) uuidMap.put(columnIndex & 0xffffffffL, v)
+    if (valueIsValid(v)) uuidMap.put(columnIndex & 0xffffffffL, v)
   }
 
   def advanceToNextBatchSet(): Boolean = {
@@ -322,7 +322,7 @@ private final class DiskMultiColumnBatch(_statsEntry: RegionEntry, _region: Loca
   private var deltaStatsEntry: RegionEntry = _
 
   private[impl] lazy val entryMap: LongObjectHashMapWithState[AnyRef] = {
-    if (closing) null
+    if (closing) new LongObjectHashMapWithState[AnyRef](0)
     else {
       // read all the entries in this column batch to fault them in or read without
       // fault-in at this point to build the temporary column to value map for this batch
@@ -339,7 +339,7 @@ private final class DiskMultiColumnBatch(_statsEntry: RegionEntry, _region: Loca
             case _ => v
           } else v
         } else re.getValueInVMOrDiskWithoutFaultIn(region)
-        map.put(getKey(re).columnIndex & 0xffffffffL, v)
+        if (valueIsValid(v)) map.put(getKey(re).columnIndex & 0xffffffffL, v)
         i += 1
       }
       diskEntries = null
@@ -350,8 +350,12 @@ private final class DiskMultiColumnBatch(_statsEntry: RegionEntry, _region: Loca
   private def getKey(entry: RegionEntry): ColumnFormatKey =
     entry.getRawKey.asInstanceOf[ColumnFormatKey]
 
-  def getDeltaStatsValue: AnyRef =
-    if (deltaStatsEntry ne null) deltaStatsEntry.getValue(region) else null
+  def getDeltaStatsValue: AnyRef = {
+    if (deltaStatsEntry ne null) {
+      val v = deltaStatsEntry.getValue(region)
+      if (valueIsValid(v)) v else null
+    } else null
+  }
 
   def addEntry(diskPosition: DiskPosition, entry: RegionEntry): Unit = {
     // store the stats entry separately to provide to top-level iterator
@@ -395,7 +399,7 @@ private final class DiskMultiColumnBatch(_statsEntry: RegionEntry, _region: Loca
   private[impl] def release(): Unit = {
     closing = true
     val entryMap = this.entryMap
-    if ((entryMap ne null) && entryMap.size() > 0) {
+    if (entryMap.size() > 0) {
       if (GemFireCacheImpl.hasNewOffHeap) entryMap.values.forEach(new Consumer[AnyRef] {
         override def accept(v: AnyRef): Unit = {
           v match {

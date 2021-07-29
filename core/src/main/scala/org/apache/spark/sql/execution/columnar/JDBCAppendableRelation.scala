@@ -70,7 +70,7 @@ abstract case class JDBCAppendableRelation(
 
   override final def connProperties: ConnectionProperties = externalStore.connProperties
 
-  override protected final def isRowTable: Boolean = false
+  override final def isRowTable: Boolean = false
 
   override final val connFactory: () => Connection = JdbcUtils
       .createConnectionFactory(new JDBCOptions(connProperties.url,

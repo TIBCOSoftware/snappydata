@@ -103,7 +103,7 @@ case class ExternalTableDMLCmd(
 
   override def run(session: SparkSession): Seq[Row] = {
     storeRelation.relation match {
-      case relation: SingleRowInsertableRelation =>
+      case relation: NativeTableRelation =>
         Seq(Row(relation.executeUpdate(command,
           JdbcExtendedUtils.toUpperCase(session.catalog.currentDatabase))))
       case other => throw new AnalysisException("DML support requires " +

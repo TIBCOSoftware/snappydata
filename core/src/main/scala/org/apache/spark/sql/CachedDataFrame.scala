@@ -22,9 +22,8 @@ import java.sql.SQLException
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
@@ -129,7 +128,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
             // Cleaning the  shuffle artifacts asynchronously
             shuffleCleanups(i) = Future {
               cleaner.doCleanupShuffle(shuffleDependency, blocking = true)
-            }
+            }(CommonUtils.waiterExecutionContext)
             i += 1
           }
         case None =>
@@ -144,7 +143,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       while (i < numShuffles) {
         val cleanup = shuffleCleanups(i)
         if (cleanup ne null) {
-          Await.ready(cleanup, Duration.Inf)
+          CommonUtils.awaitResult(cleanup, Duration.Inf)
           shuffleCleanups(i) = null
         }
         i += 1

@@ -22,19 +22,18 @@ import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future, TimeoutException}
 import scala.language.implicitConversions
-import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.CancelException
+import com.gemstone.gemfire.{CancelException, SystemFailure}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui.{MemberStatistics, SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.recovery.RecoveryService
 
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.CommonUtils
 import org.apache.spark.{Logging, SparkContext}
 
 trait TableStatsProviderService extends Logging {
@@ -47,9 +46,9 @@ trait TableStatsProviderService extends Logging {
   protected val membersInfo: mutable.Map[String, MemberStatistics] =
     new ConcurrentHashMap[String, MemberStatistics](8, 0.7f, 1).asScala
 
-  @GuardedBy("this")
-  protected var memberStatsFuture: Option[Future[Unit]] = None
-  protected val waitDuration = Duration(5000L, TimeUnit.MILLISECONDS)
+  protected final val memberStatsFuture = new RecurringFuture[Unit](
+    fillAggregatedMemberStatsOnDemand)(CommonUtils.waiterExecutionContext)
+  protected final val waitDuration: FiniteDuration = Duration(5000L, TimeUnit.MILLISECONDS)
 
   @volatile protected var doRun: Boolean = false
   @volatile private var running: Boolean = false
@@ -104,20 +103,16 @@ trait TableStatsProviderService extends Logging {
 
   def getMembersStatsOnDemand: mutable.Map[String, MemberStatistics] = {
     // wait for updated stats for sometime else return the previous information
-    val future = synchronized(memberStatsFuture match {
-      case Some(f) => f
-      case None =>
-        val f = Future(fillAggregatedMemberStatsOnDemand())
-        memberStatsFuture = Some(f)
-        f
-    })
+    logDebug(s"Obtaining updated Members Statistics. Waiting for $waitDuration")
     try {
-      logDebug(s"Obtaining updated Members Statistics. Waiting for $waitDuration")
-      Await.result(future, waitDuration)
-      synchronized(memberStatsFuture = None)
+      memberStatsFuture.result(waitDuration) match {
+        case None => // ignore timeout exception and return current map
+          logWarning("Obtaining updated Members Statistics is taking longer than expected time.")
+        case _ =>
+      }
     } catch {
-      case NonFatal(_) => // ignore timeout exception and return current map
-        logWarning("Obtaining updated Members Statistics is taking longer than expected time.")
+      case t if !SystemFailure.isJVMFailureError(t) =>
+        logWarning(s"Unexpected exception when updating Members Statistics", t)
     }
     membersInfo
   }
@@ -233,4 +228,32 @@ trait TableStatsProviderService extends Logging {
 
   def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
       Seq[SnappyIndexStats], Seq[SnappyExternalTableStats])
+}
+
+/**
+ * A future that will be run repeatedly if it is finished, else wait for the previous run.
+ * It also allows one to run explicitly on demand.
+ */
+final class RecurringFuture[T](body: () => T)(implicit executor: ExecutionContext) {
+
+  @GuardedBy("this")
+  private[this] var currentFuture: Option[Future[T]] = None
+
+  def result(duration: Duration): Option[T] = {
+    val future = synchronized(currentFuture match {
+      case Some(f) => f
+      case None =>
+        val f = Future(body())
+        currentFuture = Some(f)
+        f
+    })
+    try {
+      val result = CommonUtils.awaitResult(future, duration)
+      synchronized(
+        if (currentFuture.isDefined && (currentFuture.get eq future)) currentFuture = None)
+      Some(result)
+    } catch {
+      case _: TimeoutException => None
+    }
+  }
 }

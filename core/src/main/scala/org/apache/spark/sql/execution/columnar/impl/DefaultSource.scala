@@ -16,9 +16,9 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
-import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
@@ -27,8 +27,8 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.sources.{CreatableRelationProvider, DataSourceRegister, ExternalSchemaRelationProvider, JdbcExtendedUtils, SchemaRelationProvider}
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.types.{CharType, DataType, Metadata, MetadataBuilder, StringType, StructType, VarcharType}
-import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode, SnappyParser, SnappyParserConsts, SnappySession}
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode, SnappyParserConsts, SnappySession}
 
 /**
  * Column tables don't support any extensions over regular Spark schema syntax,
@@ -40,12 +40,12 @@ import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode,
  * which is parsed locally in the CreatableRelationProvider implementation.
  */
 final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRelationProvider
-  with CreatableRelationProvider with DataSourceRegister with Logging {
+    with CreatableRelationProvider with DataSourceRegister with Logging {
 
   override def shortName(): String = SnappyParserConsts.COLUMN_SOURCE
 
   private def getSchema(session: SnappySession,
-    options: Map[String, String]): Option[StructType] = getSchemaString(options) match {
+      options: Map[String, String]): Option[StructType] = getSchemaString(options) match {
     case None => None
     case Some(s) =>
       // Parse locally using SnappyParser that supports complex types unlike store parser.
@@ -55,7 +55,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
   }
 
   override def createRelation(sqlContext: SQLContext,
-    options: Map[String, String]): BaseColumnFormatRelation = {
+      options: Map[String, String]): BaseColumnFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val schema = getSchema(session, options) match {
       case None => JdbcExtendedUtils.EMPTY_SCHEMA // table may already exist
@@ -66,19 +66,17 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
   }
 
   override def createRelation(sqlContext: SQLContext,
-    options: Map[String, String], schema: StructType): BaseColumnFormatRelation = {
+      options: Map[String, String], schema: StructType): BaseColumnFormatRelation = {
     // table has already been checked for existence by callers if required so here mode is Ignore
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     createRelation(session, SaveMode.Ignore, options, schema)
   }
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-    options: Map[String, String], data: DataFrame): BaseColumnFormatRelation = {
+      options: Map[String, String], data: DataFrame): BaseColumnFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val schema = getSchema(session, options) match {
-      case None => {
-        CommonUtils.modifySchemaIfNeeded(options, session, data.schema)
-      }
+      case None => CommonUtils.modifySchemaIfNeeded(options, session, data.schema)
       case Some(s) => s
     }
     val relation = createRelation(session, mode, options, schema)
@@ -105,7 +103,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
   }
 
   private[sql] def createRelation(session: SnappySession, mode: SaveMode,
-    optionS: Map[String, String], specifiedSchema: StructType): BaseColumnFormatRelation = {
+      optionS: Map[String, String], specifiedSchema: StructType): BaseColumnFormatRelation = {
     // remove the property stringtypeas as it has been utilized
     val options = optionS.filterNot(tup => tup._1.equalsIgnoreCase(Constant.STRING_TYPE_AS))
     val parameters = new CaseInsensitiveMutableHashMap(options)
@@ -154,7 +152,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       connProperties.dialect)
     val schemaExtension = if (schemaString.length > 0) {
       val temp = schemaString.substring(0, schemaString.length - 1).
-        concat(s", ${StoreUtils.ROWID_COLUMN_DEFINITION}, $primaryKeyClause )")
+          concat(s", ${StoreUtils.ROWID_COLUMN_DEFINITION}, $primaryKeyClause )")
       s"$temp $ddlExtension"
     } else {
       s"$schemaString $ddlExtension"

@@ -35,7 +35,7 @@ import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.MutableURLClassLoader
 
-object SharedUtils {
+object SharedUtils extends Logging {
 
   final val EMPTY_STRING_ARRAY = Array.empty[String]
 
@@ -117,6 +117,14 @@ object SharedUtils {
     os.close()
     filters
   }
+
+  override def logDebug(msg: => String): Unit = super.logInfo(msg)
+
+  override def logInfo(msg: => String): Unit = super.logInfo(msg)
+
+  override def logWarning(msg: => String): Unit = super.logWarning(msg)
+
+  override def logError(msg: => String): Unit = super.logError(msg)
 }
 
 final class SmartExecutorBucketPartition(private var _index: Int, private var _bucketId: Int,

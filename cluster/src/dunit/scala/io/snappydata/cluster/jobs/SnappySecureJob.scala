@@ -63,7 +63,7 @@ class SnappySecureJob extends SnappySQLJob {
       assert(ServiceManager.getLeadInstance.asInstanceOf[LeadImpl].getInterpreterServerClass ==
           null, "Zeppelin interpreter must not be initialized in secure cluster")
       // Check SnappyData Pulse UI is secured by our custom authenticator.
-      assert(SparkCallbacks.getAuthenticatorForJettyServer().get
+      assert(SparkCallbacks.getAuthenticatorForJettyServer.get
           .isInstanceOf[SnappyBasicAuthenticator], "SnappyData Pulse UI not secured")
       pw.println(msg)
     } finally {

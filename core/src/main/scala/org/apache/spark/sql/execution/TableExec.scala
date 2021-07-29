@@ -57,14 +57,13 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
 
   def catalogSchemaVersion: Long = {
     if (!onExecutor) {
-      val catalogVersion: Option[Long] = Utils.executeIfSmartConnector(sqlContext.sparkContext) {
+      if (Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
         relation match {
           case Some(r: NativeTableRowLevelSecurityRelation) => r.relationInfo.catalogSchemaVersion
           case _ =>
             -1
         }
-      }
-      catalogVersion.getOrElse(-1)
+      } else -1
     } else {
       -1
     }
@@ -151,8 +150,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
       val locations = new Array[Seq[String]](numBuckets)
       var i = 0
       relInfo.partitions.foreach(x => {
-        locations(i) = x.asInstanceOf[SmartExecutorBucketPartition].
-            hostList.map(_._1.asInstanceOf[String])
+        locations(i) = x.asInstanceOf[SmartExecutorBucketPartition].hostList.map(_._1)
         i = i + 1
       })
       locations

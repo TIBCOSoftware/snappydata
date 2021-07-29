@@ -17,12 +17,16 @@
 package org.apache.spark.memory
 
 import java.nio.ByteBuffer
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import java.util.concurrent.{ArrayBlockingQueue, TimeUnit}
 import java.util.function.BiConsumer
 
 import scala.collection.mutable
+import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 
+import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.distributed.internal.{DistributionConfig, DistributionManager}
 import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
 import com.gemstone.gemfire.internal.shared.{BufferAllocator, LauncherBase}
@@ -32,6 +36,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap
 
+import org.apache.spark.sql.execution.CommonUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallback
 import org.apache.spark.storage.BlockId
 import org.apache.spark.util.Utils
@@ -105,6 +110,28 @@ class SnappyUnifiedMemoryManager private[memory](
   private val minHeapEviction = math.min(math.max(10L * 1024L * 1024L,
     (maxHeapStorageSize * 0.002).toLong), 1024L * 1024L * 1024L)
 
+  /** queue for the pending storage memory releases handled by */
+  private[this] val pendingStorageMemoryReleases =
+    new ArrayBlockingQueue[(String, Long, MemoryMode)](1024)
+
+  private[this] val stopReleaseFuture = new AtomicBoolean(false)
+  private[this] val storageMemoryReleaseFuture = Future {
+    while (!stopReleaseFuture.get()) {
+      try {
+        val pendingItem = pendingStorageMemoryReleases.poll(500, TimeUnit.MILLISECONDS)
+        if (pendingItem ne null) {
+          val pendingItems = new java.util.ArrayList[(String, Long, MemoryMode)]
+          pendingStorageMemoryReleases.drainTo(pendingItems)
+          releaseStorageMemoryForObjects(Some(pendingItem), pendingItems)
+        }
+      } catch {
+        case _: InterruptedException => // ignore and continue
+        case t if !SystemFailure.isJVMFailureError(t) =>
+          logError("SnappyUnifiedMemoryManager: unexpected failure in releaseStorageMemory", t)
+      }
+    }
+  }(CommonUtils.waiterExecutionContext)
+
   private[memory] val wrapperStats = new MemoryManagerStatsWrapper
 
   @volatile private var _memoryForObjectMap: Object2LongOpenHashMap[MemoryOwner] = _
@@ -157,6 +184,12 @@ class SnappyUnifiedMemoryManager private[memory](
     */
   override def close(): Unit = {
     assert(!bootManager)
+    // stop the pending release future and clear pending items
+    stopReleaseFuture.set(true)
+    CommonUtils.awaitResult(storageMemoryReleaseFuture, Duration.Inf)
+    val pendingItems = new java.util.ArrayList[(String, Long, MemoryMode)]
+    pendingStorageMemoryReleases.drainTo(pendingItems)
+    if (pendingItems.size() > 0) releaseStorageMemoryForObjects(None, pendingItems)
     // First reset the memory manager in callback. Hence all request will
     // go to Boot Manager
     MemoryManagerCallback.resetMemoryManager()
@@ -758,7 +791,33 @@ class SnappyUnifiedMemoryManager private[memory](
 
   override def releaseStorageMemoryForObject(objectName: String,
       numBytes: Long,
-      memoryMode: MemoryMode): Unit = synchronized {
+      memoryMode: MemoryMode): Unit = {
+    // if UMM lock is already held, then release inline else enqueue and be done with it
+    if (Thread.holdsLock(this)) synchronized {
+      releaseStorageMemoryForObject_(objectName, numBytes, memoryMode)
+    } else {
+      pendingStorageMemoryReleases.put((objectName, numBytes, memoryMode))
+    }
+  }
+
+  private def releaseStorageMemoryForObjects(obj: Option[(String, Long, MemoryMode)],
+      moreObjects: java.util.ArrayList[(String, Long, MemoryMode)]): Unit = synchronized {
+    obj match {
+      case Some(o) => releaseStorageMemoryForObject_(o._1, o._2, o._3)
+      case _ =>
+    }
+    if (moreObjects.size() > 0) {
+      val iter = moreObjects.iterator()
+      while (iter.hasNext) {
+        val item = iter.next()
+        releaseStorageMemoryForObject_(item._1, item._2, item._3)
+      }
+    }
+  }
+
+  private def releaseStorageMemoryForObject_(objectName: String,
+      numBytes: Long,
+      memoryMode: MemoryMode): Unit = {
     logDebug(s"releasing $managerId memory for $objectName = $numBytes")
     val key = new MemoryOwner(objectName, memoryMode)
     super.releaseStorageMemory(numBytes, memoryMode)

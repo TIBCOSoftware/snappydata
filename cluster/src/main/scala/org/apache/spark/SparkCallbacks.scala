@@ -53,7 +53,7 @@ object SparkCallbacks {
     if (env != null) {
       SparkHadoopUtil.get.runAsSparkUser { () =>
         // Copy the memory state to boot memory manager
-        SparkEnv.get.memoryManager.asInstanceOf[StoreUnifiedManager].close
+        SparkEnv.get.memoryManager.asInstanceOf[StoreUnifiedManager].close()
         env.stop()
         SparkEnv.set(null)
         SparkHadoopUtil.get.stopCredentialUpdater()
@@ -94,7 +94,7 @@ object SparkCallbacks {
     }
   }
 
-  def getAuthenticatorForJettyServer(): Option[BasicAuthenticator] = {
+  def getAuthenticatorForJettyServer: Option[BasicAuthenticator] = {
     JettyUtils.customAuthenticator
   }
 

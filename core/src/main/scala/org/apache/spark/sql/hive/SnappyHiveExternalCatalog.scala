@@ -20,13 +20,14 @@ package org.apache.spark.sql.hive
 import java.lang.reflect.InvocationTargetException
 import javax.annotation.concurrent.GuardedBy
 
+import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.ExecutionException
 
 import com.gemstone.gemfire.cache.CacheClosedException
+import com.gemstone.gemfire.internal.LogWriterImpl
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
-import com.gemstone.gemfire.internal.{GFToSlf4jBridge, LogWriterImpl}
 import com.google.common.cache.{Cache, CacheBuilder, CacheLoader, LoadingCache}
 import com.pivotal.gemfirexd.Constants
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -44,7 +45,6 @@ import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
-import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{NoSuchDatabaseException, NoSuchTableException, TableAlreadyExistsException}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
@@ -56,14 +56,13 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.RefreshMetadata
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.client.HiveClientImpl
-import org.apache.spark.sql.internal.StaticSQLConf.{GLOBAL_TEMP_DATABASE, SCHEMA_STRING_LENGTH_THRESHOLD, WAREHOUSE_PATH}
+import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
-import org.apache.spark.sql.sources.JdbcExtendedUtils.{toLowerCase, toUpperCase, normalizeSchema}
+import org.apache.spark.sql.sources.JdbcExtendedUtils.normalizeSchema
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.LongType
 import org.apache.spark.sql.{AnalysisException, _}
-import org.apache.spark.{SparkConf, SparkException}
 
 class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     val hadoopConf: Configuration, val createTime: Long)
@@ -78,6 +77,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   /** A cache of Spark SQL data source tables that have been accessed. */
+  // noinspection UnstableApiUsage
   protected val cachedCatalogTables: LoadingCache[(String, String), CatalogTable] = {
     val cacheLoader = new CacheLoader[(String, String), CatalogTable]() {
       override def load(name: (String, String)): CatalogTable = {
@@ -104,10 +104,12 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   /** A cache of SQL data source tables that are missing in catalog. */
+  // noinspection UnstableApiUsage
   protected val nonExistentTables: Cache[(String, String), java.lang.Boolean] = {
     CacheBuilder.newBuilder().maximumSize(ConnectorExternalCatalog.cacheSize).build()
   }
 
+  @tailrec
   private def isDisconnectException(t: Throwable): Boolean = {
     if (t ne null) {
       val tClass = t.getClass.getName
@@ -682,7 +684,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     if (SYS_SCHEMA.equalsIgnoreCase(schema)) {
       // check for a system table/VTI in store
       val session = SparkSession.getActiveSession
-      val conn = ConnectionUtil.getPooledConnection(schema, new ConnectionConf(
+      val conn = ConnectionUtil.getPooledConnection(SYS_SCHEMA, new ConnectionConf(
         ExternalStoreUtils.validateAndGetAllProps(session, ExternalStoreUtils.emptyCIMutableMap)))
       try {
         // hive compatible filter patterns are different from JDBC ones
@@ -868,7 +870,7 @@ object SnappyHiveExternalCatalog {
     // Reduce log level to error during hive client initialization
     // as it generates hundreds of lines of logs which are of no use.
     // Once the initialization is done, restore the logging level.
-    val logger = Misc.getI18NLogWriter.asInstanceOf[GFToSlf4jBridge]
+    val logger = Misc.getI18NLogWriter.asInstanceOf[LogWriterImpl]
     val previousLevel = logger.getLevel
     val log4jLogger = LogManager.getRootLogger
     val log4jLevel = log4jLogger.getEffectiveLevel

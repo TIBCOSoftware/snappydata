@@ -22,7 +22,7 @@ import java.time.{ZoneId, ZonedDateTime}
 import scala.util.Random
 
 import com.typesafe.config.Config
-import io.snappydata.{Property, SnappyFunSuite}
+import io.snappydata.SnappyFunSuite
 import org.scalatest.Assertions
 
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
@@ -279,7 +279,7 @@ object TAQTest extends Logging with Assertions {
         .setAppName("microbenchmark")
     conf.set("snappydata.store.critical-heap-percentage", "95")
     if (SnappySession.isEnterpriseEdition) {
-      conf.set("snappydata.store.memory-size", "1500m")
+      conf.set("snappydata.store.memory-size", "2g")
     }
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
         .set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")

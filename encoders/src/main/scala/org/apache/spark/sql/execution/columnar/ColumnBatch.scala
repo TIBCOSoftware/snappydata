@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
+ * Copyright (c) 2017-2021 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -36,6 +36,9 @@ import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEn
 import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructField
 import org.apache.spark.{Logging, TaskContext, TaskContextImpl, TaskKilledException}
+
+case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
+    statsData: Array[Byte], deltaIndexes: Array[Int])
 
 abstract class ResultSetIterator[A](conn: Connection,
                                     stmt: Statement, rs: ResultSet, context: TaskContext,
@@ -82,12 +85,9 @@ abstract class ResultSetIterator[A](conn: Connection,
 
   protected def getCurrentValue: A
 
-  def close() {
-    // if (!hasNextValue) return
+  def close(): Unit = {
     try {
       if (rs ne null) {
-        // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
-        // rs.lightWeightClose()
         rs.close()
       }
     } catch {
@@ -95,9 +95,10 @@ abstract class ResultSetIterator[A](conn: Connection,
     }
     try {
       if (stmt ne null) {
-        stmt.getConnection match {
+        // TODO: SW: remove the block below
+        stmt.getConnection.unwrap(classOf[Connection]) match {
           case embedConn: EmbedConnection =>
-            val lcc = embedConn.getLanguageConnection
+            val lcc = embedConn.getLanguageConnectionContext
             if (lcc ne null) {
               lcc.clearExecuteLocally()
             }
@@ -109,7 +110,6 @@ abstract class ResultSetIterator[A](conn: Connection,
       case NonFatal(e) => logWarning("Exception closing statement", e)
     }
     hasNextValue = false
-
   }
 }
 
@@ -125,7 +125,10 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
   private var currentStats: ByteBuffer = _
   private var currentDeltaStats: ByteBuffer = _
   private var rsHasNext: Boolean = rs.next()
-  def getBucketSet(): java.util.Set[Integer] = java.util.Collections.singleton(getCurrentBucketId)
+
+  override def getBucketSet: java.util.Set[Integer] =
+    java.util.Collections.singleton(getCurrentBucketId)
+
   def getCurrentBatchId: Long = currentUUID
 
   def getCurrentBucketId: Int = partitionId

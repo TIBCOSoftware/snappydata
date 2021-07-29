@@ -37,8 +37,7 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression],
     numBuckets: Int, isPartitioned: Boolean, tableSchema: StructType,
     externalStore: ExternalStore, appendableRelation: JDBCAppendableRelation,
-    keyColumns: Seq[Attribute], connProps: ConnectionProperties,
-    onExecutor: Boolean) extends ColumnExec {
+    keyColumns: Seq[Attribute], connProps: ConnectionProperties) extends ColumnExec {
 
   override def relation: Option[DestroyRelation] = Some(appendableRelation)
 
@@ -117,12 +116,12 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
 
     val tableName = ctx.addReferenceObj("columnTable", columnTable, "java.lang.String")
 
-    // last three columns in keyColumns should be internal ones
+    // last four columns in keyColumns should be internal ones
     val keyCols = keyColumns.takeRight(4)
-    assert(keyCols.head.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))
-    assert(keyCols(1).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)))
-    assert(keyCols(2).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(2)))
-    assert(keyCols(3).name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(3)))
+    assert(keyCols.head.name.equalsIgnoreCase(ColumnDelta.RowOrdinal.name))
+    assert(keyCols(1).name.equalsIgnoreCase(ColumnDelta.BatchId.name))
+    assert(keyCols(2).name.equalsIgnoreCase(ColumnDelta.BucketId.name))
+    assert(keyCols(3).name.equalsIgnoreCase(ColumnDelta.BatchNumRows.name))
 
     // bind the key columns (including partitioning columns if present)
     ctx.INPUT_ROW = null

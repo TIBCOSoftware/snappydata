@@ -19,7 +19,6 @@
 
 package io.snappydata
 
-import java.util.concurrent.TimeUnit
 import java.util.function.BiFunction
 
 import scala.collection.JavaConverters._
@@ -28,11 +27,11 @@ import scala.language.implicitConversions
 import scala.util.control.Breaks._
 import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
 import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, PartitionedRegion, RegionEntry}
+import com.gemstone.gemfire.{CancelException, SystemFailure}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
@@ -45,6 +44,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.CommonUtils
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation, ColumnFormatValue, RemoteEntriesIterator}
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 
@@ -182,25 +182,33 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     }
   }
 
+  private[this] val regionStatsFuture =
+    new RecurringFuture[Seq[SnappyRegionStatsCollectorResult]](() => {
+      val dataServers = GfxdMessage.getAllDataStores
+      if (dataServers != null && dataServers.size() > 0) {
+        FunctionService.onMembers(dataServers)
+            // .withCollector(new GfxdListResultCollector())
+            .execute(SnappyRegionStatsCollectorFunction.ID).getResult()
+            .asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
+            .asScala
+      } else Nil
+    })(CommonUtils.waiterExecutionContext)
+
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
       Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
-    var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
-    val dataServers = GfxdMessage.getAllDataStores
     var resultObtained: Boolean = false
-    try {
-      if (dataServers != null && dataServers.size() > 0) {
-        result = FunctionService.onMembers(dataServers)
-            // .withCollector(new GfxdListResultCollector())
-            .execute(SnappyRegionStatsCollectorFunction.ID).getResult(5, TimeUnit.SECONDS).
-            asInstanceOf[java.util.ArrayList[SnappyRegionStatsCollectorResult]]
-            .asScala
-        resultObtained = true
+    logDebug(s"Updating table statistics from all members. Waiting for $waitDuration")
+    val result = try {
+      regionStatsFuture.result(waitDuration) match {
+        case Some(stats) => resultObtained = true; stats
+        case None => // ignore timeout exception and return current map
+          logWarning("Obtaining updated Table Statistics is taking longer than expected time.")
+          Nil
       }
-    }
-    catch {
-      case NonFatal(e) =>
-        log.warn("Exception occurred while collecting Table Statistics: " + e.getMessage)
-        log.debug(e.getMessage, e)
+    } catch {
+      case t if !SystemFailure.isJVMFailureError(t) =>
+        logWarning(s"Unexpected exception when updating Table Statistics", t)
+        Nil
     }
 
     // handle the case of a rare race condition where external catalog is still being initialized

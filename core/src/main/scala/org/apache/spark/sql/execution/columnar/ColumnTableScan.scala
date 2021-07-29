@@ -46,6 +46,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
+import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, RangePartitioning}
 import org.apache.spark.sql.collection.{SharedUtils, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.encoding._
@@ -94,16 +95,28 @@ private[sql] final case class ColumnTableScan(
 
   @transient private val MAX_SCHEMA_LENGTH = 40
 
+  override protected def baseOutputPartitioning: Partitioning = {
+    // if the column output contains bucketId then do an ordered partition on the same
+    // to match ColumnExec.requiredChildDistribution
+    output.find(_.name.equalsIgnoreCase(ColumnDelta.BucketId.name)) match {
+      case Some(attr) =>
+        RangePartitioning(StoreUtils.getColumnUpdateDeleteOrdering(attr) :: Nil, numBuckets)
+      case _ => super.baseOutputPartitioning
+    }
+  }
+
   override lazy val outputOrdering: Seq[SortOrder] = {
-    val buffer = new ArrayBuffer[SortOrder](2)
-    // sorted on [batchId, ordinal (position within batch)] for update/delete
-    output.foreach {
-      case attr if attr.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames(1)) => // batchId
-        // ensure batchId is the first one in Seq[SortOrder]
-        StoreUtils.getColumnUpdateDeleteOrdering(attr) +=: buffer
-      case attr if attr.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head) => // ordinal
-        buffer += StoreUtils.getColumnUpdateDeleteOrdering(attr)
-      case _ =>
+    val buffer = new ArrayBuffer[SortOrder](3)
+    // ordered on [bucketId, batchId, ordinal (position within batch)] for update/delete
+    Seq(ColumnDelta.BucketId.name, ColumnDelta.BatchId.name, ColumnDelta.RowOrdinal.name).foreach(
+      name => output.find(_.name.equalsIgnoreCase(name)) match {
+        case Some(attr) => buffer += StoreUtils.getColumnUpdateDeleteOrdering(attr)
+        case _ =>
+      })
+    // either all columns should be present or none
+    if (buffer.nonEmpty && buffer.length != 3) {
+      throw new IllegalStateException("ColumnTableScan: all three columns (bucketId, batchId, " +
+          s"rowOrdinal) must be present for update/delete scan but only found: $buffer")
     }
     buffer
   }
@@ -450,17 +463,17 @@ private[sql] final case class ColumnTableScan(
     var rsIndex = -1
     val columnsInput = output.zipWithIndex.map {
       case (attr, _) if attr.name.startsWith(ColumnDelta.mutableKeyNamePrefix) =>
-        ColumnDelta.mutableKeyNames.indexOf(attr.name) match {
-          case 0 =>
+        ColumnDelta.mutableKeyMap.get(attr.name) match {
+          case Some(ColumnDelta.RowOrdinal) =>
             ordinalIdTerm = ctx.freshName("ordinalId")
             ExprCode("", "false", ordinalIdTerm)
-          case 1 =>
+          case Some(ColumnDelta.BatchId) =>
             columnBatchIdTerm = ctx.freshName("columnBatchId")
             ExprCode("", "false", columnBatchIdTerm)
-          case 2 =>
+          case Some(ColumnDelta.BucketId) =>
             bucketIdTerm = ctx.freshName("bucketId")
             ExprCode("", "false", bucketIdTerm)
-          case 3 => ExprCode("", "false", numBatchRows)
+          case Some(ColumnDelta.BatchNumRows) => ExprCode("", "false", numBatchRows)
           case _ => throw new IllegalStateException(s"Unexpected internal attribute $attr")
         }
       case (attr, index) => rsIndex += 1; columnsInputMapper(attr, index, rsIndex)
@@ -499,7 +512,7 @@ private[sql] final case class ColumnTableScan(
     val statsRow = ctx.freshName("statsRow")
     val colNextBytes = ctx.freshName("colNextBytes")
     val numTableColumns = if (relationSchema.exists(
-      _.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))) {
+      _.name.equalsIgnoreCase(ColumnDelta.RowOrdinal.name))) {
       relationSchema.length - ColumnDelta.mutableKeyNames.length // for update/delete
     } else relationSchema.length
     val numColumnsInStatBlob = ColumnStatsSchema.numStatsColumns(numTableColumns)
@@ -1002,7 +1015,7 @@ private[sql] final class UnionScanRDD[T: ClassTag](
   override def getPreferredLocations(s: Partition): Seq[String] =
     s.asInstanceOf[UnionPartition[T]].preferredLocations()
 
-  override def clearDependencies() {
+  override def clearDependencies(): Unit = {
     super.clearDependencies()
     rdds = null
   }

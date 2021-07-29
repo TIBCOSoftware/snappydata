@@ -17,7 +17,8 @@
 
 package io.snappydata
 
-import java.util.concurrent.{CyclicBarrier, Executors}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import java.util.concurrent.{CyclicBarrier, Executors, SynchronousQueue, ThreadPoolExecutor, TimeUnit}
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.Duration
@@ -31,6 +32,7 @@ import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
 import org.scalatest.Assertions
 
 import org.apache.spark.Logging
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.{Row, SnappySession}
 
 /**
@@ -622,5 +624,209 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     ds = session.sql("delete from domaindata where id = 40")
     // below checks both the result and partition pruning (only one row)
     assert(ds.rdd.getNumPartitions === 1)
+  }
+
+  def testConcurrentUpdateDeleteForCompaction(session: SnappySession,
+      numRows: Int = 200000): Unit = {
+    assert(numRows % 5000 === 0)
+    val barrier = new CyclicBarrier(2)
+    // run both versions for partitioned table vs non-partitioned table concurrently
+    val runPartitioned = Future(testConcurrentUpdateDeleteForCompactionBody(
+      session, partitioned = true, numRows, barrier))(ExecutionContext.global)
+    val runNonPartitioned = Future(testConcurrentUpdateDeleteForCompactionBody(
+      session.newSession(), partitioned = false, numRows, barrier))(ExecutionContext.global)
+    Await.result(runPartitioned, Duration.Inf)
+    Await.result(runNonPartitioned, Duration.Inf)
+  }
+
+  def testConcurrentUpdateDeleteForCompactionBody(session: SnappySession,
+      partitioned: Boolean, numRows: Int, barrier: CyclicBarrier): Unit = {
+    // General idea is to have multiple threads perform deletes and updates stepping through
+    // a range of values (different for each thread) to finally delete all data in the table
+    // with query threads confirming integrity of the results as well as column batch sizes
+
+    // Threads update/delete slices across multiple blocks in a single iteration and continue
+    // to next slice in the next iteration. This is to ensure that multiple column batches get
+    // compacted multiple times ultimately landing up into the delta row buffer. The distribution
+    // looks like below ("slice" is the marked area across blocks being updated/deleted in current
+    // iteration by that thread, while the blocks are the entire data that will be updated/deleted
+    // by the thread across all iterations). The data has been laid out as 2-dimensional for ease
+    // of visualization while the memory layout will be each of these rows of blocks laid out
+    // one after another sequentially in order.
+    //
+    //      .----------------------
+    //     /                       Thread 1 updated blocks
+    //    /          .-------------
+    //   /          /              Thread 2 updated blocks
+    //  / slice    / slice    .----
+    // /   | |    /   | |    /
+    // .---+-+----.---+-+----.---+-+----. ...
+    // |   |*|    |   |*|    |   |*|    |
+    // |---+-+----|---+-+----|---+-+----|
+    // |   |*|    |   |*|    |   |*|    |
+    // |---+-+----|---+-+----|---+-+----|
+    // |   |*|    |   |*|    |   |*|    |
+    // |---+-+----|---+-+----|---+-+----|
+    //
+    // ...
+    //
+    // |   |*|    |   |*|    |   |*|    |
+    // .---+-+----.---+-+----.---+-+----.
+
+    val tableName = s"testCompaction_${if (partitioned) "part" else "nopart"}"
+
+    val numUpdateRowsInSingleOp = 1000
+    val consecutiveRowsInOp = 10
+    val numUpdateThreads = 10
+    val numQueryThreads = 1
+    val totalThreads = numUpdateThreads + numQueryThreads
+    val updatedRows = numRows * 4 / 5
+    // fraction overlapping = (3/5) / (4/5)
+    val overlappingRowsInSingleOp = numUpdateRowsInSingleOp * 3 / 4
+    val remainingRows = numRows - updatedRows
+    val updateIterations = updatedRows / (numUpdateThreads * numUpdateRowsInSingleOp)
+
+    val numUpdateBlocks = numUpdateRowsInSingleOp / consecutiveRowsInOp
+    val consecutiveRows = updateIterations * consecutiveRowsInOp
+    val totalConsecutiveRows = numUpdateThreads * consecutiveRows
+
+    def setConf(key: String, value: String): Unit = {
+      // set in SparkConf so that all sessions inherit these values
+      val conf = Utils.getInternalSparkConf(session.sparkContext)
+      if (value ne null) {
+        conf.set(key, value)
+        session.conf.set(key, value)
+      } else {
+        conf.remove(key)
+        session.conf.unset(key)
+      }
+    }
+
+    // sparkConf changes should not be concurrent
+    synchronized {
+      setConf(Property.ColumnBatchSize.name, "100k")
+      setConf(Property.ColumnMaxDeltaRows.name, "500")
+
+      val partitionClause = if (partitioned) ", partition_by 'id'" else ""
+      session.sql(s"create table $tableName (id long, data string, seq long) using column " +
+          s"options (buckets '32'$partitionClause) " +
+          s"as select id, 'data_' || id, monotonically_increasing_id() from range($numRows)")
+    }
+
+    // wait at the barrier to avoid one of the threads running DMLs while other is still doing
+    // CREATE TABLE causing failure due to CatalogStaleException
+    barrier.await()
+
+    val numDeleted = new AtomicInteger(0)
+    val numDeletedAndInProgress = new AtomicInteger(0)
+    val numUpdated = new AtomicInteger(0)
+    val numUpdatedAndInProgress = new AtomicInteger(0)
+    val queriesRunning = new AtomicBoolean(true)
+
+    val pool = new ThreadPoolExecutor(totalThreads, totalThreads * 2,
+      60, TimeUnit.SECONDS, new SynchronousQueue[Runnable]())
+    implicit val context: ExecutionContext = ExecutionContext.fromExecutorService(pool)
+
+    def condition(startId: Long): String = {
+      s"id >= $startId and ((id - $startId) % $totalConsecutiveRows) < $consecutiveRowsInOp " +
+          s"and ((id - $startId) / $totalConsecutiveRows) < $numUpdateBlocks"
+    }
+
+    val doUpdateAndDelete = (i: Int) => Future {
+      val snappy = session.newSession()
+      // use ranges of size "numConsecutiveRowsInSingleOp" spread across batches in a single delete
+      for (iteration <- 0 until updateIterations) {
+        if (i == 0 && ((iteration % 10 == 0) || iteration == updateIterations - 1)) {
+          // scalastyle:off println
+          println(
+            s"Running iteration for partitioned=$partitioned ${iteration + 1} / $updateIterations")
+          // scalastyle:on println
+        }
+        logInfo(s"Thread $i running iteration for partitioned=$partitioned " +
+            s"${iteration + 1} / $updateIterations")
+
+        // delete in upper (numRows - remainingRows) block while update in lower one
+        val deleteStartId = consecutiveRowsInOp * iteration + consecutiveRows * i
+        val updateStartId = deleteStartId + remainingRows
+
+        numUpdatedAndInProgress.getAndAdd(numUpdateRowsInSingleOp)
+        var rows = snappy.sql(s"update $tableName set data = 'updated_' || data, seq = seq + 1 " +
+            s"where ${condition(updateStartId)}").collect()
+        assert(rows.map(_.getLong(0)).sum === numUpdateRowsInSingleOp)
+        numUpdated.getAndAdd(numUpdateRowsInSingleOp)
+        // numUpdated represents the lower bound so reduce the overlapping rows that will be
+        // deleted in advance
+        numUpdated.getAndAdd(-overlappingRowsInSingleOp)
+
+        numDeletedAndInProgress.getAndAdd(numUpdateRowsInSingleOp)
+        rows = snappy.sql(s"delete from $tableName " +
+            s"where ${condition(deleteStartId)}").collect()
+        assert(rows.map(_.getLong(0)).sum === numUpdateRowsInSingleOp)
+        numDeleted.getAndAdd(numUpdateRowsInSingleOp)
+        // reduce updated count by overlapping rows that were deleted
+        numUpdatedAndInProgress.getAndAdd(-overlappingRowsInSingleOp)
+      }
+      snappy.clear()
+    }
+    val doQuery = () => Future {
+      val snappy = session.newSession()
+      var lastNumDeleted = 0
+      while (queriesRunning.get()) {
+        var rows: Array[Row] = null
+
+        // check no duplicates seen in queries
+        rows = snappy.sql(
+          s"select count(*) from $tableName group by id having count(*) > 1").collect()
+        assert(rows.length === 0)
+
+        val lowerDeleted = numDeleted.get()
+        if (lastNumDeleted != lowerDeleted) {
+          rows = snappy.sql(s"select count(*) from $tableName").collect()
+          // val upperDeleted = numDeletedAndInProgress.get()
+          assert(rows.length === 1)
+          // val rowCount = rows(0).getLong(0)
+          // selects can fall behind deletes by quite a bit, so below checks are disabled
+          // assert(rowCount >= numRows - upperDeleted)
+          // assert(rowCount <= numRows - lowerDeleted)
+          lastNumDeleted = lowerDeleted
+        }
+      }
+    }
+
+    val updateFutures = (0 until numUpdateThreads).map(doUpdateAndDelete)
+    val queryFutures = (0 until numQueryThreads).map(_ => doQuery())
+    updateFutures.foreach(Await.result(_, Duration.Inf))
+
+    assert(numDeleted.get() === updatedRows)
+    assert(numDeletedAndInProgress.get() === updatedRows)
+    assert(numUpdated.get() === remainingRows)
+    assert(numUpdatedAndInProgress.get() === remainingRows)
+
+    queriesRunning.set(false)
+    queryFutures.foreach(Await.result(_, Duration.Inf))
+
+    pool.shutdownNow()
+
+    // check the final results
+    var rows = session.sql(s"select count(*) from $tableName").collect()
+    assert(rows.length === 1)
+    assert(rows(0).getLong(0) === remainingRows)
+    rows = session.sql(s"select count(*) from $tableName where data like 'update_%'").collect()
+    assert(rows.length === 1)
+    assert(rows(0).getLong(0) === remainingRows)
+    rows = session.sql(s"select count(*) from $tableName where data not like 'update_%'").collect()
+    assert(rows.length === 1)
+    assert(rows(0).getLong(0) === 0)
+
+    // wait at the barrier again to avoid one of the threads running DMLs while other
+    // dropping the table causing failure due to CatalogStaleException
+    barrier.await()
+
+    synchronized {
+      session.sql(s"drop table $tableName")
+
+      setConf(Property.ColumnMaxDeltaRows.name, null)
+      setConf(Property.ColumnBatchSize.name, null)
+    }
   }
 }

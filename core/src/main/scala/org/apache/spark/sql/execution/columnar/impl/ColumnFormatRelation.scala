@@ -20,7 +20,7 @@ import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property}
@@ -238,7 +238,7 @@ abstract class BaseColumnFormatRelation(
     withTableWriteLock { () =>
       ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
         partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
-        updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
+        updateColumns, updateExpressions, keyColumns, connProperties)
     }
   }
 
@@ -251,7 +251,7 @@ abstract class BaseColumnFormatRelation(
     withTableWriteLock { () =>
       ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
         partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
-        this, keyColumns, connProperties, onExecutor = false)
+        this, keyColumns, connProperties)
     }
   }
 
@@ -337,7 +337,7 @@ abstract class BaseColumnFormatRelation(
   // truncate both actual and shadow table
   override def truncate(): Unit = writeLock {
     try {
-      externalStore.tryExecute(externalColumnTableName) { conn =>
+      externalStore.tryExecute(table) { conn =>
         JdbcExtendedUtils.truncateTable(conn, externalColumnTableName, dialect)
       }
     } finally {
@@ -356,7 +356,7 @@ abstract class BaseColumnFormatRelation(
     val conn = connFactory()
     try {
       // clean up the connection pool and caches
-      StoreUtils.removeCachedObjects(sqlContext, table)
+      ExternalStoreUtils.removeCachedObjects(sqlContext, table)
     } finally {
       try {
         try {
@@ -439,32 +439,6 @@ abstract class BaseColumnFormatRelation(
     _relationInfoAndRegion = null
   }
 
-  /**
-   * Execute a DML SQL and return the number of rows affected.
-   */
-  override def executeUpdate(sql: String, defaultSchema: String): Int = {
-    val connection = ConnectionPool.getPoolConnection(table, dialect,
-      connProperties.poolProps, connProperties.connProps,
-      connProperties.hikariCP)
-    var currentSchema: String = null
-    try {
-      if (defaultSchema ne null) {
-        currentSchema = connection.getSchema
-        if (defaultSchema != currentSchema) {
-          connection.setSchema(defaultSchema)
-        }
-      }
-      val stmt = connection.prepareStatement(sql)
-      val result = stmt.executeUpdate()
-      stmt.close()
-      result
-    } finally {
-      if (currentSchema ne null) connection.setSchema(currentSchema)
-      connection.commit()
-      connection.close()
-    }
-  }
-
   override def flushRowBuffer(): Unit = {
     val sc = sqlContext.sparkContext
     // force flush all the buckets into the column store
@@ -498,8 +472,10 @@ class ColumnFormatRelation(
       _context,
       _relationInfo) with BulkPutRelation {
 
-  val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
+  private[this] val tableOptions = new CaseInsensitiveMutableHashMap(_origOptions)
+
   def getColocatedTable: Option[String] = tableOptions.get(StoreUtils.COLOCATE_WITH)
+
   override def withKeyColumns(relation: LogicalRelation,
       keyColumns: Seq[String]): LogicalRelation = {
     // keyColumns should match the key fields required for update/delete

@@ -27,7 +27,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import io.snappydata._
-import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
+import io.snappydata.test.dunit.DistributedTestBase.{WaitCriterion, getStaticLogWriter}
 import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import org.slf4j.LoggerFactory
@@ -78,7 +78,7 @@ abstract class ClusterManagerTestBase(s: String)
   sysProps.setProperty("p2p.minJoinTries", "1")
 
   // spark memory fill to detect any uninitialized memory accesses
-  sysProps.setProperty("spark.memory.debugFill", "true")
+  // sysProps.setProperty("spark.memory.debugFill", "true")
   // reduce minimum compression size so that it happens for all the values for testing
   sysProps.setProperty(Constant.COMPRESSION_MIN_SIZE, "128")
 
@@ -125,6 +125,8 @@ abstract class ClusterManagerTestBase(s: String)
     val sysProps = this.sysProps
     DistributedTestBase.invokeInLocator(new SerializableRunnable() {
       override def run(): Unit = {
+        // force initialize test-log4j.properties to enable override by SnappyData
+        getStaticLogWriter.info("[SnappyData] starting locator...")
         ClusterManagerTestBase.setSystemProperties(sysProps)
         val loc: Locator = ServiceManager.getLocatorInstance
 
@@ -143,6 +145,8 @@ abstract class ClusterManagerTestBase(s: String)
     val nodeProps = bootProps
     val startNode = new SerializableRunnable() {
       override def run(): Unit = {
+        // force initialize test-log4j.properties to enable override by SnappyData
+        getStaticLogWriter.info("[SnappyData] starting server...")
         ClusterManagerTestBase.setSystemProperties(sysProps)
         val node = ServiceManager.currentFabricServiceInstance
         if (node == null || node.status != FabricService.State.RUNNING) {
@@ -163,6 +167,7 @@ abstract class ClusterManagerTestBase(s: String)
       }
     })
     // start lead node in this VM
+    getStaticLogWriter.info("[SnappyData] starting lead...")
     val sc = SnappyContext.globalSparkContext
     if (sc == null || sc.isStopped) {
       startSnappyLead(locatorPort, bootProps.clone().asInstanceOf[java.util.Properties])

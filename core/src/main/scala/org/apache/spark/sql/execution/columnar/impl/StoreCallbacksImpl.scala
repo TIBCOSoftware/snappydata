@@ -46,7 +46,6 @@ import com.pivotal.gemfirexd.internal.impl.sql.execute.PrivilegeInfo
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
-import org.apache.spark
 
 import org.apache.spark.Logging
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
@@ -581,7 +580,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   private lazy val removeSamplerMethod: Method = {
     val samplerClassName = "org.apache.spark.sql.execution.StratifiedSampler"
-    val samplerClass = spark.util.Utils.classForName(samplerClassName)
+    val samplerClass = org.apache.spark.util.Utils.classForName(samplerClassName)
     samplerClass.getMethod("removeSampler", classOf[String], classOf[Boolean])
   }
 

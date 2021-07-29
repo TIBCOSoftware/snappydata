@@ -42,7 +42,7 @@ import com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey
 import org.apache.spark.memory.MemoryManagerCallback.{allocateExecutionMemory, memoryManager, releaseExecutionMemory}
 import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeleteDelta, ColumnEncoding, ColumnStatsSchema}
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.alignedSize
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry.{STATROW_COL_INDEX, alignedSize}
 import org.apache.spark.sql.store.{CompressionCodecId, CompressionUtils}
 
 /**
@@ -69,6 +69,8 @@ object ColumnFormatEntry {
         override def get(): GfxdDSFID = new ColumnDeleteDelta()
       })
   }
+
+  final def valueIsValid(v: AnyRef): Boolean = (v ne null) && !v.isInstanceOf[Token]
 
   /**
    * max number of consecutive compressions after which buffer will be
@@ -150,6 +152,8 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
     if (columnIndex != this.columnIndex) new ColumnFormatKey(uuid, partitionId, columnIndex)
     else this
   }
+
+  def toStatsRowKey: ColumnFormatKey = withColumnIndex(STATROW_COL_INDEX)
 
   // use the same hash code for all the columns in the same batch so that they
   // are gotten together by the iterator
@@ -352,7 +356,8 @@ class ColumnFormatValue extends SerializedDiskBuffer
 
   @inline protected final def duplicateBuffer(buffer: ByteBuffer): ByteBuffer = {
     // slice buffer for non-zero position so callers don't have to deal with it
-    if (buffer.position() == 0) buffer.duplicate() else buffer.slice()
+    val buf = if (buffer.position() == 0) buffer.duplicate() else buffer.slice()
+    buf.order(ByteOrder.LITTLE_ENDIAN)
   }
 
   /**
@@ -366,6 +371,8 @@ class ColumnFormatValue extends SerializedDiskBuffer
    * Calls to this specific class are guaranteed to always return buffers
    * which have position as zero so callers can make simplifying assumptions
    * about the same.
+   *
+   * The returned buffer is guaranteed to have its order as [[ByteOrder.LITTLE_ENDIAN]].
    */
   override final def getBufferRetain: ByteBuffer =
     getValueRetain(FetchRequest.ORIGINAL).getBuffer
@@ -373,6 +380,8 @@ class ColumnFormatValue extends SerializedDiskBuffer
   /**
    * Return the data as a ByteBuffer. Should be invoked only after a [[retain]]
    * or [[getValueRetain]] call.
+   *
+   * The returned buffer is guaranteed to have its order as [[ByteOrder.LITTLE_ENDIAN]].
    */
   override final def getBuffer: ByteBuffer = duplicateBuffer(columnBuffer)
 
@@ -713,12 +722,10 @@ class ColumnFormatValue extends SerializedDiskBuffer
     // Remove the buffer at this point. Any further reads will need to be
     // done either using DiskId, or will return empty if no DiskId is available
     val buffer = this.columnBuffer
-    if (buffer.isDirect) {
-      this.columnBuffer = DiskEntry.Helper.NULL_BUFFER
-      this.decompressionState = -1
-      this.fromDisk = false
-      DirectBufferAllocator.instance().release(buffer)
-    }
+    this.columnBuffer = DiskEntry.Helper.NULL_BUFFER
+    this.decompressionState = -1
+    this.fromDisk = false
+    if (buffer.isDirect) DirectBufferAllocator.instance().release(buffer)
   }
 
   protected def copy(buffer: ByteBuffer, isCompressed: Boolean,

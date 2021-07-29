@@ -19,7 +19,6 @@ package org.apache.spark.sql.store
 
 import io.snappydata.Constant
 
-import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 
 /**

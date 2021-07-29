@@ -21,10 +21,14 @@ import java.sql.DriverManager
 import java.util.Properties
 import java.util.function.BiConsumer
 
+import scala.collection.JavaConverters._
+
 import com.gemstone.gemfire.internal.cache.{BucketRegion, GemFireCacheImpl, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 
@@ -309,8 +313,9 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
         val conn = DriverManager.getConnection("jdbc:snappydata:")
         val stmt = conn.createStatement()
         val columnTable = ColumnFormatRelation.columnBatchTableName(tableName.toUpperCase)
-        stmt.execute(s"CALL SYS.SET_BUCKETS_FOR_LOCAL_EXECUTION('$columnTable', " +
-            s"'${(0 until numBuckets).mkString(",")}', -1)")
+        GfxdSystemProcedures.setBucketsForLocalExecution(columnTable,
+          (0 until numBuckets).map(Int.box).toSet.asJava, true,
+          conn.asInstanceOf[EmbedConnection].getLanguageConnection)
         val rs = stmt.executeQuery(s"CALL SYS.COLUMN_TABLE_SCAN('$columnTable', " +
             s"'${(1 to numColumns).mkString(",")}', null)")
         var n = 0

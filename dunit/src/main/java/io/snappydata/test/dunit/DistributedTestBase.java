@@ -74,7 +74,7 @@ import org.junit.internal.MethodSorter;
 @SuppressWarnings("serial")
 public abstract class DistributedTestBase extends TestCase implements java.io.Serializable {
   private transient static volatile Logger globalLogger = newGlobalLogger();
-  private transient volatile Logger logger = newLogWriter();
+  private transient static volatile Logger logger = newLogWriter();
   private static final LinkedHashSet<String> testHistory = new LinkedHashSet<String>();
 
   /** This VM's connection to the distributed system */
@@ -669,11 +669,15 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
   }
 
   public final Logger getLogWriter() {
-    final Logger logger = this.logger;
-    if (logger != null) {
-      return logger;
+    return getStaticLogWriter();
+  }
+
+  public static Logger getStaticLogWriter() {
+    final Logger log = logger;
+    if (log != null) {
+      return log;
     }
-    return (this.logger = newLogWriter());
+    return (logger = newLogWriter());
   }
 
   /**

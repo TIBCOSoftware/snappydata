@@ -54,7 +54,7 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
         .setAppName(getClass.getName)
     conf.set("snappydata.store.critical-heap-percentage", "95")
     if (SnappySession.isEnterpriseEdition) {
-      conf.set("snappydata.store.memory-size", "1200m")
+      conf.set("snappydata.store.memory-size", "3g")
     }
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
     conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
@@ -92,6 +92,11 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
 
   test("SNAP-2124 update missed") {
     ColumnUpdateDeleteTests.testSNAP2124(this.snc.snappySession)
+  }
+
+  test("concurrent update and delete ops causing compactions") {
+    ColumnUpdateDeleteTests.testConcurrentUpdateDeleteForCompaction(this.snc.snappySession,
+      numRows = 500000)
   }
 
   test("SNAP-1985: update delete on string type") {

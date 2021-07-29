@@ -31,9 +31,11 @@ case class RowUpdateExec(child: SparkPlan, resolvedName: String,
     numBuckets: Int, isPartitioned: Boolean, tableSchema: StructType,
     relation: Option[DestroyRelation], updateColumns: Seq[Attribute],
     updateExpressions: Seq[Expression], keyColumns: Seq[Attribute],
-    connProps: ConnectionProperties, onExecutor: Boolean) extends RowExec {
+    connProps: ConnectionProperties) extends RowExec {
 
   assert(updateColumns.length == updateExpressions.length)
+
+  override def onExecutor: Boolean = false
 
   override protected def opType: String = "Update"
 

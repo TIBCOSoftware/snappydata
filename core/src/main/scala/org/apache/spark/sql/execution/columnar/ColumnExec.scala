@@ -23,7 +23,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
-import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution}
+import org.apache.spark.sql.catalyst.plans.physical.{Distribution, OrderedDistribution}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.WholeStageCodegenExec
 import org.apache.spark.sql.execution.columnar.impl.{JDBCSourceAsColumnarStore, SnapshotConnectionListener}
@@ -37,6 +37,8 @@ trait ColumnExec extends RowExec {
 
   @transient protected final var taskListener: String = _
 
+  override def onExecutor: Boolean = false
+
   def externalStore: ExternalStore
 
   override def resolvedName: String = externalStore.tableName
@@ -48,10 +50,12 @@ trait ColumnExec extends RowExec {
   override def requiredChildDistribution: Seq[Distribution] = {
     if (partitioned) super.requiredChildDistribution
     else {
-      // for tables with no partitioning, require partitioning on batchId so that all rows of
-      // a batch are together else it results in very large number of changes for each batch
-      // strewn across all partitions
-      ClusteredDistribution(keyColumns(keyColumns.length - 3) :: Nil) :: Nil
+      // ClusteredDistribution(keyColumns(keyColumns.length - 3) :: Nil) :: Nil
+      // for tables with no partitioning, require range partitioning on bucketId so that all
+      // rows of a batch are together else it results in very large number of changes for each
+      // batch strewn across all partitions; this also matches ColumnTableScan's outputPartitioning
+      OrderedDistribution(StoreUtils.getColumnUpdateDeleteOrdering(
+        keyColumns(keyColumns.length - 2)) :: Nil) :: Nil
     }
   }
 
@@ -59,9 +63,11 @@ trait ColumnExec extends RowExec {
   // consecutive batchIds+ordinals else it will  be very inefficient for bulk updates/deletes.
   // BatchId attribute is always third last in the keyColumns while ordinal
   // (index of row in the batch) is the one before that.
-  override def requiredChildOrdering: Seq[Seq[SortOrder]] =
-    Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 3)),
-      StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 4))))
+  override def requiredChildOrdering: Seq[Seq[SortOrder]] = {
+    Seq(StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 2)),
+      StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 3)),
+      StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 4))) :: Nil
+  }
 
   override protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     val connectionClass = classOf[Connection].getName

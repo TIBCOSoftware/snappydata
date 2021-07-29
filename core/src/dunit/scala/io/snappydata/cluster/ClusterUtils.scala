@@ -28,6 +28,7 @@ import scala.util.control.NonFatal
 
 import io.snappydata.test.dunit.VM
 import io.snappydata.test.util.TestException
+import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
 
 import org.apache.spark.Logging
@@ -173,6 +174,9 @@ object ClusterUtils extends Serializable with Logging {
 
   def startSparkCluster(clusterDir: String): String = {
     logInfo(s"Starting spark cluster in $clusterDir/work")
+    writeToFile(
+      s"\nSPARK_WORKER_CORES=${TestUtils.defaultCores * 2}",
+      s"$clusterDir/conf/spark-env.sh", append = true)
     val output = s"$clusterDir/sbin/start-all.sh".!!
     logInfo(output)
     output
@@ -182,6 +186,9 @@ object ClusterUtils extends Serializable with Logging {
     stopSpark()
     logInfo(s"Stopping spark cluster in $clusterDir/work")
     logInfo(s"$clusterDir/sbin/stop-all.sh".!!)
+    Files.deleteIfExists(Paths.get(clusterDir, "conf", "spark-env.sh"))
+    Files.deleteIfExists(Paths.get(clusterDir, "conf", "log4j.properties"))
+    Files.deleteIfExists(Paths.get(clusterDir, "conf", "workers"))
   }
 
   def startSnappyCluster(clusterDir: String, enableHiveServer: Boolean,

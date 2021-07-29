@@ -25,12 +25,14 @@ import java.util.{Timer, TimerTask}
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.CancelException
+import com.gemstone.gemfire.{CancelException, SystemFailure}
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.execution.CommonUtils
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 
 object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
@@ -110,10 +112,9 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
     }
   }
 
-  override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
-      Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = synchronized {
+  private[this] val regionStatsFuture = new RecurringFuture[Seq[SnappyRegionStats]](() => {
     try {
-      val resultSet = executeStatsStmt(sc)
+      val resultSet = executeStatsStmt(Option(SnappyContext.globalSparkContext))
       val regionStats = new ArrayBuffer[SnappyRegionStats]
       while (resultSet.next()) {
         val tableName = resultSet.getString(1)
@@ -126,14 +127,29 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
         regionStats += new SnappyRegionStats(tableName, totalSize, sizeInMemory, rowCount,
           isColumnTable, isReplicatedTable, bucketCount)
       }
-      (regionStats, Nil, Nil)
+      regionStats
     } catch {
-      case NonFatal(e) =>
+      case e if !SystemFailure.isJVMFailureError(e) =>
         logWarning("Warning: unable to retrieve table stats " +
-            "from SnappyData cluster due to " + e.toString)
-        logDebug("Exception stack trace: ", e)
+            "from SnappyData cluster due to " + e.toString, e)
         closeConnection()
-        (Nil, Nil, Nil)
+        Nil
+    }
+  })(CommonUtils.waiterExecutionContext)
+
+  override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
+      Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = synchronized {
+    var resultObtained: Boolean = false
+    val result = regionStatsFuture.result(waitDuration) match {
+      case Some(stats) => resultObtained = true; stats
+      case None => // ignore timeout exception and return current map
+        logWarning("Obtaining updated Table Statistics is taking longer than expected time.")
+        Nil
+    }
+    if (resultObtained) (result, Nil, Nil)
+    else {
+      // Return last successfully updated tableSizeInfo
+      (tableSizeInfo.values.toSeq, Nil, Nil)
     }
   }
 

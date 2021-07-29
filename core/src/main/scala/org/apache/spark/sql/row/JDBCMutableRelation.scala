@@ -18,11 +18,11 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
-import com.gemstone.gemfire.internal.shared.ClientResolverUtils
-
 import scala.collection.JavaConverters._
+
+import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 import io.snappydata.SnappyTableStatsProviderService
-import kafka.client.ClientUtils
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
@@ -82,7 +82,7 @@ abstract case class JDBCMutableRelation(
 
   override protected final def dialect: JdbcDialect = connProperties.dialect
 
-  override protected final def isRowTable: Boolean = true
+  override final def isRowTable: Boolean = true
 
   override final def resolvedName: String = table
 
@@ -159,7 +159,7 @@ abstract case class JDBCMutableRelation(
       keyColumns: Seq[Attribute]): SparkPlan = {
     RowUpdateExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
       numBuckets, isPartitioned, schema, Some(this), updateColumns, updateExpressions,
-      keyColumns, connProperties, onExecutor = false)
+      keyColumns, connProperties)
   }
 
   /**
@@ -169,8 +169,7 @@ abstract case class JDBCMutableRelation(
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
     RowDeleteExec(child, resolvedName, partitionColumns, partitionExpressions(relation),
-      numBuckets, isPartitioned, schema, Some(this), keyColumns, connProperties,
-      onExecutor = false)
+      numBuckets, isPartitioned, schema, Some(this), keyColumns, connProperties)
   }
 
   /**
@@ -225,29 +224,6 @@ abstract case class JDBCMutableRelation(
         connection.commit()
         connection.close()
       }
-    }
-  }
-
-  override def executeUpdate(sql: String, defaultSchema: String): Int = {
-    val connection = ConnectionPool.getPoolConnection(table, dialect,
-      connProperties.poolProps, connProperties.connProps,
-      connProperties.hikariCP)
-    var currentSchema: String = null
-    try {
-      if (defaultSchema ne null) {
-        currentSchema = connection.getSchema
-        if (defaultSchema != currentSchema) {
-          connection.setSchema(defaultSchema)
-        }
-      }
-      val stmt = connection.prepareStatement(sql)
-      val result = stmt.executeUpdate()
-      stmt.close()
-      result
-    } finally {
-      if (currentSchema ne null) connection.setSchema(currentSchema)
-      connection.commit()
-      connection.close()
     }
   }
 
@@ -411,12 +387,11 @@ abstract case class JDBCMutableRelation(
 
   override def equals(that: Any): Boolean = {
     that match {
-      case mutable: JDBCMutableRelation => {
+      case mutable: JDBCMutableRelation =>
         (this eq mutable) || (
           hashCode() == mutable.hashCode()
             && mutable.schemaName.equalsIgnoreCase(schemaName)
             && mutable.tableName.equalsIgnoreCase(tableName))
-      }
       case _ => false
     }
   }
