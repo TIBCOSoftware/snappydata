@@ -107,7 +107,7 @@ case class ExternalTableDMLCmd(
         Seq(Row(relation.executeUpdate(command,
           JdbcExtendedUtils.toUpperCase(session.catalog.currentDatabase))))
       case other => throw new AnalysisException("DML support requires " +
-          "SingleRowInsertableRelation but found " + other)
+          "NativeTableRelation but found " + other)
     }
   }
 

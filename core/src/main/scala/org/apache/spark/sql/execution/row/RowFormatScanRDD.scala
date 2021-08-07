@@ -21,27 +21,27 @@ import java.util.{Collections, GregorianCalendar}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.ClientSharedData
-import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
+import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RawStoreResultSet, RegionEntryUtils}
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.Authorizer
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
+import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedResultSet}
 
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, Utils}
-import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
+import org.apache.spark.sql.collection.{LazyIterator, MultiBucketExecutorPartition, Utils}
+import org.apache.spark.sql.execution.columnar.ConnectionType.ConnectionType
+import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
-import org.apache.spark.sql.execution.{BucketsBasedIterator, RDDKryo, SecurityUtils}
+import org.apache.spark.sql.execution.{BucketsBasedIterator, RDDKryo, SecurityUtils, SnapshotConnectionListener}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.{Partition, TaskContext, TaskContextImpl, TaskKilledException}
@@ -56,11 +56,11 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     @transient private val columns: Array[String],
     var pushProjections: Boolean,
     protected var useResultSet: Boolean,
+    protected var isDeltaBuffer: Boolean,
     protected var connProperties: ConnectionProperties,
     @transient private[sql] val filters: Array[Expression] = Array.empty[Expression],
     @transient protected val partitionEvaluator: () => Array[Partition] = () =>
       Array.empty[Partition], protected val partitionPruner: () => Int = () => -1,
-    protected var commitTx: Boolean,
     protected var delayRollover: Boolean, protected var projection: Array[Int],
     @transient protected val region: Option[LocalRegion])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
@@ -174,41 +174,30 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     } else "1"
   }
 
-  def computeResultSet(
-      thePart: Partition, context: TaskContext): (Connection, Statement, ResultSet) = {
-    val conn = ExternalStoreUtils.getConnection(tableName,
-      connProperties, forExecutor = true)
+  protected def connectionType: ConnectionType = ConnectionType.Embedded
 
-    if (context ne null) {
-      val partitionId = context.partitionId()
-      context.addTaskCompletionListener { _ =>
-        logDebug(s"closed connection for task from listener $partitionId")
-        try {
-          conn.commit()
-          conn.close()
-          logDebug("closed connection for task " + context.partitionId())
-        } catch {
-          case NonFatal(e) => logWarning("Exception closing connection", e)
-        }
-      }
-    }
+  protected def createConnection(part: Partition): (Connection, Long) =
+    throw new UnsupportedOperationException("unexpected call for " + this)
 
+  def computeResultSet(thePart: Partition,
+      listener: SnapshotConnectionListener): (Statement, ResultSet) = {
+    val conn = listener.connection
     if (isPartitioned) {
-      val ps = conn.prepareStatement(
-        "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?, ?)")
-      try {
-        ps.setString(1, tableName)
-        val bucketString = thePart match {
-          case p: MultiBucketExecutorPartition => p.bucketsString
-          case _ => thePart.index.toString
-        }
-        ps.setString(2, bucketString)
-        ps.setLong(3, -1)
-        ps.executeUpdate()
-      } finally {
-        ps.close()
+      val bucketSet = thePart match {
+        case p: MultiBucketExecutorPartition => p.buckets
+        case _ => Collections.singleton(Int.box(thePart.index))
       }
-    }
+      val lcc = conn.unwrap(classOf[EmbedConnection]).getLanguageConnection
+      GfxdSystemProcedures.setBucketsForLocalExecution(tableName, bucketSet, true, lcc)
+      try {
+        computeResultSet(conn)
+      } finally {
+        lcc.clearExecuteLocally()
+      }
+    } else computeResultSet(conn)
+  }
+
+  private def computeResultSet(conn: Connection): (Statement, ResultSet) = {
     val sqlText = s"SELECT $columnList FROM ${quotedName(tableName)}$filterWhereClause"
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
@@ -220,95 +209,60 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       stmt.setFetchSize(fetchSize.toInt)
     }
     val rs = stmt.executeQuery()
-    /* (hangs for some reason)
-    // setup context stack for lightWeightNext calls
-    val rs = stmt.executeQuery().asInstanceOf[EmbedResultSet]
-    val embedConn = stmt.getConnection.asInstanceOf[EmbedConnection]
-    val lcc = embedConn.getLanguageConnectionContext
-    embedConn.getTR.setupContextStack()
-    rs.pushStatementContext(lcc, true)
-    */
-    // set the delayRollover flag on current transaction
-    if (delayRollover) {
-      val tx = TXManagerImpl.getCurrentTXState
-      if (tx ne null) {
-        tx.getProxy.setColumnRolloverDisabled(true)
-      }
-    }
-    (conn, stmt, rs)
-  }
-
-
-  def commitTxBeforeTaskCompletion(conn: Option[Connection], context: TaskContext): Unit = {
-    Option(context).foreach(_.addTaskCompletionListener(_ => {
-      val tx = TXManagerImpl.getCurrentSnapshotTXState
-      if (tx != null /* && !(tx.asInstanceOf[TXStateProxy]).isClosed() */ ) {
-        val txMgr = tx.getTxMgr
-        txMgr.masqueradeAs(tx)
-        txMgr.commit()
-      }
-    }))
+    (stmt, rs)
   }
 
   /**
    * Runs the SQL query against the JDBC driver.
    */
   override def compute(thePart: Partition, context: TaskContext): Iterator[Any] = {
-
-    if (Misc.getMemStoreBootingNoThrow != null && useResultSet) {
+    val connectionType = this.connectionType
+    // explicitly check for authorization for the case of embedded connection while for remote
+    // connections, the GemFireXD layer processing will do the same
+    if (connectionType == ConnectionType.Embedded) {
       SecurityUtils.authorizeTableOperation(tableName, projection,
         Authorizer.SELECT_PRIV, Authorizer.SQL_SELECT_OP, connProperties)
     }
-    if (pushProjections) {
-      val (conn, stmt, rs) = computeResultSet(thePart, context)
-      val itr = new ResultSetTraversal(conn, stmt, rs, context, Collections.emptySet[Integer]())
-      if (commitTx) {
-        commitTxBeforeTaskCompletion(Option(conn), context)
-      }
-      itr
+
+    // TODO: enable snapshots for row tables too
+    val listener = SnapshotConnectionListener(context, isDeltaBuffer,
+      connectionType, tableName, lockDiskStore = None, connProperties, delayRollover,
+      if (connectionType == ConnectionType.Embedded) Left(-1L)
+      else Right(() => createConnection(thePart)))
+    val conn = listener.connection
+    val iterator = () => if (pushProjections) {
+      val (stmt, rs) = computeResultSet(thePart, listener)
+      new ResultSetTraversal(conn, stmt, rs, context, Collections.emptySet[Integer])
     } else {
-      // explicitly check authorization for the case of column table scan
-      // !pushProjections && useResultSet means a column table
-      val txManagerImpl = GemFireCacheImpl.getExisting.getCacheTransactionManager
-      var tx = txManagerImpl.getTXState
-      val startTX = tx eq null
-      if (startTX) {
-        tx = txManagerImpl.beginTX(TXManagerImpl.getOrCreateTXContext,
-          IsolationLevel.SNAPSHOT, null, null)
-      }
       // use iterator over CompactExecRows directly when no projection;
       // higher layer PartitionedPhysicalRDD will take care of conversion
       // or direct code generation as appropriate
-      val itr = if (isPartitioned && filterWhereClause.isEmpty) {
+      if (isPartitioned && filterWhereClause.isEmpty) {
         val container = GemFireXDUtils.getGemFireContainer(tableName, true)
         val bucketIds = thePart match {
           case p: MultiBucketExecutorPartition => p.buckets
           case _ => Collections.singleton(Int.box(thePart.index))
         }
 
-        val txId = if (tx ne null) tx.getTransactionId else null
-        val itr = new CompactExecRowIteratorOnScan(container, bucketIds, txId, context)
+        val itr = new CompactExecRowIteratorOnScan(container, bucketIds, context,
+          conn.unwrap(classOf[EmbedConnection]).getLanguageConnectionContext
+              .getTransactionExecute.asInstanceOf[GemFireTransaction].getActiveTXState)
         if (useResultSet) {
-          // row buffer of column table: wrap a result set around the scan
+          // row buffer of column table: wrap a result set around the iterator for ColumnTableScan
           val dataItr = itr.map(r =>
             if (r.hasByteArrays) r.getRowByteArrays(null) else r.getRowBytes(null): AnyRef).asJava
           val rs = new RawStoreResultSet(dataItr, container, container.getCurrentRowFormatter)
           new ResultSetTraversal(conn = null, stmt = null, rs, context, bucketIds)
         } else itr
       } else {
-        val (conn, stmt, rs) = computeResultSet(thePart, context)
+        val (stmt, rs) = computeResultSet(thePart, listener)
         val ers = rs.unwrap(classOf[EmbedResultSet])
         new CompactExecRowIteratorOnRS(conn, stmt, ers, context)
       }
-      // add the listener after the close listener added by iterator
-      // so its invoked just before it
-      if (startTX) {
-        // if (commitTx) {
-        commitTxBeforeTaskCompletion(None, context)
-        // }
-      }
-      itr
     }
+    // lazily evaluated iterator on first call so that transaction can be set correctly
+    // if required (row table + column table mix) before ResultSet is materialized
+    new LazyIterator(iterator)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -359,7 +313,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     output.writeBoolean(isPartitioned)
     output.writeBoolean(pushProjections)
     output.writeBoolean(useResultSet)
-    output.writeBoolean(commitTx)
+    output.writeBoolean(isDeltaBuffer)
     output.writeBoolean(delayRollover)
 
     output.writeString(columnList)
@@ -376,14 +330,9 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         i += 1
       }
     }
-    if (useResultSet) {
-      output.writeVarInt(projection.length, true)
-      output.writeInts(projection, true)
-    }
-    // need connection properties only if computing ResultSet
-    if (pushProjections || useResultSet || !isPartitioned || len > 0) {
-      ConnectionPropertiesSerializer.write(kryo, output, connProperties)
-    }
+    output.writeVarInt(projection.length, true)
+    output.writeInts(projection, true)
+    ConnectionPropertiesSerializer.write(kryo, output, connProperties)
   }
 
   override def read(kryo: Kryo, input: Input): Unit = {
@@ -392,7 +341,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     isPartitioned = input.readBoolean()
     pushProjections = input.readBoolean()
     useResultSet = input.readBoolean()
-    commitTx = input.readBoolean()
+    isDeltaBuffer = input.readBoolean()
     delayRollover = input.readBoolean()
 
     columnList = input.readString()
@@ -409,14 +358,9 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         i += 1
       }
     }
-    if (useResultSet) {
-      val numProjections = input.readVarInt(true)
-      projection = input.readInts(numProjections, true)
-    }
-    // read connection properties only if computing ResultSet
-    if (pushProjections || useResultSet || !isPartitioned || numFilters > 0) {
-      connProperties = ConnectionPropertiesSerializer.read(kryo, input)
-    }
+    val numProjections = input.readVarInt(true)
+    projection = input.readInts(numProjections, true)
+    connProperties = ConnectionPropertiesSerializer.read(kryo, input)
   }
 }
 
@@ -450,16 +394,14 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 }
 
 abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalRegion,
-    bucketIds: java.util.Set[Integer], context: TaskContext) extends Iterator[T]
-with BucketsBasedIterator {
+    bucketIds: java.util.Set[Integer], context: TaskContext, tx: TXStateInterface)
+    extends Iterator[T] with BucketsBasedIterator {
 
   protected type PRIterator = PartitionedRegion#PRLocalScanIterator
 
   protected[this] final val taskContext = context.asInstanceOf[TaskContextImpl]
   protected[this] final var hasNextValue = true
   protected[this] final var doMove = true
-  // transaction started by row buffer scan should be used here
-  private[this] val tx = TXManagerImpl.getCurrentSnapshotTXState
   private[execution] final val itr = createIterator(container, region, tx)
 
   override def getBucketSet: java.util.Set[Integer] = this.bucketIds
@@ -503,9 +445,9 @@ with BucketsBasedIterator {
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer], txId: TXId, context: TaskContext)
+    bucketIds: java.util.Set[Integer], context: TaskContext, tx: TXStateInterface)
     extends PRValuesIterator[AbstractCompactExecRow](container,
-      region = null, bucketIds, context) {
+      region = null, bucketIds, context, tx) {
 
   override protected[sql] val currentVal: AbstractCompactExecRow = container
       .newTemplateRow().asInstanceOf[AbstractCompactExecRow]

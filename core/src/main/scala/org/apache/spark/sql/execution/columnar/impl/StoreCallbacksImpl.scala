@@ -73,8 +73,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     ColumnFormatEntry.registerTypes()
   }
 
-  override def createColumnBatch(region: BucketRegion, batchID: Long,
-      bucketID: Int): java.util.Set[AnyRef] = {
+  override def createColumnBatch(region: BucketRegion, bucketID: Int): java.util.Set[AnyRef] = {
     val pr = region.getPartitionedRegion
     val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
     val catalogEntry: ExternalTableMetaData = container.fetchHiveMetaData(false)
@@ -94,7 +93,9 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           lcc = conn.getLanguageConnectionContext
           if (lcc == null) {
             Misc.getGemFireCache.getCancelCriterion.checkCancelInProgress(null)
+            throw StandardException.newException(SQLState.NO_CURRENT_CONNECTION)
           }
+          if (conn.getAutoCommit) conn.setAutoCommit(false, true)
         }
         val row: AbstractCompactExecRow = container.newTemplateRow()
             .asInstanceOf[AbstractCompactExecRow]
@@ -139,21 +140,18 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             ColumnFormatRelation.columnBatchTableName(tableName), schema,
             catalogEntry.externalStore.asInstanceOf[ExternalStore],
             catalogEntry.compressionCodec)
-          batchCreator.createAndStoreBatch(sc, row,
-            batchID, bucketID, indexes)
+          batchCreator.createAndStoreBatch(sc, row, bucketID, indexes)
         } finally {
           lcc.clearExecuteLocally()
           if (txStateSet) tc.clearActiveTXState(false, true)
         }
-      } catch {
-        case e: Throwable => throw e
       } finally {
         if (contextSet) {
           conn.getTR.restoreContextStack()
         }
       }
     } else {
-      java.util.Collections.emptySet[AnyRef]()
+      Collections.emptySet[AnyRef]()
     }
   }
 

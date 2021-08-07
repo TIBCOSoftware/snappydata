@@ -22,8 +22,9 @@ import java.sql.Connection
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Expression, NamedExpression}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.TableExec
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
+import org.apache.spark.sql.execution.{SnapshotConnectionListener, TableExec}
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -33,82 +34,48 @@ import org.apache.spark.sql.types.{StructField, StructType}
  */
 trait RowExec extends TableExec {
 
-  @transient private[sql] var connRef = -1
+  @transient protected var taskListener: String = _
   @transient protected var connTerm: String = _
   @transient protected var stmt: String = _
   @transient protected var rowCount: String = _
   @transient protected var result: String = _
   @transient protected var numOpRowsMetric: String = _
 
-
   def resolvedName: String
 
   def connProps: ConnectionProperties
 
+  override lazy val metrics: Map[String, SQLMetric] = {
+    val opLower = opType.toLowerCase()
+    val opSuffix = if (opLower.endsWith("e")) "d" else if (opLower == "put") "" else "ed"
+    if (onExecutor) Map.empty
+    else Map(s"num${opType}Rows" -> SQLMetrics.createMetric(sparkContext,
+      s"number of $opLower$opSuffix rows"))
+  }
+
   override def simpleString: String = s"$nodeName($resolvedName) partitioning=" +
       s"${partitionColumns.mkString("[", ",", "]")} numBuckets=$numBuckets"
 
-  protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
+  protected def initConnectionCode(ctx: CodegenContext): String = {
+    val listenerClass = classOf[SnapshotConnectionListener].getName
+    taskListener = ctx.freshName("taskListener")
     val connectionClass = classOf[Connection].getName
     connTerm = ctx.freshName("connection")
-    // onExecutor will never be true in case of ColumnDelete/Update
-    if (onExecutor) {
-      // actual connection will be filled into references before execution
-      connRef = ctx.references.length
-      // connObj position in the array is connRef
-      val connObj = ctx.addReferenceObj("conn", null, connectionClass)
-      (s"final $connectionClass $connTerm = $connObj;", "", "")
-    } else {
-      val utilsClass = ExternalStoreUtils.getClass.getName
-      ctx.addMutableState(connectionClass, connTerm, "")
-      val props = ctx.addReferenceObj("connectionProperties", connProps)
-      val catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
-      val initCode: String = getInitCode(utilsClass, props, catalogVersion)
-      val endCode = getEndCode(utilsClass, catalogVersion)
-      (initCode, s"", endCode)
-    }
-  }
+    val utilsClass = ExternalStoreUtils.getClass.getName + ".MODULE$"
+    val tableName = ctx.addReferenceObj("tableName", resolvedName)
+    val getContext = Utils.genTaskContextFunction(ctx)
+    val props = ctx.addReferenceObj("connectionProperties", connProps)
+    val catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
 
-  private def getInitCode(utilsClass: String, props: String, catalogVersion: String): String = {
-   val initCode = if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
-     // for smart connector, set connection attributes so that catalog schema version can be checked
-     s"""
-        |$connTerm = $utilsClass.MODULE$$.getConnection(
-        |    "$resolvedName", $props, true);
-        |$utilsClass.MODULE$$.setSchemaVersionOnConnection($catalogVersion, $connTerm);
-        |""".stripMargin
-    } else {
-     s"""
-        |$connTerm = $utilsClass.MODULE$$.getConnection(
-        |    "$resolvedName", $props, true);
-        |""".stripMargin
-   }
-    initCode
-  }
+    ctx.addMutableState(listenerClass, taskListener, "")
+    ctx.addMutableState(connectionClass, connTerm, "")
 
-  private def getEndCode(utilsClass: String, catalogVersion: String): String = {
-    val endCode = if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
-      // for smart connector, reset connection attributes
-      s""" finally {
-         |  $utilsClass.MODULE$$.resetSchemaVersionOnConnection($catalogVersion, $connTerm);
-         |  try {
-         |    $connTerm.commit();
-         |    $connTerm.close();
-         |  } catch (java.sql.SQLException sqle) {
-         |    // ignore exception in close
-         |  }
-         |}""".stripMargin
-    } else {
-      s""" finally {
-         |  try {
-         |    $connTerm.commit();
-         |    $connTerm.close();
-         |  } catch (java.sql.SQLException sqle) {
-         |    // ignore exception in close
-         |  }
-         |}""".stripMargin
-    }
-    endCode
+    s"""
+       |$taskListener = $listenerClass$$.MODULE$$.apply($getContext(),
+       |    false, $utilsClass.getConnectionType($props.dialect()), $tableName,
+       |    scala.Option.empty(), $props, false, new scala.util.Left($catalogVersion));
+       |$connTerm = $taskListener.connection();
+       |""".stripMargin
   }
 
   protected def executeBatchCode(numOperations: String,
@@ -124,7 +91,7 @@ trait RowExec extends TableExec {
 
   protected def doProduce(ctx: CodegenContext, pstmtStr: String,
       produceAddonCode: () => String = () => ""): String = {
-    val (initCode, commitCode, endCode) = connectionCodes(ctx)
+    val initCode = initConnectionCode(ctx)
     result = ctx.freshName("result")
     stmt = ctx.freshName("statement")
     rowCount = ctx.freshName("rowCount")
@@ -157,8 +124,7 @@ trait RowExec extends TableExec {
        |  ${consume(ctx, Seq(ExprCode("", "false", result)))}
        |} catch (java.sql.SQLException sqle) {
        |  throw new java.io.IOException(sqle.toString(), sqle);
-       |}$commitCode
-       |$endCode
+       |}
     """.stripMargin
   }
 

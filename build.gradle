@@ -131,7 +131,7 @@ allprojects {
     janinoVersion = '3.0.8'
     derbyVersion = '10.14.2.0'
     parboiledVersion = '2.1.8'
-    tomcatJdbcVersion = '8.5.37'
+    tomcatJdbcVersion = '10.0.10'
     hikariCPVersion = '2.7.9'
     twitter4jVersion = '4.0.7'
     objenesisVersion = '3.0.1'

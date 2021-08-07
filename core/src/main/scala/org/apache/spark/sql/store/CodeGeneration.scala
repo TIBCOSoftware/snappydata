@@ -27,7 +27,6 @@ import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdHeapDataOutputStream
 import org.codehaus.janino.CompilerFactory
 
-import org.apache.spark.metrics.source.CodegenMetrics
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
@@ -61,8 +60,8 @@ object CodeGeneration extends Logging {
   lazy val (codeCacheSize, cacheSize) = {
     val env = SparkEnv.get
     val size = if (env ne null) {
-      env.conf.getInt("spark.sql.codegen.cacheSize", 2000)
-    } else 2000
+      env.conf.getInt("spark.sql.codegen.cacheSize", 1000)
+    } else 1000
     // don't need as big a cache for other caches
     (size, size >>> 2)
   }
@@ -70,8 +69,8 @@ object CodeGeneration extends Logging {
   /**
    * A loading cache of generated <code>GeneratedStatement</code>s.
    */
-  private[this] lazy val cache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
-    new CacheLoader[ExecuteKey, GeneratedStatement]() {
+  private[this] lazy val cache = CacheBuilder.newBuilder().maximumSize(cacheSize).build[
+      ExecuteKey, GeneratedStatement](new CacheLoader[ExecuteKey, GeneratedStatement]() {
       override def load(key: ExecuteKey): GeneratedStatement = {
         val start = System.nanoTime()
         val result = compilePreparedUpdate(key.name, key.schema, key.dialect)
@@ -86,33 +85,21 @@ object CodeGeneration extends Logging {
    * a key (name+schema) instead of the code string itself to avoid having
    * to create the code string upfront. Code adapted from CodeGenerator.cache
    */
-  private[this] lazy val codeCache = CacheBuilder.newBuilder().maximumSize(codeCacheSize).build(
-    new CacheLoader[ExecuteKey, AnyRef]() {
-      // invoke CodeGenerator.doCompile by reflection to reduce code duplication
-      private val doCompileMethod = {
-        val allMethods = CodeGenerator.getClass.getDeclaredMethods.toSeq
-        val method = allMethods.find(_.getName.endsWith("doCompile"))
-            .getOrElse(sys.error(s"Failed to find method 'doCompile' in " +
-                s"CodeGenerator (methods=$allMethods)"))
-        method.setAccessible(true)
-        method
-      }
-
+  private[this] lazy val codeCache = CacheBuilder.newBuilder().maximumSize(codeCacheSize).build[
+      ExecuteKey, AnyRef](new CacheLoader[ExecuteKey, AnyRef]() {
       override def load(key: ExecuteKey): AnyRef = {
         val (code, references) = key.genCode()
         val startTime = System.nanoTime()
-        val result = doCompileMethod.invoke(CodeGenerator, code)
+        val result = CodeGenerator.compile(code)
         val endTime = System.nanoTime()
         val timeMs = (endTime - startTime).toDouble / 1000000.0
-        CodegenMetrics.METRIC_SOURCE_CODE_SIZE.update(code.body.length)
-        CodegenMetrics.METRIC_COMPILATION_TIME.update(timeMs.toLong)
         logInfo(s"Local code for ${key.name} generated in $timeMs ms")
-        (result.asInstanceOf[GeneratedClass], references)
+        (result, references)
       }
     })
 
-  private[this] lazy val indexCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
-    new CacheLoader[ExecuteKey, GeneratedIndexStatement]() {
+  private[this] lazy val indexCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build[
+      ExecuteKey, GeneratedIndexStatement](new CacheLoader[ExecuteKey, GeneratedIndexStatement]() {
       override def load(key: ExecuteKey): GeneratedIndexStatement = {
         val start = System.nanoTime()
         val result = compileGeneratedIndexUpdate(key.name, key.schema, key.dialect)
@@ -125,8 +112,8 @@ object CodeGeneration extends Logging {
   /**
    * A loading cache of generated <code>SerializeComplexType</code>s.
    */
-  private[this] lazy val typeCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build(
-    new CacheLoader[DataType, SerializeComplexType]() {
+  private[this] lazy val typeCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build[
+      DataType, SerializeComplexType](new CacheLoader[DataType, SerializeComplexType]() {
       override def load(key: DataType): SerializeComplexType = {
         val start = System.nanoTime()
         val result = compileComplexType(key)
@@ -478,6 +465,14 @@ object CodeGeneration extends Logging {
         .iterator(), multipleRows = false, 0, schema, dialect)
   }
 
+  // the keys below are the ones used in compileCode which relies on these names to invalidate
+  // with the table name being the original one and not the internal one for the column store
+
+  private[sql] def createBatchKey(table: String): String = table + ".columnTable.batch"
+  private[sql] def createDeltaKey(table: String): String = table + ".columnTable.toDelta"
+  private[sql] def sampleInsertKey(table: String): String = table + ".columnTable.sample"
+  private[sql] def compactKey(table: String): String = table + ".columnTable.compact"
+
   def compileCode(name: String, schema: Array[StructField],
       genCode: () => (CodeAndComment, Array[Any])): (GeneratedClass, Array[Any]) = {
     codeCache.get(new ExecuteKey(name, schema, SnappyStoreDialect,
@@ -496,6 +491,10 @@ object CodeGeneration extends Logging {
 
   def removeCache(name: String): Unit = {
     cache.invalidate(new ExecuteKey(name, null, null))
+    for (key <- Array(createBatchKey(name), createDeltaKey(name),
+      sampleInsertKey(name), compactKey(name))) {
+      codeCache.invalidate(new ExecuteKey(key, null, null))
+    }
     indexCache.invalidate(new ExecuteKey(name, null, null, true))
   }
 

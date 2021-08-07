@@ -31,7 +31,7 @@ case class RowInsertExec(child: SparkPlan, putInto: Boolean,
     relation: Option[DestroyRelation], onExecutor: Boolean, resolvedName: String,
     connProps: ConnectionProperties) extends RowExec {
 
-  override def opType: String = if (putInto) "Put" else "Inserted"
+  override def opType: String = if (putInto) "Put" else "Insert"
 
   override protected def isInsert: Boolean = true
 

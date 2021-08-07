@@ -62,7 +62,9 @@ class RowFormatRelation(
     with RowPutRelation {
 
   override def toString: String = s"RowFormatRelation[${Utils.toLowerCase(table)}]"
+
   def getColocatedTable: Option[String] = origOptions.get(StoreUtils.COLOCATE_WITH)
+
   override val connectionType: ConnectionType.Value =
     ExternalStoreUtils.getConnectionType(dialect)
 
@@ -120,11 +122,17 @@ class RowFormatRelation(
 
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
+        var pushProjections = true
         val region = schemaName match {
           case SnappyExternalCatalog.SYS_SCHEMA => None
-          case _ => Some(Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion])
+          case _ =>
+            val rgn = Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
+            // below check means that push projections only for non-distributed regions which
+            // seems counter-intuitive but the reason is that those are not stored in byte
+            // array format so its better to read using a ResultSet rather than raw iterator
+            pushProjections = !rgn.isInstanceOf[CacheDistributionAdvisee]
+            Some(rgn)
         }
-        val pushProjections = !region.isInstanceOf[CacheDistributionAdvisee]
         new RowFormatScanRDD(
           session,
           resolvedName,
@@ -132,12 +140,13 @@ class RowFormatRelation(
           requiredColumns,
           pushProjections = pushProjections,
           useResultSet = pushProjections,
+          isDeltaBuffer = false,
           connProperties,
           handledFilters,
           partitionPruner = () => Utils.getPrunedPartition(partitionColumns,
             filters, schema,
             numBuckets, relationInfo.partitioningCols.length),
-          commitTx = true, delayRollover = false,
+          delayRollover = false,
           projection = Array.emptyIntArray, region = region)
 
       case _ =>
@@ -146,6 +155,7 @@ class RowFormatRelation(
           resolvedName,
           isPartitioned,
           requiredColumns,
+          _isDeltaBuffer = false,
           connProperties,
           handledFilters,
           _partEval = () => relationInfo.partitions,
@@ -153,7 +163,7 @@ class RowFormatRelation(
           filters, schema,
           numBuckets, relationInfo.partitioningCols.length),
           relationInfo.catalogSchemaVersion,
-          _commitTx = true, _delayRollover = false)
+          _delayRollover = false)
     }
     (rdd, Nil)
   }

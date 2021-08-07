@@ -220,6 +220,8 @@ class SplitSnappyClusterDUnitTest(s: String)
     Assert.assertEquals(10000100, stats1.getRowCount)
     vm1.invoke(restartServer)
 
+    Thread.sleep(10000) // allow pool connections to be checked for validity
+
     // Test using using 5 buckets
     vm3.invoke(getClass, "checkStatsForSplitMode", startArgs :+
         "8" :+ Int.box(locatorClientPort))

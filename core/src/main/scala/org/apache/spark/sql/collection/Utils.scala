@@ -24,7 +24,7 @@ import java.util.TimeZone
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.{mutable, Map => SMap}
+import scala.collection.{AbstractIterator, mutable, Map => SMap}
 import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
@@ -79,6 +79,8 @@ object Utils extends Logging {
   final val Z95Percent: Double = new NormalDistribution().
       inverseCumulativeProbability(0.975)
   final val Z95Squared: Double = Z95Percent * Z95Percent
+
+  private[this] val taskContext: ThreadLocal[TaskContext] = new ThreadLocal[TaskContext]
 
   def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int): Unit = {
     var index = start
@@ -599,11 +601,49 @@ object Utils extends Logging {
   }
 
   /**
-   * Wrap a DataFrame action to track all Spark jobs in the body so that
-   * we can connect them with an execution.
+   * Run a plan with an empty TaskContext which can be obtained using [[getTaskContext]]
+   * if it is in use. Currently only SnapshotConnectionListener makes use of it to
+   * commit/rollback/close connection at the end but can be used by others too.
+   * Note that this cannot be directly put inside TaskContext since it has no TaskMemoryManager
+   * among other missing things (a valid taskId, partitionId, metrics) so callers should use
+   * this only if they do not depend on any of those.
    */
-  def withNewExecutionId[T](df: DataFrame, body: => T): T = {
-    df.withNewExecutionId(body)
+  def withTempTaskContextIfAbsent[T](f: => T): T = {
+    if (TaskContext.get() ne null) f
+    else {
+      val context = TaskContext.empty()
+      taskContext.set(context)
+      try {
+        f
+      } catch {
+        case t: Throwable =>
+          try {
+            context.markTaskFailed(t)
+          } catch {
+            case ft: Throwable => t.addSuppressed(ft)
+          }
+          throw t
+      } finally {
+        try {
+          context.markTaskCompleted()
+        } finally {
+          taskContext.remove()
+        }
+      }
+    }
+  }
+
+  /**
+   * Get the TaskContext when created by [[withTempTaskContextIfAbsent]].
+   */
+  def getTempTaskContext: TaskContext = taskContext.get()
+
+  /**
+   * Get either the normal [[TaskContext]] or the one created by [[withTempTaskContextIfAbsent]].
+   */
+  def getTaskContext: TaskContext = TaskContext.get() match {
+    case null => taskContext.get()
+    case c => c
   }
 
   def immutableMap[A, B](m: mutable.Map[A, B]): Map[A, B] = new Map[A, B] {
@@ -862,13 +902,6 @@ object Utils extends Logging {
     }
   }
 
-  def executeIfSmartConnector[T](sc: SparkContext)(f: => T): Option[T] = {
-    SnappyContext.getClusterMode(sc) match {
-      case ThinClientConnectorMode(_, _) => Option(f)
-      case _ => None
-    }
-  }
-
   def isSmartConnectorMode(sc: SparkContext): Boolean = {
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) => true
@@ -1109,4 +1142,17 @@ object ToolsCallbackInit {
         null
     }
   }
+}
+
+/**
+ * As the name suggests, the underlying iterator will be materialized on the first call to
+ * hasNext() or next().
+ */
+final class LazyIterator[+T](createIterator: () => Iterator[T]) extends AbstractIterator[T] {
+
+  lazy val iterator: Iterator[T] = createIterator()
+
+  override def hasNext: Boolean = iterator.hasNext
+
+  override def next(): T = iterator.next()
 }

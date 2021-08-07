@@ -173,12 +173,13 @@ abstract class BaseColumnFormatRelation(
           requiredColumns,
           pushProjections = false,
           useResultSet = useResultSet,
+          isDeltaBuffer = true,
           connProperties,
           Array.empty[Expression],
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator = partitionEvaluator,
           partitionPruner = () => -1,
-          commitTx = false, delayRollover = delayRollover,
+          delayRollover = delayRollover,
           projection = projection, region = Some(region))
       case _ =>
         new SmartConnectorRowRDD(
@@ -186,13 +187,14 @@ abstract class BaseColumnFormatRelation(
           resolvedName,
           isPartitioned,
           requiredColumns,
+          _isDeltaBuffer = true,
           connProperties,
           filters,
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator,
           _partitionPruner = () => -1,
           relationInfo.catalogSchemaVersion,
-          _commitTx = false, delayRollover)
+          delayRollover)
     }
   }
 
@@ -700,13 +702,12 @@ object ColumnFormatRelation extends Logging with StoreCallback {
   }
 
   def getIndexUpdateStruct(indexEntry: ExternalTableMetaData,
-      connectedExternalStore: ConnectedExternalStore):
-  ColumnFormatRelation.IndexUpdateStruct = {
+      conn: Connection): ColumnFormatRelation.IndexUpdateStruct = {
     assert(indexEntry.dml.nonEmpty)
     val rowInsertStr = indexEntry.dml
     (CodeGeneration.getGeneratedIndexStatement(indexEntry.entityName,
       indexEntry.schema.asInstanceOf[StructType],
       indexEntry.externalStore.asInstanceOf[ExternalStore].connProperties.dialect),
-        connectedExternalStore.conn.prepareStatement(rowInsertStr))
+        conn.prepareStatement(rowInsertStr))
   }
 }
