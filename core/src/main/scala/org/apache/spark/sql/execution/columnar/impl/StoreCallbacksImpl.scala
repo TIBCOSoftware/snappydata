@@ -288,12 +288,13 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             // first check the full stats
             val statsRow = SharedUtils.toUnsafeRow(batchIterator.currentVal, numColumnsInStatBlob)
             // skip filtering if old format delta stats row containing obsolete data is present
-            if ((batchIterator.getCurrentDeltaStats ne null) || filterPredicate.check(statsRow)) {
+            if (((batchIterator.getCurrentDeltaStats ne null) || filterPredicate.check(statsRow))
+                && batchIterator.fillColumnLobs()) {
               return
             }
             batchIterator.moveNext()
           }
-          else return
+          else if (batchIterator.fillColumnLobs()) return
         }
       }
 

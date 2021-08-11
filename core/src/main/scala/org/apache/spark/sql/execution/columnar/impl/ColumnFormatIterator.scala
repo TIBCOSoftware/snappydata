@@ -167,6 +167,9 @@ final class ColumnFormatIterator(baseRegion: LocalRegion, projection: Array[Int]
     }
   }
 
+  // don't expect any missing values with local snapshot isolation
+  override def fillColumnValues(): Boolean = true
+
   override def getColumnValue(columnIndex: Int): AnyRef = {
     val column = columnIndex & 0xffffffffL
     if (entryIterator ne null) inMemoryBatches.get(inMemoryBatchIndex).get(column)

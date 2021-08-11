@@ -53,10 +53,6 @@ import org.apache.spark.{Logging, SparkEnv}
  */
 object CodeGeneration extends Logging {
 
-  override def logInfo(msg: => String): Unit = super.logInfo(msg)
-
-  override def logDebug(msg: => String): Unit = super.logDebug(msg)
-
   lazy val (codeCacheSize, cacheSize) = {
     val env = SparkEnv.get
     val size = if (env ne null) {

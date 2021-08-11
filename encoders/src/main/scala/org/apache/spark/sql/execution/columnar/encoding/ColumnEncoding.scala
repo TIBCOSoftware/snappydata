@@ -19,8 +19,7 @@ package org.apache.spark.sql.execution.columnar.encoding
 import java.nio.{ByteBuffer, ByteOrder}
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
-import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
-import com.gemstone.gemfire.internal.shared.{BufferAllocator, ClientSharedUtils, HeapBufferAllocator}
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, ClientSharedUtils}
 import io.snappydata.util.StringUtils
 
 import org.apache.spark.memory.MemoryManagerCallback.memoryManager
@@ -780,9 +779,8 @@ object ColumnEncoding {
     }
   }
 
-  def getAllocator(buffer: ByteBuffer): BufferAllocator =
-    if (buffer.isDirect) DirectBufferAllocator.instance()
-    else HeapBufferAllocator.instance()
+  @inline
+  def getAllocator(buffer: ByteBuffer): BufferAllocator = BufferAllocator.of(buffer)
 
   def getColumnDecoder(buffer: ByteBuffer, field: StructField): ColumnDecoder =
     getColumnDecoder(buffer, field, ColumnEncoding.identityLong)

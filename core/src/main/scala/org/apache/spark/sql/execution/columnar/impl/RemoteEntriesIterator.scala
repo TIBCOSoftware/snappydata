@@ -41,7 +41,7 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
 
   private type BatchStatsRows = (ColumnFormatKey, AnyRef, AnyRef)
 
-  private val statsRows: Iterator[BatchStatsRows] = {
+  private[this] val statsRows = {
     val statsKeys = pr.getBucketKeys(bucketId, StatsFilter, false, tx).toArray
 
     if (isDebugEnabled) {
@@ -71,11 +71,11 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
     }
     java.util.Arrays.sort(statsKeys, comparator)
     // get the stats rows using getAll (max 1000 at a time)
-    new AbstractIterator[BatchStatsRows] {
+    new AbstractIterator[BatchStatsRows] with AutoCloseable {
 
-      private var absoluteIndex: Int = _
-      private var currentBatch: ArrayBuffer[BatchStatsRows] = _
-      private var currentBatchIter: Iterator[BatchStatsRows] = Iterator.empty
+      private[this] var absoluteIndex: Int = _
+      private[this] var currentBatch: ArrayBuffer[BatchStatsRows] = _
+      private[this] var currentBatchIter: Iterator[BatchStatsRows] = Iterator.empty
 
       fetchNextBatch()
 
@@ -114,7 +114,7 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
               i += 1
             }
           }
-          currentBatch += ((k1, v1, v2))
+          if (v1 ne null) currentBatch += ((k1, v1, v2))
         }
         currentBatchIter = currentBatch.iterator
         currentBatchIter.hasNext
@@ -127,13 +127,21 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
         if (!currentBatchIter.hasNext) fetchNextBatch()
         result
       }
+
+      override def close(): Unit = {
+        while (currentBatchIter.hasNext) {
+          val p = currentBatchIter.next()
+          releaseBuffer(p._2)
+          releaseBuffer(p._3)
+        }
+      }
     }
   }
 
   /**
    * Full projection including all of delta and meta-data columns (except base stats entry)
    */
-  private val fullProjection = {
+  private[this] val fullProjection = {
     // (DELTA_STATROW_COL_INDEX - DELETE_MASK_COL_INDEX) gives the number of meta-data
     // columns which are always fetched. This excludes stats rows (full and delta)
     // that have already been fetched separately, while includes the delete bitmask.
@@ -156,10 +164,10 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
     projectionArray
   }
 
-  private var currentStatsKey: ColumnFormatKey = _
-  private var currentStatsValue: AnyRef = _
-  private var currentDeltaStats: AnyRef = _
-  private val currentValueMap = new Int2ObjectOpenHashMap[AnyRef](8)
+  private[this] var currentStatsKey: ColumnFormatKey = _
+  private[this] var currentStatsValue: AnyRef = _
+  private[this] var currentDeltaStats: AnyRef = _
+  private[this] val currentValueMap = new Int2ObjectOpenHashMap[AnyRef](8)
 
   private def fetchUsingGetAll(keys: Array[AnyRef]): Seq[(AnyRef, AnyRef)] = {
     val msg = new GetAllExecutorMessage(pr, keys, null, null, null, null,
@@ -186,10 +194,18 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
       currentValueMap.clear()
     }
     releaseBuffer(currentStatsValue)
+    currentStatsValue = null
     releaseBuffer(currentDeltaStats)
+    currentDeltaStats = null
   }
 
-  override def hasNext: Boolean = statsRows.hasNext
+  override def hasNext: Boolean = {
+    if (statsRows.hasNext) true
+    else {
+      releaseValues()
+      false
+    }
+  }
 
   override def next(): RegionEntry = {
     releaseValues()
@@ -200,22 +216,35 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
     NonLocalRegionEntry.newEntry(currentStatsKey, currentStatsValue, null, null)
   }
 
-  override def getColumnValue(column: Int): AnyRef = {
-    if (column == DELTA_STATROW_COL_INDEX) return currentDeltaStats
+  override def fillColumnValues(): Boolean = {
     if (currentValueMap.isEmpty) {
       // fetch all the projected columns for current batch
       val fetchKeys = fullProjection.map(c =>
         new ColumnFormatKey(currentStatsKey.uuid, currentStatsKey.partitionId, c): AnyRef)
       fetchUsingGetAll(fetchKeys).foreach {
-        case (k: ColumnFormatKey, v) => currentValueMap.put(k.columnIndex, v)
+        case (k: ColumnFormatKey, v) =>
+          if (v ne null) currentValueMap.put(k.columnIndex, v)
+          else if (k.columnIndex > 0) { // missing values for a column
+            logWarning("RemoteEntriesIterator: dropping column batch due to missing column " +
+                s"values (concurrent deletes/updates?) for: $k")
+            releaseValues()
+            return false
+          }
       }
     }
+    true
+  }
+
+  override def getColumnValue(column: Int): AnyRef = {
+    if (column == DELTA_STATROW_COL_INDEX) return currentDeltaStats
+    fillColumnValues()
     currentValueMap.get(column)
   }
 
   override def close(): Unit = {
     currentStatsKey = null
     releaseValues()
+    statsRows.close()
   }
 }
 

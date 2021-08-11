@@ -149,6 +149,9 @@ final class ColumnBatchIteratorOnRS(conn: Connection,
     buffer
   }
 
+  // skipping for partial data is taken care of by StoreCallbacksImpl.columnTableScan
+  def fillColumnLobs(): Boolean = true
+
   def getColumnLob(columnIndex: Int): ByteBuffer = {
     val buffer = colBuffers.get(columnIndex + 1)
     if (buffer ne null) buffer

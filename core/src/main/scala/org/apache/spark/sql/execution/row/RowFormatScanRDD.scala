@@ -26,7 +26,6 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.ClientSharedData
-import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RawStoreResultSet, RegionEntryUtils}
@@ -244,9 +243,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           case _ => Collections.singleton(Int.box(thePart.index))
         }
 
-        val itr = new CompactExecRowIteratorOnScan(container, bucketIds, context,
-          conn.unwrap(classOf[EmbedConnection]).getLanguageConnectionContext
-              .getTransactionExecute.asInstanceOf[GemFireTransaction].getActiveTXState)
+        val itr = new CompactExecRowIteratorOnScan(container, bucketIds, context)
         if (useResultSet) {
           // row buffer of column table: wrap a result set around the iterator for ColumnTableScan
           val dataItr = itr.map(r =>
@@ -394,7 +391,7 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 }
 
 abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalRegion,
-    bucketIds: java.util.Set[Integer], context: TaskContext, tx: TXStateInterface)
+    bucketIds: java.util.Set[Integer], context: TaskContext)
     extends Iterator[T] with BucketsBasedIterator {
 
   protected type PRIterator = PartitionedRegion#PRLocalScanIterator
@@ -402,7 +399,8 @@ abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalReg
   protected[this] final val taskContext = context.asInstanceOf[TaskContextImpl]
   protected[this] final var hasNextValue = true
   protected[this] final var doMove = true
-  private[execution] final val itr = createIterator(container, region, tx)
+  private[execution] final val itr =
+    createIterator(container, region, TXManagerImpl.getCurrentTXState)
 
   override def getBucketSet: java.util.Set[Integer] = this.bucketIds
 
@@ -445,9 +443,9 @@ abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalReg
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-    bucketIds: java.util.Set[Integer], context: TaskContext, tx: TXStateInterface)
+    bucketIds: java.util.Set[Integer], context: TaskContext)
     extends PRValuesIterator[AbstractCompactExecRow](container,
-      region = null, bucketIds, context, tx) {
+      region = null, bucketIds, context) {
 
   override protected[sql] val currentVal: AbstractCompactExecRow = container
       .newTemplateRow().asInstanceOf[AbstractCompactExecRow]

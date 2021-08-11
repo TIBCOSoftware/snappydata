@@ -28,6 +28,7 @@ import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache.BucketRegion.RolloverResult
 import com.gemstone.gemfire.internal.cache.{DiskStoreImpl, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.iapi.services.context.ContextService
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, EmbedConnectionContext}
@@ -202,6 +203,13 @@ class SnapshotConnectionListener private(private var startSnapshotTx: Boolean,
     trace(s"Going to start snapshot transaction for table $rowTable with $conn")
     conn.setTransactionIsolation(IsolationLevel.SNAPSHOT_JDBC_LEVEL)
     if (conn.getAutoCommit) conn.setAutoCommit(false)
+    // for embedded connections, start the transaction immediately which is required by
+    // PRValuesIterator while for net connections it will happen on the first JDBC call
+    if (connectionType == ConnectionType.Embedded) {
+      val tx = conn.unwrap(classOf[EmbedConnection]).getLanguageConnectionContext
+          .getTransactionExecute.asInstanceOf[GemFireTransaction].getActiveTXState
+      assert((tx ne null) && tx.isSnapshot)
+    }
     applyTransientAttributes()
     trace(s"Started snapshot transaction for table $rowTable")
   }

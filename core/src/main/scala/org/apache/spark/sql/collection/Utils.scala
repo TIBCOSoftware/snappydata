@@ -908,12 +908,6 @@ object Utils extends Logging {
       case _ => false
     }
   }
-
-  override def logInfo(msg: => String): Unit = super.logInfo(msg)
-
-  override def logWarning(msg: => String): Unit = super.logWarning(msg)
-
-  override def logError(msg: => String): Unit = super.logError(msg)
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],

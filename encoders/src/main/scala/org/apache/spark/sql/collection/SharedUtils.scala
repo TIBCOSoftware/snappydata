@@ -29,13 +29,13 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 
-import org.apache.spark._
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode, TaskMemoryManager}
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.MutableURLClassLoader
+import org.apache.spark.{Partition, TaskContext}
 
-object SharedUtils extends Logging {
+object SharedUtils {
 
   final val EMPTY_STRING_ARRAY = Array.empty[String]
 
@@ -117,14 +117,6 @@ object SharedUtils extends Logging {
     os.close()
     filters
   }
-
-  override def logDebug(msg: => String): Unit = super.logInfo(msg)
-
-  override def logInfo(msg: => String): Unit = super.logInfo(msg)
-
-  override def logWarning(msg: => String): Unit = super.logWarning(msg)
-
-  override def logError(msg: => String): Unit = super.logError(msg)
 }
 
 final class SmartExecutorBucketPartition(private var _index: Int, private var _bucketId: Int,

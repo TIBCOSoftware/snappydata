@@ -588,8 +588,6 @@ object ValidateMVCCDUnitTest {
     // scalastyle:on
     assert(cnt >= 9, s"Expected row count is 10 while actual row count is $cnt")
 
-    conn.commit()
-
     var cnt1 = 0
     s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
     val rs1 = s.getResultSet
@@ -654,6 +652,8 @@ object ValidateMVCCDUnitTest {
 
     conn.commit()
     conn.close()
+
+    cache.getCacheTransactionManager.testRollBack = false
   }
 
   def performBatchInsert(netPort: Int): Unit = {

@@ -55,7 +55,7 @@ trait Logging {
     if (value) levelFlags |= enabled else levelFlags |= disabled
   }
 
-  protected final def isInfoEnabled: Boolean = {
+  final def isInfoEnabled: Boolean = {
     val levelFlags = this.levelFlags
     if ((levelFlags & Logging.INFO_ENABLED) != 0) true
     else if ((levelFlags & Logging.INFO_DISABLED) != 0) false
@@ -66,7 +66,7 @@ trait Logging {
     }
   }
 
-  protected final def isDebugEnabled: Boolean = {
+  final def isDebugEnabled: Boolean = {
     val levelFlags = this.levelFlags
     if ((levelFlags & Logging.DEBUG_DISABLED) != 0) false
     else if ((levelFlags & Logging.DEBUG_ENABLED) != 0) true
@@ -77,7 +77,7 @@ trait Logging {
     }
   }
 
-  protected final def isTraceEnabled: Boolean = {
+  final def isTraceEnabled: Boolean = {
     val levelFlags = this.levelFlags
     if ((levelFlags & Logging.TRACE_DISABLED) != 0) false
     else if ((levelFlags & Logging.TRACE_ENABLED) != 0) true
@@ -89,44 +89,44 @@ trait Logging {
   }
 
   // Log methods that take only a String
-  protected def logInfo(msg: => String) {
+  def logInfo(msg: => String): Unit = {
     if (isInfoEnabled) log.info(msg)
   }
 
-  protected def logDebug(msg: => String) {
+  def logDebug(msg: => String): Unit = {
     if (isDebugEnabled) log.debug(msg)
   }
 
-  protected def logTrace(msg: => String) {
+  def logTrace(msg: => String): Unit = {
     if (isTraceEnabled) log.trace(msg)
   }
 
-  protected def logWarning(msg: => String) {
+  def logWarning(msg: => String): Unit = {
     if (log.isWarnEnabled) log.warn(msg)
   }
 
-  protected def logError(msg: => String) {
+  def logError(msg: => String): Unit = {
     if (log.isErrorEnabled) log.error(msg)
   }
 
   // Log methods that take Throwables (Exceptions/Errors) too
-  protected def logInfo(msg: => String, throwable: Throwable) {
+  def logInfo(msg: => String, throwable: Throwable): Unit = {
     if (isInfoEnabled) log.info(msg, throwable)
   }
 
-  protected def logDebug(msg: => String, throwable: Throwable) {
+  def logDebug(msg: => String, throwable: Throwable): Unit = {
     if (isDebugEnabled) log.debug(msg, throwable)
   }
 
-  protected def logTrace(msg: => String, throwable: Throwable) {
+  def logTrace(msg: => String, throwable: Throwable): Unit = {
     if (isTraceEnabled) log.trace(msg, throwable)
   }
 
-  protected def logWarning(msg: => String, throwable: Throwable) {
+  def logWarning(msg: => String, throwable: Throwable): Unit = {
     if (log.isWarnEnabled) log.warn(msg, throwable)
   }
 
-  protected def logError(msg: => String, throwable: Throwable) {
+  def logError(msg: => String, throwable: Throwable): Unit = {
     if (log.isErrorEnabled) log.error(msg, throwable)
   }
 

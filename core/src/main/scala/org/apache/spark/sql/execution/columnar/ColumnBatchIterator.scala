@@ -23,7 +23,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 
 import com.gemstone.gemfire.cache.EntryDestroyedException
-import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXManagerImpl, TXStateInterface, Token}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXStateInterface, Token}
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 
@@ -50,8 +50,7 @@ object ColumnBatchIterator {
 class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     bucketIds: java.util.Set[Integer], projection: Array[Int],
     fullScan: Boolean, context: TaskContext)
-    extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds, context,
-      TXManagerImpl.getCurrentTXState) {
+    extends PRValuesIterator[ByteBuffer](container = null, region, bucketIds, context) {
 
   if (region ne null) {
     assert(!region.getEnableOffHeapMemory,
@@ -116,6 +115,12 @@ class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
           s"partition=$currentKeyPartitionId batchUUID=$currentKeyUUID " +
           "failed due to missing value")
     } else null
+  }
+
+  final def fillColumnLobs(): Boolean = {
+    if (region ne null) {
+      itr.getBucketEntriesIterator.asInstanceOf[ClusteredColumnIterator].fillColumnValues()
+    } else true
   }
 
   final def getColumnLob(columnIndex: Int): ByteBuffer = {

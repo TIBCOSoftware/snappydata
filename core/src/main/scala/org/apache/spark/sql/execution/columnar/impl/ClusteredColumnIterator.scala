@@ -27,6 +27,11 @@ import com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator
 abstract class ClusteredColumnIterator extends CloseableIterator[RegionEntry] {
 
   /**
+   * Fill values for all the projected columns and return true if successful else false.
+   */
+  def fillColumnValues(): Boolean
+
+  /**
    * Get the column value (1-based) for current iterator position. Requires
    * the hasNext and next of iterator to have been invoked first else can
    * throw an NullPointerException.
