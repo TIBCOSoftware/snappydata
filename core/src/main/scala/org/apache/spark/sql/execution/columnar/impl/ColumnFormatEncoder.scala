@@ -19,8 +19,10 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.{ByteBuffer, ByteOrder}
 import java.sql.Blob
+import java.util.function.Function
 
-import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, PartitionedRegion}
+import com.gemstone.gemfire.SystemFailure
+import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, PartitionedRegion, TXStateProxy}
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.engine.store.RowEncoder.PreProcessRow
 import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey, RowEncoder}
@@ -29,7 +31,9 @@ import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLBlob, 
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import io.snappydata.thrift.common.BufferedBlob
 import io.snappydata.thrift.internal.ClientBlob
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDelta
 import org.apache.spark.sql.store.CompressionCodecId
 import org.apache.spark.sql.types.StructType
@@ -37,7 +41,7 @@ import org.apache.spark.sql.types.StructType
 /**
  * A [[RowEncoder]] implementation for [[ColumnFormatValue]] and child classes.
  */
-final class ColumnFormatEncoder extends RowEncoder {
+final class ColumnFormatEncoder extends RowEncoder with Logging {
 
   override def toRow(rawKey: Object, value: AnyRef, container: GemFireContainer): ExecRow = {
     val batchKey = rawKey.asInstanceOf[ColumnFormatKey]
@@ -122,29 +126,84 @@ final class ColumnFormatEncoder extends RowEncoder {
       events: Array[EntryEventImpl]): Unit = {
     if (!bucket.getBucketAdvisor.isPrimary) return
 
-    // delete entire batch if all rows are marked deleted
+    val keysToCompact = new ObjectOpenHashSet[ColumnFormatKey]()
+    val keysToDelete = new ObjectOpenHashSet[ColumnFormatKey]()
+    val pr = bucket.getPartitionedRegion
+    val schema = pr.getUserAttribute.asInstanceOf[GemFireContainer]
+        .fetchHiveMetaData(false).schema.asInstanceOf[StructType]
+    // 1) Delete entire batch if all rows are marked deleted
+    // 2) Compact the batch if either the deletes or updates exceed the limit
+    //    (check the condition in ColumnCompactor.isCompactionRequired)
     events.foreach(event => event.getKey match {
-      case deleteKey: ColumnFormatKey
-        if deleteKey.columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX =>
+      case key: ColumnFormatKey
+        if key.columnIndex <= ColumnFormatEntry.DELETE_MASK_COL_INDEX =>
 
-        var deleteDelta = event.getNewValue.asInstanceOf[ColumnFormatValue]
-        if (deleteDelta ne null) {
-          deleteDelta = deleteDelta.getValueRetain(FetchRequest.DECOMPRESS)
-          if (deleteDelta ne null) {
+        var delta = event.getNewValue.asInstanceOf[ColumnFormatValue]
+        if (delta ne null) {
+          delta = delta.getValueRetain(FetchRequest.DECOMPRESS)
+          if (delta ne null) {
             try {
-              val region = bucket.getPartitionedRegion
-              val deleteBuffer = deleteDelta.getBuffer
-              if (deleteBuffer.hasRemaining && ColumnDelta.checkBatchDeleted(deleteBuffer)) {
-                ColumnDelta.deleteBatch(deleteKey, region,
-                  region.getUserAttribute.asInstanceOf[GemFireContainer].fetchHiveMetaData(false)
-                      .schema.asInstanceOf[StructType].length)
+              val deltaBuffer = delta.getBuffer
+              if (deltaBuffer.hasRemaining) {
+                val statsKey = key.toStatsRowKey
+                if (key.columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX) {
+                  ColumnCompactor.batchDeleteOrCompact(deltaBuffer) match {
+                    case Some(true) => keysToDelete.add(statsKey)
+                    case Some(false) => keysToCompact.add(statsKey)
+                    case _ =>
+                  }
+                } else if (!keysToCompact.contains(statsKey)) {
+                  // check for compaction; read number of base rows and delta values
+                  val nullBitmaskBytes = deltaBuffer.getInt(4 /* skip typeId */)
+                  val index = 8 + nullBitmaskBytes
+                  val numBaseRows = deltaBuffer.getInt(index)
+                  val numDeltas = deltaBuffer.getInt(index + 4)
+                  if (ColumnCompactor.isCompactionRequired(numDeltas, numBaseRows)) {
+                    keysToCompact.add(statsKey)
+                  }
+                }
               }
             } finally {
-              deleteDelta.release()
+              delta.release()
             }
           }
         }
       case _ =>
     })
+    // perform the required actions
+    if (!keysToDelete.isEmpty) {
+      if (!keysToCompact.isEmpty) keysToCompact.removeAll(keysToDelete)
+      val numColumns = schema.length
+      val iter = keysToDelete.iterator()
+      while (iter.hasNext) {
+        ColumnDelta.deleteBatch(iter.next(), pr, numColumns)
+      }
+    }
+    if (!keysToCompact.isEmpty) {
+      // register to compact with the transaction at the end because the table scan
+      // might pick up the newly compacted batch too in addition to the previous one;
+      // the pre-commit actions with results in the transactions works both for local
+      // node as well as remote node compactions
+      ColumnCompactor.getValidTransaction(expectedRolloverDisabled = true) match {
+        case Some(tx) =>
+          val iter = keysToCompact.iterator()
+          while (iter.hasNext) {
+            val key = iter.next()
+            tx.getProxy.addBeforeCommitAction(keysToCompact, new Function[TXStateProxy, AnyRef] {
+              override def apply(proxy: TXStateProxy): AnyRef = {
+                try {
+                  val success = ColumnCompactor.compact(key, bucket)
+                  CompactionResult(key, bucket.getId, success)
+                } catch {
+                  case t: Throwable if !SystemFailure.isJVMFailureError(t) =>
+                    logError("Unexpected failure in ColumnCompactor", t)
+                    throw t
+                }
+              }
+            })
+          }
+        case _ =>
+      }
+    }
   }
 }

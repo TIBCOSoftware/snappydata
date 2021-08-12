@@ -544,19 +544,18 @@ private[sql] final case class ColumnTableScan(
         $incrementBatchCount
         $buffers = $colNextBytes;
       """
-    val filterApply =
-      if (filterFunction.isEmpty) "true"
-      else s"$colInput.getCurrentDeltaStats() != null || $filterFunction($statsRow, $numBatchRows)"
-    val batchInit =
+    val batchInit = if (filterFunction.isEmpty) batchAssign else {
       s"""
         while (true) {
           $batchAssign
           // skip filtering if old format delta stats row containing obsolete data is present
-          if (($filterApply) && $colInput.fillColumnLobs()) {
+          if ($colInput.getCurrentDeltaStats() != null ||
+              $filterFunction($statsRow, $numBatchRows)) {
             break;
           }
           if (!$colInput.hasNext()) return false;
         }"""
+    }
     val nextBatch = ctx.freshName("nextBatch")
     val closeDecodersFunction = ctx.freshName("closeAllDecoders")
     val switchSRR = if (isForSampleReservoirAsRegion) {

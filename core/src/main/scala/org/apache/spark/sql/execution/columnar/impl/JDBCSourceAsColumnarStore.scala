@@ -132,7 +132,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           ColumnFormatEntry.DELETE_MASK_COL_INDEX)
 
         // check for full batch delete
-        if (ColumnDelta.checkBatchDeleted(buffer)) {
+        if (ColumnCompactor.checkBatchDeleted(buffer)) {
           ColumnDelta.deleteBatch(key, region, key.getNumColumnsInTable(columnTableName))
           return
         }
@@ -140,7 +140,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
 
       case _ =>
         // check for full batch delete
-        if (ColumnDelta.checkBatchDeleted(buffer)) {
+        if (ColumnCompactor.checkBatchDeleted(buffer)) {
           val deleteStr = s"delete from ${quotedName(columnTableName)} where " +
               "uuid = ? and partitionId = ? and columnIndex = ?"
           val stmt = connection.prepareStatement(deleteStr)

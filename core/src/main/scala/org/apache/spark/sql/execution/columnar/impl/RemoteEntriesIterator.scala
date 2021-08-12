@@ -216,28 +216,16 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
     NonLocalRegionEntry.newEntry(currentStatsKey, currentStatsValue, null, null)
   }
 
-  override def fillColumnValues(): Boolean = {
+  override def getColumnValue(column: Int): AnyRef = {
+    if (column == DELTA_STATROW_COL_INDEX) return currentDeltaStats
     if (currentValueMap.isEmpty) {
       // fetch all the projected columns for current batch
       val fetchKeys = fullProjection.map(c =>
         new ColumnFormatKey(currentStatsKey.uuid, currentStatsKey.partitionId, c): AnyRef)
       fetchUsingGetAll(fetchKeys).foreach {
-        case (k: ColumnFormatKey, v) =>
-          if (v ne null) currentValueMap.put(k.columnIndex, v)
-          else if (k.columnIndex > 0) { // missing values for a column
-            logWarning("RemoteEntriesIterator: dropping column batch due to missing column " +
-                s"values (concurrent deletes/updates?) for: $k")
-            releaseValues()
-            return false
-          }
+        case (k: ColumnFormatKey, v) => currentValueMap.put(k.columnIndex, v)
       }
     }
-    true
-  }
-
-  override def getColumnValue(column: Int): AnyRef = {
-    if (column == DELTA_STATROW_COL_INDEX) return currentDeltaStats
-    fillColumnValues()
     currentValueMap.get(column)
   }
 

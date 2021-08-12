@@ -117,12 +117,6 @@ class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     } else null
   }
 
-  final def fillColumnLobs(): Boolean = {
-    if (region ne null) {
-      itr.getBucketEntriesIterator.asInstanceOf[ClusteredColumnIterator].fillColumnValues()
-    } else true
-  }
-
   final def getColumnLob(columnIndex: Int): ByteBuffer = {
     if (region ne null) {
       getColumnBuffer(columnIndex + 1, throwIfMissing = true)

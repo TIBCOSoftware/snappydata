@@ -22,7 +22,6 @@ import scala.collection.mutable.ArrayBuffer
 import io.snappydata.{Constant, Property}
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet
 
-import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -37,7 +36,6 @@ import org.apache.spark.sql.execution.{SnapshotConnectionListener, SparkPlan, Ta
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.CompressionCodecId
 import org.apache.spark.sql.types._
-import org.apache.spark.util.TaskCompletionListener
 
 /**
  * Generated code plan for bulk insertion into a column table.
@@ -122,10 +120,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   }
 
   /**
-   * Add a task listener to close encoders as part of defining
-   * "defaultBatchSizeTerm". Also return a string as a fallback check
-   * to be added at the end of doProduce code before returning in case
-   * this is generated on executor that has no TaskContext.
+   * Return code to close encoders and define "defaultBatchSizeTerm".
    */
   private def addBatchSizeAndCloseEncoders(ctx: CodegenContext,
       closeEncoders: String): String = {
@@ -136,24 +131,9 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  $closeEncoders
          |}
       """.stripMargin)
-    // add a task completion listener to close the encoders
-    val contextClass = classOf[TaskContext].getName
-    val listenerClass = classOf[TaskCompletionListener].getName
-    val getContext = Utils.genTaskContextFunction(ctx)
-
-    ctx.addMutableState("int", defaultBatchSizeTerm,
-      s"""
-         |if ($getContext() != null) {
-         |  $getContext().addTaskCompletionListener(new $listenerClass() {
-         |    @Override
-         |    public void onTaskCompletion($contextClass context) {
-         |      if ($numInsertions >= 0) $closeEncodersFunction();
-         |    }
-         |  });
-         |}
-      """.stripMargin)
+    ctx.addMutableState("int", defaultBatchSizeTerm, "")
     s"""
-       |if ($numInsertions >= 0 && $getContext() == null) {
+       |if ($numInsertions >= 0) {
        |  $closeEncodersFunction();
        |}""".stripMargin
   }
@@ -187,12 +167,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     ctx.addMutableState("long", numInsertions, s"$numInsertions = -1L;")
     maxDeltaRowsTerm = ctx.freshName("maxDeltaRows")
     batchSizeTerm = ctx.freshName("currentBatchSize")
-    val batchSizeDeclaration = if (true) {
-      ctx.addMutableState("int", batchSizeTerm, s"$batchSizeTerm = 0;")
-      ""
-    } else {
-      s"int $batchSizeTerm = 0;"
-    }
+    ctx.addMutableState("int", batchSizeTerm, s"$batchSizeTerm = 0;")
     defaultBatchSizeTerm = ctx.freshName("defaultBatchSize")
     val defaultRowSize = ctx.freshName("defaultRowSize")
     val childProduce = doChildProduce(ctx)
@@ -253,14 +228,14 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val closeEncoders = loop(
       s"if ($encoderArrayTerm[i] != null) $encoderArrayTerm[i].close();",
       schema.length)
-    val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders)
+    val closeEncodersCode = addBatchSizeAndCloseEncoders(ctx, closeEncoders)
     s"""
        |$checkEnd; // already done
        |
        |$taskListener = $listenerClass$$.MODULE$$.apply($getContext(),
        |    $externalStoreTerm, false, new scala.util.Left($catalogVersion));
        |
-       |$batchSizeDeclaration
+       |try {
        |if ($numInsertions < 0) {
        |  $numInsertions = 0;
        |  int $defaultRowSize = 0;
@@ -278,8 +253,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |  $storeColumnBatch($columnMaxDeltaRows / 2, $storeColumnBatchArgs);
        |  $batchSizeTerm = 0;
        |}
-       |$closeForNoContext
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
+       |} finally {
+       |$closeEncodersCode
+       |}
     """.stripMargin
   }
 
@@ -365,7 +342,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  return false;
          |}
       """.stripMargin)
-    val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders.toString())
+    val closeEncodersCode = addBatchSizeAndCloseEncoders(ctx, closeEncoders.toString())
     val useBatchSize = if (columnBatchSize > 0) columnBatchSize
     else ExternalStoreUtils.sizeAsBytes(Property.ColumnBatchSize.defaultValue.get,
       Property.ColumnBatchSize.name)
@@ -377,6 +354,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |
        |$batchSizeDeclaration
        |${cursorDeclarations.mkString("\n")}
+       |try {
        |if ($numInsertions < 0) {
        |  $numInsertions = 0;
        |  int $defaultRowSize = 0;
@@ -394,8 +372,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |  $storeColumnBatch($columnMaxDeltaRows, $storeColumnBatchArgs);
        |  $batchSizeTerm = 0;
        |}
-       |$closeForNoContext
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
+       |} finally {
+       |$closeEncodersCode
+       |}
     """.stripMargin
   }
 

@@ -20,7 +20,7 @@ import java.io.ObjectOutputStream
 import java.lang.reflect.Method
 import java.nio.ByteBuffer
 import java.sql.{DriverManager, ResultSet}
-import java.util.TimeZone
+import java.util.{Collections, TimeZone}
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
@@ -32,10 +32,16 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.gemstone.gemfire.internal.cache.{PartitionedRegion, TXManagerImpl}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
+import com.pivotal.gemfirexd.internal.iapi.error.StandardException
+import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.{Constant, ToolsCallback}
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 import org.apache.commons.math3.distribution.NormalDistribution
@@ -628,6 +634,46 @@ object Utils extends Logging {
           context.markTaskCompleted()
         } finally {
           taskContext.remove()
+        }
+      }
+    }
+  }
+
+  def withThreadLocalTransactionForBucket[T](bucketId: Int, pr: PartitionedRegion,
+      f: LanguageConnectionContext => T): T = {
+    var conn: EmbedConnection = null
+    var contextSet = false
+    var txStateSet = false
+    var lcc = Misc.getLanguageConnectionContext
+    if (lcc eq null) {
+      conn = GemFireXDUtils.getTSSConnection(true, true, false)
+      conn.getTR.setupContextStack()
+      contextSet = true
+      lcc = conn.getLanguageConnectionContext
+      if (lcc eq null) {
+        Misc.getGemFireCache.getCancelCriterion.checkCancelInProgress(null)
+        throw StandardException.newException(SQLState.NO_CURRENT_CONNECTION)
+      }
+      if (conn.getAutoCommit) conn.setAutoCommit(false, true)
+    }
+    val tc = lcc.getTransactionExecute.asInstanceOf[GemFireTransaction]
+    lcc.setExecuteLocally(Collections.singleton(bucketId), pr, false, null)
+    try {
+      if (tc.getCurrentTXStateProxy eq null) {
+        val state = TXManagerImpl.getCurrentTXState
+        if (state ne null) {
+          tc.setActiveTXState(state, true)
+          txStateSet = true
+        }
+      }
+      f(lcc)
+    } finally {
+      try {
+        lcc.clearExecuteLocally()
+        if (txStateSet) tc.clearActiveTXState(false, true)
+      } finally {
+        if (contextSet) {
+          conn.getTR.restoreContextStack()
         }
       }
     }

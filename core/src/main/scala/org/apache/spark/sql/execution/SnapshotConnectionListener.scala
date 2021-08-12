@@ -37,9 +37,9 @@ import io.snappydata.thrift.internal.ClientConnection
 
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool.SNAPSHOT_POOL_SUFFIX
-import org.apache.spark.sql.execution.SnapshotConnectionListener.{parseRolloverResult, trace, warn}
+import org.apache.spark.sql.execution.SnapshotConnectionListener.{parseCompactionResult, parseRolloverResult, trace, warn}
 import org.apache.spark.sql.execution.columnar.ConnectionType.ConnectionType
-import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
+import org.apache.spark.sql.execution.columnar.impl.{CompactionResult, JDBCSourceAsColumnarStore}
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.sources.ConnectionProperties
@@ -73,6 +73,12 @@ class SnapshotConnectionListener private(private var startSnapshotTx: Boolean,
     extends TaskCompletionListener with TaskFailureListener {
 
   private[this] var conn: Connection = _
+  /**
+   * Set to true if an existing EmbeddedConnection from thread-local ContextManager
+   * was used (i.e. in executor-side local execution) in which case the connection
+   * should not be closed nor the transaction committed or rolled back.
+   */
+  private[this] var usingContextConnection = false
   private[this] var catalogVersion: Long = -1
   private[this] var lockedDiskStores: List[DiskStoreImpl] = Nil
   private[this] var compactionMetric: Option[SQLMetric] = None
@@ -103,30 +109,13 @@ class SnapshotConnectionListener private(private var startSnapshotTx: Boolean,
 
   override def onTaskCompletion(context: TaskContext): Unit = {
     try {
-      if (!isInitialized) return
+      if (!isInitialized || usingContextConnection) return
       if (connectionType != ConnectionType.Embedded) {
         conn.unwrap(classOf[ClientConnection]).clearCommonStatementAttributes()
       }
       if (success()) {
         val results = commitSnapshotTx()
-        // both local and remote node rollovers/compactions will be in the before-commit results
-        rolloverMetric match {
-          case Some(metric) =>
-            val numRollovers = results match {
-              case Left(beforeCommitResults) =>
-                if (beforeCommitResults.isEmpty) 0
-                else beforeCommitResults.asScala.foldLeft(0) {
-                  case (s, r: RolloverResult) if r.numKeysRolledOver > 0 => s + 1
-                  case (s, _) => s
-                }
-              case Right(str) =>
-                if (str.isEmpty) 0
-                else parseRolloverResult.findAllIn(str).size
-            }
-            metric.add(numRollovers)
-          case _ =>
-        }
-        /*
+        // both local and remote node compactions/rollovers will be in the before-commit results
         compactionMetric match {
           case Some(metric) =>
             val numCompacted = results match {
@@ -136,14 +125,25 @@ class SnapshotConnectionListener private(private var startSnapshotTx: Boolean,
                   case (s, CompactionResult(_, _, true)) => s + 1
                   case (s, _) => s
                 }
-              case Right(str) =>
-                if (str.isEmpty) 0
-                else parseCompactionResult.findAllIn(str).size
+              case Right(str) => if (str.isEmpty) 0 else parseCompactionResult.findAllIn(str).size
             }
             metric.add(numCompacted)
           case _ =>
         }
-        */
+        rolloverMetric match {
+          case Some(metric) =>
+            val numRollovers = results match {
+              case Left(beforeCommitResults) =>
+                if (beforeCommitResults.isEmpty) 0
+                else beforeCommitResults.asScala.foldLeft(0) {
+                  case (s, r: RolloverResult) if r.numKeysRolledOver > 0 => s + 1
+                  case (s, _) => s
+                }
+              case Right(str) => if (str.isEmpty) 0 else parseRolloverResult.findAllIn(str).size
+            }
+            metric.add(numRollovers)
+          case _ =>
+        }
       } else {
         rollbackSnapshotTx()
       }
@@ -159,7 +159,7 @@ class SnapshotConnectionListener private(private var startSnapshotTx: Boolean,
           conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
         }
       } finally {
-        if (conn ne null) conn.close()
+        if (isInitialized && !usingContextConnection) conn.close()
       }
     }
   }
@@ -303,6 +303,7 @@ class SnapshotConnectionListener private(private var startSnapshotTx: Boolean,
     val currentCM = ContextService.getFactory.getCurrentContextManager
     if (currentCM ne null) {
       conn = EmbedConnectionContext.getEmbedConnection(currentCM)
+      usingContextConnection = true
     }
     if (isInitialized) conn
     else {
@@ -322,8 +323,8 @@ object SnapshotConnectionListener extends Logging {
     new ConcurrentHashMap[TaskContext, SnapshotConnectionListener]()
 
   // directly match successful CompactionResults so the count of matches will suffice
-  // private val parseCompactionResult =
-  //  "CompactionResult\\(ColumnKey\\([^)]*\\),[0-9]*,true\\)".r
+  private val parseCompactionResult =
+    "CompactionResult\\(ColumnKey\\([^)]*\\),[0-9]*,true\\)".r
 
   // directly match non-zero numKeysRolledOver so the count of matches will suffice
   private val parseRolloverResult =

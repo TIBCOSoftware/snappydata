@@ -24,11 +24,10 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 
-class MemoryFunSuite extends SparkFunSuite with BeforeAndAfter with BeforeAndAfterAll {
+abstract class MemoryFunSuite extends SparkFunSuite with BeforeAndAfter with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     System.clearProperty("snappydata.umm.memtrace")
-    return
   }
 
   override def beforeAll(): Unit = {

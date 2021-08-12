@@ -253,7 +253,7 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
 
   override def nodeName: String = "ExecutePlan"
 
-  override def simpleString: String = "ExecutePlan"
+  override def simpleString: String = s"ExecutePlan(${child.simpleString})"
 
   private def collectRDD(sc: SparkContext, rdd: RDD[InternalRow]): Array[InternalRow] = {
     // direct RDD collect causes NPE in new Array due to (missing?) ClassTag for some reason
@@ -279,7 +279,8 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
       val (result, shuffleIds) = if (oldExecutionId eq null) {
         val (queryStringShortForm, queryStr, queryExecStr, planInfo) = if (key eq null) {
           val callSite = sqlContext.sparkContext.getCallSite()
-          (callSite.shortForm, callSite.longForm, treeString(verbose = true),
+          val prefix = simpleString + " from: "
+          (prefix + callSite.shortForm, prefix + callSite.longForm, treeString(verbose = true),
             PartitionedPhysicalScan.getSparkPlanInfo(this))
         } else {
           val paramLiterals = key.currentLiterals

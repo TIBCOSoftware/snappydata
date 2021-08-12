@@ -22,7 +22,7 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.cache.{EntryEvent, EntryNotFoundException, Region}
 import com.gemstone.gemfire.internal.cache.delta.Delta
 import com.gemstone.gemfire.internal.cache.versions.{VersionSource, VersionTag}
-import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl, GemFireCacheImpl, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl, GemFireCacheImpl, PartitionedRegion, TXManagerImpl}
 import com.gemstone.gemfire.internal.concurrent.QueryKeyedObjectPool
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
@@ -35,7 +35,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.GenerateUnsafeProjectio
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, BoundReference, Expression, GenericInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.util.TypeUtils
 import org.apache.spark.sql.collection.SharedUtils
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding, ColumnStatsSchema}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnStatsSchema}
 import org.apache.spark.sql.types.{DataType, IntegerType, LongType, StructField, StructType}
 
 /**
@@ -360,18 +360,6 @@ object ColumnDelta extends Enumeration with Logging {
     -tableColumnIndex * MAX_DEPTH + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1 - hierarchyDepth
 
   /**
-   * Check if all the rows in a batch have been deleted.
-   */
-  private[columnar] def checkBatchDeleted(deleteBuffer: ByteBuffer): Boolean = {
-    val allocator = ColumnEncoding.getAllocator(deleteBuffer)
-    val bufferBytes = allocator.baseObject(deleteBuffer)
-    val bufferCursor = allocator.baseOffset(deleteBuffer) + 4
-    val numBaseRows = ColumnEncoding.readInt(bufferBytes, bufferCursor)
-    val numDeletes = ColumnEncoding.readInt(bufferBytes, bufferCursor + 4)
-    numDeletes >= numBaseRows
-  }
-
-  /**
    * Delete entire batch from column store for the batchId and partitionId
    * matching those of given key.
    */
@@ -390,7 +378,8 @@ object ColumnDelta extends Enumeration with Logging {
 
     val regionPath = columnRegion.getColocatedWithRegion.getFullPath
     val statsKey = key.toStatsRowKey
-    logInfo(s"ColumnStore for $regionPath: destroying batch with key = $statsKey")
+    logDebug(s"ColumnStore for $regionPath: destroying batch with key = $statsKey " +
+        s"(transaction = ${TXManagerImpl.getCurrentTXState})")
     // delete the stats rows first
     destroyKey(statsKey)
     destroyKey(key.withColumnIndex(ColumnFormatEntry.DELTA_STATROW_COL_INDEX))
