@@ -47,7 +47,7 @@ import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, RangePartitioning}
-import org.apache.spark.sql.collection.{SharedUtils, Utils}
+import org.apache.spark.sql.collection.{LazyIterator, SharedUtils, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.encoding._
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
@@ -215,6 +215,7 @@ private[sql] final case class ColumnTableScan(
     val inputIsRowSRR = s"${input}IsRowSRR"
     val inputIsOtherRDD = s"${input}IsOtherRDD"
     val rs = ctx.freshName("resultSet")
+    val lazyIteratorClass = classOf[LazyIterator[Any]].getName
     val rsIterClass = classOf[ResultSetTraversal].getName
     val unsafeHolder = if (otherRDDs.isEmpty && !isForSampleReservoirAsRegion) null
     else ctx.freshName("unsafeHolder")
@@ -251,7 +252,7 @@ private[sql] final case class ColumnTableScan(
       ctx.addMutableState(colIteratorClass, colInput,
         s"$colInput = ($colIteratorClass)inputs[0].next();")
       ctx.addMutableState("java.sql.ResultSet", rs,
-        s"$rs = (($rsIterClass)$rowInput).rs();")
+        s"$rs = (($rsIterClass)(($lazyIteratorClass)$rowInput).iterator()).rs();")
     } else {
       ctx.addMutableState("boolean", inputIsOtherRDD,
         s"$inputIsOtherRDD = (partitionIndex >= $otherRDDsPartitionIndex);")
@@ -261,7 +262,8 @@ private[sql] final case class ColumnTableScan(
       ctx.addMutableState(colIteratorClass, colInput,
         s"$colInput = $inputIsOtherRDD ? null : ($colIteratorClass)inputs[0].next();")
       ctx.addMutableState("java.sql.ResultSet", rs,
-        s"$rs = $inputIsOtherRDD ? null : (($rsIterClass)$rowInput).rs();")
+        s"$rs = $inputIsOtherRDD ? null : " +
+            s"(($rsIterClass)(($lazyIteratorClass)$rowInput).iterator()).rs();")
       ctx.addMutableState(unsafeHolderClass, unsafeHolder,
         s"$unsafeHolder = new $unsafeHolderClass();")
     }

@@ -43,7 +43,7 @@ object ConnectionPool {
    * Type of the key used to search for matching pool. Tuple of pool properties,
    * connection properties, and whether pool uses Tomcat pool or HikariCP.
    */
-  private[this] type PoolKey = (Properties, Properties, Boolean)
+  private[this] type PoolKey = (Properties, Properties, Boolean, Boolean)
 
   /**
    * Map of ID to corresponding pool DataSources. Using Java's
@@ -59,6 +59,12 @@ object ConnectionPool {
    */
   private[this] val pools = mutable.Map[PoolKey,
       (DataSource, mutable.Set[String])]()
+
+  /**
+   * Use this suffix for obtaining snapshot transaction enabled connections for consistency
+   * and to disable sharing snapshot and non-snapshot enabled pools.
+   */
+  val SNAPSHOT_POOL_SUFFIX: String = "#SNAPSHOT"
 
   /**
    * Get a pooled DataSource for a given ID, pool properties and connection
@@ -95,7 +101,8 @@ object ConnectionPool {
         // search if there is already an existing pool with same properties
         val poolProps = new Properties()
         for ((k, v) <- props) poolProps.setProperty(k, v)
-        val poolKey: PoolKey = (poolProps, connectionProps, hikariCP)
+        val isSnapshotPool = id.endsWith(SNAPSHOT_POOL_SUFFIX)
+        val poolKey: PoolKey = (poolProps, connectionProps, hikariCP, isSnapshotPool)
         pools.get(poolKey) match {
           case Some((newDS, ids)) =>
             ids += id
@@ -136,12 +143,12 @@ object ConnectionPool {
    */
   def getPoolConnection(id: String, dialect: JdbcDialect,
       poolProps: Map[String, String], connProps: Properties,
-      hikariCP: Boolean): Connection = {
+      hikariCP: Boolean, resetIsolationLevel: Boolean = true): Connection = {
     val ds = getPoolDataSource(id, poolProps, connProps, hikariCP)
     val conn = ds.getConnection
     dialect match {
       case _: SnappyDataBaseDialect =>
-        conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
+        if (resetIsolationLevel) conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
 
       case _ =>
     }

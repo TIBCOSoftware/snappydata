@@ -22,7 +22,6 @@ import scala.collection.mutable.ArrayBuffer
 import io.snappydata.{Constant, Property}
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet
 
-import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -33,11 +32,10 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
-import org.apache.spark.sql.execution.{SparkPlan, TableExec, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{SnapshotConnectionListener, SparkPlan, TableExec, WholeStageCodegenExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.CompressionCodecId
 import org.apache.spark.sql.types._
-import org.apache.spark.util.TaskCompletionListener
 
 /**
  * Generated code plan for bulk insertion into a column table.
@@ -68,13 +66,8 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   @transient private var numInsertions: String = _
   @transient private var schemaTerm: String = _
   @transient private var storeColumnBatch: String = _
-  @transient private var beginSnapshotTx: String = _
-  @transient private var closeConnection: String = _
-  @transient private var commitSnapshotTx: String = _
-  @transient private var txIdConnArray: String = _
-  @transient private var txId: String = _
-  @transient private var conn: String = _
-  @transient private var rollbackSnapshotTx: String = _
+  @transient private var externalStoreTerm: String = _
+  @transient private var taskListener: String = _
   @transient private var storeColumnBatchArgs: String = _
   @transient private var initEncoders: String = _
 
@@ -83,9 +76,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   @transient private var cursorsArrayCreate: String = _
   @transient private var encoderArrayTerm: String = _
   @transient private var cursorArrayTerm: String = _
-  @transient private var catalogVersion: String = _
-
-  @transient private[sql] var batchIdRef = -1
 
   @transient private var batchBucketIdTerm: Option[String] = None
 
@@ -95,7 +85,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
 
   val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(batchParams._3)
 
-  override protected def opType: String = "Inserted"
+  override protected def opType: String = "Insert"
 
   override def nodeName: String = "ColumnInsert"
 
@@ -130,10 +120,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   }
 
   /**
-   * Add a task listener to close encoders as part of defining
-   * "defaultBatchSizeTerm". Also return a string as a fallback check
-   * to be added at the end of doProduce code before returning in case
-   * this is generated on executor that has no TaskContext.
+   * Return code to close encoders and define "defaultBatchSizeTerm".
    */
   private def addBatchSizeAndCloseEncoders(ctx: CodegenContext,
       closeEncoders: String): String = {
@@ -144,24 +131,9 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  $closeEncoders
          |}
       """.stripMargin)
-    // add a task completion listener to close the encoders
-    val contextClass = classOf[TaskContext].getName
-    val listenerClass = classOf[TaskCompletionListener].getName
-    val getContext = Utils.genTaskContextFunction(ctx)
-
-    ctx.addMutableState("int", defaultBatchSizeTerm,
-      s"""
-         |if ($getContext() != null) {
-         |  $getContext().addTaskCompletionListener(new $listenerClass() {
-         |    @Override
-         |    public void onTaskCompletion($contextClass context) {
-         |      if ($numInsertions >= 0) $closeEncodersFunction();
-         |    }
-         |  });
-         |}
-      """.stripMargin)
+    ctx.addMutableState("int", defaultBatchSizeTerm, "")
     s"""
-       |if ($numInsertions >= 0 && $getContext() == null) {
+       |if ($numInsertions >= 0) {
        |  $closeEncodersFunction();
        |}""".stripMargin
   }
@@ -181,6 +153,12 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       if (onExecutor) "null" else metricTerm(ctx, "numInsertColumnBatchRows")
     schemaTerm = ctx.addReferenceObj("schema", tableSchema,
       classOf[StructType].getName)
+    val listenerClass = classOf[SnapshotConnectionListener].getName
+    taskListener = ctx.freshName("taskListener")
+    ctx.addMutableState(listenerClass, taskListener, "")
+    val catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
+    externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
+    val getContext = Utils.genTaskContextFunction(ctx)
 
     val schemaLength = tableSchema.length
     encoderArrayTerm = ctx.freshName("encoderArray")
@@ -189,15 +167,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     ctx.addMutableState("long", numInsertions, s"$numInsertions = -1L;")
     maxDeltaRowsTerm = ctx.freshName("maxDeltaRows")
     batchSizeTerm = ctx.freshName("currentBatchSize")
-    txIdConnArray = ctx.freshName("txIdConnArray")
-    txId = ctx.freshName("txId")
-    conn = ctx.freshName("conn")
-    val batchSizeDeclaration = if (true) {
-      ctx.addMutableState("int", batchSizeTerm, s"$batchSizeTerm = 0;")
-      ""
-    } else {
-      s"int $batchSizeTerm = 0;"
-    }
+    ctx.addMutableState("int", batchSizeTerm, s"$batchSizeTerm = 0;")
     defaultBatchSizeTerm = ctx.freshName("defaultBatchSize")
     val defaultRowSize = ctx.freshName("defaultRowSize")
     val childProduce = doChildProduce(ctx)
@@ -258,16 +228,14 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val closeEncoders = loop(
       s"if ($encoderArrayTerm[i] != null) $encoderArrayTerm[i].close();",
       schema.length)
-    val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders)
-    val resetConnectionAttributes = resetConnectionAttributesCode()
+    val closeEncodersCode = addBatchSizeAndCloseEncoders(ctx, closeEncoders)
     s"""
        |$checkEnd; // already done
        |
-       |final Object[] $txIdConnArray = $beginSnapshotTx();
+       |$taskListener = $listenerClass$$.MODULE$$.apply($getContext(),
+       |    $externalStoreTerm, false, new scala.util.Left($catalogVersion));
        |
-       |boolean success = false;
        |try {
-       |$batchSizeDeclaration
        |if ($numInsertions < 0) {
        |  $numInsertions = 0;
        |  int $defaultRowSize = 0;
@@ -282,45 +250,14 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |  $childProduce
        |}
        |if ($batchSizeTerm > 0) {
-       |  $storeColumnBatch($columnMaxDeltaRows / 2, $storeColumnBatchArgs,
-       |      new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  $storeColumnBatch($columnMaxDeltaRows / 2, $storeColumnBatchArgs);
        |  $batchSizeTerm = 0;
        |}
-       |$closeForNoContext
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
-       |success = true;
-       |}
-       |finally {
-       |if ($txIdConnArray[1] != null) {
-       |  $resetConnectionAttributes
-       |  if (success) {
-       |    $commitSnapshotTx((String)$txIdConnArray[1],
-       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
-       |  } else {
-       |    $rollbackSnapshotTx((String)$txIdConnArray[1],
-       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
-       |  }
-       |}
-       |else {
-       |  $closeConnection(new scala.Some((java.sql.Connection)$txIdConnArray[0]));
-       |}
+       |} finally {
+       |$closeEncodersCode
        |}
     """.stripMargin
-  }
-
-  def resetConnectionAttributesCode(): String = {
-    if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
-      // for smart connector, reset the connection attributes as well
-      val externalStoreUtilsClass = ExternalStoreUtils.getClass.getName
-      s"""
-        |  $externalStoreUtilsClass.MODULE$$.resetSchemaVersionOnConnection(
-        |  $catalogVersion, (java.sql.Connection)$txIdConnArray[0]);
-      """.stripMargin
-    } else {
-      """
-        |
-      """.stripMargin
-    }
   }
 
   override protected def doProduce(ctx: CodegenContext): String = {
@@ -335,6 +272,13 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       if (onExecutor) "null" else metricTerm(ctx, "numInsertColumnBatchRows")
     schemaTerm = ctx.addReferenceObj("schema", tableSchema,
       classOf[StructType].getName)
+    val listenerClass = classOf[SnapshotConnectionListener].getName
+    taskListener = ctx.freshName("taskListener")
+    ctx.addMutableState(listenerClass, taskListener, "")
+    val catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
+    externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
+    val getContext = Utils.genTaskContextFunction(ctx)
+
     encoderCursorTerms = tableSchema.map { _ =>
       (ctx.freshName("encoder"), ctx.freshName("cursor"))
     }
@@ -342,9 +286,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     ctx.addMutableState("long", numInsertions, s"$numInsertions = -1L;")
     maxDeltaRowsTerm = ctx.freshName("maxDeltaRows")
     batchSizeTerm = ctx.freshName("currentBatchSize")
-    txIdConnArray = ctx.freshName("txIdConnArray")
-    txId = ctx.freshName("txId")
-    conn = ctx.freshName("conn")
     val batchSizeDeclaration = if (useMemberVariables) {
       ctx.addMutableState("int", batchSizeTerm, s"$batchSizeTerm = 0;")
       ""
@@ -401,18 +342,19 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  return false;
          |}
       """.stripMargin)
-    val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders.toString())
+    val closeEncodersCode = addBatchSizeAndCloseEncoders(ctx, closeEncoders.toString())
     val useBatchSize = if (columnBatchSize > 0) columnBatchSize
     else ExternalStoreUtils.sizeAsBytes(Property.ColumnBatchSize.defaultValue.get,
       Property.ColumnBatchSize.name)
-    val resetConnectionAttributes = resetConnectionAttributesCode()
     s"""
        |$checkEnd; // already done
-       |final Object[] $txIdConnArray  = $beginSnapshotTx();
-       |boolean success = false;
-       |try {
+       |
+       |$taskListener = $listenerClass$$.MODULE$$.apply($getContext(),
+       |    $externalStoreTerm, false, new scala.util.Left($catalogVersion));
+       |
        |$batchSizeDeclaration
        |${cursorDeclarations.mkString("\n")}
+       |try {
        |if ($numInsertions < 0) {
        |  $numInsertions = 0;
        |  int $defaultRowSize = 0;
@@ -427,28 +369,12 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |}
        |if ($batchSizeTerm > 0) {
        |  $cursorsArrayCreate
-       |  $storeColumnBatch($columnMaxDeltaRows, $storeColumnBatchArgs,
-       |      new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |  $storeColumnBatch($columnMaxDeltaRows, $storeColumnBatchArgs);
        |  $batchSizeTerm = 0;
        |}
-       |$closeForNoContext
        |${consume(ctx, Seq(ExprCode("", "false", numInsertions)))}
-       |success = true;
-       |}
-       |finally {
-       |if ($txIdConnArray[1] != null) {
-       |  $resetConnectionAttributes
-       |  if (success) {
-       |    $commitSnapshotTx((String)$txIdConnArray[1],
-       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
-       |  } else {
-       |    $rollbackSnapshotTx((String)$txIdConnArray[1],
-       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
-       |  }
-       |}
-       |else {
-       |  $closeConnection(new scala.Some((java.sql.Connection)$txIdConnArray[0]));
-       |}
+       |} finally {
+       |$closeEncodersCode
        |}
     """.stripMargin
   }
@@ -576,16 +502,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     initEncoders = loop(cursorLoopCode, schema.length)
     val calculateSize = loop(encoderLoopCode, schema.length)
     val columnBatchClass = classOf[ColumnBatch].getName
-    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
-    batchIdRef = ctx.references.length
-    val batchUUID = ctx.addReferenceObj("batchUUID", invalidUUID, "Long")
-    val bucketId = ctx.addReferenceObj("partitionId", -1, "Integer")
-    val partitionIdCode = if (partitioned) "partitionIndex"
+    val partitionIdCode = if (partitioned || (onExecutor && isPartitioned)) "partitionIndex"
     else {
       // check for bucketId variable if available
-      batchBucketIdTerm.getOrElse(
-        // add as a reference object which can be updated by caller if required
-        s"$bucketId.intValue()")
+      batchBucketIdTerm.getOrElse(-1)
     }
     val tableName = ctx.addReferenceObj("columnTable", columnTable,
       "java.lang.String")
@@ -602,7 +522,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     ctx.addNewFunction(storeColumnBatch,
       s"""
          |private final void $storeColumnBatch(int $maxDeltaRowsTerm,
-         |    int $batchSizeTerm, long[] $cursorArrayTerm, scala.Option $conn) {
+         |    int $batchSizeTerm, long[] $cursorArrayTerm) {
          |  // create statistics row
          |  ${statsEv.code.trim}
          |  // create ColumnBatch and insert
@@ -612,34 +532,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
-         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
+         |      $partitionIdCode, $invalidUUID, $maxDeltaRowsTerm,
          |      ${compressionCodec.id}, $numInsertRowsMetric, $numColumnBatchesMetric,
-         |      $numInsertColumnStoreMetric, $conn);
+         |      $numInsertColumnStoreMetric, $taskListener);
          |  $numInsertions += $batchSizeTerm;
-         |}
-      """.stripMargin)
-
-    generateBeginSnapshotTx(ctx, externalStoreTerm)
-
-    commitSnapshotTx = ctx.freshName("commitSnapshotTx")
-    ctx.addNewFunction(commitSnapshotTx,
-      s"""
-         |private final void $commitSnapshotTx(String $txId, scala.Option $conn) {
-         |  $externalStoreTerm.commitTx($txId, false, $conn);
-         |}
-      """.stripMargin)
-    rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")
-    ctx.addNewFunction(rollbackSnapshotTx,
-      s"""
-         |private final void $rollbackSnapshotTx(String $txId, scala.Option $conn) {
-         |  $externalStoreTerm.rollbackTx($txId, $conn);
-         |}
-      """.stripMargin)
-    closeConnection = ctx.freshName("closeConnection")
-    ctx.addNewFunction(closeConnection,
-      s"""
-         |private final void $closeConnection(scala.Option $conn) {
-         |  $externalStoreTerm.closeConnection($conn);
          |}
       """.stripMargin)
 
@@ -659,8 +555,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |    $sizeExceededTerm = $sizeTerm >= $columnBatchSize;
        |  }
        |  if ($sizeExceededTerm) {
-       |    $storeColumnBatch(-1, $storeColumnBatchArgs,
-       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |    $storeColumnBatch(-1, $storeColumnBatchArgs);
        |    $batchSizeTerm = 0;
        |    $initEncoders
        |  }
@@ -669,27 +564,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |$writeColumns
        |$batchSizeTerm++;
     """.stripMargin
-  }
-
-  private def generateBeginSnapshotTx(ctx: CodegenContext, externalStoreTerm: String): Unit = {
-    beginSnapshotTx = ctx.freshName("beginSnapshotTx")
-    catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
-    if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
-      // on smart connector also set connection attributes to check catalog schema version
-      ctx.addNewFunction(beginSnapshotTx,
-        s"""
-           |private final Object[] $beginSnapshotTx() throws java.io.IOException {
-           |  return $externalStoreTerm.beginTxSmartConnector(false, $catalogVersion);
-           |}
-      """.stripMargin)
-    } else {
-      ctx.addNewFunction(beginSnapshotTx,
-        s"""
-           |private final Object[] $beginSnapshotTx() {
-           |  return $externalStoreTerm.beginTx(false);
-           |}
-      """.stripMargin)
-    }
   }
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
@@ -737,16 +611,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     cursorsArrayCreate = ""
 
     val columnBatchClass = classOf[ColumnBatch].getName
-    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
-    batchIdRef = ctx.references.length
-    val batchUUID = ctx.addReferenceObj("batchUUID", invalidUUID, "Long")
-    val bucketId = ctx.addReferenceObj("partitionId", -1, "Integer")
-    val partitionIdCode = if (partitioned) "partitionIndex"
+    val partitionIdCode = if (partitioned || (onExecutor && isPartitioned)) "partitionIndex"
     else {
       // check for bucketId variable if available
-      batchBucketIdTerm.getOrElse(
-        // add as a reference object which can be updated by caller if required
-        s"$bucketId.intValue()")
+      batchBucketIdTerm.getOrElse(-1)
     }
     val tableName = ctx.addReferenceObj("columnTable", columnTable,
       "java.lang.String")
@@ -757,7 +625,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     ctx.addNewFunction(storeColumnBatch,
       s"""
          |private final void $storeColumnBatch(int $maxDeltaRowsTerm,
-         |    int $batchSizeTerm, ${batchFunctionDeclarations.toString()}, scala.Some $conn) {
+         |    int $batchSizeTerm, ${batchFunctionDeclarations.toString()}) {
          |  $encoderCursorDeclarations
          |  // create statistics row
          |  ${statsEv.code.trim}
@@ -768,32 +636,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  final $columnBatchClass $columnBatch = $columnBatchClass.apply(
          |      $batchSizeTerm, $buffers, $statsRow.getBytes(), null);
          |  $externalStoreTerm.storeColumnBatch($tableName, $columnBatch,
-         |      $partitionIdCode, $batchUUID.longValue(), $maxDeltaRowsTerm,
+         |      $partitionIdCode, $invalidUUID, $maxDeltaRowsTerm,
          |      ${compressionCodec.id}, $numInsertRowsMetric, $numColumnBatchesMetric,
-         |      $numInsertColumnStoreMetric, $conn);
+         |      $numInsertColumnStoreMetric, $taskListener);
          |  $numInsertions += $batchSizeTerm;
-         |}
-      """.stripMargin)
-    generateBeginSnapshotTx(ctx, externalStoreTerm)
-    commitSnapshotTx = ctx.freshName("commitSnapshotTx")
-    ctx.addNewFunction(commitSnapshotTx,
-      s"""
-         |private final void $commitSnapshotTx(String $txId, scala.Option $conn) {
-         |  $externalStoreTerm.commitTx($txId, false, $conn);
-         |}
-      """.stripMargin)
-    rollbackSnapshotTx = ctx.freshName("rollbackSnapshotTx")
-    ctx.addNewFunction(rollbackSnapshotTx,
-      s"""
-         |private final void $rollbackSnapshotTx(String $txId, scala.Option $conn) {
-         |  $externalStoreTerm.rollbackTx($txId, $conn);
-         |}
-      """.stripMargin)
-    closeConnection = ctx.freshName("closeConnection")
-    ctx.addNewFunction(closeConnection,
-      s"""
-         |private final void $closeConnection(scala.Option $conn) {
-         |  $externalStoreTerm.closeConnection($conn);
          |}
       """.stripMargin)
     storeColumnBatchArgs = s"$batchSizeTerm, ${batchFunctionCall.toString()}"
@@ -809,8 +655,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |  }
        |  if ($sizeExceededTerm) {
        |    $cursorsArrayCreate
-       |    $storeColumnBatch(-1, $storeColumnBatchArgs,
-       |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
+       |    $storeColumnBatch(-1, $storeColumnBatchArgs);
        |    $batchSizeTerm = 0;
        |    $initEncoders
        |  }

@@ -25,7 +25,6 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.cache.EntryDestroyedException
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import io.snappydata.thrift.common.BufferedBlob
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap
 
@@ -41,9 +40,8 @@ case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
     statsData: Array[Byte], deltaIndexes: Array[Int])
 
 abstract class ResultSetIterator[A](conn: Connection,
-                                    stmt: Statement, rs: ResultSet, context: TaskContext,
-                                    closeConnectionOnResultsClose: Boolean = true)
-  extends Iterator[A] with Logging with BucketsBasedIterator {
+    stmt: Statement, rs: ResultSet, context: TaskContext)
+    extends Iterator[A] with Logging with BucketsBasedIterator {
 
   protected[this] final var doMove = true
 
@@ -54,7 +52,7 @@ abstract class ResultSetIterator[A](conn: Connection,
   if (taskContext ne null) {
     val partitionId = taskContext.partitionId
     taskContext.addTaskCompletionListener { _ =>
-      logDebug(s"closed connection for task from listener $partitionId")
+      logDebug(s"closing result set for task from listener $partitionId")
       close()
     }
   }
@@ -95,15 +93,6 @@ abstract class ResultSetIterator[A](conn: Connection,
     }
     try {
       if (stmt ne null) {
-        // TODO: SW: remove the block below
-        stmt.getConnection.unwrap(classOf[Connection]) match {
-          case embedConn: EmbedConnection =>
-            val lcc = embedConn.getLanguageConnectionContext
-            if (lcc ne null) {
-              lcc.clearExecuteLocally()
-            }
-          case _ =>
-        }
         stmt.close()
       }
     } catch {

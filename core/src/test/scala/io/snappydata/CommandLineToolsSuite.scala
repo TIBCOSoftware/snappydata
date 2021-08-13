@@ -29,8 +29,6 @@ class CommandLineToolsSuite extends SnappyTestRunner {
 
   override def servers: String = s"$localHostName\n"
 
-  override def clusterSuccessString: String = "Distributed system now has 3 members"
-
   private val snappyProductDir = System.getProperty("SNAPPY_HOME")
   private val snappyNativeTestDir = s"$snappyProductDir/../../../store/native/tests"
 
@@ -224,7 +222,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       stmnt.execute("drop table if exists tmptable")
     }
   }
-      
+
   // scalastyle:off println
   test("backup restore") {
     val debugWriter = new PrintWriter(s"$snappyHome/CommandLineToolsSuite.debug")

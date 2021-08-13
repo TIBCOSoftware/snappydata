@@ -24,7 +24,6 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
-import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.sources.{DestroyRelation, JdbcExtendedUtils, NativeTableRowLevelSecurityRelation}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{LongType, StructType}
@@ -102,12 +101,6 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
               s"$partColumn in child output for $toString")))
       ClusteredDistribution(childPartitioningAttributes) :: Nil
     } else UnspecifiedDistribution :: Nil
-  }
-
-  override lazy val metrics: Map[String, SQLMetric] = {
-    if (onExecutor) Map.empty
-    else Map(s"num${opType}Rows" -> SQLMetrics.createMetric(sparkContext,
-      s"number of ${opType.toLowerCase} rows"))
   }
 
   override protected def doExecute(): RDD[InternalRow] = {

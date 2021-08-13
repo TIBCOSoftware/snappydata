@@ -406,7 +406,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
       }
       dr.acquireReadLock()
       try diskId.synchronized(synchronized {
-        if ((this.columnBuffer ne DiskEntry.Helper.NULL_BUFFER) && incrementReference()) {
+        if (this.columnBuffer.hasRemaining && incrementReference()) {
           // transform outside any locks (else UMM lock may cause deadlock like in SNAP-2349)
           transformValue = true
         } else {
@@ -506,7 +506,6 @@ class ColumnFormatValue extends SerializedDiskBuffer
 
   private def decompressValue(incReference: Boolean, onlyIfStored: Boolean): ColumnFormatValue = {
     var context: RegionEntryContext = null
-    var position = 0
     var typeId = 0
     var outputLen = 0
     var refCountDecremented = false
@@ -525,8 +524,12 @@ class ColumnFormatValue extends SerializedDiskBuffer
       } else {
         val buffer = this.columnBuffer
         // check if decompression is required
+        if (!buffer.hasRemaining) {
+          this.decompressionState = -1
+          return this
+        }
         assert(buffer.order() eq ByteOrder.LITTLE_ENDIAN)
-        position = buffer.position()
+        val position = buffer.position()
         typeId = buffer.getInt(position)
         outputLen = buffer.getInt(position + 4)
         if (typeId >= 0) {
@@ -578,7 +581,8 @@ class ColumnFormatValue extends SerializedDiskBuffer
         buffer = this.columnBuffer
         state = this.decompressionState
         val startDecompression = perfStats.startDecompression()
-        CompressionUtils.codecDecompress(buffer, decompressed, outputLen, position, -typeId)
+        CompressionUtils.codecDecompress(buffer, decompressed, outputLen,
+          buffer.position(), -typeId)
         // update decompression stats
         perfStats.endDecompression(startDecompression)
         // proper refCount check at this point to ensure no other thread is holding reference
@@ -805,9 +809,9 @@ class ColumnFormatValue extends SerializedDiskBuffer
         if (v ne null) v else getValueRetain(FetchRequest.ORIGINAL)
       case _ => getValueRetain(FetchRequest.COMPRESS)
     }
-    val buffer = writeValue.getBuffer
     try {
-      val numBytes = buffer.limit()
+      val buffer = writeValue.getBuffer
+      val numBytes = buffer.remaining()
       out.writeByte(0) // padding for 8-byte alignment
       out.writeInt(numBytes)
       if (numBytes > 0) {
@@ -834,7 +838,9 @@ class ColumnFormatValue extends SerializedDiskBuffer
     if (numBytes > 0) {
       val allocator = GemFireCacheImpl.getCurrentBufferAllocator
       var buffer = in match {
-        case din: ByteBufferDataInput =>
+        case din: ByteBufferDataInput if numBytes == din.getInternalBuffer.remaining() &&
+            (din.getInternalBuffer.position() <= 32 ||
+                allocator != BufferAllocator.of(din.getInternalBuffer)) =>
           // just transfer the internal buffer; higher layer (e.g. BytesAndBits)
           // will take care not to release this buffer (if direct);
           // buffer is already positioned at start of data
@@ -845,8 +851,16 @@ class ColumnFormatValue extends SerializedDiskBuffer
           }
           buffer
 
+        case din: ByteBufferDataInput =>
+          val buffer = allocator.allocateForStorage(numBytes)
+          buffer.mark()
+          din.read(buffer)
+          buffer.reset()
+          buffer
+
         case channel: InputStreamChannel =>
           val buffer = allocator.allocateForStorage(numBytes)
+          buffer.mark()
           var numTries = 0
           do {
             if (channel.read(buffer) == 0) {
@@ -856,7 +870,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
             }
           } while (buffer.hasRemaining)
           // move to the start of data
-          buffer.rewind()
+          buffer.reset()
           buffer
 
         case _ =>

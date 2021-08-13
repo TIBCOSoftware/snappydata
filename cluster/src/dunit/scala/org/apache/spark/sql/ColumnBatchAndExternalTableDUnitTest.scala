@@ -402,13 +402,13 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
   private def assertMaxTasksStarted(max: Int, expected: Int): Unit = {
     // occasionally a few tasks more than expected might get started due to gap between
     // notification and job submissions
-    assert(max - expected <= TestUtils.defaultCores / 2,
+    assert(max - expected <= TestUtils.defaultCores,
       s"Upper limit of concurrent tasks = $expected, actual = $max")
   }
 
   private def assertMinTasksStarted(max: Int, expected: Int): Unit = {
     // lower limit might get violated due to the gap between notification and job submissions
-    assert(expected - max <= TestUtils.defaultCores / 2,
+    assert(expected - max <= TestUtils.defaultCores,
       s"Lower limit of concurrent tasks = $expected, actual = $max")
   }
 }

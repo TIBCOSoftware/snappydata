@@ -25,7 +25,6 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoder, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
-import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
@@ -85,21 +84,13 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
 
   override def nodeName: String = "ColumnUpdate"
 
-  override lazy val metrics: Map[String, SQLMetric] = {
-    if (onExecutor) Map.empty
-    else Map(
-      "numUpdateRows" -> SQLMetrics.createMetric(sparkContext,
-        "number of updates to row buffer"),
-      "numUpdateColumnBatchRows" -> SQLMetrics.createMetric(sparkContext,
-        "number of updates to column batches"))
-  }
-
   override def simpleString: String = s"${super.simpleString} update: columns=$updateColumns " +
       s"expressions=$updateExpressions compression=$compressionCodec"
 
   @transient private var batchOrdinal: String = _
   @transient private var finishUpdate: String = _
   @transient private var updateMetric: String = _
+  @transient private var updateBatchesMetric: String = _
   @transient protected var txId: String = _
 
   override protected def delayRollover: Boolean = true
@@ -123,7 +114,6 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |if ($batchOrdinal > 0) {
          |  $finishUpdate($invalidUUID, -1, -1); // force a finish
          |}
-         |$taskListener.setSuccess();
       """.stripMargin)
   }
 
@@ -146,7 +136,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     val deltaIndexes = ctx.addReferenceObj("deltaIndexes", updateIndexes, "int[]")
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val tableName = ctx.addReferenceObj("columnTable", columnTable, "java.lang.String")
-    updateMetric = if (onExecutor) "null" else metricTerm(ctx, "numUpdateColumnBatchRows")
+    updateMetric = metricTerm(ctx, s"num${opType}ColumnBatchRows")
+    updateBatchesMetric = metricTerm(ctx, s"num${opType}ColumnBatches")
 
     val numColumns = updateColumns.length
     val deltaEncoderClass = classOf[ColumnDeltaEncoder].getName
@@ -293,8 +284,8 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
          |        $batchOrdinal, buffers, ${statsEv.value}.getBytes(), $deltaIndexes);
          |    // maxDeltaRows is -1 so that insert into row buffer is never considered
          |    $externalStoreTerm.storeColumnBatch($tableName, columnBatch, $lastBucketId,
-         |        $lastColumnBatchId, -1, ${compressionCodec.id}, null, null, $updateMetric,
-         |        new scala.Some($connTerm));
+         |        $lastColumnBatchId, -1, ${compressionCodec.id}, null, $updateBatchesMetric,
+         |        $updateMetric, $taskListener);
          |    $result += $batchOrdinal;
          |    $initializeEncoders();
          |    $lastColumnBatchId = batchId;

@@ -160,7 +160,7 @@ class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
     }
   }
 
-  private def releaseColumns(): Int = {
+  private final def releaseColumns(): Int = {
     val previousColumns = currentColumns
     if ((previousColumns ne null) && previousColumns.nonEmpty) {
       currentColumns = null

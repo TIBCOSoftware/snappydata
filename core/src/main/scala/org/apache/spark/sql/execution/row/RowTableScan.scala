@@ -25,7 +25,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{LazyIterator, Utils}
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan, SparkPlan}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
@@ -134,13 +134,14 @@ private[sql] final case class RowTableScan(
     // case of ResultSet
     val numRows = ctx.freshName("numRows")
     val iterator = ctx.freshName("iterator")
+    val lazyIteratorClass = classOf[LazyIterator[Any]].getName
     val iteratorClass = classOf[ResultSetTraversal].getName
     val rs = ctx.freshName("resultSet")
     val columnsRowInput = output.zipWithIndex.map { case (a, index) =>
       genCodeResultSetColumn(ctx, rs, iterator, index, a.dataType, a.nullable)
     }
     s"""
-       |final $iteratorClass $iterator = ($iteratorClass)$input;
+       |final $iteratorClass $iterator = ($iteratorClass)(($lazyIteratorClass)$input).iterator();
        |final java.sql.ResultSet $rs = $iterator.rs();
        |long $numRows = 0L;
        |try {

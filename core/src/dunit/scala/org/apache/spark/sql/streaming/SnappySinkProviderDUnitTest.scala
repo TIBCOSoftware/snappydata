@@ -22,6 +22,7 @@ import java.sql.Connection
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.annotation.tailrec
 import scala.reflect.io.Path
 
 import com.pivotal.gemfirexd.Attribute
@@ -425,6 +426,7 @@ object SnappySinkProviderDUnitTest extends Logging {
         actualData.map(a => a.toString()).mkString(","))
   }
 
+  @tailrec
   private def waitTillTheBatchIsPickedForProcessing(batchId: Int, testId: String,
       retries: Int = 15): Unit = {
     if (retries == 0) {

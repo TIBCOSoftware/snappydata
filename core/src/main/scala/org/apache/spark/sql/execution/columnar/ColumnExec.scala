@@ -25,17 +25,15 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, OrderedDistribution}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.WholeStageCodegenExec
-import org.apache.spark.sql.execution.columnar.impl.{JDBCSourceAsColumnarStore, SnapshotConnectionListener}
+import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
+import org.apache.spark.sql.execution.{SnapshotConnectionListener, WholeStageCodegenExec}
 import org.apache.spark.sql.store.StoreUtils
 
 /**
  * Base class for bulk column table insert, update, put, delete operations.
  */
 trait ColumnExec extends RowExec {
-
-  @transient protected final var taskListener: String = _
 
   override def onExecutor: Boolean = false
 
@@ -46,6 +44,26 @@ trait ColumnExec extends RowExec {
   protected def delayRollover: Boolean = false
 
   def keyColumns: Seq[Attribute]
+
+  protected final def compactionMetricName: String = "numCompactions"
+
+  protected final def rolloverMetricName: String = "numDelayedRollovers"
+
+  override lazy val metrics: Map[String, SQLMetric] = createMetrics
+
+  protected def createMetrics: Map[String, SQLMetric] = {
+    val opAction = s"${opType.toLowerCase}s"
+    if (onExecutor) Map.empty
+    else Map(
+      s"num${opType}Rows" -> SQLMetrics.createMetric(sparkContext,
+        s"number of $opAction in row buffer"),
+      s"num${opType}ColumnBatchRows" -> SQLMetrics.createMetric(sparkContext,
+        s"number of $opAction in column batches"),
+      s"num${opType}ColumnBatches" -> SQLMetrics.createMetric(sparkContext,
+        s"number of column batches with $opAction"),
+      compactionMetricName -> SQLMetrics.createMetric(sparkContext, "number of batches compacted"),
+      rolloverMetricName -> SQLMetrics.createMetric(sparkContext, "number of delayed rollovers"))
+  }
 
   override def requiredChildDistribution: Seq[Distribution] = {
     if (partitioned) super.requiredChildDistribution
@@ -69,27 +87,26 @@ trait ColumnExec extends RowExec {
       StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 4))) :: Nil
   }
 
-  override protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
+  override protected def initConnectionCode(ctx: CodegenContext): String = {
     val connectionClass = classOf[Connection].getName
     val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val listenerClass = classOf[SnapshotConnectionListener].getName
-    val storeClass = classOf[JDBCSourceAsColumnarStore].getName
+    val compactionMetric = metricTerm(ctx, compactionMetricName)
+    val rolloverMetric = metricTerm(ctx, rolloverMetricName)
     taskListener = ctx.freshName("taskListener")
     connTerm = ctx.freshName("connection")
     val getContext = Utils.genTaskContextFunction(ctx)
+    val catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
 
     ctx.addMutableState(listenerClass, taskListener, "")
     ctx.addMutableState(connectionClass, connTerm, "")
 
-    val initCode =
-      s"""
-         |$taskListener = new $listenerClass(($storeClass)$externalStoreTerm, $delayRollover);
-         |$connTerm = $taskListener.getConn();
-         |if ($getContext() != null) {
-         |   $getContext().addTaskCompletionListener($taskListener);
-         |}
-         | """.stripMargin
-    (initCode, "", "")
+    s"""
+       |$taskListener = $listenerClass$$.MODULE$$.apply($getContext(),
+       |    $externalStoreTerm, $delayRollover, new scala.util.Left($catalogVersion));
+       |$taskListener.setMetrics($compactionMetric, $rolloverMetric);
+       |$connTerm = $taskListener.connection();
+       |""".stripMargin
   }
 
   override protected def doExecute(): RDD[InternalRow] = {

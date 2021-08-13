@@ -64,7 +64,8 @@ with Logging with Retries {
 
   def snappyscalaShell: String = s"$snappyHome/bin/snappy-scala"
 
-  def clusterSuccessString: String = "Distributed system now has 4 members"
+  val clusterSuccessPattern: Pattern = Pattern.compile(
+    "SnappyData Leader pid: [0-9]* status: running", Pattern.DOTALL)
 
   private val availablePort = AvailablePort.getRandomAvailablePort(AvailablePort.JGROUPS)
   private  var locatorDirPath = ""
@@ -85,11 +86,11 @@ with Logging with Retries {
     if (workDir.exists) {
       FileUtils.deleteDirectory(workDir)
     }
-    startupCluster
+    startupCluster()
   }
 
   override def afterAll(): Unit = {
-    stopCluster
+    stopCluster()
   }
 
   def stopCluster(): Unit = {
@@ -116,7 +117,7 @@ with Logging with Retries {
     val (out, _) = executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-start-all.sh",
       Some(commandOutput))
 
-    if (!out.contains(clusterSuccessString)) {
+    if (!clusterSuccessPattern.matcher(out).find()) {
       throw new Exception(s"Failed to start Snappy cluster: " + out)
     }
     executeProcess("sparkCluster", s"$snappyHome/sbin/start-all.sh", Some(commandOutput))

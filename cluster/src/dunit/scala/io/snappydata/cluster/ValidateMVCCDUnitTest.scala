@@ -439,6 +439,7 @@ object ValidateMVCCDUnitTest {
 
     val tableName: String = "APP.TESTTABLE"
     val conn = DriverManager.getConnection(url)
+    conn.setTransactionIsolation(IsolationLevel.SNAPSHOT_JDBC_LEVEL)
 
     val s = conn.createStatement()
     s.execute(s"select * from $tableName")
@@ -506,6 +507,7 @@ object ValidateMVCCDUnitTest {
     cache.waitOnRvvTestHook()
     cache.setRvvSnapshotTestHook(null)
 
+    conn.commit()
 
     var cnt4 = 0
     s.execute(s"select * from " +
@@ -549,6 +551,8 @@ object ValidateMVCCDUnitTest {
     // scalastyle:on
     assert(cnt6 >= 9, s"Expected row count is 10 while actual row count is $cnt6")
 
+    conn.commit()
+    conn.close()
   }
 
 
@@ -566,7 +570,7 @@ object ValidateMVCCDUnitTest {
 
     val tableName: String = "APP.TESTTABLE"
     val conn = DriverManager.getConnection(url)
-
+    conn.setTransactionIsolation(IsolationLevel.SNAPSHOT_JDBC_LEVEL)
 
     val s = conn.createStatement()
     s.execute(s"select * from $tableName")
@@ -583,7 +587,6 @@ object ValidateMVCCDUnitTest {
     println("Row count before creating the cachebatch: " + cnt)
     // scalastyle:on
     assert(cnt >= 9, s"Expected row count is 10 while actual row count is $cnt")
-
 
     var cnt1 = 0
     s.execute(s"select * from $tableName -- GEMFIREXD-PROPERTIES executionEngine=Store\n")
@@ -625,6 +628,7 @@ object ValidateMVCCDUnitTest {
     // scalastyle:on
     assert(cnt3 >= 9, s"Expected row count is 10 while actual row count is $cnt3")
 
+    conn.commit()
 
     // The number of entries in column store is 4 as after
     // columnwise storage 3 rows will be created one for each
@@ -645,6 +649,11 @@ object ValidateMVCCDUnitTest {
       // scalastyle:on
       cnt4 == 0
     }, "Row count not 0 even after rollback ", 30000, 500, true)
+
+    conn.commit()
+    conn.close()
+
+    cache.getCacheTransactionManager.testRollBack = false
   }
 
   def performBatchInsert(netPort: Int): Unit = {

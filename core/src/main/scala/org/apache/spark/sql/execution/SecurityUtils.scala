@@ -76,7 +76,7 @@ object SecurityUtils extends Logging {
     if (Misc.isSecurityEnabled) {
       // pool connection is a proxy so get embedded connection
       val pooledConnection = ExternalStoreUtils.getConnection(rowBufferTable,
-        connProperties, forExecutor)
+        connProperties, forExecutor, resetIsolationLevel = true)
       val conn = pooledConnection.unwrap(classOf[EmbedConnection])
       val lcc = conn.getLanguageConnectionContext
       var popContext = false

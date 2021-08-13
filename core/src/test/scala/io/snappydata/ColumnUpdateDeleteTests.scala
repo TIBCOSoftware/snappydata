@@ -795,32 +795,38 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
     val updateFutures = (0 until numUpdateThreads).map(doUpdateAndDelete)
     val queryFutures = (0 until numQueryThreads).map(_ => doQuery())
-    updateFutures.foreach(Await.result(_, Duration.Inf))
+    try {
+      updateFutures.foreach(Await.result(_, Duration.Inf))
 
-    assert(numDeleted.get() === updatedRows)
-    assert(numDeletedAndInProgress.get() === updatedRows)
-    assert(numUpdated.get() === remainingRows)
-    assert(numUpdatedAndInProgress.get() === remainingRows)
+      assert(numDeleted.get() === updatedRows)
+      assert(numDeletedAndInProgress.get() === updatedRows)
+      assert(numUpdated.get() === remainingRows)
+      assert(numUpdatedAndInProgress.get() === remainingRows)
 
-    queriesRunning.set(false)
-    queryFutures.foreach(Await.result(_, Duration.Inf))
+      queriesRunning.set(false)
+      queryFutures.foreach(Await.result(_, Duration.Inf))
 
-    pool.shutdownNow()
-
-    // check the final results
-    var rows = session.sql(s"select count(*) from $tableName").collect()
-    assert(rows.length === 1)
-    assert(rows(0).getLong(0) === remainingRows)
-    rows = session.sql(s"select count(*) from $tableName where data like 'update_%'").collect()
-    assert(rows.length === 1)
-    assert(rows(0).getLong(0) === remainingRows)
-    rows = session.sql(s"select count(*) from $tableName where data not like 'update_%'").collect()
-    assert(rows.length === 1)
-    assert(rows(0).getLong(0) === 0)
-
-    // wait at the barrier again to avoid one of the threads running DMLs while other
-    // dropping the table causing failure due to CatalogStaleException
-    barrier.await()
+      // check the final results
+      var rows = session.sql(s"select count(*) from $tableName").collect()
+      assert(rows.length === 1)
+      assert(rows(0).getLong(0) === remainingRows)
+      rows = session.sql(s"select count(*) from $tableName where data like 'update_%'").collect()
+      assert(rows.length === 1)
+      assert(rows(0).getLong(0) === remainingRows)
+      rows = session.sql(
+        s"select count(*) from $tableName where data not like 'update_%'").collect()
+      assert(rows.length === 1)
+      assert(rows(0).getLong(0) === 0)
+    } catch {
+      case t: Throwable =>
+        queriesRunning.set(false)
+        throw t
+    } finally {
+      pool.shutdownNow()
+      // wait at the barrier again to avoid one of the threads running DMLs while other
+      // dropping the table causing failure due to CatalogStaleException
+      barrier.await()
+    }
 
     synchronized {
       session.sql(s"drop table $tableName")

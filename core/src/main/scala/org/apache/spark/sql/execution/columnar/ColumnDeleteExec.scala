@@ -22,7 +22,6 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Exp
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteEncoder
 import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
-import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{ConnectionProperties, DestroyRelation, JdbcExtendedUtils}
@@ -48,20 +47,12 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
 
   override def nodeName: String = "ColumnDelete"
 
-  override lazy val metrics: Map[String, SQLMetric] = {
-    if (onExecutor) Map.empty
-    else Map(
-      "numDeleteRows" -> SQLMetrics.createMetric(sparkContext,
-        "number of deletes in row buffer"),
-      "numDeleteColumnBatchRows" -> SQLMetrics.createMetric(sparkContext,
-        "number of deletes in column batches"))
-  }
-
   override def simpleString: String = s"${super.simpleString} compression=$compressionCodec"
 
   @transient private var batchOrdinal: String = _
   @transient private var finishDelete: String = _
   @transient private var deleteMetric: String = _
+  @transient private var deleteBatchesMetric: String = _
   @transient protected var txId: String = _
   @transient protected var success: String = _
 
@@ -84,7 +75,6 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
          |if ($batchOrdinal > 0) {
          |  $finishDelete($invalidUUID, -1, -1); // force a finish
          |}
-         |$taskListener.setSuccess();
       """.stripMargin)
   }
 
@@ -97,7 +87,8 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
     val deleteEncoder = ctx.freshName("deleteEncoder")
     batchOrdinal = ctx.freshName("batchOrdinal")
     finishDelete = ctx.freshName("finishDelete")
-    deleteMetric = if (onExecutor) null else metricTerm(ctx, "numDeleteColumnBatchRows")
+    deleteMetric = metricTerm(ctx, s"num${opType}ColumnBatchRows")
+    deleteBatchesMetric = metricTerm(ctx, s"num${opType}ColumnBatches")
 
     val deleteEncoderClass = classOf[ColumnDeleteEncoder].getName
 
@@ -155,9 +146,11 @@ case class ColumnDeleteExec(child: SparkPlan, columnTable: String,
          |    // finish previous encoder, put into table and re-initialize
          |    final java.nio.ByteBuffer buffer = $deleteEncoder.finish($position, $lastNumRows);
          |    $externalStoreTerm.storeDelete($tableName, buffer, $lastBucketId,
-         |        $lastColumnBatchId, ${compressionCodec.id}, new scala.Some($connTerm));
+         |        $lastColumnBatchId, ${compressionCodec.id}, $connTerm);
          |    $result += $batchOrdinal;
          |    ${if (deleteMetric eq null) "" else s"$deleteMetric.${metricAdd(batchOrdinal)};"}
+         |    ${if (deleteBatchesMetric eq null) ""
+                else s"$deleteBatchesMetric.${metricAdd("1")};"}
          |    $initializeEncoder
          |    $lastColumnBatchId = batchId;
          |    $lastBucketId = bucketId;

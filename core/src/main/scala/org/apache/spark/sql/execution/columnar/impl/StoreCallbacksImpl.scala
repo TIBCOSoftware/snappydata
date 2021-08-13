@@ -25,20 +25,18 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.cache.{EntryDestroyedException, RegionDestroyedException}
+import com.gemstone.gemfire.cache.RegionDestroyedException
 import com.gemstone.gemfire.internal.cache.lru.LRUEntry
 import com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator
-import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, ExternalTableMetaData, LocalRegion, TXManagerImpl, TXStateInterface}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, ExternalTableMetaData, LocalRegion}
 import com.gemstone.gemfire.internal.shared.{FetchRequest, SystemProperties}
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, ColumnTableEntry, StoreCallbacks, UMMMemoryTracker}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import com.pivotal.gemfirexd.internal.iapi.error.{PublicAPI, StandardException}
-import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.TransactionController
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, Util}
@@ -73,39 +71,15 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     ColumnFormatEntry.registerTypes()
   }
 
-  override def createColumnBatch(region: BucketRegion, batchID: Long,
-      bucketID: Int): java.util.Set[AnyRef] = {
+  override def createColumnBatch(region: BucketRegion, bucketID: Int): java.util.Set[AnyRef] = {
     val pr = region.getPartitionedRegion
     val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
     val catalogEntry: ExternalTableMetaData = container.fetchHiveMetaData(false)
 
     if (catalogEntry != null) {
-      // LCC should be available assuming insert is already being done
-      // via a proper connection
-      var conn: EmbedConnection = null
-      var contextSet: Boolean = false
-      var txStateSet: Boolean = false
-      try {
-        var lcc: LanguageConnectionContext = Misc.getLanguageConnectionContext
-        if (lcc == null) {
-          conn = GemFireXDUtils.getTSSConnection(true, true, false)
-          conn.getTR.setupContextStack()
-          contextSet = true
-          lcc = conn.getLanguageConnectionContext
-          if (lcc == null) {
-            Misc.getGemFireCache.getCancelCriterion.checkCancelInProgress(null)
-          }
-        }
-        val row: AbstractCompactExecRow = container.newTemplateRow()
-            .asInstanceOf[AbstractCompactExecRow]
-        val tc = lcc.getTransactionExecute.asInstanceOf[GemFireTransaction]
-        lcc.setExecuteLocally(Collections.singleton(bucketID), pr, false, null)
-        try {
-          val state: TXStateInterface = TXManagerImpl.getCurrentTXState
-          if (tc.getCurrentTXStateProxy == null && state != null) {
-            tc.setActiveTXState(state, true)
-            txStateSet = true
-          }
+      Utils.withThreadLocalTransactionForBucket(bucketID, pr, {
+        lcc =>
+          val row = container.newTemplateRow().asInstanceOf[AbstractCompactExecRow]
           val sc = lcc.getTransactionExecute.openScan(
             container.getId.getContainerId, false, 0,
             TransactionController.MODE_RECORD,
@@ -139,21 +113,10 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             ColumnFormatRelation.columnBatchTableName(tableName), schema,
             catalogEntry.externalStore.asInstanceOf[ExternalStore],
             catalogEntry.compressionCodec)
-          batchCreator.createAndStoreBatch(sc, row,
-            batchID, bucketID, indexes)
-        } finally {
-          lcc.clearExecuteLocally()
-          if (txStateSet) tc.clearActiveTXState(false, true)
-        }
-      } catch {
-        case e: Throwable => throw e
-      } finally {
-        if (contextSet) {
-          conn.getTR.restoreContextStack()
-        }
-      }
+          batchCreator.createAndStoreBatch(sc, row, bucketID, indexes)
+      })
     } else {
-      java.util.Collections.emptySet[AnyRef]()
+      Collections.emptySet[AnyRef]()
     }
   }
 
@@ -346,10 +309,10 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         }
         if (throwIfMissing) {
           // empty buffer indicates value removed from region
-          val ede = new EntryDestroyedException(s"Iteration on column=$columnPosition " +
-              s"partition=$bucketId batchUUID=$uuid failed due to missing value")
-          throw PublicAPI.wrapStandardException(StandardException.newException(
-            SQLState.DATA_UNEXPECTED_EXCEPTION, ede))
+          val msg = s"Iteration on column=$columnPosition " +
+              s"partition=$bucketId batchUUID=$uuid failed due to missing value in"
+          throw PublicAPI.wrapStandardException(StandardException.newException(SQLState
+              .LANG_OBJECT_NOT_FOUND, msg, GemFireContainer.getRowBufferTableName(columnTable)))
         }
       }
     }

@@ -24,16 +24,17 @@ import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet
 
-import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.row.RowTableScan
-import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupportOnExecutor, LeafExecNode, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupportOnExecutor, LeafExecNode, SnapshotConnectionListener, WholeStageCodegenExec}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
+import org.apache.spark.{Logging, TaskContext}
 
 final class ColumnBatchCreator(
     bufferRegion: PartitionedRegion,
@@ -43,21 +44,9 @@ final class ColumnBatchCreator(
     val externalStore: ExternalStore,
     val compressionCodec: String) extends Logging {
 
-  def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
-      batchID: Long, bucketID: Int,
+  def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow, bucketID: Int,
       dependents: Seq[ExternalTableMetaData]): ObjectOpenHashSet[AnyRef] = {
-    var connectedExternalStore: ConnectedExternalStore = null
-    var success: Boolean = false
     try {
-      val store = if (dependents.isEmpty) externalStore else {
-        connectedExternalStore = externalStore.getConnectedExternalStore(
-          columnTableName, onExecutor = true)
-        val indexStatements = dependents.map(ColumnFormatRelation
-            .getIndexUpdateStruct(_, connectedExternalStore))
-        connectedExternalStore.withDependentAction { _ =>
-          indexStatements.foreach(_._2.executeBatch())
-        }
-      }
       val memHeapScanController = sc.asInstanceOf[MemHeapScanController]
       memHeapScanController.setAddRegionAndKey()
       val keySet = new ObjectOpenHashSet[AnyRef]
@@ -77,56 +66,42 @@ final class ColumnBatchCreator(
           }
         }
       }
-      try {
-        // the lookup key does not depend on tableName since the generated
-        // code does not (which is passed in the references separately)
-        val gen = CodeGeneration.compileCode("columnTable.batch", schema.fields, () => {
+      Utils.withTempTaskContextIfAbsent {
+        val compileKey = CodeGeneration.createBatchKey(tableName)
+        val gen = CodeGeneration.compileCode(compileKey, schema.fields, () => {
           val tableScan = RowTableScan(schema.toAttributes, schema,
             dataRDD = null, numBuckets = -1, partitionColumns = Nil,
             partitionColumnAliases = Nil, tableName, baseRelation = null, caseSensitive = true)
           // sending negative values for batch size and delta rows will create
           // only one column batch that will not be checked for size again
           val insertPlan = ColumnInsertExec(tableScan, Nil, Nil,
-            numBuckets = -1, isPartitioned = false, None,
+            numBuckets = -1, isPartitioned = true, None,
             (-bufferRegion.getColumnBatchSize, -1, compressionCodec), columnTableName,
-            onExecutor = true, schema, store, useMemberVariables = false)
+            onExecutor = true, schema, externalStore, useMemberVariables = false)
           // now generate the code with the help of WholeStageCodegenExec
           // this is only used for local code generation while its RDD semantics
           // and related methods are all ignored
           val (ctx, code) = ExternalStoreUtils.codeGenOnExecutor(
             WholeStageCodegenExec(insertPlan), insertPlan)
           val references = ctx.references
-          // also push the index of batchId reference at the end which can be
-          // used by caller to update the reference objects before execution
-          references += insertPlan.batchIdRef
           (code, references.toArray)
         })
-        val references = gen._2.clone()
-        // update the batchUUID and bucketId as per the passed values
-        // the index of the batchId (and bucketId after that) has already
-        // been pushed in during compilation above
-        val batchIdRef = references(references.length - 1).asInstanceOf[Int]
-        references(batchIdRef) = batchID
-        references(batchIdRef + 1) = bucketID
-        references(batchIdRef + 2) = columnTableName
-        // update table name and partitions in ExternalStore
-        references(batchIdRef - 1) = references(batchIdRef - 1).asInstanceOf[ExternalStore]
-            .withTable(tableName, bufferRegion.getTotalNumberOfBuckets)
-        // no harm in passing a references array with an extra element at end
-        val iter = gen._1.generate(references).asInstanceOf[BufferedRowIterator]
+        val iter = gen._1.generate(gen._2).asInstanceOf[BufferedRowIterator]
         iter.init(bucketID, Array(execRows.asInstanceOf[Iterator[InternalRow]]))
         while (iter.hasNext) {
           iter.next() // ignore result which is number of inserted rows
         }
+        if (dependents.nonEmpty) {
+          // expect both TaskContext and SnapshotConnectionListener to be present here
+          val conn = SnapshotConnectionListener.getExisting(TaskContext.get()).get.connection
+          val indexStatements = dependents.map(ColumnFormatRelation
+              .getIndexUpdateStruct(_, conn))
+          indexStatements.foreach(_._2.executeBatch())
+        }
         keySet
-      } finally {
-        sc.close()
-        success = true
       }
     } finally {
-      if (connectedExternalStore != null) {
-        connectedExternalStore.commitAndClose(success)
-      }
+      sc.close()
     }
   }
 
@@ -137,10 +112,14 @@ final class ColumnBatchCreator(
    */
   def createColumnBatchBuffer(columnBatchSize: Int,
       columnMaxDeltaRows: Int): ColumnBatchRowsBuffer = {
-    val gen = CodeGeneration.compileCode(columnTableName + ".buffer", schema.fields, () => {
+    val compileKey = CodeGeneration.sampleInsertKey(tableName)
+    val gen = CodeGeneration.compileCode(compileKey, schema.fields, () => {
       val bufferPlan = CallbackColumnInsert(schema)
       // no puts into row buffer for now since it causes split of rows held
       // together and thus failures in ClosedFormAccuracySuite etc
+
+      // NOTE: Utils.withTempTaskContextIfAbsent is not required as the TaskContext is always
+      // non-null here because the callers invoke this method in the body of RDD compute
       val insertPlan = ColumnInsertExec(bufferPlan, Nil, Nil,
         numBuckets = -1, isPartitioned = false, None, (columnBatchSize, -1, compressionCodec),
         columnTableName, onExecutor = true, schema, externalStore,

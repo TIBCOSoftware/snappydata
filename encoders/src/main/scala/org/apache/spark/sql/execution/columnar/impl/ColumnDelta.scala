@@ -22,7 +22,7 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.cache.{EntryEvent, EntryNotFoundException, Region}
 import com.gemstone.gemfire.internal.cache.delta.Delta
 import com.gemstone.gemfire.internal.cache.versions.{VersionSource, VersionTag}
-import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl, GemFireCacheImpl, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl, GemFireCacheImpl, PartitionedRegion, TXManagerImpl}
 import com.gemstone.gemfire.internal.concurrent.QueryKeyedObjectPool
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
@@ -30,11 +30,12 @@ import com.pivotal.gemfirexd.internal.engine.{GfxdSerializable, Misc}
 import org.apache.commons.pool2.impl.DefaultPooledObject
 import org.apache.commons.pool2.{BaseKeyedPooledObjectFactory, PooledObject}
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.expressions.codegen.GenerateUnsafeProjection
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, BoundReference, Expression, GenericInternalRow, UnsafeProjection}
 import org.apache.spark.sql.catalyst.util.TypeUtils
 import org.apache.spark.sql.collection.SharedUtils
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoding, ColumnStatsSchema}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnStatsSchema}
 import org.apache.spark.sql.types.{DataType, IntegerType, LongType, StructField, StructType}
 
 /**
@@ -103,7 +104,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
           // while UnsafeRow based data can never be less than 8 bytes)
           if (!existingBuffer.hasRemaining) {
             // entry has been removed from the region
-            SharedUtils.logWarning(s"Statistics entry for $key to apply ColumnDelta removed!")
+            ColumnDelta.logWarning(s"Statistics entry for $key to apply ColumnDelta removed!")
             null
           } else if (existingBuffer.limit() <= 4 || newBuffer.limit() <= 4) {
             // returned value should be the original and not oldColValue which may be a temp copy
@@ -122,7 +123,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
           oldValue
         } else if (!existingBuffer.hasRemaining) {
           // entry has been removed from the region
-          SharedUtils.logWarning(s"Entry for $key to apply ColumnDelta removed!")
+          ColumnDelta.logWarning(s"Entry for $key to apply ColumnDelta removed!")
           null
         } else {
           // currently only delta to delta merges are supported
@@ -259,7 +260,7 @@ final class ColumnDelta extends ColumnFormatValue with Delta {
   override protected def className: String = "ColumnDelta"
 }
 
-object ColumnDelta extends Enumeration {
+object ColumnDelta extends Enumeration with Logging {
 
   /**
    * The initial size of delta column (the smallest delta in the hierarchy).
@@ -318,7 +319,7 @@ object ColumnDelta extends Enumeration {
         val start = System.nanoTime()
         val result = GenerateUnsafeProjection.generate(exprs)
         val elapsed = (System.nanoTime() - start).toDouble / 1000000.0
-        SharedUtils.logDebug(s"ColumnDelta: UnsafeProjection code generated in $elapsed ms")
+        logDebug(s"ColumnDelta: UnsafeProjection code generated in $elapsed ms")
         result
       }
 
@@ -359,18 +360,6 @@ object ColumnDelta extends Enumeration {
     -tableColumnIndex * MAX_DEPTH + ColumnFormatEntry.DELETE_MASK_COL_INDEX - 1 - hierarchyDepth
 
   /**
-   * Check if all the rows in a batch have been deleted.
-   */
-  private[columnar] def checkBatchDeleted(deleteBuffer: ByteBuffer): Boolean = {
-    val allocator = ColumnEncoding.getAllocator(deleteBuffer)
-    val bufferBytes = allocator.baseObject(deleteBuffer)
-    val bufferCursor = allocator.baseOffset(deleteBuffer) + 4
-    val numBaseRows = ColumnEncoding.readInt(bufferBytes, bufferCursor)
-    val numDeletes = ColumnEncoding.readInt(bufferBytes, bufferCursor + 4)
-    numDeletes >= numBaseRows
-  }
-
-  /**
    * Delete entire batch from column store for the batchId and partitionId
    * matching those of given key.
    */
@@ -381,13 +370,18 @@ object ColumnDelta extends Enumeration {
     def destroyKey(key: ColumnFormatKey): Unit = {
       try {
         columnRegion.destroy(key, null)
+        logDebug(s"ColumnStore for ${columnRegion.getFullPath}: destroyed key $key")
       } catch {
         case _: EntryNotFoundException => // ignore
       }
     }
 
+    val regionPath = columnRegion.getColocatedWithRegion.getFullPath
+    val statsKey = key.toStatsRowKey
+    logDebug(s"ColumnStore for $regionPath: destroying batch with key = $statsKey " +
+        s"(transaction = ${TXManagerImpl.getCurrentTXState})")
     // delete the stats rows first
-    destroyKey(key.toStatsRowKey)
+    destroyKey(statsKey)
     destroyKey(key.withColumnIndex(ColumnFormatEntry.DELTA_STATROW_COL_INDEX))
     // column values and deltas next
     for (columnIndex <- 1 to numTableColumns) {

@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.sql.{Connection, PreparedStatement, SQLException, Statement, Types}
+import java.sql.{Connection, PreparedStatement, Types}
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 import javax.naming.NameNotFoundException
@@ -25,6 +25,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
+import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -34,11 +35,9 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.authentication.{AuthenticationSe
 import com.pivotal.gemfirexd.internal.impl.sql.execute.GranteeIterator
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.sql.catalog.SnappyExternalCatalog
-import io.snappydata.thrift.internal.ClientStatement
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
 
-import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
@@ -57,11 +56,12 @@ import org.apache.spark.sql.sources.{ConnectionProperties, ExternalSchemaRelatio
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.util.{Utils => SparkUtils}
+import org.apache.spark.{Logging, SparkContext}
 
 /**
  * Utility methods used by external storage layers.
  */
-object ExternalStoreUtils {
+object ExternalStoreUtils extends Logging {
 
   private[spark] final lazy val (defaultTableBuckets, defaultSampleTableBuckets) = {
     val sc = Option(SnappyContext.globalSparkContext)
@@ -400,7 +400,7 @@ object ExternalStoreUtils {
   }
 
   def getConnection(id: String, connProperties: ConnectionProperties,
-      forExecutor: Boolean): Connection = {
+      forExecutor: Boolean, resetIsolationLevel: Boolean): Connection = {
     connProperties.driver match {
       case Constant.JDBC_EMBEDDED_DRIVER | Constant.JDBC_CLIENT_DRIVER => // ignore
       case driver => Utils.registerDriver(driver)
@@ -408,7 +408,7 @@ object ExternalStoreUtils {
     val connProps = if (forExecutor) connProperties.executorConnProps
     else connProperties.connProps
     ConnectionPool.getPoolConnection(id, connProperties.dialect,
-      connProperties.poolProps, connProps, connProperties.hikariCP)
+      connProperties.poolProps, connProps, connProperties.hikariCP, resetIsolationLevel)
   }
 
   def getConnectionType(dialect: JdbcDialect): ConnectionType.Value = {
@@ -744,43 +744,14 @@ object ExternalStoreUtils {
     SparkSession.sqlListener
   }
 
-  def setSchemaVersionOnConnection(catalogVersion: Long, conn: Connection): Unit = {
-    var clientStmt: Option[Statement] = None
-    if (catalogVersion != -1) {
-      try {
-        clientStmt = Option(conn.createStatement())
-        clientStmt match {
-          case Some(c: ClientStatement) =>
-            val clientConn = c.getConnection
-            clientConn.setCommonStatementAttributes(
-              new io.snappydata.thrift.StatementAttrs().setCatalogVersion(catalogVersion))
-          case _ =>
-        }
-      } catch {
-        case sqle: SQLException =>
-          throw new java.io.IOException(sqle.toString, sqle)
-      } finally {
-        clientStmt.foreach(s => s.close())
-      }
-    }
-  }
-
-  def resetSchemaVersionOnConnection(catalogVersion: Long, conn: Connection): Unit = {
-    var clientStmt: Option[Statement] = None
-    if (catalogVersion != -1) {
-      try {
-        clientStmt = Option(conn.createStatement())
-        clientStmt match {
-          case Some(c: ClientStatement) =>
-            c.getConnection.setCommonStatementAttributes(null)
-          case _ =>
-        }
-      } catch {
-        case _: SQLException => // ignored
-      }
-      finally {
-        clientStmt.foreach(s => s.close())
-      }
+  def handleRollback(rollback: () => Unit, finallyCode: () => Unit = null): Unit = {
+    try {
+      rollback()
+    } catch {
+      case t: Throwable if !SystemFailure.isJVMFailureError(t) =>
+        if (GemFireXDUtils.retryToBeDone(t)) logInfo(t.toString) else logWarning(t.toString, t)
+    } finally {
+      if (finallyCode ne null) finallyCode()
     }
   }
 }

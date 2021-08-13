@@ -20,6 +20,7 @@ import java.net.URL
 import java.nio.file.{Files, Paths}
 import java.sql.{CallableStatement, Connection, SQLException}
 import java.util.Collections
+import java.util.function.Consumer
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -29,7 +30,8 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.types.HarmonySerialBlob
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
-import io.snappydata.thrift.{BucketOwners, CatalogMetadataDetails, CatalogMetadataRequest}
+import io.snappydata.thrift.internal.ClientConnection
+import io.snappydata.thrift.{BucketOwners, CatalogMetadataDetails, CatalogMetadataRequest, StatementAttrs}
 import io.snappydata.{Constant, Property}
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 
@@ -151,26 +153,32 @@ object SmartConnectorHelper {
 
   DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
 
-  val snapshotTxIdForRead: ThreadLocal[(String, (String, String))] =
-    new ThreadLocal[(String, (String, String))]
-  val snapshotTxIdForWrite: ThreadLocal[String] = new ThreadLocal[String]
-
   private[this] val urlPrefix: String = Constant.DEFAULT_THIN_CLIENT_URL
   // no query routing or load-balancing
   private[this] val urlSuffix: String = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
-      ClientAttribute.LOAD_BALANCE + "=false"
+      Attribute.INTERNAL_CONNECTION + "=true;" + ClientAttribute.LOAD_BALANCE + "=false"
 
-  /**
-   * Get pair of TXId and (host, network server URL) pair.
-   */
-  def getTxIdAndHostUrl(txIdAndHost: String, preferHost: Boolean): (String, (String, String)) = {
-    val index = txIdAndHost.indexOf('@')
-    if (index < 0) {
-      throw new AssertionError(s"Unexpected TXId@HostURL string = $txIdAndHost")
+  def withPartitionAttrs[T](conn: Connection, tableName: String,
+      bucketId: Int)(f: => T): T = {
+    val clientConn = conn.unwrap(classOf[ClientConnection])
+    clientConn.updateCommonStatementAttributes(new Consumer[StatementAttrs] {
+      override def accept(attrs: StatementAttrs): Unit = {
+        attrs.setBucketIds(Collections.singleton(Int.box(bucketId)))
+            .setBucketIdsTable(tableName).setRetainBucketIds(true)
+      }
+    })
+    try {
+      f
+    } finally {
+      clientConn.updateCommonStatementAttributes(new Consumer[StatementAttrs] {
+        override def accept(attrs: StatementAttrs): Unit = {
+          attrs.unsetBucketIds()
+          attrs.unsetBucketIdsTable()
+          attrs.setRetainBucketIds(false)
+          attrs.unsetRetainBucketIds()
+        }
+      })
     }
-    val server = txIdAndHost.substring(index + 1)
-    val hostUrl = getNetUrl(server, preferHost, urlPrefix, urlSuffix, availableNetUrls = null)
-    txIdAndHost.substring(0, index) -> hostUrl
   }
 
   def getPartitions(bucketToServerList: Array[ArrayBuffer[(String, String)]]): Array[Partition] = {

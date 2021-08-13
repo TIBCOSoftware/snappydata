@@ -20,11 +20,11 @@ import java.io.ObjectOutputStream
 import java.lang.reflect.Method
 import java.nio.ByteBuffer
 import java.sql.{DriverManager, ResultSet}
-import java.util.TimeZone
+import java.util.{Collections, TimeZone}
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.{mutable, Map => SMap}
+import scala.collection.{AbstractIterator, mutable, Map => SMap}
 import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
@@ -32,10 +32,16 @@ import scala.util.control.NonFatal
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.gemstone.gemfire.internal.cache.{PartitionedRegion, TXManagerImpl}
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.access.GemFireTransaction
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
+import com.pivotal.gemfirexd.internal.iapi.error.StandardException
+import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.{Constant, ToolsCallback}
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 import org.apache.commons.math3.distribution.NormalDistribution
@@ -79,6 +85,8 @@ object Utils extends Logging {
   final val Z95Percent: Double = new NormalDistribution().
       inverseCumulativeProbability(0.975)
   final val Z95Squared: Double = Z95Percent * Z95Percent
+
+  private[this] val taskContext: ThreadLocal[TaskContext] = new ThreadLocal[TaskContext]
 
   def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int): Unit = {
     var index = start
@@ -599,11 +607,89 @@ object Utils extends Logging {
   }
 
   /**
-   * Wrap a DataFrame action to track all Spark jobs in the body so that
-   * we can connect them with an execution.
+   * Run a plan with an empty TaskContext which can be obtained using [[getTaskContext]]
+   * if it is in use. Currently only SnapshotConnectionListener makes use of it to
+   * commit/rollback/close connection at the end but can be used by others too.
+   * Note that this cannot be directly put inside TaskContext since it has no TaskMemoryManager
+   * among other missing things (a valid taskId, partitionId, metrics) so callers should use
+   * this only if they do not depend on any of those.
    */
-  def withNewExecutionId[T](df: DataFrame, body: => T): T = {
-    df.withNewExecutionId(body)
+  def withTempTaskContextIfAbsent[T](f: => T): T = {
+    if (TaskContext.get() ne null) f
+    else {
+      val context = TaskContext.empty()
+      taskContext.set(context)
+      try {
+        f
+      } catch {
+        case t: Throwable =>
+          try {
+            context.markTaskFailed(t)
+          } catch {
+            case ft: Throwable => t.addSuppressed(ft)
+          }
+          throw t
+      } finally {
+        try {
+          context.markTaskCompleted()
+        } finally {
+          taskContext.remove()
+        }
+      }
+    }
+  }
+
+  def withThreadLocalTransactionForBucket[T](bucketId: Int, pr: PartitionedRegion,
+      f: LanguageConnectionContext => T): T = {
+    var conn: EmbedConnection = null
+    var contextSet = false
+    var txStateSet = false
+    var lcc = Misc.getLanguageConnectionContext
+    if (lcc eq null) {
+      conn = GemFireXDUtils.getTSSConnection(true, true, false)
+      conn.getTR.setupContextStack()
+      contextSet = true
+      lcc = conn.getLanguageConnectionContext
+      if (lcc eq null) {
+        Misc.getGemFireCache.getCancelCriterion.checkCancelInProgress(null)
+        throw StandardException.newException(SQLState.NO_CURRENT_CONNECTION)
+      }
+      if (conn.getAutoCommit) conn.setAutoCommit(false, true)
+    }
+    val tc = lcc.getTransactionExecute.asInstanceOf[GemFireTransaction]
+    lcc.setExecuteLocally(Collections.singleton(bucketId), pr, false, null)
+    try {
+      if (tc.getCurrentTXStateProxy eq null) {
+        val state = TXManagerImpl.getCurrentTXState
+        if (state ne null) {
+          tc.setActiveTXState(state, true)
+          txStateSet = true
+        }
+      }
+      f(lcc)
+    } finally {
+      try {
+        lcc.clearExecuteLocally()
+        if (txStateSet) tc.clearActiveTXState(false, true)
+      } finally {
+        if (contextSet) {
+          conn.getTR.restoreContextStack()
+        }
+      }
+    }
+  }
+
+  /**
+   * Get the TaskContext when created by [[withTempTaskContextIfAbsent]].
+   */
+  def getTempTaskContext: TaskContext = taskContext.get()
+
+  /**
+   * Get either the normal [[TaskContext]] or the one created by [[withTempTaskContextIfAbsent]].
+   */
+  def getTaskContext: TaskContext = TaskContext.get() match {
+    case null => taskContext.get()
+    case c => c
   }
 
   def immutableMap[A, B](m: mutable.Map[A, B]): Map[A, B] = new Map[A, B] {
@@ -862,25 +948,12 @@ object Utils extends Logging {
     }
   }
 
-  def executeIfSmartConnector[T](sc: SparkContext)(f: => T): Option[T] = {
-    SnappyContext.getClusterMode(sc) match {
-      case ThinClientConnectorMode(_, _) => Option(f)
-      case _ => None
-    }
-  }
-
   def isSmartConnectorMode(sc: SparkContext): Boolean = {
     SnappyContext.getClusterMode(sc) match {
       case ThinClientConnectorMode(_, _) => true
       case _ => false
     }
   }
-
-  override def logInfo(msg: => String): Unit = super.logInfo(msg)
-
-  override def logWarning(msg: => String): Unit = super.logWarning(msg)
-
-  override def logError(msg: => String): Unit = super.logError(msg)
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
@@ -1109,4 +1182,17 @@ object ToolsCallbackInit {
         null
     }
   }
+}
+
+/**
+ * As the name suggests, the underlying iterator will be materialized on the first call to
+ * hasNext() or next().
+ */
+final class LazyIterator[+T](createIterator: () => Iterator[T]) extends AbstractIterator[T] {
+
+  lazy val iterator: Iterator[T] = createIterator()
+
+  override def hasNext: Boolean = iterator.hasNext
+
+  override def next(): T = iterator.next()
 }
