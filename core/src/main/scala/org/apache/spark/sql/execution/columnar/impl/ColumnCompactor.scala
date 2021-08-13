@@ -118,6 +118,10 @@ object ColumnCompactor extends Logging {
 
   /**
    * Perform compaction of the batch with given key.
+   *
+   * TODO: PERF: for delta compaction, merge and replace required columns only using
+   * ColumnDeltaEncoder.merge rather than creating an entire new batch for best performance.
+   * Also update the stats row for those columns.
    */
   def compact(key: ColumnFormatKey, bucket: BucketRegion): Boolean = {
     if (!bucket.getBucketAdvisor.isPrimary) return false
