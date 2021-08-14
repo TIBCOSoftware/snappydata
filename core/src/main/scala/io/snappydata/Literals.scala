@@ -147,11 +147,19 @@ object Property extends Enumeration {
 
   val ColumnCompactionRatio: SparkValue[Double] = Val[Double](
     s"${Constant.PROPERTY_PREFIX}column.compactionRatio",
-    "Proportion of updated/deleted rows in a column batch after which the batch will be " +
+    "Proportion of deleted rows in a column batch after which the batch will be " +
         "compacted. This should be a double value between 0 (exclusive) and 1 (inclusive). " +
         "A value of 1 will disable compaction. This property has to be set at spark " +
         "configuration level or as system property (latter on all the servers) and cannot be " +
         "changed at the session level. Default is 0.1", Some(0.1))
+
+  val ColumnUpdateCompactionRatio: SparkValue[Double] = Val[Double](
+    s"${Constant.PROPERTY_PREFIX}column.updateCompactionRatio",
+    "Proportion of updated rows in a column batch after which the batch will be " +
+        "compacted. This should be a double value between 0 (exclusive) and 1 (inclusive). " +
+        "A value of 1 will disable compaction. This property has to be set at spark " +
+        "configuration level or as system property (latter on all the servers) and cannot be " +
+        "changed at the session level. Default is 0.2", Some(0.2))
 
   val DisableHashJoin: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.disableHashJoin",

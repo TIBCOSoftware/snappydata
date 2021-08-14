@@ -876,14 +876,18 @@ object Utils extends Logging {
     // use common taskContext variable so it is obtained only once for a plan
     if (!ctx.addedFunctions.contains(TASKCONTEXT_FUNCTION)) {
       val taskContextVar = ctx.freshName("taskContext")
+      val taskContextInitialized = ctx.freshName("taskContextInit")
       val contextClass = classOf[TaskContext].getName
       ctx.addMutableState(contextClass, taskContextVar, "")
+      ctx.addMutableState("boolean", taskContextInitialized, "")
       ctx.addNewFunction(TASKCONTEXT_FUNCTION,
         s"""
            |private $contextClass $TASKCONTEXT_FUNCTION() {
-           |  final $contextClass context = $taskContextVar;
-           |  if (context != null) return context;
-           |  return ($taskContextVar = $contextClass.get());
+           |  if (!$taskContextInitialized) {
+           |    $taskContextVar = $contextClass.get();
+           |    $taskContextInitialized = true;
+           |  }
+           |  return $taskContextVar;
            |}
         """.stripMargin)
     }

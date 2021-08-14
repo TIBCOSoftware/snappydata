@@ -18,23 +18,18 @@
 package io.snappydata.cluster
 
 import java.sql.DriverManager
-import java.util
 
 import com.gemstone.gemfire.cache.IsolationLevel
-import com.gemstone.gemfire.internal.cache.{TXStateProxy, GemFireCacheImpl}
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl.RvvSnapshotTestHook
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.{FabricService, TestUtil}
-import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
-import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, SerializableRunnable, VM}
-import io.snappydata.{Locator, ServiceManager}
-import org.slf4j.LoggerFactory
+import io.snappydata.test.dunit.{AvailablePortHelper, VM}
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
   with Logging {
@@ -52,66 +47,8 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
   }
 
   override def beforeClass(): Unit = {
-    val testName = getName
-    val testClass = getClass
-    // bootProps.setProperty(Attribute.SYS_PERSISTENT_DIR, s)
-    TestUtil.currentTest = testName
-    TestUtil.currentTestClass = getTestClass
-    TestUtil.skipDefaultPartitioned = true
-    TestUtil.doCommonSetup(bootProps)
-    GemFireXDUtils.IS_TEST_MODE = true
-
-    getLogWriter.info("\n\n\n  STARTING TEST " + testClass.getName + '.' +
-        testName + "\n\n")
-
-    val locNetPort = locatorNetPort
-    val locNetProps = locatorNetProps
-    val locPort = ClusterManagerTestBase.locPort
-    val sysProps = this.sysProps
-    DistributedTestBase.invokeInLocator(new SerializableRunnable() {
-      override def run(): Unit = {
-        ClusterManagerTestBase.setSystemProperties(sysProps)
-        val loc: Locator = ServiceManager.getLocatorInstance
-
-        if (loc.status != FabricService.State.RUNNING) {
-          loc.start("localhost", locPort, locNetProps)
-        }
-        if (locNetPort > 0) {
-          loc.startNetworkServer("localhost", locNetPort, locNetProps)
-        }
-        assert(loc.status == FabricService.State.RUNNING)
-
-        val logger = LoggerFactory.getLogger(getClass)
-        logger.info("\n\n\n  STARTING TESTS IN " + getClass.getName + "\n\n")
-      }
-    })
-    val nodeProps = bootProps
-    val startNode = new SerializableRunnable() {
-      override def run(): Unit = {
-        ClusterManagerTestBase.setSystemProperties(sysProps)
-        val node = ServiceManager.currentFabricServiceInstance
-        if (node == null || node.status != FabricService.State.RUNNING) {
-          ClusterManagerTestBase.startSnappyServer(locPort, nodeProps)
-        }
-        assert(ServiceManager.currentFabricServiceInstance.status ==
-            FabricService.State.RUNNING)
-
-        val logger = LoggerFactory.getLogger(getClass)
-        logger.info("\n\n\n  STARTING TESTS IN " + getClass.getName + "\n\n")
-      }
-    }
-
-    vm0.invoke(startNode)
-    // vm1.invoke(startNode)
-    // vm2.invoke(startNode)
-
-    // start lead node in this VM
-    val sc = SnappyContext.globalSparkContext
-    if (sc == null || sc.isStopped) {
-      ClusterManagerTestBase.startSnappyLead(locPort, bootProps)
-    }
-    assert(ServiceManager.currentFabricServiceInstance.status ==
-        FabricService.State.RUNNING)
+    Array(vm1, vm2).foreach(_.invoke(getClass, "stopAny"))
+    beforeClassStartCluster(numServers = 1)
   }
 
   override def tearDownAfter(): Unit = {
@@ -274,7 +211,6 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
     t
   }
 
-
   def testMVCCForColumnTableWithRollback(): Unit = {
     errorInThread = null
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
@@ -292,7 +228,8 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
     vm0.invoke(classOf[ValidateMVCCDUnitTest], "setTestHook")
     // Invoking validate result in each VM as a separate thread inorder to resume the code for
     // insertion of records
-    val t= invokeMethodInVm(vm0,classOf[ValidateMVCCDUnitTest], "validateResultsWithRollback", netPort1)
+    val t = invokeMethodInVm(vm0, classOf[ValidateMVCCDUnitTest], "validateResultsWithRollback",
+      netPort1)
 
     var cnt = snc.sql(s"select * from $tableName").count()
 
@@ -301,31 +238,28 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
     try {
       for (i <- 1 to 10) {
         snc.sql(s"insert into $tableName values($i, '${i + 1}', ${i + 2})")
-        println(s"From: testMVCCForColumnTableWithRollback Inserting $i")
+        logInfo(s"From: testMVCCForColumnTableWithRollback Inserting $i")
       }
     } catch {
-      case rex: Throwable => // As expected
+      case _: Throwable => // As expected
     }
-
 
     vm0.invoke(classOf[ValidateMVCCDUnitTest], "printRegionSize")
     cnt = snc.sql(s"select * from $tableName").count()
 
-    assert(cnt >=9, s"Expected row count is 10 while actual row count is $cnt")
+    assert(cnt >= 9, s"Expected row count is 10 while actual row count is $cnt")
     t.join(30000)
 
     snc.sql(s"drop table $tableName")
     if (errorInThread != null) {
       throw errorInThread
     }
-    vm0.invoke(classOf[ValidateMVCCDUnitTest],"clearTestHook", 0)
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "clearTestHook", 0)
     vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")
     // scalastyle:on
-
   }
-
 
   def testMixOperationsOnRowTables(): Unit = {
     errorInThread = null

@@ -27,7 +27,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import io.snappydata._
-import io.snappydata.test.dunit.DistributedTestBase.{WaitCriterion, getStaticLogWriter}
+import io.snappydata.test.dunit.DistributedTestBase.{WaitCriterion, fail, getStaticLogWriter}
 import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import org.slf4j.LoggerFactory
@@ -114,6 +114,14 @@ abstract class ClusterManagerTestBase(s: String)
   def sc: SparkContext = SnappyContext.globalSparkContext
 
   override def beforeClass(): Unit = {
+    beforeClassStartCluster(numServers = 3)
+  }
+
+  protected def beforeClassStartCluster(numServers: Int): Unit = {
+    if (numServers > 3 || numServers < 1) {
+      fail(s"beforeClassStartNodes: numServers should be in the range [1, 3] but was $numServers",
+        new Throwable)
+    }
     super.beforeClass()
     val logger = LoggerFactory.getLogger(getClass)
     logger.info("Boot properties:" + bootProps)
@@ -160,7 +168,12 @@ abstract class ClusterManagerTestBase(s: String)
       }
     }
 
-    Array(vm0, vm1, vm2).map(_.invokeAsync(startNode)).foreach(_.getResult)
+    val servers = numServers match {
+      case 1 => Array(vm0)
+      case 2 => Array(vm0, vm1)
+      case _ => Array(vm0, vm1, vm2)
+    }
+    servers.map(_.invokeAsync(startNode)).foreach(_.getResult)
     vm3.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         ClusterManagerTestBase.setSystemProperties(sysProps)

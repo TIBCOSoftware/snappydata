@@ -35,6 +35,11 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnFormatEntry._
 
 /**
  * A [[ClusteredColumnIterator]] that fetches entries from a remote bucket.
+ *
+ * TODO: PERF: instead of fetching using getAll, this should instead open a named
+ * ColumnFormatIterator on the remote node hosting the bucket, then step through the iterator
+ * to fetch batch (or batches) at a time using Function/GfxdFunctionMessage invocations.
+ * As of now, the getAll invocation does not honour ordered disk reads, proper fault-in etc.
  */
 final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
     pr: PartitionedRegion, tx: TXStateInterface) extends ClusteredColumnIterator with Logging {

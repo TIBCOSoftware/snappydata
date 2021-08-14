@@ -158,7 +158,8 @@ final class ColumnFormatEncoder extends RowEncoder with Logging {
                   val index = 8 + nullBitmaskBytes
                   val numBaseRows = deltaBuffer.getInt(index)
                   val numDeltas = deltaBuffer.getInt(index + 4)
-                  if (ColumnCompactor.isCompactionRequired(numDeltas, numBaseRows)) {
+                  if (ColumnCompactor.isCompactionRequired(numDeltas, numBaseRows,
+                    forDelete = false)) {
                     keysToCompact.add(statsKey)
                   }
                 }

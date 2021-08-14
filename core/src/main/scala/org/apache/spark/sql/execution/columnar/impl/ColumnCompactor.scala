@@ -25,7 +25,7 @@ import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData,
 import com.gemstone.gemfire.internal.concurrent.ConcurrentHashSet
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import io.snappydata.Property.{ColumnCompactionRatio, SerializeWrites}
+import io.snappydata.Property.{ColumnCompactionRatio, ColumnUpdateCompactionRatio, SerializeWrites}
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{LazyIterator, Utils}
@@ -63,9 +63,28 @@ object ColumnCompactor extends Logging {
       val msgPart =
         if (sysProp ne null) s"as system property = $sysProp"
         else "in spark configuration"
+      val defaultValue = ColumnCompactionRatio.defaultValue.get
       logError(s"Ignoring invalid value of ${ColumnCompactionRatio.name} $msgPart" +
-          s"(reverting to default of ${ColumnCompactionRatio.defaultValue.get}): ${e.getMessage}")
-      ColumnCompactionRatio.defaultValue.get
+          s"(reverting to default of $defaultValue): $e")
+      defaultValue
+  }
+
+  private[this] lazy val updateCompactionRatio: Double = try {
+    SparkEnv.get match {
+      case null => System.getProperty(ColumnUpdateCompactionRatio.name,
+        ColumnUpdateCompactionRatio.defaultValue.get.toString).toDouble
+      case env => ColumnUpdateCompactionRatio.get(env.conf)
+    }
+  } catch {
+    case e: Exception =>
+      val sysProp = System.getProperty(ColumnUpdateCompactionRatio.name)
+      val msgPart =
+        if (sysProp ne null) s"as system property = $sysProp"
+        else "in spark configuration"
+      val defaultValue = ColumnUpdateCompactionRatio.defaultValue.get
+      logError(s"Ignoring invalid value of ${ColumnUpdateCompactionRatio.name} $msgPart" +
+          s"(reverting to default of $defaultValue): $e")
+      defaultValue
   }
 
   private def getSchema(metadata: ExternalTableMetaData): StructType = {
@@ -75,9 +94,15 @@ object ColumnCompactor extends Logging {
   /**
    * Check if compaction of a batch with given updated/deleted rows and total is required.
    */
-  private[columnar] def isCompactionRequired(numDeltaRows: Int, numBatchRows: Int): Boolean = {
+  private[columnar] def isCompactionRequired(numDeltaRows: Int, numBatchRows: Int,
+      forDelete: Boolean): Boolean = {
     assert(numDeltaRows <= numBatchRows)
-    compactionRatio < 1.0 && compactionRatio * numBatchRows.toDouble <= numDeltaRows.toDouble
+    if (forDelete) {
+      compactionRatio < 1.0 && compactionRatio * numBatchRows.toDouble <= numDeltaRows.toDouble
+    } else {
+      updateCompactionRatio < 1.0 &&
+          updateCompactionRatio * numBatchRows.toDouble <= numDeltaRows.toDouble
+    }
   }
 
   /**
@@ -91,7 +116,7 @@ object ColumnCompactor extends Logging {
     val numBaseRows = ColumnEncoding.readInt(bufferBytes, bufferCursor)
     val numDeletes = ColumnEncoding.readInt(bufferBytes, bufferCursor + 4)
     if (numDeletes >= numBaseRows) Some(true)
-    else if (isCompactionRequired(numDeletes, numBaseRows)) Some(false)
+    else if (isCompactionRequired(numDeletes, numBaseRows, forDelete = true)) Some(false)
     else None
   }
 
