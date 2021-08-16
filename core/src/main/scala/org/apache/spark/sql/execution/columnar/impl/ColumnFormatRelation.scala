@@ -291,9 +291,9 @@ abstract class BaseColumnFormatRelation(
         // insert into the delta buffer
         val connection = ExternalStoreUtils.getConnection(table + SNAPSHOT_POOL_SUFFIX,
           connProperties, forExecutor = false, resetIsolationLevel = false)
-        connection.setTransactionIsolation(IsolationLevel.SNAPSHOT_JDBC_LEVEL)
         var success = false
         try {
+          connection.setTransactionIsolation(IsolationLevel.SNAPSHOT_JDBC_LEVEL)
           val stmt = connection.prepareStatement(rowInsertStr)
           val result = CodeGeneration.executeUpdate(table, stmt,
             rows, numRows > 1, batchSize, schema.fields, dialect)
