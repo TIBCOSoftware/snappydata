@@ -615,9 +615,12 @@ final class BucketRolloverTask() extends BatchTask with DataSerializable {
     try {
       RefreshMetadata.executeOnAll(sc, RefreshMetadata.FLUSH_ROW_BUFFER,
         Array[AnyRef](rowBufferTable, buckets, Boolean.box(force)), executeInConnector = false)
-    } finally lockOption match {
-      case Some(lock) => session.releaseLock(lock)
-      case _ =>
+    } finally {
+      lockOption match {
+        case Some(lock) => session.releaseLock(lock)
+        case _ =>
+      }
+      session.clear()
     }
   }
 
