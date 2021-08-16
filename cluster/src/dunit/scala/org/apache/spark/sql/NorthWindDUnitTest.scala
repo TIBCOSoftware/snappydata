@@ -21,6 +21,7 @@ import java.sql.{ResultSet, Statement}
 
 import scala.io.{Codec, Source}
 
+import io.snappydata.SnappyFunSuite
 import io.snappydata.cluster.{ClusterManagerTestBase, ClusterUtils}
 import io.snappydata.test.dunit.AvailablePortHelper
 
@@ -41,9 +42,11 @@ class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) with Clust
     super.beforeClass()
     startNetworkServersOnAllVMs()
     startSparkCluster(Some(vm3))
+    SnappyFunSuite.setupPendingTasksWaiter()
   }
 
   override def afterClass(): Unit = {
+    SnappyFunSuite.clearPendingTasksWaiter()
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
     ClusterManagerTestBase.stopNetworkServers()
     super.afterClass()

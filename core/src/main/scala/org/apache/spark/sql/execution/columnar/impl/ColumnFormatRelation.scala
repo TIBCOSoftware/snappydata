@@ -20,6 +20,7 @@ import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
 
+import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
@@ -290,6 +291,7 @@ abstract class BaseColumnFormatRelation(
         // insert into the row buffer
         val connection = ConnectionPool.getPoolConnection(table, dialect,
           connProperties.poolProps, connProps, connProperties.hikariCP)
+        connection.setTransactionIsolation(IsolationLevel.SNAPSHOT_JDBC_LEVEL)
         try {
           val stmt = connection.prepareStatement(rowInsertStr)
 
@@ -299,6 +301,7 @@ abstract class BaseColumnFormatRelation(
           result
         } finally {
           connection.commit()
+          connection.setTransactionIsolation(Connection.TRANSACTION_NONE)
           connection.close()
         }
       }
@@ -313,7 +316,7 @@ abstract class BaseColumnFormatRelation(
     }
   }
 
-  def withTableWriteLock(f: () => SparkPlan): SparkPlan = {
+  def withTableWriteLock[T](f: () => T, releaseLock: Boolean = false): T = {
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
     logDebug(s"WithTable WriteLock ${SnappyContext.executorAssigned}")
 
@@ -328,9 +331,13 @@ abstract class BaseColumnFormatRelation(
     finally {
       lockOption match {
         case Some(lock) =>
-          logDebug(s"Added the $lock object to the context for $table")
-          snc.addContextObject(
-            SnappySession.BULKWRITE_LOCK, lock)
+          if (releaseLock) {
+            logDebug(s"Released the $lock object immediately for $table")
+            snc.releaseLock(lock)
+          } else {
+            logDebug(s"Added the $lock object to the context for $table")
+            snc.addContextObject(SnappySession.BULKWRITE_LOCK, lock)
+          }
         case None => // do nothing
       }
     }
@@ -444,8 +451,9 @@ abstract class BaseColumnFormatRelation(
   override def flushRowBuffer(): Unit = {
     val sc = sqlContext.sparkContext
     // force flush all the buckets into the column store
-    RefreshMetadata.executeOnAll(sc, RefreshMetadata.FLUSH_ROW_BUFFER,
-      resolvedName, executeInConnector = false)
+    withTableWriteLock(() => RefreshMetadata.executeOnAll(sc, RefreshMetadata.FLUSH_ROW_BUFFER,
+      Array[AnyRef](resolvedName, new java.util.HashSet[Integer](), Boolean.box(true)),
+      executeInConnector = false), releaseLock = true)
   }
 }
 

@@ -304,24 +304,24 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     stmt.execute("create table t3(id integer, fs string) using column options" +
         "(key_columns 'id', COLUMN_MAX_DELTA_ROWS '7', BUCKETS '2')")
 
-    var thrCount1: Integer = 0
-    var insertedRecords = 0
+    val thrCount1 = new AtomicInteger()
+    val insertedRecords = new AtomicInteger()
     val colThread1 = new Thread(new Runnable {def run() {
       (1 to 5) foreach (i => {
-        var result = insertRecords(1, 10)
-        thrCount1 += result._1
-        insertedRecords += result._2
+        val result = insertRecords(1, 10)
+        thrCount1.getAndAdd(result._1)
+        insertedRecords.getAndAdd(result._2)
       })
     }
     })
     colThread1.start()
 
-    var thrCount2: Integer = 0
+    val thrCount2 = new AtomicInteger()
     val colThread2 = new Thread(new Runnable {def run() {
       (1 to 5) foreach (i => {
-        var result = insertRecords(11, 20)
-        thrCount2 += result._1
-        insertedRecords += result._2
+        val result = insertRecords(11, 20)
+        thrCount2.getAndAdd(result._1)
+        insertedRecords.getAndAdd(result._2)
       })
     }
     })
@@ -333,7 +333,7 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     var rscnt = stmt.executeQuery("select count(*) from t3")
     rscnt.next()
     assertEquals(100, rscnt.getInt(1))
-    assertEquals(100, insertedRecords)
+    assertEquals(100, insertedRecords.get())
 
     val rs = stmt.executeQuery("select * from t3 order by id")
 
@@ -351,35 +351,35 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
       cnt = cnt + 1
     }
 
-    var thrCount3: Integer = 0
-    var updatedRecords = 0
+    val thrCount3 = new AtomicInteger()
+    val updatedRecords = new AtomicInteger()
     val colThread3 = new Thread(new Runnable {def run() {
       (1 to 5) foreach (i => {
-        var result = updateRecords(1, 20)
-        thrCount3 += result._1
-        updatedRecords += result._2
+        val result = updateRecords(1, 20)
+        thrCount3.getAndAdd(result._1)
+        updatedRecords.getAndAdd(result._2)
       })
     }
     })
     colThread3.start()
 
-    var thrCount4: Integer = 0
+    val thrCount4 = new AtomicInteger()
     val colThread4 = new Thread(new Runnable {def run() {
       (1 to 5) foreach (i => {
-        var result = updateRecords(11, 20)
-        thrCount4 += result._1
-        updatedRecords += result._2
+        val result = updateRecords(11, 20)
+        thrCount4.getAndAdd(result._1)
+        updatedRecords.getAndAdd(result._2)
       })
     }
     })
     colThread4.start()
 
-    var thrCount5: Integer = 0
+    val thrCount5 = new AtomicInteger()
     val colThread5 = new Thread(new Runnable {def run() {
       (1 to 5) foreach (i => {
-        var result = updateRecords(21, 30)
-        thrCount5 += result._1
-        updatedRecords += result._2
+        val result = updateRecords(21, 30)
+        thrCount5.getAndAdd(result._1)
+        updatedRecords.getAndAdd(result._2)
       })
     }
     })
@@ -393,7 +393,7 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     rscnt = stmt.executeQuery("select count(*) from t3")
     rscnt.next()
     assertEquals(100, rscnt.getInt(1))
-    assertEquals(100, updatedRecords)
+    assertEquals(100, updatedRecords.get())
 
     var rs1 = stmt.executeQuery("select * from t3 order by id")
     var i2 = 1
@@ -408,12 +408,12 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
       cnt = cnt + 1
     }
 
-    var thrCount6: Integer = 0
+    val thrCount6 = new AtomicInteger()
     val deletedRecords = new AtomicInteger(0)
     val colThread6 = new Thread(new Runnable {def run() {
       (1 to 5) foreach (i => {
         val result = deleteRecords(1, 20)
-        thrCount6 += result._1
+        thrCount6.getAndAdd(result._1)
         deletedRecords.getAndAdd(result._2)
       })
     }

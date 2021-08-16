@@ -23,6 +23,7 @@ import scala.util.Random
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.SnappyFunSuite
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableCallable, SerializableRunnable}
 import org.apache.commons.io.FileUtils
@@ -39,8 +40,19 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   private val currentLocatorPort = ClusterManagerTestBase.locPort
 
+  override def beforeClass(): Unit = {
+    super.beforeClass()
+    SnappyFunSuite.setupPendingTasksWaiter()
+  }
+
+  override def afterClass(): Unit = {
+    SnappyFunSuite.clearPendingTasksWaiter()
+    super.afterClass()
+  }
+
   def testTableCreation(): Unit = {
     startSparkJob()
+    SnappyFunSuite.waitForPendingTasks()
     Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
       "validateNoActiveSnapshotTX"))
   }
@@ -65,42 +77,49 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     verifyTableData(snc, tableName)
     dropTable(snc, tableName)
+    SnappyFunSuite.waitForPendingTasks()
     Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
       "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTable(): Unit = {
     startSparkJob2()
+    SnappyFunSuite.waitForPendingTasks()
     Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
       "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTableProjectionQuery(): Unit = {
     startSparkJob3()
+    SnappyFunSuite.waitForPendingTasks()
     Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
       "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAndDropOfTableWithPartition(): Unit = {
     startSparkJob4()
+    SnappyFunSuite.waitForPendingTasks()
     Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
       "validateNoActiveSnapshotTX"))
   }
 
   def testCreateInsertAPI(): Unit = {
     startSparkJob5()
+    SnappyFunSuite.waitForPendingTasks()
     Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
       "validateNoActiveSnapshotTX"))
   }
 
   def testCreateAndSingleInsertAPI(): Unit = {
     startSparkJob6()
+    SnappyFunSuite.waitForPendingTasks()
     Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
       "validateNoActiveSnapshotTX"))
   }
 
   def testCreateAndInsertCLOB(): Unit = {
     startSparkJob7()
+    SnappyFunSuite.waitForPendingTasks()
     Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
       "validateNoActiveSnapshotTX"))
   }
@@ -272,6 +291,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 1008, s"Unexpected elements ${r.length}, expected=1008")
 
     snc.dropTable(tableName, ifExists = true)
+    SnappyFunSuite.waitForPendingTasks()
     Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
       "validateNoActiveSnapshotTX"))
     getLogWriter.info("Successful")

@@ -34,10 +34,8 @@ class QueryRoutingDUnitSecurityTest(val s: String)
 
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
-    // scalastyle:off println
-    println(s"QueryRoutingDUnitSecureTest.testColumnTableRouting:" +
+    logInfo(s"QueryRoutingDUnitSecureTest.testColumnTableRouting:" +
         s" network server started at $serverHostPort")
-    // scalastyle:on println
 
     QueryRoutingDUnitSecurityTest.columnTableRouting(jdbcUser1, jdbcUser2, tableName,
       serverHostPort)
@@ -49,10 +47,8 @@ class QueryRoutingDUnitSecurityTest(val s: String)
     val tableName = "order_line_row"
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
-    // scalastyle:off println
-    println(s"QueryRoutingDUnitSecureTest.testRowTableRouting:" +
+    logInfo(s"QueryRoutingDUnitSecureTest.testRowTableRouting:" +
         s" network server started at $serverHostPort")
-    // scalastyle:on println
 
     QueryRoutingDUnitSecurityTest.rowTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
   }
@@ -135,10 +131,8 @@ class QueryRoutingDUnitSecurityTest(val s: String)
 
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
-    // scalastyle:off println
-    println(s"QueryRoutingDUnitSecureTest.testMetastoreAccessAdminOnly:" +
+    logInfo(s"QueryRoutingDUnitSecureTest.testMetastoreAccessAdminOnly:" +
         s" network server started at $serverHostPort")
-    // scalastyle:on println
     QueryRoutingDUnitSecurityTest.checkMetastoreAccess(adminUser, jdbcUser4, serverHostPort)
   }
 
@@ -156,7 +150,7 @@ class QueryRoutingDUnitSecurityTest(val s: String)
           assert("42504".equals(sqle.getSQLState))
         } else {
           sqle.printStackTrace()
-          println(s"sqle state: ${sqle.getSQLState}")
+          logInfo(s"sqle state: ${sqle.getSQLState}")
           assert(false, "did not expect exception")
         }
       }
@@ -169,11 +163,12 @@ class QueryRoutingDUnitSecurityTest(val s: String)
 
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
-    // scalastyle:off println
-    val connAdmin = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, adminUser, adminUser)
+    val connAdmin = QueryRoutingDUnitSecurityTest.netConnection(
+      serverHostPort, adminUser, adminUser)
     val st = connAdmin.createStatement()
     doExecScalaSimpleStuff(st)
-    val connNoAdmin = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, nonAdminUser, nonAdminUser)
+    val connNoAdmin = QueryRoutingDUnitSecurityTest.netConnection(
+      serverHostPort, nonAdminUser, nonAdminUser)
     val st2 = connNoAdmin.createStatement()
     doExecScalaSimpleStuff(st2, true)
     st.execute(s"grant privilege exec scala to $nonAdminUser")
@@ -195,7 +190,8 @@ class QueryRoutingDUnitSecurityTest(val s: String)
     doExecScalaSimpleStuff(st7, true)
     st.execute(s"grant privilege exec scala to LDAPGROUP:gemGroup3")
     doExecScalaSimpleStuff(st7)
-    val connNoAdminGrp2 = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, "gemfire8", "gemfire8")
+    val connNoAdminGrp2 = QueryRoutingDUnitSecurityTest.netConnection(
+      serverHostPort, "gemfire8", "gemfire8")
     val st8 = connNoAdminGrp2.createStatement()
     doExecScalaSimpleStuff(st8)
     // now revoke all and expect exception
@@ -221,7 +217,7 @@ class QueryRoutingDUnitSecurityTest(val s: String)
           assert("42504".equals(sqle.getSQLState))
         } else {
           sqle.printStackTrace()
-          println(s"sqle state: ${sqle.getSQLState}")
+          logInfo(s"sqle state: ${sqle.getSQLState}")
           assert(false, s"did not expect exception on table $fqtn")
         }
       }
@@ -236,14 +232,15 @@ class QueryRoutingDUnitSecurityTest(val s: String)
       val adminFQTN = adminUser + ".t1"
       val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
       vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
-      // scalastyle:off println
-      val connAdmin = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, adminUser, adminUser)
+      val connAdmin = QueryRoutingDUnitSecurityTest.netConnection(
+        serverHostPort, adminUser, adminUser)
       val st = connAdmin.createStatement()
       st.execute(s"create external table t1 using csv options(path " +
         s"'${getClass.getResource("/northwind/orders.csv").getPath}', header 'true', " +
         s"inferschema 'true', maxCharsPerColumn '4096')")
       doSimpleStuffOnExtTable(st, adminFQTN)
-      val connNoAdmin = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, nonAdminUser, nonAdminUser)
+      val connNoAdmin = QueryRoutingDUnitSecurityTest.netConnection(
+        serverHostPort, nonAdminUser, nonAdminUser)
       val st2 = connNoAdmin.createStatement()
       doSimpleStuffOnExtTable(st2, adminFQTN, true)
       st.execute(s"grant all on t1 to $nonAdminUser")
@@ -265,7 +262,8 @@ class QueryRoutingDUnitSecurityTest(val s: String)
       doSimpleStuffOnExtTable(st7, adminFQTN, true)
       st.execute(s"grant all on $adminFQTN to LDAPGROUP:gemGroup3")
       doSimpleStuffOnExtTable(st7, adminFQTN)
-      val connNoAdminGrp2 = QueryRoutingDUnitSecurityTest.netConnection(serverHostPort, "gemfire8", "gemfire8")
+      val connNoAdminGrp2 = QueryRoutingDUnitSecurityTest.netConnection(
+        serverHostPort, "gemfire8", "gemfire8")
       val st8 = connNoAdminGrp2.createStatement()
       doSimpleStuffOnExtTable(st8, adminFQTN)
       // now revoke all and expect exception
@@ -281,7 +279,7 @@ class QueryRoutingDUnitSecurityTest(val s: String)
   }
 }
 
-object QueryRoutingDUnitSecurityTest {
+object QueryRoutingDUnitSecurityTest extends Logging {
 
   def columnTableRouting(jdbcUser1: String, jdbcUser2: String, tableName: String,
       serverHostPort: Int): Unit = {
@@ -519,9 +517,7 @@ object QueryRoutingDUnitSecurityTest {
   def createColumnTable(testName: String, serverHostPort: Int, tableName: String,
       user: String, pass: String): Unit = {
     val conn = netConnection(serverHostPort, user, pass)
-    // scalastyle:off println
-    println(s"createColumnTable-$testName: Connected to $serverHostPort")
-    // scalastyle:on println
+    logInfo(s"createColumnTable-$testName: Connected to $serverHostPort")
 
     val stmt1 = conn.createStatement()
     try {
@@ -537,9 +533,7 @@ object QueryRoutingDUnitSecurityTest {
   def createRowTable(testName: String, serverHostPort: Int, tableName: String,
       user: String, pass: String): Unit = {
     val conn = netConnection(serverHostPort, user, pass)
-    // scalastyle:off println
-    println(s"createRowTable-$testName: Connected to $serverHostPort")
-    // scalastyle:on println
+    logInfo(s"createRowTable-$testName: Connected to $serverHostPort")
 
     val stmt1 = conn.createStatement()
     try {
@@ -555,9 +549,7 @@ object QueryRoutingDUnitSecurityTest {
   def dropTable(testName: String, serverHostPort: Int, tableName: String,
       user: String, pass: String): Unit = {
     val conn = netConnection(serverHostPort, user, pass)
-    // scalastyle:off println
-    println(s"dropTable-$testName: Connected to $serverHostPort")
-    // scalastyle:on println
+    logInfo(s"dropTable-$testName: Connected to $serverHostPort")
 
     val stmt1 = conn.createStatement()
     try {
@@ -571,9 +563,7 @@ object QueryRoutingDUnitSecurityTest {
   def batchInsert(testName: String, numRows: Int, batchSize: Int, serverHostPort: Int,
       tableName: String, user: String, pass: String): Unit = {
     val conn = netConnection(serverHostPort, user, pass)
-    // scalastyle:off println
-    println(s"batchInsert-$testName: Connected to $serverHostPort")
-    // scalastyle:on println
+    logInfo(s"batchInsert-$testName: Connected to $serverHostPort")
 
     val stmt1 = conn.createStatement()
     try {
@@ -588,9 +578,7 @@ object QueryRoutingDUnitSecurityTest {
       })
       stmt1.executeBatch()
 
-      // scalastyle:off println
-      println(s"batchInsert-$testName: committed $numRows rows")
-      // scalastyle:on println
+      logInfo(s"batchInsert-$testName: committed $numRows rows")
     } finally {
       stmt1.close()
       conn.close()
@@ -600,9 +588,7 @@ object QueryRoutingDUnitSecurityTest {
   def singleInsert(testName: String, numRows: Int, serverHostPort: Int, tableName: String,
       user: String, pass: String): Unit = {
     val conn = netConnection(serverHostPort, user, pass)
-    // scalastyle:off println
-    println(s"singleInsert-$testName: Connected to $serverHostPort")
-    // scalastyle:on println
+    logInfo(s"singleInsert-$testName: Connected to $serverHostPort")
 
     val stmt1 = conn.createStatement()
     try {
@@ -610,9 +596,7 @@ object QueryRoutingDUnitSecurityTest {
         stmt1.executeUpdate(s"insert into $tableName values($i, $i, '$i')")
       })
 
-      // scalastyle:off println
-      println(s"singleInsert-$testName: committed $numRows rows")
-      // scalastyle:on println
+      logInfo(s"singleInsert-$testName: committed $numRows rows")
     } finally {
       stmt1.close()
       conn.close()
@@ -635,19 +619,15 @@ object QueryRoutingDUnitSecurityTest {
       }
     }
     builder.append(s"verifyQuery-$testName: " +
-        s"$qryTest Stmt: Total number of rows = $index").append("\n")
-    // scalastyle:off println
-    println(builder.toString())
-    // scalastyle:on println
+        s"$qryTest Stmt: Total number of rows = $index, expected=$numRows").append("\n")
+    logInfo(builder.toString())
     assert(index == numRows)
   }
 
   def query(testName: String, serverHostPort: Int, tableName: String,
       user: String, pass: String, numRows: Int, debugNumRows: Int): Unit = {
     val conn = netConnection(serverHostPort, user, pass)
-    // scalastyle:off println
-    println(s"query-$testName: Connected to $serverHostPort")
-    // scalastyle:off println
+    logInfo(s"query-$testName: Connected to $serverHostPort")
 
     val stmt1 = conn.createStatement()
     try {
@@ -658,7 +638,6 @@ object QueryRoutingDUnitSecurityTest {
       val rs1 = stmt1.executeQuery(qry1)
       verifyQuery(testName, qry1, rs1, numRows, debugNumRows)
       rs1.close()
-      // Thread.sleep(1000000)
     } finally {
       stmt1.close()
       conn.close()

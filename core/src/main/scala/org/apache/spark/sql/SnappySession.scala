@@ -637,7 +637,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             // conn.close()
           }
         } while (!locked)
-        Some(conn, new TableIdentifier(table, Some(schemaName)))
+        Some(conn, new TableIdentifier(table, Option(schemaName)))
       case _ =>
         logDebug(s"Taking lock in " +
             s" ${Thread.currentThread().getId} and " +

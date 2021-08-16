@@ -19,6 +19,7 @@ package io.snappydata.cluster
 
 import java.sql.{Connection, DriverManager, ResultSet}
 
+import io.snappydata.SnappyFunSuite
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.Logging
@@ -61,6 +62,8 @@ class ConcurrentQueryRoutingDUnitTest(val s: String)
   def testConcurrency(): Unit = {
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+
+    SnappyFunSuite.setupPendingTasksWaiter()
 
     var thrCount1: Integer = 0
     val colThread1 = new Thread(new Runnable {def run() {
@@ -133,6 +136,7 @@ class ConcurrentQueryRoutingDUnitTest(val s: String)
       s"ConcurrentQueryRoutingDUnitTest.testConcurrency:" +
           s" rowTableRoutingCompleted-2=$thrCount4")
 
+    SnappyFunSuite.clearPendingTasksWaiter()
     Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
       "validateNoActiveSnapshotTX"))
   }

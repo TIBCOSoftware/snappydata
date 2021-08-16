@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
+import java.io.{DataInput, DataOutput, IOException}
 import java.lang.reflect.Method
 import java.net.URLClassLoader
 import java.sql.SQLException
@@ -26,14 +27,20 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.cache.RegionDestroyedException
+import com.gemstone.gemfire.cache.execute.FunctionContext
+import com.gemstone.gemfire.distributed.DistributedMember
 import com.gemstone.gemfire.internal.cache.lru.LRUEntry
 import com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator
 import com.gemstone.gemfire.internal.cache.{BucketRegion, EntryEventImpl, ExternalTableMetaData, LocalRegion}
 import com.gemstone.gemfire.internal.shared.{FetchRequest, SystemProperties}
 import com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, ColumnTableEntry, StoreCallbacks, UMMMemoryTracker}
+import com.gemstone.gemfire.internal.{BatchTask, BatchTaskScheduler}
+import com.gemstone.gemfire.{DataSerializable, DataSerializer}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.engine.sql.execute.FunctionUtils
+import com.pivotal.gemfirexd.internal.engine.sql.execute.FunctionUtils.GetFunctionMembers
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
 import com.pivotal.gemfirexd.internal.engine.ui.SnappyRegionStats
 import com.pivotal.gemfirexd.internal.iapi.error.{PublicAPI, StandardException}
@@ -42,10 +49,9 @@ import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, Util}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.PrivilegeInfo
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
+import io.snappydata.{Property, SnappyTableStatsProviderService}
 
-import org.apache.spark.Logging
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql._
@@ -53,14 +59,15 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFo
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, expressions}
 import org.apache.spark.sql.collection.{SharedUtils, ToolsCallbackInit, Utils}
-import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ColumnBatchIterator, ColumnTableScan, ExternalStore, ExternalStoreUtils}
+import org.apache.spark.sql.execution.{ConnectionPool, RefreshMetadata}
 import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.store.{CodeGeneration, StoreHashFunction}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.{Logging, SparkException}
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
@@ -555,6 +562,106 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       case NonFatal(e) => logWarning("Failure while removing sampler:", e)
     }
   }
+
+  override def submitBucketRolloverTaskOnLead(br: BucketRegion, forceFlush: Boolean): Boolean = {
+    val task = new BucketRolloverTask(br, forceFlush)
+    FunctionUtils.onMembers(Misc.getDistributedSystem, ExecuteOnLead, false)
+        .withArgs(task).execute(ExecuteOnLead.ID).getResult
+    true
+  }
+}
+
+/**
+ * A batch job to rollover buckets that needs to be submitted to lead node.
+ */
+@SerialVersionUID(-1217949033976637015L)
+final class BucketRolloverTask() extends BatchTask with DataSerializable {
+
+  private var rowBufferTable: String = _
+  private var buckets: java.util.HashSet[Integer] = new java.util.HashSet[Integer]()
+  private var force: Boolean = _
+
+  def this(br: BucketRegion, forceFlush: Boolean) = {
+    this()
+    rowBufferTable = Misc.getFullTableNameFromRegionPath(
+      br.getPartitionedRegion.getFullPath)
+    buckets.add(br.getId)
+    force = forceFlush
+  }
+
+  override def accumulate(other: BatchTask): Boolean = other match {
+    case otherTask: BucketRolloverTask
+      if rowBufferTable == otherTask.rowBufferTable && force == otherTask.force =>
+      buckets.addAll(otherTask.buckets)
+      true
+    case _ => false
+  }
+
+  override def numChanges: Int = buckets.size
+
+  override def minBatchSize: Int = 5
+
+  override def waitMillis: Long = 3000L
+
+  override def applyBatchInBackground: Boolean = true
+
+  override def applyBatch(): Unit = {
+    val sc = SnappyContext.globalSparkContext
+    if (sc eq null) throw new SparkException("No active SparkContext")
+    val session = new SnappySession(sc)
+    val lockOption = if (Property.SerializeWrites.get(session.sessionState.conf)) {
+      session.grabLock(rowBufferTable, schemaName = null, session.defaultConnectionProps)
+    } else None
+    try {
+      RefreshMetadata.executeOnAll(sc, RefreshMetadata.FLUSH_ROW_BUFFER,
+        Array[AnyRef](rowBufferTable, buckets, Boolean.box(force)), executeInConnector = false)
+    } finally lockOption match {
+      case Some(lock) => session.releaseLock(lock)
+      case _ =>
+    }
+  }
+
+  @throws[IOException]
+  override def toData(out: DataOutput): Unit = {
+    DataSerializer.writeString(rowBufferTable, out)
+    DataSerializer.writeHashSet(buckets, out)
+    out.writeBoolean(force)
+  }
+
+  @throws[IOException]
+  @throws[ClassNotFoundException]
+  override def fromData(in: DataInput): Unit = {
+    rowBufferTable = DataSerializer.readString(in)
+    buckets = DataSerializer.readHashSet(in)
+    force = in.readBoolean()
+  }
+}
+
+object ExecuteOnLead extends com.gemstone.gemfire.cache.execute.Function with GetFunctionMembers {
+
+  val ID: String = "SnappyExecuteOnLead"
+
+  override def getId: String = ID
+
+  override def execute(context: FunctionContext): Unit = {
+    context.getArguments match {
+      case batchTask: BatchTask => BatchTaskScheduler.getInstance().add(batchTask)
+      case task: Runnable => task.run()
+    }
+    context.getResultSender[Boolean].lastResult(true)
+  }
+
+  override def hasResult: Boolean = true
+
+  override def optimizeForWrite(): Boolean = false
+
+  override def isHA: Boolean = true
+
+  override def getMembers: java.util.Set[DistributedMember] = Misc.getLeadNodes
+
+  override def getServerGroups: java.util.Set[String] = null
+
+  override def postExecutionCallback(): Unit = {}
 }
 
 trait StoreCallback extends Serializable {

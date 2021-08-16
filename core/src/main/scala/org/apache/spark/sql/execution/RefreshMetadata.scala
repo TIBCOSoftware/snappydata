@@ -107,7 +107,9 @@ object RefreshMetadata extends Enumeration
           }
         }
       case FLUSH_ROW_BUFFER =>
-        GfxdSystemProcedures.flushLocalBuckets(args.asInstanceOf[String], true)
+        val argsArr = args.asInstanceOf[Array[AnyRef]]
+        GfxdSystemProcedures.flushLocalBuckets(argsArr(0).asInstanceOf[String],
+          argsArr(1).asInstanceOf[java.util.Set[Integer]], argsArr(2).asInstanceOf[Boolean], false)
       case REMOVE_CACHED_OBJECTS =>
         ExternalStoreUtils.removeCachedObjects(args.asInstanceOf[String])
       case CLEAR_CODEGEN_CACHE =>

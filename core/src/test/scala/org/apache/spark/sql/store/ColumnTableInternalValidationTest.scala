@@ -209,6 +209,8 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.columnBatchTableName(
       "APP.COLUMNTABLE7"), true).asInstanceOf[PartitionedRegion]
 
+    SnappyFunSuite.setupPendingTasksWaiter()
+
     snc.sql("insert into COLUMNTABLE7 VALUES(1,11)")
     snc.sql("insert into COLUMNTABLE7 VALUES(2,11)")
     snc.sql("insert into COLUMNTABLE7 VALUES(3,11)")
@@ -222,10 +224,14 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
     val rCopy = region.getPartitionAttributes.getRedundantCopies
     assert(rCopy == 2)
 
+    SnappyFunSuite.waitForPendingTasks()
     // assert(GemFireCacheImpl.getColumnBatchSize == 2)
     // sometimes sizes may be different depending on how are the rows distributed
     if (region.getColumnMaxDeltaRows == 4) {
-      assert(region.size == 1)
+      // delayed rollover from lead-side after taking the table lock will result in all 5 rows
+      // to be rolled over (which should be after last insert since the delay time is 3 secs
+      //   which is way more than enough time for last insert to finish)
+      assert(region.size == 0)
       assert(shadowRegion.size/3 == 1)
     }
     else {

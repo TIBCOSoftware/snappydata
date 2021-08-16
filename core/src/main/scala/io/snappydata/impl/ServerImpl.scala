@@ -25,6 +25,7 @@ import io.snappydata.util.ServiceUtils
 import io.snappydata.{ProtocolOverrides, Server}
 
 import org.apache.spark.sql.execution.RefreshMetadata
+import org.apache.spark.sql.execution.columnar.impl.ExecuteOnLead
 import org.apache.spark.sql.row.SnappyStoreDialect
 
 /**
@@ -43,6 +44,7 @@ class ServerImpl extends FabricServerImpl with Server with ProtocolOverrides {
   override def start(bootProps: Properties, ignoreIfStarted: Boolean): Unit = {
     // all SnappyData distributed GemFire Functions should be registered below
     FunctionService.registerFunction(RefreshMetadata)
+    FunctionService.registerFunction(ExecuteOnLead)
     super.start(ServiceUtils.setCommonBootDefaults(bootProps, forLocator = false),
       ignoreIfStarted)
   }

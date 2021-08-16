@@ -21,7 +21,9 @@ import java.sql.Statement
 
 import scala.collection.mutable.ArrayBuffer
 
+import com.gemstone.gemfire.internal.concurrent.ConcurrentHashSet
 import com.gemstone.gemfire.internal.shared.NativeCalls
+import com.gemstone.gemfire.internal.{BatchTask, BatchTaskScheduler}
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
 import io.snappydata.test.dunit.DistributedTestBase
@@ -144,6 +146,7 @@ abstract class SnappyFunSuite
     }
   }
 
+  // noinspection ScalaUnusedSymbol
   protected def baseCleanup(clearStoreToBlockMap: Boolean = true): Unit = {
     try {
       val session = this.snc.snappySession
@@ -208,6 +211,9 @@ abstract class SnappyFunSuite
 }
 
 object SnappyFunSuite extends Assertions {
+
+  private[this] lazy val pendingTasks = new ConcurrentHashSet[BatchTask]()
+
   def checkAnswer(df: => DataFrame, expectedAnswer: Seq[Row]): Unit = {
     val analyzedDF = try df catch {
       case ae: AnalysisException =>
@@ -261,6 +267,22 @@ object SnappyFunSuite extends Assertions {
     } else {
       implicit val encoder: ExpressionEncoder[Row] = RowEncoder(StructType(Nil))
       session.createDataset[Row](Nil)
+    }
+  }
+
+  def setupPendingTasksWaiter(): Unit = {
+    BatchTaskScheduler.getInstance().recordPendingBatchTasks(pendingTasks)
+  }
+
+  def clearPendingTasksWaiter(): Unit = {
+    waitForPendingTasks()
+    BatchTaskScheduler.getInstance().recordPendingBatchTasks(null)
+  }
+
+  /** wait for pending batch rollover tasks */
+  def waitForPendingTasks(): Unit = {
+    while (!pendingTasks.isEmpty) {
+      Thread.sleep(200)
     }
   }
 }
@@ -335,7 +357,7 @@ trait PlanTest extends SnappyFunSuite with PredicateHelper {
   }
 
   /** Fails the test if the two plans do not match */
-  protected def comparePlans(plan1: LogicalPlan, plan2: LogicalPlan) {
+  protected def comparePlans(plan1: LogicalPlan, plan2: LogicalPlan): Unit = {
     val normalized1 = normalizePlan(normalizeExprIds(plan1))
     val normalized2 = normalizePlan(normalizeExprIds(plan2))
     if (normalized1 != normalized2) {

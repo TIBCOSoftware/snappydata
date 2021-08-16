@@ -24,6 +24,7 @@ import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl.RvvSnapshotTestHook
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import io.snappydata.SnappyFunSuite
 import io.snappydata.test.dunit.{AvailablePortHelper, VM}
 
 import org.apache.spark.Logging
@@ -49,9 +50,16 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
   override def beforeClass(): Unit = {
     Array(vm1, vm2).foreach(_.invoke(getClass, "stopAny"))
     beforeClassStartCluster(numServers = 1)
+    SnappyFunSuite.setupPendingTasksWaiter()
+  }
+
+  override def afterClass(): Unit = {
+    SnappyFunSuite.clearPendingTasksWaiter()
+    super.afterClass()
   }
 
   override def tearDownAfter(): Unit = {
+    SnappyFunSuite.waitForPendingTasks()
     vm0.invoke(classOf[ValidateMVCCDUnitTest], "clearTestHook", 0)
   }
 
@@ -82,6 +90,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
     assert(cnt >=9, s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
 
+    SnappyFunSuite.waitForPendingTasks()
     vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")
@@ -113,6 +122,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
     assert(cnt == 100, s"Expected row count is 100 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
 
+    SnappyFunSuite.waitForPendingTasks()
     vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")
@@ -144,6 +154,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
     assert(cnt == 100, s"Expected row count is 10 while actual row count is $cnt")
     snc.sql(s"drop table $tableName")
 
+    SnappyFunSuite.waitForPendingTasks()
     vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")
@@ -183,7 +194,8 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
       throw errorInThread
     }
 
-    vm0.invoke(classOf[ValidateMVCCDUnitTest],"clearTestHook", 0)
+    SnappyFunSuite.waitForPendingTasks()
+    vm0.invoke(classOf[ValidateMVCCDUnitTest], "clearTestHook", 0)
     vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")
@@ -254,6 +266,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
     if (errorInThread != null) {
       throw errorInThread
     }
+    SnappyFunSuite.waitForPendingTasks()
     vm0.invoke(classOf[ValidateMVCCDUnitTest], "clearTestHook", 0)
     vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
@@ -276,6 +289,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
 
     vm0.invoke(classOf[ValidateMVCCDUnitTest], "performMixOperationsOnRowTable",
       netPort1)
+    SnappyFunSuite.waitForPendingTasks()
     vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")
@@ -299,6 +313,7 @@ class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
 
     vm0.invoke(classOf[ValidateMVCCDUnitTest], "performBatchInsert",
       netPort1)
+    SnappyFunSuite.waitForPendingTasks()
     vm0.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX")
     // scalastyle:off
     println("Successful")

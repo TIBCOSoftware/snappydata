@@ -279,9 +279,11 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
       val (result, shuffleIds) = if (oldExecutionId eq null) {
         val (queryStringShortForm, queryStr, queryExecStr, planInfo) = if (key eq null) {
           val callSite = sqlContext.sparkContext.getCallSite()
-          val prefix = simpleString + " from: "
-          (prefix + callSite.shortForm, prefix + callSite.longForm, treeString(verbose = true),
-            PartitionedPhysicalScan.getSparkPlanInfo(this))
+          val planString = child.simpleString
+          val shortPrefix = CachedDataFrame.queryStringShortForm(planString) + " from:: "
+          val fullPrefix = planString + " from:\n"
+          (shortPrefix + callSite.shortForm, fullPrefix + callSite.longForm,
+              treeString(verbose = true), PartitionedPhysicalScan.getSparkPlanInfo(this))
         } else {
           val paramLiterals = key.currentLiterals
           val paramsId = key.currentParamsId
