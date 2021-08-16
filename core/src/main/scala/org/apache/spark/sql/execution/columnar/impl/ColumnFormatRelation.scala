@@ -32,11 +32,12 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference,
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier, analysis}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.ConnectionPool.SNAPSHOT_POOL_SUFFIX
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.execution.{BucketsBasedIterator, ConnectionPool, PartitionedDataSourceScan, RefreshMetadata, SparkPlan}
+import org.apache.spark.sql.execution.{BucketsBasedIterator, PartitionedDataSourceScan, RefreshMetadata, SparkPlan}
 import org.apache.spark.sql.internal.ColumnTableBulkOps
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
@@ -270,8 +271,7 @@ abstract class BaseColumnFormatRelation(
       throw new IllegalArgumentException(
         "ColumnFormatRelation.insert: no rows provided")
     }
-    val connProps = connProperties.connProps
-    val batchSize = connProps.getProperty("batchsize", "1000").toInt
+    val batchSize = connProperties.connProps.getProperty("batchsize", "1000").toInt
     // use bulk insert directly into column store for large number of rows
 
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
@@ -289,20 +289,23 @@ abstract class BaseColumnFormatRelation(
           resolvedName, putInto = false)
       } else {
         // insert into the row buffer
-        val connection = ConnectionPool.getPoolConnection(table, dialect,
-          connProperties.poolProps, connProps, connProperties.hikariCP)
+        val connection = ExternalStoreUtils.getConnection(table + SNAPSHOT_POOL_SUFFIX,
+          connProperties, forExecutor = false, resetIsolationLevel = false)
         connection.setTransactionIsolation(IsolationLevel.SNAPSHOT_JDBC_LEVEL)
+        var success = false
         try {
           val stmt = connection.prepareStatement(rowInsertStr)
-
           val result = CodeGeneration.executeUpdate(table, stmt,
             rows, numRows > 1, batchSize, schema.fields, dialect)
           stmt.close()
+          success = true
           result
         } finally {
-          connection.commit()
-          connection.setTransactionIsolation(Connection.TRANSACTION_NONE)
-          connection.close()
+          try {
+            if (success) connection.commit() else connection.rollback()
+          } finally {
+            connection.close()
+          }
         }
       }
     }
