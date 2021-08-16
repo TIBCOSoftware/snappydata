@@ -288,7 +288,7 @@ abstract class BaseColumnFormatRelation(
         ColumnTableBulkOps.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
           resolvedName, putInto = false)
       } else {
-        // insert into the row buffer
+        // insert into the delta buffer
         val connection = ExternalStoreUtils.getConnection(table + SNAPSHOT_POOL_SUFFIX,
           connProperties, forExecutor = false, resetIsolationLevel = false)
         connection.setTransactionIsolation(IsolationLevel.SNAPSHOT_JDBC_LEVEL)
