@@ -185,7 +185,7 @@ final class ColumnFormatEncoder extends RowEncoder with Logging {
       // might pick up the newly compacted batch too in addition to the previous one;
       // the pre-commit actions with results in the transactions works both for local
       // node as well as remote node compactions
-      ColumnCompactor.getValidTransaction(expectedRolloverDisabled = true) match {
+      ColumnCompactor.getSnapshotTransaction(expectedRolloverDisabled = true) match {
         case Some(tx) =>
           val iter = keysToCompact.iterator()
           while (iter.hasNext) {

@@ -225,8 +225,7 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
     if (column == DELTA_STATROW_COL_INDEX) return currentDeltaStats
     if (currentValueMap.isEmpty) {
       // fetch all the projected columns for current batch
-      val fetchKeys = fullProjection.map(c =>
-        new ColumnFormatKey(currentStatsKey.uuid, currentStatsKey.partitionId, c): AnyRef)
+      val fetchKeys = fullProjection.map(currentStatsKey.withColumnIndex(_): AnyRef)
       fetchUsingGetAll(fetchKeys).foreach {
         case (k: ColumnFormatKey, v) => currentValueMap.put(k.columnIndex, v)
       }

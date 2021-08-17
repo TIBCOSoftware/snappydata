@@ -25,7 +25,7 @@ import com.gemstone.gemfire.internal.cache.{BucketRegion, ExternalTableMetaData,
 import com.gemstone.gemfire.internal.concurrent.ConcurrentHashSet
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import io.snappydata.Property.{ColumnCompactionRatio, ColumnUpdateCompactionRatio, SerializeWrites}
+import io.snappydata.Property
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{LazyIterator, Utils}
@@ -51,41 +51,27 @@ object ColumnCompactor extends Logging {
    */
   private[this] val compactionsInProgress = new ConcurrentHashSet[ColumnFormatKey]()
 
-  private[this] lazy val compactionRatio: Double = try {
+  private def getSparkProperty(prop: Property.SparkValue[Double]): Double = try {
     SparkEnv.get match {
-      case null => System.getProperty(ColumnCompactionRatio.name,
-        ColumnCompactionRatio.defaultValue.get.toString).toDouble
-      case env => ColumnCompactionRatio.get(env.conf)
+      case null => System.getProperty(prop.name, prop.defaultValue.get.toString).toDouble
+      case env => prop.get(env.conf)
     }
   } catch {
     case e: Exception =>
-      val sysProp = System.getProperty(ColumnCompactionRatio.name)
+      val sysProp = System.getProperty(prop.name)
       val msgPart =
-        if (sysProp ne null) s"as system property = $sysProp"
-        else "in spark configuration"
-      val defaultValue = ColumnCompactionRatio.defaultValue.get
-      logError(s"Ignoring invalid value of ${ColumnCompactionRatio.name} $msgPart" +
+        if (sysProp ne null) s"as system property = $sysProp" else "in spark configuration"
+      val defaultValue = prop.defaultValue.get
+      logError(s"Ignoring invalid value of ${prop.name} $msgPart" +
           s"(reverting to default of $defaultValue): $e")
       defaultValue
   }
 
-  private[this] lazy val updateCompactionRatio: Double = try {
-    SparkEnv.get match {
-      case null => System.getProperty(ColumnUpdateCompactionRatio.name,
-        ColumnUpdateCompactionRatio.defaultValue.get.toString).toDouble
-      case env => ColumnUpdateCompactionRatio.get(env.conf)
-    }
-  } catch {
-    case e: Exception =>
-      val sysProp = System.getProperty(ColumnUpdateCompactionRatio.name)
-      val msgPart =
-        if (sysProp ne null) s"as system property = $sysProp"
-        else "in spark configuration"
-      val defaultValue = ColumnUpdateCompactionRatio.defaultValue.get
-      logError(s"Ignoring invalid value of ${ColumnUpdateCompactionRatio.name} $msgPart" +
-          s"(reverting to default of $defaultValue): $e")
-      defaultValue
-  }
+  private[this] lazy val compactionRatio: Double =
+    getSparkProperty(Property.ColumnCompactionRatio)
+
+  private[this] lazy val updateCompactionRatio: Double =
+    getSparkProperty(Property.ColumnUpdateCompactionRatio)
 
   private def getSchema(metadata: ExternalTableMetaData): StructType = {
     metadata.schema.asInstanceOf[StructType]
@@ -127,9 +113,9 @@ object ColumnCompactor extends Logging {
     batchDeleteOrCompact(deleteBuffer).contains(true)
   }
 
-  def getValidTransaction(expectedRolloverDisabled: Boolean): Option[TXStateInterface] = {
-    // should only be invoked in the context of an active snapshot transaction,
-    // and rollover should be disabled else the reader might see the newly inserted batch too
+  def getSnapshotTransaction(expectedRolloverDisabled: Boolean): Option[TXStateInterface] = {
+    // should only be invoked in the context of an active snapshot transaction, and rollover
+    // should be delayed else the reader in the same thread might see the newly inserted batch too
     val tx = TXManagerImpl.getCurrentTXState
     if ((tx eq null) || !tx.isSnapshot || !tx.isInProgress) {
       logError(s"ColumnCompactor: should only be invoked in the context of an " +
@@ -155,19 +141,19 @@ object ColumnCompactor extends Logging {
     assert(!Misc.getGemFireCache.isClosed)
 
     // rollover would have been enabled when compaction is actually executed
-    val tx = getValidTransaction(expectedRolloverDisabled = false)
+    val tx = getSnapshotTransaction(expectedRolloverDisabled = false)
     if (tx.isEmpty) return false
 
     val statsKey = key.toStatsRowKey
     // check that no other compaction on the key should be going on in parallel
     if (!compactionsInProgress.add(statsKey)) {
       logError(s"A concurrent compaction is running on bucket ${bucket.getFullPath} for batch " +
-          s"with $statsKey which can lead to loss of data. Is $SerializeWrites set to false?")
+          s"with $statsKey which can lead to loss of data. Is ${Property.SerializeWrites} false?")
       return false
     }
     try {
-      // compaction is just using ColumnTableScan to read and rows that are fed to ColumnInsertExec
-      // which will do the requited inserts then delete the old batch
+      // compaction is just using ColumnTableScan to read the batch to be compacted and the rows
+      // are fed to ColumnInsertExec which will do the requited inserts then delete the old batch
       val pr = bucket.getPartitionedRegion
       val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
       val metadata = container.fetchHiveMetaData(false)
