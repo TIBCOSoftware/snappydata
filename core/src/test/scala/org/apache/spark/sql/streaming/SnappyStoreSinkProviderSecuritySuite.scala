@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.reflect.io.Path
 
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.{Constant, SnappyFunSuite}
@@ -49,8 +50,8 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
 
   private def getTopic(id: Int) = s"topic-$id"
 
-  override def beforeAll() {
-    super.beforeAll()
+  override def beforeAll(): Unit = {
+    if (GemFireCacheImpl.getInstance ne null) super.beforeAll()
     this.stopAll()
     kafkaTestUtils = new KafkaTestUtils
     kafkaTestUtils.setup()
@@ -61,7 +62,7 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
     session.sql(s"CREATE SCHEMA $ldapGroup AUTHORIZATION ldapgroup:$ldapGroup;")
   }
 
-  override def afterAll() {
+  override def afterAll(): Unit = {
     // setup session credentials for cleanup
     val session = this.snc.snappySession
     session.conf.set(Attribute.USERNAME_ATTR, sysUser)

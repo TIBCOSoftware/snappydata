@@ -17,11 +17,14 @@
 package org.apache.spark.sql
 
 
+import java.io.File
+
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Property
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableCallable}
 import io.snappydata.util.TestUtils
+import org.apache.commons.io.FileUtils
 import org.scalatest.Assertions
 
 import org.apache.spark.internal.Logging
@@ -410,6 +413,54 @@ class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTest
     // lower limit might get violated due to the gap between notification and job submissions
     assert(expected - max <= TestUtils.defaultCores,
       s"Lower limit of concurrent tasks = $expected, actual = $max")
+  }
+
+  def testExternalTableMetadataCacheWithInserts(): Unit = {
+    val dataDir = new File("extern1")
+    FileUtils.deleteQuietly(dataDir)
+    dataDir.mkdir()
+    // create external parquet table and insert some data
+    val session = new SnappySession(sc)
+    session.sql("create table extern1 (id long, data string, stat string) using parquet " +
+        s"options (path '${dataDir.getAbsolutePath}') partitioned by (stat)")
+    session.sql("insert into extern1 select id, 'data_' || id, 'stat' || (id % 10) " +
+        "from range(100000)")
+
+    // check results
+    assert(session.sql("select * from extern1 where stat = 'stat1'").collect().length === 10000)
+    assert(session.sql("select * from extern1 where stat = 'stat2'").collect().length === 10000)
+
+    // insert more data from another session
+    val session2 = new SnappySession(sc)
+    session2.sql("insert into extern1 select id, 'data_' || id, 'stat' || (id % 10) " +
+        "from range(10000)")
+
+    // check results
+    assert(session.sql("select * from extern1 where stat = 'stat1'").collect().length === 11000)
+    assert(session.sql("select * from extern1 where stat = 'stat2'").collect().length === 11000)
+    assert(session.sql("select * from extern1 where stat = 'stat3'").collect().length === 11000)
+    assert(session.sql("select * from extern1 where stat = 'stat11'").collect().length === 0)
+
+    // insert more data with new partitions
+    session2.sql("insert into extern1 select id, 'data_' || id, 'stat' || (id % 20) " +
+        "from range(10000)")
+
+    // check results
+    assert(session.sql("select * from extern1 where stat = 'stat1'").collect().length === 11500)
+    assert(session.sql("select * from extern1 where stat = 'stat2'").collect().length === 11500)
+    assert(session.sql("select * from extern1 where stat = 'stat3'").collect().length === 11500)
+    assert(session.sql("select * from extern1 where stat = 'stat11'").collect().length === 500)
+
+    assert(session2.sql("select * from extern1 where stat = 'stat1'").collect().length === 11500)
+    assert(session2.sql("select * from extern1 where stat = 'stat2'").collect().length === 11500)
+    assert(session2.sql("select * from extern1 where stat = 'stat3'").collect().length === 11500)
+    assert(session2.sql("select * from extern1 where stat = 'stat11'").collect().length === 500)
+
+    session.sql("drop table extern1")
+    session.clear()
+    session2.clear()
+
+    FileUtils.deleteDirectory(dataDir)
   }
 }
 

@@ -110,7 +110,7 @@ case class CodegenSparkFallback(var child: SparkPlan,
                 result
               } catch {
                 case t: Throwable if CachedDataFrame.isConnectorCatalogStaleException(t, session) =>
-                  session.externalCatalog.invalidateAll()
+                  session.sessionCatalog.invalidateAll()
                   SnappySession.clearAllCache()
                   throw CachedDataFrame.catalogStaleFailure(t, session)
               } finally {
@@ -125,7 +125,7 @@ case class CodegenSparkFallback(var child: SparkPlan,
   }
 
   private def handleStaleCatalogException[T](f: SparkPlan => T, plan: SparkPlan, t: Throwable) = {
-    session.externalCatalog.invalidateAll()
+    session.sessionCatalog.invalidateAll()
     SnappySession.clearAllCache()
     // fail immediate for insert/update/delete, else retry entire query
     val action = plan.find {

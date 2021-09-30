@@ -436,7 +436,7 @@ abstract class BaseColumnFormatRelation(
     createExternalTableForColumnBatches(externalColumnTableName, conn)
     // store schema will miss complex types etc, so use the user-provided one
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    session.externalCatalog.invalidate(schemaName -> tableName)
+    session.sessionCatalog.invalidate(TableIdentifier(tableName, Some(schemaName)))
     _schema = userSchema
     _relationInfoAndRegion = null
   }

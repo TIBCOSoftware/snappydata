@@ -793,9 +793,10 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes: Long,
       memoryMode: MemoryMode): Unit = {
     // if UMM lock is already held, then release inline else enqueue and be done with it
-    if (Thread.holdsLock(this) || !pendingStorageMemoryReleases.offer(
-      (objectName, numBytes, memoryMode), 15, TimeUnit.SECONDS)) {
-      synchronized(releaseStorageMemoryForObject_(objectName, numBytes, memoryMode))
+    if (Thread.holdsLock(this)) synchronized {
+      releaseStorageMemoryForObject_(objectName, numBytes, memoryMode)
+    } else {
+      pendingStorageMemoryReleases.put((objectName, numBytes, memoryMode))
     }
   }
 

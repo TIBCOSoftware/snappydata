@@ -23,12 +23,13 @@ import java.sql.SQLException
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.SystemFailure
+import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
 import io.snappydata.sql.catalog.CatalogObjectType.getTableType
 import io.snappydata.sql.catalog.SnappyExternalCatalog.{DBTABLE_PROPERTY, getTableWithSchema}
-import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
+import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, SnappyExternalCatalog}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 
@@ -94,6 +95,19 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     createSchema(defaultName, ignoreIfExists = true)
     setCurrentSchema(defaultName, force = true)
     defaultName
+  }
+
+  /** A cache of Spark SQL data source tables that have been accessed. */
+  // noinspection UnstableApiUsage
+  protected[sql] val cachedDataSourceTables: LoadingCache[TableIdentifier, LogicalPlan] = {
+    val loader = new CacheLoader[TableIdentifier, LogicalPlan]() {
+      override def load(tableName: TableIdentifier): LogicalPlan = {
+        logDebug(s"Creating new cached data source for $tableName")
+        val table = externalCatalog.getTable(tableName.database.get, tableName.table)
+        new FindDataSourceTable(snappySession)(SimpleCatalogRelation(table.database, table))
+      }
+    }
+    CacheBuilder.newBuilder().maximumSize(ConnectorExternalCatalog.cacheSize >> 2).build(loader)
   }
 
   final def getCurrentSchema: String = getCurrentDatabase
@@ -270,7 +284,11 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   final def resolveRelationWithAlias(tableIdent: TableIdentifier,
       alias: Option[String] = None): LogicalPlan = {
     // resolve the relation right away with alias around
-    new FindDataSourceTable(snappySession)(lookupRelation(tableIdent, alias))
+    lookupRelation(tableIdent, alias) match {
+      case lr: LogicalRelation => lr
+      case a: SubqueryAlias if a.child.isInstanceOf[LogicalRelation] => a
+      case r => new FindDataSourceTable(snappySession)(r)
+    }
   }
 
   /**
@@ -878,7 +896,17 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
               getPolicyPlan(table)
             } else {
               view = None
-              SimpleCatalogRelation(schemaName, table)
+              if (DDLUtils.isDatasourceTable(table)) {
+                val resolved = TableIdentifier(tableName, Some(schemaName))
+                cachedDataSourceTables(resolved) match {
+                  case lr: LogicalRelation
+                    if lr.catalogTable.isDefined && (lr.catalogTable.get ne table) =>
+                    // refresh since table metadata has changed
+                    cachedDataSourceTables.invalidate(resolved)
+                    cachedDataSourceTables(resolved)
+                  case p => p
+                }
+              } else SimpleCatalogRelation(schemaName, table)
             }
           }
         case Some(p) => p
@@ -914,11 +942,21 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
       super.refreshTable(table)
     } else {
       val resolved = resolveTableIdentifier(table)
-      externalCatalog.invalidate(resolved.database.get -> resolved.table)
+      invalidate(resolved)
       if (snappySession.enableHiveSupport) {
         hiveSessionCatalog.refreshTable(resolved)
       }
     }
+  }
+
+  def invalidate(resolved: TableIdentifier, sessionOnly: Boolean = false): Unit = {
+    cachedDataSourceTables.invalidate(resolved)
+    if (!sessionOnly) externalCatalog.invalidate(resolved.database.get -> resolved.table)
+  }
+
+  def invalidateAll(sessionOnly: Boolean = false): Unit = {
+    cachedDataSourceTables.invalidateAll()
+    if (!sessionOnly) externalCatalog.invalidateAll()
   }
 
   def getDataSourceRelations[T](tableType: CatalogObjectType.Type): Seq[T] = {

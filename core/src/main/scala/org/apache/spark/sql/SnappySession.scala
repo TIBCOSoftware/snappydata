@@ -245,12 +245,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             val relations = plan.collect {
               case _: Command => hasCommand = true; null
               case u: UnresolvedRelation =>
-                val tableIdent = sessionCatalog.resolveTableIdentifier(u.tableIdentifier)
-                tableIdent.database.get -> tableIdent.table
+                sessionCatalog.resolveTableIdentifier(u.tableIdentifier)
             }
-            if (hasCommand) externalCatalog.invalidateAll()
+            if (hasCommand) sessionCatalog.invalidateAll()
             else if (relations.nonEmpty) {
-              relations.foreach(externalCatalog.invalidate)
+              relations.foreach(sessionCatalog.invalidate(_))
             }
             throw e
           case _ =>
@@ -332,6 +331,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @transient
   private var sqlWarnings: SQLWarning = _
 
+  private[sql] var catalogInitialized: Boolean = _
   private[sql] var hiveInitializing: Boolean = _
 
   private[sql] def isHiveSupportEnabled(v: String): Boolean = Utils.toLowerCase(v) match {
@@ -1700,6 +1700,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     plan match {
       case LogicalRelation(rls: RowLevelSecurityRelation, _, _) =>
         rls.enableOrDisableRowLevelSecurity(tableIdent, enableRls)
+        sessionCatalog.invalidate(tableIdent)
         externalCatalog.invalidateCaches(tableIdent.database.get -> tableIdent.table :: Nil)
       case _ =>
         throw new AnalysisException("ALTER TABLE enable/disable Row Level Security " +

@@ -72,7 +72,7 @@ class TestHiveSnappySession(@transient protected val sc: SparkContext,
       sharedState.cacheManager.clearCache()
       loadedTables.clear()
       sessionCatalog.clearTempTables()
-      sessionCatalog.externalCatalog.invalidateAll()
+      sessionCatalog.invalidateAll()
 
       FunctionRegistry.getFunctionNames.asScala.filterNot(originalUDFs.contains(_)).
           foreach { udfName => FunctionRegistry.unregisterTemporaryUDF(udfName) }

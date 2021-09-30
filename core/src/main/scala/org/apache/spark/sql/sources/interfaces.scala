@@ -422,7 +422,9 @@ trait NativeTableRowLevelSecurityRelation
     // If the schema has changed (in smart connector) then execution should throw an exception
     // leading to a retry or a CatalogStaleException to fail the operation.
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    if (invalidateCached) session.externalCatalog.invalidate(schemaName -> tableName)
+    if (invalidateCached) {
+      session.sessionCatalog.invalidate(TableIdentifier(tableName, Some(schemaName)))
+    }
     _relationInfoAndRegion = null
     if (fetchFromStore) {
       _schema = JdbcExtendedUtils.normalizeSchema(JDBCRDD.resolveTable(new JDBCOptions(

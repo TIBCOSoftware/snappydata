@@ -674,7 +674,7 @@ class SnappySessionState(val snappySession: SnappySession)
    * Internal catalog for managing table and database states.
    */
   override lazy val catalog: SnappySessionCatalog = {
-    new SnappySessionCatalog(
+    val sessionCatalog = new SnappySessionCatalog(
       snappySession.sharedState.getExternalCatalogInstance(snappySession),
       snappySession,
       snappySession.sharedState.globalTempViewManager,
@@ -682,6 +682,8 @@ class SnappySessionState(val snappySession: SnappySession)
       functionRegistry,
       conf,
       newHadoopConf())
+    snappySession.catalogInitialized = true
+    sessionCatalog
   }
 
   protected lazy val wrapperCatalog: SessionCatalogWrapper = {
@@ -701,7 +703,7 @@ class SnappySessionState(val snappySession: SnappySession)
     python.ExtractPythonUDFs,
     TokenizeSubqueries(snappySession),
     EnsureRequirements(conf),
-    OptimizeSortAndFilePlans(conf),
+    OptimizeSortAndFilePlans(snappySession),
     CollapseCollocatedPlans(snappySession),
     CollapseCodegenStages(conf),
     InsertCachedPlanFallback(snappySession, topLevel),
@@ -916,14 +918,28 @@ class SnappyAnalyzer(sessionState: SnappySessionState)
  * Rule to replace Spark's SortExec plans with an optimized SnappySortExec (in SMJ for now).
  * Also sets the "spark.task.cpus" property implicitly for file scans/writes.
  */
-case class OptimizeSortAndFilePlans(conf: SnappyConf) extends Rule[SparkPlan] {
+case class OptimizeSortAndFilePlans(session: SnappySession) extends Rule[SparkPlan] {
   override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
     case join@joins.SortMergeJoinExec(_, _, _, _, _, sort@SortExec(_, _, child, _)) =>
       join.copy(right = SnappySortExec(sort, child))
-    case s@(_: FileSourceScanExec | _: HiveTableScanExec | _: InsertIntoHiveTable |
+    case i: InsertIntoHiveTable =>
+      val table = i.table.catalogTable
+      // invalidate meta-data since that can change after the insert
+      val tableIdentifier = session.sessionCatalog.resolveTableIdentifier(table.identifier)
+      session.externalCatalog.invalidate(tableIdentifier.database.get -> tableIdentifier.table)
+      session.sessionState.conf.setDynamicCpusPerTask()
+      i
+    case c@ExecutedCommandExec(i: InsertIntoHadoopFsRelationCommand) if i.catalogTable.isDefined =>
+      val table = i.catalogTable.get
+      // invalidate meta-data since that can change after the insert
+      val tableIdentifier = session.sessionCatalog.resolveTableIdentifier(table.identifier)
+      session.externalCatalog.invalidate(tableIdentifier.database.get -> tableIdentifier.table)
+      session.sessionState.conf.setDynamicCpusPerTask()
+      c
+    case s@(_: FileSourceScanExec | _: HiveTableScanExec |
             ExecutedCommandExec(_: InsertIntoHadoopFsRelationCommand |
                                 _: CreateHiveTableAsSelectCommand)) =>
-      conf.setDynamicCpusPerTask()
+      session.sessionState.conf.setDynamicCpusPerTask()
       s
   }
 }

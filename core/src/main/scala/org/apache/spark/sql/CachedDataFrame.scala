@@ -415,7 +415,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
             } catch {
               case t: Throwable
                 if CachedDataFrame.isConnectorCatalogStaleException(t, snappySession) =>
-                snappySession.externalCatalog.invalidateAll()
+                snappySession.sessionCatalog.invalidateAll()
                 SnappySession.clearAllCache()
                 val execution =
                   snappySession.getContextObject[() => QueryExecution](SnappySession.ExecutionKey)
@@ -1005,7 +1005,7 @@ object CachedDataFrame
       } catch {
         case t: Throwable
           if CachedDataFrame.isConnectorCatalogStaleException(t, snappySession) =>
-          snappySession.externalCatalog.invalidateAll()
+          snappySession.sessionCatalog.invalidateAll()
           SnappySession.clearAllCache()
           if (attempts < retryCount) {
             Thread.sleep(attempts*100)

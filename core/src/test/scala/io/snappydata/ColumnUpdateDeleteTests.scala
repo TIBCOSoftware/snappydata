@@ -639,7 +639,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     Await.result(runNonPartitioned, Duration.Inf)
   }
 
-  def testConcurrentUpdateDeleteForCompactionBody(session: SnappySession,
+  private def testConcurrentUpdateDeleteForCompactionBody(session: SnappySession,
       partitioned: Boolean, numRows: Int, barrier: CyclicBarrier): Unit = {
     // General idea is to have multiple threads perform deletes and updates stepping through
     // a range of values (different for each thread) to finally delete all data in the table

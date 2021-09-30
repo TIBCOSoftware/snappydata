@@ -121,7 +121,7 @@ object ColumnTableBulkOps {
           result
         } catch {
           case t: Throwable if CachedDataFrame.isConnectorCatalogStaleException(t, session) =>
-            session.externalCatalog.invalidateAll()
+            session.sessionCatalog.invalidateAll()
             SnappySession.clearAllCache()
             // throw failure immediately to keep it consistent with insert/update/delete
             throw CachedDataFrame.catalogStaleFailure(t, session)

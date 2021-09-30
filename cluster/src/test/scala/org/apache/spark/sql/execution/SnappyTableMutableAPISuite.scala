@@ -824,7 +824,8 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     val message = intercept[AnalysisException] {
       df2.write.deleteFrom("col_table")
     }.getMessage
-    assert(message.contains("column `pk3` cannot be resolved on the right side of the operation."))
+    assert(message.contains("column `pk3` cannot be resolved on the right side of the operation.")
+        || message.contains("WHERE clause of the DELETE FROM statement must have all the key"))
   }
 
   test("Bug - SNAP-2157") {
@@ -908,7 +909,8 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     }.getMessage
 
     assert(message.contains("DeleteFrom operation requires " +
-        "key columns(s) or primary key defined on table."))
+        "key columns(s) or primary key defined on table.") ||
+        message.contains("WHERE clause of the DELETE FROM statement must have all the key"))
   }
 
 
@@ -930,7 +932,8 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
       df2.write.deleteFrom("row_table")
     }.getMessage
 
-    assert(message.contains("column `pk3` cannot be resolved on the right side of the operation."))
+    assert(message.contains("column `pk3` cannot be resolved on the right side of the operation.")
+        || message.contains("WHERE clause of the DELETE FROM statement must have all the key"))
   }
 
   test("Delete From SQL using JDBC: row tables") {

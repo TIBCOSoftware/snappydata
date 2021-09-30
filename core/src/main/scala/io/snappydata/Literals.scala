@@ -168,9 +168,10 @@ object Property extends Enumeration {
         "(value in bytes or k/m/g suffixes for unit, min 1k). Default is 4MB.", Some("4m"))
 
   val ResultPersistenceTimeout: SparkValue[Long] = Val[Long](
-    s"${Constant.SPARK_PREFIX}sql.ResultPersistenceTimeout",
+    s"${Constant.SPARK_PREFIX}sql.resultPersistenceTimeout",
     s"Maximum duration in seconds for which results larger than ${MaxMemoryResultSize.name}" +
-        s"are held on disk after which they are cleaned up. Default is 3600s (1h).", Some(3600L))
+        "are held on disk after which they are cleaned up. This is to handle cases where a " +
+        "client does not consume all the results. Default is 14400 (4h).", Some(14400L))
 
   val DisableHashJoin: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.disableHashJoin",

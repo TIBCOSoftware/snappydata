@@ -239,7 +239,9 @@ class SnappyConf(@transient val session: SnappySession)
         key
     }
 
-    case GAttr.USERNAME_ATTR | GAttr.USERNAME_ALT_ATTR | GAttr.PASSWORD_ATTR => key
+    case GAttr.USERNAME_ATTR | GAttr.USERNAME_ALT_ATTR | GAttr.PASSWORD_ATTR =>
+      if (session.catalogInitialized) session.sessionCatalog.invalidateAll(sessionOnly = true)
+      key
 
     case _ if key.startsWith("spark.sql.aqp.") =>
       session.clearPlanCache()
