@@ -6,25 +6,13 @@ Start the VSD tool, load statistics files, and maintain the view you want on you
 <a id="install-vsd"></a>
 ## Install VSD
 
-VSD is a free analysis tool and is provided as-is. VSD is distributed with SnappyData. To install VSD, install SnappyData. See [Installing SnappyData](running_vsd.md) for instructions.
+VSD is a free analysis tool for SnappyData/GemFire/GemStone but is not OSS and not distributed with SnappyData. You can find a copy of VSD from [GemTalk Systems VSD](https://gemtalksystems.com/products/vsd/) or [Pivotal GemFire](https://network.pivotal.io/products/pivotal-gemfire).
 
-After you install SnappyData, you can find VSD in the following location of your installation:
-
-```pre
-<snappydata-installdir>/vsd
-```
-
-Where *snappydata-installdir* corresponds to the location where SnappyData is installed. 
+You can open the VSD tool by running `bin/vsd` in the installation packages from above.
 
 The VSD tool installation has the following subdirectories:
 
--   **bin**. The scripts and binaries that can be used to run VSD on a variety of operating systems. The following scripts are included with this release:
-    -   vsd
-
-    -   vsd.bat
-
-    The following binaries are included with this release:
-    -   vsdwishLinux - for Linux
+-   **bin**. The scripts/binaries that can be used to run VSD
 
 -   **lib**. The jars and binary libraries needed to run VSD
 
@@ -32,10 +20,18 @@ The VSD tool installation has the following subdirectories:
 
 ## Start VSD
 
--   **Linux/Unix, MacOS or Other OS:**
+-   **Linux/Unix, MacOS:**
 
-    ```pre 
-    $ ./vsd
+    ```pre
+    $ ./bin/vsd
+    ```
+
+-   **Windows OS:**
+
+    ```pre
+    Run the vsd executable from command prompt or otherwise.
+
+    > .\bin\vsd
     ```
 
 <a id="statistics-vsd"></a>

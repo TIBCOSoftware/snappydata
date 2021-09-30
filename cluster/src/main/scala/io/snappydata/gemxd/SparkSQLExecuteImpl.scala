@@ -44,8 +44,9 @@ import io.snappydata.{Constant, Property, QueryHint}
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
+import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{GenerateFlatIterator, Utils}
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.RDDBlockId
 import org.apache.spark.util.SnappyUtils
@@ -129,13 +130,12 @@ class SparkSQLExecuteImpl(
       //   shipping/compilation etc and lack of proper BlockManager usage in
       //   messaging + server-side final processing, so do it selectively)
       val partitionBlocks = df match {
-        case cdf: CachedDataFrame => cdf.collectWithHandler(CachedDataFrame,
-           CachedDataFrame.localBlockStoreResultHandler(rddId, bm),
+        case cdf: CachedDataFrame => cdf.collectWithHandler(CachedDataFrame(session),
+           CachedDataFrame.localBlockStoreResultHandler(rddId, bm, session),
            CachedDataFrame.localBlockStoreDecoder(querySchema.length, bm))
-        case dataFrame: DataFrame => {
+        case dataFrame: DataFrame =>
           Iterator(CachedDataFrame(null,
-            dataFrame.queryExecution.executedPlan.executeCollect().iterator)._1)
-        }
+            dataFrame.queryExecution.executedPlan.executeCollect().iterator, -1L)._1)
       }
       hdos.clearForReuse()
       SparkSQLExecuteImpl.writeMetaData(srh, hdos, tableNames, nullability, getColumnNames,
@@ -146,12 +146,14 @@ class SparkSQLExecuteImpl(
         block match {
           case null => // skip but still id has to be incremented
           case data: Array[Byte] => if (data.length > 0) {
+            hdos.writeInt(data.length)
             hdos.write(data)
           }
           case p: RDDBlockId =>
             val partitionData = Utils.getPartitionData(p, bm)
             // remove the block once a local handle to it has been obtained
             bm.removeBlock(p, tellMaster = false)
+            hdos.writeInt(partitionData.remaining())
             hdos.write(partitionData)
         }
         logTrace(s"Writing data for partition ID = $id: $block")
@@ -408,8 +410,14 @@ object SparkSQLExecuteImpl {
     }
     val execRow = new ValueRow(dvds)
     val numFields = types.length
-    val unsafeRows = CachedDataFrame.decodeUnsafeRows(numFields,
-      input.array(), input.position(), input.available())
+    val unsafeRows = new GenerateFlatIterator[UnsafeRow, ByteArrayDataInput](input => {
+      if (input.available() > 0) {
+        val size = input.readInt()
+        val pos = input.position()
+        input.setPosition(pos + size)
+        (CachedDataFrame.decodeUnsafeRows(numFields, input.array(), pos, size), input)
+      } else (GenerateFlatIterator.TERMINATE, input)
+    }, input)
     unsafeRows.map { row =>
       var index = 0
       var refTypeIndex = 0

@@ -16,8 +16,12 @@
  */
 package org.apache.spark.sql
 
-import java.nio.ByteBuffer
+import java.io.{BufferedOutputStream, DataInputStream, DataOutputStream, FileOutputStream, OutputStream}
+import java.nio.channels.FileChannel
+import java.nio.charset.StandardCharsets
+import java.nio.{ByteBuffer, ByteOrder}
 import java.sql.SQLException
+import java.util.concurrent.atomic.AtomicLong
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -31,10 +35,9 @@ import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
-import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
-import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
+import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferOutputStream}
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.Constant
+import io.snappydata.{Constant, Property}
 
 import org.apache.spark._
 import org.apache.spark.io.CompressionCodec
@@ -47,13 +50,13 @@ import org.apache.spark.sql.catalyst.expressions.{ParamLiteral, UnsafeProjection
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLExecutionStart}
-import org.apache.spark.sql.store.CompressionUtils
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.storage.{BlockManager, RDDBlockId, StorageLevel}
+import org.apache.spark.storage.{BlockId, BlockManager, BroadcastBlockId, RDDBlockId, StorageLevel}
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.util.CallSite
+import org.apache.spark.util.io.ChunkedByteBuffer
+import org.apache.spark.util.{ByteBufferInputStream, CallSite}
 
 class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecution,
     private[sql] val queryExecutionString: String,
@@ -282,10 +285,6 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     }
   }
 
-  override def collect(): Array[Row] = {
-    collectInternal().map(boundEnc.fromRow).toArray
-  }
-
   override def withNewExecutionId[T](body: => T): T = withNewExecutionIdTiming(body)._1
 
   private def withNewExecutionIdTiming[T](body: => T): (T, Long) = if (noSideEffects) {
@@ -324,8 +323,12 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     (result, System.nanoTime() - start)
   }
 
+  override def collect(): Array[Row] = {
+    collectInternal().map(boundEnc.fromRow).toArray
+  }
+
   override def collectAsList(): java.util.List[Row] = {
-    java.util.Arrays.asList(collect(): _*)
+    collectInternal().map(boundEnc.fromRow).toList.asJava
   }
 
   override def toLocalIterator(): java.util.Iterator[Row] = {
@@ -334,9 +337,12 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
 
   def collectInternal(): Iterator[InternalRow] = {
     if (noSideEffects) {
-      collectWithHandler[Array[Byte], Iterator[UnsafeRow]](CachedDataFrame,
-        (_, data) => CachedDataFrame.decodeUnsafeRows(schema.length, data, 0,
-          data.length), identity).flatten
+      collectWithHandler[Array[Byte], Iterator[UnsafeRow]](CachedDataFrame(snappySession),
+        (_, result) => {
+          val data = result._1
+          if (result._2 < 0) snappySession.registerBlockIdForLargeResult()
+          CachedDataFrame.decodeUnsafeRows(schema.length, data, 0, data.length)
+        }, identity).flatten
     } else {
       // skip double encoding/decoding for the case when underlying plan
       // execution returns an Iterator[InternalRow] itself
@@ -347,7 +353,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
 
   def collectWithHandler[U: ClassTag, R: ClassTag](
       processPartition: (TaskContext, Iterator[InternalRow]) => (U, Int),
-      resultHandler: (Int, U) => R,
+      resultHandler: (Int, (U, Int)) => R,
       decodeResult: R => Iterator[InternalRow],
       skipUnpartitionedDataProcessing: Boolean = false,
       skipLocalCollectProcessing: Boolean = false): Iterator[R] = {
@@ -369,7 +375,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
         case plan: CollectLimitExec =>
           val takeRDD = if (isCached) cachedRDD else plan.child.execute()
           CachedDataFrame.executeTake(takeRDD, plan.limit, processPartition,
-            resultHandler, decodeResult, schema, snappySession)
+            resultHandler, decodeResult, snappySession)
 
         case plan: CollectAggregateExec =>
           if (skipLocalCollectProcessing) {
@@ -385,7 +391,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
           } else {
             // convert to UnsafeRow
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              executeCollect().iterator.map(rowConverter))._1))
+              executeCollect().iterator.map(rowConverter))))
           }
 
         case _: ExecutedCommandExec | _: LocalTableScanExec | _: ExecutePlan =>
@@ -395,7 +401,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
           } else {
             // convert to UnsafeRow
             Iterator(resultHandler(0, processPartition(TaskContext.get(),
-              executeCollect().iterator.map(rowConverter))._1))
+              executeCollect().iterator.map(rowConverter))))
           }
 
         case _ =>
@@ -427,11 +433,18 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       }
     }
 
+    var success = false
     try {
-      withCallback("collect")(_ => execute())
+      val result = withCallback("collect")(_ => execute())
+      success = true
+      result
     } finally {
       if (!hasLocalCallSite) {
         sc.clearCallSite()
+      }
+      if (!success) {
+        // clear any persisted result data
+        snappySession.registerBlockIdForLargeResult(failed = true)
       }
     }
   }
@@ -439,12 +452,12 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def runAsJob[R: ClassTag, U: ClassTag](
       execRdd: RDD[InternalRow],
       processPartition: (TaskContext, Iterator[InternalRow]) => (U, Int),
-      resultHandler: (Int, U) => R, sc: SparkContext) = {
+      resultHandler: (Int, (U, Int)) => R, sc: SparkContext): Iterator[R] = {
     val numPartitions = execRdd.getNumPartitions
     val results = new Array[R](numPartitions)
     sc.runJob(execRdd, processPartition, 0 until numPartitions,
       (index: Int, r: (U, Int)) =>
-        results(index) = resultHandler(index, r._1))
+        results(index) = resultHandler(index, r))
     results.iterator
   }
 }
@@ -468,36 +481,29 @@ final class AggregatePartialDataIterator(
 }
 
 object CachedDataFrame
-    extends ((TaskContext, Iterator[InternalRow]) => PartitionResult)
+    extends ((TaskContext, Iterator[InternalRow], Long) => PartitionResult)
     with Serializable with KryoSerializable with Logging {
 
   @transient @volatile var sparkConf: SparkConf = _
-  @transient @volatile var compressionCodec: String = _
+  @transient @volatile var compressionCodecName: String = _
+  /** size beyond which result data will be written to disk */
+  @transient @volatile var maxMemoryResultSize: Long = Long.MaxValue
+  /**
+   * Start the local block ID generator at Long.Max / 2 so there is no overlap with those
+   * generated at the driver.
+   */
+  @transient private[this] val localBlockId = new AtomicLong(Long.MaxValue >> 1)
 
   override def write(kryo: Kryo, output: Output): Unit = {}
 
   override def read(kryo: Kryo, input: Input): Unit = {}
 
-  private def flushBufferOutput(bufferOutput: Output, position: Int,
-      output: ByteBufferDataOutput, codec: CompressionCodec): Unit = {
-    if (position > 0) {
-      val compressedBytes = CompressionUtils.codecCompress(codec,
-        bufferOutput.getBuffer, position)
-      val len = compressedBytes.length
-      // write the uncompressed length too
-      output.writeInt(position)
-      output.writeInt(len)
-      output.write(compressedBytes, 0, len)
-      bufferOutput.clear()
-    }
-  }
-
   private def getCompressionCodec: CompressionCodec = {
     var conf = sparkConf
-    var codecName = compressionCodec
+    var codecName = compressionCodecName
     if ((conf eq null) || (codecName eq null)) synchronized {
       conf = sparkConf
-      codecName = compressionCodec
+      codecName = compressionCodecName
       if ((conf eq null) || (codecName eq null)) {
         SparkEnv.get match {
           case null => conf = new SparkConf()
@@ -505,52 +511,130 @@ object CachedDataFrame
         }
         codecName = CompressionCodec.getCodecName(conf)
         sparkConf = conf
-        compressionCodec = codecName
+        compressionCodecName = codecName
+        maxMemoryResultSize = ExternalStoreUtils.sizeAsBytes(Property.MaxMemoryResultSize.get(
+          conf), Property.MaxMemoryResultSize.name, 1024, Long.MaxValue)
       }
     }
     CompressionCodec.createCodec(conf, codecName)
   }
 
-  override def apply(context: TaskContext,
-      iter: Iterator[InternalRow]): PartitionResult = {
+  private[this] def newLengthBuffer(len: Int): ByteBuffer = {
+    val lenBuffer = ByteBuffer.wrap(new Array[Byte](4)).order(ByteOrder.BIG_ENDIAN)
+    lenBuffer.putInt(0, len)
+    lenBuffer
+  }
+
+  private[this] def flushStreamToDisk(baseStream: ByteBufferOutputStream,
+      finalStream: DataOutputStream, context: TaskContext, broadcastId: Long,
+      fileCount: Long, diskWriter: Option[(OutputStream, FileChannel)],
+      flush: Boolean): Option[(OutputStream, FileChannel)] = {
+    val outBuffer = baseStream.getContentBuffer
+    val len = outBuffer.remaining()
+    if (len == 0) return diskWriter
+    diskWriter match {
+      case None =>
+        val env = SparkEnv.get
+        // use the passed broadcast ID that cannot overlap with others
+        val blockId = BroadcastBlockId(broadcastId, s"${context.partitionId()}_$fileCount")
+        // write the size of the block at the start
+        val lenBuffer = newLengthBuffer(len)
+        // track the blockId using BlockManager and get handle to the disk file for append of
+        // further data to the same file till a limit instead of separate files for every chunk
+        if (!env.blockManager.putBytes(blockId, Utils.newChunkedByteBuffer(
+          Array(lenBuffer, outBuffer)), StorageLevel.DISK_ONLY)) {
+          throw new SparkException(s"Failed to store $blockId to BlockManager disk")
+        }
+        val blockName = blockId.name.getBytes(StandardCharsets.UTF_8)
+        finalStream.writeInt(-blockName.length) // negative value < -1 indicates blockId
+        finalStream.write(blockName)
+        if (flush) None
+        else {
+          val fileBufferSize = env.conf.getSizeAsKb("spark.shuffle.file.buffer", "32k") * 1024
+          val file = env.blockManager.diskBlockManager.getFile(blockId)
+          val fileOut = new FileOutputStream(file, true)
+          val out = new BufferedOutputStream(fileOut, fileBufferSize.toInt)
+          val channel = fileOut.getChannel
+          Some(out -> channel)
+        }
+      case Some((writer, channel)) =>
+        // write the size of the block at the start
+        val lenBuffer = newLengthBuffer(len)
+        writer.write(lenBuffer.array(), 0, 4)
+        writer.write(outBuffer.array(), outBuffer.arrayOffset() + outBuffer.position(), len)
+        if (flush || channel.size() >= maxMemoryResultSize * 8) {
+          // flush and close the file
+          writer.flush()
+          writer.close()
+          None
+        } else diskWriter
+    }
+  }
+
+  def apply(session: SnappySession): (TaskContext, Iterator[InternalRow]) => PartitionResult = {
+    val broadcastId = localBlockId.getAndIncrement()
+    session.noteActiveBlockIdForLargeResult(broadcastId)
+    (context, iter) => apply(context, iter, broadcastId)
+  }
+
+  override def apply(context: TaskContext, iter: Iterator[InternalRow],
+      broadcastId: Long): PartitionResult = {
+    val env = SparkEnv.get
+    val persist = (env ne null) && (context ne null) && broadcastId >= 0
     var count = 0
+    var fileCount = 1L
     val buffer = new Array[Byte](4 << 10)
-
-    // final output is written to this buffer
-    var output: ByteBufferDataOutput = null
-    // holds intermediate bytes which are compressed and flushed to output
-    val maxOutputBufferSize = 64 << 10
-
-    // can't enforce maxOutputBufferSize due to a row larger than that limit
-    val bufferOutput = new Output(4 << 10, -1)
-    var outputRetained = false
+    val codec = getCompressionCodec
+    var baseStream = new ByteBufferOutputStream(8 << 10)
+    var out = new DataOutputStream(codec.compressedOutputStream(baseStream))
+    var finalBaseStream = baseStream
+    var finalStream = out
+    val maxMemorySize = maxMemoryResultSize
+    var diskWriter: Option[(OutputStream, FileChannel)] = None
+    var success = false
     try {
-      output = new ByteBufferDataOutput(4 << 10,
-        DirectBufferAllocator.instance(),
-        null,
-        DirectBufferAllocator.DIRECT_STORE_DATA_FRAME_OUTPUT)
-
-      val codec = getCompressionCodec
       while (iter.hasNext) {
         val row = iter.next().asInstanceOf[UnsafeRow]
-        val numBytes = row.getSizeInBytes
-        // if capacity has been exceeded then compress and store
-        val bufferPosition = bufferOutput.position()
-        if (maxOutputBufferSize - bufferPosition < numBytes + 5) {
-          flushBufferOutput(bufferOutput, bufferPosition, output, codec)
+        out.writeInt(row.getSizeInBytes)
+        row.writeToStream(out, buffer)
+        // flush to disk if required
+        if (persist && baseStream.size() >= maxMemorySize) {
+          // there is no clean way to switch the underlying OutputStream in the compressed stream
+          // to the file stream, so flush and write the compressed data so far and start a new
+          // compressed stream appending to the existing file which means that the file will
+          // have two compressed streams back-to-back
+          out.writeInt(-1)
+          out.flush()
+          out.close()
+          if (finalStream eq out) {
+            // switch finalStream to a new compressed stream that will contain the blockIds
+            finalBaseStream = new ByteBufferOutputStream(8 << 10)
+            finalStream = new DataOutputStream(codec.compressedOutputStream(finalBaseStream))
+          }
+          diskWriter = flushStreamToDisk(baseStream, finalStream, context, broadcastId, fileCount,
+            diskWriter, flush = false)
+          baseStream = new ByteBufferOutputStream(8 << 10)
+          out = new DataOutputStream(codec.compressedOutputStream(baseStream))
+          if (diskWriter.isEmpty) { // indicates that previous diskWriter was full and closed
+            fileCount += 1
+          }
         }
-        bufferOutput.writeVarInt(numBytes, true)
-        row.writeToStream(bufferOutput, buffer)
         count += 1
       }
+      out.writeInt(-1)
+      out.flush()
+      out.close()
+      if (finalStream ne out) {
+        diskWriter = flushStreamToDisk(baseStream, finalStream, context, broadcastId, fileCount,
+          diskWriter, flush = true)
+        finalStream.writeInt(-1)
+        finalStream.flush()
+        finalStream.close()
+      }
 
-      flushBufferOutput(bufferOutput, bufferOutput.position(), output, codec)
       if (count > 0) {
-        val finalBuffer = output.getBufferRetain
-        outputRetained = true
-        finalBuffer.flip
-        val memSize = finalBuffer.limit().toLong
-        // Ask UMM before getting the array to heap.
+        val finalBuffer = finalBaseStream.getContentBuffer
+        val memSize = finalBuffer.remaining().toLong
         // Taking execution memory as this memory is cleaned up on task completion.
         // On connector mode also this should account to the overall memory usage.
         // We will ensure that sufficient memory is available by reserving
@@ -558,43 +642,41 @@ object CachedDataFrame
         // and transport layer can create another copy.
         if (context ne null) {
           val memoryConsumer = new DefaultMemoryConsumer(context.taskMemoryManager())
-          // TODO Remove the 4 times check once SNAP-1759 is fixed
-          val required = 4L * memSize
-          val granted = memoryConsumer.acquireMemory(4L * memSize)
+          val granted = memoryConsumer.acquireMemory(memSize)
           context.addTaskCompletionListener(_ => {
             memoryConsumer.freeMemory(granted)
           })
-          if (granted < required) {
+          if ((finalStream eq out) && granted < memSize) {
             throw new LowMemoryException(s"Could not obtain ${memoryConsumer.getMode} " +
-                s"memory of size $required ",
+                s"memory of size $memSize ",
               java.util.Collections.emptySet())
           }
         }
 
         val bytes = ClientSharedUtils.toBytes(finalBuffer)
-        new PartitionResult(bytes, count)
+        success = true
+        // negative row count indicates that persistence to file was done so driver should
+        // mark the broadcastId for cleanup in case of failures, partial result consumption etc
+        new PartitionResult(bytes, if (finalStream eq out) count else -count)
       } else {
-        new PartitionResult(Array.empty, 0)
+        success = true
+        new PartitionResult(Array.emptyByteArray, 0)
       }
-    } catch {
-      case oom: OutOfMemoryError if oom.getMessage.contains("Direct buffer") =>
-        throw new LowMemoryException(s"Could not allocate Direct buffer for" +
-            s" result data. Please check -XX:MaxDirectMemorySize while starting the server",
-          java.util.Collections.emptySet())
     } finally {
-      bufferOutput.clear()
-      // one additional release for the explicit getBufferRetain
-      if (output ne null) {
-        if (outputRetained) {
-          output.release()
+      try {
+        if (diskWriter.isDefined) diskWriter.get._1.close()
+      } finally {
+        if (!success && persist && (finalStream ne out)) {
+          env.blockManager.removeBroadcast(broadcastId, tellMaster = true)
         }
-        output.release()
       }
     }
   }
 
-  def localBlockStoreResultHandler(rddId: Int, bm: BlockManager)(
-      partitionId: Int, data: Array[Byte]): Any = {
+  def localBlockStoreResultHandler(rddId: Int, bm: BlockManager, session: SnappySession)(
+      partitionId: Int, result: (Array[Byte], Int)): Any = {
+    val data = result._1
+    if (result._2 < 0) session.registerBlockIdForLargeResult()
     // put in block manager only if result is large
     if (data.length <= Utils.MIN_LOCAL_BLOCK_SIZE) data
     else {
@@ -686,47 +768,86 @@ object CachedDataFrame
   }
 
   /**
-   * Decode the byte arrays back to UnsafeRows and put them into buffer.
+   * Decode the byte arrays back to UnsafeRows and return an iterator over the resulting rows.
    */
   def decodeUnsafeRows(numFields: Int,
       data: Array[Byte], offset: Int, dataLen: Int): Iterator[UnsafeRow] = {
     if (dataLen == 0) return Iterator.empty
 
-    val codec = getCompressionCodec
-    val input = new ByteArrayDataInput
-    input.initialize(data, offset, dataLen, null)
-    val dataLimit = offset + dataLen
-    var decompressedLen = input.readInt()
-    var inputLen = input.readInt()
-    val inputPosition = input.position()
-    val bufferInput = new Input(CompressionUtils.codecDecompress(codec, data,
-      inputPosition, inputLen, decompressedLen))
-    input.setPosition(inputPosition + inputLen)
-
     new Iterator[UnsafeRow] {
-      private var sizeOfNextRow = bufferInput.readInt(true)
+      private[this] val codec = getCompressionCodec
+      private[this] var in = {
+        val input = new ByteArrayDataInput
+        input.initialize(data, offset, dataLen, null)
+        new DataInputStream(codec.compressedInputStream(input))
+      }
+      private[this] val finalIn = in
+      private[this] var diskBuffer: Option[ChunkedByteBuffer] = None
+      private[this] var diskData: Option[ByteBuffer] = None
+      private[this] var sizeOfNextRow: Int = _
+
+      readNextRowLength()
+
+      /** read the length of compressed block and return a buffer around that block */
+      private def readCompressedBlock(data: ByteBuffer): ByteBuffer = {
+        val len = data.getInt
+        val slicedData = data.slice()
+        slicedData.limit(len)
+        // set the position to the end of current compressed block
+        data.position(data.position() + len)
+        slicedData
+      }
+
+      @tailrec
+      private def readNextRowLength(): Unit = {
+        sizeOfNextRow = in.readInt()
+        if (sizeOfNextRow == -1) {
+          // check for existing disk data
+          diskData match {
+            case Some(data) =>
+              if (data.hasRemaining) {
+                // start a new compressed stream since those are stored back-to-back in the file
+                val stream = new ByteBufferInputStream(readCompressedBlock(data))
+                in = new DataInputStream(codec.compressedInputStream(stream))
+                sizeOfNextRow = in.readInt()
+              } else {
+                in = finalIn
+                diskBuffer.get.dispose()
+                diskBuffer = None
+                diskData = None
+                readNextRowLength()
+              }
+            case _ =>
+          }
+        } else if (sizeOfNextRow < -1) {
+          // indicates disk data
+          val size = -sizeOfNextRow
+          val bytes = new Array[Byte](size)
+          in.readFully(bytes)
+          val blockId = BlockId(new String(bytes, StandardCharsets.UTF_8))
+          val env = SparkEnv.get
+          env.blockManager.getRemoteBytes(blockId) match {
+            case s@Some(buffers) =>
+              env.blockManager.master.removeBlock(blockId)
+              val data = buffers.toByteBuffer.order(ByteOrder.BIG_ENDIAN)
+              val stream = new ByteBufferInputStream(readCompressedBlock(data))
+              in = new DataInputStream(codec.compressedInputStream(stream))
+              diskBuffer = s
+              diskData = Some(data)
+              readNextRowLength()
+            case _ => throw new SparkException(s"Failed to get $blockId from BlockManager")
+          }
+        }
+      }
 
       override def hasNext: Boolean = sizeOfNextRow >= 0
 
       override def next(): UnsafeRow = {
+        val bs = new Array[Byte](sizeOfNextRow)
+        in.readFully(bs)
         val row = new UnsafeRow(numFields)
-        val position = bufferInput.position()
-        row.pointTo(bufferInput.getBuffer,
-          position + Platform.BYTE_ARRAY_OFFSET, sizeOfNextRow)
-        val newPosition = position + sizeOfNextRow
-
-        sizeOfNextRow = if (newPosition < decompressedLen) {
-          bufferInput.setPosition(newPosition)
-          bufferInput.readInt(true)
-        } else if (input.position() < dataLimit) {
-          decompressedLen = input.readInt()
-          inputLen = input.readInt()
-          val inputPosition = input.position()
-          bufferInput.setBuffer(CompressionUtils.codecDecompress(codec, data,
-            inputPosition, inputLen, decompressedLen))
-          input.setPosition(inputPosition + inputLen)
-          bufferInput.readInt(true)
-        } else -1
+        row.pointTo(bs, sizeOfNextRow)
+        readNextRowLength()
         row
       }
     }
@@ -734,22 +855,23 @@ object CachedDataFrame
 
   private def takeRows[U, R](n: Int, results: Array[(R, Int)],
       processPartition: (TaskContext, Iterator[InternalRow]) => (U, Int),
-      resultHandler: (Int, U) => R,
+      resultHandler: (Int, (U, Int)) => R,
       decodeResult: R => Iterator[InternalRow]): Iterator[R] = {
     val takeResults = new ArrayBuffer[R](n)
     var numRows = 0
     results.indices.foreach { partitionId =>
       val r = results(partitionId)
       if ((r ne null) && r._1 != null) {
-        if (numRows + r._2 <= n) {
+        val resultRows = math.abs(r._2)
+        if (numRows + resultRows <= n) {
           takeResults += r._1
-          numRows += r._2
+          numRows += resultRows
         } else {
           // need to split this partition result to take only remaining rows
           val decoded = decodeResult(r._1).take(n - numRows)
           // encode back and add
           takeResults += resultHandler(partitionId,
-            processPartition(TaskContext.get(), decoded)._1)
+            processPartition(TaskContext.get(), decoded))
           return takeResults.iterator
         }
       }
@@ -764,8 +886,8 @@ object CachedDataFrame
    */
   private[sql] def executeTake[U: ClassTag, R](rdd: RDD[InternalRow], n: Int,
       processPartition: (TaskContext, Iterator[InternalRow]) => (U, Int),
-      resultHandler: (Int, U) => R, decodeResult: R => Iterator[InternalRow],
-      schema: StructType, session: SnappySession): Iterator[R] = {
+      resultHandler: (Int, (U, Int)) => R, decodeResult: R => Iterator[InternalRow],
+      session: SnappySession): Iterator[R] = {
     if (n == 0) {
       return Iterator.empty
     }
@@ -800,8 +922,9 @@ object CachedDataFrame
         totalParts).toInt)
       val sc = session.sparkContext
       sc.runJob(takeRDD, processPartition, p, (index: Int, r: (U, Int)) => {
-        results(partsScanned + index) = (resultHandler(partsScanned + index, r._1), r._2)
-        numResults += r._2
+        val resultRows = math.abs(r._2)
+        results(partsScanned + index) = (resultHandler(partsScanned + index, r), resultRows)
+        numResults += resultRows
       })
 
       partsScanned += p.size
@@ -897,7 +1020,8 @@ object CachedDataFrame
 
   private[sql] def clear(): Unit = synchronized {
     sparkConf = null
-    compressionCodec = null
+    compressionCodecName = null
+    maxMemoryResultSize = Long.MaxValue
   }
 
   override def toString(): String =

@@ -44,67 +44,71 @@ object CompressionUtils {
 
   private[sql] val COMPRESSION_OWNER = "COMPRESSOR"
   private[sql] val DECOMPRESSION_OWNER = "DECOMPRESSOR"
-  private[this] val COMPRESSION_HEADER_SIZE = 8
+  private[sql] val COMPRESSION_HEADER_SIZE = 8
   private[this] val MIN_COMPRESSION_RATIO = 0.75
   /** minimum size of buffer that will be considered for compression */
   private[sql] val MIN_COMPRESSION_SIZE =
     SystemProperties.getServerInstance.getInteger(Constant.COMPRESSION_MIN_SIZE, 2048)
 
   private def writeCompressionHeader(codecId: Int,
-      uncompressedLen: Int, buffer: ByteBuffer): Unit = {
+      uncompressedLen: Int, buffer: ByteBuffer, startPosition: Int): Unit = {
     // assume little-endian to match ColumnEncoding.writeInt/readInt
     assert(buffer.order() eq ByteOrder.LITTLE_ENDIAN)
-    buffer.rewind()
     // write the codec and uncompressed size for fastest decompression
-    buffer.putInt(0, -codecId) // negative typeId indicates compressed buffer
-    buffer.putInt(4, uncompressedLen)
+    buffer.putInt(startPosition, -codecId) // negative typeId indicates compressed buffer
+    buffer.putInt(startPosition + 4, uncompressedLen)
+  }
+
+  def maxBufferSizeForCompress(codecId: Int, len: Int): Int = codecId match {
+    case CompressionCodecId.LZ4_ID =>
+      val compressor = LZ4Factory.fastestInstance().fastCompressor()
+      val maxLength = compressor.maxCompressedLength(len)
+      maxLength + COMPRESSION_HEADER_SIZE
+    case CompressionCodecId.SNAPPY_ID =>
+      Snappy.maxCompressedLength(len) + COMPRESSION_HEADER_SIZE
+    case _ => throw new IllegalStateException(s"Unknown compression codec $codecId")
   }
 
   def acquireBufferForCompress(codecId: Int, input: ByteBuffer, len: Int,
       allocator: BufferAllocator): ByteBuffer = {
     if (len < MIN_COMPRESSION_SIZE) input
-    else codecId match {
-      case CompressionCodecId.LZ4_ID =>
-        val compressor = LZ4Factory.fastestInstance().fastCompressor()
-        val maxLength = compressor.maxCompressedLength(len)
-        val maxTotal = maxLength + COMPRESSION_HEADER_SIZE
-        allocateExecutionMemory(maxTotal, COMPRESSION_OWNER, allocator)
-      case CompressionCodecId.SNAPPY_ID =>
-        val maxTotal = Snappy.maxCompressedLength(len) + COMPRESSION_HEADER_SIZE
-        allocateExecutionMemory(maxTotal, COMPRESSION_OWNER, allocator)
-      case _ => throw new IllegalStateException(s"Unknown compression codec $codecId")
+    else {
+      allocateExecutionMemory(maxBufferSizeForCompress(codecId, len), COMPRESSION_OWNER, allocator)
     }
   }
 
   def codecCompress(codecId: Int, input: ByteBuffer, len: Int,
       result: ByteBuffer, allocator: BufferAllocator): ByteBuffer = {
     val position = input.position()
+    val startPosition = result.position()
+    val compressStartPosition = startPosition + COMPRESSION_HEADER_SIZE
     val resultLen = try codecId match {
       case CompressionCodecId.LZ4_ID =>
         val compressor = LZ4Factory.fastestInstance().fastCompressor()
         val maxLength = compressor.maxCompressedLength(len)
         compressor.compress(input, position, len,
-          result, COMPRESSION_HEADER_SIZE, maxLength)
+          result, compressStartPosition, maxLength)
       case CompressionCodecId.SNAPPY_ID =>
         if (input.isDirect) {
-          result.position(COMPRESSION_HEADER_SIZE)
+          result.position(compressStartPosition)
           Snappy.compress(input, result)
         } else {
           Snappy.compress(input.array(), input.arrayOffset() + position,
-            len, result.array(), COMPRESSION_HEADER_SIZE)
+            len, result.array(), compressStartPosition)
         }
     } finally {
       // reset the position/limit of input buffer in case it was changed by compressor
       input.position(position)
+      result.position(startPosition)
     }
     // check if there was some decent reduction else return uncompressed input itself
-    if (resultLen.toDouble <= len * MIN_COMPRESSION_RATIO) {
-      // caller should trim the buffer (can skip if written to output stream right away)
-      writeCompressionHeader(codecId, len, result)
-      result.limit(resultLen + COMPRESSION_HEADER_SIZE)
+    if (resultLen.toDouble <= len.toDouble * MIN_COMPRESSION_RATIO) {
+      writeCompressionHeader(codecId, len, result, startPosition)
+      // caller should trim the output buffer (can skip if written to output stream right away)
+      result.limit(resultLen + compressStartPosition)
       result
     } else {
-      allocator.release(result)
+      if (allocator ne null) allocator.release(result)
       input
     }
   }

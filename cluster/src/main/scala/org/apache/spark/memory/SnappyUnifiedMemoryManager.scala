@@ -793,10 +793,9 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes: Long,
       memoryMode: MemoryMode): Unit = {
     // if UMM lock is already held, then release inline else enqueue and be done with it
-    if (Thread.holdsLock(this)) synchronized {
-      releaseStorageMemoryForObject_(objectName, numBytes, memoryMode)
-    } else {
-      pendingStorageMemoryReleases.put((objectName, numBytes, memoryMode))
+    if (Thread.holdsLock(this) || !pendingStorageMemoryReleases.offer(
+      (objectName, numBytes, memoryMode), 15, TimeUnit.SECONDS)) {
+      synchronized(releaseStorageMemoryForObject_(objectName, numBytes, memoryMode))
     }
   }
 
@@ -962,13 +961,14 @@ object SnappyUnifiedMemoryManager extends Logging {
           val clazz = Utils.classForName(
             "com.gemstone.gemfire.internal.cache.store.ManagedDirectBufferAllocator")
           clazz.getDeclaredMethod("instance").invoke(null)
+          size
         } catch {
           case NonFatal(e) =>
             logError("Failed to load managed buffer allocator in SnappyData OSS." +
                 s"Temporary scan buffers will be unaccounted DirectByteBuffers: $e")
+            0
         }
-      }
-      size
+      } else 0
     }
     if (memorySize > 0) {
       // set Spark's off-heap properties

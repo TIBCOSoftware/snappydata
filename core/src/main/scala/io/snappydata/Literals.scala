@@ -161,6 +161,17 @@ object Property extends Enumeration {
         "configuration level or as system property (latter on all the servers) and cannot be " +
         "changed at the session level. Default is 0.2", Some(0.2))
 
+  val MaxMemoryResultSize: SparkValue[String] = Val[String](
+    s"${Constant.SPARK_PREFIX}sql.maxMemoryResultSize",
+    "Maximum size of results from a JDBC/ODBC query in a partition that will be held " +
+        "in memory beyond which the results will be written to disk " +
+        "(value in bytes or k/m/g suffixes for unit, min 1k). Default is 4MB.", Some("4m"))
+
+  val ResultPersistenceTimeout: SparkValue[Long] = Val[Long](
+    s"${Constant.SPARK_PREFIX}sql.ResultPersistenceTimeout",
+    s"Maximum duration in seconds for which results larger than ${MaxMemoryResultSize.name}" +
+        s"are held on disk after which they are cleaned up. Default is 3600s (1h).", Some(3600L))
+
   val DisableHashJoin: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.disableHashJoin",
     "Disable hash joins completely including those for replicated row tables. Default is false.",

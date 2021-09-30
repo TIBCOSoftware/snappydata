@@ -84,5 +84,5 @@ final class SlicedIterator[A](val iter: Iterator[A]) extends Iterator[A] {
 }
 
 object GenerateFlatIterator {
-  val TERMINATE = Iterator()
+  val TERMINATE: Iterator[Nothing] = Iterator()
 }

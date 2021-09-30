@@ -615,7 +615,7 @@ class SnappyMemoryAccountingSuite extends MemoryFunSuite {
     val taskContext =
       new TaskContextImpl(0, 0, taskAttemptId = 1, 0, taskMemoryManager, new Properties, null)
     try {
-      CachedDataFrame(taskContext, Seq(unsafeRow).iterator)
+      CachedDataFrame(taskContext, Seq(unsafeRow).iterator, -1L)
       assert(false , "Should not have obtained memory")
     } catch {
       case lme : LowMemoryException => // Success

@@ -224,7 +224,7 @@ object SnappyInterpreterExecute {
           "scala code execution", "", "ComputeDB", "Cluster")
       }
     }
-    val id: Long = session.getUniqueIdForExecScala()
+    val id: Long = session.getUniqueIdForExecScala
     val intpHelper = SnappyInterpreterExecute.getOrCreateStateHolder(id, user, authToken, group)
     try {
       intpHelper.interpret(code.split("\n"), options) match {

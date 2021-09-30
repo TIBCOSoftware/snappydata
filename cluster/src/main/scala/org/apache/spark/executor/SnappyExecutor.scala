@@ -22,11 +22,13 @@ import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable
+
 import com.gemstone.gemfire.internal.tcp.ConnectionTable
 import com.gemstone.gemfire.{CancelException, SystemFailure}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql.internal.ContextJarUtils
@@ -41,7 +43,6 @@ class SnappyExecutor(
     exceptionHandler: SnappyUncaughtExceptionHandler,
     isLocal: Boolean = false)
     extends Executor(executorId, executorHostname, env, userClassPath, isLocal) {
-
 
   {
     // set a thread-factory for the thread pool for cleanup
@@ -76,12 +77,12 @@ class SnappyExecutor(
     Thread.setDefaultUncaughtExceptionHandler(exceptionHandler)
   }
 
-  private val classLoaderCache = {
+  private[this] val classLoaderCache = {
     val loader = new CacheLoader[ClassLoaderKey, ClassLoader]() {
       override def load(key: ClassLoaderKey): ClassLoader = {
         if (key.isReplPath) return mutableLoaderWithRepl(key)
         logInfo(s"Creating ClassLoader for key = $key" +
-          s" with appTime = ${key.appTime} and appName = ${key.appName}")
+            s" with appTime = ${key.appTime} and appName = ${key.appName}")
         val appName = key.appName // appName = "schemaname.functionname"
         val appNameAndJars = key.appNameAndJars
         lazy val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
@@ -134,11 +135,10 @@ class SnappyExecutor(
       private def mutableLoaderWithRepl(key: ClassLoaderKey): ClassLoader = {
         try {
           val klass = Utils.classForName("org.apache.spark.repl.SnappyExecutorClassLoader")
-            .asInstanceOf[Class[_ <: ClassLoader]]
+              .asInstanceOf[Class[_ <: ClassLoader]]
           val constructor = klass.getConstructor(classOf[SparkConf], classOf[SparkEnv],
             classOf[String], classOf[ClassLoader], classOf[Boolean])
-          val cl = constructor.newInstance(conf, env, key.appName, replClassLoader, java.lang.Boolean.TRUE)
-          cl
+          constructor.newInstance(conf, env, key.appName, replClassLoader, java.lang.Boolean.TRUE)
         } catch {
           case _: ClassNotFoundException =>
             logError("Could not find org.apache.spark.repl.ExecutorClassLoader on classpath!")
@@ -148,7 +148,7 @@ class SnappyExecutor(
       }
     }
     // Keeping 500 as cache size. Can revisit the number
-    CacheBuilder.newBuilder().maximumSize(500).build(loader)
+    CacheBuilder.newBuilder().maximumSize(500).build[ClassLoaderKey, ClassLoader](loader)
   }
 
   class ClassLoaderKey(val appName: String,
@@ -170,7 +170,8 @@ class SnappyExecutor(
     }
 
     var userClasspathFirst: Boolean = false
-    def setUserClassPathFirst(userClassPathFirst: Boolean) = {
+
+    def setUserClassPathFirst(userClassPathFirst: Boolean): Unit = {
       this.userClasspathFirst = userClassPathFirst
     }
   }
@@ -270,10 +271,10 @@ class SnappyExecutor(
     Utils.getLocalDir(conf)
   }
 
-  def invalidateReplLoader(replDir: String) = try {
+  def invalidateReplLoader(replDir: String): Unit = try {
     classLoaderCache.invalidate(replDir)
   } catch {
-    case npe: NullPointerException => // ignore
+    case _: NullPointerException => // ignore
   }
 }
 
@@ -305,7 +306,7 @@ private class SnappyUncaughtExceptionHandler(
     val executorBackend: SnappyCoarseGrainedExecutorBackend)
     extends Thread.UncaughtExceptionHandler with Logging {
 
-  override def uncaughtException(thread: Thread, exception: Throwable) {
+  override def uncaughtException(thread: Thread, exception: Throwable): Unit = {
     try {
       // Make it explicit that uncaught exceptions are thrown when container is shutting down.
       // It will help users when they analyze the executor logs

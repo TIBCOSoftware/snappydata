@@ -19,13 +19,12 @@ package org.apache.spark.sql.execution.aggregate
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.CachedDataFrame
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, UnspecifiedDistribution}
 import org.apache.spark.sql.execution.{BufferedRowIterator, InputAdapter, PlanLater, SparkPlan, UnaryExecNode, WholeStageCodegenExec}
-import org.apache.spark.sql.hive.SnappySessionState
+import org.apache.spark.sql.{CachedDataFrame, SnappySession}
 
 /**
  * Special plan to collect top-level aggregation on driver itself and avoid
@@ -66,6 +65,7 @@ case class CollectAggregateExec(child: SparkPlan)(
    */
   private[sql] def executeCollectData(): Array[Any] = {
     val childRDD = this.childRDD
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val sc = sqlContext.sparkContext
     val bm = sc.env.blockManager
 
@@ -75,11 +75,11 @@ case class CollectAggregateExec(child: SparkPlan)(
     var success = false
 
     try {
-      sc.runJob(childRDD, CachedDataFrame, 0 until numPartitions,
+      sc.runJob(childRDD, CachedDataFrame(session), 0 until numPartitions,
         (index: Int, r: (Array[Byte], Int)) =>
           // store the partition results in BlockManager for large results
           partitionBlocks(index) = CachedDataFrame.localBlockStoreResultHandler(
-            rddId, bm)(index, r._1))
+            rddId, bm, session)(index, r))
       success = true
 
       partitionBlocks
@@ -121,8 +121,8 @@ case class CollectAggregateExec(child: SparkPlan)(
   }
 
   override def doExecute(): RDD[InternalRow] = {
-    val sessionState = sqlContext.sparkSession.sessionState
-        .asInstanceOf[SnappySessionState]
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val sessionState = session.sessionState
     val plan = basePlan.transformUp {
       // TODO: if Spark adds plan space exploration then do the same below
       // (see SparkPlanner.plan)

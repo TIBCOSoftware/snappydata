@@ -33,8 +33,8 @@ import org.apache.spark.util.Utils
 import org.apache.spark.{Logging, SparkConf, SparkEnv}
 
 /**
-  * Base trait for different memory manager used by SnappyData in different modes
-  */
+ * Base trait for different memory manager used by SnappyData in different modes
+ */
 trait StoreUnifiedManager {
 
   def acquireStorageMemoryForObject(
@@ -72,35 +72,33 @@ trait StoreUnifiedManager {
   def initMemoryStats(stats: MemoryManagerStats): Unit
 
   /**
-    * Change the off-heap owner to mark it being used for storage.
-    * Passing the owner as null allows moving ByteBuffers not allocated
-    * by [[BufferAllocator]]s to be also changed and freshly accounted.
-    */
+   * Change the off-heap owner to mark it being used for storage.
+   * Passing the owner as null allows moving ByteBuffers not allocated
+   * by [[BufferAllocator]]s to be also changed and freshly accounted.
+   */
   def changeOffHeapOwnerToStorage(buffer: ByteBuffer,
       allowNonAllocator: Boolean): Unit
 
   /**
-    * Clears the internal map
-    */
-  def clear()
+   * Clears the internal map
+   */
+  def clear(): Unit
 
   /**
-    * Closes the memory manager.
-    */
-  def close()
+   * Closes the memory manager.
+   */
+  def close(): Unit
 
   /**
-    * Initializes the memoryManager
-    */
-  def init()
+   * Initializes the memoryManager
+   */
+  def init(): Unit
 }
-
 
 
 object MemoryManagerCallback extends Logging {
 
-  val storageBlockId = TestBlockId("SNAPPY_STORAGE_BLOCK_ID")
-  val cachedDFBlockId = TestBlockId("SNAPPY_CACHED_DF_BLOCK_ID")
+  val storageBlockId: TestBlockId = TestBlockId("SNAPPY_STORAGE_BLOCK_ID")
 
   val ummClass = "org.apache.spark.memory.SnappyUnifiedMemoryManager"
 
@@ -232,7 +230,7 @@ final class ExecutionFreeMemory(consumer: DefaultMemoryConsumer,
 
   override protected def objectName(): String = BufferAllocator.EXECUTION
 
-  override def run() {
+  override def run(): Unit = {
     val address = tryFree()
     if (address != 0) {
       Platform.freeMemory(address)

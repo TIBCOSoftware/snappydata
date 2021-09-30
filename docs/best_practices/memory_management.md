@@ -84,7 +84,7 @@ You can set the following configuration parameters to control the pools:
 |`spark.memory.storageFraction`|50|Fraction of workable memory allocated for storage pool and the remaining memory is allocated to the execution pool. It is recommended that you do not change this setting.|
 |`critical-heap-percentage`|95| The heap percent beyond which the system considers itself in a critical state. This is to safeguard the system from crashing due to an OutOfMemoryException. Beyond this point, SnappyData starts canceling all jobs and queries and a LowMemoryException is reported.</br> This means (100 minus `critical-heap-percent`) memory is not allocated to any pool and is unused.|
 |`eviction-heap-percentage`|85.5|Initially, the amount of memory that is available for storage pool is 50% of the total workable memory. This can however grow up to `eviction-heap-percentage` (default 85.5%). On reaching this threshold it starts evicting table data as per the eviction clause that was specified when creating the table.|
-|`spark.memory.fraction`|0.97|Total workable memory for execution and storage. This fraction is applied after removing reserved memory (100 minus `critical-heap-percentage`). This gives a cushion before the system reaches a critical state. It is recommended that you do not change this setting.
+|`spark.memory.fraction`|0.85|Total workable memory for execution and storage. This fraction is applied after removing reserved memory (100 minus `critical-heap-percentage`). This gives a cushion before the system reaches a critical state. It is recommended that you do not change this setting.
 
 At the start, each of the two pools is assigned a portion of the available memory. This is driven by `spark.memory.storageFraction` property (default 50%). However, SnappyData allows each pool to "balloon" into the other if capacity is available subject to following rules:
 
@@ -107,7 +107,7 @@ At the start, each of the two pools is assigned a portion of the available memor
 
 ```scala
 Reserved_Heap_Memory => 20g * (1 - 0.95) = 1g ( 0.95 being derived from critical_heap_percentage)
-Heap_Memory_Fraction => (20g - Reserved_Memory) *(0.97) = 17.4 ( 0.97 being derived from spark.memory.fraction)
+Heap_Memory_Fraction => (20g - Reserved_Memory) *(0.85) = 17.4 ( 0.85 being derived from spark.memory.fraction)
 Heap_Storage_Pool_Size => 17.4 * (0.5) = 8.73 ( 0.5 being derived from spark.memory.storageFraction)
 Heap_Execution_Pool_Size => 17.4 * (0.5) = 8.73
 Heap_Max_Storage_pool_Size => 17.4 * 0.85 = 14.7 ( 0.85 derived from eviction_heap_percentage)

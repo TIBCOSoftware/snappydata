@@ -18,8 +18,8 @@ package org.apache.spark.sql
 
 import java.lang.reflect.Method
 import java.sql.{Connection, SQLException, SQLWarning}
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 import java.util.{Calendar, Properties}
 
 import scala.collection.JavaConverters._
@@ -33,7 +33,7 @@ import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
-import com.google.common.cache.{Cache, CacheBuilder}
+import com.google.common.cache.{Cache, CacheBuilder, RemovalListener, RemovalNotification}
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
@@ -97,6 +97,14 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[spark] val id = SnappySession.newId()
 
   private[this] val tempCacheIndex = new AtomicInteger(0)
+
+  @transient
+  private[sql] val largeResultBlockIdsForCleanup = CacheBuilder.newBuilder().concurrencyLevel(1)
+      .expireAfterWrite(Property.ResultPersistenceTimeout.get(sparkContext.conf), TimeUnit.SECONDS)
+      .removalListener(new BroadcastRemovalListener).build[java.lang.Long, java.lang.Boolean]()
+
+  @transient
+  private[this] val activeBlockIdForLargeResults = new AtomicLong(-1L)
 
   new FinalizeSession(this)
 
@@ -300,7 +308,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] val queryHints = new ConcurrentHashMap[String, String](4, 0.7f, 1)
 
   @transient
-  private val contextObjects = new ConcurrentHashMap[Any, Any](16, 0.7f, 1)
+  private[this] val contextObjects = new ConcurrentHashMap[Any, Any](16, 0.7f, 1)
 
   @transient
   private[sql] var currentKey: CachedKey = _
@@ -681,6 +689,20 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
+  private[sql] def noteActiveBlockIdForLargeResult(blockId: Long): Unit = {
+    activeBlockIdForLargeResults.set(blockId)
+  }
+
+  private[sql] def registerBlockIdForLargeResult(failed: Boolean = false): Unit = {
+    val activeBlockId = activeBlockIdForLargeResults.get()
+    if (activeBlockId >= 0) {
+      activeBlockIdForLargeResults.compareAndSet(activeBlockId, -1L)
+      // clear blocks in case of failure immediately
+      if (failed) new BroadcastRemovalListener().removeBroadcast(activeBlockId)
+      else largeResultBlockIdsForCleanup.put(activeBlockId, true)
+    }
+  }
+
   private[sql] def clearContext(): Unit = synchronized {
     clearPutInto()
     clearWriteLockOnTable()
@@ -702,6 +724,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     clearContext()
     clearQueryData()
     clearPlanCache()
+    largeResultBlockIdsForCleanup.invalidateAll()
     snappyContextFunctions.clear()
   }
 
@@ -2219,7 +2242,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   @volatile private var uniqueId = 0L
 
-  def getUniqueIdForExecScala(): Long = {
+  def getUniqueIdForExecScala: Long = {
     if (uniqueId != 0L) {
       uniqueId = SnappySession.nextDummyId
     }
@@ -2230,7 +2253,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 private class FinalizeSession(session: SnappySession)
     extends FinalizeObject(session, true) {
 
-  private var sessionId = session.id
+  private[this] var sessionId = session.id
+  private[this] var largeResultBlockIds = session.largeResultBlockIdsForCleanup
 
   override def getHolder: FinalizeHolder = FinalizeObject.getServerHolder
 
@@ -2238,12 +2262,17 @@ private class FinalizeSession(session: SnappySession)
     if (sessionId != SnappySession.INVALID_ID) {
       SnappySession.clearSessionCache(sessionId)
       sessionId = SnappySession.INVALID_ID
+      if (largeResultBlockIds ne null) {
+        largeResultBlockIds.invalidateAll()
+        largeResultBlockIds = null
+      }
     }
     true
   }
 
   override protected def clearThis(): Unit = {
     sessionId = SnappySession.INVALID_ID
+    largeResultBlockIds = null
   }
 
 }
@@ -2836,4 +2865,21 @@ private object UnionCommands {
     } => Some(true)
     case _ => None
   }
+}
+
+// noinspection UnstableApiUsage
+private final class BroadcastRemovalListener
+    extends RemovalListener[java.lang.Long, java.lang.Boolean] {
+
+  def removeBroadcast(broadcastId: Long): Unit = {
+    SparkEnv.get match {
+      case null =>
+      case env => env.blockManager.master.removeBroadcast(broadcastId,
+        removeFromMaster = true, blocking = false)
+    }
+  }
+
+  override def onRemoval(
+      notification: RemovalNotification[java.lang.Long, java.lang.Boolean]): Unit =
+    removeBroadcast(notification.getKey)
 }

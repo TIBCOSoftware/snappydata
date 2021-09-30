@@ -97,6 +97,8 @@ object ServiceUtils {
       for ((hiveVar, dirName) <- HiveClientUtil.HIVE_DEFAULT_SETTINGS) {
         sysProps.putIfAbsent(hiveVar.varname, dirName)
       }
+      // increase call stack depth
+      sysProps.putIfAbsent("spark.callstack.depth", "50")
     }
     // set default member-timeout higher for GC pauses (SNAP-1777)
     storeProps.putIfAbsent(DistributionConfig.MEMBER_TIMEOUT_NAME, "30000")
