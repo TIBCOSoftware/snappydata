@@ -464,7 +464,8 @@ subprojects {
                 '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/*HDFS*DUnit*.class',
                 '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
                 '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class',
-                '**/pivotal/gemfirexd/wan/**/*DUnit.class', '**/*DUnitRecoveryTest.class'
+                '**/pivotal/gemfirexd/wan/**/*DUnit.class', '**/*DUnitRecoveryTest.class',
+                '**/offheap/**/*DUnit*.class', '**/*OffHeap*DUnit*.class', '**/*Offheap*DUnit*.class'
             ]
           }
           FileTree includeTestFiles = dunitTests
