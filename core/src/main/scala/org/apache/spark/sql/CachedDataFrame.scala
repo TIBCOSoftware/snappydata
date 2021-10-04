@@ -24,6 +24,7 @@ import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicLong
 
 import scala.annotation.tailrec
+import scala.collection.AbstractIterator
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
@@ -119,6 +120,11 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
 
   @transient
   private var prepared: Boolean = _
+
+  @transient @volatile
+  private[this] var pendingBlockIdForLargeResults = -1L
+  @transient @volatile
+  private[this] var activeBlockIdForLargeResults = -1L
 
   private[sql] def startShuffleCleanups(sc: SparkContext): Unit = {
     val numShuffleDeps = shuffleDependencies.length
@@ -332,22 +338,69 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   }
 
   override def toLocalIterator(): java.util.Iterator[Row] = {
-    collectInternal().map(boundEnc.fromRow).asJava
+    val rows = collectInternal()
+    new java.util.Iterator[Row] with AutoCloseable {
+      override def hasNext: Boolean = rows.hasNext
+
+      override def next(): Row = boundEnc.fromRow(rows.next())
+
+      override def close(): Unit = rows match {
+        case a: AutoCloseable => a.close()
+        case _ =>
+      }
+    }
   }
 
   def collectInternal(): Iterator[InternalRow] = {
     if (noSideEffects) {
-      collectWithHandler[Array[Byte], Iterator[UnsafeRow]](CachedDataFrame(snappySession),
-        (_, result) => {
+      val iters = collectWithHandler[Array[Byte], Iterator[UnsafeRow]](
+        CachedDataFrame(this), (_, result) => {
           val data = result._1
-          if (result._2 < 0) snappySession.registerBlockIdForLargeResult()
+          if (result._2 < 0) registerBlockIdForLargeResults()
           CachedDataFrame.decodeUnsafeRows(schema.length, data, 0, data.length)
-        }, identity).flatten
+        }, identity)
+      new AbstractIterator[InternalRow] with AutoCloseable {
+        private[this] var iter: Iterator[InternalRow] = Iterator.empty
+        private[this] val activeBlockId = activeBlockIdForLargeResults
+
+        @tailrec
+        def hasNext: Boolean = {
+          if (iter.hasNext) true else if (iters.hasNext) {
+            iter = iters.next()
+            hasNext
+          } else {
+            close()
+            false
+          }
+        }
+
+        def next(): InternalRow =
+          if (hasNext) iter.next() else throw new NoSuchElementException("end already reached")
+
+        override def close(): Unit = if (activeBlockId >= 0) {
+          snappySession.largeResultBlockIdsForCleanup.invalidate(activeBlockId)
+        }
+      }
     } else {
       // skip double encoding/decoding for the case when underlying plan
       // execution returns an Iterator[InternalRow] itself
       collectWithHandler[InternalRow, InternalRow](null, null, null,
         skipUnpartitionedDataProcessing = true)
+    }
+  }
+
+  private def markPendingBlockIdForLargeResults(blockId: Long): Unit = {
+    pendingBlockIdForLargeResults = blockId
+    activeBlockIdForLargeResults = -1L
+  }
+
+  // multiple threads can call this concurrently, hence the synchronized
+  private def registerBlockIdForLargeResults(): Unit = synchronized {
+    val blockId = pendingBlockIdForLargeResults
+    assert(blockId >= 0)
+    if (activeBlockIdForLargeResults != blockId) {
+      activeBlockIdForLargeResults = blockId
+      snappySession.largeResultBlockIdsForCleanup.put(blockId, true)
     }
   }
 
@@ -444,7 +497,13 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       }
       if (!success) {
         // clear any persisted result data
-        snappySession.registerBlockIdForLargeResult(failed = true)
+        val activeBlockId = activeBlockIdForLargeResults
+        if (activeBlockId >= 0) {
+          snappySession.largeResultBlockIdsForCleanup.invalidate(activeBlockId)
+        } else {
+          val pendingBlockId = pendingBlockIdForLargeResults
+          if (pendingBlockId >= 0) new BroadcastRemovalListener().removeBroadcast(pendingBlockId)
+        }
       }
     }
   }
@@ -571,9 +630,9 @@ object CachedDataFrame
     }
   }
 
-  def apply(session: SnappySession): (TaskContext, Iterator[InternalRow]) => PartitionResult = {
+  def apply(cdf: CachedDataFrame): (TaskContext, Iterator[InternalRow]) => PartitionResult = {
     val broadcastId = localBlockId.getAndIncrement()
-    session.noteActiveBlockIdForLargeResult(broadcastId)
+    cdf.markPendingBlockIdForLargeResults(broadcastId)
     (context, iter) => apply(context, iter, broadcastId)
   }
 
@@ -673,10 +732,10 @@ object CachedDataFrame
     }
   }
 
-  def localBlockStoreResultHandler(rddId: Int, bm: BlockManager, session: SnappySession)(
+  def localBlockStoreResultHandler(rddId: Int, bm: BlockManager, cdf: CachedDataFrame)(
       partitionId: Int, result: (Array[Byte], Int)): Any = {
     val data = result._1
-    if (result._2 < 0) session.registerBlockIdForLargeResult()
+    if (result._2 < 0) cdf.registerBlockIdForLargeResults()
     // put in block manager only if result is large
     if (data.length <= Utils.MIN_LOCAL_BLOCK_SIZE) data
     else {
@@ -770,11 +829,11 @@ object CachedDataFrame
   /**
    * Decode the byte arrays back to UnsafeRows and return an iterator over the resulting rows.
    */
-  def decodeUnsafeRows(numFields: Int,
-      data: Array[Byte], offset: Int, dataLen: Int): Iterator[UnsafeRow] = {
+  def decodeUnsafeRows(numFields: Int, data: Array[Byte],
+      offset: Int, dataLen: Int): Iterator[UnsafeRow] = {
     if (dataLen == 0) return Iterator.empty
 
-    new Iterator[UnsafeRow] {
+    new AbstractIterator[UnsafeRow] with AutoCloseable {
       private[this] val codec = getCompressionCodec
       private[this] var in = {
         val input = new ByteArrayDataInput
@@ -785,6 +844,7 @@ object CachedDataFrame
       private[this] var diskBuffer: Option[ChunkedByteBuffer] = None
       private[this] var diskData: Option[ByteBuffer] = None
       private[this] var sizeOfNextRow: Int = _
+      private[this] var broadcastId: Long = -1L
 
       readNextRowLength()
 
@@ -825,6 +885,9 @@ object CachedDataFrame
           val bytes = new Array[Byte](size)
           in.readFully(bytes)
           val blockId = BlockId(new String(bytes, StandardCharsets.UTF_8))
+          if (broadcastId == -1L && blockId.isInstanceOf[BroadcastBlockId]) {
+            broadcastId = blockId.asInstanceOf[BroadcastBlockId].broadcastId
+          }
           val env = SparkEnv.get
           env.blockManager.getRemoteBytes(blockId) match {
             case s@Some(buffers) =>
@@ -849,6 +912,12 @@ object CachedDataFrame
         row.pointTo(bs, sizeOfNextRow)
         readNextRowLength()
         row
+      }
+
+      override def close(): Unit = {
+        if (broadcastId != -1L) {
+          new BroadcastRemovalListener().removeBroadcast(broadcastId)
+        }
       }
     }
   }

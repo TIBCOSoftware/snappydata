@@ -171,7 +171,7 @@ object Property extends Enumeration {
     s"${Constant.SPARK_PREFIX}sql.resultPersistenceTimeout",
     s"Maximum duration in seconds for which results larger than ${MaxMemoryResultSize.name}" +
         "are held on disk after which they are cleaned up. This is to handle cases where a " +
-        "client does not consume all the results. Default is 14400 (4h).", Some(14400L))
+        "client does not consume all the results. Default is 21600 (6h).", Some(21600L))
 
   val DisableHashJoin: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.disableHashJoin",

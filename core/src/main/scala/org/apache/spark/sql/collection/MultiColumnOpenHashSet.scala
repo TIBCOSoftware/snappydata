@@ -19,7 +19,7 @@ package org.apache.spark.sql.collection
 
 import scala.collection.generic.{CanBuildFrom, Growable}
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.{IterableLike, mutable}
+import scala.collection.{AbstractIterator, IterableLike, mutable}
 import scala.util.hashing.MurmurHash3
 
 import org.apache.spark.sql.Row
@@ -264,7 +264,7 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
     }
 
   override def iterator: Iterator[ReusableRow] =
-    new Iterator[ReusableRow] {
+    new AbstractIterator[ReusableRow] {
 
       final val bitset = _bitset
       var pos = bitset.nextSetBit(0)
@@ -280,7 +280,7 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
     }
 
   def iteratorRowReuse: Iterator[ReusableRow] =
-    new Iterator[ReusableRow] {
+    new AbstractIterator[ReusableRow] {
 
       final val bitset = _bitset
       final val currentRow = newEmptyValueAsRow()
@@ -1185,7 +1185,7 @@ object QCSSQLColumnHandler {
     (index, iter, clazz, bufferArr) =>
       val buffer = clazz.generate(bufferArr.toArray).asInstanceOf[BufferedRowIterator]
       buffer.init(index, Array(iter))
-      new Iterator[InternalRow] {
+      new AbstractIterator[InternalRow] {
 
         override def hasNext(): Boolean =   buffer.hasNext
 
@@ -1193,7 +1193,7 @@ object QCSSQLColumnHandler {
       }
   }
 
-  val iter = new Iterator[InternalRow]() {
+  val iter = new AbstractIterator[InternalRow]() {
     def next: InternalRow =  RowToInternalRow
     def hasNext = RowToInternalRow.rowHolder.get() != null
   }

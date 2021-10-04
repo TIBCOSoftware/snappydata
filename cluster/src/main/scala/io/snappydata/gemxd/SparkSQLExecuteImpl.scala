@@ -130,8 +130,8 @@ class SparkSQLExecuteImpl(
       //   shipping/compilation etc and lack of proper BlockManager usage in
       //   messaging + server-side final processing, so do it selectively)
       val partitionBlocks = df match {
-        case cdf: CachedDataFrame => cdf.collectWithHandler(CachedDataFrame(session),
-           CachedDataFrame.localBlockStoreResultHandler(rddId, bm, session),
+        case cdf: CachedDataFrame => cdf.collectWithHandler(CachedDataFrame(cdf),
+           CachedDataFrame.localBlockStoreResultHandler(rddId, bm, cdf),
            CachedDataFrame.localBlockStoreDecoder(querySchema.length, bm))
         case dataFrame: DataFrame =>
           Iterator(CachedDataFrame(null,
@@ -418,7 +418,7 @@ object SparkSQLExecuteImpl {
         (CachedDataFrame.decodeUnsafeRows(numFields, input.array(), pos, size), input)
       } else (GenerateFlatIterator.TERMINATE, input)
     }, input)
-    unsafeRows.map { row =>
+    def mapRow(row: UnsafeRow): ValueRow = {
       var index = 0
       var refTypeIndex = 0
       while (index < numFields) {
@@ -505,7 +505,15 @@ object SparkSQLExecuteImpl {
       }
 
       execRow
-    }.asJava
+    }
+
+    new java.util.Iterator[ValueRow] with AutoCloseable {
+      override def hasNext: Boolean = unsafeRows.hasNext
+
+      override def next(): ValueRow = mapRow(unsafeRows.next())
+
+      override def close(): Unit = unsafeRows.close()
+    }
   }
 }
 

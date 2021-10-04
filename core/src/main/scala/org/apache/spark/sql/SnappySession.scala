@@ -103,9 +103,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       .expireAfterWrite(Property.ResultPersistenceTimeout.get(sparkContext.conf), TimeUnit.SECONDS)
       .removalListener(new BroadcastRemovalListener).build[java.lang.Long, java.lang.Boolean]()
 
-  @transient
-  private[this] val activeBlockIdForLargeResults = new AtomicLong(-1L)
-
   new FinalizeSession(this)
 
   /**
@@ -686,20 +683,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         finally {
           conn.close()
         }
-    }
-  }
-
-  private[sql] def noteActiveBlockIdForLargeResult(blockId: Long): Unit = {
-    activeBlockIdForLargeResults.set(blockId)
-  }
-
-  private[sql] def registerBlockIdForLargeResult(failed: Boolean = false): Unit = {
-    val activeBlockId = activeBlockIdForLargeResults.get()
-    if (activeBlockId >= 0) {
-      activeBlockIdForLargeResults.compareAndSet(activeBlockId, -1L)
-      // clear blocks in case of failure immediately
-      if (failed) new BroadcastRemovalListener().removeBroadcast(activeBlockId)
-      else largeResultBlockIdsForCleanup.put(activeBlockId, true)
     }
   }
 

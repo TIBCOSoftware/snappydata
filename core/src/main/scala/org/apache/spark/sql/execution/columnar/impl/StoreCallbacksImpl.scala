@@ -21,6 +21,7 @@ import java.net.URLClassLoader
 import java.sql.SQLException
 import java.util.Collections
 
+import scala.collection.AbstractIterator
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.NonFatal
@@ -239,7 +240,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     val numColumnsInStatBlob = ColumnStatsSchema.numStatsColumns(schemaAttrs.length)
 
     // noinspection TypeAnnotation
-    val entriesIter = new Iterator[ArrayBuffer[ColumnTableEntry]] {
+    val entriesIter = new AbstractIterator[ArrayBuffer[ColumnTableEntry]] {
       private var numColumns = (projection.length + 1) << 1
 
       // iterator will remain one step ahead to skip over filtered/deleted batches

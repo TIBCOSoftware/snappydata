@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution.aggregate
 
 import scala.collection.mutable.ArrayBuffer
 
+import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
@@ -65,7 +66,6 @@ case class CollectAggregateExec(child: SparkPlan)(
    */
   private[sql] def executeCollectData(): Array[Any] = {
     val childRDD = this.childRDD
-    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val sc = sqlContext.sparkContext
     val bm = sc.env.blockManager
 
@@ -75,11 +75,11 @@ case class CollectAggregateExec(child: SparkPlan)(
     var success = false
 
     try {
-      sc.runJob(childRDD, CachedDataFrame(session), 0 until numPartitions,
-        (index: Int, r: (Array[Byte], Int)) =>
+      sc.runJob(childRDD, (context: TaskContext, iter: Iterator[InternalRow]) => CachedDataFrame(
+        context, iter, -1L), 0 until numPartitions, (index: Int, r: (Array[Byte], Int)) =>
           // store the partition results in BlockManager for large results
           partitionBlocks(index) = CachedDataFrame.localBlockStoreResultHandler(
-            rddId, bm, session)(index, r))
+            rddId, bm, cdf = null /* will never be used since no broadcastId */)(index, r))
       success = true
 
       partitionBlocks

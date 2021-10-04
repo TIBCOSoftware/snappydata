@@ -28,10 +28,11 @@ import scala.collection.Iterator
  * Use the GenerateFlatIterator.TERMINATE token to indicate end of iteration.
  */
 final class GenerateFlatIterator[A, U](val genFunc: U => (Iterator[A], U),
-    val init: U) extends Iterator[A] {
+    val init: U) extends Iterator[A] with AutoCloseable {
 
-  private var currentPair = genFunc(init)
-  private var currentIter = currentPair._1
+  private[this] var currentPair = genFunc(init)
+  private[this] var currentIter = currentPair._1
+  private[this] var lastIter = currentIter
 
   override def hasNext: Boolean = {
     if (currentIter.hasNext) true
@@ -41,12 +42,18 @@ final class GenerateFlatIterator[A, U](val genFunc: U => (Iterator[A], U),
         currentPair = genFunc(currentPair._2)
         currentIter = currentPair._1
         if (currentIter eq GenerateFlatIterator.TERMINATE) return false
+        lastIter = currentIter
       } while (!currentIter.hasNext)
       true
     }
   }
 
   override def next(): A = currentIter.next()
+
+  override def close(): Unit = this.lastIter match {
+    case a: AutoCloseable => a.close()
+    case _ =>
+  }
 }
 
 final class SlicedIterator[A](val iter: Iterator[A]) extends Iterator[A] {
