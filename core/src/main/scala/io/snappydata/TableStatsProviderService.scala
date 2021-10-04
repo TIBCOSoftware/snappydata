@@ -112,7 +112,7 @@ trait TableStatsProviderService extends Logging {
       }
     } catch {
       case t if !SystemFailure.isJVMFailureError(t) =>
-        logWarning(s"Unexpected exception when updating Members Statistics", t)
+        logWarning("Unexpected exception when updating Members Statistics", t)
     }
     membersInfo
   }

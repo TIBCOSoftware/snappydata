@@ -207,7 +207,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
     } catch {
       case t if !SystemFailure.isJVMFailureError(t) =>
-        logWarning(s"Unexpected exception when updating Table Statistics", t)
+        logWarning("Unexpected exception when updating Table Statistics", t)
         Nil
     }
 

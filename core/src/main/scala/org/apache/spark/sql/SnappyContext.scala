@@ -27,11 +27,12 @@ import javax.annotation.concurrent.GuardedBy
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Future, TimeoutException}
 import scala.concurrent.duration.Duration
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 
+import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.Attribute
@@ -1256,7 +1257,13 @@ object SnappyContext extends Logging {
           val closeHive = Future(SnappyHiveExternalCatalog.close())
           // wait for a while else fail for connection to close else it is likely that
           // there is some trouble in initialization itself so don't block shutdown
-          CommonUtils.awaitResult(closeHive, Duration(10, TimeUnit.SECONDS))
+          try {
+            CommonUtils.awaitResult(closeHive, Duration(10, TimeUnit.SECONDS))
+          } catch {
+            case _: TimeoutException => logWarning("Timed out waiting for hive close in shutdown")
+            case t if !SystemFailure.isJVMFailureError(t) =>
+              logWarning("Unexpected exception in shutdown during hive close", t)
+          }
           if (mode.isInstanceOf[LocalMode]) {
             val props = sc.conf.getOption(Constant.STORE_PROPERTY_PREFIX +
                 Attribute.USERNAME_ATTR) match {

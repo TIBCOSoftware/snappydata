@@ -140,10 +140,16 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
       Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = synchronized {
     var resultObtained: Boolean = false
-    val result = regionStatsFuture.result(waitDuration) match {
-      case Some(stats) => resultObtained = true; stats
-      case None => // ignore timeout exception and return current map
-        logWarning("Obtaining updated Table Statistics is taking longer than expected time.")
+    val result = try {
+      regionStatsFuture.result(waitDuration) match {
+        case Some(stats) => resultObtained = true; stats
+        case None => // ignore timeout exception and return current map
+          logWarning("Obtaining updated Table Statistics is taking longer than expected time.")
+          Nil
+      }
+    } catch {
+      case t if !SystemFailure.isJVMFailureError(t) =>
+        logWarning("Unexpected exception when updating Table Statistics", t)
         Nil
     }
     if (resultObtained) (result, Nil, Nil)

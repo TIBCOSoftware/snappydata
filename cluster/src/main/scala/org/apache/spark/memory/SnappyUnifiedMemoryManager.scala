@@ -22,7 +22,7 @@ import java.util.concurrent.{ArrayBlockingQueue, TimeUnit}
 import java.util.function.BiConsumer
 
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{Future, TimeoutException}
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 
@@ -186,10 +186,18 @@ class SnappyUnifiedMemoryManager private[memory](
     assert(!bootManager)
     // stop the pending release future and clear pending items
     stopReleaseFuture.set(true)
-    CommonUtils.awaitResult(storageMemoryReleaseFuture, Duration.Inf)
+    try {
+      CommonUtils.awaitResult(storageMemoryReleaseFuture, Duration(10, TimeUnit.SECONDS))
+    } catch {
+      case _: TimeoutException => logWarning("Timed out waiting for release thread in shutdown")
+      case t if !SystemFailure.isJVMFailureError(t) =>
+        logWarning("Unexpected exception in SnappyUMM close waiting for release thread", t)
+    }
+    /*
     val pendingItems = new java.util.ArrayList[(String, Long, MemoryMode)]
     pendingStorageMemoryReleases.drainTo(pendingItems)
     if (pendingItems.size() > 0) releaseStorageMemoryForObjects(None, pendingItems)
+    */
     // First reset the memory manager in callback. Hence all request will
     // go to Boot Manager
     MemoryManagerCallback.resetMemoryManager()
@@ -793,24 +801,34 @@ class SnappyUnifiedMemoryManager private[memory](
       numBytes: Long,
       memoryMode: MemoryMode): Unit = {
     // if UMM lock is already held, then release inline else enqueue and be done with it
-    if (Thread.holdsLock(this)) synchronized {
-      releaseStorageMemoryForObject_(objectName, numBytes, memoryMode)
-    } else {
-      pendingStorageMemoryReleases.put((objectName, numBytes, memoryMode))
+    if (Thread.holdsLock(this) || stopReleaseFuture.get() || !pendingStorageMemoryReleases.offer(
+      (objectName, numBytes, memoryMode), 10, TimeUnit.SECONDS)) {
+      synchronized(releaseStorageMemoryForObject_(objectName, numBytes, memoryMode))
     }
   }
 
   private def releaseStorageMemoryForObjects(obj: Option[(String, Long, MemoryMode)],
       moreObjects: java.util.ArrayList[(String, Long, MemoryMode)]): Unit = synchronized {
     obj match {
-      case Some(o) => releaseStorageMemoryForObject_(o._1, o._2, o._3)
+      case Some(o) =>
+        try {
+          releaseStorageMemoryForObject_(o._1, o._2, o._3)
+        } catch {
+          case t: Throwable =>
+            logError("SnappyUnifiedMemoryManager: unexpected failure in releaseStorageMemory", t)
+        }
       case _ =>
     }
     if (moreObjects.size() > 0) {
       val iter = moreObjects.iterator()
       while (iter.hasNext) {
         val item = iter.next()
-        releaseStorageMemoryForObject_(item._1, item._2, item._3)
+        try {
+          releaseStorageMemoryForObject_(item._1, item._2, item._3)
+        } catch {
+          case t: Throwable =>
+            logError("SnappyUnifiedMemoryManager: unexpected failure in releaseStorageMemory", t)
+        }
       }
     }
   }
