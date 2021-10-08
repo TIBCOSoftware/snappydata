@@ -83,6 +83,11 @@ esac
 CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
 
 # Determine the Java command to use to start the JVM.
+if [ -n "$JAVA8_HOME" ]; then
+    JAVA_HOME="$JAVA8_HOME"
+    PATH="$JAVA_HOME/bin:$PATH"
+    export JAVA_HOME PATH
+fi
 if [ -n "$JAVA_HOME" ] ; then
     if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
         # IBM's JDK on AIX uses strange locations for the executables

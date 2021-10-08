@@ -549,7 +549,7 @@ object CachedDataFrame
   @transient @volatile var maxMemoryResultSize: Long = Long.MaxValue
   /**
    * Start the local block ID generator at Long.Max / 2 so there is no overlap with those
-   * generated at the driver.
+   * generated for actual broadcast operations.
    */
   @transient private[this] val localBlockId = new AtomicLong(Long.MaxValue >> 1)
 
@@ -661,7 +661,7 @@ object CachedDataFrame
           // there is no clean way to switch the underlying OutputStream in the compressed stream
           // to the file stream, so flush and write the compressed data so far and start a new
           // compressed stream appending to the existing file which means that the file will
-          // have two compressed streams back-to-back
+          // have multiple compressed streams back-to-back
           out.writeInt(-1)
           out.flush()
           out.close()
@@ -854,7 +854,7 @@ object CachedDataFrame
         val slicedData = data.slice()
         slicedData.limit(len)
         // set the position to the end of current compressed block
-        data.position(data.position() + len)
+        data.position(math.min(data.position() + len, data.limit()))
         slicedData
       }
 
@@ -869,14 +869,13 @@ object CachedDataFrame
                 // start a new compressed stream since those are stored back-to-back in the file
                 val stream = new ByteBufferInputStream(readCompressedBlock(data))
                 in = new DataInputStream(codec.compressedInputStream(stream))
-                sizeOfNextRow = in.readInt()
               } else {
                 in = finalIn
                 diskBuffer.get.dispose()
                 diskBuffer = None
                 diskData = None
-                readNextRowLength()
               }
+              readNextRowLength()
             case _ =>
           }
         } else if (sizeOfNextRow < -1) {
@@ -915,6 +914,14 @@ object CachedDataFrame
       }
 
       override def close(): Unit = {
+        diskBuffer match {
+          case Some(buffer) => try {
+            buffer.dispose()
+          } catch {
+            case _: Throwable => // ignore
+          }
+          case _ =>
+        }
         if (broadcastId != -1L) {
           new BroadcastRemovalListener().removeBroadcast(broadcastId)
         }
