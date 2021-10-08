@@ -440,6 +440,10 @@ function collect_on_remote {
   do
     files+=($l)
   done
+  for l in $( ls hs_err* 2> /dev/null )
+  do
+    files+=($l)
+  done
   for l in $( ls *.jmap 2> /dev/null )
   do
     files+=($l)

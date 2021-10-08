@@ -715,13 +715,13 @@ class ColumnTableTest
     assert(region.getEvictionAttributes.getMaximum === 200)
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
-    try {
+    // try {
       snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING column options" +
           " (PARTITION_BY 'OrderId', EVICTION_BY 'LRUCOUNT 200')")
-      assert(false, "EVICTION_BY=LRUCOUNT is not supported for column tables")
-    } catch {
-      case _: AnalysisException => // Expected
-    }
+    //   assert(false, "EVICTION_BY=LRUCOUNT is not supported for column tables")
+    // } catch {
+    //  case _: AnalysisException => // Expected
+    // }
     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
 
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) USING row options" +

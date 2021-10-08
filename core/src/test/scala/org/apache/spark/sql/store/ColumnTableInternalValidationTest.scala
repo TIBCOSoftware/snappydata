@@ -42,7 +42,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
 
   test("test the shadow table with eviction options LRUCOUNT on " +
       "compressed table") {
-    intercept[AnalysisException] {
+    // intercept[AnalysisException] {
       snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING)" +
           "USING column " +
           "options " +
@@ -51,7 +51,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite
           "BUCKETS '213'," +
           "REDUNDANCY '2'," +
           "EVICTION_BY 'LRUCOUNT 20')").collect()
-    }
+    // }
     logInfo("Success")
   }
 

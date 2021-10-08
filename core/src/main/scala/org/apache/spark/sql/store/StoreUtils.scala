@@ -413,10 +413,7 @@ object StoreUtils {
     val overflow = parameters.get(OVERFLOW).forall(_.toBoolean)
     val defaultEviction = if (overflow) s"$GEM_HEAPPERCENT $GEM_OVERFLOW" else EMPTY_STRING
     sb.append(parameters.remove(EVICTION_BY).map(v => {
-      if (v.contains(LRUCOUNT) && isShadowTable) {
-        throw Utils.analysisException(
-          "Column table cannot take LRUCOUNT as eviction policy.")
-      } else if (v.equalsIgnoreCase("NONE")) {
+      if (v.equalsIgnoreCase("NONE")) {
         EMPTY_STRING
       } else {
         if (!overflow) {
