@@ -32,8 +32,8 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.{Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.jdbc.JdbcDialect
@@ -50,7 +50,7 @@ abstract case class JDBCAppendableRelation(
     provider: String,
     mode: SaveMode,
     userSchema: StructType,
-    origOptions: CaseInsensitiveMap,
+    origOptions: CaseInsensitiveMutableHashMap[String],
     externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext) extends BaseRelation
     with PrunedUnsafeFilteredScan

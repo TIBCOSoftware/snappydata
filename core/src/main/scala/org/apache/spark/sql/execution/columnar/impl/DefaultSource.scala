@@ -20,7 +20,6 @@ import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.CommonUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -86,7 +85,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       // on the servers to determine table properties like compression etc.
       // SnappyExternalCatalog will alter the definition for final entry if required.
       session.sessionCatalog.createTableForBuiltin(relation.resolvedName,
-        getClass.getCanonicalName, relation.schema, relation.origOptions,
+        getClass.getCanonicalName, relation.schema, Utils.immutableMap(relation.origOptions),
         mode != SaveMode.ErrorIfExists)
       relation.insert(data, mode == SaveMode.Overwrite)
       success = true
@@ -136,7 +135,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
     }
     val partitioningColumns = StoreUtils.getAndSetPartitioningAndKeyColumns(session,
       schema, parameters)
-    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
+    val tableOptions = new CaseInsensitiveMutableHashMap[String](parameters)
 
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = false, isShadowTable = false)

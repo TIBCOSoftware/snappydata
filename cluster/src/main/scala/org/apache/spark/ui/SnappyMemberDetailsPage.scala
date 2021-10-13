@@ -260,11 +260,11 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
 
   override def render(request: HttpServletRequest): Seq[Node] = {
 
-    val offset = Option(request.getParameter("offset")).map(_.toLong)
-    val byteLength =
-      Option(request.getParameter("byteLength")).map(_.toLong).getOrElse(defaultBytes)
+    val offset = Option(UIUtils.stripXSS(request.getParameter("offset"))).map(_.toLong)
+    val byteLength = Option(UIUtils.stripXSS(request.getParameter("byteLength"))).map(_.toLong)
+        .getOrElse(defaultBytes)
 
-    val memberId = Option(request.getParameter("memId")).map { memberId =>
+    val memberId = Option(UIUtils.stripXSS(request.getParameter("memId"))).map { memberId =>
       UIUtils.decodeURLParameter(memberId)
     }.getOrElse {
       throw new IllegalArgumentException(s"Missing memId parameter")
@@ -401,11 +401,11 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
 
   def renderLog(request: HttpServletRequest): String = {
 
-    val offset = Option(request.getParameter("offset")).map(_.toLong)
-    val byteLength =
-      Option(request.getParameter("byteLength")).map(_.toLong).getOrElse(defaultBytes)
+    val offset = Option(UIUtils.stripXSS(request.getParameter("offset"))).map(_.toLong)
+    val byteLength = Option(UIUtils.stripXSS(request.getParameter("byteLength"))).map(_.toLong)
+        .getOrElse(defaultBytes)
 
-    val memberId = Option(request.getParameter("memId")).map { memberId =>
+    val memberId = Option(UIUtils.stripXSS(request.getParameter("memId"))).map { memberId =>
       UIUtils.decodeURLParameter(memberId)
     }.getOrElse {
       throw new IllegalArgumentException(s"Missing memId parameter")

@@ -43,7 +43,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryComparison, BinaryExpression, DynamicInSet, Expression, TokenLiteral}
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.execution.datasources.DataSource
@@ -166,7 +165,10 @@ object ExternalStoreUtils extends Logging {
       extends mutable.Map[String, T] with Serializable {
 
     val baseMap = new mutable.HashMap[String, T]
-    baseMap ++= map.map(kv => kv.copy(_1 = kv._1.toLowerCase))
+    map match {
+      case _: CaseInsensitiveMutableHashMap[T] => baseMap ++= map
+      case _ => baseMap ++= map.map(kv => kv.copy(_1 = kv._1.toLowerCase))
+    }
 
     override def get(k: String): Option[T] = baseMap.get(k.toLowerCase)
 
@@ -204,22 +206,21 @@ object ExternalStoreUtils extends Logging {
   }
 
   def removeSamplingOptions(
-      parameters: mutable.Map[String, String]): Map[String, String] = {
+      parameters: mutable.Map[String, String]): scala.collection.Map[String, String] = {
 
     val optSequence = Seq("qcs", "fraction", "strataReservoirSize",
       "errorLimitColumn", "errorLimitPercent", "timeSeriesColumn",
       "timeInterval", "aqp.debug.byPassSampleOperator")
 
-    val optMap = new mutable.HashMap[String, String]
-
+    val optMap = emptyCIMutableMap
     optSequence.map(key => {
       val value = parameters.remove(key)
       value match {
-        case Some(v) => optMap += key -> v
+        case Some(v) => optMap.put(key, v)
         case None => // Do nothing
       }
     })
-    new CaseInsensitiveMap(optMap.toMap)
+    optMap
   }
 
   def getLdapGroupsForUser(userId: String): Array[String] = {

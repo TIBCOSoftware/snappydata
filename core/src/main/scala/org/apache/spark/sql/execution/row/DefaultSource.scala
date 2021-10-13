@@ -19,7 +19,7 @@ package org.apache.spark.sql.execution.row
 import io.snappydata.Constant
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.CommonUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -77,7 +77,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       // on the servers to determine table properties like compression etc.
       // SnappyExternalCatalog will alter the definition for final entry if required.
       session.sessionCatalog.createTableForBuiltin(relation.resolvedName,
-        getClass.getCanonicalName, relation.schema, relation.origOptions,
+        getClass.getCanonicalName, relation.schema, Utils.immutableMap(relation.origOptions),
         mode != SaveMode.ErrorIfExists)
       // SaveMode.Overwrite already taken care by createTable to truncate
       relation.insert(data, overwrite = false)
@@ -104,7 +104,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
     ExternalStoreUtils.getAndSetTotalPartitions(session, parameters,
       forManagedTable = true, forColumnTable = false)
     StoreUtils.getAndSetPartitioningAndKeyColumns(session, schema = null, parameters)
-    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
+    val tableOptions = new CaseInsensitiveMutableHashMap[String](parameters)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schemaString $ddlExtension"

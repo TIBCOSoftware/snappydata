@@ -229,7 +229,7 @@ trait SamplingRelation extends BaseRelation with SchemaInsertableRelation {
   /**
    * Options set for this sampling relation.
    */
-  def samplingOptions: Map[String, Any]
+  def samplingOptions: scala.collection.Map[String, Any]
 
   /**
    * The QCS columns for the sample.

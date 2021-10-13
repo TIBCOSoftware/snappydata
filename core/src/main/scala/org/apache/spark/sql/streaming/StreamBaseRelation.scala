@@ -23,8 +23,8 @@ import io.snappydata.sql.catalog.SnappyExternalCatalog
 import org.apache.spark.rdd.{EmptyRDD, RDD}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.sources._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.{DStream, InputDStream, ReceiverInputDStream}
@@ -38,9 +38,10 @@ abstract class StreamBaseRelation(opts: Map[String, String])
     SnappyStreamingContext.getInstance().getOrElse(
       throw new IllegalStateException("No initialized streaming context"))
 
-  protected val options = new CaseInsensitiveMap(opts)
+  protected val options: scala.collection.Map[String, String] =
+    new CaseInsensitiveMutableHashMap[String](opts)
 
-  @transient val tableName = options(SnappyExternalCatalog.DBTABLE_PROPERTY)
+  @transient val tableName: String = options(SnappyExternalCatalog.DBTABLE_PROPERTY)
 
   val storageLevel: StorageLevel = options.get("storageLevel")
       .map(StorageLevel.fromString)

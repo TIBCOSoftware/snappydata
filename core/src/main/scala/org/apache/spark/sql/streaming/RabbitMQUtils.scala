@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.streaming
 
+import scala.collection.{Map => SMap}
 import scala.reflect._
 import scala.util.{Failure, Success, Try}
 
@@ -30,7 +31,7 @@ import org.apache.spark.streaming.receiver.Receiver
 
 object RabbitMQUtils {
   def createStream[T: ClassTag, D: ClassTag](snsc: SnappyStreamingContext,
-      options: Map[String, String]): ReceiverInputDStream[T] = {
+      options: SMap[String, String]): ReceiverInputDStream[T] = {
     new RabbitMQInputDStream[T, D](snsc, options)
   }
 }
@@ -47,7 +48,7 @@ final class RabbitMQStringDecoder extends RabbitMQDecoder[String] {
 
 final class RabbitMQInputDStream[T: ClassTag, D: ClassTag](
     _snsc: SnappyStreamingContext,
-    options: Map[String, String])
+    options: SMap[String, String])
     extends ReceiverInputDStream[T](_snsc) {
 
   override def getReceiver(): Receiver[T] = {
@@ -55,7 +56,7 @@ final class RabbitMQInputDStream[T: ClassTag, D: ClassTag](
   }
 }
 
-final class RabbitMQReceiver[T: ClassTag, D: ClassTag](options: Map[String, String])
+final class RabbitMQReceiver[T: ClassTag, D: ClassTag](options: SMap[String, String])
     extends Receiver[T](StorageLevel.MEMORY_AND_DISK_SER_2) with Logging {
 
   override def onStart() {

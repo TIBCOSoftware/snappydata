@@ -28,7 +28,6 @@ import io.snappydata.{Constant, Property}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Descending, Expression, SortDirection}
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier, analysis}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -67,7 +66,7 @@ abstract class BaseColumnFormatRelation(
     _userSchema: StructType,
     val schemaExtensions: String,
     val ddlExtensionForShadowTable: String,
-    _origOptions: CaseInsensitiveMap,
+    _origOptions: CaseInsensitiveMutableHashMap[String],
     _externalStore: ExternalStore,
     val partitioningColumns: Seq[String],
     _context: SQLContext,
@@ -456,7 +455,7 @@ class ColumnFormatRelation(
     _userSchema: StructType,
     _schemaExtensions: String,
     _ddlExtensionForShadowTable: String,
-    _origOptions: CaseInsensitiveMap,
+    _origOptions: CaseInsensitiveMutableHashMap[String],
     _externalStore: ExternalStore,
     _partitioningColumns: Seq[String],
     _context: SQLContext,
@@ -576,7 +575,7 @@ class ColumnFormatRelation(
       indexTblName,
       "column",
       tableRelation.schema,
-      indexOptions)
+      Utils.immutableMap(indexOptions))
   }
 
   override def createIndex(indexIdent: TableIdentifier,
@@ -638,7 +637,7 @@ class IndexColumnFormatRelation(
     _userSchema: StructType,
     _schemaExtensions: String,
     _ddlExtensionForShadowTable: String,
-    _origOptions: CaseInsensitiveMap,
+    _origOptions: CaseInsensitiveMutableHashMap[String],
     _externalStore: ExternalStore,
     _partitioningColumns: Seq[String],
     _context: SQLContext,
