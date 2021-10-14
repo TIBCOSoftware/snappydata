@@ -50,7 +50,7 @@ class SnappyInterpreterExecute(sql: String, connId: Long) extends InterpreterExe
       if (!allowed) {
         // throw exception
         throw StandardException.newException(SQLState.AUTH_NO_EXECUTE_PERMISSION, user,
-          "scala code execution", "", "ComputeDB", "Cluster")
+          "scala code execution", "", "SnappyData", "Cluster")
       }
     }
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
@@ -97,7 +97,7 @@ object SnappyInterpreterExecute {
       if (!grantor.toLowerCase.equals(dbOwner)) {
         throw StandardException.newException(
           SQLState.AUTH_NO_OBJECT_PERMISSION, grantor,
-          "grant/revoke of scala code execution", "ComputeDB", "Cluster")
+          "grant/revoke of scala code execution", "SnappyData", "Cluster")
       }
       val commaSepVals = users.split(",")
       commaSepVals.foreach(u => {
@@ -221,7 +221,7 @@ object SnappyInterpreterExecute {
       if (!allowed) {
         // throw exception
         throw StandardException.newException(SQLState.AUTH_NO_EXECUTE_PERMISSION, user,
-          "scala code execution", "", "ComputeDB", "Cluster")
+          "scala code execution", "", "SnappyData", "Cluster")
       }
     }
     val id: Long = session.getUniqueIdForExecScala

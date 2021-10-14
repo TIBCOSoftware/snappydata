@@ -43,7 +43,7 @@ The following type of metrics are made available for SnappyData:
 	Examples:
     
     *	Resource usage for system-level resources such as CPU, memory, disk, and network.
-    *	Resource usage for ComputeDB application/component resources such as heap or off-heap memory and their percentage utilization etc.
+    *	Resource usage for SnappyData application/component resources such as heap or off-heap memory and their percentage utilization etc.
 
 ## Enabling the Sinks for Metrics collection
 

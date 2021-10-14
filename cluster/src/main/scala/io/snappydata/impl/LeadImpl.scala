@@ -724,8 +724,8 @@ class LeadImpl extends ServerImpl with Lead
         remoteInterpreterServerClass = Utils.classForName(
           "org.apache.zeppelin.interpreter.SnappyInterpreterServer")
         val constructor: Constructor[_] = remoteInterpreterServerClass
-            .getConstructor(classOf[Integer])
-        remoteInterpreterServerObj = constructor.newInstance(port.asInstanceOf[AnyRef])
+            .getConstructor(classOf[String], classOf[Int], classOf[String])
+        remoteInterpreterServerObj = constructor.newInstance(null, port.asInstanceOf[AnyRef], ":")
 
         remoteInterpreterServerClass.getSuperclass.getSuperclass
             .getDeclaredMethod("start").invoke(remoteInterpreterServerObj)

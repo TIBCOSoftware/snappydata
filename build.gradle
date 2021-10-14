@@ -158,8 +158,7 @@ allprojects {
     pegdownVersion = '1.6.0'
     snappyStoreVersion = '1.6.6'
     snappydataVersion = version
-    pulseVersion = '1.5.1'
-    zeppelinInterpreterVersion = '0.7.3.7'
+    zeppelinInterpreterVersion = '0.8.2.1'
 
     buildFlags = ''
     createdBy = System.getProperty('user.name')
@@ -804,8 +803,10 @@ subprojects {
     from javadoc
   }
   if (rootProject.hasProperty('enablePublish')) {
-    signing {
-      sign configurations.archives
+    if (rootProject.hasProperty('sign')) {
+      signing {
+        sign configurations.archives
+      }
     }
 
     uploadArchives {
@@ -1166,6 +1167,10 @@ task product(type: Zip) {
       into "${snappyProductDir}/benchmark"
     }
 
+    if (rootProject.hasProperty('enablePublish')) {
+      packageZeppelinInterpreter()
+    }
+
     if (rootProject.hasProperty('R.enable')) {
       def targetRDir = "${snappyProductDir}/R"
       copy {
@@ -1174,9 +1179,9 @@ task product(type: Zip) {
       }
 
       exec {
-        environment 'SPARK_HOME', snappyProductDir,
-            'NO_TESTS', '1',
-            'CLEAN_INSTALL', '1'
+        environment 'SPARK_HOME': snappyProductDir,
+            'NO_TESTS': '1',
+            'CLEAN_INSTALL': '1'
         workingDir targetRDir
         commandLine "${targetRDir}/check-cran.sh"
       }
@@ -1220,7 +1225,7 @@ ospackage {
     into '/opt/' + packageName
   }
 
-  if (rootProject.hasProperty('enablePublish')) {
+  if (rootProject.hasProperty('enablePublish') && rootProject.hasProperty('sign')) {
     signingKeyId = rootProject.property('signing.keyId')
     signingKeyPassphrase = rootProject.property('signing.password')
     signingKeyRingFile = file(rootProject.property('signing.secretKeyRingFile'))
@@ -1235,9 +1240,7 @@ ospackage {
 }
 
 buildRpm {
-  if (rootProject.hasProperty('enablePublish')) {
-    dependsOn ':packageZeppelinInterpreter'
-  }
+  dependsOn product
   requires('glibc')
   requires('bash')
   requires('perl')
@@ -1250,9 +1253,7 @@ buildRpm {
 }
 
 buildDeb {
-  if (rootProject.hasProperty('enablePublish')) {
-    dependsOn ':packageZeppelinInterpreter'
-  }
+  dependsOn product
   requires('libc6')
   requires('bash')
   requires('perl')
@@ -1272,9 +1273,6 @@ distTar {
   classifier 'bin'
   // }
   dependsOn product
-  if (rootProject.hasProperty('enablePublish')) {
-    dependsOn ':packageZeppelinInterpreter'
-  }
   compression = Compression.GZIP
   archiveExtension.set('tar.gz')
   if (rootProject.hasProperty('hadoop-provided')) {
@@ -1285,9 +1283,6 @@ distTar {
 distZip {
   classifier 'bin'
   dependsOn product
-  if (rootProject.hasProperty('enablePublish')) {
-    dependsOn ':packageZeppelinInterpreter'
-  }
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
   }
@@ -1452,7 +1447,7 @@ static int getLast(includeTestFiles, pattern) {
   }
 }
 
-task packageZeppelinInterpreter { doLast {
+def packageZeppelinInterpreter() {
   String zeppelinInterpreterJarName = "snappydata-zeppelin_${scalaBinaryVersion}-${zeppelinInterpreterVersion}.jar"
   String zeppelinInterpreterDir = System.env.ZEPPELIN_INTERPRETER_DIR
 
@@ -1478,44 +1473,11 @@ task packageZeppelinInterpreter { doLast {
   } else {
     println "Skipping including Zeppelin Interpreter jar due to unwritable ${zeppelinInterpreterDir}"
   }
-} }
-
-task packagePulse { doLast {
-  String pulseWarName = "pulse-${pulseVersion}.war"
-  String pulseDir = System.env.PULSEDIR
-
-  if (pulseDir == null || pulseDir.length() == 0) {
-    pulseDir = "${projectDir}/../pulse"
-  }
-
-  String pulseDistDir = "${pulseDir}/build-artifacts/linux/dist"
-  if (file(pulseDir).canWrite()) {
-    exec {
-      executable "${pulseDir}/build.sh"
-      workingDir = pulseDir
-      args 'clean', 'build-all'
-    }
-    delete "${snappyProductDir}/jars/pulse.war"
-    println ''
-    println "Copying Pulse war from ${pulseDistDir} to ${snappyProductDir}/jars"
-    println ''
-    copy {
-      from "${pulseDir}/build-artifacts/linux/dist"
-      into "${snappyProductDir}/jars"
-      include "${pulseWarName}"
-      rename { filename -> 'pulse.war' }
-    }
-  } else {
-    println "Skipping Pulse due to unwritable ${pulseDir}"
-  }
-} }
+}
 
 task sparkPackage {
   dependsOn ":snappy-core_${scalaBinaryVersion}:sparkPackage"
 }
-
-packagePulse.mustRunAfter product
-packageZeppelinInterpreter.mustRunAfter product
 
 distTar.mustRunAfter clean, cleanAll, product
 distZip.mustRunAfter clean, cleanAll, product
@@ -1599,8 +1561,8 @@ task checkPython(type: Exec) {
     from "${rootDir}/python/pyspark/test_supprt"
     into wdir
   }
-  environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.10.4-src.zip:${snappyProductDir}/python"
-  environment 'SPARK_HOME', "${snappyProductDir}"
+  environment 'PYTHONPATH': "${snappyProductDir}/python/lib/py4j-0.10.4-src.zip:${snappyProductDir}/python",
+      'SPARK_HOME': "${snappyProductDir}"
   commandLine 'python', '-u', "${rootDir}/python/run-snappy-tests.py"
 }
 

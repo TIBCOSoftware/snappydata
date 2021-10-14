@@ -9,7 +9,7 @@ import java.util.Properties;
 
 /**
  * This example shows how one can use `exec scala` to execute a piece of scala/spark code
- * onto the ComputeDB cluster and get back the result.
+ * onto the SnappyData cluster and get back the result.
  *
  * To start the cluster execute the following command:
  * <p/>
@@ -33,7 +33,7 @@ public class ExecScalaExample {
     Connection connection = DriverManager.getConnection(url, new Properties());
     Statement statement = connection.createStatement();
 
-    // execute some scala code via exec scala on ComputeDB cluster.
+    // execute some scala code via exec scala on SnappyData cluster.
     String execScalaString = "exec scala " +
         "snappysession.sql(\"drop table if exists testtable\")\n " +
         "snappysession.sql(\"create table if not exists testtable (col1 int) using column\")\n" +
