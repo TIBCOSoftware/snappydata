@@ -1,8 +1,7 @@
 # Mail Us
 You can contact the SnappyData support team using:
 
-- [chomp@snappydata.io](mailto:chomp@snappydata.io)
-- [support@snappydata.io](mailto:suppport@snappydata.io) 
+- [support@tibco.com](mailto:support@tibco.com)
 
 # Community
 The following channels are monitored for comments/questions:
@@ -15,4 +14,4 @@ The following channels are monitored for comments/questions:
 
 * [Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)
 
-* [JIRA](https://jira.snappydata.io/projects/SNAP/issues) ![JIRA](http://i.imgur.com/E92zntA.png)
+* [JIRA](https://jirasnappydataio.atlassian.net/projects/SNAP/issues) ![JIRA](http://i.imgur.com/E92zntA.png)

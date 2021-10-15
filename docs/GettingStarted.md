@@ -88,7 +88,7 @@ We monitor the following channels comments/questions:
 
 *	[Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)          
 
-*	[JIRA](https://jira.snappydata.io/projects/SNAP/issues) ![JIRA](http://i.imgur.com/E92zntA.png)
+*	[JIRA](https://jirasnappydataio.atlassian.net/projects/SNAP/issues) ![JIRA](http://i.imgur.com/E92zntA.png)
 
 ## Link with SnappyData Distribution
 

@@ -34,7 +34,7 @@ Multiple users can concurrently access a secure SnappyData cluster by configurin
 6. Start the Zeppelin daemon using the command: </br> `./bin/zeppelin-daemon.sh start`
 
 ## Configure the JDBC Interpreter
-Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](https://zeppelin.apache.org/docs/0.7.0/interpreter/jdbc.html).
+Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](https://zeppelin.apache.org/docs/0.8.2/interpreter/jdbc.html).
 
 		Zeppelin web server is started on port 8080
 		http://<IP address>:8080/#/
@@ -54,8 +54,8 @@ Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](ht
     |default.password|<password>|The JDBC user password|
     |default.user|<username>|The JDBC username|
 
-3. **Dependency settings**</br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for SnappyData. The SnappyData Client (JDBC) JAR file (snappydata-jdbc-2.11_1.3.0.jar) is available on [the release page](https://github.com/TIBCOSoftware/snappydata/releases/latest). </br>
-	The SnappyData Client (JDBC) JAR file (snappydata-jdbc_2.11-1.3.0.jar)can also be placed under **<ZEPPELIN_HOME>/interpreter/jdbc** before starting Zeppelin instead of providing it in the dependency setting.
+3. **Dependency settings**</br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for SnappyData. The SnappyData Client (JDBC) JAR file (snappydata-jdbc-2.11\_1.3.0.jar) is available on [the release page](https://github.com/TIBCOSoftware/snappydata/releases/tag/v1.3.0). </br>
+	The SnappyData Client (JDBC) JAR file (snappydata-jdbc\_2.11-1.3.0.jar)can also be placed under **<ZEPPELIN\_HOME>/interpreter/jdbc** before starting Zeppelin instead of providing it in the dependency setting.
 
 4. If required, edit other properties, and then click **Save** to apply your changes. 
 

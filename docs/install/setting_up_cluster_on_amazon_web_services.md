@@ -277,8 +277,8 @@ You can also provide your SnappyData build to the script to launch the cluster, 
 option `--snappydata-tarball` to the `launch` command.
 The build can be present either on a local filesystem or as a resource on the web.
 
-For example, to use **SnappyData Enterprise** build to launch the cluster, download the build tarball from
-www.snappydata.io/download on your local machine and give its path as value to above option.
+For example, to use **SnappyData OSS** build to launch the cluster, download the build tarball from
+https://github.com/TIBCOSoftware/snappydata/releases on your local machine and give its path as value to above option.
 
 ```pre
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="/home/ec2-user/snappydata/distributions/snappydata-1.3.0-bin.tar.gz" 

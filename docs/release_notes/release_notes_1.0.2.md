@@ -36,7 +36,7 @@ The following new features are included in SnappyData 1.0.2 version:
 *	Introduced an API in snappy session catalog to get table type as String.
 *	Added support for arbitrary size view definition. It use to fail when view text size went beyond 32k.
 Support for displaying VIEWTEXT for views in SYS.HIVETABLES. 
-For example: Select viewtext from sys.hivetables where tablename = ‘view_name” will give the text with which the view was created.
+For example: Select viewtext from sys.hivetables where tablename = ‘view\_name” will give the text with which the view was created.
 *	Added Row level Security feature. Admins can define multiple security policies on tables for different users or LDAP groups. Refer [Row Level Security](/security/row_level_security.md)
 *	Auto refresh of UI page. Now the SnappyData UI page gets updated automatically and frequently. Users need not refresh or reload. Refer [SnappyData Pulse](/monitoring/monitoring.md)
 *	Richer user interface. Added graphs for memory, CPU consumption etc. for last 15 minutes. The user has the ability to see how the cluster health has been for the last 15 minutes instead of just current state.
@@ -80,7 +80,7 @@ The following defect fixes are included in SnappyData 1.0.2 version:
 *	Fixed few issues related to wrong results for Row tables due to plan caching. (SNAP-2463 - Incorrect pushing down of OR and AND clause filter combination in push down query, SNAP-2351 - re-evaluation of filter was not happening due to plan caching, SNAP-2451, SNAP-2457)
 *	Skip batch, if the stats row is missing while scanning column values from disk. This was already handled for in-memory batches and the same has been added for on-disk batches. (SNAP-2364)
 *	Fixes in UI to forbid unauthorized users to view any tab. (ENT-21)
-*	Fixes in SnappyData parser to create inlined table. (SNAP-2302), ‘()’ as optional in some function like ‘current_date()’, ‘current_timestamp()’ etc. (SNAP-2303)
+*	Fixes in SnappyData parser to create inlined table. (SNAP-2302), ‘()’ as optional in some function like ‘current\_date()’, ‘current\_timestamp()’ etc. (SNAP-2303)
 *	Consider the current schema name also as part of Caching Key for plan caching. So same query on same table but from different schema should not clash with each other. (SNAP-2438)
 *	Fix for COLUMN table shown as ROW table on dashboard after LME in data  server. (SNAP-2382)
 *	Fixed off-heap size for Partitioned Regions, showed on UI. (SNAP-2186)
@@ -114,7 +114,7 @@ The following table describes the download artifacts included in SnappyData 1.0.
 |snappydata-1.0.2-bin.tar.gz| Full product binary (includes Hadoop 2.7) |
 |snappydata-1.0.2-without-hadoop-bin.tar.gz| Product without the Hadoop dependency JARs |
 |snappydata-client-1.6.2.jar|Client (JDBC) JAR|
-|[snappydata-zeppelin_2.11-0.7.3.2.jar](https://github.com/TIBCOSoftware/zeppelin-interpreter/releases/download/v0.7.3.2/snappydata-zeppelin_2.11-0.7.3.2.jar)| The Zeppelin interpreter jar for SnappyData, compatible with Apache Zeppelin 0.7.3 |
+|[snappydata-zeppelin\_2.11-0.7.3.2.jar](https://github.com/TIBCOSoftware/snappy-zeppelin-interpreter/releases/download/v0.7.3.2/snappydata-zeppelin_2.11-0.7.3.2.jar)| The Zeppelin interpreter jar for SnappyData, compatible with Apache Zeppelin 0.7.3 |
 |[snappydata-ec2-0.8.2.tar.gz](https://github.com/TIBCOSoftware/snappy-cloud-tools/releases/download/v0.8.2/snappydata-ec2-0.8.2.tar.gz)|Script to Launch SnappyData cluster on AWS EC2 instances
 
 
