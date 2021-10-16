@@ -25,23 +25,22 @@
 
 5. Extract the contents of the Zeppelin binary package. </br>
 
-6. The SnappyData Zeppelin interpreter is included in the product jars directory. Install it in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
+6. The SnappyData Zeppelin interpreter is included in the product jars directory. Install it in Apache Zeppelin by executing the following command from Zeppelin's installation directory: </br>
 
-        ./install-interpreter.sh --name snappydata --artifact <product_install_directory>/jars/snappydata-zeppelin_2.11-<version>.jar
+        ./bin/install-interpreter.sh --name snappydata --artifact <product_install_directory>/jars/snappydata-zeppelin_2.11-<version_number>.jar
 
    Zeppelin interpreter allows the SnappyData interpreter to be plugged into Zeppelin using which, you can run queries.
+   Install additional interpreters like below (angular is used by display panels of the sample notebooks installed later): </br>
 
-7. Rename the **zeppelin-site.xml.template** file (located in zeppelin-<_version_number_>-bin-all/conf directory) to **zeppelin-site.xml**.
+        ZEPPELIN_INTERPRETER_DEP_MVNREPO=https://repo1.maven.org/maven2 ./bin/install-interpreter.sh --name angular,jdbc
 
-8. Edit the **zeppelin-site.xml** file:
+   These additional interpreters may need to be configured similar to the snappydata interpreter as described in the next section.
 
-   In the `zeppelin.interpreters` property, add the following interpreter class names: `org.apache.zeppelin.interpreter.SnappyDataZeppelinInterpreter,org.apache.zeppelin.interpreter.SnappyDataSqlZeppelinInterpreter`
+7. Download the predefined SnappyData notebooks with configuration [notebooks\_embedded\_zeppelin.tar.gz](https://github.com/TIBCOSoftware/snappy-zeppelin-interpreter/blob/master/examples/notebook/notebooks_embedded_zeppelin.tar.gz). </br> Extract and copy the contents of the compressed tar file (tar xzf) to the **notebook** folder in the Zeppelin installation on your local machine.
 
-9. Download the predefined SnappyData notebooks [notebooks\_embedded\_zeppelin.tar.gz](https://github.com/TIBCOSoftware/snappy-zeppelin-interpreter/blob/master/examples/notebook/notebooks_embedded_zeppelin.tar.gz). </br> Extract and copy the contents of the compressed tar file (tar xzf) to the **notebook** folder in the Zeppelin installation on your local machine.
+8. Start the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`
 
-10. Start the Zeppelin daemon using the command: </br> `bin/zeppelin-daemon.sh start`
-
-11. To ensure that the installation is successful, log into the Zeppelin UI (**http://localhost:8080** or <AWS-AMI\_PublicIP>:8080) from your web browser.
+9. To ensure that the installation is successful, log into the Zeppelin UI (**http://localhost:8080** or <AWS-AMI\_PublicIP>:8080) from your web browser.
 
 ![homepage](../Images/zeppelin.png)
 
@@ -51,6 +50,9 @@ Refer [here](concurrent_apache_zeppelin_access_to_secure_snappydata.md) for inst
 ## Step 2: Configure Interpreter Settings
 
 1. Log on to Zeppelin from your web browser and select **Interpreter** from the **Settings** option.
+   This will require administrator privileges, which has user name as `admin` by default.
+   See **zeppelin-dir/conf/shiro.ini** file for the default admin password and other users and
+   update the file to use your preferred authentication scheme as required.
 
 2. Click **Create** to add an interpreter. If the list of interpreters already has snappydata,
    then skip this step and instead configure the existing interpreter as shown in the next step.</br> ![Create](../Images/create_interpreter.png)
@@ -81,7 +83,7 @@ Refer [here](concurrent_apache_zeppelin_access_to_secure_snappydata.md) for inst
    |----------|-------|-------------|
    |default.url|jdbc:snappydata://localhost:1527/ | Specify the JDBC URL for SnappyData cluster in the format `jdbc:snappydata://<locator_hostname>:1527` |
    |default.driver|io.snappydata.jdbc.ClientDriver| Specify the JDBC driver for SnappyData|
-   |snappydata.connection|localhost:1527| Specify the `host:clientPort` combination of the locator for the JDBC connection |
+   |snappydata.connection|localhost:1527| Specify the `host:clientPort` combination of the locator for the JDBC connection (only required if running smart connector) |
    |master|local[*]| Specify the URI of the spark master (only local/split mode) |
    |zeppelin.jdbc.concurrent.use|true| Specify the Zeppelin scheduler to be used. </br>Select **True** for Fair and **False** for FIFO |
 

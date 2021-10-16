@@ -5,9 +5,9 @@ Multiple users can concurrently access a secure SnappyData cluster by configurin
 
 !!! Note
 
-	* Currently, only the `%jdbc` interpreter is supported with a secure SnappyData cluster.
+	* Currently, only the `%snappydata` and `%jdbc` interpreters are supported with a secure SnappyData cluster.
 
-	* Each user accessing the secure SnappyData cluster should configure the `%jdbc` interpreter in Apache Zeppelin as described in this section.
+	* Each user accessing the secure SnappyData cluster should configure the `%snappydata` and `%jdbc` interpreters in Apache Zeppelin as described in this section.
 
 ## Step 1: Download, Install and Configure SnappyData
 1. [Download and install SnappyData Enterprise Edition](../install.md) </br>
@@ -44,7 +44,7 @@ Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](ht
 
 1. Log on to Zeppelin from your web browser and select **Interpreter** from the **Settings** option.
 
-2. Edit the existing `%jdbc` interpreter and configure the interpreter properties.
+2. Edit the existing `%snappydata` and `%jdbc` interpreters and configure the interpreter properties.
 	The table lists the properties required for SnappyData:
     
     | Property | Value |Description|
@@ -54,7 +54,7 @@ Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](ht
     |default.password|<password>|The JDBC user password|
     |default.user|<username>|The JDBC username|
 
-3. **Dependency settings**</br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for SnappyData. The SnappyData Client (JDBC) JAR file (snappydata-jdbc-2.11\_1.3.0.jar) is available on [the release page](https://github.com/TIBCOSoftware/snappydata/releases/tag/v1.3.0). </br>
+3. **Dependency settings**</br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for SnappyData with the `%jdbc` interpreter. The SnappyData Client (JDBC) JAR file (snappydata-jdbc-2.11\_1.3.0.jar) is available on [the release page](https://github.com/TIBCOSoftware/snappydata/releases/tag/v1.3.0). </br>
 	The SnappyData Client (JDBC) JAR file (snappydata-jdbc\_2.11-1.3.0.jar)can also be placed under **<ZEPPELIN\_HOME>/interpreter/jdbc** before starting Zeppelin instead of providing it in the dependency setting.
 
 4. If required, edit other properties, and then click **Save** to apply your changes. 

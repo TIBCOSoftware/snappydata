@@ -331,6 +331,12 @@ object Property extends Enumeration {
         "older implementation to run out of memory much for easily despite it being " +
         "substantially faster for most single column group by cases.", Some(true))
 
+  val UseDriverCollectForGroupBy: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.useDriverCollectForGroupBy",
+    "Enable direct collect for partial grouping results avoiding the EXCHANGE at the last step." +
+        "Use this with caution since it can cause memory problems in case the final result is " +
+        "large, so its best to turn it on for specific queries and disable when done.", Some(false))
+
   val ApproxMaxCapacityOfBBMap: SQLValue[Int] = SQLVal[Int](
     s"${Constant.PROPERTY_PREFIX}sql.approxMaxCapacityOfBBMap",
     s"The max capacity of value byte array in ByteBufferHashMap. " +

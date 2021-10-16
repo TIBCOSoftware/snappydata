@@ -594,7 +594,8 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
       child = partialAggregate,
       hasDistinct = false)
 
-    val finalAggregate = if (isRootPlan && groupingAttributes.isEmpty) {
+    val finalAggregate = if (isRootPlan &&
+        (groupingAttributes.isEmpty || Property.UseDriverCollectForGroupBy.get(planner.conf))) {
       // Special CollectAggregateExec plan for top-level simple aggregations
       // which can be performed on the driver itself rather than an exchange.
       CollectAggregateExec(partialAggregate)(finalHashAggregate)

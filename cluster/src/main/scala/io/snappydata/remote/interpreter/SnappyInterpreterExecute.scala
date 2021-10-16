@@ -214,7 +214,7 @@ object SnappyInterpreterExecute {
 
   def getScalaCodeDF(code: String,
     session: SnappySession, options: Map[String, String]): Dataset[Row] = {
-    val user = session.conf.get(Attribute.USERNAME_ATTR, default = null)
+    val user = session.conf.get(Attribute.USERNAME_ATTR, default = Constant.DEFAULT_SCHEMA)
     val authToken = session.conf.get(Attribute.PASSWORD_ATTR, "")
     val (allowed, group) = SnappyInterpreterExecute.permissions.isAllowed(user)
     if (Misc.isSecurityEnabled && !user.equalsIgnoreCase(SnappyInterpreterExecute.dbOwner)) {
