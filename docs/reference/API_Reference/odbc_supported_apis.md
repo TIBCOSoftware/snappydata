@@ -22,7 +22,7 @@ The following APIs are supported for ODBC in Snappy Driver:
 | SQLColumns          | Core              | Yes                        ||
 | SQLConnect          | Core              | Yes                        ||
 | SQLCopyDesc         | Core              | Not                        ||
-| SQLDataSources      | Core              | Not                        |As per MSDN document it should implement by Driver Manager.|
+| SQLDataSources      | Core              | Not                        |As per MSDN document it should be implemented by Driver Manager.|
 | SQLDescribeCol      | Core[1]           | Yes                        ||
 | SQLDescribeParam    | Level 2           | Yes                        ||
 | SQLDisconnect       | Core              | Yes                        ||

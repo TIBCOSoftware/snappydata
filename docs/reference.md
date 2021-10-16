@@ -6,6 +6,8 @@ The following topics are covered in this section:
 
 * [SQL Reference Guide](sql_reference.md)
 
+* [SQL Functions](reference/sql_functions/sql_functions.md)
+
 * [Built-in System Procedures](reference/inbuilt_system_procedures/system-procedures.md)
 
 * [System Tables](reference/system_tables/system_tables.md)

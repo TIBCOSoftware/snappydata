@@ -1,4 +1,5 @@
-# Known Issues 
+# Known Issues for SnappyData 1.1.0 release
+
 The following key issues have been registered as bugs in the SnappyData bug tracking system:
 
 <table align="left">

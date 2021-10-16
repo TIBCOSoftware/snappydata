@@ -163,7 +163,7 @@ object Property extends Enumeration {
 
   val MaxMemoryResultSize: SparkValue[String] = Val[String](
     s"${Constant.SPARK_PREFIX}sql.maxMemoryResultSize",
-    "Maximum size of results from a JDBC/ODBC query in a partition that will be held " +
+    "Maximum size of results from a JDBC/ODBC/SQL query in a partition that will be held " +
         "in memory beyond which the results will be written to disk " +
         "(value in bytes or k/m/g suffixes for unit, min 1k). Default is 4MB.", Some("4m"))
 

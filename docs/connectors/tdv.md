@@ -33,9 +33,13 @@ SnappyData edition 1.3.0 is tested and works with TIBCO Data Virtualization 8.2.
             
             For example:
             snappy>deploy jar dv-jar '/snappydata/snappy-connectors/tdv-connector/lib/csjdbc8.jar';
-	
+
     !!!Note
-    	You should execute this command only once when you connect to the TDV cluster for the first time.
+        The above jar may not be available in the SnappyData Community edition.
+        In that case find and copy it from your TDV installation.
+
+    !!!Note
+        You should execute this command only once when you connect to the TDV cluster for the first time.
 
 8.	Create an external table with JDBC options:
 

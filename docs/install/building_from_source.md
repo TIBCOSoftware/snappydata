@@ -5,18 +5,46 @@
 	Building SnappyData requires JDK 8 installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)).
 
 ## Build all Components of SnappyData
- 
+
 
 **Master**
 ```pre
 > git clone https://github.com/TIBCOSoftware/snappydata.git --recursive
 > cd snappydata
-> git clone https://github.com/TIBCOSoftware/snappy-aqp.git aqp
-> git clone https://github.com/TIBCOSoftware/snappy-connectors.git
 > ./gradlew product
 ```
 
 The product is in **build-artifacts/scala-2.11/snappy**
+
+To build product artifacts in all supported formats (tarball, zip, rpm, deb):
+
+```pre
+> git clone https://github.com/TIBCOSoftware/snappydata.git --recursive
+> cd snappydata
+> ./gradlew cleanAll
+> ./gradlew distProduct
+```
+
+The artifacts are in **build-artifacts/scala-2.11/distributions**
+
+You can also add the flags `-PenablePublish -PR.enable` to get them in the form as in an official
+SnappyData distributions but that also requires zeppelin-interpreter and R as noted below.
+
+To build all product artifacts that are in the official SnappyData distributions:
+
+```pre
+> git clone https://github.com/TIBCOSoftware/snappydata.git --recursive
+> git clone https://github.com/TIBCOSoftware/snappy-zeppelin-interpreter.git
+> cd snappydata
+> ./gradlew cleanAll
+> ./gradlew product copyShadowJars distTar -PenablePublish -PR.enable
+```
+
+The artifacts are in **build-artifacts/scala-2.11/distributions**
+
+Building SparkR (with the `R.enable` flag) requires R to be installed locally and at least the following
+R packages along with their dependencies: knitr, markdown, rmarkdown, testthat
+
 
 ## Repository Layout
 
@@ -36,7 +64,7 @@ This component depends on _core_ and _store_. The code in the _cluster_ depends 
 
 - **snappy-connectors** - Connector for Apache Geode and a Change-Data-Capture (CDC) connector.
 
-  The _spark_, _store_, and _spark-jobserver_ directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git submodules. When working with submodules, updating the repositories follows the normal [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). One can add some aliases in gitconfig to aid pull/push as follows:
+  The _spark_, _store_, _spark-jobserver_, _aqp_, and _snappy-connectors_ directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git submodules. When working with submodules, updating the repositories follows the normal [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). One can add some aliases in gitconfig to aid pull/push as follows:
 
 ```pre
 [alias]
@@ -108,8 +136,8 @@ To import into IntelliJ IDEA:
 * Increase the available JVM heap size for IDEA. Open **bin/idea64.vmoptions** (assuming 64-bit JVM) and increase `-Xmx` option to be something like **-Xmx2g** for comfortable use.
 
 * Select **Import Project**, and then select the SnappyData directory. Use external Gradle import. Click **Next** in the following screen. Clear the **Create separate module per source set** option, while other options can continue with the default. Click **Next** in the following screens.<br/>
-    
-	!!! Note
+
+    !!! Note
 		
         * Ignore the **"Gradle location is unknown warning"**.
 
@@ -117,22 +145,22 @@ To import into IntelliJ IDEA:
 
         * Ignore and dismiss the **"Unindexed remote Maven repositories found"** warning message if seen.
 
-* When import is completed, 
-	1. Go to **File> Settings> Editor> Code Style> Scala**. Set the scheme as **Project**. 
+* When import is completed,
+    1. Go to **File> Settings> Editor> Code Style> Scala**. Set the scheme as **Project**.
 
-	2. In the same window, select **Java** code style and set the scheme as **Project**. 
+    2. In the same window, select **Java** code style and set the scheme as **Project**.
 
-	3. Click **OK** to apply and close the window. 
+    3. Click **OK** to apply and close the window.
 
-	4. Copy **codeStyleSettings.xml** located in the SnappyData top-level directory, to the **.idea** directory created by IDEA. 
+    4. Copy **codeStyleSettings.xml** located in the SnappyData top-level directory, to the **.idea** directory created by IDEA.
 
-	5. Verify that the settings are now applied in **File> Settings> Editor> Code Style> Java** which should display indent as 2 and continuation indent as 4 (same as Scala).
+    5. Verify that the settings are now applied in **File> Settings> Editor> Code Style> Java** which should display indent as 2 and continuation indent as 4 (same as Scala).
 
 * If the Gradle tab is not visible immediately, then select it from option available at the bottom-left of IDE. Click on that window list icon for the tabs to be displayed permanently.
 
 * Generate Apache Avro and SnappyData required sources by expanding: **snappydata_2.11> Tasks> other**. Right-click on **generateSources** and run it. The **Run** option may not be available if indexing is still in progress, wait for indexing to complete, and then try again. <br> The first run may take some time to complete, as it downloads the jar files and other required files. This step has to be done the first time, or if **./gradlew clean** has been run, or if you have made changes to **javacc/avro/messages.xml** source files.
 
-*	Go to **File> Settings> Build, Execution, Deployment> Build tools> Gradle**. Enter **-DideaBuild** in the **Gradle VM Options** textbox.
+* Go to **File> Settings> Build, Execution, Deployment> Build tools> Gradle**. Enter **-DideaBuild** in the **Gradle VM Options** textbox.
 
 * If you get unexpected **Database not found** or **NullPointerException** errors in SnappyData-store/GemFireXD layer, run the **generateSources** target (Gradle tab) again.
 
@@ -155,13 +183,19 @@ Error:(236, 18) value getByte is not a member of org.apache.spark.unsafe.types.U
 
 ```
 
-Even with the above, running unit tests in IDEA may result in more runtime errors due to unexpected **slf4j** versions. A more comprehensive way to correct, both the compilation and unit test problems in IDEA, is to update the snappy-cluster or for whichever module unit tests are to be run and have the **TEST** imports at the end. 
+Even with the above, running unit tests in IDEA may result in more runtime errors due to unexpected **slf4j** versions. A more comprehensive way to correct, both the compilation and unit test problems in IDEA, is to update the snappy-cluster or for whichever module unit tests are to be run and have the **TEST** imports at the end.
 
 The easiest way to do that is to close IDEA, open the module IML file (**.idea/modules/cluster/snappy-cluster_2.11.iml** in this case) in an editor. Search for **scope="TEST"** and move all those lines to the bottom just before `</component>` close tag.
+The ordering of imports is no longer a problem in latest IDEA 2020.x and newer.
 
 ## Running a ScalaTest/JUnit
 
 Running Scala/JUnit tests from IntelliJ IDEA is straightforward.
+
+* In newer IDEA releases, ensure that Intellij IDEA is used to run the tests instead of gradle, while gradle
+  is used for the build. To do this, go to File->Settings->Build, Execution, Deployment->Build Tools->Gradle,
+  select "Run tests using" to be "Intellij IDEA" rather than with gradle for the "snappydata" project.
+  Also ensure that "Build and run using" is gradle rather than "Intellij IDEA".
 
 * When selecting a run configuration for JUnit/ScalaTest, avoid selecting the Gradle one (green round icon) otherwise, an external Gradle process is launched that can start building the project again is not cleanly integrated with IDEA. Use the normal JUnit (red+green arrows icon) or ScalaTest (JUnit like with red overlay).
 

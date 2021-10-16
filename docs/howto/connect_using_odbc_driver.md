@@ -22,9 +22,9 @@ To download and install the ODBC driver:
 2. Extract **snappydata-odbc_1.3.0_win.zip**. Depending on your Windows installation, extract the contents of the 32-bit or 64-bit version of the SnappyData ODBC Driver.
 
     | Version | ODBC Driver |
-    |--------|--------|
-    |32-bit for 32-bit platform|TIB_compute-odbc_1.2.0_win_x86.zip|
-    |64-bit for 64-bit platform|TIB_compute-odbc_1.2.0_win_x64.zip|
+    |---------|-------------|
+    |32-bit for 32-bit platform|snappydata-odbc_1.3.0_win_x86.msi|
+    |64-bit for 64-bit platform|snappydata-odbc_1.3.0_win_x64.msi|
 
 4. Double-click on the corresponding **msi** file, and follow the steps to complete the installation.
 

@@ -21,16 +21,25 @@ SnappyData turns Apache Spark into a mission-critical, elastic scalable in-memor
 ## Operating Systems Supported
 
 | Operating System| Version |
-|--------|--------|
-|Red Hat Enterprise Linux|- RHEL 6.0 </p> - RHEL 7.0 (Mininum recommended kernel version: 3.10.0-693.2.2.el7.x86\_64)|
-|Ubuntu|Ubuntu Server 14.04 and later||
-|CentOS|CentOS 6, 7 (Minimum recommended kernel version: 3.10.0-693.2.2.el7.x86\_64)|
+|-----------------|---------|
+|Red Hat Enterprise Linux|RHEL 6, 7 and later (Minimum recommended kernel version: 3.10.0-693.2.2.el7.x86\_64)|
+|Ubuntu|Ubuntu Server 14.04 and later|
+|CentOS|CentOS 6, 7 and later (Minimum recommended kernel version: 3.10.0-693.2.2.el7.x86\_64)|
 
 
 ## Host Machine Requirements
+
 Requirements for each host:
 
-* A supported [Oracle Java SE 8](http://www.oracle.com/technetwork/java/javase/downloads) installation. We recommend minimum version: 1.8.0\_144 (see [SNAP-2017](https://jirasnappydataio.atlassian.net/browse/SNAP-2017), [SNAP-1999](https://jirasnappydataio.atlassian.net/browse/SNAP-1999), [SNAP-1911](https://jirasnappydataio.atlassian.net/browse/SNAP-1911), [SNAP-1375](https://jirasnappydataio.atlassian.net/browse/SNAP-1375) for crashes reported with earlier versions).
+* A supported [Oracle Java SE 8](http://www.oracle.com/technetwork/java/javase/downloads) JDK installation.
+  Required minimum version: 1.8.0\_144 (see [SNAP-2017](https://jirasnappydataio.atlassian.net/browse/SNAP-2017),
+  [SNAP-1999](https://jirasnappydataio.atlassian.net/browse/SNAP-1999),
+  [SNAP-1911](https://jirasnappydataio.atlassian.net/browse/SNAP-1911),
+  [SNAP-1375](https://jirasnappydataio.atlassian.net/browse/SNAP-1375) for crashes reported with earlier versions).
+  Recommended is the latest stable release version.
+
+* Alternatively equivalent version of OpenJDK distributions >= 1.8.0\_144 and recommended is having the
+  latest stable release version. A full JDK installation is required.
 
 * The latest version of Bash shell.
 
@@ -53,24 +62,19 @@ Requirements for each host:
 
 	* If you deploy SnappyData on a virtualized host, consult the documentation provided with the platform, for system requirements and recommended best practices, for running Java and latency-sensitive workloads.
 
-<!---## VSD Requirements
 
+## Python Integration using pyspark
 
-- Install 32-bit libraries on 64-bit Linux:</br>
-	`yum install glibc.i686 libX11.i686` on RHEL/CentOS</br>
-	`apt-get install libc6:i386 libx11-6:i386` on Ubuntu/Debian like systems</br>
+- The Python pyspark module has the same requirements as in Apache Spark. The numpy package is required by many modules of pyspark including the examples shipped with SnappyData. On recent Red Hat based systems, it can be installed using `sudo yum install numpy` or `sudo yum install python2-numpy` commands. Whereas, on Debian/Ubuntu based systems, you can install using the `sudo apt-get install python-numpy` command.
 
-- Locally running X server. For example, an X server implementation like, XQuartz for Mac OS, Xming for Windows OS, and Xorg which is installed by default for Linux systems.--->
+- Some of the python APIs can use SciPy to optimize some algorithms (in linalg package), and some others need Pandas. On recent Red Hat based systems SciPy can be installed using `sudo yum install scipy` command. Whereas,  on Debian/Ubuntu based systems you can install using the `sudo apt-get install python-scipy` command. Likewise, Pandas on recent Red Hat based systems can be installed using `sudo yum installed python-pandas` command, while on Debian/Ubuntu based systems it can be installed using the `sudo apt-get install python-pandas` command.
 
-## Python Integration using pyspark 
--	The Python pyspark module has the same requirements as in Apache Spark. The numpy package is required by many modules of pyspark including the examples shipped with SnappyData. On recent Red Hat based systems, it can be installed using `sudo yum install numpy` or `sudo yum install python2-numpy` commands. Whereas, on Debian/Ubuntu based systems, you can install using the `sudo apt-get install python-numpy` command.
+- On Red Hat based systems, some of the above Python packages may be available only after enabling the **EPEL** repository. If these are not available in the repositories for your OS version or if using **EPEL** is not an option, then you can use **pip**. Refer to the respective project documentation for details and alternative options such as Anaconda.
 
--	Some of the python APIs can use SciPy to optimize some algorithms (in linalg package), and some others need Pandas. On recent Red Hat based systems SciPy can be installed using `sudo yum install scipy` command. Whereas,  on Debian/Ubuntu based systems you can install using the `sudo apt-get install python-scipy` command. Likewise, Pandas on recent Red Hat based systems can be installed using `sudo yum installed python-pandas` command, while on Debian/Ubuntu based systems it can be installed using the `sudo apt-get install python-pandas` command.
+- Alternatively Python 3 <= 3.7 can also be used. Consult your distribution documents for the equivalent python 3
+  packages for `numpy`, `scipy` and `pandas`. Or you can use conda/mamba to set up the required python environment.
 
--	On Red Hat based systems, some of the above Python packages may be available only after enabling the **EPEL** repository. If these are not available in the repositories for your OS version or if using **EPEL** is not an option, then you can use **pip**. Refer to the respective project documentation for details and alternative options such as Anaconda.
 
 ## Filesystem Type for Linux Platforms
 
 For optimum disk-store performance, we recommend the use of local filesystem for disk data storage and not over NFS.
-
-

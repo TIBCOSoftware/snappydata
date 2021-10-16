@@ -1,36 +1,52 @@
-# SnappyData Community Edition (Open Source) and TIBCO ComputeDB Enterprise Edition
+# SnappyData Community Edition (Open Source)
 
-With the 1.3.0 release, SnappyData Community Edition gets even closer to the TIBCO ComputeDB Enterprise Edition, in terms of the features.
+With the 1.3.0 release, SnappyData Community Edition gets close to the erstwhile TIBCO ComputeDB Enterprise Edition, in terms of the features.
+Apart from the GemFire connector (that depends on non-OSS Pivotal GemFire jars), the 1.3.0 Community Edition
+exceeds the previous TIBCO ComputeDB Enterprise Edition 1.2.0 in both features and performance. You can find a list
+of new features and performance improvements in the [release notes](../release_notes/release_notes.md).
 
-The features hitherto available only in Enterprise edition - Off-heap storage for column tables, Approximate Query Processing, LDAP-based Authentication and Authorization, to name a few - 
-are now availble in SnappyData (community edition) as well.
+The features hitherto available only in Enterprise edition - Off-heap storage for column tables, Approximate Query Processing, LDAP-based Authentication and Authorization, ODBC driver, to name a few -
+are now available in SnappyData (community edition) as well.
 
-<!---
-SnappyData offers a fully functional core OSS distribution, which is the **Community Edition**, that is Apache 2.0 licensed. The **Enterprise Edition** of the product, which is sold by TIBCO Software under the name **TIBCO ComputeDB™**, includes everything that is offered in the OSS version along with additional capabilities that are closed source and only available as part of a licensed subscription. You can download the Enterprise Edition from [TIBCO eDelivery website](https://edelivery.tibco.com).
---->
-The capabilities of the **Community Edition** and the additional capabilities of the **Enterprise Edition** are listed in the following table:
+The high level capabilities of the **Community Edition** are listed in the following table:
 
-| Feature             | Community                | Enterprise               |
-| ------------------- |:------------------------:| :-----------------------:|
-| Mutable Row & Column Store                                        | X | X |
-| Compatibility with Spark                                          | X | X |
-| Shared Nothing Persistence and HA                                 | X | X |
-| REST API for Spark Job Submission                                 | X | X |
-| Fault Tolerance for Driver                                        | X | X |
-| Access to the system using JDBC Driver                            | X | X |
-| CLI for backup, restore, and export data                          | X | X |
-| Spark console extensions                                          | X | X |
-| System Perf/Behavior statistics                                   | X | X |
-| Support for transactions in Row tables                            | X | X |
-| Support for indexing in Row Tables                                | X | X |
-| SQL extensions for stream processing                              | X | X |
-| Runtime deployment of packages and jars                           | X | X |
-| Synopsis Data Engine for Approximate Querying                     | X | X |
-| ODBC Driver with High Concurrency                                 | X | X |
-| Off-heap data storage for column tables                           | X | X |
-| CDC Stream receiver for SQL Server into SnappyData                | X | X |
-| GemFire/Apache Geode connector                                    |   | X |
-| Row Level Security                                                | X | X |
-| Use encrypted password instead of clear text password             | X | X |
-| Restrict Table, View, Function creation even in user’s own schema | X | X |
-| LDAP security interface                                           | X | X |
+| Feature | Available |
+| ------- | --------- |
+|Mutable Row and Column Store | X |
+|Compatibility with Spark | X |
+|Shared Nothing Persistence and HA | X |
+|REST API for Spark Job Submission | X |
+|Fault Tolerance for Driver | X |
+|Access to the system using JDBC Driver | X |
+|CLI for backup, restore, and export data | X |
+|Spark console extensions | X |
+|System Performance/behavior statistics | X |
+|Support for transactions in Row tables | X |
+|Support for indexing in Row tables | X |
+|Support for snapshot transactions in Column tables | X |
+|Online compaction of column block data | X |
+|Transparent disk overflow of large query results | X |
+|Support for external Hive meta store | X |
+|SQL extensions for stream processing | X |
+|SnappyData sink for structured stream processing | X |
+|Structured Streaming user interface | X |
+|Runtime deployment of packages and jars | X |
+|Scala code execution from SQL (EXEC SCALA) | X |
+|Out of the box support for cloud storage | X |
+|Support for Hadoop 3.2 | X |
+|SnappyData Interpreter for Apache Zeppelin | X |
+|Synopsis Data Engine for Approximate Querying | X |
+|Support for Synopsis Data Engine from TIBCO Spotfire® | X |
+|ODBC Driver with High Concurrency | X |
+|Off-heap data storage for column tables | X |
+|CDC Stream receiver for SQL Server into SnappyData | X |
+|Row Level Security | X |
+|Use encrypted password instead of clear text password | X |
+|Restrict Table, View, Function creation even in user’s own schema | X |
+|LDAP security interface | X |
+|Visual Statistics Display (VSD) tool for system statistics (gfs) files(*) |  |
+|GemFire connector |  |
+
+(*) NOTE: The graphical Visual Statistics Display (VSD) tool to see the system statistics (gfs) files is not OSS
+and was never shipped with SnappyData. It is available from [GemTalk Systems](https://gemtalksystems.com/products/vsd/)
+or [Pivotal GemFire](https://network.pivotal.io/products/pivotal-gemfire) under their own respective licenses.

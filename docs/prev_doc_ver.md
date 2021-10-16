@@ -2,6 +2,7 @@
 
 Click a release to check the corresponding archived product documentation of SnappyData:
 
+*	[SnappyData 1.2.0](https://snappydata-docs.readthedocs.io/en/community_docv1.2.0/)
 
 *	[SnappyData 1.1.1](https://snappydata-docs.readthedocs.io/en/community_docv1.1.1/)
 

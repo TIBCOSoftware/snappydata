@@ -1,14 +1,12 @@
 # Provisioning SnappyData
 
-SnappyData offers two editions of the product:
-
-*	**Community Edition**
-*	**Enterprise Edition**
-
 The SnappyData **Community Edition** is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
-The **Enterprise Edition** of the product, which is sold by TIBCO Software under the name **TIBCO ComputeDB™**, includes everything that is offered in the Community Edition along with additional capabilities that are closed source and only available as part of a licensed subscription.
+The erstwhile **Enterprise Edition** of the product, which is sold by TIBCO Software under the name **TIBCO ComputeDB™**, includes everything that is offered in the Community Edition along with additional capabilities that are closed source and only available as part of a licensed subscription.
 
-For more information on the capabilities of the Community Edition and Enterprise Edition, see [Community Edition (Open Source)/Enterprise Edition components](additional_files/open_source_components.md).
+As of the 1.3.0 release, all components that were previously closed source are now OSS (except for the
+GemFire connector), and there is only the **Community Edition** that is released.
+
+For more information on the capabilities of the Community Edition and differences from the previous Enterprise Edition, see [Community Edition (Open Source)](additional_files/open_source_components.md).
 
 <a id= download> </a>
 <heading2>Download SnappyData Community Edition</heading2>
@@ -18,12 +16,6 @@ Download the [SnappyData 1.3.0 Community Edition (Open Source)](https://github.c
 
 * [**SnappyData 1.3.0 Release download link**](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.0/snappydata-1.3.0-bin.tar.gz)
 
-
-<!---
-<heading2>Download SnappyData Enterprise Edition</heading2> 
-
-You can download the Enterprise Edition from [TIBCO eDelivery website](https://edelivery.tibco.com).
---->
 
 <a id= provisioningsnappy> </a>
 <heading2>SnappyData Provisioning Options</heading2>

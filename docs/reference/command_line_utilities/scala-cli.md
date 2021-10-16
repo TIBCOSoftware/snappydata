@@ -1,12 +1,12 @@
 # snappy-scala CLI
 
-The snappy-scala CLI is introduced as an experimental feature in the SnappyData 1.2.0 release. This is similar to the Spark shell in its capabilities. The [Spark documentation](https://spark.apache.org/docs/2.1.1/quick-start.html) defines the Spark shell as follows: 
+The snappy-scala CLI is introduced as an experimental feature in the SnappyData 1.2.0 release and is considered a stable feature in the 1.3.0 release. This is similar to the Spark shell in its capabilities. The [Spark documentation](https://spark.apache.org/docs/2.1.1/quick-start.html) defines the Spark shell as follows:
 
 ***Spark’s shell provides a simple way to learn the API, as well as a powerful tool to analyze data interactively. It is available in either Scala (which runs on the Java VM and is thus a good way to use existing Java libraries) or Python.***
 
 A developer who is learning the Spark APIs of SparkContext, SparkSession, RDD, DataSet, DataSources, ML, etc. , can use the following utilities:
 
-*	**Spark shell** to quickly bring up an interactive shell and start learning and experimenting with the APIs. 
+*	**Spark shell** to quickly bring up an interactive shell and start learning and experimenting with the APIs.
 *	**PySpark**, provided by spark, for interactive Python where you can interactively learn the Python APIs that are provided by Spark.
 
 Spark shell is a spark application that is built on Scala’s REPL (Read-Evaluate-Print loop). It accepts Scala code as input, executes the instructions as per the code, and returns the output of those instructions. After this utility is invoked, the spark driver comes into life, in which a SparkContext, a SparkSession, and a REPL object are initialized, and an interactive shell is provided to the users on the driver VM itself for interactive learning.
@@ -18,7 +18,7 @@ snappy-scala CLI is built on top of the [exec scala](/reference/sql_reference/ex
 
 Although the experience of the snappy-scala CLI is similar to that of a Scala or a Spark shell, yet a couple of important features are either missing or are thinly supported. This is because it is currently an experimental feature. The following are a couple of notable differences between the Spark shell and snappy-scala CLI:
 
-* The auto completion feature, which is rich in a true Scala or Scala based interpreter. It is almost as rich as an IDE, where it can prompt possible completions, method signature, word completion, syntaxes, etc.  
+* The auto completion feature, which is rich in a true Scala or Scala based interpreter. It is almost as rich as an IDE, where it can prompt possible completions, method signature, word completion, syntaxes, etc.
 * Support for the list of commands which can be executed on the shell.
 
 The following image shows a simple SnappyData cluster, which is started, and then the snappy-scala is launched to connect.
