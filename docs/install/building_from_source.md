@@ -21,29 +21,27 @@ To build product artifacts in all supported formats (tarball, zip, rpm, deb):
 ```pre
 > git clone https://github.com/TIBCOSoftware/snappydata.git --recursive
 > cd snappydata
-> ./gradlew cleanAll
-> ./gradlew distProduct
+> ./gradlew cleanAll distProduct
 ```
 
 The artifacts are in **build-artifacts/scala-2.11/distributions**
 
 You can also add the flags `-PenablePublish -PR.enable` to get them in the form as in an official
-SnappyData distributions but that also requires zeppelin-interpreter and R as noted below.
+SnappyData distributions but that also requires an installation of R as noted below.
 
 To build all product artifacts that are in the official SnappyData distributions:
 
 ```pre
 > git clone https://github.com/TIBCOSoftware/snappydata.git --recursive
-> git clone https://github.com/TIBCOSoftware/snappy-zeppelin-interpreter.git
 > cd snappydata
-> ./gradlew cleanAll
-> ./gradlew product copyShadowJars distTar -PenablePublish -PR.enable
+> ./gradlew cleanAll product copyShadowJars distTar -PenablePublish -PR.enable
 ```
 
 The artifacts are in **build-artifacts/scala-2.11/distributions**
 
-Building SparkR (with the `R.enable` flag) requires R to be installed locally and at least the following
-R packages along with their dependencies: knitr, markdown, rmarkdown, testthat
+Building SparkR with the `-PR.enable` flag requires R 3.x or 4.x to be installed locally.
+At least the following R packages along with their dependencies also need to be installed:
+`knitr`, `markdown`, `rmarkdown`, `testthat`
 
 
 ## Repository Layout

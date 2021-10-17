@@ -1167,9 +1167,11 @@ task product(type: Zip) {
       into "${snappyProductDir}/benchmark"
     }
 
+    /* (preferred one is the standard %jdbc interpreter in Zeppelin)
     if (rootProject.hasProperty('enablePublish')) {
       packageZeppelinInterpreter()
     }
+    */
 
     if (rootProject.hasProperty('R.enable')) {
       def targetRDir = "${snappyProductDir}/R"
@@ -1479,6 +1481,7 @@ task sparkPackage {
   dependsOn ":snappy-core_${scalaBinaryVersion}:sparkPackage"
 }
 
+product.mustRunAfter clean, cleanAll
 distTar.mustRunAfter clean, cleanAll, product
 distZip.mustRunAfter clean, cleanAll, product
 distRpm.mustRunAfter clean, cleanAll, product

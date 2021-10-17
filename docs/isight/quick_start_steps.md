@@ -221,6 +221,18 @@ Connecting the SnappyData Interpreter to the SnappyData cluster is represented i
 
 ![Example](../Images/isightconnect.png)
 
+## Important Note
+
+The `%snappydata.*` interpreters described in the sections below are no longer preferred due to being
+unsupported on secure clusters. The standard `%jdbc` interpreter with support for `EXEC SCALA` provides
+equivalent functionality for both secure and insecure clusters.
+
+Refer to [How to Use Apache Zeppelin with SnappyData](../howto/use_apache_zeppelin_with_snappydata.md) for more details.
+
+The previous way noted below can still useful for AQP queries with the `show-instant-results-first` directive
+as described in the sections below, but it works only for insecure clusters and for all other cases,
+use of `%jdbc` interpreter should be preferred.
+
 ## Using the Interpreter
 SnappyData Interpreter group consists of the interpreters `%snappydata.spark` and `%snappydata.sql`.
 To use an interpreter, add the associated interpreter directive with the format, `%<Interpreter_name>` at the beginning of a paragraph in your note. In a paragraph, use one of the interpreters, and then enter required commands.

@@ -5,61 +5,43 @@ Multiple users can concurrently access a secure SnappyData cluster by configurin
 
 !!! Note
 
-	* Currently, only the `%snappydata` and `%jdbc` interpreters are supported with a secure SnappyData cluster.
+	* Currently, only the `%jdbc` interpreter is supported with a secure SnappyData cluster.
 
-	* Each user accessing the secure SnappyData cluster should configure the `%snappydata` and `%jdbc` interpreters in Apache Zeppelin as described in this section.
+	* Each user accessing the secure SnappyData cluster should configure the `%jdbc` interpreter in Apache Zeppelin as described here.
 
 ## Step 1: Download, Install and Configure SnappyData
-1. [Download and install SnappyData Enterprise Edition](../install.md) </br>
+
+1. [Download and install SnappyData](../install.md).
 
 2. [Configure the SnappyData cluster with security enabled](../security/security.md).
 
 3. [Start the SnappyData cluster](start_snappy_cluster.md).
 
-	- Create a table and load data.
+    - Create a table and load data.
 
-	- Grant the required permissions for the users accessing the table.
+    - Grant the required permissions for the users accessing the table.
 
         For example:
 
             snappy> GRANT SELECT ON Table airline TO user2;
-        	snappy> GRANT INSERT ON Table airline TO user3;
-        	snappy> GRANT UPDATE ON Table airline TO user4;
+            snappy> GRANT INSERT ON Table airline TO user3;
+            snappy> GRANT UPDATE ON Table airline TO user4;
 
-	!!! Note
-    	User requiring INSERT, UPDATE or DELETE permissions also require explicit SELECT permission on a table.
+        To enable running `EXEC SCALA` also `GRANT`:
 
-5. Extract the contents of the Zeppelin binary package. </br> 
+            snappy> GRANT PRIVILEGE EXEC SCALA TO user2;
 
-6. Start the Zeppelin daemon using the command: </br> `./bin/zeppelin-daemon.sh start`
 
-## Configure the JDBC Interpreter
-Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](https://zeppelin.apache.org/docs/0.8.2/interpreter/jdbc.html).
+    !!! Note
+        User requiring INSERT, UPDATE or DELETE permissions also require explicit SELECT permission on a table.
 
-		Zeppelin web server is started on port 8080
-		http://<IP address>:8080/#/
+    !!! IMPORTANT
+        Beware that granting EXEC SCALA privilege is overarching by design and essentially makes the user
+        equivalent to the database adminstrator since scala code can be used to modify anything using internal APIs.
 
-<a id="configinterpreter"></a>
-## Configure the Interpreter
-
-1. Log on to Zeppelin from your web browser and select **Interpreter** from the **Settings** option.
-
-2. Edit the existing `%snappydata` and `%jdbc` interpreters and configure the interpreter properties.
-	The table lists the properties required for SnappyData:
-    
-    | Property | Value |Description|
-	|--------|--------|--------|
-	|default.url|jdbc:snappydata://localhost:1527/|Specify the JDBC URL for SnappyData cluster in the format `jdbc:snappydata://<locator_hostname>:1527`|
-    |default.driver|io.snappydata.jdbc.ClientDriver|Specify the JDBC driver for SnappyData|
-    |default.password|<password>|The JDBC user password|
-    |default.user|<username>|The JDBC username|
-
-3. **Dependency settings**</br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for SnappyData with the `%jdbc` interpreter. The SnappyData Client (JDBC) JAR file (snappydata-jdbc-2.11\_1.3.0.jar) is available on [the release page](https://github.com/TIBCOSoftware/snappydata/releases/tag/v1.3.0). </br>
-	The SnappyData Client (JDBC) JAR file (snappydata-jdbc\_2.11-1.3.0.jar)can also be placed under **<ZEPPELIN\_HOME>/interpreter/jdbc** before starting Zeppelin instead of providing it in the dependency setting.
-
-4. If required, edit other properties, and then click **Save** to apply your changes. 
+4. Follow the remaining steps as given in [How to Use Apache Zeppelin with SnappyData](use_apache_zeppelin_with_snappydata.md)
 
 **See also**
 
 *  [How to Use Apache Zeppelin with SnappyData](use_apache_zeppelin_with_snappydata.md)
-*  [How to connect using JDBC driver](/howto/connect_using_jdbc_driver.md)
+*  [How to connect using JDBC driver](../howto/connect_using_jdbc_driver.md)

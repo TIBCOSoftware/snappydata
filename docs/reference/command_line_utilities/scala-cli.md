@@ -1,6 +1,8 @@
 # snappy-scala CLI
 
-The snappy-scala CLI is introduced as an experimental feature in the SnappyData 1.2.0 release and is considered a stable feature in the 1.3.0 release. This is similar to the Spark shell in its capabilities. The [Spark documentation](https://spark.apache.org/docs/2.1.1/quick-start.html) defines the Spark shell as follows:
+The snappy-scala CLI that was introduced as an experimental feature in the SnappyData 1.2.0 release,
+is considered a stable feature in the 1.3.0 release. This is similar to the Spark shell in its capabilities.
+The [Spark documentation](https://spark.apache.org/docs/2.1.1/quick-start.html) defines the Spark shell as follows:
 
 ***Spark’s shell provides a simple way to learn the API, as well as a powerful tool to analyze data interactively. It is available in either Scala (which runs on the Java VM and is thus a good way to use existing Java libraries) or Python.***
 
