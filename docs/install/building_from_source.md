@@ -43,6 +43,7 @@ Building SparkR with the `-PR.enable` flag requires R 3.x or 4.x to be installed
 At least the following R packages along with their dependencies also need to be installed:
 `knitr`, `markdown`, `rmarkdown`, `testthat`
 
+Official builds are published to maven using the `publishMaven` task.
 
 ## Repository Layout
 

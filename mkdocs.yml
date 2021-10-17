@@ -217,6 +217,7 @@ pages:
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
+    - 'SQL Functions': 'reference/sql_functions/sql_functions.md'
     - 'SQL General Limitations': 'reference/sql_general_limitations.md'
     - 'Built-in System Procedures and Built-in Functions': 'reference/inbuilt_system_procedures/system-procedures.md'
     - 'Built-in System Procedures and Built-in Functions': 
@@ -339,7 +340,7 @@ pages:
 #- Additional Information: additional_files/additional_docs.md
 #- About:
 #   - Contributing: about/contributing.md
-- Community Edition/ Enterprise Edition Features: additional_files/open_source_components.md
+- Community Edition Features: additional_files/open_source_components.md
 - 'License Model': 'additional_files/license_model.md'
 - 'Release Notes': 'release_notes/release_notes.md' 
 - 'Doc Archives': prev_doc_ver.md
@@ -365,5 +366,5 @@ extra_css:
 markdown_extensions:
     - admonition 
     
-copyright: Copyright © 2017-2020 TIBCO Software Inc. All rights reserved. 
+copyright: Copyright © 2017-2021 TIBCO Software Inc. All rights reserved.
 

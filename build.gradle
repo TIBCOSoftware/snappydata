@@ -119,6 +119,7 @@ allprojects {
     sparkAvroVersion = '4.0.0'
     sparkXmlVersion = '0.4.1'
     scalatestVersion = '2.2.6'
+    py4jVersion = '0.10.7'
     jettyVersion = '9.2.26.v20180806'
     guavaVersion = '14.0.1'
     fastutilVersion = '8.5.4'
@@ -803,10 +804,9 @@ subprojects {
     from javadoc
   }
   if (rootProject.hasProperty('enablePublish')) {
-    if (rootProject.hasProperty('sign')) {
-      signing {
-        sign configurations.archives
-      }
+    signing {
+      useGpgCmd()
+      sign configurations.archives
     }
 
     uploadArchives {
@@ -1227,10 +1227,10 @@ ospackage {
     into '/opt/' + packageName
   }
 
-  if (rootProject.hasProperty('enablePublish') && rootProject.hasProperty('sign')) {
-    signingKeyId = rootProject.property('signing.keyId')
-    signingKeyPassphrase = rootProject.property('signing.password')
-    signingKeyRingFile = file(rootProject.property('signing.secretKeyRingFile'))
+  if (rootProject.hasProperty('enablePublish')) {
+    // signingKeyId = rootProject.property('signing.keyId')
+    // signingKeyPassphrase = rootProject.property('signing.password')
+    // signingKeyRingFile = file(rootProject.property('signing.secretKeyRingFile'))
   }
 
   link('/usr/sbin/snappy-start-all.sh', "/opt/${packageName}/sbin/snappy-start-all.sh")
@@ -1564,7 +1564,7 @@ task checkPython(type: Exec) {
     from "${rootDir}/python/pyspark/test_supprt"
     into wdir
   }
-  environment 'PYTHONPATH': "${snappyProductDir}/python/lib/py4j-0.10.4-src.zip:${snappyProductDir}/python",
+  environment 'PYTHONPATH': "${snappyProductDir}/python/lib/py4j-${py4jVersion}-src.zip:${snappyProductDir}/python",
       'SPARK_HOME': "${snappyProductDir}"
   commandLine 'python', '-u', "${rootDir}/python/run-snappy-tests.py"
 }

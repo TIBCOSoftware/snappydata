@@ -292,10 +292,10 @@ The following table describes the download artifacts included in SnappyData 1.3.
 
 | Artifact Name | Description |
 | ------------- | ----------- |
-|snappydata-1.3.0-bin.tar.gz | Full product binary (includes Hadoop 3.2.0) |
+|snappydata-1.3.0-bin.tar.gz     | Full product binary (includes Hadoop 3.2.0) |
 |snappydata-jdbc\_2.11-1.3.0.jar | JDBC client driver and push down JDBC data source for Spark |
 |snappydata-core\_2.11-1.3.0.jar | The single jar needed in Smart Connector mode; an alternative to --packages option |
-|snappydata-odbc\_1.3.0_win.zip | 32-bit and 64-bit ODBC client drivers for Windows |
+|snappydata-odbc\_1.3.0\_win.zip | 32-bit and 64-bit ODBC client drivers for Windows |
 |snappydata-1.3.0.sha256 | The SHA256 checksums of the product artifacts. On Linux verify using `sha256sum --check snappydata-1.3.0.sha256`. |
-|snappydata-1.3.0.sha256.gpg | GnuPG signature for snappydata-1.3.0.sha256. Get the public key using `gpg --keyserver hkps://keys.gnupg.net --recv-keys 573D42FDD455480DC33B7105F76D50B69DB1586C`. Then verify using `gpg --verify snappydata-1.3.0.sha256.gpg`. |
+|snappydata-1.3.0.sha256.asc | PGP signature for snappydata-1.3.0.sha256 in ASCII format. Get the public key using `gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys 573D42FDD455480DC33B7105F76D50B69DB1586C`. Then verify using `gpg --verify snappydata-1.3.0.sha256.asc` which should show the mentioned key in the verification with email as `swale@tibco.com`. |
 |[snappydata-zeppelin\_2.11-0.8.2.1.jar](https://github.com/TIBCOSoftware/snappy-zeppelin-interpreter/releases/download/v0.8.2.1/snappydata-zeppelin_2.11-0.8.2.1.jar) | The Zeppelin interpreter jar for SnappyData compatible with Apache Zeppelin 0.8.2. The standard jdbc interpreter is preferred over this. See [How to Use Apache Zeppelin with SnappyData](../howto/use_apache_zeppelin_with_snappydata.md). |
