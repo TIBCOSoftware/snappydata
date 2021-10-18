@@ -27,4 +27,4 @@ snappy> call sys.set_trace_flag ('TraceJars', 'true');
 
 **Also see:**
 
-*	[Built-in System Procedures and Built-in Functions](system-procedures.md)
+*	[Built-in System Procedures and Built-in Functions](index.md)

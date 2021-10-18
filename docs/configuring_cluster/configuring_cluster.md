@@ -1,11 +1,11 @@
-# Configuration Reference 
+# Configuration Reference
 
 The following items are inclulded in this section:
 
 *   [Configuring Cluster Components](#clustercompt)
 *   [List of Properties](#listofproperties)
 *   [Specifying Configuration Properties using Environment Variables](#speenvi)
-*   [Configuring SnappyData Smart Connector](#configure-smart-connector) 
+*   [Configuring SnappyData Smart Connector](#configure-smart-connector)
 *   [Logging](#logging)
 *   [Auto-Configuring Off-Heap Memory Size](#autoconfigur_offheap)
 *   [Firewalls and Connections](#firewall)
@@ -27,9 +27,9 @@ These files should contain the hostnames of the nodes (one per line) where you i
 <a id="locator"></a>
 ### Configuring Locators
 
-Locators provide discovery service for the cluster. Clients (for example, JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the [Architecture](/architecture/cluster_architecture.md) section for more information on the core components.
+Locators provide discovery service for the cluster. Clients (for example, JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the [Architecture](../architecture/cluster_architecture.md) section for more information on the core components.
 
-It is recommended to configure two locators (for HA) in production using the **conf/locators** file located in the **<_SnappyData_home_>/conf** directory. 
+It is recommended to configure two locators (for HA) in production using the **conf/locators** file located in the **<_SnappyData_home_>/conf** directory.
 
 In this file, you can specify:
 
@@ -77,7 +77,7 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 <a id="lead"></a>
 ### Configuring Leads
 
-Lead Nodes primarily runs the SnappyData managed Spark driver. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. Applications can run Jobs using the REST service provided by the Lead node. Most of the SQL queries are automatically routed to the Lead to be planned and executed through a scheduler. You can refer to the **conf/leads.template** file for some examples. 
+Lead Nodes primarily runs the SnappyData managed Spark driver. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. Applications can run Jobs using the REST service provided by the Lead node. Most of the SQL queries are automatically routed to the Lead to be planned and executed through a scheduler. You can refer to the **conf/leads.template** file for some examples.
 
 Create the configuration file (**leads**) for leads in the **<_SnappyData_home_>/conf** directory.
 
@@ -143,7 +143,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <a id="confsecondarylead"></a>
 #### Configuring Secondary Lead
 
-To configure secondary leads, you must add the required number of entries in the **conf/leads** file. 
+To configure secondary leads, you must add the required number of entries in the **conf/leads** file.
 
 For example:
 
@@ -159,9 +159,9 @@ In this example, two leads (one on node-l1 and another on node-l2) are configure
 <a id="dataserver"></a>
 ### Configuring Data Servers
 
-Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than the Spark engine. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL. You can refer to the **conf/servers.template** file for some examples. 
+Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than the Spark engine. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL. You can refer to the **conf/servers.template** file for some examples.
 
-Create the configuration file (**servers**) for data servers in the **<_SnappyData_home_>/conf** directory. 
+Create the configuration file (**servers**) for data servers in the **<_SnappyData_home_>/conf** directory.
 
 <!---
 ### List of Server Properties
@@ -209,14 +209,14 @@ Refer [SnappyData properties](property_description.md).
 <a id="speenvi"></a>
 ## Specifying Configuration Properties using Environment Variables
 
-SnappyData configuration properties can be specified using environment variables LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS, and LEAD_STARTUP_OPTIONS respectively for locators, leads and servers.  These environment variables are useful to specify common properties for locators, servers, and leads.  These startup environment variables can be specified in **conf/spark-env.sh** file. This file is sourced when SnappyData system is started. A template file **conf/spark-env.sh.template** is provided in **conf** directory for reference. You can copy this file and use it to configure properties. 
+SnappyData configuration properties can be specified using environment variables LOCATOR\_STARTUP\_OPTIONS, SERVER\_STARTUP\_OPTIONS, and LEAD\_STARTUP\_OPTIONS respectively for locators, leads and servers.  These environment variables are useful to specify common properties for locators, servers, and leads.  These startup environment variables can be specified in **conf/spark-env.sh** file. This file is sourced when SnappyData system is started. A template file **conf/spark-env.sh.template** is provided in **conf** directory for reference. You can copy this file and use it to configure properties.
 
 For example:
 ```pre
 # create a spark-env.sh from the template file
-$cp conf/spark-env.sh.template conf/spark-env.sh 
+$cp conf/spark-env.sh.template conf/spark-env.sh
 
-# Following example configuration can be added to spark-env.sh, 
+# Following example configuration can be added to spark-env.sh,
 # it shows how to add security configuration using the environment variables
 
 SECURITY_ARGS="-auth-provider=LDAP -J-Dgemfirexd.auth-ldap-server=ldap://192.168.1.162:389/ -user=user1 -password=password123 -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-pw=password123"
@@ -231,9 +231,9 @@ LEAD_STARTUP_OPTIONS=”$SECURITY_ARGS”
 
 ```
 <a id="configure-smart-connector"></a>
-## Configuring SnappyData Smart Connector  
+## Configuring SnappyData Smart Connector
 
-Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). In Smart connector mode, a Spark application connects to SnappyData cluster to store and process data. SnappyData currently works with Spark version 2.1.1. To work with SnappyData cluster, a Spark application must set the `snappydata.connection` property while starting.   
+Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). In Smart connector mode, a Spark application connects to SnappyData cluster to store and process data. SnappyData currently works with Spark version 2.1.1 to 2.1.3. To work with SnappyData cluster, a Spark application must set the `snappydata.connection` property while starting.
 
 | Property |Description |
 |--------|--------|
@@ -242,8 +242,8 @@ Spark applications run as independent sets of processes on a cluster, coordinate
 **Example**:
 
 ```pre
-$ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
-	--master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
+$ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass
+	--master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527
 	--packages 'TIBCOSoftware:snappydata:1.3.0-s_2.11'
 ```
 <a id="environment"></a>
@@ -265,13 +265,13 @@ export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 -->
 
 <a id="logging"></a>
-## Logging 
+## Logging
 
 Currently, log files for SnappyData components go inside the working directory. To change the log file directory, you can specify a property _-log-file_ as the path of the directory. </br>
-The logging levels can be modified by adding a *conf/log4j.properties* file in the product directory. 
+The logging levels can be modified by adding a *conf/log4j.properties* file in the product directory.
 
 ```pre
-$ cat conf/log4j.properties 
+$ cat conf/log4j.properties
 log4j.logger.org.apache.spark.scheduler.DAGScheduler=DEBUG
 log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 ```
@@ -285,13 +285,13 @@ Off-Heap memory size is auto-configured by default in the following scenarios:
 
 *	**When the lead, locator, and server are setup on different host machines:**</br>
 	In this case, off-heap memory size is configured by default for the host machines with the server setup. The total size of heap and off-heap memory does not exceed more than 75% of the total RAM. For example, if the RAM is greater than 8GB, the heap memory is between 4-8 GB and the remaining becomes the off-heap memory.
-    
+
 
 * **When leads and one of the server node are on the same host:**</br>
-In this case,  off-heap memory size is configured by default and is adjusted based on the number of leads that are present. The total size of heap and off-heap memory does not exceed more than 75% of the total RAM. However, here the heap memory is the total heap size of the server as well as that of the lead. 
+In this case,  off-heap memory size is configured by default and is adjusted based on the number of leads that are present. The total size of heap and off-heap memory does not exceed more than 75% of the total RAM. However, here the heap memory is the total heap size of the server as well as that of the lead.
 
 !!! Note
-	The off-heap memory size is not auto-configured when the heap memory and the off-heap memory are explicitly configured through properties or when multiple servers are on the same host machine. 
+	The off-heap memory size is not auto-configured when the heap memory and the off-heap memory are explicitly configured through properties or when multiple servers are on the same host machine.
 
 <a id="firewall"></a>
 ## Firewalls and Connections
@@ -323,14 +323,14 @@ By default, SnappyData utilizes *ephemeral* ports for UDP messaging and TCP fail
 
 #####  Store Layer
 
-This following tables contain properties potentially involved in firewall behavior, with a brief description of each property. The [Configuration Properties](../reference/configuration_parameters/config_parameters.md) section contains detailed information for each property.
+This following tables contain properties potentially involved in firewall behavior, with a brief description of each property. The [Configuration Properties](../reference/configuration_parameters/index.md) section contains detailed information for each property.
 
 | Configuration Area | Property or Setting | Definition |
 |--------|--------|--------|
 |peer-to-peer config|[locators](../reference/configuration_parameters/locators.md)|The list of locators used by system members. The list must be configured consistently for every member of the distributed system.|
 |peer-to-peer config|[membership-port-range](../reference/configuration_parameters/membership-port-range.md)|The range of ephemeral ports available for unicast UDP messaging and for TCP failure detection in the peer-to-peer distributed system.|
 |member config|[-J-Dgemfirexd.hostname-for-clients](../configuring_cluster/property_description.md#host-name)|The IP address or host name that this server/locator sends to the JDBC/ODBC/thrift clients to use for the connection.|
-|member config|[client-port](../reference/command_line_utilities/store-run/) option to the [snappy server](../configuring_cluster/configuring_cluster.md#configuring-data-servers) and [snappy locator](../configuring_cluster/configuring_cluster.md#configuring-locators) commands|Port that the member listens on for client communication.|
+|member config|[client-port](../reference/command_line_utilities/store-run.md) option to the [snappy server](../configuring_cluster/configuring_cluster.md#configuring-data-servers) and [snappy locator](../configuring_cluster/configuring_cluster.md#configuring-locators) commands|Port that the member listens on for client communication.|
 |Locator|[locator command](../configuring_cluster/configuring_cluster.md#configuring-locators)|10334|
 
 ##### Spark Layer

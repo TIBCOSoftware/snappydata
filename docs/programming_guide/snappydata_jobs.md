@@ -2,7 +2,7 @@
 # SnappyData Jobs
 
 To create a job that can be submitted through the job server, the job must implement the **SnappySQLJob** or **SnappyStreamingJob** trait. The structure of a job looks as below:
- 
+
 **Scala**
 
 ```pre
@@ -52,7 +52,7 @@ class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
 ```
 
 !!! Note
-	The _Job_ traits are simply extensions of the _SparkJob_ implemented by [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver). 
+	The _Job_ traits are simply extensions of the _SparkJob_ implemented by [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver).
 
 * `runSnappyJob` contains the implementation of the Job.
 The [SnappySession](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession)/[SnappyStreamingContext](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and is provided to the job through this method. This relieves the developer from configuration management that comes with the creation of a Spark job and allows the Job Server to manage and reuse contexts.
@@ -60,7 +60,7 @@ The [SnappySession](http://tibcosoftware.github.io/snappydata/apidocs/#org.apach
 * `isValidJob` allows for an initial validation of the context and any provided configuration.
     If the context and configuration can run the job, returning `spark.jobserver.SnappyJobValid` allows the job to execute, otherwise returning `spark.jobserver.SnappyJobInvalid<reason>` prevents the job from running and provides means to convey the reason for failure. In this case, the call immediately returns an "HTTP/1.1 400 Bad Request" status code. Validate helps you prevent running jobs that eventually fail due to a  missing or wrong configuration, and saves both time and resources.
 
-See [examples](https://github.com/TIBCOSoftware/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) for Spark and Spark streaming jobs. 
+See [examples](https://github.com/TIBCOSoftware/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) for Spark and Spark streaming jobs.
 
 SnappySQLJob trait extends the SparkJobBase trait. It provides users the singleton SnappyContext object that may be reused across jobs. SnappyContext singleton object creates one SnappySession per job. Similarly, SnappyStreamingJob provides users access to SnappyStreamingContext object that can be reused across jobs.
 
@@ -91,7 +91,7 @@ The utility `snappy-job.sh` submits the job and returns a JSON that has a Job Id
 
 -  `--app-jar`: Specifies the jar file that packages the code for Spark job
 
--  `--packages`: Specifies the packages names, which must be comma separated. These package names can be used to inform Spark about all the dependencies of a job. For more details, refer to [Deploying Dependency Jars](/connectors/deployment_dependency_jar.md).
+-  `--packages`: Specifies the packages names, which must be comma separated. These package names can be used to inform Spark about all the dependencies of a job. For more details, refer to [Deploying Dependency Jars](../connectors/deployment_dependency_jar.md).
 
 The status returned by the utility is displayed below:
 
@@ -104,7 +104,7 @@ The status returned by the utility is displayed below:
   }
 }
 ```
-This Job ID can be used to query the status of the running job. 
+This Job ID can be used to query the status of the running job.
 
 ```pre
 $ ./bin/snappy-job.sh status  \
@@ -121,7 +121,7 @@ $ ./bin/snappy-job.sh status  \
   "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48"
 }
 ```
-Once the tables are created, they can be queried by running another job. Please refer to [AirlineDataJob](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala) for implementing the job. 
+Once the tables are created, they can be queried by running another job. Please refer to [AirlineDataJob](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala) for implementing the job.
 
 ```pre
 $ ./bin/snappy-job.sh submit  \
@@ -176,10 +176,10 @@ Python users can submit a Python application using `./bin/spark-submit` in the S
 
 ## Streaming Jobs
 
-An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying `--stream` as an option to the submit command. This option creates a new SnappyStreamingContext before the job is submitted. 
+An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying `--stream` as an option to the submit command. This option creates a new SnappyStreamingContext before the job is submitted.
 Alternatively, you can specify the name of an existing/pre-created streaming context as `--context <context-name>` with the `submit` command.
 
-For example, [TwitterPopularTagsJob](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) can be submitted as follows. 
+For example, [TwitterPopularTagsJob](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) can be submitted as follows.
 This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, and top 10 popular tweets.
 
 ```pre

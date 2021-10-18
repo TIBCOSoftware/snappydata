@@ -1,17 +1,17 @@
 <a id="howto-streams"></a>
 
-# How to use Stream Processing with SnappyData 
+# How to use Stream Processing with SnappyData
 
 SnappyData supports both the older [Spark Streaming model (based on DStreams)](#dstreams) as well as the newer [Structured Streaming model](#structuredstreaming). Unlike the Spark streaming DStreams model, that is based on RDDs, SnappyData supports Spark SQL in both models.
 
 <a id= structuredstreaming> </a>
 ## Structured Streaming
 
-The SnappyData structured streaming programming model is the same as [Spark structured streaming](https://spark.apache.org/docs/2.1.1/structured-streaming-programming-guide.html). The only difference is support for ingesting streaming dataframes into SnappyData tables through a built-in **Sink**. 
+The SnappyData structured streaming programming model is the same as [Spark structured streaming](https://spark.apache.org/docs/2.1.3/structured-streaming-programming-guide.html). The only difference is support for ingesting streaming dataframes into SnappyData tables through a built-in **Sink**.
 
-SnappyData provides a build-in output **Sink** which simplifies ingestion of streaming dataframes into SnappyData tables. The **Sink** supports idempotent writes, ensuring consistency of data when failures occur, as well as support for all mutation operations such as inserts, appends, updates, puts, and deletes. 
+SnappyData provides a build-in output **Sink** which simplifies ingestion of streaming dataframes into SnappyData tables. The **Sink** supports idempotent writes, ensuring consistency of data when failures occur, as well as support for all mutation operations such as inserts, appends, updates, puts, and deletes.
 
-The output data source name for SnappyData is `snappysink`. A minimal code example for structured streaming with socket source and **Snappy Sink** is available [here](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala). You can also refer to [Structured Streaming Quickstart guide](/quickstart/structucture_streamingquickstart.md). 
+The output data source name for SnappyData is `snappysink`. A minimal code example for structured streaming with socket source and **Snappy Sink** is available [here](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala). You can also refer to [Structured Streaming Quickstart guide](../quickstart/structucture_streamingquickstart.md).
 
 For more examples, refer to [structured streaming examples](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming). The following examples are shown:
 
@@ -40,11 +40,11 @@ The topic included the following sections:
 <a id= ssapi> </a>
 ### Using SnappyData Structured Streaming API
 
-The following code snippet, from the example, explains the usage of SnappyData's ** Structured Streaming API**:
+The following code snippet, from the example, explains the usage of SnappyData's **Structured Streaming API**:
 
 ```pre
     val streamingQuery = structDF
-        .filter(_.signal > 10)      // so transformation on input dataframe 
+        .filter(_.signal > 10)      // so transformation on input dataframe
         .writeStream
         .format("snappysink")       // Required to ingest into SnappyData tables
         .queryName("Devices")   // Required when using snappysink. Must be unique across the SnappyData cluster.
@@ -53,6 +53,7 @@ The following code snippet, from the example, explains the usage of SnappyData's
         .option("checkpointLocation", checkpointDirectory)
         .start()
 ```
+
 #### SnappyData Specific options
 
 The following are SnappyData specific options which can be configured for Structured Streaming:
@@ -70,7 +71,7 @@ The following are SnappyData specific options which can be configured for Struct
 A common use case for streaming is capturing writes into another store (Operational database such as RDB or NoSQL DB) and streaming the events through Kafka, applying Spark transformations, and ingesting into an analytics datastore such as SnappyData. This pattern is commonly referred to as **Change-Data-Capture (CDC)**.
 
 <a id= eventypecolumn> </a>
-To support this use case, **Snappy Sink** supports events to signal if these are Inserts, Updates, or Deletes. The application is required to inject a column called `_eventType` as described below. 
+To support this use case, **Snappy Sink** supports events to signal if these are Inserts, Updates, or Deletes. The application is required to inject a column called `_eventType` as described below.
 
 To support **CDC**, the source DataFrame must have the following:
 
@@ -89,7 +90,7 @@ To support **CDC**, the source DataFrame must have the following:
 An example explaining the **CDC** use case is available [here](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CDCExample.scala).
 
 
-If the `_eventType` column is not provided as part of source dataframe, then the following is observed:</br> 
+If the `_eventType` column is not provided as part of source dataframe, then the following is observed:</br>
 
 -	In a target table with key columns/primary key defined, the **put into** operation is applied to all events.
 -	In a target table without key columns/primary key defined, the **insert** operation is applied to all the events.
@@ -102,7 +103,7 @@ Currently, the ordering of events across partitions is not supported. Event proc
 If your incoming stream is not partitioned on the key column, the application should first repartition the dataframe on the key column. You can ignore this requirement, if your incoming streams are continuously appending. For example, time series or when replacing data where ordering is irrelevant.
 
 <a id= abovementioned> </a>
-The writes occur by grouping the events in the following manner (for performance optimization of the columnar store) and is only applicable when your DataFrame has an **_eventType** column: 
+The writes occur by grouping the events in the following manner (for performance optimization of the columnar store) and is only applicable when your DataFrame has an **_eventType** column:
 
 *	Processes all delete events (deletes relevant records from target table)
 *	Processes all insert events (inserts relevant records into the target table
@@ -118,7 +119,7 @@ If `conflation` property is set to `true`, **Snappy Sink** will first conflate t
 *	Convert inserts into **put into** operations if the event type of the last event for a key is of insert type and there are more than one events for the same key.
 *	Keep the last event for each key and drop remaining events.
 
-This results in a batch, where there is at most a single entry per key. 
+This results in a batch, where there is at most a single entry per key.
 
 By default the `conflation` property is set to `false`. Therefore, the event processing semantics only ensures consistency when incoming events in a batch are for the unique key column(s).
 
@@ -144,7 +145,7 @@ When security is enabled for the cluster, the **stateTableSchema** becomes a man
 
 #### Maintaining Idempotency In Case Of Stream Failures
 
-When stream execution fails, it is possible that streaming batch was half processed. Hence next time whenever the stream is started, Spark picks the half processed batch again for processing. This can lead to extraneous records in the target table if the batch contains insert events. To overcome this, Snappy Sink keeps the state of a stream query execution as part of the Sink State table. 
+When stream execution fails, it is possible that streaming batch was half processed. Hence next time whenever the stream is started, Spark picks the half processed batch again for processing. This can lead to extraneous records in the target table if the batch contains insert events. To overcome this, Snappy Sink keeps the state of a stream query execution as part of the Sink State table.
 
 !!! Note
 	The key columns in a column table are merely a hint (used to perform **put into** and **delete** operations) and does not enforce a unique constraint such as a primary key in case of a row table.
@@ -170,9 +171,9 @@ def process(snappySession: SnappySession, sinkProps: Map[String, String],
 <a id= resetstreamquery> </a>
 ### Resetting a Streaming Query
 
-Progress of a streaming query is saved as part of the checkpoint directory by Spark. On top of this **Snappy Sink** also maintains an internal state as part of the state table to ensure idempotency of the sink. 
+Progress of a streaming query is saved as part of the checkpoint directory by Spark. On top of this **Snappy Sink** also maintains an internal state as part of the state table to ensure idempotency of the sink.
 
-Hence to reset a streaming query, the following actions must be taken to clean te state of the streaming query: 
+Hence to reset a streaming query, the following actions must be taken to clean te state of the streaming query:
 
 !!! Note
 	When you use the following steps you may permanently lose the state of the streaming query.
@@ -182,13 +183,13 @@ Hence to reset a streaming query, the following actions must be taken to clean t
 
 		delete from [state_table_schema].snappysys_internal____sink_state_table where stream_query_id = <query_name>;
 
-	*	`[state_table_schema]` is the schema passed as part of **stateTableSchema** option of snappy sink. It should be skipped if **stateTableSchema** option was not provided while defining snappy sink. 
+	*	`[state_table_schema]` is the schema passed as part of **stateTableSchema** option of snappy sink. It should be skipped if **stateTableSchema** option was not provided while defining snappy sink.
 	*	`<query_name>` is the name of the query provided while defining the sink.
 
 <a id= bestpracticesstruc> </a>
-### Best Practices for Structured Streaming 
+### Best Practices for Structured Streaming
 
-Refer to the [Best Practices for Structured Streaming Considerations](/best_practices/structured_streaming_best_practices.md). 
+Refer to the [Best Practices for Structured Streaming Considerations](../best_practices/structured_streaming_best_practices.md).
 
 <a id= limitationsstruc> </a>
 ### Limitations

@@ -2,7 +2,7 @@
 
 Click a release to check the corresponding archived product documentation of SnappyData:
 
-*	[SnappyData 1.2.0](https://snappydata-docs.readthedocs.io/en/community_docv1.2.0/)
+*	[SnappyData 1.2.0](https://github.com/TIBCOSoftware/snappydata/tree/community_docv1.2.0/docs)
 
 *	[SnappyData 1.1.1](https://snappydata-docs.readthedocs.io/en/community_docv1.1.1/)
 
@@ -15,5 +15,3 @@ Click a release to check the corresponding archived product documentation of Sna
 * 	[SnappyData 1.0.1](https://snappydata-docs.readthedocs.io/en/docv1.0.1/)
 
 *	[SnappyData 1.0.0](https://snappydata-docs.readthedocs.io/en/docv1.0.0/)
-
-

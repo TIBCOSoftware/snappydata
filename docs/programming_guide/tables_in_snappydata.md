@@ -34,7 +34,7 @@ CREATE TABLE [IF NOT EXISTS] table_name
 DROP TABLE [IF EXISTS] table_name
 ```
 
-Refer to the [Best Practices](../best_practices/design_schema.md) section for more information on partitioning and colocating data and [CREATE TABLE](../reference/sql_reference/create-table.md) for information on creating a row/column table.</br>
+Refer to the [Best Practices](../best_practices/design_schema/index.md) section for more information on partitioning and colocating data and [CREATE TABLE](../reference/sql_reference/create-table.md) for information on creating a row/column table.</br>
 DDL extensions are required to [configure a table](../reference/sql_reference/create-table.md#ddl) based on user requirements. 
 
 You can also define complex types (Map, Array and StructType) as columns for column tables. 
@@ -159,5 +159,5 @@ Any query on column table also takes into account the row cached buffer. By doin
 
 ### SQL Reference to the Syntax
 
-Refer to the [SQL Reference Guide](../sql_reference.md) for information on the syntax.
+Refer to the [SQL Reference Guide](../reference/sql_reference/index.md) for information on the syntax.
 

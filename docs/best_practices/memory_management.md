@@ -99,13 +99,13 @@ At the start, each of the two pools is assigned a portion of the available memor
 ![Heap-Size](../Images/heap_size.png)
 
 **Example**: Configuration for memory (typically configured in **conf/leads** or **conf/servers**) 
-```scala
+```pre
 -heap-size=20g -critical-heap-percentage=95 -eviction-heap-percentage=85.5
 ```
 
 **Example**: Depicts how SnappyData derives different memory region sizes.
 
-```scala
+```pre
 Reserved_Heap_Memory => 20g * (1 - 0.95) = 1g ( 0.95 being derived from critical_heap_percentage)
 Heap_Memory_Fraction => (20g - Reserved_Memory) *(0.85) = 17.4 ( 0.85 being derived from spark.memory.fraction)
 Heap_Storage_Pool_Size => 17.4 * (0.5) = 8.73 ( 0.5 being derived from spark.memory.storageFraction)
@@ -128,13 +128,13 @@ Similar to heap pools, off-heap pools are also divided between off-heap storage 
 
 **Example**: Off-heap configuration: 
 
-```scala
+```pre
 -heap-size = 4g -memory-size=16g -critical-heap-percentage=95 -eviction-heap-percentage=85.5
 ```
 
 **Example**: How SnappyData derives different memory region sizes.
 
-```scala
+```pre
 Reserved_Memory ( Heap Memory) => 4g * (1 - 0.95) = 200m ( 0.95 being derived from critical_heap_percentage)
 Memory_Fraction ( Heap Memory) => (4g - Reserved_Memory) *(0.97) = 3.5g
 Heap Storage_Pool_Size => 3.5 * (0.5) = 1.75

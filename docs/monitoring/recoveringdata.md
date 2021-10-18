@@ -2,7 +2,7 @@
 In scenarios where the SnappyData cluster fails to come up due to some issues, the Data Extractor utility can be used to retrieve the data in a standard format along with the schema definitions.
 
 Typically, the SnappyData cluster starts when all the instances of the servers, leads, and locators within the cluster are started. However, sometimes, the cluster does not come up. In such situations, there is a possibility that the data inside the cluster remains either entirely or partially unavailable.
-In such situations, you must first refer to the [Troubleshooting Common Problems](/troubleshooting/troubleshooting.md) section in the SnappyData product documentation, fix the corresponding issues, and bring up the cluster. Even after this, if the cluster cannot be started successfully, due to unforeseen circumstances, you can use the Data Extractor utility to start the cluster in Recovery mode and salvage the data.
+In such situations, you must first refer to the [Troubleshooting Common Problems](../troubleshooting/index.md) section in the SnappyData product documentation, fix the corresponding issues, and bring up the cluster. Even after this, if the cluster cannot be started successfully, due to unforeseen circumstances, you can use the Data Extractor utility to start the cluster in Recovery mode and salvage the data.
 
 Data Extractor utility is a read-only mode of the cluster. In this mode, you cannot make any changes to the data such as INSERT, UPDATE, DELETE, and CREATE/ALTER etc. Moreover, in this mode, the inter-dependencies between the nodes during the startup process is minimized. Therefore, reducing failures during startup. 
 
@@ -37,8 +37,8 @@ snappy-start-all.sh -r
 
 After you bring the cluster into recovery mode, you can retrieve the metadata and the table data in the cluster. The following system procedures are provided for this purpose:
 
-*	[EXPORT_DDLS](/reference/inbuilt_system_procedures/export_ddl.md)
-*	[EXPORT_DATA](/reference/inbuilt_system_procedures/export_data.md)
+*	[EXPORT_DDLS](../reference/inbuilt_system_procedures/export_ddl.md)
+*	[EXPORT_DATA](../reference/inbuilt_system_procedures/export_data.md)
 
 Thus the table definitions and tables in a specific format can be exported and used later to launch a new cluster. 
 

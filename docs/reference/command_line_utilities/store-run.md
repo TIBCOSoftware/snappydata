@@ -32,7 +32,7 @@ This table describes options for the `snappy run` command. Default values are us
 |-ignore-errors|Include this option to ignore any errors that may occur while executing statements in the file, and continue executing the remaining statements. If you omit this option, then snappy immediately terminates the script's execution if an exception occurs.|
 |-J-D;property=value;|Sets Java system property to the specified value.|
 |-password|If the servers or locators have been configured to use authentication, this option specifies the password for the user (specified with the -user option) to use for booting the server and joining the distributed system.</br>The password value is optional. If you omit the password, you are prompted to enter a password from the console.|
-|-path|Configures the working directory for any other SQL command files executed from within the script. The `-path` entry is prepended to any SQL script file name executed that the script executes in a [run](../../reference/interactive_commands/store_command_reference.md) command.|
+|-path|Configures the working directory for any other SQL command files executed from within the script. The `-path` entry is prepended to any SQL script file name executed that the script executes in a [run](../../reference/interactive_commands/index.md) command.|
 |-user|If the servers or locators have been configured to use authentication, this option specifies the username to use for booting the server and joining the distributed system.|
 
 ## Description

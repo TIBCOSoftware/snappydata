@@ -46,7 +46,7 @@ When speed is essential, applications can selectively copy the external data int
    In SnappyData, operational systems can feed data updates through Kafka to SnappyData. The incoming data can be CDC(Change-data-capture) events (insert, updates, or deletes) and can be easily ingested into in-memory tables with ease, consistency, and exactly-once semantics. The Application can apply custom logic to do sophisticated transformations and get the data ready for analytics. This incremental and continuous process is far more efficient than batch refreshes. Refer [Stream Processing with SnappyData](docs/howto/use_stream_processing_with_snappydata.md) </br>  
 
 *	**Approximate Query Processing(AQP)** </br>
-	When dealing with huge data sets, for example, IoT sensor streaming time-series data, it may not be possible to provision the data in-memory, and if left at the source (say Hadoop or S3) your analytic query processing can take too long. In SnappyData, you can create one or more stratified data samples on the full data set. The query engine automatically uses these samples for aggregation queries, and a nearly accurate answer returned to clients. This can be immensely valuable when visualizing a trend, plotting a graph or bar chart. Refer [AQP](docs/aqp.md)
+	When dealing with huge data sets, for example, IoT sensor streaming time-series data, it may not be possible to provision the data in-memory, and if left at the source (say Hadoop or S3) your analytic query processing can take too long. In SnappyData, you can create one or more stratified data samples on the full data set. The query engine automatically uses these samples for aggregation queries, and a nearly accurate answer returned to clients. This can be immensely valuable when visualizing a trend, plotting a graph or bar chart. Refer [AQP](docs/sde/index.md).
 
 *	**Access from anywhere** </br>
 	You can use JDBC, ODBC, REST, or any of the Apache Spark APIs. The product is fully compatible with Apache Spark 2.1.1. SnappyData natively supports modern visualization tools such as [TIBCO Spotfire](docs/howto/connecttibcospotfire.md), [Tableau](docs/howto/tableauconnect.md), and [Qlikview](docs/setting_up_jdbc_driver_qlikview.md). Refer 
@@ -54,7 +54,7 @@ When speed is essential, applications can selectively copy the external data int
 
 ## Downloading and Installing SnappyData
 You can download and install the latest version of SnappyData from [github](https://github.com/TIBCOSoftware/snappydata/releases).
-Refer to the [documentation](docs//install.md) for installation steps.
+Refer to the [documentation](docs/install/index.md) for installation steps.
 
 ## Getting Started
 Multiple options are provided to get started with SnappyData. Easiest way to get going with SnappyData is on your laptop. You can also use any of the following options:
@@ -66,7 +66,7 @@ Multiple options are provided to get started with SnappyData. Easiest way to get
 *	Docker
 *	Kubernetes
 
-You can find more information on options for running SnappyData [here](docs/quickstart.md).
+You can find more information on options for running SnappyData [here](docs/quickstart/index.md).
 
 ## Quick Test to Measure Performance of SnappyData vs Apache Spark
 

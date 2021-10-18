@@ -3,9 +3,9 @@
 
 SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.
 
-For quick start instructions on Installing SnappyData on-premise, refer [Getting Started with SnappyData On-premise](/quickstart/getting_started_by_installing_snappydata_on-premise.md). 
+For quick start instructions on Installing SnappyData on-premise, refer [Getting Started with SnappyData On-premise](../quickstart/getting_started_by_installing_snappydata_on-premise.md).
 
-After installing SnappyData, follow the instructions [here](/howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin.
+After installing SnappyData, follow the instructions [here](../howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin.
 
 <a id="singlehost"></a>
 ## Single-Host Installation
@@ -101,7 +101,7 @@ In case the machines in your cluster do not share a common path as well as canno
 
 **To set up the cluster for machines without passwordless SSH:**
 
-1.	Copy and extract the downloaded binaries into each machine. The binaries can be placed in different directory structures. 
+1.	Copy and extract the downloaded binaries into each machine. The binaries can be placed in different directory structures.
 
 3.	Configure each member separately.
 
@@ -117,13 +117,13 @@ In case the machines in your cluster do not share a common path as well as canno
 	*	`$SNAPPY_HOME/sbin/snappy-lead.sh`
 
     **Start Examples**:
-    
+
     	    $SNAPPY_HOME/sbin/snappy-locator.sh start -dir=/tmp/locator
             $SNAPPY_HOME/sbin/snappy-server.sh  start -dir=/tmp/server -locators="localhost:10334"
             $SNAPPY_HOME/sbin/snappy-lead.sh      start -dir=/tmp/lead      -locators="localhost:10334"
-        
+
     **Stop Examples**:
-    
+
     	    $SNAPPY_HOME/sbin/snappy-locator.sh stop -dir=/tmp/locator
 			$SNAPPY_HOME/sbin/snappy-server.sh  stop -dir=/tmp/server
 			$SNAPPY_HOME/sbin/snappy-lead.sh      stop -dir=/tmp/lead

@@ -630,7 +630,7 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
 		./sbin/snappy-start-all.sh
 
-17.	After deploying SnappyData, follow the instructions [here](/howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin.
+17.	After deploying SnappyData, follow the instructions [here](../howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin.
 
 <a id="accesssnappydatacluster"></a>
 ### Accessing SnappyData Cluster

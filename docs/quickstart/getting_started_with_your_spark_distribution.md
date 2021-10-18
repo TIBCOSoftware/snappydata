@@ -1,7 +1,7 @@
 <a id="getting-started-with-your-spark-distribution"></a>
 # Getting Started with your Spark Distribution
 
-If you are a Spark developer and already using Spark 2.1.1 the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using the `package` option in the Spark shell.
+If you are a Spark developer and already using Spark 2.1.1 to 2.1.3, the fastest way to work with SnappyData is to add SnappyData as a dependency. For instance, using the `package` option in the Spark shell.
 
 Open a command terminal, go to the location of the Spark installation directory, and enter the following:
 

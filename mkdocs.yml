@@ -2,16 +2,16 @@ site_name: SnappyData™ 1.3.0
 site_url: https://github.com/TIBCOSoftware/snappydata
 site_description: Project documentation for SnappyData
 site_author: SnappyData Team
-site_favicon: favicon.ico
 
 repo_url: https://github.com/TIBCOSoftware/snappydata
 
-pages:
-# this file may just be the [toc] tag .. not sure if that works.
-#
+use_directory_urls: True
+
+nav:
 - Overview: index.md
-- 'Provisioning SnappyData': 'install.md'
+- 'Release Notes': 'release_notes/release_notes.md'
 - 'Provisioning SnappyData':
+    - install/index.md
     - 'System Requirements': 'install/system_requirements.md'
     - 'Installing SnappyData On-Premise': 'install/install_on_premise.md'
     - 'Setting-up SnappyData Cluster on AWS': 'install/setting_up_cluster_on_amazon_web_services.md'
@@ -19,8 +19,8 @@ pages:
     - 'Building a Docker Image with SnappyData Binaries': 'quickstart/getting_started_with_docker_image.md'
     - 'Building SnappyData from Source files': 'install/building_from_source.md'
     - 'Upgrading SnappyData': 'install/upgrade.md'
-- 'Getting Started': 'quickstart.md'
-- 'Getting Started': 
+- 'Getting Started':
+    - quickstart/index.md
     - 'On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
     - 'Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
 #    - 'Docker Image': 'quickstart/getting_started_with_docker_image.md'
@@ -31,35 +31,35 @@ pages:
     - 'Benchmark 16-20x Faster Performance than Apache Spark': 'quickstart/performance_apache_spark.md'
     - 'Using SQL': 'quickstart/using_sql.md'
     - 'Structured Streaming': 'quickstart/structucture_streamingquickstart.md'
-- 'Configure/Launch SnappyData Cluster': 'configuring_cluster/configure_launch_cluster.md'    
+- 'Configure/Launch SnappyData Cluster': 'configuring_cluster/configure_launch_cluster.md'
 #- 'Migration Guide': 'migration/migration.md'
 #- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
-#    - 'Manually Upgrading from SQLFire 1.1.x to SnappyData RowStore 1.0': 'migration/upgrade_sqlfire_standalone.md'    
+#    - 'Manually Upgrading from SQLFire 1.1.x to SnappyData RowStore 1.0': 'migration/upgrade_sqlfire_standalone.md'
 #    - 'Migrating from Version 0.8 to Version 0.9': 'migration/migration-0.8-0.9.md'
 #    - 'Migrating from Version 0.9 to Version 1.0.0-RC1 Release': 'migration/migration-0.9-01_rc.md'
 #---
 # 1.0 - 'Concepts': 'concepts.md'
-# 1.0 - 'Concepts': 
+# 1.0 - 'Concepts':
 # 1.0    - 'Detecting and Handling Network Segmentation ("Split Brain")': 'concepts/network_partition.md'
-- 'Concepts': 'install/concepts.md'
 - 'Concepts':
+    - architecture/index.md
     - 'Core Components': 'architecture/core_components.md'
     - 'SnappyData Cluster Architecture': 'architecture/cluster_architecture.md'
-    - 'Hybrid Cluster Manager': 'architecture/hybrid_cluster_manager.md'  
-    - 'Distributed Transactions': 'consistency/transactions_about.md'
+    - 'Hybrid Cluster Manager': 'architecture/hybrid_cluster_manager.md'
     - 'Distributed Transactions':
-        - 'How Transactions Work for Row Tables': 'consistency/using_transactions_row.md' 
+        - consistency/index.md
+        - 'How Transactions Work for Row Tables': 'consistency/using_transactions_row.md'
         - 'Lock-free Queries using MVCC and Snapshot Isolation for Column Tables': 'consistency/using_snapshot_isolation_column.md'
-    - 'Affinity Modes': 'deployment.md'
-    - 'Affinity Modes': 
+    - 'Affinity Modes':
+        - affinity_modes/index.md
         - 'Local Mode': 'affinity_modes/local_mode.md'
         - 'Embedded SnappyData Store Mode': 'affinity_modes/embedded_mode.md'
-        - 'SnappyData Smart Connector Mode': 'affinity_modes/connector_mode.md'        
+        - 'SnappyData Smart Connector Mode': 'affinity_modes/connector_mode.md'
 #    - 'List of Properties':    (to be updated later)
 #        - 'Property Details': 'configuring_cluster/property_details.md'
-- 'How Tos': 'howto.md'
-- 'How Tos': 
+- 'How Tos':
+    - howto/index.md
     - 'How to Start a SnappyData Cluster': 'howto/start_snappy_cluster.md'
     - 'How to Check the Status of a SnappyData Cluster': 'howto/check_status_cluster.md'
     - 'How to Stop a SnappyData Cluster': 'howto/stop_snappy_cluster.md'
@@ -82,15 +82,15 @@ pages:
     - 'How to use Python to Create Tables and Run Queries': 'howto/use_python_to_create_tables_and_run_queries.md'
     - 'How to Connect using ODBC Driver': 'howto/connect_using_odbc_driver.md'
     - 'How to Connect to the Cluster from External Network': 'howto/connect_to_the_cluster_from_external_clients.md'
-    - 'How to Import Data from Hive Table into SnappyData Table': 'howto/import_from_hive_table.md'    
-    - 'How to Export and Restore Table Data using HDFS': 'howto/export_hdfs.md'   
+    - 'How to Import Data from Hive Table into SnappyData Table': 'howto/import_from_hive_table.md'
+    - 'How to Export and Restore Table Data using HDFS': 'howto/export_hdfs.md'
     - 'How to Access SnappyData from Various SQL Client Tools': 'howto/connect_oss_vis_client_tools.md'
-    - 'How to connect TIBCO Spotfire® Desktop to SnappyData': 'howto/connecttibcospotfire.md' 
-    - 'How to Connect Tableau to SnappyData': 'howto/tableauconnect.md' 
+    - 'How to connect TIBCO Spotfire® Desktop to SnappyData': 'howto/connecttibcospotfire.md'
+    - 'How to Connect Tableau to SnappyData': 'howto/tableauconnect.md'
     - 'How to Use Apache Zeppelin with SnappyData': 'howto/use_apache_zeppelin_with_snappydata.md'
     - 'How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster': 'howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md'
-- 'Programming Guide': 'programming_guide.md'
 - 'Programming Guide':
+    - programming_guide/index.md
     - 'SparkSession, SnappySession and SnappyStreamingContext': 'programming_guide/sparksession_snappysession_and_snappystreamingcontext.md'
     - 'Snappy Jobs': 'programming_guide/snappydata_jobs.md'
     - 'Managing JAR Files': 'programming_guide/managing_jar_files.md'
@@ -105,21 +105,21 @@ pages:
     - 'Building SnappyData Applications using Spark API': 'programming_guide/building_snappydata_applications_using_spark_api.md'
     - 'Tables in SnappyData': 'programming_guide/tables_in_snappydata.md'
     - 'Stream Processing using SQL': 'programming_guide/stream_processing_using_sql.md'
-    - 'User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)': 'programming_guide/udf_and_udaf.md' 
-- 'Best Practices': 'best_practices.md'
+    - 'User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)': 'programming_guide/udf_and_udaf.md'
 - 'Best Practices':
+    - best_practices/index.md
     - 'Tuning for Concurrency and Computation': 'best_practices/setup_cluster.md'
-    - 'Designing your Database and Schema': 'best_practices/design_schema.md'  
     - 'Designing your Database and Schema':
-        - 'Design Principles of Scalable, Partition-Aware Databases': 'best_practices/design_principles.md'
-        - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/optimizing_query_latency.md'
-    - 'Memory Management': 'best_practices/memory_management.md'      
+        - best_practices/design_schema/index.md
+        - 'Design Principles of Scalable, Partition-Aware Databases': 'best_practices/design_schema/design_principles.md'
+        - 'Optimizing Query Latency: Partitioning and Replication Strategies': 'best_practices/design_schema/optimizing_query_latency.md'
+    - 'Memory Management': 'best_practices/memory_management.md'
     - 'HA Considerations': 'best_practices/ha_considerations.md'
-    - 'Structured Streaming': 'best_practices/structured_streaming_best_practices.md'     
+    - 'Structured Streaming': 'best_practices/structured_streaming_best_practices.md'
     - 'Important Settings': 'best_practices/important_settings.md'
-    - 'SnappyData Distributed Transactions': 'best_practices/transactions_best_practices.md'      
-- 'Approximate Query Processing': 'aqp.md'
-- 'Approximate Query Processing': 
+    - 'SnappyData Distributed Transactions': 'best_practices/transactions_best_practices.md'
+- 'Approximate Query Processing':
+    - sde/index.md
     - 'Key Concepts': 'sde/key_concepts.md'
     - 'Working with Stratified Samples': 'sde/working_with_stratified_samples.md'
     - 'Running Queries': 'sde/running_queries.md'
@@ -127,25 +127,27 @@ pages:
     - 'Sample Selection': 'sde/sample_selection.md'
     - 'High-level Accuracy Contracts (HAC)': 'sde/hac_contracts.md'
     - 'Sketching': 'sde/sketching.md'
-- 'Working with Data Sources': 'connectors/connector.md'  
 - 'Working with Data Sources':
+    - connectors/index.md
     - 'Supported Data Formats': 'Data/data_formats.md'
     - 'Accessing Cloud Storages': 'connectors/access_cloud_data.md'
-    - 'Connecting to External Hive Metastores': 'Data/external_hive_support.md' 
-    - 'Using the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
+    - 'Connecting to External Hive Metastores': 'Data/external_hive_support.md'
+    #- 'Using the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'
     - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
+    - 'Using the SnappyData JDBC Streaming Connector': 'connectors/jdbc_streaming_connector.md'
+    - 'Connecting to TIBCO Data Virtualization (TDV)': 'connectors/tdv.md'
     - 'Deploying Third Party Connectors': 'connectors/deployment_dependency_jar.md'
-- 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
 - 'Managing and Monitoring':
+    - monitoring/index.md
     - 'SnappyData Monitoring UI': 'monitoring/monitoring.md'
-    - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
+    - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'
     - 'Configuring Logging': 'monitoring/configure_logging.md'
     - 'Monitoring with Metrics': 'monitoring/metrics.md'
-    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'  
-    - 'Recovering Data During Cluster Failures': 'monitoring/recoveringdata.md'  
+    - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'
+    - 'Recovering Data During Cluster Failures': 'monitoring/recoveringdata.md'
 # -- Topic - Reference Guide
-- 'Managing Security': 'security/security.md'
-- 'Managing Security': 
+- 'Managing Security':
+    - security/index.md
     - 'Launching the Cluster in Secure Mode': 'security/launching_the_cluster_in_secure_mode.md'
     - 'Specifying Encrypted Passwords in Conf Files or in Client Connections': 'security/specify_encrypt_passwords_conf_client.md'
     - 'Authentication - Connecting to a Secure Cluster': 'security/authentication_connecting_to_a_secure_cluster.md'
@@ -155,26 +157,25 @@ pages:
     - 'Enabling SSL Encryption in Different Socket Endpoints of SnappyData': 'configuring_cluster/ssl_setup.md'
     - 'Securing SnappyData UI Connection': 'configuring_cluster/securinguiconnection.md'
     - 'User Names for Authentication, Authorization, and Membership': 'security/user_names_for_authentication_authorization_and_membership.md'
-- 'Evaluating Statistics for the System and Applications': 'vsd/system_performance.md'
 - 'Evaluating Statistics for the System and Applications':
-    - 'Collecting System Statistics': 'vsd/collecting_system_stats.md'
-#    - 'Using VSD to Analyze Statistics': 'vsd/vsd_overview.md'
-#    - 'Using VSD to Analyze Statistics':
-#        - 'Installing and Running VSD': 'vsd/running_vsd.md'
-#        - 'Transaction Performance': 'vsd/vsd_transactions.md'
-#        - 'Table Performance': 'vsd/vsd_tables.md'
-#        - 'SQL Statement Performance': 'vsd/vsd_statements.md'
-#        - 'Memory Usage': 'vsd/vsd_memory.md'
-#        - 'Client Connections': 'vsd/vsd-connection-stats.md'
-#        - 'CPU Usage': 'vsd/vsd_cpu.md'
-- 'Reference Guides': 'reference.md'
-- 'Reference Guides': 
+    - statistics/index.md
+    - 'Collecting System Statistics': 'statistics/collecting_system_stats.md'
+    - 'Using VSD to Analyze Statistics':
+        - statistics/vsd/index.md
+        - 'Installing and Running VSD': 'statistics/vsd/running_vsd.md'
+        - 'Transaction Performance': 'statistics/vsd/vsd_transactions.md'
+        - 'Table Performance': 'statistics/vsd/vsd_tables.md'
+        - 'SQL Statement Performance': 'statistics/vsd/vsd_statements.md'
+        - 'Memory Usage': 'statistics/vsd/vsd_memory.md'
+        - 'Client Connections': 'statistics/vsd/vsd-connection-stats.md'
+        - 'CPU Usage': 'statistics/vsd/vsd_cpu.md'
+- 'Reference Guides':
+    - reference/index.md
     - 'Configuration Reference': 'configuring_cluster/configuring_cluster.md'
     - 'List of Properties': 'configuring_cluster/property_description.md'
-    - 'SQL Reference Guide': 'sql_reference.md'
     - 'SQL Reference Guide':
-        - 'ALTER TABLE': 'reference/sql_reference/alter-table.md'    
-        - 'CREATE Statements': 'reference/sql_reference/create-statements.md'
+        - reference/sql_reference/index.md
+        - 'ALTER TABLE': 'reference/sql_reference/alter-table.md'
         - 'CREATE Statements':
             - 'CREATE DISKSTORE': 'reference/sql_reference/create-diskstore.md'
             - 'CREATE EXTERNAL TABLE': 'reference/sql_reference/create-external-table.md'
@@ -188,7 +189,6 @@ pages:
             - 'CREATE TEMPORARY TABLE': 'reference/sql_reference/create-temporary-table.md'
             - 'CREATE VIEW': 'reference/sql_reference/create-view.md'
         - 'DELETE': 'reference/sql_reference/delete.md'
-        - 'DROP Statements': 'reference/sql_reference/drop-statements.md'
         - 'DROP Statements':
             - 'DROP DISKSTORE': 'reference/sql_reference/drop-diskstore.md'
             - 'DROP FUNCTION': 'reference/sql_reference/drop-function.md'
@@ -196,12 +196,11 @@ pages:
             - 'DROP TABLE/EXTERNAL TABLE/SAMPLE TABLE': 'reference/sql_reference/drop-table.md'
             - 'DROP SCHEMA': 'reference/sql_reference/drop-schema.md'
 #            - 'DROP SYNONYM': 'reference/sql_reference/drop-synonym.md'
-        - 'DEPLOY Statements': 'reference/sql_reference/deploy.md'
         - 'DEPLOY Statements':
             - 'DEPLOY PACKAGE': 'reference/sql_reference/deploy_package.md'
             - 'DEPLOY JAR': 'reference/sql_reference/deploy_jar.md'
             - 'UNDEPLOY': 'reference/sql_reference/undeploy.md'
-        - 'exec scala': 'reference/sql_reference/exec-scala.md' 
+        - 'exec scala': 'reference/sql_reference/exec-scala.md'
         - 'EXPLAIN': 'reference/sql_reference/explain.md'
         - 'GRANT': 'reference/sql_reference/grant.md'
         - 'GRANT ALL': 'reference/sql_reference/grant-all.md'
@@ -217,38 +216,41 @@ pages:
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
-    - 'SQL Functions': 'reference/sql_functions/sql_functions.md'
+    - 'SQL Functions':
+        - reference/sql_functions/index.md
     - 'SQL General Limitations': 'reference/sql_general_limitations.md'
-    - 'Built-in System Procedures and Built-in Functions': 'reference/inbuilt_system_procedures/system-procedures.md'
-    - 'Built-in System Procedures and Built-in Functions': 
+    - 'Built-in System Procedures and Built-in Functions':
+        - reference/inbuilt_system_procedures/index.md
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
         - 'REBALANCE_ALL_BUCKETS': 'reference/inbuilt_system_procedures/rebalance-all-buckets.md'
         - 'SET_CRITICAL_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_critical_heap_percentage.md'
         - 'SET_TRACE_FLAG': 'reference/inbuilt_system_procedures/set-trace-flag.md'
-        - 'SYS.REMOVE_METASTORE_ENTRY': 'reference/inbuilt_system_procedures/sys_remove_metastore_entry.md'
+        - 'REMOVE_METASTORE_ENTRY': 'reference/inbuilt_system_procedures/sys_remove_metastore_entry.md'
+        - 'EXPORT_DDLS': 'reference/inbuilt_system_procedures/export_ddl.md'
+        - 'EXPORT_DATA': 'reference/inbuilt_system_procedures/export_data.md'
         - 'DSID': 'reference/inbuilt_system_procedures/dsid.md'
-        - 'SYS.EXPORT_DDLS': 'reference/inbuilt_system_procedures/export_ddl.md'
-        - 'SYS.EXPORT_DATA': 'reference/inbuilt_system_procedures/export_data.md'
-    - 'System Tables': 'reference/system_tables/system_tables.md'
-    - 'System Tables': 
+        - 'CURRENT_USER': 'reference/inbuilt_system_procedures/current_user.md'
+        - 'CURRENT_USER_LDAP_GROUPS': 'reference/inbuilt_system_procedures/current_user_ldap_groups.md'
+    - 'System Tables':
+        - reference/system_tables/index.md
         - 'MEMBERS': 'reference/system_tables/members.md'
         - 'SYSDISKSTORES': 'reference/system_tables/sysdiskstores.md'
         - 'SYSDISKSTOREIDS': 'reference/system_tables/sysdiskstoreids.md'
         - 'SYSTABLES': 'reference/system_tables/systables.md'
-    - 'Command Line Utilities': 'reference/command_line_utilities/store-launcher.md'
     - 'Command Line Utilities':
+        - reference/command_line_utilities/index.md
         - 'backup and restore': 'reference/command_line_utilities/store-backup.md'
         - 'compact-all-disk-stores': 'reference/command_line_utilities/store-compact-all-disk-stores.md'
         - 'compact-disk-store': 'reference/command_line_utilities/store-compact-disk-store.md'
-        - 'validate-disk-store': 'reference/command_line_utilities/validate_diskstore.md' 
-        - 'list-missing-disk-stores': 'reference/command_line_utilities/store-list-missing-disk-stores.md' 
+        - 'validate-disk-store': 'reference/command_line_utilities/validate_diskstore.md'
+        - 'list-missing-disk-stores': 'reference/command_line_utilities/store-list-missing-disk-stores.md'
         - 'revoke-missing-disk-store': 'reference/command_line_utilities/store-revoke-missing-disk-stores.md'
         - 'unblock-disk-store': 'reference/command_line_utilities/store-unblock-disk-stores.md'
         - 'run': 'reference/command_line_utilities/store-run.md'
         - 'scala CLI': 'reference/command_line_utilities/scala-cli.md'
         - 'version': 'reference/command_line_utilities/store-version.md'
-    - 'Snappy-SQL Shell Interactive Commands': 'reference/interactive_commands/store_command_reference.md'
     - 'Snappy-SQL Shell Interactive Commands':
+        - reference/interactive_commands/index.md
         - 'autocommit': 'reference/interactive_commands/autocommit.md'
         - 'commit': 'reference/interactive_commands/commit.md'
         - 'connect client': 'reference/interactive_commands/connect_client.md'
@@ -262,8 +264,8 @@ pages:
         - 'run': 'reference/interactive_commands/run.md'
         - 'set connection': 'reference/interactive_commands/set_connection.md'
         - 'show': 'reference/interactive_commands/show.md'
-    - 'Configuration Parameters': 'reference/configuration_parameters/config_parameters.md'
-    - 'Configuration Parameters':         
+    - 'Configuration Parameters':
+        - reference/configuration_parameters/index.md
         - 'ack-severe-alert-threshold': 'reference/configuration_parameters/ack-severe-alert-threshold.md'
         - 'ack-wait-threshold': 'reference/configuration_parameters/ack-wait-threshold.md'
         - 'allow-explicit-commit': 'reference/configuration_parameters/allow-explicit-commit.md'
@@ -319,15 +321,14 @@ pages:
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Reference': 'apidocsintro.md'
     - 'ODBC Supported API': 'reference/API_Reference/odbc_supported_apis.md'
-    - 'SQL Functions Reference': 'reference/sql_functions/sql_functions.md'
     - 'SnappyData Spark extension API Reference Guide': 'reference/API_Reference/apireference_guide.md'
     - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver': 'setting_up_odbc_driver-tableau_desktop.md'
     - 'Setting Up SnappyData JDBC Client and QlikView': 'setting_up_jdbc_driver_qlikview.md'
 - 'Experimental Features': 'experimental.md'
-- 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting Common Problems':
+    - troubleshooting/index.md
     - 'Member Startup Problems': 'troubleshooting/member_startup_problems.md'
     - 'Recovering from a ConflictingPersistentDataException': 'troubleshooting/recovering_from_a_conflictingpersistentdataexception.md'
     - 'Preventing Disk Full Errors': 'troubleshooting/preventing_disk_full_errors.md'
@@ -335,21 +336,37 @@ pages:
     - 'Resolving Catalog Inconsistency Issues': 'troubleshooting/catalog_inconsistency.md'
     - 'Troubleshooting Out-of-Memory (OOM) Error': 'troubleshooting/oom.md'
     - 'Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script': 'troubleshooting/collect_debug_artifacts.md'
-    - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'  
+    - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'
 - 'Unsupported Third-Party Modules': 'unsupported.md'
 #- Additional Information: additional_files/additional_docs.md
 #- About:
 #   - Contributing: about/contributing.md
 - Community Edition Features: additional_files/open_source_components.md
-- 'License Model': 'additional_files/license_model.md'
-- 'Release Notes': 'release_notes/release_notes.md' 
+#- 'License Model': 'additional_files/license_model.md'
 - 'Doc Archives': prev_doc_ver.md
 - 'Contact and Support': techsupport.md
 - 'License': LICENSE.md
 - 'Important Information': imp_info.md
 
-theme: readthedocs
-theme_dir: 'docs/custom_theme'
+#theme:
+#  name: readthedocs
+
+theme:
+    name: material
+    custom_dir: 'docs/custom_theme'
+    palette:
+        scheme: default
+        primary: teal
+        accent: cyan
+    logo: Images/logo.png
+    favicon: favicon.ico
+    features:
+        - navigation.instant
+        - navigation.indexes
+        - navigation.top
+        - header.autohide
+
+#theme_dir: 'docs/custom_theme'
 
 extra_javascript:
     - 'custom_theme/js/menu.js'
@@ -361,10 +378,18 @@ extra_css:
     - 'custom_theme/css/images.css'
     - 'custom_theme/css/style.css'
     - 'custom_theme/css/highlight.css'
-    - 'extra.css'
-    
-markdown_extensions:
-    - admonition 
-    
-copyright: Copyright © 2017-2021 TIBCO Software Inc. All rights reserved.
+#    - 'extra.css'
+    - 'custom_theme/css/material-extra.css'
 
+# Plugins
+plugins:
+  - search
+  - minify:
+      minify_html: true
+
+markdown_extensions:
+    - admonition
+    - toc:
+        permalink: true
+
+copyright: Copyright © 2017-2021 TIBCO Software Inc. All rights reserved.

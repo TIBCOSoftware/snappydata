@@ -11,7 +11,7 @@ You can use any of the following methods to connect TIBCO Spotfire® Desktop to 
 
 <a id= nativespotfireconnector> </a>
 ## CDB Connector using Native ODBC Driver
-TIBCO recommends to use the native Spotfire Connector to connect TIBCO Spotfire® Desktop to SnappyData. This connector is based on native ODBC and is a faster connnector. Refer [TIBCO Spotfire® Connectivity to SnappyData™](https://community.tibco.com/wiki/tibco-spotfire-connectivity-tibco-computedb) for detailed instructions to access SnappyData using this connector.
+TIBCO recommends to use the native Spotfire Connector to connect TIBCO Spotfire® Desktop to SnappyData. This connector is based on native ODBC and is a faster connector. Refer [TIBCO Spotfire® Connectivity to SnappyData™](https://community.tibco.com/wiki/tibco-spotfire-connectivity-tibco-computedb) for detailed instructions to access SnappyData using this connector.
 
 <a id= builtinspotfireconnector> </a>
 ## CDB Connector using Simba ODBC Driver (Builtin CDB Connector in Spotfire 10.4)
@@ -27,15 +27,14 @@ Users of Spotfire versions prior to 10.4 can use Apache Spark SQL to connect TIB
 <a id= tibcomputsetup> </a>
 ### Download and Launch SnappyData
 
-Check the [system requirements](/install/system_requirements.md), [download and install](/install.md) SnappyData, and then [start the SnappyData cluster](./start_snappy_cluster.md). Hive Thrift server is enabled by default. If you want to securely access the Hive Thrift server using SSL encryption, you must set these additional properties in the [Lead Node Configuration](/configuring_cluster/configuring_cluster.md#lead):
+Check the [system requirements](../install/system_requirements.md), [download and install](../install/index.md) SnappyData, and then [start the SnappyData cluster](./start_snappy_cluster.md). Hive Thrift server is enabled by default. If you want to securely access the Hive Thrift server using SSL encryption, you must set these additional properties in the [Lead Node Configuration](../configuring_cluster/configuring_cluster.md#lead):
 
 *	`-hive.server2.use.SSL=true`
 *	`-hive.server2.keystore.path=<keystore-file-path>`
 *	`-hive.server2.keystore.password=<keystore file password>`
 
-<!--- For more details about setting the Hive Thrift server, refer to [placeholder]--->
+For more details about setting the Hive Thrift server, refer to [Spark's documentation](https://spark.apache.org/docs/2.1.3/sql-programming-guide.html#distributed-sql-engine).
 
-<!---
 ### Connecting Spotfire® Desktop to SnappyData using Apache Spark SQL
 
 Login and download TIBCO Spotfire® Desktop from the [TIBCO eDelivery website]( https://edelivery.tibco.com/storefront/eval/tibco-spotfire-desktop/prod10954.html). Follow the setup guidelines to install the product. After installation, you can use the following steps to connect Spotfire® Desktop to SnappyData.

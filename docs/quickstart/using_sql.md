@@ -1,4 +1,4 @@
-<a id="getting-started-using-sql"></a> 
+<a id="getting-started-using-sql"></a>
 # Using SQL
 
 In this section, you can also connect to SQL using Snappy Session API. </br>
@@ -32,7 +32,7 @@ scala>  snappy.sql("create table rowTable(CustKey Integer NOT NULL PRIMARY KEY, 
             "CustName String) using row options()")
 ```
 If you create a table using standard SQL (that is, no 'row options' clause) it creates a replicated row table.
- 
+
 ```pre
 //Insert couple of records to the row table
 scala>  snappy.sql("insert into rowTable values(1, 'a')")
@@ -60,6 +60,6 @@ Now that you have seen the basic working of SnappyData tables, let us run the [b
 
 ## More Information
 
-For more examples of the common operations, you can refer to the [How-tos](../howto.md) section. 
+For more examples of the common operations, you can refer to the [How-tos](../howto/index.md) section.
 
 If you have questions or queries you can contact us through our [community channels](../techsupport.md#community).

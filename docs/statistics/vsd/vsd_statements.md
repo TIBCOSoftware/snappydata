@@ -17,4 +17,4 @@ An example follows the table.
 
 This VSD chart shows statistics for two fabric servers for prepared statements that insert rows in the history table. The first round of inserts occurs during initial data loading. The second round occurs as part of normal business operations. This chart also shows that the application used different prepared statements for data loading and subsequent transactions, with slightly different ordering in the fields. If the statements had been identical, there would be only one instance per server.
 
-![](../Images/vsd/vsd_statements.png)
+![](../../Images/vsd/vsd_statements.png)

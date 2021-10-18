@@ -1,9 +1,9 @@
 # Using <!--iSight-Cloud-->SnappyData CloudBuilder
-<!--iSight-Cloud-->CloudBuilder is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine ([SDE](aqp.md)), users interact with <!--iSight-Cloud-->CloudBuilder to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries. 
+<!--iSight-Cloud-->CloudBuilder is a cloud-based service that allows for instant visualization of analytic query results on large datasets. Powered by the SnappyData Synopsis Data Engine ([SDE](sde/index.md)), users interact with <!--iSight-Cloud-->CloudBuilder to populate the synopsis engine with the right data sets and accelerate SQL queries by using the engine to provide latency bounded responses to large complex aggregate queries.
 
-<!--iSight-Cloud-->CloudBuilder uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes. 
+<!--iSight-Cloud-->CloudBuilder uses Apache Zeppelin as the front end notebook to display results and allows users to build powerful notebooks representing key elements of their business in a matter of minutes.
 
-The service provides a web URL that spins up a cluster instance on AWS or users can download the <!--iSight-Cloud-->CloudBuilder EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button. 
+The service provides a web URL that spins up a cluster instance on AWS or users can download the <!--iSight-Cloud-->CloudBuilder EC2 script to configure a custom sized cluster, to create and render powerful visualizations of their big data sets with the click of a button.
 With <!--iSight-Cloud-->CloudBuilder, you can speed up the process of understanding what your data is telling you, and move on to the task of organizing your business around those insights rapidly.
 
 In this document, the features provided by SnappyData for analyzing your data is described. It also provides details for deploying a SnappyData Cloud cluster on AWS using either the CloudFormation service or by using the EC2 scripts.

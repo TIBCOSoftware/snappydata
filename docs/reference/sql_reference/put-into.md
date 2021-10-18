@@ -51,7 +51,7 @@ PUT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR ,TID) VALUES (1, 'User 1' , 'Sna
 
 **For API**
 
-[**putInto API**](/reference/API_Reference/apireference_guide.md#putintoapi) is available from the DataFrameWriter extension.
+[**putInto API**](../API_Reference/apireference_guide.md#putintoapi) is available from the DataFrameWriter extension.
 
 ```pre
 import org.apache.spark.sql.snappy._

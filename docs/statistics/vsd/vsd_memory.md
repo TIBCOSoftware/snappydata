@@ -59,7 +59,7 @@ You can use these statistics to analyze your application's memory usage. An exam
 
 This VSD chart shows the heap usage in a fabric server plotted against the entry counts in each of the replicated and partitioned tables used in an application. This suggests that heap is growing over time due to an increase in the number of rows in the ORDER\_LINE table. Several associated tables are growing in size as well.
 
-![](../Images/vsd/vsd_memory.png)
+![](../../Images/vsd/vsd_memory.png)
 This growth can be verified by looking at the bytes used by each of the partitioned tables. The ORDER\_LINE table is responsible for most of the heap growth.
 
-![](../Images/vsd/vsd_memory_2.png)
+![](../../Images/vsd/vsd_memory_2.png)

@@ -17,33 +17,33 @@ The following list of commonly used configuration properties can be set to confi
 	For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. -J is NOT required for -D and -XX options.
 
 <a id="network"></a>
-## Network Configuration 
+## Network Configuration
 
 |Property|Description|Components</br>|
 |-|-|-|
-|-ack-severe-alert-threshold| See [ack-severe-alert-threshold](/reference/configuration_parameters/ack-severe-alert-threshold.md)|
-|-ack-wait-threshold| See [ack-wait-threshold](/reference/configuration_parameters/ack-wait-threshold.md)| |
-|-bind-address|IP address on which the member is bound. The default behavior is to bind to all local addresses. Also see [bind-address](/reference/configuration_parameters/bind-address.md) |Server</br>Lead</br>Locator|
+|-ack-severe-alert-threshold| See [ack-severe-alert-threshold](../reference/configuration_parameters/ack-severe-alert-threshold.md)|
+|-ack-wait-threshold| See [ack-wait-threshold](../reference/configuration_parameters/ack-wait-threshold.md)| |
+|-bind-address|IP address on which the member is bound. The default behavior is to bind to all local addresses. Also see [bind-address](../reference/configuration_parameters/bind-address.md) |Server</br>Lead</br>Locator|
 |-client-port| The port that the network controller listens for client connections in the range of 1 to 65535. The default value is 1527.|Locator</br>Server|
 |-hostname-for-clients<a id="host-name"></a>|Set the IP address or host name that this server/locator sends to JDBC/ODBC/thrift clients to use for connection. The default value causes the client-bind-address to be given to clients. This value can be different from client-bind-address for cases where locators, servers are behind a NAT firewall (AWS for example) where client-bind-address needs to be a private one that gets exposed to clients outside the firewall as a different public address specified by this property. In many cases this is handled by hostname translation itself, i.e. hostname used in client-bind-address resolves to internal IP address from inside but to public IP address from outside, but for other cases this property will be required.|Server|
-|-enable-network-partition-detection|See [enable-network-partition-detection](/reference/configuration_parameters/enable-network-partition-detection.md)||
-|-enforce-unique-host|See [enforce-unique-host](/reference/configuration_parameters/enforce-unique-host.md)||
+|-enable-network-partition-detection|See [enable-network-partition-detection](../reference/configuration_parameters/enable-network-partition-detection.md)||
+|-enforce-unique-host|See [enforce-unique-host](../reference/configuration_parameters/enforce-unique-host.md)||
 |-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system. This property should be configured for all the nodes in the respective configuration files, if there are multiple locators.|Server</br>Lead</br>Locator|
 |-member-timeout<a id="member-timeout"></a>|Uses the member-timeout server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the **are you alive** datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000-600000 milliseconds. For more information, refer to [Best Practices](../best_practices/important_settings.md#member-timeout)|Server</br>Lead</br>Locator|
-|-membership-port-range|See [membership-port-range](/reference/configuration_parameters/membership-port-range.md)
+|-membership-port-range|See [membership-port-range](../reference/configuration_parameters/membership-port-range.md)
 |-peer-discovery-address|Use this as value for the port in the "host:port" value of "-locators" property |Locator|
 |-peer-discovery-port|Port on which the locator listens for peer discovery (includes servers as well as other locators).  </br>Valid values are in the range 1-65535, with a default of 10334.|Locator|
-|read-timeout| See [read-timeout](/reference/configuration_parameters/read-timeout.md)| |
+|read-timeout| See [read-timeout](../reference/configuration_parameters/read-timeout.md)| |
 |-spark.ui.port|Port for your SnappyData Monitoring Console, which shows tables, memory and workload data. The default is 5050|Lead|
-|-redundancy-zone|See [redundancy-zone](/reference/configuration_parameters/redundancy-zone.md) | |
-|-secondary-locators|See [secondary-locators](/reference/configuration_parameters/secondary-locators.md) | |
-|-socket-buffer-size| See [socket-buffer-size](/reference/configuration_parameters/socket-buffer-size.md) | |
-|-socket-lease-time|See [socket-lease-time](/reference/configuration_parameters/socket-lease-time.md) | |
-|-gemfirexd.max-lock-wait|See [gemfirexd.max-lock-wait](/reference/configuration_parameters/snappydata.max-lock-wait.md) | 
+|-redundancy-zone|See [redundancy-zone](../reference/configuration_parameters/redundancy-zone.md) | |
+|-secondary-locators|See [secondary-locators](../reference/configuration_parameters/secondary-locators.md) | |
+|-socket-buffer-size| See [socket-buffer-size](../reference/configuration_parameters/socket-buffer-size.md) | |
+|-socket-lease-time|See [socket-lease-time](../reference/configuration_parameters/socket-lease-time.md) | |
+|-gemfirexd.max-lock-wait|See [gemfirexd.max-lock-wait](../reference/configuration_parameters/snappydata.max-lock-wait.md) |
 
 <a id="memory"></a>
 ## Memory Configuration
- 
+
 |Property|Description|Components</br>|
 |-|-|-|
 |-critical-heap-percentage<a id="critical-heap-percentage"></a>|Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set `-heap-size`, the default value for `critical-heap-percentage` is set to 95% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.|Server</br>Lead|
@@ -59,12 +59,12 @@ The following list of commonly used configuration properties can be set to confi
 
 |Property|Description|Components</br>|
 |-|-|-|
-|-archive-disk-space-limit|See [archive-disk-space-limit](/reference/configuration_parameters/archive-disk-space-limit.md)|
-|-archive-file-size-limit|See [archive-file-size-limit](/reference/configuration_parameters/archive-file-size-limit.md)| 
+|-archive-disk-space-limit|See [archive-disk-space-limit](../reference/configuration_parameters/archive-disk-space-limit.md)|
+|-archive-file-size-limit|See [archive-file-size-limit](../reference/configuration_parameters/archive-file-size-limit.md)|
 |-dir|Working directory of the member that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).| Server</br>Lead</br>Locator</br>|
-|gemfirexd.default-startup-recovery-delay|See [gemfirexd.default-startup-recovery-delay](/reference/configuration_parameters/snappydata.default-startup-recovery-delay.md)|
+|gemfirexd.default-startup-recovery-delay|See [gemfirexd.default-startup-recovery-delay](../reference/configuration_parameters/snappydata.default-startup-recovery-delay.md)|
 |-spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks. For more information, refer to [Best Practices](../best_practices/important_settings.md#spark-local-dir).|Lead</br>Server|
-|-sys-disk-dir|See [sys-disk-dir](/reference/configuration_parameters/sys-disk-dir.md)| 
+|-sys-disk-dir|See [sys-disk-dir](../reference/configuration_parameters/sys-disk-dir.md)|
 
 
 <a id="security"></a>
@@ -127,16 +127,16 @@ The following list of commonly used configuration properties can be set to confi
 
 |Property|Description|Components</br>|
 |-|-|-|
-|-enable-stats| See [enable-stats](/reference/configuration_parameters/enable-stats.md) | |
-|-enable-time-statistics| See [enable-time-statisticss](/reference/configuration_parameters/enable-time-statistics.md) | |
-|-enable-timestats| See [enable-timestats](/reference/configuration_parameters/enable-timestats.md) | |
-|-gemfirexd.debug.true| Use this property to set the required [trace flag](/monitoring/configure_logging.md#trace-flag) which enables the logging of specific features of SnappyData.|Server</br>Lead</br>Locator|
+|-enable-stats| See [enable-stats](../reference/configuration_parameters/enable-stats.md) | |
+|-enable-time-statistics| See [enable-time-statisticss](../reference/configuration_parameters/enable-time-statistics.md) | |
+|-enable-timestats| See [enable-timestats](../reference/configuration_parameters/enable-timestats.md) | |
+|-gemfirexd.debug.true| Use this property to set the required [trace flag](../monitoring/configure_logging.md#trace-flag) which enables the logging of specific features of SnappyData.|Server</br>Lead</br>Locator|
 |-log-file|Path of the file to which this member writes log messages (default is snappy[member].log in the working directory. For example, **snappylocator.log**, **snappyleader.log**,**snappyserver.log**. In case logging is set via log4j, the default log file is **snappydata.log** for each of the SnappyData member.)|Server</br>Lead</br>Locator|
-|-log-level|See [log-level](/reference/configuration_parameters/log-level.md) | |
-|-snappy.history| See [snappy.history](/reference/configuration_parameters/snappy.history.md) | |
-|-statistic-archive-file| See [statistic-archive-file](/reference/configuration_parameters/statistic-archive-file.md) | |
-|-statistic-sample-rate| See [statistic-sample-rate](/reference/configuration_parameters/statistic-archive-file.md) | |
-|-statistic-sampling-enabled| See [statistic-sampling-enabled](/reference/configuration_parameters/statistic-sampling-enabled.md) | |
+|-log-level|See [log-level](../reference/configuration_parameters/log-level.md) | |
+|-snappy.history| See [snappy.history](../reference/configuration_parameters/snappy.history.md) | |
+|-statistic-archive-file| See [statistic-archive-file](../reference/configuration_parameters/statistic-archive-file.md) | |
+|-statistic-sample-rate| See [statistic-sample-rate](../reference/configuration_parameters/statistic-archive-file.md) | |
+|-statistic-sampling-enabled| See [statistic-sampling-enabled](../reference/configuration_parameters/statistic-sampling-enabled.md) | |
 
 <a id="jvm"></a>
 ## JVM Properties
@@ -147,7 +147,7 @@ The following list of commonly used configuration properties can be set to confi
 |-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1GB to set the JVM heap to 1GB.|Server</br>Lead</br>Locator|
 
 
-Other than the above properties, you can also refer the [Configuration Parameters section](../reference/configuration_parameters/config_parameters.md#property-names) for properties that are used in special cases.
+Other than the above properties, you can also refer the [Configuration Parameters section](../reference/configuration_parameters/index.md#property-names) for properties that are used in special cases.
 
 <a id="sql-properties"></a>
 ## SQL Properties
@@ -170,17 +170,17 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 
 | Property | Description|
 |--------|--------|
-|-allow-explicit-commit|See [allow-explicit-commit](/reference/configuration_parameters/allow-explicit-commit.md) | |
-|-init-scripts|See [init-scripts](/reference/configuration_parameters/init-scripts.md)| |
-|-skip-constraint-checks|See [skip-constraint-checks](/reference/configuration_parameters/skip-constraint-checks.md)| |
-|-skip-locks|See [skip-locks](/reference/configuration_parameters/skip-locks.md)| |
-|-gemfirexd.datadictionary.allow-startup-errors|See [gemfirexd.datadictionary.allow-startup-errors](/reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors.md)| |
-|-gemfirexd.query-cancellation-interval|See [gemfirexd.query-cancellation-interval](/reference/configuration_parameters/snappydata.query-cancellation-interval.md)| |
-|-gemfirexd.query-timeout| See [gemfirexd.query-timeout](/reference/configuration_parameters/snappydata.query-timeout.md)||
+|-allow-explicit-commit|See [allow-explicit-commit](../reference/configuration_parameters/allow-explicit-commit.md) | |
+|-init-scripts|See [init-scripts](../reference/configuration_parameters/init-scripts.md)| |
+|-skip-constraint-checks|See [skip-constraint-checks](../reference/configuration_parameters/skip-constraint-checks.md)| |
+|-skip-locks|See [skip-locks](../reference/configuration_parameters/skip-locks.md)| |
+|-gemfirexd.datadictionary.allow-startup-errors|See [gemfirexd.datadictionary.allow-startup-errors](../reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors.md)| |
+|-gemfirexd.query-cancellation-interval|See [gemfirexd.query-cancellation-interval](../reference/configuration_parameters/snappydata.query-cancellation-interval.md)| |
+|-gemfirexd.query-timeout| See [gemfirexd.query-timeout](../reference/configuration_parameters/snappydata.query-timeout.md)||
 |-snappydata.column.batchSize |The default size of blocks to use for storage in SnappyData column and store. When inserting data into the column storage this is the unit (in bytes or k/m/g suffixes for unit) that is used to split the data into chunks for efficient storage and retrieval. </br> This property can also be set for each table in the `create table` DDL. Maximum allowed size is 2GB. The default is 24m.|
 |-snappydata.column.maxDeltaRows|The maximum number of rows that can be in the delta buffer of a column table. The size of the delta buffer is already limited by `ColumnBatchSize` property, but this allows a lower limit on the number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of `ColumnBatchSize` and this property is hit first. It can also be set for each table in the `create table` DDL, else this setting is used for the `create table`|
 |-snappydata.hiveServer.enabled|Enables the Hive Thrift server for SnappyData.This is enabled by default when you start the cluster. Thus it adds an additional 10 seconds to the cluster startup time. To avoid this additional time, you can set the property to false.|
-|snappydata.maxRetryAttemptsForWrite|Default retry of Spark tasks on failure can cause duplicates in the case of insert operations. This property can be set to **0** to avoid this scenario. Other operations, as usual, retries without causing any consistency issues.| 
+|snappydata.maxRetryAttemptsForWrite|Default retry of Spark tasks on failure can cause duplicates in the case of insert operations. This property can be set to **0** to avoid this scenario. Other operations, as usual, retries without causing any consistency issues.|
 |-snappydata.sql.hashJoinSize|The join would be converted into a hash join if the table is of size less than the `hashJoinSize`.  The limit specifies an estimate on the input data size (in bytes or k/m/g/t suffixes for unit). The default value is 100MB.|
 |-snappydata.sql.hashAggregateSize|Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) and not the output size. Set this only if there are queries that can return a large number of rows in aggregation results. The default value is set to 0 which means, no limit is set on the size, so the optimized hash aggregation is always used.|
 |-snappydata.sql.planCacheSize|Number of query plans that will be cached.|
@@ -194,13 +194,13 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 |-snappydata.enable-experimental-features|Use this property to enable and disable experimental features. You can call out in case some features are completely broken and need to be removed from the product.|
 |-snappydata.sql.planCaching|Use this property to enable/disable plan caching. By default it is disabled. |Lead|
 |snappydata.recovery.enableTableCountInUI|In the recovery mode, by default, the table counts and sizes do not appear on the UI. To view the table counts, you should set this property to **true** in the lead's conf file. By default, the property is set to **false**, and the table count is shown as **-1**. ||
-|sync-commits| See [sync-commits](/reference/configuration_parameters/sync-commits.md)||
+|sync-commits| See [sync-commits](../reference/configuration_parameters/sync-commits.md)||
 
 <a id="aqp"></a>
 ## AQP Properties
 
-The [AQP](../aqp.md) properties can be set using a Snappy SQL shell (snappy-sql) command or using the configuration properties in the **conf/leads** file. </br>
-The command sets the property for the current SnappySession while setting it in **conf/leads** file sets the property for all SnappySession. 
+The [AQP](../sde/index.md) properties can be set using a Snappy SQL shell (snappy-sql) command or using the configuration properties in the **conf/leads** file. </br>
+The command sets the property for the current SnappySession while setting it in **conf/leads** file sets the property for all SnappySession.
 
 For example: Set in the  Snappy SQL shell (snappy-sql)
 
@@ -226,7 +226,7 @@ This sets the property for the snappy SQL shell's session.
 <a id="connectionpro"></a>
 ## Connection Properties
 
-You can define connection properties directly in the JDBC connection URL, or in the Properties object while using JDBC API `DriverManager.getConnection(String url, java.util.Properties info)`. You can also define connection properties  in the `connect` command in an interactive SnappyData session using snappy shell. 
+You can define connection properties directly in the JDBC connection URL, or in the Properties object while using JDBC API `DriverManager.getConnection(String url, java.util.Properties info)`. You can also define connection properties  in the `connect` command in an interactive SnappyData session using snappy shell.
 An example URL that defines a connection property is shown below. In the URL, replace the `property1=value1` string with appropriate property that you want to use. Multiple properties can be be specified by separating them with a semicolon.
 
 Example URL:
@@ -239,13 +239,13 @@ Example connect command that sets connection properties while using snappy shell
 
 |Property|Description|Components</br>|
 |-|-|-|
-|-allow-explicit-commit| See [allow-explicit-commit](/reference/configuration_parameters/allow-explicit-commit.md)||
-|-enable-stats|See [enable-stats](/reference/configuration_parameters/enable-stats.md)||
-|-enable-timestats|See [enable-timestats](/reference/configuration_parameters/enable-timestats.md)||
-|-load-balance|See [load-balance](/reference/configuration_parameters/load-balance.md)||
-|-log-file|See [log-file](/reference/configuration_parameters/log-file.md)||
-|-password|See [password](/reference/configuration_parameters/password.md)||
-|-read-timeout|See [read-timeout](/reference/configuration_parameters/read-timeout.md)||
-|-skip-constraint-checks|See [skip-constraint-checks](/reference/configuration_parameters/skip-constraint-checks.md)||
-|-skip-locks|See [skip-locks](/reference/configuration_parameters/skip-locks.md)||
-|-user|See [user](/reference/configuration_parameters/user.md)||
+|-allow-explicit-commit| See [allow-explicit-commit](../reference/configuration_parameters/allow-explicit-commit.md)||
+|-enable-stats|See [enable-stats](../reference/configuration_parameters/enable-stats.md)||
+|-enable-timestats|See [enable-timestats](../reference/configuration_parameters/enable-timestats.md)||
+|-load-balance|See [load-balance](../reference/configuration_parameters/load-balance.md)||
+|-log-file|See [log-file](../reference/configuration_parameters/log-file.md)||
+|-password|See [password](../reference/configuration_parameters/password.md)||
+|-read-timeout|See [read-timeout](../reference/configuration_parameters/read-timeout.md)||
+|-skip-constraint-checks|See [skip-constraint-checks](../reference/configuration_parameters/skip-constraint-checks.md)||
+|-skip-locks|See [skip-locks](../reference/configuration_parameters/skip-locks.md)||
+|-user|See [user](../reference/configuration_parameters/user.md)||

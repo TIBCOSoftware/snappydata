@@ -43,4 +43,4 @@ Considering the case when cluster fails to come up, and the log mentions the pat
 
 **Also see:**
 
-*	[Built-in System Procedures and Built-in Functions](system-procedures.md)
+*	[Built-in System Procedures and Built-in Functions](index.md)

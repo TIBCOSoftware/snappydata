@@ -2,12 +2,12 @@
 
 ###Note: I think this section should be merged with the other 'How to connect using JDBC' section (jags)
 
-JDBC client pool driver provides built-in connection pooling and relies on the non-pooled [JDBC driver](/howto/connect_using_jdbc_driver.md). The driver will initialize the pool when the first connection is created using this driver. Thereafter, for every request, the connection is returned from the pool instead of establishing a new connection with the server. We recommend using the pooled driver for low latency operations (e.g. a point lookup query) and when using the Spark JDBC data source API (see example below). When accessing SnappyData from Java frameworks such as Spring we recommend you use pooling provided in the framework and switch to using the non-pooled driver. 
+JDBC client pool driver provides built-in connection pooling and relies on the non-pooled [JDBC driver](../howto/connect_using_jdbc_driver.md). The driver will initialize the pool when the first connection is created using this driver. Thereafter, for every request, the connection is returned from the pool instead of establishing a new connection with the server. We recommend using the pooled driver for low latency operations (e.g. a point lookup query) and when using the Spark JDBC data source API (see example below). When accessing SnappyData from Java frameworks such as Spring we recommend you use pooling provided in the framework and switch to using the non-pooled driver.
 
-#### (Jags) I don't understand this below section. It doesn't make sense with no context on what property you are talkign about. 
+#### (Jags) I don't understand this below section. It doesn't make sense with no context on what property you are talkign about.
 I don't know the exact semantics but perhaps this is the wording .....
-The underlying pool is uniquely associated with the set of properties passed when creating the connection. If any of the properties change a new pool will be created. 
-#### (Jags) it is super important for us to document the caveats - if you set a connection property like autocommit(false) other connection requests on this pool will also have this property set. Not sure if this issue exists. If so, critical to document and provide suggestions. Lizy, please verify. 
+The underlying pool is uniquely associated with the set of properties passed when creating the connection. If any of the properties change a new pool will be created.
+#### (Jags) it is super important for us to document the caveats - if you set a connection property like autocommit(false) other connection requests on this pool will also have this property set. Not sure if this issue exists. If so, critical to document and provide suggestions. Lizy, please verify.
 
 
 !!!Important
@@ -21,7 +21,7 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 
 
 /*Dependency section needs approval/discussion */
-**Dependencies**: Use the Maven/SBT dependencies for the latest released version of SnappyData. 
+**Dependencies**: Use the Maven/SBT dependencies for the latest released version of SnappyData.
 
 **Example: Maven dependency**
 ```pre

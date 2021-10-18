@@ -10,7 +10,7 @@ Download and install SnappyData Enterprise edition to connect Tableau to SnappyD
 
 Use the following steps to connect Tableau to SnappyData using Thrift Server that is compatible with Apache HiveServer2. This is also fully compatible with Spark's Thrift.
 
-1.	Check the [system requirements](/install/system_requirements.md), [download and install](/install.md) SnappyData, and then [start the SnappyData cluster](./start_snappy_cluster.md). Thrift server is enabled by default.
+1.	Check the [system requirements](../install/system_requirements.md), [download and install](../install/index.md) SnappyData, and then [start the SnappyData cluster](start_snappy_cluster.md). Thrift server is enabled by default.
 2.	Download and install **Tableau Desktop v2018.3.x or higher** from the [Tableau Download page](https://www.tableau.com/support/releases/online). You may also need to register your product.
 3.	Open the Tableau Desktop application, on the left panel, from the **To A Server **section, select **Spark SQL connector** option. 
 	![Tableau_desktop](../Images/LocateSparkSQL.png)
@@ -49,7 +49,7 @@ Use the following instructions to connect Tableau using SnappyData ODBC driver:
 
 ### Step 1: Setup SnappyData ODBC Driver
 
-Follow the instructions provided [here](/setting_up_odbc_driver-tableau_desktop.md) to setup SnappyData ODBC Driver.
+Follow the instructions provided [here](../setting_up_odbc_driver-tableau_desktop.md) to setup SnappyData ODBC Driver.
 
 ### Step 2: Install Tableau Desktop (10.1 or Higher)
 
@@ -63,7 +63,7 @@ To install Tableau desktop:
 
 ### Step 3: Connect Tableau Desktop to SnappyData Server
 
-When using Tableau with the SnappyData ODBC Driver for the first time, you must add the **odbc-snappydata.tdc** file that is available in the downloaded **snappydata-odbc_1.3.0_win.zip**.
+When using Tableau with the SnappyData ODBC Driver for the first time, you must add the **odbc-snappydata.tdc** file that is available in the downloaded **snappydata-odbc_1.3.0_win64.zip**.
 
 To connect the Tableau Desktop to the SnappyData Server:
 

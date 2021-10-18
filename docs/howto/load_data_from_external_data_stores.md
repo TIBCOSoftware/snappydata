@@ -76,7 +76,7 @@ df.write.format("column").saveAsTable("columnTable")
 ## Importing Data using JDBC from a relational DB
 
 !!! Note
-	Before you begin, you must install the corresponding JDBC driver. Refer to [Deploying Third Party Connectors](/connectors/deployment_dependency_jar.md).
+	Before you begin, you must install the corresponding JDBC driver. Refer to [Deploying Third Party Connectors](../connectors/deployment_dependency_jar.md).
 
 <!--**TODO: This is a problem- restart the cluster ? Must confirm package installation or at least get install_jar tested for this case. -- Jags**
 -->
@@ -127,7 +127,7 @@ snc.sql(s"CREATE  external TABLE external_table USING jdbc OPTIONS (dbtable 'twe
 snc.sql("select * from external_table").show
 ```
 
-Refer to the [Spark SQL JDBC source access for how to parallelize access when dealing with large data sets](https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#jdbc-to-other-databases).
+Refer to the [Spark SQL JDBC source access for how to parallelize access when dealing with large data sets](https://spark.apache.org/docs/2.1.3/sql-programming-guide.html#jdbc-to-other-databases).
 
 
 ## Loading Data from NoSQL store (Cassandra)
@@ -135,7 +135,7 @@ Refer to the [Spark SQL JDBC source access for how to parallelize access when de
 The example below demonstrates how you can load data from a NoSQL store:
 
 !!! Note
-	Before you begin, you must install the corresponding Spark-Cassandra connector jar. Refer to [Deploying Third Party Connectors](/connectors/deployment_dependency_jar.md).
+	Before you begin, you must install the corresponding Spark-Cassandra connector jar. Refer to [Deploying Third Party Connectors](../connectors/deployment_dependency_jar.md).
 
 <!--**TODO** This isn't a single JAR from what I know. The above step needs testing and clarity. -- Jags
 -->

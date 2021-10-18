@@ -2,9 +2,9 @@
 # SparkSession, SnappySession and SnappyStreamingContext
 
 ## Create a SparkSession
-[Spark Context](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/SparkContext.html) is the main entry point for Spark functionality. A SparkContext represents the connection to a Spark cluster and can be used to create RDDs, accumulators and broadcast variables on that cluster.
+[Spark Context](https://spark.apache.org/docs/2.1.3/api/java/org/apache/spark/SparkContext.html) is the main entry point for Spark functionality. A SparkContext represents the connection to a Spark cluster and can be used to create RDDs, accumulators and broadcast variables on that cluster.
 
-[Spark Session](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/sql/SparkSession.html) is the entry point to programming Spark with the Dataset and DataFrame API.
+[Spark Session](https://spark.apache.org/docs/2.1.3/api/java/org/apache/spark/sql/SparkSession.html) is the entry point to programming Spark with the Dataset and DataFrame API.
 SparkSession object can be created by using SparkSession.Builder used as below.
 
 ```pre
@@ -22,7 +22,7 @@ SparkSession.builder().getOrCreate()
 ```
 
 ## Create a SnappySession
-[SnappySession](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's [SparkSession](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.SparkSession) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.
+[SnappySession](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's [SparkSession](http://spark.apache.org/docs/2.1.3/api/scala/index.html#org.apache.spark.sql.SparkSession) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.
 
 To create a SnappySession:
 
@@ -66,7 +66,7 @@ To create a SnappySession:
 
 ## Create a SnappyStreamingContext
 [SnappyStreamingContext](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's
-[Streaming Context](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.streaming.StreamingContext).
+[Streaming Context](http://spark.apache.org/docs/2.1.3/api/scala/index.html#org.apache.spark.streaming.StreamingContext).
 
 To create a SnappyStreamingContext:
 
@@ -107,7 +107,7 @@ To create a SnappyStreamingContext:
  snsc = SnappyStreamingContext(sc, duration)
 ```
 
-Also, SnappyData can be run in three different modes, Local Mode, Embedded Mode and SnappyData Connector mode. Before proceeding, it is important that you understand these modes. For more information, see [Affinity modes](../deployment.md).
+Also, SnappyData can be run in three different modes, Local Mode, Embedded Mode and SnappyData Connector mode. Before proceeding, it is important that you understand these modes. For more information, see [Affinity modes](../affinity_modes/index.md).
 
 If you are using SnappyData in LocalMode or Connector mode, it is the responsibility of the user to create a SnappySession.
 If you are in the Embedded Mode, applications typically submit jobs to SnappyData and do not explicitly create a SnappySession or SnappyStreamingContext.

@@ -4,11 +4,11 @@
 
 ## Step 1: Download, Install and Configure SnappyData
 
-1. [Download and install SnappyData](../install.md).
+1. [Download and install SnappyData](../install/index.md)
 
-2. [Configure the SnappyData Cluster](../configuring_cluster/configuring_cluster.md).
+2. [Configure the SnappyData Cluster](../configuring_cluster/configuring_cluster.md)
 
-3. [Start the SnappyData cluster](start_snappy_cluster.md).
+3. [Start the SnappyData cluster](start_snappy_cluster.md)
 
 4. Extract the contents of the [Zeppelin 0.8.2 binary package](http://archive.apache.org/dist/zeppelin/zeppelin-0.8.2/zeppelin-0.8.2-bin-netinst.tgz).
    Then `cd` into the extracted `zeppelin-0.8.2-bin-netinst` directory.</br>

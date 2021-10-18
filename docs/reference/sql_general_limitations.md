@@ -102,4 +102,4 @@ The following syntax will produce an error:
         snappy> insert into StudentGrades values (1, 'Jim',Map('English', 'A', 'Science', 'B'));
         ERROR 42Y03: (SQLState=42Y03 Severity=20000) (Server=localhost/127.0.0.1[1529] Thread=ThriftProcessor-0) 'MAP(java.lang.String,java.lang.String,java.lang.String,java.lang.String)' is not recognized as a function or procedure.
 
-For more details on complex datatypes, refer to [Supported datatypes](misc/supported_datatypes.md) and [how to store and retrieve complex data types using ComplexTypeSerializer class](/howto/store_retrieve_complex_datatypes_JDBC.md).
+For more details on complex datatypes, refer to [Supported datatypes](misc/supported_datatypes.md) and [how to store and retrieve complex data types using ComplexTypeSerializer class](../howto/store_retrieve_complex_datatypes_JDBC.md).

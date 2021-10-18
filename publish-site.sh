@@ -49,15 +49,19 @@ if [ -z ${MKDOCS_EXISTS} ]; then
   exit 1
 fi
 
+# Generate and copy the built-in function docs
+spark/sql/create-docs.sh --markdown-only
+rm -rf docs/reference/sql_functions/*
+cp -dR spark/sql/docs/* docs/reference/sql_functions/
+rm -rf spark/sql/docs
+
 # echo $@
 # mkdocs $@
 mkdocs build --clean
 
 # Copy the generated scala docs inside the site folder. 
 mkdir -p site/apidocs
-cp -R build-artifacts/scala-2.11/docs/* site/apidocs/
-mkdir -p site/sql_functions
-cp -R spark/sql/site/* site/sql_functions/
+cp -dR build-artifacts/scala-2.11/docs/* site/apidocs/
 
 #mkdocs gh-deploy
 

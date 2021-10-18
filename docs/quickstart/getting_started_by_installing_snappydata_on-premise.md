@@ -12,4 +12,4 @@ $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir 
 
 It opens the Spark shell. All SnappyData metadata, as well as persistent data, is stored in the directory **quickstartdatadir**.</br> The spark-shell can now be used to work with SnappyData using [SQL](using_sql.md) and [Scala APIs](using_spark_scala_apis.md).
 
-Follow instructions [here](/howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin.
+Follow instructions [here](../howto/use_apache_zeppelin_with_snappydata.md), to use the product from Apache Zeppelin.

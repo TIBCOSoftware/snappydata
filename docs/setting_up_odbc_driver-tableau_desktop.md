@@ -7,9 +7,9 @@
 
 ## Step 1: Install the SnappyData ODBC Driver
 
-1. [Download the SnappyData 1.3.0 Community Edition](install.md#download-snappydata).
+1. [Download the SnappyData 1.3.0 Community Edition](install/index.md#download-snappydata).
 
-2. Download the **snappydata-odbc_1.3.0_win.zip** file.
+2. Download the **snappydata-odbc_1.3.0_win64.zip** file.
 
 3. Follow [steps 1 and 2](howto/connect_using_odbc_driver.md) to install the SnappyData ODBC driver.
 

@@ -1540,14 +1540,8 @@ task docs(type: ScalaDoc) {
   destinationDir = file("${rootProject.buildDir}/docs")
 }
 
-task buildSqlFuncDocs(type: Exec) {
-  dependsOn product
-  //on linux
-  commandLine "${rootProject.projectDir}/spark/sql/create-docs.sh"
-}
-
 task publishDocs(type: Exec) {
-  dependsOn docs, buildSqlFuncDocs
+  dependsOn product, docs
   //on linux
   commandLine './publish-site.sh'
 }

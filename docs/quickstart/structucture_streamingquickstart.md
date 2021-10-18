@@ -3,7 +3,7 @@
 
 This quick start guide provides step-by-step instructions to perform structured streaming in SnappyData by using the Spark shell as well as through a Snappy job.
 
-For detailed information, refer to  [Structured Streaming](/howto/use_stream_processing_with_snappydata.md#structuredstreaming).
+For detailed information, refer to  [Structured Streaming](../howto/use_stream_processing_with_snappydata.md#structuredstreaming).
 
 ## Structured Streaming using Spark Shell
 

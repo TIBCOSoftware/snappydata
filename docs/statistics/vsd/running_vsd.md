@@ -1,12 +1,15 @@
 # Installing and Running VSD
 
-
 Start the VSD tool, load statistics files, and maintain the view you want on your statistics.
 
 <a id="install-vsd"></a>
 ## Install VSD
 
-VSD is a free analysis tool for SnappyData/GemFire/GemStone but is not OSS and not distributed with SnappyData. You can find a copy of VSD from [GemTalk Systems VSD](https://gemtalksystems.com/products/vsd/) or [Pivotal GemFire](https://network.pivotal.io/products/pivotal-gemfire).
+!!! Note
+
+	Visual Statistics Display (VSD) is a third-party tool and is not shipped with SnappyData.
+    It is available from [GemTalk Systems](https://gemtalksystems.com/products/vsd/) or
+    [Pivotal GemFire](https://network.pivotal.io/products/pivotal-gemfire) under their own respective licenses.
 
 You can open the VSD tool by running `bin/vsd` in the installation packages from above.
 

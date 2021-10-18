@@ -38,4 +38,4 @@ An example follows the table.
 
 This VSD chart shows the CPU usage in a fabric server, and breaks it down into system and user. The majority of the time is spent in user code. The first few minutes correspond to loading various tables. The rest is the main workload, during which many clients are executing transactions.
 
-![](../Images/vsd/vsd_cpu.png)
+![](../../Images/vsd/vsd_cpu.png)

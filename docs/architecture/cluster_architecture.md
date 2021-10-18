@@ -9,7 +9,7 @@ A SnappyData cluster is a peer-to-peer (P2P) network comprised of three distinct
 
 ![ClusterArchitecture](../GettingStarted_Architecture.png)
 
-SnappyData also has multiple deployment options. For more information refer to, [Deployment Options](../deployment.md).
+SnappyData also has multiple deployment options. For more information refer to, [Deployment Options](../affinity_modes/index.md).
 
 ## Interacting with SnappyData
 

@@ -3,7 +3,7 @@
 
 ## Starting SnappyData Cluster on a Single Machine
 
-If you have [downloaded and extracted](../install.md) the SnappyData product distribution, navigate to the SnappyData product root directory.
+If you have [downloaded and extracted](../install/index.md) the SnappyData product distribution, navigate to the SnappyData product root directory.
 
 **Start the Cluster**: Run the `./sbin/snappy-start-all.sh` script to start the SnappyData cluster on your single machine using default settings. This starts a lead node, a locator, and a data server. The Hive Thrift server also starts by default. 
 

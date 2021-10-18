@@ -65,7 +65,7 @@ The special value NULL, denotes an unassigned or missing value of any of the typ
 <a id="array"></a>
 ## ARRAY
 
-A column of ARRAY datatype can contain a collection of elements. A column of type Array can store array of Java objects (Object[]), typed arrays, java.util.Collection and scala.collection.Seq. You can use **com.pivotal.gemfirexd.snappy.ComplexTypeSerializer** class to serialize the array data in order to insert it into column tables. Refer [How to store and retrieve complex data types in JDBC programs](/howto/store_retrieve_complex_datatypes_JDBC.md) for a Scala example that shows how to serialize and store an array in a table using JDBC APIs and **ComplexTypeSerializer** class.
+A column of ARRAY datatype can contain a collection of elements. A column of type Array can store array of Java objects (Object[]), typed arrays, java.util.Collection and scala.collection.Seq. You can use **com.pivotal.gemfirexd.snappy.ComplexTypeSerializer** class to serialize the array data in order to insert it into column tables. Refer [How to store and retrieve complex data types in JDBC programs](../../howto/store_retrieve_complex_datatypes_JDBC.md) for a Scala example that shows how to serialize and store an array in a table using JDBC APIs and **ComplexTypeSerializer** class.
 
 !!! Note
 	Supported only for column tables
@@ -348,7 +348,7 @@ ROLLNO  |NAME  |COURSE[English]
 ```                                                                                
 
 
-A column of type Map can store **java.util.Map** or **scala.collection.Map**. You can use **com.pivotal.gemfirexd.snappy.ComplexTypeSerializer** class to serialize the map data in order to insert it into column tables. Refer [How to store and retrieve complex data types in JDBC programs](/howto/store_retrieve_complex_datatypes_JDBC.md) for a Scala example that shows how to serialize and store an array in a table using JDBC APIs and **ComplexTypeSerializer** class. Map data can also be stored in a similar way.
+A column of type Map can store **java.util.Map** or **scala.collection.Map**. You can use **com.pivotal.gemfirexd.snappy.ComplexTypeSerializer** class to serialize the map data in order to insert it into column tables. Refer [How to store and retrieve complex data types in JDBC programs](../../howto/store_retrieve_complex_datatypes_JDBC.md) for a Scala example that shows how to serialize and store an array in a table using JDBC APIs and **ComplexTypeSerializer** class. Map data can also be stored in a similar way.
 
 !!! Note
 	Supported only for column tables
@@ -429,7 +429,7 @@ MSGU
 
 ```
 A column of type STRUCT can store array of Java objects (Object[]), typed arrays, java.util.Collection, scala.collection.Seq or scala.Product. You can use **com.pivotal.gemfirexd.snappy.ComplexTypeSerializer** 
-class to serialize the data in order to insert it into column tables. Refer [How to store and retrieve complex data types in JDBC programs](/howto/store_retrieve_complex_datatypes_JDBC.md) for a Scala example that shows how to serialize and store an array in a table using JDBC APIs and **ComplexTypeSerializer** class.
+class to serialize the data in order to insert it into column tables. Refer [How to store and retrieve complex data types in JDBC programs](../../howto/store_retrieve_complex_datatypes_JDBC.md) for a Scala example that shows how to serialize and store an array in a table using JDBC APIs and **ComplexTypeSerializer** class.
 
 <a id="timestamp"></a>
 ## TIMESTAMP

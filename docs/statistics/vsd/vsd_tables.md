@@ -24,12 +24,12 @@ An example follows the table.
 
 These VSD charts show the rates of reads and writes to the various tables in the application.
 
-![](../Images/vsd/vsd_tables.png)
+![](../../Images/vsd/vsd_tables.png)
 
-![](../Images/vsd/vsd_tables_2.png)
+![](../../Images/vsd/vsd_tables_2.png)
 
 You can use these statistics to see that the NEW\_ORDER table is growing over time. After the initial orders are loaded, new orders are being placed (created) faster than customers are paying for (destroying) them.
 
-![](../Images/vsd/vsd_tables_3.png)
+![](../../Images/vsd/vsd_tables_3.png)
 
 

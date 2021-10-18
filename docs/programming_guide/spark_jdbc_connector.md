@@ -1,16 +1,16 @@
 # Accessing SnappyData Tables from any Spark (2.1+) Cluster
 
-Spark applications can be run embedded inside the SnappyData cluster by submitting Jobs using **Snappy-Job.sh** or it can be run using the native [Smart Connector](/howto/spark_installation_using_smart_connector.md). However, from SnappyData 1.0.2 release the connector can only be used from a Spark 2.1 compatible cluster.
+Spark applications can be run embedded inside the SnappyData cluster by submitting Jobs using **Snappy-Job.sh** or it can be run using the native [Smart Connector](../howto/spark_installation_using_smart_connector.md). However, from SnappyData 1.0.2 release the connector can only be used from a Spark 2.1 compatible cluster.
 If you are using a Spark version or distribution that is based on a version higher than 2.1 then, you can use the **SnappyData JDBC Extension Connector** as described below. 
 
 <a id="howto-sparkjdbc"></a>
 ## How can Spark Applications Connect to SnappyData using Spark JDBC? 
 
 Spark SQL supports reading and writing to databases using a built-in **JDBC data source**. Applications can configure and use JDBC like any other Spark data source queries return data frames and can be efficiently processed in Spark SQL or joined with other data sources. The JDBC data source is also easy to use from Java or Python.
-All you need is a JDBC driver from the database vendor. Likewise, applications can use the Spark [DataFrameWriter](/reference/API_Reference/apireference_guide.md#dataframewriter) to insert, append, or replace a dataset in the database.
+All you need is a JDBC driver from the database vendor. Likewise, applications can use the Spark [DataFrameWriter](../reference/API_Reference/apireference_guide.md#dataframewriter) to insert, append, or replace a dataset in the database.
 
 !!!Note
-	The usage model for the Spark JDBC data source is described [here](https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#jdbc-to-other-databases). We strongly recommend you to go through this section in case you are not familiar with how Spark works with data sources.
+	The usage model for the Spark JDBC data source is described [here](https://spark.apache.org/docs/2.1.3/sql-programming-guide.html#jdbc-to-other-databases). We strongly recommend you to go through this section in case you are not familiar with how Spark works with data sources.
 
 ### Pushing Entire Query into the Database
 When Spark queries are executed against external data sources, the current Spark model can only push down filters and projections in the query down to the database. If you are running an expensive aggregation on a large data set, then the entire data set is fetched into the Spark partitions, and the query is executed inside your Spark cluster. 
@@ -81,7 +81,7 @@ DataFrame df = exec.snappyQuery("select x, sum(y), max(z) from largeTable group 
 
 ### Updating/Writing Data in SnappyData Tables
 
-Your application can use the Spark [DataFrameWriter](/reference/API_Reference/apireference_guide.md#dataframewriter) API to either insert or append data.
+Your application can use the Spark [DataFrameWriter](../reference/API_Reference/apireference_guide.md#dataframewriter) API to either insert or append data.
 
 Also, for convenience, the connector provides an implicit in scala that is **import io.snappydata.sql.implicits._** for the DataFrameWriter to simplify writing to SnappyData. Hence, there is no need to explicitly set the connection properties. 
 

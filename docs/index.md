@@ -1,6 +1,3 @@
-!!!Note
-        This repository is provided for legacy users and informational purposes only. It may contain security vulnerabilities in the code itself or its dependencies. TIBCO provides no updates, including security updates, to this code. Consistent with the terms of the Apache License 2.0 that apply to the TIBCO code in this repository, the code is provided on an "as is" basis, without any warranties or conditions of any kind and in no event and under no legal theory shall TIBCO be liable to you for damages arising as a result of the use or inability to use the code.
-
 # Introduction 
 SnappyData™ (aka TIBCO ComputeDB™) is a distributed, in-memory optimized, analytics database. SnappyData delivers high throughput, low latency, and high concurrency for unified analytics workloads. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources/formats and stream processing all in one unified cluster.
 
@@ -44,15 +41,15 @@ When speed is essential, applications can selectively copy the external data int
    In SnappyData, operational systems can feed data updates through Kafka to SnappyData. The incoming data can be CDC(Change-data-capture) events (insert, updates, or deletes) and can be easily ingested into in-memory tables with ease, consistency, and exactly-once semantics. The Application can apply custom logic to do sophisticated transformations and get the data ready for analytics. This incremental and continuous process is far more efficient than batch refreshes. Refer [Stream Processing with SnappyData](howto/use_stream_processing_with_snappydata.md) </br>  
 
 *	**Approximate Query Processing(AQP)** </br>
-	When dealing with huge data sets, for example, IoT sensor streaming time-series data, it may not be possible to provision the data in-memory, and if left at the source (say Hadoop or S3) your analytic query processing can take too long. In SnappyData, you can create one or more stratified data samples on the full data set. The query engine automatically uses these samples for aggregation queries, and a nearly accurate answer returned to clients. This can be immensely valuable when visualizing a trend, plotting a graph or bar chart. Refer [AQP](aqp.md)
+	When dealing with huge data sets, for example, IoT sensor streaming time-series data, it may not be possible to provision the data in-memory, and if left at the source (say Hadoop or S3) your analytic query processing can take too long. In SnappyData, you can create one or more stratified data samples on the full data set. The query engine automatically uses these samples for aggregation queries, and a nearly accurate answer returned to clients. This can be immensely valuable when visualizing a trend, plotting a graph or bar chart. Refer [AQP](sde/index.md).
 
 *	**Access from anywhere** </br>
-	You can use JDBC, ODBC, REST, or any of the Apache Spark APIs. The product is fully compatible with Apache Spark 2.1.1. SnappyData natively supports modern visualization tools such as [TIBCO Spotfire](howto/connecttibcospotfire.md), [Tableau](howto/tableauconnect.md), and [Qlikview](setting_up_jdbc_driver_qlikview.md). Refer 
+	You can use JDBC, ODBC, REST, or any of the Apache Spark APIs. The product is fully compatible with Apache Spark 2.1.1 to 2.1.3. SnappyData natively supports modern visualization tools such as [TIBCO Spotfire](howto/connecttibcospotfire.md), [Tableau](howto/tableauconnect.md), and [Qlikview](setting_up_jdbc_driver_qlikview.md).
 
 
 ## Downloading and Installing SnappyData
 You can download and install the latest version of SnappyData from [github](https://github.com/TIBCOSoftware/snappydata/releases) or you can download the enterprise version that is TIBCO ComputeDB from [here](https://edelivery.tibco.com/storefront/index.ep).
-Refer to the [documentation](/install.md) for installation steps.
+Refer to the [documentation](install/index.md) for installation steps.
 
 ## Getting Started
 Multiple options are provided to get started with SnappyData. Easiest way to get going with SnappyData is on your laptop. You can also use any of the following options:
@@ -64,7 +61,7 @@ Multiple options are provided to get started with SnappyData. Easiest way to get
 *	Docker
 *	Kubernetes
 
-You can find more information on options for running SnappyData [here](/quickstart.md).
+You can find more information on options for running SnappyData [here](quickstart/index.md).
 
 ## Quick Test to Measure Performance of SnappyData vs Apache Spark
 
@@ -135,7 +132,7 @@ For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.
 
 
 ## Building from Source
-If you would like to build SnappyData from source, refer to the [documentation on building from source](/install/building_from_source.md).
+If you would like to build SnappyData from source, refer to the [documentation on building from source](install/building_from_source.md).
 
 
 ## How is SnappyData Different than Apache Spark?

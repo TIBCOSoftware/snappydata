@@ -25,5 +25,5 @@ snappy> call sys.rebalance_all_buckets();
 ```
 **Also see:**
 
-*	[Built-in System Procedures and Built-in Functions](system-procedures.md)
+*	[Built-in System Procedures and Built-in Functions](index.md)
 

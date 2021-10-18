@@ -4,4 +4,4 @@
 
 The Synopsis Data Engine offers a breakthrough solution to these problems by building out stratified samples of the most common columns used in queries, as well as other probabilistic data structures like count-min-sketch, bloom filters etc. The use of these structures, along with extensions to the querying engine allow users to get almost-perfect answers to complex queries in a fraction of the time it used to take to answer these queries.
 
-For more information on SDE and sampling techniques used by SnappyData, refer to the [SDE documentation](../aqp.md). 
+For more information on SDE and sampling techniques used by SnappyData, refer to the [SDE documentation](../sde/index.md).

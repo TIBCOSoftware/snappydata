@@ -16,4 +16,4 @@ The following topics are covered in this section:
 
 * [Collecting logs, stats and dumps using the collect-debug-artifacts script](collect_debug_artifacts.md)
 
-*	[Troubleshooting Error Messages](troubleshooting_error_messages.md)
+* [Troubleshooting Error Messages](troubleshooting_error_messages.md)

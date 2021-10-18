@@ -44,9 +44,4 @@ The high level capabilities of the **Community Edition** are listed in the follo
 |Use encrypted password instead of clear text password | X |
 |Restrict Table, View, Function creation even in user’s own schema | X |
 |LDAP security interface | X |
-|Visual Statistics Display (VSD) tool for system statistics (gfs) files(*) |  |
 |GemFire connector |  |
-
-(*) NOTE: The graphical Visual Statistics Display (VSD) tool to see the system statistics (gfs) files is not OSS
-and was never shipped with SnappyData. It is available from [GemTalk Systems](https://gemtalksystems.com/products/vsd/)
-or [Pivotal GemFire](https://network.pivotal.io/products/pivotal-gemfire) under their own respective licenses.

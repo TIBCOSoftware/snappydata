@@ -18,18 +18,18 @@ To download and install the Visual C++ Redistributable for Visual Studio 2013:
 
 To download and install the ODBC driver:
 
-1. Download the drivers zip file **snappydata-odbc_1.3.0_win.zip** using the steps provided [here](/quickstart/getting_started_by_installing_snappydata_on-premise.md).
-2. Extract **snappydata-odbc_1.3.0_win.zip**. Depending on your Windows installation, extract the contents of the 32-bit or 64-bit version of the SnappyData ODBC Driver.
+1. Download the drivers zip file **snappydata-odbc_1.3.0_win64.zip** using the steps provided [here](../quickstart/getting_started_by_installing_snappydata_on-premise.md).
+2. Extract **snappydata-odbc_1.3.0_win64.zip**. Depending on your Windows installation, extract the contents of the 32-bit or 64-bit version of the SnappyData ODBC Driver.
 
     | Version | ODBC Driver |
     |---------|-------------|
-    |32-bit for 32-bit platform|snappydata-odbc_1.3.0_win_x86.msi|
-    |64-bit for 64-bit platform|snappydata-odbc_1.3.0_win_x64.msi|
+    |32-bit for 64-bit platform|snappydata-odbc_1.3.0_win64_x86.msi|
+    |64-bit for 64-bit platform|snappydata-odbc_1.3.0_win64_x64.msi|
 
 4. Double-click on the corresponding **msi** file, and follow the steps to complete the installation.
 
 	!!! Note
-		Ensure that [SnappyData is installed](../install.md) and the [SnappyData cluster is running](start_snappy_cluster.md).
+		Ensure that [SnappyData is installed](../install/index.md) and the [SnappyData cluster is running](start_snappy_cluster.md).
 
 ## Connecting to the SnappyData Cluster
 Once you have installed the SnappyData ODBC Driver, you can connect to SnappyData cluster in any of the following ways:
@@ -47,4 +47,4 @@ Refer [TIBCO Spotfire® Connectivity to SnappyData™](https://community.tibco.c
 
 Also see:
 
-[ODBC Supported APIs in SnappyData Driver](/reference/API_Reference/odbc_supported_apis.md)
+[ODBC Supported APIs in SnappyData Driver](../reference/API_Reference/odbc_supported_apis.md)

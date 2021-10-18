@@ -11,9 +11,9 @@ Multiple users can concurrently access a secure SnappyData cluster by configurin
 
 ## Step 1: Download, Install and Configure SnappyData
 
-1. [Download and install SnappyData](../install.md).
+1. [Download and install SnappyData](../install/index.md).
 
-2. [Configure the SnappyData cluster with security enabled](../security/security.md).
+2. [Configure the SnappyData cluster with security enabled](../security/index.md).
 
 3. [Start the SnappyData cluster](start_snappy_cluster.md).
 

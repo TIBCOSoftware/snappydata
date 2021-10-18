@@ -38,4 +38,4 @@ The following tables describe some commonly-used connection statistics. Examine 
 
 This figure illustrates how to select the connection statistics for graphing.
 
-![](../Images/vsd/vsd-connection-stats.png)
+![](../../Images/vsd/vsd-connection-stats.png)

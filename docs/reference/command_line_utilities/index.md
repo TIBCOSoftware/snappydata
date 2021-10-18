@@ -14,7 +14,7 @@ The command form to display a particular utility's usage is:
 ./bin/snappy <utility> --help
 ```
 
-With no arguments, `snappy` starts an [interactive SQL command shell](../../reference/interactive_commands/store_command_reference.md):
+With no arguments, `snappy` starts an [interactive SQL command shell](../../reference/interactive_commands/index.md):
 
 ```pre
 ./bin/snappy

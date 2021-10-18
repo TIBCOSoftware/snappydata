@@ -28,12 +28,12 @@ You can also download the Enterprise Edition [here](https://www.snappydata.io/do
 | Restrict Table, View, Function creation even in user’s own schema|  | X |
 | LDAP security interface |  | X |
 
-## New Features 
+## New Features
 
 SnappyData 1.0.2.1 version includes the following new features:
 
 *	Support Spark's HiveServer2 in SnappyData cluster. Enables starting an embedded Spark HiveServer2 on leads in embedded mode.
-*	Provided a default [Structured Streaming Sink implementation](/howto/use_stream_processing_with_snappydata.md#structuredstreaming) for SnappyData column and row tables. A Sink property can enable conflation of events with the same key columns. 
+*	Provided a default [Structured Streaming Sink implementation](../howto/use_stream_processing_with_snappydata.md#structuredstreaming) for SnappyData column and row tables. A Sink property can enable conflation of events with the same key columns.
 *	Added a **-agent **JVM argument in the launch commands to kill the JVM as soon as Out-of-Memory(OOM) occurs. This is important because the VM sometimes used to crash in unexpected ways later as a side effect of this corrupting internal metadata which later gave restart troubles. [Handling Out-of-Memory Error](../best_practices/important_settings.md#oomerrorhandle)
 *	Allow **NONE** as a valid policy for `server-auth-provider`. Essentially, the cluster can now be configured only for user authentication, and mutual peer to peer authentication of cluster members can be disabled by specifying this property as NONE.
 *	Add support for query hints to force a join type. This may be useful for cases where the result is known to be small, for example, but plan rules cannot determine it.
@@ -45,7 +45,7 @@ The following performance enhancements are included in SnappyData 1.0.2.1 versio
 
 *	Avoid shuffle when join key columns are a superset of child partitioning.
 
-*	Added a pooled version of SnappyData JDBC driver for Spark to connect to SnappyData cluster as JDBC data source. [Connecting with JDBC Client Pool Driver](../howto/connect_using_jdbc_driver.md#jdbcpooldriverconnect) 
+*	Added a pooled version of SnappyData JDBC driver for Spark to connect to SnappyData cluster as JDBC data source. [Connecting with JDBC Client Pool Driver](../howto/connect_using_jdbc_driver.md#jdbcpooldriverconnect)
 
 *	Added caching for hive catalog lookups. Meta-data queries with large number of tables take quite long because of nested loop joins between **SYSTABLES** and **HIVETABLES** for most meta-data queries. Even if the table numbers were in hundreds, it used to take much time. [SNAP-2657]
 
@@ -56,7 +56,7 @@ The following defect fixes are included in SnappyData 1.0.2.1 version:
 
 *	Reset the pool at the end of collect to avoid spillover of low latency pool setting to the latter operations that may not use the CachedDataFrame execution paths. [SNAP-2659]
 
-*	Fixed: Column added using 'ALTER TABLE ... ADD COLUMN ...' through SnappyData shell does not reflect in spark-shell. [SNAP-2491]  
+*	Fixed: Column added using 'ALTER TABLE ... ADD COLUMN ...' through SnappyData shell does not reflect in spark-shell. [SNAP-2491]
 
 *	Fixed the occasional failures in serialization using **CachedDataFrame**, if the node is just starting/stopping. Also, fixed a hang in shutdown for cases where hive client close is trying to boot up the node again, waiting on the locks that are taken during the shutdown.
 
@@ -75,8 +75,8 @@ The following defect fixes are included in SnappyData 1.0.2.1 version:
 
 The following table describes the download artifacts included in SnappyData 1.0.2.1 version:
 
-| Artifact Name | Description | 
-| ------------- |:-------------:| 
+| Artifact Name | Description |
+| ------------- |:-------------:|
 |snappydata-1.0.2.1-bin.tar.gz| Full product binary (includes Hadoop 2.7) |
 |snappydata-1.0.2.1-without-hadoop-bin.tar.gz| Product without the Hadoop dependency JARs |
 |snappydata-jdbc\_2.11-1.0.2.2.jar|Client (JDBC) JAR|

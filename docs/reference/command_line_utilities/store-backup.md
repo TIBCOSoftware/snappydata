@@ -77,7 +77,7 @@ GFXD-DD-DISKSTORE_76705038-10de-4b3e-955b-446546fe4036 GFXD-DEFAULT-DISKSTORE_15
 | Directory  | Contents                                                     |
 | ---------- | ------------------------------------------------------------ |
 | config     | For internal use                                             |
-| diskstores | - GFXD-DD-DISKSTORE: Diskstores created for DataDictionary  </br> - GFXD-DEFAULT-DISKSTORE: The default diskstore. </br>- USERDISKSTORE: Generated for diskstores created by users using [CREATE DISKSTORE](/reference/sql_reference/create-diskstore) command.</br>- USERDISKSTORE-SNAPPY-DELTA: Created for delta regions. |
+| diskstores | - GFXD-DD-DISKSTORE: Diskstores created for DataDictionary  </br> - GFXD-DEFAULT-DISKSTORE: The default diskstore. </br>- USERDISKSTORE: Generated for diskstores created by users using [CREATE DISKSTORE](../sql_reference/create-diskstore.md) command.</br>- USERDISKSTORE-SNAPPY-DELTA: Created for delta regions. |
 | user       | For internal use                                             |
 | README.txt | The file contains information about other files in a directory. |
 | restore.sh | Script that copies files back to their original locations.   |

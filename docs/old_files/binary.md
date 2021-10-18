@@ -15,7 +15,7 @@ Left         | Center        | Right
 
 
 **Image Link:**
-![SDE_Architecture](./Images/sde_architecture.png)
+![SDE_Architecture](../Images/sde_architecture.png)
 
 **Hyperlink:**
 Refer to the [handbook](https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf).

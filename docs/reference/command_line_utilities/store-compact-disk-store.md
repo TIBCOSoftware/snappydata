@@ -19,9 +19,8 @@ Manual compaction can be done for online and offline disk stores. For the online
 Offline compaction runs in the same way, but without the incoming CRUD operations. Also, because there is no current open log, the compaction creates a new one to get started.
 
 !!! Note
-	You must provide all of the directories in the disk store. If no oplog max size is specified, SnappyData uses the system default.</br> Offline compaction can consume a large amount of memory. If you get a java.lang.OutOfMemory error while running this command, you made need to increase the heap size by setting the `-Xmx` and `-Xms` options in the JAVA_ARGS environment variable. [Command Line Utilites](../../reference/command_line_utilities/store-launcher.md) provides more information about setting Java options.
+	You must provide all of the directories in the disk store. If no oplog max size is specified, SnappyData uses the system default.</br> Offline compaction can consume a large amount of memory. If you get a java.lang.OutOfMemory error while running this command, you made need to increase the heap size by setting the `-Xmx` and `-Xms` options in the JAVA_ARGS environment variable. [Command Line Utilites](../../reference/command_line_utilities/index.md) provides more information about setting Java options.
 
-</p>
 
 ## Example
 
@@ -36,5 +35,3 @@ The output of this command is similar to:
 Offline compaction removed 12 records.
 Total number of region entries in this disk store is: 7
 ```
-
-

@@ -37,21 +37,21 @@ The following new features are included in SnappyData 1.0.2 version:
 *	Added support for arbitrary size view definition. It use to fail when view text size went beyond 32k.
 Support for displaying VIEWTEXT for views in SYS.HIVETABLES. 
 For example: Select viewtext from sys.hivetables where tablename = ‘view\_name” will give the text with which the view was created.
-*	Added Row level Security feature. Admins can define multiple security policies on tables for different users or LDAP groups. Refer [Row Level Security](/security/row_level_security.md)
-*	Auto refresh of UI page. Now the SnappyData UI page gets updated automatically and frequently. Users need not refresh or reload. Refer [SnappyData Pulse](/monitoring/monitoring.md)
+*	Added Row level Security feature. Admins can define multiple security policies on tables for different users or LDAP groups. Refer [Row Level Security](../security/row_level_security.md)
+*	Auto refresh of UI page. Now the SnappyData UI page gets updated automatically and frequently. Users need not refresh or reload. Refer [SnappyData Pulse](../monitoring/monitoring.md)
 *	Richer user interface. Added graphs for memory, CPU consumption etc. for last 15 minutes. The user has the ability to see how the cluster health has been for the last 15 minutes instead of just current state.
-*	Total CPU core count capacity of the cluster is now displayed on the UI. </br>Refer [SnappyData Pulse](/monitoring/monitoring.md)
+*	Total CPU core count capacity of the cluster is now displayed on the UI. </br>Refer [SnappyData Pulse](../monitoring/monitoring.md)
 *	Bucket count of tables are also displayed now on the user interface.
-*	Support deployment of packages and jars as DDL command. Refer [Deploy](/reference/sql_reference/deploy.md)
-*	Added support for reading maven dependencies using **--packages** option in our job server scripts. Refer [Deploying Packages in SnappyData](/connectors/deployment_dependency_jar.md#deploypackages).
-*	Changes to procedure **sys.repair_catalog** to execute it on the server (earlier this was run on lead by sending a message to it). This will be useful to repair catalog even when lead is down. </br>Refer [Catalog Repair](/troubleshooting/catalog_inconsistency.md)
+*	Support deployment of packages and jars as DDL command. Refer [Deploy](../reference/sql_reference/deploy.md)
+*	Added support for reading maven dependencies using **--packages** option in our job server scripts. Refer [Deploying Packages in SnappyData](../connectors/deployment_dependency_jar.md#deploypackages).
+*	Changes to procedure **sys.repair_catalog** to execute it on the server (earlier this was run on lead by sending a message to it). This will be useful to repair catalog even when lead is down. </br>Refer [Catalog Repair](../troubleshooting/catalog_inconsistency.md)
 *	Added support for **PreparedStatement.getMetadata() JDBC API**. This is on an experimental basis.
 *	Added support for execution of some DDL commands viz CREATE/DROP DISKSTORE, GRANT, REVOKE. CALL procedures from snappy session as well.
 *	Quote table names in all store DDL/DML/query strings to allow for special characters  and keywords in table names.
 *	Spark application with same name cannot be submitted to SnappyData. This has been done so that individual apps can be killed by its name when required.
 *	Users are not allowed to create tables in their own schema based on system property - `snappydata.RESTRICT_TABLE_CREATION`. In some cases it may be required to control use of cluster resources in which case the table creation is done only by authorized owners of schema.
 *	Schema can be owned by an LDAP group also and not necessarily by a single user.
-*	Support for deploying SnappyData on Kubernetes using Helm charts. </br>Refer [Kubernetes](/kubernetes.md)
+*	Support for deploying SnappyData on Kubernetes using Helm charts. </br>Refer [Kubernetes](../kubernetes.md)
 *	Disk Store Validate tool enhancement. Validation of disk store can find out all the inconsistencies at once.
 *	BINARY data type is same as BLOB data type.
 

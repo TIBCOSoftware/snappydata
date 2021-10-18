@@ -24,8 +24,8 @@ You can use these statistics to see the transaction rate. An example follows the
 
 This VSD chart shows the aggregated transaction rate across three FabricServer instances, along with the rollback rate.
 
-![](../Images/vsd/vsd_transactions.png)
+![](../../Images/vsd/vsd_transactions.png)
 
 With time statistics enabled, you can compute the average latency for each sample point as the total time spent in the transaction divided by the number of transactions in each sample. The chart also shows that the average latency across all samples is 6.76 ms.
 
-![](../Images/vsd/vsd_transactions_2.png)
+![](../../Images/vsd/vsd_transactions_2.png)

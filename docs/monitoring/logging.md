@@ -9,20 +9,18 @@ You can specify the name and location of the log file by using the JDBC boot pro
 snappy-shell snappydata server start -log-file=/home/user1/log/mysnappystorelog.log
 ```
 
--   **[Product Usage Logging](../../manage_guide/Topics/membership-logging.html)**
+-   **[Product Usage Logging](membership-logging.md)**
     Each SnappyData locator creates a log file that record the different membership views of the SnappyData distributed system. You can use the contents of these log files to verify that your product usage is compliance with your SnappyData license.
 
--   **[Log Message Format](../../manage_guide/log-format.html)**
+-   **[Log Message Format](log-format.md)**
 
     Each message in a server or locator log file contains the severity level, timestamp, and other important information.
--   **[Severity Levels](../../manage_guide/log-severity.html)**
+-   **[Severity Levels](log-severity.md)**
 
     You can configure the logging system to record only those messages that are at or above a specified logging level. By default, the logging level is set to "config", which means that the system logs messages at config, info, warning, error, and severe severity levels.
 
--   **[Using java.util.logging.Logger for Application Log Messages](../../manage_guide/log-application.html)**
+-   **[Using java.util.logging.Logger for Application Log Messages](log-application.md)**
     Applications that use the SnappyData JDBC peer driver can log messages through the java.util.Logger logging API. You can obtain a handle to the java.util.Logger logger object by entering `com.pivotal.gemfirexd` after the application connects to the SnappyData cluster with the peer driver.
 
--   **[Using Trace Flags for Advanced Debugging](../../manage_guide/log-debug.html)**
+-   **[Using Trace Flags for Advanced Debugging](configure_logging.md#using-trace-flags-for-advanced-logging-for-snappydata-store)**
     SnappyData provides debug trace flags to record additional information about SnappyData features in the log file.
-
-

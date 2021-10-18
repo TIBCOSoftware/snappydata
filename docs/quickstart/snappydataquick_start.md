@@ -77,7 +77,7 @@ SnappyData Leader pid: 10468 status: running
 Connect to  [Snappy SQL shell](#connectsnappyshell) to perform various SQL operations.
 
 
-Alternatively , you can access the [SnappyData Monitoring Console](/monitoring/monitoring.md) by entering  [http:// `<leadhost>`:5050/dashboard/]() in the web browser. For example,  http://localhost:5050/dashboard/. </br>` <leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the conf/leads file. On the SnappyData Monitoring Console dashboards, after starting a cluster, you can check the status of each of the cluster member.
+Alternatively , you can access the [SnappyData Monitoring Console](../monitoring/monitoring.md) by entering  [http:// `<leadhost>`:5050/dashboard/]() in the web browser. For example,  http://localhost:5050/dashboard/. </br>` <leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the conf/leads file. On the SnappyData Monitoring Console dashboards, after starting a cluster, you can check the status of each of the cluster member.
 
 <a id= connectsnappyshell> </a>
 ## Connect/Disconnect to SnappyData Shell
@@ -280,7 +280,7 @@ NULL
 
 <a id= submitsnapjobs> </a>
 ## Submit Snappy Jobs
-Instructions to submit Snappy jobs are available [here](/programming_guide/snappydata_jobs.md). There are sample jobs available for reference. You can import the examples into a separate independent gradle project and submit the jobs to the cluster or run within an IDE. Refer to the instructions [here](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/README.md).
+Instructions to submit Snappy jobs are available [here](../programming_guide/snappydata_jobs.md). There are sample jobs available for reference. You can import the examples into a separate independent gradle project and submit the jobs to the cluster or run within an IDE. Refer to the instructions [here](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/README.md).
 
 <a id= addservercluster> </a>
 ## Add Servers into Cluster
@@ -321,4 +321,4 @@ The SnappyData Leader has stopped.
 The SnappyData Server has stopped.
 The SnappyData Locator has stopped.
 ```
-For more details, refer to [Stopping the Cluster](/howto/stop_snappy_cluster.md)
+For more details, refer to [Stopping the Cluster](../howto/stop_snappy_cluster.md)

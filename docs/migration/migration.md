@@ -24,6 +24,6 @@ For more information see,
 
 2. Stop the cluster and verify that all members are stopped: You can shutdown the cluster using the `sbin/snappy-stop-all.sh` command. To ensure that all the members have been shut down correctly, use the `sbin/snappy-status-all.sh` command.
 	
-3. Re-install SnappyData: After you have stopped the cluster, [install the latest version of SnappyData](../install.md).
+3. Re-install SnappyData: After you have stopped the cluster, [install the latest version of SnappyData](../install/index.md).
 
 4. Reconfigure your cluster.

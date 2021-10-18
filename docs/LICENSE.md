@@ -1,4 +1,8 @@
-## LICENSE
+# License
+
+The source code is distributed with Apache License 2.0. Users can download and deploy it in production.
+Full text of the license is below.
+
 
                                  Apache License
                            Version 2.0, January 2004
@@ -188,7 +192,7 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright 2018 SnappyData Inc.
+   Copyright © 2017-2021 TIBCO Software Inc. All rights reserved.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.

@@ -30,5 +30,4 @@ snappy-sql> run './quickstart/scripts/create_and_load_column_table.sql';
 snappy-sql> run './quickstart/scripts/create_and_load_row_table.sql';
 ```
 
-The complete list of commands available through _snappy_shell_ can be found [here](../reference/command_line_utilities/store-launcher.md).
-
+The complete list of commands available through _snappy_shell_ can be found [here](../reference/command_line_utilities/index.md).

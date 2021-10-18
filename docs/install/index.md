@@ -6,7 +6,7 @@ The erstwhile **Enterprise Edition** of the product, which is sold by TIBCO Soft
 As of the 1.3.0 release, all components that were previously closed source are now OSS (except for the
 GemFire connector), and there is only the **Community Edition** that is released.
 
-For more information on the capabilities of the Community Edition and differences from the previous Enterprise Edition, see [Community Edition (Open Source)](additional_files/open_source_components.md).
+For more information on the capabilities of the Community Edition and differences from the previous Enterprise Edition, see [Community Edition (Open Source)](../additional_files/open_source_components.md).
 
 <a id= download> </a>
 <heading2>Download SnappyData Community Edition</heading2>
@@ -27,15 +27,15 @@ Before you start the installation, make sure that Java SE Development Kit 8 is i
 
 The following options are available for provisioning SnappyData:
 
-* [On-Premise](install/install_on_premise.md) <a id="install-on-premise"></a>
+* [On-Premise](install_on_premise.md) <a id="install-on-premise"></a>
 
-* [Amazon Web Services (AWS)](install/setting_up_cluster_on_amazon_web_services.md) <a id="setting-up-cluster-on-amazon-web-services-aws"></a>
+* [Amazon Web Services (AWS)](setting_up_cluster_on_amazon_web_services.md) <a id="setting-up-cluster-on-amazon-web-services-aws"></a>
 
-* [Kubernetes](kubernetes.md)
+* [Kubernetes](../kubernetes.md)
 
-* [Docker](/quickstart/getting_started_with_docker_image.md)
+* [Docker](../quickstart/getting_started_with_docker_image.md)
 
-* [Building from Source](install/building_from_source.md)<a id="building-from-source"></a>
+* [Building from Source](building_from_source.md)<a id="building-from-source"></a>
 
 <heading3>Configuring the Limit for Open Files and Threads/Processes</heading3>
 

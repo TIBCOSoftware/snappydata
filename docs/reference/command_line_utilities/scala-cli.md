@@ -2,7 +2,7 @@
 
 The snappy-scala CLI that was introduced as an experimental feature in the SnappyData 1.2.0 release,
 is considered a stable feature in the 1.3.0 release. This is similar to the Spark shell in its capabilities.
-The [Spark documentation](https://spark.apache.org/docs/2.1.1/quick-start.html) defines the Spark shell as follows:
+The [Spark documentation](https://spark.apache.org/docs/2.1.3/quick-start.html) defines the Spark shell as follows:
 
 ***Spark’s shell provides a simple way to learn the API, as well as a powerful tool to analyze data interactively. It is available in either Scala (which runs on the Java VM and is thus a good way to use existing Java libraries) or Python.***
 
@@ -16,7 +16,7 @@ The high cost, in terms of time and efforts, for each change warranting code com
 
 The idea of snappy-scala CLI is similar to that of Spark shell with few differences. With the snappy-scala CLI, you can interactively learn all the Spark APIs, the additional SnappyData APIs and also have the same experience of a Scala REPL or a Spark shell REPL app. You can still use the Spark shell and connect to a SnappyData cluster in Smart Connector mode, but you will require a separate Spark cluster for that. Moreover, that will be a different experience wherein the SnappyData cluster is used mostly as a DataSource by the Spark application.
 
-snappy-scala CLI is built on top of the [exec scala](/reference/sql_reference/exec-scala.md) feature and the already existing snappy CLI utility, which connects to the SnappyData cluster using the JDBC driver. snappy-scala CLI is not a true scala interpreter but mimics a scala or a Spark shell type of interpreter. Each line of the code is shipped to the Lead node of the SnappyData cluster. The code is interpreted there, and the result of the interpretation is then brought back to the snappy-scala CLI. It is displayed in the same fashion as that of a Scala REPL.
+snappy-scala CLI is built on top of the [exec scala](../sql_reference/exec-scala.md) feature and the already existing snappy CLI utility, which connects to the SnappyData cluster using the JDBC driver. snappy-scala CLI is not a true scala interpreter but mimics a scala or a Spark shell type of interpreter. Each line of the code is shipped to the Lead node of the SnappyData cluster. The code is interpreted there, and the result of the interpretation is then brought back to the snappy-scala CLI. It is displayed in the same fashion as that of a Scala REPL.
 
 Although the experience of the snappy-scala CLI is similar to that of a Scala or a Spark shell, yet a couple of important features are either missing or are thinly supported. This is because it is currently an experimental feature. The following are a couple of notable differences between the Spark shell and snappy-scala CLI:
 
@@ -63,7 +63,7 @@ The following options are only available currently:
 
 ### Securing the Usage of snappy-scala CLI
 
-This is the same as [securing the usage of **exec scala**](/programming_guide/scala_interpreter.md#secureexscala). In a secured system, by default, only the DB owner has the permission to secure the usage and can grant this privilege to other users as well. Apart from running the Scala code, the CLI also takes predefined commands. Each of these commands has a specific purpose. All these commands start with a colon **:**. With the help of this, the interpreter differentiates between the code and command.
+This is the same as [securing the usage of **exec scala**](../../programming_guide/scala_interpreter.md#secureexscala). In a secured system, by default, only the DB owner has the permission to secure the usage and can grant this privilege to other users as well. Apart from running the Scala code, the CLI also takes predefined commands. Each of these commands has a specific purpose. All these commands start with a colon **:**. With the help of this, the interpreter differentiates between the code and command.
 
 On the snappy-scala prompt, type **:help** for the list of supported commands. The following image shows the  list of the available commands that are displayed when you type **:help** command:
 

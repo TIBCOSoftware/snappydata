@@ -94,7 +94,7 @@ val newSession = snappySession.newSession()
 The newSession instance has a similar session level config as snappySession.
 
 !!!Note
-	For embedded snappy jobs, it is recommended to use a new [snappy-job](/programming_guide/snappydata_jobs.md)for each streaming query.
+	For embedded snappy jobs, it is recommended to use a new [snappy-job](../programming_guide/snappydata_jobs.md)for each streaming query.
 
 
 <a id= otherops> </a>

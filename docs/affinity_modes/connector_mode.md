@@ -11,7 +11,7 @@ Specifically, to run on a cluster, the SparkContext can connect to several types
 
 **Key Points:**
 
-* Can work with SnappyData store from a compatible Spark distribution (2.1.1)
+* Can work with SnappyData store from a compatible Spark distribution (2.1.1 to 2.1.3)
 
 * Spark application executes in its own independent JVM processes
 

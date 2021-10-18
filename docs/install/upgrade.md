@@ -14,7 +14,7 @@ Before you begin the upgrade, ensure that you understand the new features and an
 
 4. Create a [backup of the operational disk store files](../reference/command_line_utilities/store-backup.md) for all members in the distributed system.
 
-5. Reinstall SnappyData: After you have stopped the cluster, [install the latest version of SnappyData](../install.md).
+5. Reinstall SnappyData: After you have stopped the cluster, [install the latest version of SnappyData](../install/index.md).
 
 6. Reconfigure your cluster using the locator, lead, and server configuration files you backed up in step 1.
 

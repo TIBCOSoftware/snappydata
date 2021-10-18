@@ -4,18 +4,18 @@
 
 **exec scala** is an SQL feature that you can use to submit Scala code to the SnappyData cluster. This is a SQL construct from any JDBC/ODBC client and one of the ways in which you can submit the Scala code to the SnappyData cluster. You can submit a chunk of Scala code similar to a SQL query, which is submitted to a database on a JDBC/ODBC connection including hive thrift server SQL clients such as beeline.
 
-A parallel between a SQL query and a block of Scala code is brought about by using a fixed schema for the Scala code. Since, a select query's result set metadata is fixed, whereas there is no meaning of a fixed schema for a chunk of Scala code. Therefore, SnappyData provides a fixed schema to all the Scala code. This is elaborated in the following sections. 
+A parallel between a SQL query and a block of Scala code is brought about by using a fixed schema for the Scala code. Since, a select query's result set metadata is fixed, whereas there is no meaning of a fixed schema for a chunk of Scala code. Therefore, SnappyData provides a fixed schema to all the Scala code. This is elaborated in the following sections.
 
 ### How Does it Work?
 
-All the code from **exec scala** is executed using the Scala REPL <TODO: Link> on the SnappyData Lead node. When Spark Dataframes are invoked this would automatically result in workload distribution across all the SnappyData 
-servers. The Lead node manages a pool of REPL based interpreters. The user SQL activity is delegated to one of the interpreters from this pool. The pool is lazily created.  
+All the code from **exec scala** is executed using the Scala REPL <TODO: Link> on the SnappyData Lead node. When Spark Dataframes are invoked this would automatically result in workload distribution across all the SnappyData
+servers. The Lead node manages a pool of REPL based interpreters. The user SQL activity is delegated to one of the interpreters from this pool. The pool is lazily created.
 
-Any connection (JDBC or ODBC) results in the creation of a SnappySession within the CDB cluster. Moreover, the session remains associated with the connection until it is closed or dereferenced. 
+Any connection (JDBC or ODBC) results in the creation of a SnappySession within the CDB cluster. Moreover, the session remains associated with the connection until it is closed or dereferenced.
 
 
 The first time **exec scala** is executed, an interpreter from the pool gets associated with the connection. This allows the user to manage any adhoc private state on the server side. For example, any variables, objects, or even classes created will be isolated from other users.
-The functioning of the interpreter is same as that of the interactive [Spark-shell](/programming_guide/using_the_spark_shell_and_spark-submit.md) only with one difference. As commands are interpreted any output generated will be cached in a buffer. And, when the command is done, the cached output will be available in the client side ResultSet object. 
+The functioning of the interpreter is same as that of the interactive [Spark-shell](../../programming_guide/using_the_spark_shell_and_spark-submit.md) only with one difference. As commands are interpreted any output generated will be cached in a buffer. And, when the command is done, the cached output will be available in the client side ResultSet object.
 
 ### Important Information about **exec scala**
 
@@ -34,18 +34,18 @@ The functioning of the interpreter is same as that of the interactive [Spark-she
 ## Syntax
 
 		exec scala [options (returnDF ‘dfName’)] <Scala_code>
-        
-*	**exec** and **scala** are the keywords to identify this SQL type. 
 
-*	**options** is an optional part of the syntax. If it is present, then after the keyword **options**, you can specify the allowed options inside parentheses. Currently, only one optional parameter, that is **returnDF**, can be specified with the execution. For this option, you can provide the name of any actual symbol in the Scala code, which is of type DataFrame. 
-Through the **returnDF** option, you can request the system to return the result of the specific dataframe, which got created as the result of the Scala code execution. By default, the **exec scala** just returns the output of each interpreted line, which the interpreter prints on the Console after executing each line. 
+*	**exec** and **scala** are the keywords to identify this SQL type.
+
+*	**options** is an optional part of the syntax. If it is present, then after the keyword **options**, you can specify the allowed options inside parentheses. Currently, only one optional parameter, that is **returnDF**, can be specified with the execution. For this option, you can provide the name of any actual symbol in the Scala code, which is of type DataFrame.
+Through the **returnDF** option, you can request the system to return the result of the specific dataframe, which got created as the result of the Scala code execution. By default, the **exec scala** just returns the output of each interpreted line, which the interpreter prints on the Console after executing each line.
 
 <a id= examplesofexec> </a>
 ## Examples
 
 ### Examples I
 
-Following are some examples to demonstrate the usage of **exec scala**. You can run these examples using [Snappy shell](../howto/use_snappy_shell.md).
+Following are some examples to demonstrate the usage of **exec scala**. You can run these examples using [Snappy shell](../../howto/use_snappy_shell.md).
 
 
 *	A simple Scala code to define a value **x** and print it.
@@ -87,17 +87,17 @@ Following are some examples to demonstrate the usage of **exec scala**. You can 
 
     !!!Note
         The variable **snappysession** is not declared anywhere; however, the above code uses it. The **snappysession** symbol name is for the object **SnappySession**, which represents this database connection. Similarly, **sc** is there to access the singleton SparkContext present on the lead node.
-    
+
 ### Examples II
 
 *	Executing scala code snippet via JDBC or ODBC connection on to the SnappyData cluster.
 
             // Note this is an SQL command... this is the text you will send using a JDBC or ODBC connection.
 
-            val prepDataCommand = 
-              """ exec scala 
+            val prepDataCommand =
+              """ exec scala
                  val dataDF = snappysession.read.option("header", "true").csv("../path/to/customers.csv")
-                 // Variable 'snappysession' is injected to your program automatically. 
+                 // Variable 'snappysession' is injected to your program automatically.
                  // Refers to a SnappySession instance.
                  val newDF = dataDF.withColumn("promotion", "$20")
                  newDF.createOrReplaceTempView("customers")
@@ -112,13 +112,13 @@ Following are some examples to demonstrate the usage of **exec scala**. You can 
 *	Returning a specific Dataframe using keyword **returnDF**. Note the use of the option **returnDF** here. Through this option, you can request the system to return the result of the specific dataframe you want, which got created as the result of the Scala code execution.
 
             val getDataFromCDB =
-             """ exec scala options(returnDF 'someDF') 
+             """ exec scala options(returnDF 'someDF')
                    val someDF = snappysession.table("customers").filter(..... )
              """
             ResultSet rs = conn.createStatement().executeSQL(getDataFromCDB)
             //Use JDBC ResultSet API to fetch result. Data types will be mapped automatically
 
-*	Declaring a case class and then creating a dataset using it. Also creating another dataset and then getting a dataframe on it. Note the use of the option **returnDF** here. Through this option, you can request the system to return the result of the specific dataframe you want, which got created as the result of the Scala code execution. 
+*	Declaring a case class and then creating a dataset using it. Also creating another dataset and then getting a dataframe on it. Note the use of the option **returnDF** here. Through this option, you can request the system to return the result of the specific dataframe you want, which got created as the result of the Scala code execution.
 Here both **ds1** and **ds2** are created. However, the caller wants the output of the **ds2** and hence specified the symbol **ds2** in the options. By default, the **exec scala** returns the output of each interpreted line, which the interpreter prints on the console after executing each line.
 
             exec scala options(returnDF 'ds2') case class ClassData(a: String, b: Int)
@@ -151,7 +151,7 @@ The superuser or the database owner, in turn, can grant the privilege of executi
 
 You can use the following DDL for this purpose:
 
-**GRANT** 
+**GRANT**
 
 ```
 grant privilege exec scala to <user(s) and or ldap_group(s)>
@@ -201,24 +201,24 @@ val numbersRdd = sc.parallelize(data, 1)
 val collectedNumbers = numbersRdd.map(_ * x).collect()
 ```
 
-This is because the closure is referring to **x**, which is defined outside the closure. 
+This is because the closure is referring to **x**, which is defined outside the closure.
 There are no issues if the closure has no dependency on any external variables.
 
 
 ## Exceptions
 
-Following are some examples of exceptions that can occur in the code that is executed through **exec scala**. 
+Following are some examples of exceptions that can occur in the code that is executed through **exec scala**.
 
-!!! Attention 
+!!! Attention
 	Whenever an exception occurs in the code that is executed via exec scala, then the error code, as part of SQLEexception, is **SQLState=38000**. Hence, if you get an SQLException with an error code other than **SQLState=38000**, the exception is originated from another part of code and not from the snippet that is passed  via exec scala.
-    
+
 ### Examples
 
 **Example 1**
 
 ```
-execstr = "exe scala snappysession.sql(\"create table testtab (col1 int)\").show" 
- 
+execstr = "exe scala snappysession.sql(\"create table testtab (col1 int)\").show"
+
  java.sql.SQLException: (SQLState=42X01 Severity=20000) (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-9) Syntax error: Invalid input "exe ", expected select, insert, put, update, delete, ctes, dmlOperation, putValuesOperation or ddl (line 1, column 1):
 exe scala snappysession.sql("create table testtab (col1 int)").show
 ^;.
@@ -228,7 +228,7 @@ exe scala snappysession.sql("create table testtab (col1 int)").show
 
 ```
  execstr = "exec scala snappysession.sql(\"create table testtab (col1 int)\").show"
-  
+
 java.sql.SQLException: (SQLState=38000 Severity=20000) (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-9) The exception 'com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException: myID: 127.0.0.1(16536)<v1>:30591, caused by java.lang.RuntimeException: Got error while interpreting line  snappysession.sql("create table testtab (col1 int)").show and interpreter output = org.apache.spark.sql.AnalysisException: Table app.testtab already exists.;
 
 ```

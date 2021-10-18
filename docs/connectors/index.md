@@ -15,5 +15,6 @@ You can also deploy other third party connectors using the SQL `Deploy` command.
 * [Accessing Cloud Stores](access_cloud_data.md)
 * [Connecting to External Hive Metastores](../Data/external_hive_support.md)
 * [Using the SnappyData Change Data Capture (CDC) Connector](cdc_connector.md)
-* [Using the SnappyData GemFire Connector](gemfire_connector.md)
-
+* [Using the SnappyData JDBC Streaming Connector](jdbc_streaming_connector.md)
+<!-- * [Using the SnappyData GemFire Connector](gemfire_connector.md) -->
+* [Connecting to TIBCO Data Virtualization (TDV)](tdv.md)
