@@ -38,8 +38,8 @@ Requirements for each host:
   [SNAP-1375](https://jirasnappydataio.atlassian.net/browse/SNAP-1375) for crashes reported with earlier versions).
   Recommended is the latest stable release version.
 
-* Alternatively equivalent version of OpenJDK distributions >= 1.8.0\_144 and recommended is having the
-  latest stable release version. A full JDK installation is required.
+* Alternatively equivalent Java version >= 1.8.0\_144 from OpenJDK distributions (Linux vendor build, AdoptOpenJDK
+  or equivalent). Recommended is the latest stable release version. A full JDK installation is required.
 
 * The latest version of Bash shell.
 
@@ -71,8 +71,9 @@ Requirements for each host:
 
 - On Red Hat based systems, some of the above Python packages may be available only after enabling the **EPEL** repository. If these are not available in the repositories for your OS version or if using **EPEL** is not an option, then you can use **pip**. Refer to the respective project documentation for details and alternative options such as Anaconda.
 
-- Alternatively Python 3 <= 3.7 can also be used. Consult your distribution documents for the equivalent python 3
-  packages for `numpy`, `scipy` and `pandas`. Or you can use conda/mamba to set up the required python environment.
+- Alternatively Python 3 can also be used but the version should be <= 3.7. Consult your distribution documentation to
+  install the equivalent python 3 packages for `numpy`, `scipy` and `pandas`.
+  Or you can use conda/mamba to set up the required python environment.
 
 
 ## Filesystem Type for Linux Platforms

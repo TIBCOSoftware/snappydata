@@ -7,7 +7,7 @@ The following SQL general limitations are observed in SnappyData:
 *	[For complex data types (ARRAY, MAP, STRUCT), values to be inserted can not be directly used in the values clause of `INSERT INTO <table> values (x, y, z … )`](#limitation3)
 
 <a id="limitation1"></a>
-##### For row tables without primary key, DML operations that use Spark functions are not supported
+### For row tables without primary key, DML operations that use Spark functions are not supported
 
 !!!Note
 	This limitation applies only to row tables. For column tables such DML operations are supported.
@@ -49,7 +49,7 @@ However, if *table1* contains a primary key, then the DML operations are support
         2 rows selected
 
 <a id="limitation2"></a>
-##### The syntax, `INSERT INTO <table><(col1,...)> values (… )`, cannot contain Spark functions in the values clause
+### The syntax, `INSERT INTO <table><(col1,...)> values (… )`, cannot contain Spark functions in the values clause
 
 The value clause of `INSERT INTO <table><(col1,...)> values (… ) `operation can not contain Spark functions. In such a case, use syntax `INSERT INTO <table> SELECT <>` syntax.
 
@@ -76,7 +76,7 @@ However, the following syntax works:
         1 row selected
 
 <a id="limitation3"></a>
-##### For complex data types (ARRAY, MAP, STRUCT), values to be inserted can not be directly used in the values clause of `INSERT INTO <table> values (x, y, z … )`
+### For complex data types (ARRAY, MAP, STRUCT), values to be inserted can not be directly used in the values clause of `INSERT INTO <table> values (x, y, z … )`
 
 To insert values using Snappy shell or a SQL client use `insert into <table> select` syntax.
 
