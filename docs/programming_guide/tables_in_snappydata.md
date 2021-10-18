@@ -84,7 +84,13 @@ Create a SnappyStore table using Spark APIs
 
 * Option EXPIRE is not applicable for column tables
 
-* Option EVICTION_BY with value LRUCOUNT is not applicable for column tables
+* Option EVICTION_BY with value LRUCOUNT is supported for column tables but it may not work as expected
+  because the count in this case does not refer to number of rows per node. The count instead is the
+  number of column blocks that will be retained in memory before eviction kicks in, which may translate
+  to an arbitrary number of rows (or none at all if only blocks having column statistics are retained).
+  The recommended use case for this option is to have a tiny LRUCOUNT (should be at least 1) so that
+  nearly all table data is on disk, that allows the column table to behave as a disk-only table with
+  no memory caching which is useful for infrequently used historical data, for example.
 
 * READ_COMMITTED and REPEATABLE_READ isolation levels are not supported for column tables.
 

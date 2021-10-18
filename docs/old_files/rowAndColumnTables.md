@@ -74,10 +74,10 @@ The below mentioned DDL extensions are required to configure a table based on us
    10.  EXPIRE: You can use the EXPIRE clause with tables to control SnappyStore memory usage. It will expire the rows after configured TTL.
 
 ##### Restrictions on column tables
+
 1. Column tables can not specify any primary key, unique key constraints.
 2. Index on column table is not supported.
-2. Option EXPIRE is not applicable for column tables.
-3. Option EVICTION_BY with value LRUCOUNT is not applicable for column tables. 
+3. Option EXPIRE is not applicable for column tables.
 
 
 #### DML operations on tables

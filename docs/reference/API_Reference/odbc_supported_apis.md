@@ -16,6 +16,7 @@ The following APIs are supported for ODBC in Snappy Driver:
 | SQLBrowseConnect    | Level 1           | Not                        ||
 | SQLBulkOperations   | Level 1           | Yes                        ||
 | SQLCancel           | Core[1]           | Yes                        ||
+| SQLCancelHandle     | Core[1]           | Yes                        ||
 | SQLCloseCursor      | Core              | Yes                        ||
 | SQLColAttribute     | Core[1]           | Yes                        ||
 | SQLColumnPrivileges | Level 2           | Yes                        ||

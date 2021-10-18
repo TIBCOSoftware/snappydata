@@ -21,7 +21,11 @@
 *	[peer-discovery-port](#peer-discovery-port)
 *	[rebalance](#rebalance)
 *	[snappydata.column.batchSize](#snappydata.column.batchSize)
+*	[snappydata.column.compactionRatio](#snappydata.column.compactionRatio)
+*	[snappydata.column.updateCompactionRatio](#snappydata.column.updateCompactionRatio)
 *	[spark.driver.maxResultSize](#spark.driver.maxResultSize)
+*	[spark.sql.maxMemoryResultSize](#spark.sql.maxMemoryResultSize)
+*	[spark.sql.resultPersistenceTimeout](#spark.sql.resultPersistenceTimeout)
 *	[spark.executor.cores](#spark.executor.cores)
 *	[spark.local.dir](#spark.local.dir)
 *	[spark.network.timeout](#spark.network.timeout)
@@ -396,11 +400,13 @@ This is an SQL property
 
 **Default Values**</br>
 
+24MB
+
 **Components**</br>
 
 This can be set using a `SET SQL` command or using the configuration properties in the **conf/leads** file. The `SET SQL` command sets the property for the current SnappySession while setting it in conf/leads file sets the property for all SnappySession.
 
-For example:
+**Example**</br>
 ```
 Set in the snappy SQL shell
 
@@ -414,8 +420,53 @@ $ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10 -snappydata.column.batchSize=100k
 ```
 
-**Example**</br>
+<a id="snappydata.column.compactionRatio"></a>
+## snappydata.column.compactionRatio
 
+**Description**</br>
+The ratio of deleted rows in a column batch that will trigger its compaction.
+The value should be between 0 and 1 (both exclusive).
+The compaction is triggered in one of the foreground threads performing delete or update.
+The compacted batch will be put into the delta buffer if it has become too small else it will be put into the column store.
+
+This is a Spark property that needs to be set in the node configuration as an argument or as system property.
+
+**Default Value**</br>
+
+0.1
+
+**Components**</br>
+
+- Server
+
+**Example**</br>
+```
+-snappydata.column.compactionRatio=0.15
+```
+
+<a id="snappydata.column.updateCompactionRatio"></a>
+## snappydata.column.updateCompactionRatio
+
+**Description**</br>
+The ratio of updated rows in a column batch that will trigger its compaction.
+The value should be between 0 and 1 (both exclusive).
+The compaction is triggered in one of the foreground threads performing update or delete.
+The compacted batch will be put into the delta buffer if it has become too small else it will be put into the column store.
+
+This is a Spark property that needs to be set in the node configuration as an argument or as system property.
+
+**Default Value**</br>
+
+0.2
+
+**Components**</br>
+
+- Server
+
+**Example**</br>
+```
+-snappydata.column.updateCompactionRatio=0.15
+```
 
 <a id="spark.driver.maxResultSize"></a>
 ## spark.driver.maxResultSize
@@ -425,6 +476,8 @@ Limit of the total size of serialized results of all partitions for each action 
 
 **Default Values**</br>
 
+1GB
+
 **Components**</br>
 
 - Lead
@@ -433,6 +486,61 @@ Limit of the total size of serialized results of all partitions for each action 
 ```
 -spark.driver.maxResultSize=2g
 ```
+
+<a id="spark.sql.maxMemoryResultSize"></a>
+## spark.sql.maxMemoryResultSize
+
+**Description**</br>
+The maximum size of results from a JDBC/ODBC/SQL query in a partition that will be held in memory
+beyond which the results will be written to disk. The disk file will continue to grow till 8 times
+this initial value after which a new disk file will be written. The server/lead to which the client
+is connected will decompress one disk file at a time and return the results, so the disk file size
+should not be too large (e.g. with the default 4MB for this property, maximum disk file size is 32MB).
+
+Note that this only works with JDBC/ODBC drivers or when using SnappySession.sql().toLocalIterator() API.
+If there is any intermediate Dataset API operation before the toLocalIterator(), then the regular
+Spark DataFrame will get created which will hold the results only in memory and whose behaviour is governed
+by [spark.driver.maxResultSize](#spark.driver.maxResultSize) instead.
+
+This is a Spark property that needs to be set in the node configuration as an argument or as system property.
+
+**Default Value**</br>
+
+4MB
+
+**Components**</br>
+
+- Server
+
+**Example**</br>
+```
+-spark.sql.maxMemoryResultSize=8m
+```
+
+<a id="spark.sql.resultPersistenceTimeout"></a>
+## spark.sql.resultPersistenceTimeout
+
+**Description**</br>
+Maximum duration in seconds for which results overflowed to disk are held on disk after
+which they are cleaned up. This works in conjunction with [spark.sql.maxMemoryResultSize](#spark.sql.maxMemoryResultSize)
+to delete the intermediate disk files generated. This will take effect only for the operations
+mentioned in that property description.
+
+This is a Spark property that needs to be set in the node configuration as an argument or as system property.
+
+**Default Value**</br>
+
+21600 i.e. 6 hours
+
+**Components**</br>
+
+- Server
+
+**Example**</br>
+```
+-spark.sql.resultPersistenceTimeout=14400
+```
+
 <a id="spark.executor.cores"></a>
 ## spark.executor.cores
 

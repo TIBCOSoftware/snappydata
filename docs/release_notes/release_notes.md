@@ -126,7 +126,7 @@ SnappyData 1.3.0 release includes the following new features over the previous 1
 * **Hadoop upgraded to version 3.2.0 and added ADLS gen 1/2 connectivity**</br>
 
     Hadoop upgraded to 3.2.0 from 2.7.x to allow support for newer components like ADLS gen 1/2.
-    Azure jars added to the product by default to allow support for ADLS.</br></br>
+    ADLS gen 2 jars added to the product by default to enable support for Azure Data Lake Storage (ADLS) out of the box.</br></br>
 
 * **Enable LRUCOUNT eviction for column tables to enable creation of disk-only column tables**</br>
 
@@ -154,6 +154,42 @@ SnappyData 1.3.0 release includes the following new features over the previous 1
 
 Apart from the above new features, the interactive execution of Scala code using **EXEC SCALA** SQL
 that was marked experimental in the previous release is now considered production ready.
+
+<a id="odbc-changes"></a>
+### ODBC Driver
+
+Apart from open sourcing of the source code, the SnappyData ODBC Driver has also seen many enhancements
+over the previous TIBCO ComputeDB™ ODBC Driver 1.2.0 release:
+
+* **Transparent reconnect to the cluster after failure**</br>
+
+    If a connection to the cluster fails for some reason (network or anything else), then the driver
+    will attempt to reconnect to the cluster on the next operation, including trying failover on all the
+    available locators and servers of the cluster. This is enabled by setting the new `AutoReconnect`
+    option to true (default is false).</br></br>
+
+* **Ability to read passwords securely from the system credential manager**</br>
+
+    The new boolean `CredentialManager` option can be enabled to allow reading the login password as well
+    as private SSL key password (for SSL mutual authentication) from the system credential manager.
+    On Windows this uses the standard CredRead() API with type as CRED_TYPE_GENERIC so user must add
+    the user name and password under Generic Windows Credentials, then provide the address key in the password fields.
+    On Mac OSX the "security" tool is used to look up the password for the given value as provided in the password field.
+    On Linux and other UNIXes, the `secret-tool` utility must be installed (`libsecret-tools` package on debian/ubuntu
+    based systems, `libsecret` on most of the others) which is used to look up the password with the
+    password field split on the first ':' to obtain the attribute and its value.</br></br>
+
+* **Set the default schema to use on the connection**</br>
+
+    The default schema on a connection is normally set to the same name as the user. The new `DefaultSchema` option
+    can be used to change it to a different value which is equivalent to the `USE <SCHEMA>` SQL statement.</br></br>
+
+* **New API implementations for SQLCancel and SQLCancelHandle and fixes to many existing ones**</br>
+
+    The SQLCancel and SQLCancelHandle APIs are now implemented. A number of existing APIs including SQLPutData,
+    SQLBindParameter, SQLGetDiagRec, SQLGetDiagField have seen bug fixes while SQLGetInfo has been enhanced.</br></br>
+
+* **Updated build dependencies Thrift, Boost, OpenSSL to new releases having many fixes**
 
 
 ## Stability and Performance Improvements

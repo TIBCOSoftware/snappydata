@@ -5,11 +5,11 @@
 You can connect to SnappyData Cluster using SnappyData ODBC Driver and can execute SQL queries by connecting to any of the servers in the cluster.
 
 <a id="howto-odbc-step1"></a>
-## Step 1: Installing Visual C++ Redistributable for Visual Studio 2013
+## Step 1: Installing Visual C++ Redistributable for Visual Studio 2015 and above
 
-To download and install the Visual C++ Redistributable for Visual Studio 2013:
+To download and install the Visual C++ Redistributable for Visual Studio 2015 and above:
 
-1. [Download Visual C++ Redistributable for Visual Studio 2013](https://www.microsoft.com/en-in/download/details.aspx?id=40784)
+1. [Download Visual C++ Redistributable for Visual Studio 2015 and above](https://aka.ms/vs/16/release/vc_redist.x64.exe)
 
 2. Select **Run** to start the installation and follow the steps to complete the installation.
 
@@ -40,7 +40,7 @@ Once you have installed the SnappyData ODBC Driver, you can connect to SnappyDat
 
 * Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver. Refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>
 When prompted, select the SnappyData ODBC Driver from the list of drivers and enter a Data Source name, SnappyData Server Host, Port, User Name and Password.
-Refer to the documentation for detailed information on [Setting Up SnappyData ODBC Driver](../setting_up_odbc_driver-tableau_desktop.md).
+Refer to the documentation for detailed information on [Setting Up SnappyData ODBC Driver](../setting_up_odbc_driver.md).
 
 ## Connecting Spotfire® Desktop to SnappyData
 Refer [TIBCO Spotfire® Connectivity to SnappyData™](https://community.tibco.com/wiki/tibco-spotfire-connectivity-tibco-computedb) for detailed instructions to access SnappyData using this connector.

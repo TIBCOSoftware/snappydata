@@ -49,7 +49,7 @@ Use the following instructions to connect Tableau using SnappyData ODBC driver:
 
 ### Step 1: Setup SnappyData ODBC Driver
 
-Follow the instructions provided [here](../setting_up_odbc_driver-tableau_desktop.md) to setup SnappyData ODBC Driver.
+Follow the instructions provided [here](../setting_up_odbc_driver.md) to setup SnappyData ODBC Driver.
 
 ### Step 2: Install Tableau Desktop (10.1 or Higher)
 

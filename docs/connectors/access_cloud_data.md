@@ -126,3 +126,7 @@ You can use the following command to access data from EMR HDFS location for a cl
 create external table categories using csv options(path 'hdfs://<masternode IP address>/<file_path>');
 ```
 
+## Azure Data Lake Storage (ADLS)
+
+SnappyData supports ADLS gen 2 out of the box. Refer to [Hadoop Azure Documentation](https://hadoop.apache.org/docs/stable/hadoop-azure/abfs.html)
+for more details. The `abfs:` URLs mentioned in the documentation can be used directly in SnappyData as file paths to store or load data.
