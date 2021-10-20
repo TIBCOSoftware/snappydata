@@ -334,12 +334,9 @@ The following among the known issues have been **fixed** over the previous 1.2.0
 
 | Key | Item | Description |
 | --- | ---- | ----------- |
-|[SNAP-3306](https://jirasnappydataio.atlassian.net/browse/SNAP-3306) | Row tables with altered schema having added columns causes failure in recovery mode. | A new column that is added in an existing table in normal mode fails to get restored in the recovery mode. |
+|[<s>SNAP-3306</s>](https://jirasnappydataio.atlassian.net/browse/SNAP-3306) [FIXED] | Row tables with altered schema having added columns causes failure in recovery mode. | A new column that is added in an existing table in normal mode fails to get restored in the recovery mode. |
 
-For the remaining known issues, see the **Known Issues** section of [1.2.0 release notes](https://raw.githubusercontent.com/TIBCOSoftware/snappydata/community_docv1.2.0/docs/release_notes/TIB_compute-ce_1.2.0_relnotes.pdf#%5B%7B%22num%22%3A63%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C69%2C720%2C0%5D).
-Note that the issue links in that document having https://jira.snappydata.io are no longer valid which should be
-changed to https://jirasnappydataio.atlassian.net. For example the broken https://jira.snappydata.io/browse/SNAP-3298
-becomes https://jirasnappydataio.atlassian.net/browse/SNAP-3298.
+For the remaining known issues, see the **Known Issues** section of [1.2.0 release notes](https://raw.githubusercontent.com/TIBCOSoftware/snappydata/community_docv1.2.0/docs/release_notes/TIB_compute-ce_1.2.0_relnotes.pdf#%5B%7B%22num%22%3A21%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C69%2C720%2C0%5D).
 
 ## Description of Download Artifacts
 
@@ -347,10 +344,10 @@ The following table describes the download artifacts included in SnappyData 1.3.
 
 | Artifact Name | Description |
 | ------------- | ----------- |
-|snappydata-1.3.0-bin.tar.gz     | Full product binary (includes Hadoop 3.2.0) |
-|snappydata-jdbc\_2.11-1.3.0.jar | JDBC client driver and push down JDBC data source for Spark |
-|snappydata-core\_2.11-1.3.0.jar | The single jar needed in Smart Connector mode; an alternative to --packages option |
-|snappydata-odbc\_1.3.0\_win64.zip | 32-bit and 64-bit ODBC client drivers for Windows 64-bit platform |
+|snappydata-1.3.0-bin.tar.gz     | Full product binary (includes Hadoop 3.2.0). |
+|snappydata-jdbc\_2.11-1.3.0.jar | JDBC client driver and push down JDBC data source for Spark. Compatible with Java 8, Java 11 and higher. |
+|snappydata-core\_2.11-1.3.0.jar | The single jar needed in Smart Connector mode; an alternative to --packages option. Compatible with Spark versions 2.1.1, 2.1.2 and 2.1.3. |
+|snappydata-odbc\_1.3.0\_win64.zip | 32-bit and 64-bit ODBC client drivers for Windows 64-bit platform. |
 |[snappydata-zeppelin\_2.11-0.8.2.1.jar](https://github.com/TIBCOSoftware/snappy-zeppelin-interpreter/releases/download/v0.8.2.1/snappydata-zeppelin_2.11-0.8.2.1.jar) | The Zeppelin interpreter jar for SnappyData compatible with Apache Zeppelin 0.8.2. The standard jdbc interpreter is now recommended instead of this. See [How to Use Apache Zeppelin with SnappyData](../howto/use_apache_zeppelin_with_snappydata.md). |
 |snappydata-1.3.0.sha256 | The SHA256 checksums of the product artifacts. On Linux verify using `sha256sum --check snappydata-1.3.0.sha256`. |
-|snappydata-1.3.0.sha256.asc | PGP signature for snappydata-1.3.0.sha256 in ASCII format. Get the public key using `gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys 573D42FDD455480DC33B7105F76D50B69DB1586C`. Then verify using `gpg --verify snappydata-1.3.0.sha256.asc` which should show the mentioned key in the verification with email as `swale@tibco.com`. |
+|snappydata-1.3.0.sha256.asc | PGP signature for snappydata-1.3.0.sha256 in ASCII format. Get the public key using `gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys A7994CE77A24E5511A68727D8CED09EB8184C4D6`. Then verify using `gpg --verify snappydata-1.3.0.sha256.asc` which should show the mentioned key in the verification with email as `build@snappydata.io`. |

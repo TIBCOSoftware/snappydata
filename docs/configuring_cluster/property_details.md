@@ -70,14 +70,14 @@ This can be set using a `SET SQL` command or using the configuration properties 
 
 **Example**</br>
 
-``` pre
+```  scala
 // To set auto broadcast
 snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=<_SizeInBytes_>")
 ```
 
-``` pre
+``` scala
 // To disable auto broadcast
-.set("spark.sql.autoBroadcastJoinThreshold", "-1")
+snc.conf.set("spark.sql.autoBroadcastJoinThreshold", "-1")
 ```
 <a id="bind-address"></a>
 ## bind-address
@@ -135,7 +135,7 @@ If you set `heap-size`, the default value for `critical-heap-percentage` is set 
 - Lead
 
 **Example**</br>
-```
+``` scala
 conf.set("snappydata.store.critical-heap-percentage", "95")
 ```
 
@@ -153,7 +153,7 @@ When this limit is breached, the system starts canceling memory-intensive querie
 - Server
 
 **Example**</br>
-```
+``` scala
 conf.set("snappydata.store.critical-off-heap-percentage", "95")
 ```
 
@@ -201,7 +201,7 @@ This can be set as a launcher property or a boot property as below:
 -eviction-heap-percentage = “20”
 ```
 
-```pre
+``` scala
 props.setProperty("eviction-heap-percentage", "20") 
 ```
 <a id="eviction-off-heap-percentage"></a>
@@ -226,7 +226,7 @@ This can be set as a launcher property or a boot property as below:
 -eviction-heap-percentage = “20”
 ```
 
-```pre
+``` scala
 props.setProperty("eviction-off-heap-percentage", "15")
 ```
 
@@ -571,7 +571,7 @@ Directory to use for "scratch" space in SnappyData, including map output files a
 - Lead
 
 **Example**</br>
-```
+``` scala
 conf.set("spark.local.dir", localDir.getAbsolutePath)
 
 ```
@@ -588,7 +588,7 @@ The default timeout for all network interactions while running queries.
 - Lead
 
 **Example**</br>
-```
+``` scala
 conf.get("spark.network.timeout", "120s"));
 
 ```
@@ -628,7 +628,7 @@ This is an SDE Property
 - Lead
 
 **Example**</br>
-```
+``` sql
 SELECT ... FROM .. WHERE .. GROUP BY ...<br>
 WITH [BEHAVIOR `<string>]`
 ```
@@ -688,7 +688,7 @@ The default value is 0.95.
 Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> The default value is0.95. </br>This property can be set as connection property in the Snappy SQL shell.
 
 **Example**</br>
-```
+``` sql
 SELECT ... FROM .. WHERE .. GROUP BY ...<br>
 WITH [CONFIDENCE` <fraction>`]
 ```
@@ -705,7 +705,7 @@ Default is False.
 **Components**</br>
 
 **Example**</br>
-```
+``` scala
 snc.setConf(io.snappydata.Property.EnableExperimentalFeatures.name, "false")
 ```
 <a id="Error"></a>
@@ -730,7 +730,7 @@ This is an SDE Property
 This property can be set as connection property in the Snappy SQL shell
 
 **Example**</br>
-```
+``` sql
 SELECT ... FROM .. WHERE .. GROUP BY ...<br>
 WITH ERROR `<fraction> `
 ```
@@ -839,7 +839,7 @@ False
 Lead
 
 **Example**</br>
-```
+``` scala
 setProperty(Property.JobServerEnabled.name, "false")
 ```
 
@@ -885,7 +885,7 @@ Enables detailed rule tracing for parse errors.
 
 **Example**</br>
 
-```
+``` scala
 showTraces = Property.ParserTraceError.get(session.sessionState.conf))))
 ```
 
@@ -1006,5 +1006,3 @@ Property to enable/disable tokenization
 **Components**</br>
 
 **Example**</br>
-
-

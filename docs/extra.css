@@ -1,108 +1,197 @@
-html {
-    font-size: 10pt;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+/* Remove the edit page link */
+.md-content__button {
+    display: none;
+}
+
+/* Compact the footer */
+.md-footer__inner {
+    padding: 4px;
+}
+.md-footer__link {
+    padding: 8px 0 2px;
+}
+.md-footer__direction {
+    position: absolute;
+    right: 0;
+    left: 0;
+    margin-top: -16px;
+}
+.md-footer__title {
+    font-size: 14px;
+    padding: 12px 20px 0;
+    line-height: 24px;
+}
+.md-footer__button {
+    margin: 0;
+    padding: 4px;
+}
+.md-footer-copyright {
+  margin: 0 8px;
+  padding: 4px 0;
+}
+.md-footer-generator {
+    margin: 0 8px;
+    padding: 4px 0;
+    color: var(--md-footer-fg-color--lighter);
+    font-size: 12.8px;
+}
+
+/* Improve horizontal rule */
+.md-typeset hr {
+    border-bottom: .1rem solid rgba(0,0,0,.26);
+}
+
+/* Increase logo width else SnappyData looks squished. */
+.md-logo img {
+    width: 36px ! Important;
+    height: auto;
+}
+
+/* @import url(https://fonts.googleapis.com/css?family=Roboto+Slab:300,400,400i,700); */
+
+.md-main html {
+    font-size: 15px;
 }
 /* Formatting for body text */
-p{
-font-size: 14px;
-/*font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
+.md-main body {
+    font-size: 15px;
+}
+.md-main p {
+    font-size: 15px;
+}
+.md-main ul {
+    font-size: 14.5px;
 }
 
 /* Formatting for headings */
 
-h1{
-    color: #000000;
-    font-size: 20pt;
-/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; */
-    background-color: #e8e9ea;
-}
-
-
-h2{
-    color: #335183;
-    font-size: 18pt;
-/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
-}
-
-heading2{
-    color: #335183;
-    font-size: 18pt;
-/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
-}
-
-
-h3{
-    color: #404040;
-    font-size: 16pt;
-/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
-    border-bottom: thin double #e0e0e0;
-}
-
-heading3{
-    color: #404040;
-    font-size: 16pt;
-/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;*/
-    border-bottom: thin double #e0e0e0;
-}
-h4 {
-    color: #404040;
-    font-size: 14pt;
-/*    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; */
-    font-style: italic;
-}
-
-/* Formatting for code snippets
+/* Add vertical rhythm
+ * Based on example 5 of https://tympanus.net/codrops/2012/11/02/heading-set-styling-with-css/
+.md-main {counter-reset: section-1, section-2, section-3, section-4;}
 */
-pre code {
-  font-size:12px;
-  overflow-x: auto
-  font-family: monospace,serif;
+
+.md-main h1 {
+    margin: 0.8em 0 0.5em 0;
+    color: #333;
+    background-color: #e8e9ea;
+    font-weight: normal;
+    font-size: 32px;
+    /* font-family: "Roboto Slab", sans-serif; */
+    line-height: 36px;
+    /*
+    counter-increment: section-1;
+    counter-reset: section-2 section-3 section-4;
+    */
+}
+
+.md-main h2 {
+    margin: 0.8em 0 0.5em 0;
+    color: #335183;
+    font-weight: normal;
+    font-size: 24px;
+    /* font-family: "Roboto Slab", sans-serif; */
+    line-height: 36px;
+    border-bottom: 1px solid #fff;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.1);
+    padding-bottom: 10px;
+    /*
+    counter-increment: section-2;
+    counter-reset: section-3 section-4;
+    */
+}
+
+.md-main h3 {
+    margin: 0.8em 0 0.5em 0;
+    color: #404040;
+    font-weight: normal;
+    font-size: 20px;
+    /* font-family: "Roboto Slab", sans-serif; */
+    line-height: 36px;
+    border-bottom: thin double #e0e0e0;
+    /*
+    counter-increment: section-3;
+    counter-reset: section-4;
+    */
+}
+
+.md-main h4 {
+    margin: 0.8em 0 0.5em 0;
+    color: #404040;
+    font-weight: normal;
+    font-size: 16px;
+    /* font-family: "Roboto Slab", sans-serif; */
+    font-style: italic;
+    line-height: 20px;
+    /* counter-increment: section-4; */
+}
+
+/* Change color background of code examples and admonitions */
+.md-typeset .codehilite code,
+.md-typeset .codehilite pre,
+.md-typeset .highlight code,
+.md-typeset .highlight pre {
+    background-color: #dfe2f1;
+    overflow-x: auto
 }
 
 /* Formatting for inline code */
-
-code {
+.md-typeset code {
     white-space: pre-wrap;
     word-wrap: break-word;
     padding: 2px 5px;
 }
 
-/*
-pre .cs, pre .c {
-    font-weight: inherit;
-    font-style: inherit;
+.md-typeset .admonition,
+.md-typeset details {
+    background-color: #eee;
 }
-*/
 
-/*Formatting for Note 
+/* Change color background of `monospace` elements used in markdown pages */
+.md-typeset .codehilite, .md-typeset .highlight {
+    background-color: rgba(144, 144, 144, 0.10);
+}
+
+/* Decrease font-size e.g in <pre class="small-text"> elements */
+.small-text {
+    font-size: 10px !important;
+}
+
+pre.small-text {
+    font-size: 10px !important;
+}
+
+/* Set z-index to 0 to elements that otherwise would appear above the menu bar upon scrolling. */
+.custom-search-form {
+    z-index: 0;
+}
+
+/*Formatting for Note
 note-sub {
-    background-color: #e8f7ff; 
+    background-color: #e8f7ff;
     color: 6ab0de;
     margin: 10px 0px;
     border: #e8f7ff 1px solid;
-    border-radius: 5px; 
+    border-radius: 5px;
     word-wrap: normal;
     display: block;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
-    font-size:14px;
+    font-size: 15px;
     font-style: italic;
     list-style-type: square;
 }
 
 {
-  background-color: #e8f7ff; 
+  background-color: #e8f7ff;
   color: green;
   background-image: url(Images/info.png);
   margin: 10px 0px;
-  padding:5px 5px 10px 50px;
+  padding: 5px 5px 10px 50px;
   background-repeat: no-repeat;
   background-position: 10px center;
   border: #e8f7ff 1px solid;
-  border-radius: 5px; 
+  border-radius: 5px;
   word-wrap: normal;
   display: block;
-  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
-  font-size:14px;
+  font-size: 15px;
   font-style: italic;
 }
 */
@@ -113,37 +202,37 @@ glossary {
     color: black;
     font-size: 25px;
     font-style: bold;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
 glossaryterm {
     color: Blue;
     font-size: 16px;
     font-style: bold;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
 glossarytext {
     color: black;
-    font-size: 14px;
+    font-size: 15px;
     font-style: normal;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
 /*  Image Alignment - Center */
+figure {
+    text-align: center;
+}
+
 img {
     display: block;
     background-color: transparent;
     border: none;
-    margin: 0px auto;
+    margin: auto;
 }
 
 /* Formatting for text for review/comments purpose only */
 
 mark {
     color: red;
-    font-size: 14px;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 15px;
     background-color: #f6f3d7;
 }
 
@@ -151,9 +240,8 @@ mark {
 
 error {
     color: black;
-    font-size: 14px;
+    font-size: 15px;
     font-style: bold;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
     background: #cc2222
     white-space: pre;
     word-wrap: normal;
@@ -163,10 +251,9 @@ error {
 
 error-text {
     color: black;
-    font-size: 12px;
+    font-size: 15px;
     font-style: bold;
-    font-style: italic;	
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-style: italic;
     background: #cc2222
     white-space: pre;
     word-wrap: normal;
@@ -176,33 +263,29 @@ error-text {
 
 diagnosis {
     color: black;
-    font-size: 12px;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 15px;
     word-wrap: normal;
     display: block;
 }
 
 action {
     color: black;
-    font-size: 12px;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 15px;
     word-wrap: normal;
     display: block;
     border-bottom: 1px solid #333
 }
 
 /* Formatting for Tables */
-      
-table
-{
+
+table {
     border-collapse: separate;
     line-height: 24px;
     margin: 15px auto;
     text-align: left;
     width: auto;
     color: black;
-    font-size: 14px;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    /* font-size: 15px; */
 }
 
 th {
@@ -216,22 +299,21 @@ th {
     font-weight: bold;
     padding: 10px 15px;
     position: relative;
-    text-shadow: 0 1px 0 #000;  
+    text-shadow: 0 1px 0 #000;
 }
 /* Formatting for Enterprise*/
 
 ent {
-  background-color: #FBFEDD; 
-  color: black;
-  margin: 10px 0px;
-  padding:5px 5px 5px 5px;
-  background-repeat: no-repeat;
-  background-position: 10px center;
-  border: #E5E5E4 1px solid;
-  border-radius: 5px; 
-  word-wrap: normal;
-  display: block;
-  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
-  font-size:14px;
-  font-style: bold; 	
+    background-color: #FBFEDD;
+    color: black;
+    margin: 10px 0px;
+    padding: 5px 5px 5px 5px;
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    border: #E5E5E4 1px solid;
+    border-radius: 5px;
+    word-wrap: normal;
+    display: block;
+    font-size: 15px;
+    font-style: bold;
 }

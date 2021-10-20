@@ -30,13 +30,13 @@ The batch size can be restricted using one of the following options depending up
 
 Example:
 
-```
+``` scala
 val streamingDF = snappySession
       .readStream
       .format("kafka")
-      .option("kafka.bootstrap.servers",”localhost:9091”)
+      .option("kafka.bootstrap.servers", "localhost:9091")
       .option("maxOffsetsPerTrigger", 100)
-      .option("subscribe", “topic1”)
+      .option("subscribe", "topic1")
       .load
 ```
 
@@ -46,7 +46,7 @@ val streamingDF = snappySession
 
 Example:
 
-```
+``` scala
 val inputPath = "/path/to/parquet_input"
 val schema = snappy.read.parquet(inputPath).schema
 val df = snappy.readStream.schema(schema)
@@ -65,19 +65,19 @@ To overcome this, use the session level property **spark.sql.defaultSizeInBytesy
 
 It can be set using the following SQL command: 
 
-```
+``` sql
 set spark.sql.defaultSizeInBytes = <some long value>
 ```
 
 For example:
 
-```
+``` sql
 set spark.sql.defaultSizeInBytes = 10000
 ```
 
 Using SnappySession instance, you can be run the same as follows: 
 
-```
+``` sql
 snappySession.sql(“set spark.sql.defaultSizeInBytes = 10000”)
 ```
 
@@ -87,7 +87,7 @@ snappySession.sql(“set spark.sql.defaultSizeInBytes = 10000”)
 A good practice is to run each structured streaming query using it’s own dedicated instance of SnappySession. 
 A new instance of SnappySession can be created as follows:
 
-```
+``` scala
 val newSession = snappySession.newSession()
 ```
 

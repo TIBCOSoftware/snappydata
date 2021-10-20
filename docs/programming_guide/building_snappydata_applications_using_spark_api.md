@@ -4,8 +4,9 @@
 ### Create Columnar Tables using API 
 Other than `create` and `drop` table, rest are all based on the Spark SQL Data Source APIs.
 
-### Scala
-```pre
+=== "Scala"
+
+``` scala
  val props = Map("BUCKETS" -> "8")// Number of partitions to use in the SnappyStore
 
  case class Data(COL1: Int, COL2: Int, COL3: Int)
@@ -29,8 +30,9 @@ Other than `create` and `drop` table, rest are all based on the Spark SQL Data S
  results.foreach(r => println(r))
 ```
 
-### Java
-```pre
+=== "Java"
+
+``` java
  Map<String, String> props1 = new HashMap<>();
  props1.put("buckets", "16");
 
@@ -66,10 +68,9 @@ Other than `create` and `drop` table, rest are all based on the Spark SQL Data S
  }
 ```
 
+=== "Python"
 
-### Python
-
-```pre
+``` python
 from pyspark.sql.types import *
 
 data = [(1,2,3),(7,8,9),(9,2,3),(4,2,3),(5,6,7)]
@@ -99,7 +100,7 @@ For more details about the properties ('props1' map in above example) and `creat
 
 ## Create Row Tables using API, Update the Contents of Row Table
 
-```pre
+``` scala
 // create a row format table called ROW_TABLE
 snappy.dropTable("ROW_TABLE", ifExists = true)
 // "row" is the table format
@@ -134,8 +135,9 @@ results4.foreach(println)
 SnappyData extends Spark streaming so stream definitions can be declaratively written using SQL and these streams can be analyzed using static and dynamic SQL.
 
 
-### Scala
-```pre
+=== "Scala"
+
+``` scala
  import org.apache.spark.sql._
  import org.apache.spark.streaming._
  import scala.collection.mutable
@@ -168,8 +170,9 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
  snsc.sql("select count(*) from streamingExample").show
 ```
 
-### Java
-```pre
+=== "Java"
+
+``` java
  StructType schema = new StructType(new StructField[]{
      new StructField("id", DataTypes.IntegerType, false, Metadata.empty()),
      new StructField("text", DataTypes.StringType, false, Metadata.empty())
@@ -208,8 +211,9 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
  jsnsc.sql("select count(*) from streamingExample").show();
 ```
 
-### Python
-```pre
+=== "Python"
+
+``` python
 from pyspark.streaming.snappy.context import SnappyStreamingContext
 from pyspark.sql.types import *
 
@@ -235,7 +239,3 @@ snsc.start()
 time.sleep(1)
 snsc.sql("select count(*) from streamingExample").show()
 ```
-
-<!--
-> Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and SnappyData stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and SnappyData stores form independent clusters). Refer to the  [deployment](../affinity_modes/index.md) chapter for all the supported deployment modes and the [configuration](../configuring_cluster/configuring_cluster.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.-->
-

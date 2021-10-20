@@ -98,7 +98,7 @@ These settings lower the OS cache buffer sizes which reduce the long GC pauses d
 Since modern operating systems perform lazy allocation, it has been observed that despite setting `-Xmx` and `-Xms` settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in the process going down.</br>
 It is recommended to set the swap space on your system to at least 16 GB or preferably 32 GB. To set swap space use the following commands:
 
-```
+``` shell
 # sets a swap space of 32 GB
 
 ## If fallocate is available, run the following command: 
@@ -164,7 +164,7 @@ Optionally when using the `-XX:+HeapDumpOnOutOfMemoryError` option, you can spec
 	*agentPath snappyHome/jars/libgemfirexd.dylib*
 
 ## Handling the OOM-Killer by OS
-In the enterprise version of the product SnappyData, the data is stored in off-heap i.e native memory. It uses Java's **direct byte buffer** which in turn uses **glibc **as native memory allocator.
+In the absence of any settings, the data for column tables is stored in off-heap i.e native memory. It uses Java's **direct byte buffer** which in turn uses **glibc **as native memory allocator.
 **glibc** has a known problem of fragmentation as it does not release the freed memory to the OS immediately to improve on performance. This fragmentation can grow in a long running cluster where memory requirement is extremely high and the memory is utilized rapidly thereby leading to the process being killed by the OS. This is known as OOM-Killer.
 This issue is faced by all products using **glibc** memory allocator and they overcome this by either having their own memory manager or tuning glibc according to their needs.
 
@@ -173,7 +173,8 @@ To avoid this issuem the following parameters are set by default in the product:
 *	`MALLOC_MMAP_THRESHOLD_=131072`
 *	`MALLOC_MMAP_MAX_= 2147483647`
 
-You can overide the values of these default parameters by modifying the `snappy-env.sh` template in the conf directory.
+You can override the values of these default parameters by modifying the `snappy-env.sh` template in the conf directory
+and exporting these shell variables (i.e. like `export MALLOC_ARENA_MAX = ...`).
 
 <a id="codegenerationtokenization"></a>
 ## Code Generation and Tokenization

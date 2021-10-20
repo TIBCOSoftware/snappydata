@@ -7,7 +7,7 @@ When working with Hive, one must instantiate Snappy session with Hive support, i
 If the underlying storage for Hive is HDFS, you can configure Hive with Snappy session. For this, you must place **hive-site.xml**, **core-site.xml** (for security configuration) and **hdfs-site.xml**(for HDFS configuration) files in the **conf/** folder of Snappy. In addition to this, you must configure **spark-env.sh** file into the **conf/** folder.
 
 The content in the **hadoop_spark-env.sh** file should be as follows:  
-```
+``` shell
 export SPARK_DIST_CLASSPATH=$(/home/user/hadoop-2.7.3/bin/hadoop classpath)
 ```
 
@@ -15,7 +15,7 @@ Snappy has been tested with default hive database i.e. embedded derby database. 
 
 In **hive-site** xml, user needs to configure the parameters as per the requirement. With derby as database, the following are the ** hive-site.xml** configuration:
 
-```
+``` xml
 <property>
     <name>javax.jdo.option.ConnectionURL</name>
     <value>jdbc:derby:;databaseName=metastore_db;create=true</value>
@@ -29,7 +29,7 @@ In **hive-site** xml, user needs to configure the parameters as per the requirem
 
 If you want to setup remote meta store instead of using default database derby, you can use the following configuration:
 
-```
+``` xml
 <property>
     <name>hive.metastore.uris</name>
     <value>thrift://chbhatt-dell:9083</value>
@@ -88,21 +88,3 @@ For more details, refer the following links:
 *	[https://spark.apache.org/docs/latest/sql-data-sources-hive-tables.html](https://spark.apache.org/docs/latest/sql-data-sources-hive-tables.html)
 
 *	[https://cwiki.apache.org/confluence/display/Hive/Hive+on+Spark%3A+Getting+Started](https://cwiki.apache.org/confluence/display/Hive/Hive+on+Spark%3A+Getting+Started)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

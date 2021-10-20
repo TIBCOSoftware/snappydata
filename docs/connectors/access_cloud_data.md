@@ -11,7 +11,7 @@ To access the data on AWS cloud storage, you must set the credentials using any 
 
 Add the following key properties into **conf** > **hive-site.xml** file:
 
-```
+``` xml
    <property>
        <name>fs.s3a.access.key</name>
        <value>Amazon S3 Access Key</value>
@@ -34,16 +34,18 @@ Add the following key properties into **conf** > **hive-site.xml** file:
 
 ### Setting the Access or Secret Key Properties through Environment Variable
 
-Set credentials as enviroment variable:
+Set credentials as environment variables:
 
+``` shell
         export AWS_ACCESS_KEY_ID=<Amazon S3 Access Key>
         export AWS_SECRET_ACCESS_KEY=<Amazon S3 Secret Key>
+```
 
 ### Accessing Data from AWS Cloud Storage
 
 Create an external table using the following command:
 
-```
+``` sql
 create external table staging_parquet using parquet options (path 's3a://<bucketName>/<folderName>');
 create table parquet_test using column as select * from staging_parquet;
 ```
@@ -63,7 +65,7 @@ To access the data on Azure Blob storage, you must set the credentials using any
 
 Set the following property in hive-site.xml
 
-```
+``` xml
 	<property> 
     	<name>fs.azure.account.key.youraccount.blob.core.windows.net</name> 
     	<value>YOUR ACCESS KEY</value>
@@ -73,19 +75,19 @@ Set the following property in hive-site.xml
 ### Setting Credentials through Spark Property 
 
 
-```
+``` scala
 sc.hadoopConfiguration.set("fs.azure.account.key.<your-storage_account_name>.dfs.core.windows.net", "<YOUR ACCESS KEY>")
 ```
 
 ### Accessing Data from Azure Unsecured BLOB Storage
 
-```
+``` sql
     CREATE EXTERNAL TABLE testADLS1 USING PARQUET Options (path 'wasb://container_name@storage_account_name.blob.core.windows.net/dir/file')
 ```
 
 ### Accessing Data from Azure Secured BLOB Storage
 
-```
+``` sql
     CREATE EXTERNAL TABLE testADLS1 USING PARQUET Options (path 'wasbs://container_name@storage_account_name.blob.core.windows.net/dir/file')
 ```
 
@@ -97,7 +99,7 @@ To access the data on GCS cloud storage, you must set the credentials using any 
 *	Setting Credentials through Spark Property
 
 ### Setting Credentials in hive-site.xml 
-```
+``` xml
 
    <property>
        <name>google.cloud.auth.service.account.json.keyfile</name>
@@ -108,13 +110,13 @@ To access the data on GCS cloud storage, you must set the credentials using any 
 
 ### Setting Credentials through Spark property on Shell 
 
-```
+``` scala
 sc.hadoopConfiguration.set("google.cloud.auth.service.account.json.keyfile","`<json file path>`")
 ``` 
 
 ### Accessing Data from GCS Cloud Storage
 
-```
+``` sql
 CREATE EXTERNAL TABLE airline_ext USING parquet OPTIONS(path 'gs://bucket_name/object_name')
 ```
 
@@ -122,7 +124,7 @@ CREATE EXTERNAL TABLE airline_ext USING parquet OPTIONS(path 'gs://bucket_name/o
 
 You can use the following command to access data from EMR HDFS location for a cluster that is running on ec2:
 
-```
+``` sql
 create external table categories using csv options(path 'hdfs://<masternode IP address>/<file_path>');
 ```
 

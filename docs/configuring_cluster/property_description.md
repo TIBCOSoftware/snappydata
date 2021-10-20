@@ -156,7 +156,7 @@ These properties can be set using a `SET` SQL command or using the configuration
 
 For example: Set in the snappy SQL shell
 
-```pre
+``` sql
 snappy> connect client 'localhost:1527';
 snappy> set snappydata.column.batchSize=100k;
 ```
@@ -210,7 +210,7 @@ The command sets the property for the current SnappySession while setting it in 
 
 For example: Set in the  Snappy SQL shell (snappy-sql)
 
-```pre
+``` sql
 snappy> connect client 'localhost:1527';
 snappy> set snappydata.flushReservoirThreshold=20000;
 ```

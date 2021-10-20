@@ -47,7 +47,7 @@ You can either start SnappyData members using the `snappy_start_all` script or y
 
 ***_In the Local mode_***
 
-```pre
+``` shell
 
 ./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "TIBCOSoftware:snappydata:1.3.0-s_2.11"
 ```
@@ -64,13 +64,13 @@ This opens a Scala Shell.
 *	**SQL Context**
 *	**SnappyContext**
 
-```
+``` scala
 import org.apache.spark.sql.{SQLContext,SnappyContext,SnappySession}
 ```
 
  This starts the SnappyData cluster with Smart Connector mode. Create a SnappySession to interact with the SnappyData store.
 
-```pre
+``` scala
 	// Create a SnappySession to work with SnappyData store
 	$scala > val snSession = new SnappySession(spark.sparkContext)
 ```
@@ -81,11 +81,11 @@ The code example for writing a Smart Connector application program is located in
 
 **Cluster mode**
 
-```pre
+``` shell
 ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "TIBCOSoftware:snappydata:1.3.0-s_2.11"
 ```
 **Client mode**
-```pre
+``` shell
 ./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "TIBCOSoftware:snappydata:1.3.0-s_2.11"
 ```
 
@@ -93,11 +93,11 @@ The code example for writing a Smart Connector application program is located in
 ***_Using YARN as a Cluster Manager_***
 
 **Cluster mode**
-```pre
+``` shell
 ./spark-submit --master yarn  --deploy-mode cluster --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --class MainClass SampleProjectYarn.jar
 ```
 
 **Client mode**
-```pre
+``` shell
 ./spark-submit --master yarn  --deploy-mode client --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --class MainClass SampleProjectYarn.jar
 ```

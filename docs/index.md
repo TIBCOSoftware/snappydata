@@ -94,7 +94,7 @@ We monitor the following channels comments/questions:
 
 ### Using Maven Dependency
 
-SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
+SnappyData's artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
 
 ```
 groupId: io.snappydata
@@ -106,13 +106,13 @@ version: 1.3.0
 
 If you are using SBT, add this line to your **build.sbt** for core SnappyData artifacts:
 
-```
+``` scala
 libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.3.0"
 ```
 
 For additions related to SnappyData cluster, use:
 
-```
+``` scala
 libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.0"
 ```
 
@@ -121,7 +121,7 @@ You can find more specific SnappyData artifacts [here](http://mvnrepository.com/
 !!!Note
 	If your project fails when resolving the above dependency (that is, it fails to download `javax.ws.rs#javax.ws.rs-api;2.1`), it may be due an issue with its pom file. </br> As a workaround, you can add the below code to your **build.sbt**:
 
-```
+``` scala
 val workaround = {
   sys.props += "packaging.type" -> "jar"
   ()
@@ -157,4 +157,3 @@ Here is a stream + Transactions + Analytics use case example to illustrate the S
 ## Contributing to SnappyData
 
 If you are interested in contributing, please visit the [community page](http://www.snappydata.io/community) for ways in which you can help.
-

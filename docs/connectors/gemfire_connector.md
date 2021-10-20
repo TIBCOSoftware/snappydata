@@ -41,7 +41,7 @@ This Quick Start guide explains, how to start a GemFire cluster, load data onto 
 
 The following prerequisites are required for setting up GemFire connector:
 
-**Prerequisites** 
+**Prerequisites**
 
 *	Basic knowledge of GemFire
 *	[GemFire version 8.2 or later](https://network.pivotal.io/products/pivotal-gemfire#/releases/4375) installed and running.
@@ -52,33 +52,41 @@ The following section provides instructions to get a two-node GemFire cluster ru
 
 1.	Start the GemFire shell.
 
-		$ <GemFire_home>/bin/gfsh
-		gfsh> start locator --name=locator1 --port=55221
-	You need to use a non-default port, as SnappyData uses the same defaults as GemFire.
+``` pre
+        $ <GemFire_home>/bin/gfsh
+        gfsh> start locator --name=locator1 --port=55221
+```
+    You need to use a non-default port, as SnappyData uses the same defaults as GemFire.
 
 2.	Start two data servers.
 
-		gfsh>start server --name=server1
-		--locators=localhost[55221]
-		gfsh>start server --name=server2
-		--locators=localhost[55221] --server-port=40405
+``` pre
+        gfsh>start server --name=server1
+        --locators=localhost[55221]
+        gfsh>start server --name=server2
+        --locators=localhost[55221] --server-port=40405
+```
 
 3.	Create Region.
 
-		gfsh>create region --name=GemRegion --type=PARTITION --key-constraint=java.lang.String --value-constraint=java.lang.String
+        gfsh>create region --name=GemRegion --type=PARTITION --key-constraint=java.lang.String --value-constraint=java.lang.String
 
 4.	Add at least 10 entries in this region using the PUT command.
 
-		gfsh> put --key=1 --value='James'      --region=/GemRegion
-		gfsh> put --key=2 --value='Jim'        --region=/GemRegion
-		gfsh> put --key=3 --value='James Bond' --region=/GemRegion
-		gfsh> put --key=4 --value='007'        --region=/GemRegion
+``` pre
+        gfsh> put --key=1 --value='James'      --region=/GemRegion
+        gfsh> put --key=2 --value='Jim'        --region=/GemRegion
+        gfsh> put --key=3 --value='James Bond' --region=/GemRegion
+        gfsh> put --key=4 --value='007'        --region=/GemRegion
+```
 
 5.	Deploy these functions to the GemFire cluster.
 
-		gfsh>deploy --jar=<SnappyData-home>/connectors/gfeFunctions-0.9.jar
+``` pre
+        gfsh>deploy --jar=<SnappyData-home>/connectors/gfeFunctions-0.9.jar
+```
 
-	A two node GemFire cluster is up and running with a region **GemRegion** and the added entries.
+    A two node GemFire cluster is up and running with a region **GemRegion** and the added entries.
 
 <a id= configuresnappydataclustergemfire> </a>
 ### Configuring the SnappyData Cluster for GemFire Connector
@@ -87,24 +95,24 @@ The SnappyData cluster must be configured with details of the GemFire cluster wi
 
 1.	Modify the server and lead configuration files that are located at:
 
-	* **<_SnappyData-home_>/conf/leads**
-	* **<_SnappyData-home_>/conf/servers**
+    * **<_SnappyData-home_>/conf/leads**
+    * **<_SnappyData-home_>/conf/servers**
 
 2.	Add the connector jar (connector-0.9.jar) to the classpath and configure the remote GemFire cluster (locators, the servers and lead files) as follows:
 
-        localhost -locators=localhost:10334 -client-bind-address=localhost 
+        localhost -locators=localhost:10334 -client-bind-address=localhost
         -classpath= <SnappyData-home>/connectors/connector-0.9.jar
-        -spark.gemfire-grid.\<UniqueID\>=localhost[55221] 
+        -spark.gemfire-grid.\<UniqueID\>=localhost[55221]
 
-	Here, the UniqueID is a name assigned for the Grid. </br>
+    Here, the UniqueID is a name assigned for the Grid. </br>
 
-	For example, SnappyData GemFire connector can connect to multiple Grids for federated data access.
+    For example, SnappyData GemFire connector can connect to multiple Grids for federated data access.
 
-		-spark.gemfire-grid.gridOne=localhost[55221] -spark.gemfire-grid.gridTwo=localhost[65221]
+        -spark.gemfire-grid.gridOne=localhost[55221] -spark.gemfire-grid.gridTwo=localhost[65221]
 
 3.	[Start the SnappyData cluster](../howto/start_snappy_cluster.md) using the following command:
 
-		$ <SnappyData-home>/sbin/snappy-start-all.sh
+        $ <SnappyData-home>/sbin/snappy-start-all.sh
 
 <a id= accessgemfireassql> </a>
 ### Accessing GemFire as an SQL Table to Run Queries
@@ -113,33 +121,41 @@ The following section provides instructions to access GemFire as an SQL table to
 
 **To access GemFire as an SQL table.**
 
-1.	Start the Snappy Shell. 
+1.	Start the Snappy Shell.
 
-		$<SnappyData-home>/bin/snappy
-		snappy> connect client 'localhost:1527';
-        
+``` pre
+        $<SnappyData-home>/bin/snappy
+        snappy> connect client 'localhost:1527';
+```
+
 2.	Register an external table in SnappyData pointing to the GemFire region.
 
-		snappy> create external table GemTable using gemfire options(regionPath 'GemRegion', keyClass 'java.lang.String', valueClass 'java.lang.String') ;
-	
+        snappy> create external table GemTable using gemfire options(regionPath 'GemRegion', keyClass 'java.lang.String', valueClass 'java.lang.String') ;
+
     The schema is automatically inferred from the object data in GemFire:
-    
-		snappy> describe gemTable;
+
+``` sql
+        snappy> describe gemTable;
         snappy> select * from gemTable;
+```
 
 <a id= replicatesnappydatatable> </a>
 ### Replicating to SnappyData Table and Running Join Queries
 
 You can replicate the data in GemFire SQL table into a SnappyData table and then run join queries.
 
-1.	Create a SnappyData table based on the external table that was created using GemFire. 
+1.	Create a SnappyData table based on the external table that was created using GemFire.
 
-		snappy> create table SnappyDataTable using column as (select * from gemTable);
-		snappy> select * from SnappyDataTable;
+``` sql
+        snappy> create table SnappyDataTable using column as (select * from gemTable);
+        snappy> select * from SnappyDataTable;
+```
 
 2.	Run join queries.
 
-		snappy> select t1.key_Column, t1.value_Column, t2.value_Column from GemTable t1, SnappyDataTable t2 where t1.key_Column = t2.key_Column;
+``` sql
+        snappy> select t1.key_Column, t1.value_Column, t2.value_Column from GemTable t1, SnappyDataTable t2 where t1.key_Column = t2.key_Column;
+```
 
 <a id= initializegemfireconnector> </a>
 ## Initializing the GemFire Connector
@@ -155,8 +171,6 @@ Execute the following to deploy the **gemfire-function** jar:
 Deploy SnappyData GemFire Connector's gemfire-function jar (`gfeFunct
 ions-0.9.3.jar`):
 gfsh>deploy --jar=<SnappyData Product Home>//connectors/gfeFunctions-0.9.3.jar
-
-
 ```
 
 ### Executing Queries with GemFire Connector
@@ -169,16 +183,16 @@ For this purpose by default SnappyData relies on OQL of GemFire to prune the dat
 The **QueryExecutor** implementation should be packaged in a jar which is loaded by SnappyData using **ServiceLoader** API of java. As a part of the contract, the jar should include the following file with the path described:</br>**META-INF/services/io.snappydata.spark.gemfire.connector.query.QueryExecutor**</br>This file should contain the fully qualified class name of the custom **QueryExecutor**.
 
 !!!Note
-	The name of the file should be **io.snappydata.spark.gemfire.connector.query.QueryExecutor**.
+    The name of the file should be **io.snappydata.spark.gemfire.connector.query.QueryExecutor**.
 
 This jar needs to be deployed on the GemFire cluster using **gfsh**.
 
 !!!Attention
-	It is important that as part of deployment, **gfeFunctions.jar** must be deployed first and then the jars containing custom **QueryExecutors**.
+    It is important that as part of deployment, **gfeFunctions.jar** must be deployed first and then the jars containing custom **QueryExecutors**.
 
 Following is an example of the implementation of **QueryExecutor** interface:
 
-```
+``` java
 package io.snappydata.spark.gemfire.connector.query;
 
 import java.util.Iterator;
@@ -284,12 +298,12 @@ Next step is invocation of the appropriate method to get Iterator on the pruned 
 
 -	If the region contains **pdx** instances, then the method **filteredPdxData** is invoked.
 
-	!!!Note
-		This method requires the user to return the iterator on valid Pdx instances. The relevant attributes are extracted by the framework.
+    !!!Note
+        This method requires the user to return the iterator on valid Pdx instances. The relevant attributes are extracted by the framework.
 
 -	If the region contains POJOs, then depending upon single or multiple attributes, one of the following method is invoked:
-	- **executeSingleProjectionQuery** 
-	- **executeMultiProjectionQuery***
+    - **executeSingleProjectionQuery**
+    - **executeMultiProjectionQuery***
 
 <a id= configuresnappyforgemfire> </a>
 ### Configuring the SnappyData Cluster for GemFire Connector
@@ -305,7 +319,7 @@ The following configurations can be set in SnappyData Cluster for GemFire Connec
 
 You can configure the **DistributedSystem** with additional attributes by implementing the following interface:
 
-```
+``` java
 package io.snappydata.spark.gemfire.connector.dsinit;
 /**
  * @param @link{DSConfig} instance which can be used to configure the DistributedSystem properties at the
@@ -325,7 +339,7 @@ The **DistributedSystemInitializer** implementation needs to be packaged in a ja
 This file should contain the fully qualified class name of the custom DistributedSystemInitializer
 
 !!!Note
-	The name of the file should be **io.snappydata.spark.gemfire.connector.dsinit.DistributedSystemInitializer**
+    The name of the file should be **io.snappydata.spark.gemfire.connector.dsinit.DistributedSystemInitializer**
 
 The connector interacts with the GemFire cluster. Therefore, you should configure the SnappyData cluster with the details of GemFire cluster. The configuration details must be provided in both the SnappyData lead and server nodes at the following locations:
 -	**SnappyData-Home directory/conf/leads**
@@ -338,7 +352,7 @@ Modify the servers and leads configuration file to add the connector jar (**conn
 
 To statically specify the running locators of the GemFire cluster, set the property as follows, where **uniqueIDForGrid** is any unique identifier key:
 
-		-snappydata.connector.gemfire-grid.\<uniqueIDForGrid\>=localhost[55221]
+        -snappydata.connector.gemfire-grid.\<uniqueIDForGrid\>=localhost[55221]
 
 
 Following is a sample from the servers and leads file:
@@ -354,11 +368,11 @@ localhost -locators=localhost:10334 -client-bind-address=localhost -client-port=
 
 Instead of specifying the locators via the property, it is possible to provide custom logic for discovery of the grid for the region by implementing **GridResolver** trait as follows:
 
-```
+``` scala
 trait GridResolver {
 
   /**
-    * Optional method to identify the locators and delegate to SnappyData for creating connection 
+    * Optional method to identify the locators and delegate to SnappyData for creating connection
     * pool using [[GridHelper]]. Invoked once in the lifecycle.
     * @param gfeGridProps
     * @param gridHelper
@@ -389,16 +403,16 @@ The **GridResolver** implementation should be packaged in a jar which is loaded 
 This file should contain the fully qualified class name of the custom **GridResolver**.
 
 !!!Note
-	The name of the file should be **io.snappydata.spark.gemfire.connector.grids.GridResolver**.
+    The name of the file should be **io.snappydata.spark.gemfire.connector.grids.GridResolver**.
 
 To initialize the GemFire connector and enable its functions in SnappyData, you must include the following import statement before creating the external table:
 
-```
+``` scala
 import io.snappydata.spark.gemfire.connector
 ```
 <a id= accessingdatafromgemfire> </a>
 ## Accessing Data from GemFire
-In SnappyData applications, you can create external tables that represent GemFire regions and run SQL queries against GemFire. For accesing data from GemFire, you must first expose the GemFire regions: 
+In SnappyData applications, you can create external tables that represent GemFire regions and run SQL queries against GemFire. For accesing data from GemFire, you must first expose the GemFire regions:
 
 You can use any the following options to expose GemFire regions:
 
@@ -412,19 +426,19 @@ You can use any the following options to expose GemFire regions:
 You can create an external table that represents a GemFire region which stores PDX instances. The SnappyData schema for this external table is derived from the PDXType. Here, the GemFire region is already populated with data and SnappyData infers the schema based on the inspection of the PDX types.
 The following syntax creates an external table that represents a GemFire region which stores PDX instances.
 
-```
-val externalBsegTable = snc.createExternalTable("bsegInGem", 
+``` scala
+val externalBsegTable = snc.createExternalTable("bsegInGem",
      "gemfire",
      Map[String, String]("region.path" -> "bseg1", "data.as.pdx" -> "true"))
-```     
+```
 
 The SnappyData external table schema for the GemFire region can optionally include the GemFire region key as a column in the table. To enable this, the **key.class ** attribute should be set when you create the table as shown in the following example:
 
-```
+``` scala
 val externalBsegTable = snc.createExternalTable("bsegInGem",
    "gemfire",
    Map[String, String]("region.path" -> "bseg1", "data.as.pdx" -> "true",
-   "key.class" -> "java.lang.Long"     
+   "key.class" -> "java.lang.Long"
      ))
 ```
 
@@ -433,14 +447,14 @@ val externalBsegTable = snc.createExternalTable("bsegInGem",
 
 In the following example, an external table is created using the getter methods on POJOs as SnappyData column names:
 
-```
-snc.createExternalTable(externalPersonsTable1, "gemfire", 
+``` scala
+snc.createExternalTable(externalPersonsTable1, "gemfire",
 Map[String, String]("region.path" -> personsRegionName, "value.class" -> "load.Person"))
-``` 
+```
 As in the previous case, if the GemFire key field has to be included as a column, then the **Key.class** attribute has to be passed in as an option.
 
-```
-snc.createExternalTable(externalPersonsTable1, "gemfire", Map[String, String]("region.path" -> personsRegionName, 
+``` scala
+snc.createExternalTable(externalPersonsTable1, "gemfire", Map[String, String]("region.path" -> personsRegionName,
 "value.class" -> "load.Person"), "key.class" -> "java.lang.Long"))
 ```
 
@@ -448,22 +462,22 @@ snc.createExternalTable(externalPersonsTable1, "gemfire", Map[String, String]("r
 ### Expose GemFire Region Using Dataframe Based External Tables
 
 In the following example, a DataFrame is used to create an external table **bsegTable**, with the schema which is same as that of DataFrame **bsegDF**. The primary key column name should be specified for this to work correctly. In the following example, it is assumed that the dataframe contains a column named "id1".
-```
-bsegDF.write.format("gemfire").  
+``` scala
+bsegDF.write.format("gemfire").
       option("region.path", "bseg1").
       option("primary.key.column.name", "id1").
       option("pdx.identity.fields", "id1").
       saveAsTable("bsegTable")
 ```
 !!!Note
-	The **pdx.identity.fields** specification has a huge impact on performance within GemFire since this specification informs GemFire to use only the specified field for computing hashCode and equality for PdxInstance.
-    
+    The **pdx.identity.fields** specification has a huge impact on performance within GemFire since this specification informs GemFire to use only the specified field for computing hashCode and equality for PdxInstance.
+
 <a id= gemfirerdds> </a>
 ### Expose GemFire Regions as RDDs
 Invoking the **gemfireRegion** method on the SparkContext in SnappyData exposes the full data set of a GemFire region as a Spark RDD.
 The same API exposes both replicated and partitioned region as RDDs.
 
-```
+``` scala
 scala> val rdd = sc.gemfireRegion[String, String]("gemTable1")
 
 scala> rdd.foreach(println)
@@ -473,13 +487,13 @@ scala> rdd.foreach(println)
 ```
 
 !!!Note
-	when the RDD is used, it is important to specify the correct type for both the region key and value, otherwise a **ClassCastException** is encountered.
+    when the RDD is used, it is important to specify the correct type for both the region key and value, otherwise a **ClassCastException** is encountered.
 
 <a id= controlschemaofexternaltable> </a>
 ### Controlling the Schema of the External Table
 The pdx fields (of pdx instances) or the getter methods (of the POJOs) define the schema of the external table by default. However, you can also control the schema by excluding the columns as per requirement. This is done by implementing the following trait:
 
-```
+``` scala
 package io.snappydata.spark.gemfire.connector.lifecycle
 import org.apache.spark.sql.types.StructType
 
@@ -488,10 +502,10 @@ trait ColumnSelector {
       allColumns: StructType): StructType
 }
 ```
-Based on the requirement, a new StructType which contains fewer columns can be returned. 
+Based on the requirement, a new StructType which contains fewer columns can be returned.
 
 !!!Note
-	The new StructType returned can only have the subset of the columns that are passed. No new columns should be added.
+    The new StructType returned can only have the subset of the columns that are passed. No new columns should be added.
 
 The **ColumnSelector** implemetation needs to be added to the startup classpath of the SnappyDataCluster.
 At the time of table creation, an option with key = **column.selector** and value as the fully qualified class name of the ColumnSelector implementation class should be passed.
@@ -507,25 +521,25 @@ At the time of table creation, an option with key = **column.selector** and valu
 |     **pdxtype.maxscan**   |   This parameter determines the maximum number of entries from the region which is scanned to completely determine the schema of the external table from the Pdx instances that is stored in the region. The default value is 100.     |
 
 <a id= controllingtaskconcurrency> </a>
-### Controlling Task Concurrency in SnappyData When Accessing GemFire 
+### Controlling Task Concurrency in SnappyData When Accessing GemFire
 
-There are two types of regions in GemFire; **replicated** and **partitioned**. All the data for a replicated region is present on every server where the region is defined. A GemFire partitioned region splits the data across the servers that define the partitioned region. 
+There are two types of regions in GemFire; **replicated** and **partitioned**. All the data for a replicated region is present on every server where the region is defined. A GemFire partitioned region splits the data across the servers that define the partitioned region.
 
-When operating with replicated regions, there is only a single RDD partition representing the replicated region in SnappyData. Since there is only one data bucket for the replicated region. As compared to this, a GemFire partitioned region can be represented by a configurable number of RDD partitions in SnappyData. 
+When operating with replicated regions, there is only a single RDD partition representing the replicated region in SnappyData. Since there is only one data bucket for the replicated region. As compared to this, a GemFire partitioned region can be represented by a configurable number of RDD partitions in SnappyData.
 
-Choosing the number of RDD partitions directly controls the task concurrency in SnappyData when you run queries on GemFire regions. By default, the GemFire connector works out the number of buckets per GemFire server, assigns partitions to each server, and uses a default value of maximum three buckets per partition. You can configure the **max.buckets.per.partition** attribute to change this value. 
+Choosing the number of RDD partitions directly controls the task concurrency in SnappyData when you run queries on GemFire regions. By default, the GemFire connector works out the number of buckets per GemFire server, assigns partitions to each server, and uses a default value of maximum three buckets per partition. You can configure the **max.buckets.per.partition** attribute to change this value.
 
 When queries are executed on an external table, the degree of parallelism in query execution is directly proportional to the number of RDD partitions that represents the table.
 
 The following example shows how to configure the RDD partitions count for an external table representing a GemFire region:
 
-```
+``` scala
 import io.snappydata.spark.gemfire.connector._
 
 val externalBsegTable = snc.createExternalTable("bsegInGem",
    "gemfire",
    Map[String, String]("region.path" -> "bseg1", "data.as.pdx" -> "true",
-   "key.class" -> "java.lang.Long" , "max.buckets.per.partition" -> "5"    
+   "key.class" -> "java.lang.Long" , "max.buckets.per.partition" -> "5"
      ))
 ```
 ## Saving Data to GemFire Region
@@ -539,14 +553,17 @@ You can save data to GemFire Regions using any of the following :
 <a id= savepairrddgemfire> </a>
 ### Saving Pair RDD to GemFire Region
 
-A pair RDD can be saved from SnappyData into a GemFire region as follows: 
+A pair RDD can be saved from SnappyData into a GemFire region as follows:
 
 1.	Import the implicits as shown:
 
-		import io.snappydata.spark.gemfire.connector
-       
+``` scala
+        import io.snappydata.spark.gemfire.connector
+```
+
 2.	In the Spark shell, create a simple pair RDD and save it to GemFire Region:
 
+``` scala
         scala> import io.snappydata.spark.gemfire.connector._
         scala> val data = Array(("1", "one"), ("2", "two"), ("3", "three"))
         data: Array[(String, String)] = Array((1,one), (2,two), (3,three))
@@ -556,9 +573,11 @@ A pair RDD can be saved from SnappyData into a GemFire region as follows:
 
         scala> distData.saveToGemFire("gemTable1")
         15/02/17 07:11:54 INFO DAGScheduler: Job 0 finished: runJob at GemFireRDDFunctions.scala:29, took 0.341288 s
+```
 
 3.	Verify the data is saved in GemFire using `gfsh`:
 
+``` pre
         gfsh>query --query="select key,value from /gemTable1.entries"
 
         Result     : true
@@ -571,13 +590,14 @@ A pair RDD can be saved from SnappyData into a GemFire region as follows:
         1   | one
         3   | three
         2   | two
+```
 
 <a id= savenonpairrddgemfire> </a>
-### Saving Non-Pair RDD to GemFire 
-Saving a non-pair RDD to GemFire requires an extra function that converts each element of RDD to a key-value pair. 
+### Saving Non-Pair RDD to GemFire
+Saving a non-pair RDD to GemFire requires an extra function that converts each element of RDD to a key-value pair.
 Here's a sample session in Spark shell:
 
-```
+``` scala
 scala> import io.snappydata.spark.gemfire.connector._
 scala> val data2 = Array("a","ab","abc")
 data2: Array[String] = Array(a, ab, abc)
@@ -611,10 +631,10 @@ key | value
 ### Saving a DataFrame to GemFire
 To save a DataFrame, that is dataSet of row objects, into GemFire, use the following API which is available as an implicit definition. The rows of the dataframes are converted into PDX instances for storage in the GemFire's region.
 
-In the following example, it is assumed that there is a column "id1" present in the dataframe's schema. To specify the PDX Identity Fields for the PDX Type, use the option as ("pdx.identity.fields", "Col1, Col2, Col3") to specify one or more columns to be used as PDX Identity fields. 
+In the following example, it is assumed that there is a column "id1" present in the dataframe's schema. To specify the PDX Identity Fields for the PDX Type, use the option as ("pdx.identity.fields", "Col1, Col2, Col3") to specify one or more columns to be used as PDX Identity fields.
 SnappyData recommends to define the identity fields for performance during comparison of PDX Instances.
 
-```
+``` scala
 import io.snappydata.spark.gemfire.connector._
 
 df.write.format("gemfire").
@@ -622,46 +642,45 @@ df.write.format("gemfire").
           option("primary.key.column.name", "id1").
           option("pdx.identity.fields", "id1")
           .save()
-```      
+```
 
 To dynamically generate the GemFire Region's key, import the implicits and use the following API:
 
-```
+``` scala
 saveToGemFire[K](regionPath: String, keyExtractor: Row => K, opConf: Map[String, String] = Map.empty )
 ```
 
-```
+``` scala
 import io.snappydata.spark.gemfire.connector._
 
-df.saveToGemFire[String]("/region1", 
+df.saveToGemFire[String]("/region1",
 (row: Row) => ( row.getString(1) + "_" + row.getString(10)),
 Map[String, String]("pdx.identity.fields" -> "id1, id10")
 )
-```    
+```
 
 <a id= runoqlqueriesgemfire> </a>
 ## Running OQL queries Directly on GemFire from SnappyData
 
-Most applications using SnappyData will choose to run regular SQL queries on GemFire regions. Refer to [Accessing Data From GemFire](#accessingdatafromgemfire) 
+Most applications using SnappyData will choose to run regular SQL queries on GemFire regions. Refer to [Accessing Data From GemFire](#accessingdatafromgemfire)
 Additionally, you can directly execute OQL queries on GemFire regions using the GemFire connector. In scenarios where the data stored in GemFire regions is neither PDX nor Java bean compliant POJO, you can execute OQL queries and retrieve the data from the server and make it available as a data frame.
 
 An instance of `SQLContext` is required to run OQL query.
 
-```
+``` scala
 val snc = new org.apache.spark.sql.SnappyContext(sc)
 ```
 
 Create a `DataFrame` using OQL:
-```
+``` scala
 val dataFrame = snc.gemfireOQL("SELECT iter.name,itername.address.city, iter.id FROM /personRegion iter")
 ```
 
-You can repartition the `DataFrame` using `DataFrame.repartition()` if required. 
-After you have the `DataFrame`, you can register it as a table and use Spark 
+You can repartition the `DataFrame` using `DataFrame.repartition()` if required.
+After you have the `DataFrame`, you can register it as a table and use Spark
 SQL to query:
 
-```
+``` scala
 dataFrame.registerTempTable("person")
 val SQLResult = sqlContext.sql("SELECT * FROM person WHERE id > 100")
 ```
-

@@ -30,7 +30,7 @@ This is the recommended PatternLayout to use for SnappyData logging.
 
 When using a custom **log4j.properties**, and the mentioned layout cannot be used or when using AsyncAppender, then a custom appender `ThreadIdAppender` has been provided that can be inserted as the first appender to get the same output.
 
-<Heading3>Examples:</Heading3>
+### Examples:
 
 **When using the default PatternLayout in the log4j.properties file:**
 

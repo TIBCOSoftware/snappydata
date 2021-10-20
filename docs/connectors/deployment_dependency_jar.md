@@ -57,11 +57,11 @@ deploy package <unique-alias-name> ‘packages’ [ repos ‘repositories’ ] [
 
 **Deploy packages from a default repository:**
 	
-``` pre
+```  sql
 deploy package deeplearning 'databricks:spark-deep-learning:0.3.0-spark2.2-s_2.11' path '/home/snappydata/work';
 ```
 
-```pre
+``` sql
 deploy package Sparkredshift 'com.databricks:spark-redshift_2.10:3.0.0-preview1' path '/home/snappydata/work';
 ```
 

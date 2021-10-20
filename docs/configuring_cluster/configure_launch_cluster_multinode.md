@@ -108,8 +108,3 @@ node2_hostname -dir=/nfs/opt/snappy-db1/server3 -heap-size=8g -memory-size=42g
 node2_hostname -dir=/nfs/opt/snappy-db1/server4 -heap-size=8g -memory-size=42g
 
 ```
-
-
-
-
-

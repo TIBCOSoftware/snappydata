@@ -23,13 +23,17 @@ Multiple users can concurrently access a secure SnappyData cluster by configurin
 
         For example:
 
+``` sql
             snappy> GRANT SELECT ON Table airline TO user2;
             snappy> GRANT INSERT ON Table airline TO user3;
             snappy> GRANT UPDATE ON Table airline TO user4;
+```
 
-        To enable running `EXEC SCALA` also `GRANT`:
+   To enable running `EXEC SCALA` also `GRANT`:
 
+``` sql
             snappy> GRANT PRIVILEGE EXEC SCALA TO user2;
+```
 
 
     !!! Note
@@ -37,7 +41,7 @@ Multiple users can concurrently access a secure SnappyData cluster by configurin
 
     !!! IMPORTANT
         Beware that granting EXEC SCALA privilege is overarching by design and essentially makes the user
-        equivalent to the database adminstrator since scala code can be used to modify anything using internal APIs.
+        equivalent to the database adminstrator since scala code can be used to modify any data using internal APIs.
 
 4. Follow the remaining steps as given in [How to Use Apache Zeppelin with SnappyData](use_apache_zeppelin_with_snappydata.md)
 

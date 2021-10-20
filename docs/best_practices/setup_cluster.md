@@ -102,7 +102,7 @@ SnappyData has its own operator for extremely fast joins/aggregates. One limitat
 
 To disable hashJoin/hashAggregates for a particular session you can use the following:
 
-```
+``` sql
 set snappydata.sql.hashAggregateSize=-1
 set snappydata.sql.hashJoinSize=-1
 

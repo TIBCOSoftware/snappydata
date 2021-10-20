@@ -24,7 +24,7 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 **Dependencies**: Use the Maven/SBT dependencies for the latest released version of SnappyData.
 
 **Example: Maven dependency**
-```pre
+``` xml
 <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client -->
 <dependency>
     <groupId>io.snappydata</groupId>
@@ -34,7 +34,7 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 ```
 
 **Example: SBT dependency**
-```pre
+``` scala
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
 libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.1.0"
 ```
@@ -43,7 +43,7 @@ libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.1.0"
 
 	If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>As a workaround, add the below code to the **build.sbt**:
 
-```
+``` scala
 val workaround = {
   sys.props += "packaging.type" -> "jar"
   ()
@@ -74,7 +74,7 @@ The following additional properties can be configured for JDBC client pool drive
 
 **Example Code Snippet:**
 
-```pre
+``` scala
 val properties = new Properties()
 properties.setProperty("pool.user", "user")
 properties.setProperty("pool.password", "pass")

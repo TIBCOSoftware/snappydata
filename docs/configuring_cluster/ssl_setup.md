@@ -137,19 +137,19 @@ This example uses keystores created by the Java keytool application to provide t
 
 To create the keystore and certificate for the locator, run the following:
 
-```
+``` shell
 keytool -genkey -alias mySnappyLocator -keystore locatorKeyStore.key
 keytool -export -alias mySnappyLocator -keystore locatorKeyStore.key -rfc -file myLocator.cert
 ```
 
 You can use similar commands for a server member and a lead member respectively:
 
-```
+``` shell
 keytool -genkey -alias mySnappyServer -keystore serverKeyStore.key
 keytool -export -alias mySnappyServer -keystore serverKeyStore.key -rfc -file myServer.cert
 ```
 
-```
+``` shell
 keytool -genkey -alias mySnappyLead -keystore leadKeyStore.key
 keytool -export -alias mySnappyLead -keystore leadKeyStore.key -rfc -file myLead.cert
 ```
@@ -158,21 +158,21 @@ Each of the member's certificate is then imported into the other member's trust 
 
 For the server member:
 
-```
+``` shell
 keytool -import -alias mySnappyServer -file ./myServer.cert -keystore ./locatorKeyStore.key
 keytool -import -alias mySnappyServer -file ./myServer.cert -keystore ./leadKeyStore.key
 ```
 
 For the locator member:
 
-```
+``` shell
 keytool -import -alias mySnappyLocator -file ./myLocator.cert -keystore ./serverKeyStore.key
 keytool -import -alias mySnappyLocator -file ./myLocator.cert -keystore ./leadKeyStore.key
 ```
 
 For the lead member:
 
-```
+``` shell
 keytool -import -alias mySnappyLead -file ./myLead.cert -keystore ./locatorKeyStore.key
 keytool -import -alias mySnappyLead -file ./myLead.cert -keystore ./serverKeyStore.key
 ```
@@ -236,7 +236,7 @@ To configure SSL for Spark layer:
 
 This example uses keystores created by the Java keytool application to provide the proper credentials to the provider.  On each node, create keystore files, certificates, and truststore files. Here, in this example, to create the keystore and certificate for the locator, the following was run:
 
-```
+``` shell
 keytool -genkey -alias mySnappyLocator -keystore locatorKeyStore.key
 keytool -export -alias mySnappyLocator -keystore locatorKeyStore.key -rfc -file myLocator.cert
 
@@ -244,12 +244,12 @@ keytool -export -alias mySnappyLocator -keystore locatorKeyStore.key -rfc -file 
 
 Similar commands were used for a server member and lead member respectively:
 
-```
+``` shell
 keytool -genkey -alias mySnappyServer -keystore serverKeyStore.key
 keytool -export -alias mySnappyServer -keystore serverKeyStore.key -rfc -file myServer.cert
 ```
 
-```
+``` shell
 keytool -genkey -alias mySnappyLead -keystore leadKeyStore.key
 keytool -export -alias mySnappyLead -keystore leadKeyStore.key -rfc -file myLead.cert
 ```
@@ -257,19 +257,19 @@ keytool -export -alias mySnappyLead -keystore leadKeyStore.key -rfc -file myLead
 After this, each of the member's certificate is imported into the other member's trust store.
 
 For the locator member:
-```
+``` shell
 keytool -import -alias mySnappyLocator -file ./myLocator.cert -keystore ./serverKeyStore.key
 keytool -import -alias mySnappyLocator -file ./myLocator.cert -keystore ./leadKeyStore.key
 ```
 
 For the server member:
-```
+``` shell
 keytool -import -alias mySnappyServer -file ./myServer.cert -keystore ./locatorKeyStore.key
 keytool -import -alias mySnappyServer -file ./myServer.cert -keystore ./leadKeyStore.key
 ```
 
 For the lead member:
-```
+``` shell
 keytool -import -alias mySnappyLead -file ./myLead.cert -keystore ./locatorKeyStore.key
 keytool -import -alias mySnappyLead -file ./myLead.cert -keystore ./serverKeyStore.key
 ```

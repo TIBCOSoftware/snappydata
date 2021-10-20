@@ -17,22 +17,31 @@ SnappyData edition 1.3.0 is tested and works with TIBCO Data Virtualization 8.2.
 
 4.	Make sure SnappyData is running by executing the following command:	
 
+``` shell
             ./sbin/snappy-status-all.sh
+```
 
 5.	Launch the SnappyData SQL shell:
 
+``` shell
 			./bin/snappy
+```
 
 6.	Connect to the running SnappyData cluster:
 
+``` pre
 			snappy>connect client '<host-name>:<locator port>';
 			For example: snappy>connect client '<localhost>:<1527>';
+```
+
 7.	Deploy the JDBC jar of the TDV module:
 
+``` pre
 			snappy>deploy jar <jar alias> '<SnappyData installation directory>/connectors/csjdbc8.jar';
             
             For example:
             snappy>deploy jar dv-jar '/snappydata/snappy-connectors/tdv-connector/lib/csjdbc8.jar';
+```
 
     !!!Note
         The above jar may not be available in the SnappyData Community edition.

@@ -2,7 +2,7 @@
 
 The SnappyData team is pleased to announce the availability of SnappyData Release 1.0.0 (GA) of the platform.
 
-<heading2> New Features/Fixed Issues</heading2>
+## New Features/Fixed Issues
 
 - Fully compatible with Apache Spark 2.1.1
 
@@ -34,7 +34,7 @@ The SnappyData team is pleased to announce the availability of SnappyData Releas
 
 - The history file for snappy shell has been renamed from .gfxd.history to .snappy.history. You may copy your existing ~/.gfxd.history to ~/.snappy.history to be able to access your historical snappy shell commands.
 
-<heading2> Performance Enhancements</heading2>
+## Performance Enhancements
 
 - Performance enhancements with dictionary decoder when dictionary is large. (SNAP-1877)
   - Using a consistent sort for pushed down predicates so that different sessions do not end up creating different generated code.
@@ -43,7 +43,7 @@ The SnappyData team is pleased to announce the availability of SnappyData Releas
 - Performance improvements in Smart Connector mode, specially with queries on tables with wide schema (SNAP-1363, SNAP-1699)
 - Several other performance improvements.
 
-<heading2> Select bug fixes and performance related fixes</heading2>
+## Select bug fixes and performance related fixes
 
 There have been numerous bug fixes done as part of this release. Some of these are included below. For a more comprehensive list, see [ReleaseNotes](https://github.com/TIBCOSoftware/snappydata/blob/master/ReleaseNotes.txt).
 

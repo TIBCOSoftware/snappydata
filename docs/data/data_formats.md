@@ -13,13 +13,13 @@ SnappyData relies on the Spark SQL Data Sources API to parallelly load data from
 **Load using Spark API or SQL** </br> You can use SQL to point to any data source or use the native Spark Scala/Java API to load. 
 For instance, you can first [create an external table](../reference/sql_reference/create-external-table.md). 
 
-```pre
+``` sql
 CREATE EXTERNAL TABLE <tablename> USING <any-data-source-supported> OPTIONS <options>
 ```
 
 Next, use it in any SQL query or DDL. For example,
 
-```pre
+``` sql
 CREATE EXTERNAL TABLE STAGING_CUSTOMER USING parquet OPTIONS(path 'quickstart/src/main/resources/customerparquet')
 
 CREATE TABLE CUSTOMER USING column OPTIONS(buckets '8') AS ( SELECT * FROM STAGING_CUSTOMER)
@@ -56,4 +56,3 @@ The following table provides information about the supported data formats along 
 | **Multiline JSON** | create external table staging_json_multiline using json options (path '`<json_file_path>`', wholeFile 'true');</br>create table json_test using column as select * from staging_json_multiline;  |val extJsonMultiLineDF = snappy.createExternalTable("jsonTableMultiLine_ext","json", Map("path"-> "`<json_file_path>`","wholeFile" -> "true"),false)</br>snappy.createTable("jsonTableMultiLine", "column", extJsonMultiLineDF.schema, Map("buckets"->"9"), false);</br>import org.apache.spark.sql.SaveMode;</br>extJsonMultiLineDF.write.format("column").mode(SaveMode.Append).saveAsTable("jsonTableMultiLine");   |
 | **XML** |create external table staging_xml using xml options (rowTag '`<rowTag>`',path '`<xml-file-path>`');</br>create table xml_test using column as select * from staging_xml;| val extXmlDF = snappy.createExternalTable("xmlTable_ext","xml", Map("path"-> "`<xml-file-path>`","rowTag" -> "`<rowTag>`"),false)</br>snappy.createTable("xmlTable", "column", extXmlDF.schema, Map("buckets"->"9"), false)</br>;import org.apache.spark.sql.SaveMode;</br>extXmlDF.write.format("column").mode(SaveMode.Append).saveAsTable("xmlTable");|
 | **TEXT** | create external table staging_text using text options (path '`<text_file_path>`');</br>create table text_test using column as select * from staging_text;  |   |
-

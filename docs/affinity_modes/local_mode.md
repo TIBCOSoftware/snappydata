@@ -23,7 +23,7 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
 
 **Example: Maven dependency**
 
-```pre
+``` xml
 <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 -->
 <dependency>
     <groupId>io.snappydata</groupId>
@@ -34,15 +34,15 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
 
 **Example: SBT dependency**
 
-```pre
+``` scala
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
 libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.0"
 ```
 
 **Note**:</br>
-If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>As a workaround, add the below code to the **build.sbt**:
+If your project fails when resolving the above dependency (that is, it fails to download `javax.ws.rs#javax.ws.rs-api;2.1`), it may be due an issue with its pom file. </br>As a workaround, add the below code to the **build.sbt**:
 
-```pre
+``` scala
 val workaround = {
   sys.props += "packaging.type" -> "jar"
   ()
@@ -55,7 +55,7 @@ For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.
 
 To start SnappyData store you need to create a SnappySession in your program:
 
-```pre
+``` scala
  val spark: SparkSession = SparkSession
          .builder
          .appName("SparkApp")
@@ -63,13 +63,12 @@ To start SnappyData store you need to create a SnappySession in your program:
          .getOrCreate
  val snappy = new SnappySession(spark.sparkContext)
 ```
-  
-  
+
   
 **Example**: **Launch Apache Spark shell and provide SnappyData dependency as a Spark package**:
 
 If you already have Spark 2.1.1 to 2.1.3 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
 
-```pre
+``` shell
 ./bin/spark-shell --packages "TIBCOSoftware:snappydata:1.3.0-s_2.11"
 ```

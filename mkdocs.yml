@@ -129,9 +129,9 @@ nav:
     - 'Sketching': 'sde/sketching.md'
 - 'Working with Data Sources':
     - connectors/index.md
-    - 'Supported Data Formats': 'Data/data_formats.md'
+    - 'Supported Data Formats': 'data/data_formats.md'
     - 'Accessing Cloud Storages': 'connectors/access_cloud_data.md'
-    - 'Connecting to External Hive Metastores': 'Data/external_hive_support.md'
+    - 'Connecting to External Hive Metastores': 'data/external_hive_support.md'
     #- 'Using the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'
     - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
     - 'Using the SnappyData JDBC Streaming Connector': 'connectors/jdbc_streaming_connector.md'
@@ -358,6 +358,9 @@ theme:
         scheme: default
         primary: teal
         accent: cyan
+    font:
+      text: 'Lato'
+      code: 'Fira Code'
     logo: Images/logo.png
     favicon: favicon.ico
     features:
@@ -368,18 +371,18 @@ theme:
 
 #theme_dir: 'docs/custom_theme'
 
-extra_javascript:
-    - 'custom_theme/js/menu.js'
-    - 'custom_theme/js/highlight.pack.js'
+#extra_javascript:
+#    - 'custom_theme/js/menu.js'
+#    - 'custom_theme/js/highlight.pack.js'
 
 extra_css:
-    - 'custom_theme/css/toc.css'
-    - 'custom_theme/css/menu.css'
-    - 'custom_theme/css/images.css'
-    - 'custom_theme/css/style.css'
-    - 'custom_theme/css/highlight.css'
-#    - 'extra.css'
-    - 'custom_theme/css/material-extra.css'
+#    - 'custom_theme/css/toc.css'
+#    - 'custom_theme/css/menu.css'
+#    - 'custom_theme/css/images.css'
+#    - 'custom_theme/css/style.css'
+#    - 'custom_theme/css/highlight.css'
+    - 'extra.css'
+#    - 'custom_theme/css/material-extra.css'
 
 # Plugins
 plugins:
@@ -389,6 +392,13 @@ plugins:
 
 markdown_extensions:
     - admonition
+    - pymdownx.highlight
+    - pymdownx.inlinehilite
+    - pymdownx.superfences
+    - pymdownx.snippets
+    - pymdownx.superfences
+    - pymdownx.tabbed:
+        alternate_style: true
     - toc:
         permalink: true
 

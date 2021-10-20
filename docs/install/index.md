@@ -9,7 +9,8 @@ GemFire connector), and there is only the **Community Edition** that is released
 For more information on the capabilities of the Community Edition and differences from the previous Enterprise Edition, see [Community Edition (Open Source)](../additional_files/open_source_components.md).
 
 <a id= download> </a>
-<heading2>Download SnappyData Community Edition</heading2>
+
+## Download SnappyData Community Edition
 
 
 Download the [SnappyData 1.3.0 Community Edition (Open Source)](https://github.com/TIBCOSoftware/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
@@ -18,10 +19,11 @@ Download the [SnappyData 1.3.0 Community Edition (Open Source)](https://github.c
 
 
 <a id= provisioningsnappy> </a>
-<heading2>SnappyData Provisioning Options</heading2>
+
+## SnappyData Provisioning Options
 
 
-<heading3>Prerequisites</heading3>
+### Prerequisites
 
 Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the *JAVA_HOME* environment variable is set on each computer.
 
@@ -37,7 +39,7 @@ The following options are available for provisioning SnappyData:
 
 * [Building from Source](building_from_source.md)<a id="building-from-source"></a>
 
-<heading3>Configuring the Limit for Open Files and Threads/Processes</heading3>
+### Configuring the Limit for Open Files and Threads/Processes
 
 On a Linux system, you can set the limit of open files and thread processes in the **/etc/security/limits.conf** file. 
 </br>A minimum of **8192** is recommended for open file descriptors limit and **>128K** is recommended for the number of active threads. 

@@ -11,9 +11,9 @@ You can also deploy other third party connectors using the SQL `Deploy` command.
 
 * [START HERE - for a quick overview of the concepts and some examples for loading data](../howto/load_data_into_snappydata_tables.md)
 * [Data Loading examples using Spark SQL/Data Sources API](../howto/load_data_from_external_data_stores.md)
-* [Supported Data Formats](../Data/data_formats.md)
+* [Supported Data Formats](../data/data_formats.md)
 * [Accessing Cloud Stores](access_cloud_data.md)
-* [Connecting to External Hive Metastores](../Data/external_hive_support.md)
+* [Connecting to External Hive Metastores](../data/external_hive_support.md)
 * [Using the SnappyData Change Data Capture (CDC) Connector](cdc_connector.md)
 * [Using the SnappyData JDBC Streaming Connector](jdbc_streaming_connector.md)
 <!-- * [Using the SnappyData GemFire Connector](gemfire_connector.md) -->

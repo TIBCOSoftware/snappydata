@@ -8,7 +8,7 @@ If you want to launch the cluster either on Amazon EC2 or on a Kubernetes cluste
 
 If you are launching on a single node, for example, on your laptop or on a linux server you have access to, you can do so using this simple command:
 
-```
+``` shell
 ./sbin/snappy-start-all.sh
 ```
 This launches a single [locator](../configuring_cluster/configuring_cluster.md#locator), [lead](../configuring_cluster/configuring_cluster.md#lead) and a [data server](../configuring_cluster/configuring_cluster.md#dataserver). You can go to the following URL on your browser to view the cluster dashboard:
@@ -57,11 +57,13 @@ A general rule of thumb for compressed data (say Parquet) is to configure about 
 1.	Define your external tables to access the data sources. This only creates catalog entries in SnappyData. </br>For example,  when loading data from a folder with data in CSV format, you can do the following using the [Snappy Shell](../howto/use_snappy_shell.md):
 
 
+``` sql
         create external table t1 using csv options(inferSchema 'true', header 'true', path '<some folder or file containing the CSV data>') ;
-                    // Spark Scala/Java/Python API example is omitted for brevity.
+                    -- Spark Scala/Java/Python API example is omitted for brevity.
+```
 
 
-	More examples for loading data from external sources are available [here](../howto/load_data_from_external_data_stores.md)
+    More examples for loading data from external sources are available [here](../howto/load_data_from_external_data_stores.md)
 
 2.	Decide if you want to manage this data in a [Columnar or Row format](../programming_guide/tables_in_snappydata.md).
 
@@ -81,10 +83,14 @@ TIBCO recommends to configure off-heap memory. Even when off-heap is configured,
 !!!Note
 	Only the columnar table data is managed in off-heap memory. Row tables are always in JVM heap.
 
-TIBCO recommends to allocate at least **1 GB **of memory per core to JVM heap for computations.
+TIBCO recommends to allocate at least **1 GB **of memory per core to JVM heap for computations up to a max of **12 GB**.
 
-For example, when running on **8 core** servers, configure JVM heap to be **8 GB**.
+For example, when running on **8 core** servers, configure JVM heap to be **8 GB**, while on **32 core** servers a heap of **12 - 16 GB** will suffice.
 By default, **50%** of the off-heap memory is available as computational memory. While, you may not need this much computational capacity when large off-heap is configured, it is still recommended for reserving enough capacity if working with large data sets.
+
+If you are going to run queries using [jobs](../programming_guide/snappydata_jobs.md) that run queries returning multiple GB
+of results using the Dataset/RDD.collect() then all the data will need to held in the heap of lead node so you must account
+for that requirement when planning the heap size of lead node.
 
 
 More complex the analytical processing, especially large aggregations, greater the space requirement in off-heap. For example, if your per server off-heap storage need is **100 GB** then, allocate an additional **30 GB** of off-heap for computations. Even if your data set is small, you must still allocate at least a few Gigabytes of off-heap storage for computations.
@@ -167,7 +173,3 @@ See [Configuration Reference](../configuring_cluster/configuring_cluster.md) sec
 ##  List of Properties
 
 Refer [SnappyData properties](property_description.md) for complete list of properties.
-
-
-
-

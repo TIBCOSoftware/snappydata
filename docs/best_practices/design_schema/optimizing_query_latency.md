@@ -111,13 +111,13 @@ Currently, all `NOT IN` queries use an unoptimized plan and lead to a nested-loo
 
 For example a query like:
 
-```
+``` sql
 select count(*) from T1 where id not in (select id from T2)
 ```
 
 can be changed to:
 
-```
+``` sql
 select count(*) from T1 where not exists (select 1 from T2 where T1.id = T2.id)
 ```
 
@@ -125,7 +125,7 @@ Be aware of the different null value semantics of the two operators as noted her
 
 In a nutshell, the `NOT IN` operator is null-aware and skips the row if the sub-query has a null value, while the `NOT EXISTS` operator ignores the null values in the sub-query. In other words, the following two are equivalent when dealing with null values:
 
-```
+``` sql
 select count(*) from T1 where id not in (select id from T2 where id is not null)
 select count(*) from T1 where not exists (select 1 from T2 where T1.id = T2.id)
 ```
