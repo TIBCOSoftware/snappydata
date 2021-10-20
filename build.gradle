@@ -1542,7 +1542,7 @@ task docs(type: ScalaDoc) {
 
 task publishDocs(type: Exec) {
   dependsOn product, docs
-  //on linux
+  // on linux
   commandLine './publish-site.sh'
 }
 

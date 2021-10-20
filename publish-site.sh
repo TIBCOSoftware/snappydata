@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-# This utility moves markdown files to the docs folder for 
-# generating documentation and then call the mkdocs utility 
-# with the passed arguments.  
+# This utility moves markdown files to the docs folder for
+# generating documentation and then call the mkdocs utility
+# with the passed arguments.
 
 API_DOCS_DIR="build-artifacts/scala-2.11/docs"
 
@@ -19,7 +19,7 @@ NUM_HTML_FILES=`find ${API_DOCS_DIR} -name "*.html" | wc -l`
 if [ "${NUM_HTML_FILES}" -lt 3500 ]; then
   echo "Expected at least 3500 html files but got only ${NUM_HTML_FILES} html files"
   echo "${API_DOCS_DIR} does not seem to contain all the htmls of the apidocs"
-  exit 1 
+  exit 1
 fi
 
 # In place replace GettingStarted.md with index.md in all the md files in docs
@@ -55,13 +55,14 @@ rm -rf docs/reference/sql_functions/*
 cp -dR spark/sql/docs/* docs/reference/sql_functions/
 rm -rf spark/sql/docs
 
+# Copy the generated scala docs inside the docs directory.
+rm -rf docs/apidocs
+mkdir -p docs/apidocs
+cp -dR build-artifacts/scala-2.11/docs/* docs/apidocs/
+
 # echo $@
 # mkdocs $@
-mkdocs build --clean
-
-# Copy the generated scala docs inside the site folder. 
-mkdir -p site/apidocs
-cp -dR build-artifacts/scala-2.11/docs/* site/apidocs/
+mkdocs build --clean --strict
 
 #mkdocs gh-deploy
 
