@@ -1,0 +1,1796 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>LongObjectHashMapWithState - snappydata_2.11 1.3.0 API - org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState</title>
+          <meta name="description" content="LongObjectHashMapWithState - snappydata 2.11 1.3.0 API - org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState" />
+          <meta name="keywords" content="LongObjectHashMapWithState snappydata 2.11 1.3.0 API org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img alt="Class" src="../../../../../../../lib/class_big.png" />
+        <p id="owner"><a href="../../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql.execution">execution</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.execution.columnar">columnar</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl">impl</a></p>
+        <h1>LongObjectHashMapWithState</h1><h3><span class="morelinks"><div>Related Doc:
+            <a href="package.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl">package impl</a>
+          </div></span></h3><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">LongObjectHashMapWithState</span><span class="tparams">[<span name="V">V</span>]</span><span class="result"> extends <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap">Long2ObjectOpenHashMap</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap">Long2ObjectOpenHashMap</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>], <span class="extype" name="it.unimi.dsi.fastutil.Hash">Hash</span>, <span class="extype" name="java.lang.Cloneable">Cloneable</span>, <span class="extype" name="it.unimi.dsi.fastutil.longs.AbstractLong2ObjectMap">AbstractLong2ObjectMap</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>], <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectMap">Long2ObjectMap</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>], <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="java.lang.Long">Long</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>], <span class="extype" name="it.unimi.dsi.fastutil.longs.AbstractLong2ObjectFunction">AbstractLong2ObjectFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>], <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction">Long2ObjectFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>], <span class="extype" name="java.util.function.LongFunction">LongFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>], <span class="extype" name="it.unimi.dsi.fastutil.Function">Function</span>[<span class="extype" name="java.lang.Long">Long</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>], <span class="extype" name="java.util.function.Function">Function</span>[<span class="extype" name="java.lang.Long">Long</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>], <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState"><span>LongObjectHashMapWithState</span></li><li class="in" name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap"><span>Long2ObjectOpenHashMap</span></li><li class="in" name="it.unimi.dsi.fastutil.Hash"><span>Hash</span></li><li class="in" name="java.lang.Cloneable"><span>Cloneable</span></li><li class="in" name="it.unimi.dsi.fastutil.longs.AbstractLong2ObjectMap"><span>AbstractLong2ObjectMap</span></li><li class="in" name="it.unimi.dsi.fastutil.longs.Long2ObjectMap"><span>Long2ObjectMap</span></li><li class="in" name="java.util.Map"><span>Map</span></li><li class="in" name="it.unimi.dsi.fastutil.longs.AbstractLong2ObjectFunction"><span>AbstractLong2ObjectFunction</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction"><span>Long2ObjectFunction</span></li><li class="in" name="java.util.function.LongFunction"><span>LongFunction</span></li><li class="in" name="it.unimi.dsi.fastutil.Function"><span>Function</span></li><li class="in" name="java.util.function.Function"><span>Function</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(expectedSize:Int):org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState[V]"></a>
+      <a id="&lt;init&gt;:LongObjectHashMapWithState[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">LongObjectHashMapWithState</span><span class="params">(<span name="expectedSize">expectedSize: <span class="extype" name="scala.Int">Int</span></span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@&lt;init&gt;(expectedSize:Int):org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState[V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap.MapEntry" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MapEntryextendsLong2ObjectMap.Entry[V]withMap.Entry[Long,V]withLongObjectPair[V]"></a>
+      <a id="MapEntry:MapEntry"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">MapEntry</span><span class="result"> extends <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry">Entry</span>[<span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap.V">V</span>] with <span class="extype" name="java.util.Map.Entry">Entry</span>[<span class="extype" name="java.lang.Long">Long</span>, <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap.V">V</span>] with <span class="extype" name="it.unimi.dsi.fastutil.longs.LongObjectPair">LongObjectPair</span>[<span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@MapEntryextendsLong2ObjectMap.Entry[V]withMap.Entry[Long,V]withLongObjectPair[V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>private[<a href="../../../../../../../it$unimi$dsi$fastutil$longs.html" class="extype" name="it.unimi.dsi.fastutil.longs">it.unimi.dsi.fastutil.longs</a>] </dd><dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap</dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@##():Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@==(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="java.util.function.Function#andThen" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="andThen[V](x$1:java.util.function.Function[_&gt;:R,_&lt;:V]):java.util.function.Function[T,V]"></a>
+      <a id="andThen[V](Function[_&gt;:V,_&lt;:V]):Function[Long,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">andThen</span><span class="tparams">[<span name="V">V</span>]</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.util.function.Function">Function</span>[_ &gt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>, _ &lt;: <span class="extype" name="java.util.function.Function.andThen.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="java.util.function.Function">Function</span>[<span class="extype" name="java.lang.Long">Long</span>, <span class="extype" name="java.util.function.Function.andThen.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@andThen[V](x$1:java.util.function.Function[_&gt;:R,_&lt;:V]):java.util.function.Function[T,V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Function</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#andThenByte" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="andThenByte(x$1:it.unimi.dsi.fastutil.objects.Object2ByteFunction[V]):it.unimi.dsi.fastutil.longs.Long2ByteFunction"></a>
+      <a id="andThenByte(Object2ByteFunction[V]):Long2ByteFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">andThenByte</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.objects.Object2ByteFunction">Object2ByteFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ByteFunction">Long2ByteFunction</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@andThenByte(x$1:it.unimi.dsi.fastutil.objects.Object2ByteFunction[V]):it.unimi.dsi.fastutil.longs.Long2ByteFunction" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#andThenChar" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="andThenChar(x$1:it.unimi.dsi.fastutil.objects.Object2CharFunction[V]):it.unimi.dsi.fastutil.longs.Long2CharFunction"></a>
+      <a id="andThenChar(Object2CharFunction[V]):Long2CharFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">andThenChar</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.objects.Object2CharFunction">Object2CharFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2CharFunction">Long2CharFunction</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@andThenChar(x$1:it.unimi.dsi.fastutil.objects.Object2CharFunction[V]):it.unimi.dsi.fastutil.longs.Long2CharFunction" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#andThenDouble" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="andThenDouble(x$1:it.unimi.dsi.fastutil.objects.Object2DoubleFunction[V]):it.unimi.dsi.fastutil.longs.Long2DoubleFunction"></a>
+      <a id="andThenDouble(Object2DoubleFunction[V]):Long2DoubleFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">andThenDouble</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.objects.Object2DoubleFunction">Object2DoubleFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2DoubleFunction">Long2DoubleFunction</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@andThenDouble(x$1:it.unimi.dsi.fastutil.objects.Object2DoubleFunction[V]):it.unimi.dsi.fastutil.longs.Long2DoubleFunction" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#andThenFloat" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="andThenFloat(x$1:it.unimi.dsi.fastutil.objects.Object2FloatFunction[V]):it.unimi.dsi.fastutil.longs.Long2FloatFunction"></a>
+      <a id="andThenFloat(Object2FloatFunction[V]):Long2FloatFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">andThenFloat</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.objects.Object2FloatFunction">Object2FloatFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2FloatFunction">Long2FloatFunction</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@andThenFloat(x$1:it.unimi.dsi.fastutil.objects.Object2FloatFunction[V]):it.unimi.dsi.fastutil.longs.Long2FloatFunction" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#andThenInt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="andThenInt(x$1:it.unimi.dsi.fastutil.objects.Object2IntFunction[V]):it.unimi.dsi.fastutil.longs.Long2IntFunction"></a>
+      <a id="andThenInt(Object2IntFunction[V]):Long2IntFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">andThenInt</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.objects.Object2IntFunction">Object2IntFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2IntFunction">Long2IntFunction</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@andThenInt(x$1:it.unimi.dsi.fastutil.objects.Object2IntFunction[V]):it.unimi.dsi.fastutil.longs.Long2IntFunction" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#andThenLong" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="andThenLong(x$1:it.unimi.dsi.fastutil.objects.Object2LongFunction[V]):it.unimi.dsi.fastutil.longs.Long2LongFunction"></a>
+      <a id="andThenLong(Object2LongFunction[V]):Long2LongFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">andThenLong</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.objects.Object2LongFunction">Object2LongFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2LongFunction">Long2LongFunction</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@andThenLong(x$1:it.unimi.dsi.fastutil.objects.Object2LongFunction[V]):it.unimi.dsi.fastutil.longs.Long2LongFunction" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#andThenObject" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="andThenObject[T](x$1:it.unimi.dsi.fastutil.objects.Object2ObjectFunction[_&gt;:V,_&lt;:T]):it.unimi.dsi.fastutil.longs.Long2ObjectFunction[T]"></a>
+      <a id="andThenObject[T](Object2ObjectFunction[_&gt;:V,_&lt;:T]):Long2ObjectFunction[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">andThenObject</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.objects.Object2ObjectFunction">Object2ObjectFunction</span>[_ &gt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>, _ &lt;: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction.andThenObject.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction">Long2ObjectFunction</span>[<span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction.andThenObject.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@andThenObject[T](x$1:it.unimi.dsi.fastutil.objects.Object2ObjectFunction[_&gt;:V,_&lt;:T]):it.unimi.dsi.fastutil.longs.Long2ObjectFunction[T]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#andThenReference" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="andThenReference[T](x$1:it.unimi.dsi.fastutil.objects.Object2ReferenceFunction[_&gt;:V,_&lt;:T]):it.unimi.dsi.fastutil.longs.Long2ReferenceFunction[T]"></a>
+      <a id="andThenReference[T](Object2ReferenceFunction[_&gt;:V,_&lt;:T]):Long2ReferenceFunction[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">andThenReference</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.objects.Object2ReferenceFunction">Object2ReferenceFunction</span>[_ &gt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>, _ &lt;: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction.andThenReference.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ReferenceFunction">Long2ReferenceFunction</span>[<span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction.andThenReference.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@andThenReference[T](x$1:it.unimi.dsi.fastutil.objects.Object2ReferenceFunction[_&gt;:V,_&lt;:T]):it.unimi.dsi.fastutil.longs.Long2ReferenceFunction[T]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#andThenShort" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="andThenShort(x$1:it.unimi.dsi.fastutil.objects.Object2ShortFunction[V]):it.unimi.dsi.fastutil.longs.Long2ShortFunction"></a>
+      <a id="andThenShort(Object2ShortFunction[V]):Long2ShortFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">andThenShort</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.objects.Object2ShortFunction">Object2ShortFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ShortFunction">Long2ShortFunction</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@andThenShort(x$1:it.unimi.dsi.fastutil.objects.Object2ShortFunction[V]):it.unimi.dsi.fastutil.longs.Long2ShortFunction" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="apply(x$1:Long):V"></a>
+      <a id="apply(Long):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@apply(x$1:Long):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction → LongFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.Function#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="apply(x$1:K):V"></a>
+      <a id="apply(Long):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@apply(x$1:K):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Function → Function</dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#clear" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clear():Unit"></a>
+      <a id="clear():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clear</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@clear():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectMap → Map → Function</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#clone" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap[V]"></a>
+      <a id="clone():Long2ObjectOpenHashMap[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap">Long2ObjectOpenHashMap</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@clone():it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap[V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → AnyRef</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#composeByte" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="composeByte(x$1:it.unimi.dsi.fastutil.bytes.Byte2LongFunction):it.unimi.dsi.fastutil.bytes.Byte2ObjectFunction[V]"></a>
+      <a id="composeByte(Byte2LongFunction):Byte2ObjectFunction[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">composeByte</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.bytes.Byte2LongFunction">Byte2LongFunction</span></span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.bytes.Byte2ObjectFunction">Byte2ObjectFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@composeByte(x$1:it.unimi.dsi.fastutil.bytes.Byte2LongFunction):it.unimi.dsi.fastutil.bytes.Byte2ObjectFunction[V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#composeChar" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="composeChar(x$1:it.unimi.dsi.fastutil.chars.Char2LongFunction):it.unimi.dsi.fastutil.chars.Char2ObjectFunction[V]"></a>
+      <a id="composeChar(Char2LongFunction):Char2ObjectFunction[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">composeChar</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.chars.Char2LongFunction">Char2LongFunction</span></span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.chars.Char2ObjectFunction">Char2ObjectFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@composeChar(x$1:it.unimi.dsi.fastutil.chars.Char2LongFunction):it.unimi.dsi.fastutil.chars.Char2ObjectFunction[V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#composeDouble" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="composeDouble(x$1:it.unimi.dsi.fastutil.doubles.Double2LongFunction):it.unimi.dsi.fastutil.doubles.Double2ObjectFunction[V]"></a>
+      <a id="composeDouble(Double2LongFunction):Double2ObjectFunction[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">composeDouble</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.doubles.Double2LongFunction">Double2LongFunction</span></span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.doubles.Double2ObjectFunction">Double2ObjectFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@composeDouble(x$1:it.unimi.dsi.fastutil.doubles.Double2LongFunction):it.unimi.dsi.fastutil.doubles.Double2ObjectFunction[V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#composeFloat" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="composeFloat(x$1:it.unimi.dsi.fastutil.floats.Float2LongFunction):it.unimi.dsi.fastutil.floats.Float2ObjectFunction[V]"></a>
+      <a id="composeFloat(Float2LongFunction):Float2ObjectFunction[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">composeFloat</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.floats.Float2LongFunction">Float2LongFunction</span></span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.floats.Float2ObjectFunction">Float2ObjectFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@composeFloat(x$1:it.unimi.dsi.fastutil.floats.Float2LongFunction):it.unimi.dsi.fastutil.floats.Float2ObjectFunction[V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#composeInt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="composeInt(x$1:it.unimi.dsi.fastutil.ints.Int2LongFunction):it.unimi.dsi.fastutil.ints.Int2ObjectFunction[V]"></a>
+      <a id="composeInt(Int2LongFunction):Int2ObjectFunction[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">composeInt</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.ints.Int2LongFunction">Int2LongFunction</span></span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.ints.Int2ObjectFunction">Int2ObjectFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@composeInt(x$1:it.unimi.dsi.fastutil.ints.Int2LongFunction):it.unimi.dsi.fastutil.ints.Int2ObjectFunction[V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#composeLong" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="composeLong(x$1:it.unimi.dsi.fastutil.longs.Long2LongFunction):it.unimi.dsi.fastutil.longs.Long2ObjectFunction[V]"></a>
+      <a id="composeLong(Long2LongFunction):Long2ObjectFunction[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">composeLong</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2LongFunction">Long2LongFunction</span></span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction">Long2ObjectFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@composeLong(x$1:it.unimi.dsi.fastutil.longs.Long2LongFunction):it.unimi.dsi.fastutil.longs.Long2ObjectFunction[V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#composeObject" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="composeObject[T](x$1:it.unimi.dsi.fastutil.objects.Object2LongFunction[_&gt;:T]):it.unimi.dsi.fastutil.objects.Object2ObjectFunction[T,V]"></a>
+      <a id="composeObject[T](Object2LongFunction[_&gt;:T]):Object2ObjectFunction[T,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">composeObject</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.objects.Object2LongFunction">Object2LongFunction</span>[_ &gt;: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction.composeObject.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.objects.Object2ObjectFunction">Object2ObjectFunction</span>[<span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction.composeObject.T">T</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@composeObject[T](x$1:it.unimi.dsi.fastutil.objects.Object2LongFunction[_&gt;:T]):it.unimi.dsi.fastutil.objects.Object2ObjectFunction[T,V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#composeReference" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="composeReference[T](x$1:it.unimi.dsi.fastutil.objects.Reference2LongFunction[_&gt;:T]):it.unimi.dsi.fastutil.objects.Reference2ObjectFunction[T,V]"></a>
+      <a id="composeReference[T](Reference2LongFunction[_&gt;:T]):Reference2ObjectFunction[T,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">composeReference</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.objects.Reference2LongFunction">Reference2LongFunction</span>[_ &gt;: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction.composeReference.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.objects.Reference2ObjectFunction">Reference2ObjectFunction</span>[<span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction.composeReference.T">T</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@composeReference[T](x$1:it.unimi.dsi.fastutil.objects.Reference2LongFunction[_&gt;:T]):it.unimi.dsi.fastutil.objects.Reference2ObjectFunction[T,V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#composeShort" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="composeShort(x$1:it.unimi.dsi.fastutil.shorts.Short2LongFunction):it.unimi.dsi.fastutil.shorts.Short2ObjectFunction[V]"></a>
+      <a id="composeShort(Short2LongFunction):Short2ObjectFunction[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">composeShort</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="it.unimi.dsi.fastutil.shorts.Short2LongFunction">Short2LongFunction</span></span>)</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.shorts.Short2ObjectFunction">Short2ObjectFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@composeShort(x$1:it.unimi.dsi.fastutil.shorts.Short2LongFunction):it.unimi.dsi.fastutil.shorts.Short2ObjectFunction[V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#compute" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="compute(x$1:Long,x$2:java.util.function.BiFunction[_&gt;:Long,_&gt;:V,_&lt;:V]):V"></a>
+      <a id="compute(Long,BiFunction[_&gt;:Long,_&gt;:V,_&lt;:V]):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">compute</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="java.util.function.BiFunction">BiFunction</span>[_ &gt;: <span class="extype" name="java.lang.Long">Long</span>, _ &gt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>, _ &lt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@compute(x$1:Long,x$2:java.util.function.BiFunction[_&gt;:Long,_&gt;:V,_&lt;:V]):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectMap</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#computeIfAbsent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="computeIfAbsent(x$1:Long,x$2:it.unimi.dsi.fastutil.longs.Long2ObjectFunction[_&lt;:V]):V"></a>
+      <a id="computeIfAbsent(Long,Long2ObjectFunction[_&lt;:V]):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">computeIfAbsent</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction">Long2ObjectFunction</span>[_ &lt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@computeIfAbsent(x$1:Long,x$2:it.unimi.dsi.fastutil.longs.Long2ObjectFunction[_&lt;:V]):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectMap</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#computeIfAbsent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="computeIfAbsent(x$1:Long,x$2:java.util.function.LongFunction[_&lt;:V]):V"></a>
+      <a id="computeIfAbsent(Long,LongFunction[_&lt;:V]):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">computeIfAbsent</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="java.util.function.LongFunction">LongFunction</span>[_ &lt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@computeIfAbsent(x$1:Long,x$2:java.util.function.LongFunction[_&lt;:V]):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectMap</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#computeIfPresent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="computeIfPresent(x$1:Long,x$2:java.util.function.BiFunction[_&gt;:Long,_&gt;:V,_&lt;:V]):V"></a>
+      <a id="computeIfPresent(Long,BiFunction[_&gt;:Long,_&gt;:V,_&lt;:V]):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">computeIfPresent</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="java.util.function.BiFunction">BiFunction</span>[_ &gt;: <span class="extype" name="java.lang.Long">Long</span>, _ &gt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>, _ &lt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@computeIfPresent(x$1:Long,x$2:java.util.function.BiFunction[_&gt;:Long,_&gt;:V,_&lt;:V]):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectMap</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#containsKey" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="containsKey(x$1:Long):Boolean"></a>
+      <a id="containsKey(Long):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">containsKey</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@containsKey(x$1:Long):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → AbstractLong2ObjectMap → Long2ObjectMap → Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#containsValue" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="containsValue(x$1:Any):Boolean"></a>
+      <a id="containsValue(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">containsValue</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@containsValue(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → AbstractLong2ObjectMap → Map</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.AbstractLong2ObjectFunction#defaultReturnValue" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="defaultReturnValue():V"></a>
+      <a id="defaultReturnValue():V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultReturnValue</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@defaultReturnValue():V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractLong2ObjectFunction → Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.AbstractLong2ObjectFunction#defaultReturnValue" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="defaultReturnValue(x$1:V):Unit"></a>
+      <a id="defaultReturnValue(V):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultReturnValue</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@defaultReturnValue(x$1:V):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractLong2ObjectFunction → Long2ObjectFunction</dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.AbstractLong2ObjectMap#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractLong2ObjectMap → Map → AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@finalize():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#forEach" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="forEach(x$1:java.util.function.BiConsumer[_&gt;:Long,_&gt;:V]):Unit"></a>
+      <a id="forEach(BiConsumer[_&gt;:Long,_&gt;:V]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">forEach</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.util.function.BiConsumer">BiConsumer</span>[_ &gt;: <span class="extype" name="java.lang.Long">Long</span>, _ &gt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@forEach(x$1:java.util.function.BiConsumer[_&gt;:Long,_&gt;:V]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#get" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="get(x$1:Long):V"></a>
+      <a id="get(Long):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">get</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@get(x$1:Long):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectFunction</dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@getClass():Class[_]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState#getGlobalState" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getGlobalState:AnyRef"></a>
+      <a id="getGlobalState:AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getGlobalState</span><span class="result">: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@getGlobalState:AnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#getOrDefault" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getOrDefault(x$1:Long,x$2:V):V"></a>
+      <a id="getOrDefault(Long,V):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getOrDefault</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@getOrDefault(x$1:Long,x$2:V):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectMap → Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → AbstractLong2ObjectMap → Map → AnyRef → Any</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#isEmpty" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isEmpty():Boolean"></a>
+      <a id="isEmpty():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isEmpty</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@isEmpty():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → AbstractLong2ObjectMap → Map</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#keySet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="keySet():it.unimi.dsi.fastutil.longs.LongSet"></a>
+      <a id="keySet():LongSet"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">keySet</span><span class="params">()</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.longs.LongSet">LongSet</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@keySet():it.unimi.dsi.fastutil.longs.LongSet" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → AbstractLong2ObjectMap → Long2ObjectMap → Map</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#long2ObjectEntrySet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="long2ObjectEntrySet():it.unimi.dsi.fastutil.longs.Long2ObjectMap.FastEntrySet[V]"></a>
+      <a id="long2ObjectEntrySet():FastEntrySet[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">long2ObjectEntrySet</span><span class="params">()</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectMap.FastEntrySet">FastEntrySet</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@long2ObjectEntrySet():it.unimi.dsi.fastutil.longs.Long2ObjectMap.FastEntrySet[V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectMap</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#merge" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="merge(x$1:Long,x$2:V,x$3:java.util.function.BiFunction[_&gt;:V,_&gt;:V,_&lt;:V]):V"></a>
+      <a id="merge(Long,V,BiFunction[_&gt;:V,_&gt;:V,_&lt;:V]):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">merge</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>, <span name="arg2">arg2: <span class="extype" name="java.util.function.BiFunction">BiFunction</span>[_ &gt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>, _ &gt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>, _ &lt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@merge(x$1:Long,x$2:V,x$3:java.util.function.BiFunction[_&gt;:V,_&gt;:V,_&lt;:V]):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectMap</dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@notify():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@notifyAll():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#put" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="put(x$1:Long,x$2:V):V"></a>
+      <a id="put(Long,V):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">put</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@put(x$1:Long,x$2:V):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#putAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="putAll(x$1:java.util.Map[_&lt;:Long,_&lt;:V]):Unit"></a>
+      <a id="putAll(Map[_&lt;:Long,_&lt;:V]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">putAll</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.util.Map">Map</span>[_ &lt;: <span class="extype" name="java.lang.Long">Long</span>, _ &lt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@putAll(x$1:java.util.Map[_&lt;:Long,_&lt;:V]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → AbstractLong2ObjectMap → Map</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#putIfAbsent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="putIfAbsent(x$1:Long,x$2:V):V"></a>
+      <a id="putIfAbsent(Long,V):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">putIfAbsent</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@putIfAbsent(x$1:Long,x$2:V):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectMap</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#rehash" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="rehash(x$1:Int):Unit"></a>
+      <a id="rehash(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">rehash</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@rehash(x$1:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../../it$unimi$dsi$fastutil$longs.html" class="extype" name="it.unimi.dsi.fastutil.longs">it.unimi.dsi.fastutil.longs</a>] </dd><dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#remove" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="remove(x$1:Long,x$2:Any):Boolean"></a>
+      <a id="remove(Long,Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">remove</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@remove(x$1:Long,x$2:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectMap</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#remove" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="remove(x$1:Long):V"></a>
+      <a id="remove(Long):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">remove</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@remove(x$1:Long):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectFunction</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#replace" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="replace(x$1:Long,x$2:V):V"></a>
+      <a id="replace(Long,V):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">replace</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@replace(x$1:Long,x$2:V):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectMap</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#replace" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="replace(x$1:Long,x$2:V,x$3:V):Boolean"></a>
+      <a id="replace(Long,V,V):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">replace</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>, <span name="arg2">arg2: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@replace(x$1:Long,x$2:V,x$3:V):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectMap</dd></dl></div>
+    </li><li name="java.util.Map#replaceAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="replaceAll(x$1:java.util.function.BiFunction[_&gt;:K,_&gt;:V,_&lt;:V]):Unit"></a>
+      <a id="replaceAll(BiFunction[_&gt;:Long,_&gt;:V,_&lt;:V]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">replaceAll</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.util.function.BiFunction">BiFunction</span>[_ &gt;: <span class="extype" name="java.lang.Long">Long</span>, _ &gt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>, _ &lt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@replaceAll(x$1:java.util.function.BiFunction[_&gt;:K,_&gt;:V,_&lt;:V]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Map</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState#setGlobalState" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setGlobalState(state:AnyRef):Unit"></a>
+      <a id="setGlobalState(AnyRef):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setGlobalState</span><span class="params">(<span name="state">state: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@setGlobalState(state:AnyRef):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#shiftKeys" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="shiftKeys(x$1:Int):Unit"></a>
+      <a id="shiftKeys(Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">shiftKeys</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@shiftKeys(x$1:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../../it$unimi$dsi$fastutil$longs.html" class="extype" name="it.unimi.dsi.fastutil.longs">it.unimi.dsi.fastutil.longs</a>] </dd><dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#size" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="size():Int"></a>
+      <a id="size():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">size</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@size():Int" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → Long2ObjectMap → Map → Function</dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.AbstractLong2ObjectMap#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@toString():String" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractLong2ObjectMap → AnyRef → Any</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#trim" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="trim(x$1:Int):Boolean"></a>
+      <a id="trim(Int):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">trim</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@trim(x$1:Int):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#trim" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="trim():Boolean"></a>
+      <a id="trim():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">trim</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@trim():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap</dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap#values" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="values():it.unimi.dsi.fastutil.objects.ObjectCollection[V]"></a>
+      <a id="values():ObjectCollection[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">values</span><span class="params">()</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.objects.ObjectCollection">ObjectCollection</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@values():it.unimi.dsi.fastutil.objects.ObjectCollection[V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectOpenHashMap → AbstractLong2ObjectMap → Long2ObjectMap → Map</dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@wait():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@wait(x$1:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol><li name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction#compose" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="compose[T](x$1:java.util.function.Function[_&gt;:T,_&lt;:Long]):java.util.function.Function[T,V]"></a>
+      <a id="compose[T](Function[_&gt;:T,_&lt;:Long]):Function[T,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">compose</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.util.function.Function">Function</span>[_ &gt;: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction.compose.T">T</span>, _ &lt;: <span class="extype" name="java.lang.Long">Long</span>]</span>)</span><span class="result">: <span class="extype" name="java.util.function.Function">Function</span>[<span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction.compose.T">T</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@compose[T](x$1:java.util.function.Function[_&gt;:T,_&lt;:Long]):java.util.function.Function[T,V]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectFunction → Function</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#compute" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="compute(x$1:Long,x$2:java.util.function.BiFunction[_&gt;:Long,_&gt;:V,_&lt;:V]):V"></a>
+      <a id="compute(Long,BiFunction[_&gt;:Long,_&gt;:V,_&lt;:V]):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">compute</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="java.util.function.BiFunction">BiFunction</span>[_ &gt;: <span class="extype" name="java.lang.Long">Long</span>, _ &gt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>, _ &lt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@compute(x$1:Long,x$2:java.util.function.BiFunction[_&gt;:Long,_&gt;:V,_&lt;:V]):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#computeIfAbsent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="computeIfAbsent(x$1:Long,x$2:java.util.function.Function[_&gt;:Long,_&lt;:V]):V"></a>
+      <a id="computeIfAbsent(Long,Function[_&gt;:Long,_&lt;:V]):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">computeIfAbsent</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="java.util.function.Function">Function</span>[_ &gt;: <span class="extype" name="java.lang.Long">Long</span>, _ &lt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@computeIfAbsent(x$1:Long,x$2:java.util.function.Function[_&gt;:Long,_&lt;:V]):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#computeIfAbsentPartial" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="computeIfAbsentPartial(x$1:Long,x$2:it.unimi.dsi.fastutil.longs.Long2ObjectFunction[_&lt;:V]):V"></a>
+      <a id="computeIfAbsentPartial(Long,Long2ObjectFunction[_&lt;:V]):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">computeIfAbsentPartial</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction">Long2ObjectFunction</span>[_ &lt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@computeIfAbsentPartial(x$1:Long,x$2:it.unimi.dsi.fastutil.longs.Long2ObjectFunction[_&lt;:V]):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#computeIfPresent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="computeIfPresent(x$1:Long,x$2:java.util.function.BiFunction[_&gt;:Long,_&gt;:V,_&lt;:V]):V"></a>
+      <a id="computeIfPresent(Long,BiFunction[_&gt;:Long,_&gt;:V,_&lt;:V]):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">computeIfPresent</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="java.util.function.BiFunction">BiFunction</span>[_ &gt;: <span class="extype" name="java.lang.Long">Long</span>, _ &gt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>, _ &lt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@computeIfPresent(x$1:Long,x$2:java.util.function.BiFunction[_&gt;:Long,_&gt;:V,_&lt;:V]):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#containsKey" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="containsKey(x$1:Any):Boolean"></a>
+      <a id="containsKey(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">containsKey</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@containsKey(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map → Long2ObjectFunction → Function</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#entrySet" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="entrySet():it.unimi.dsi.fastutil.objects.ObjectSet[java.util.Map.Entry[Long,V]]"></a>
+      <a id="entrySet():ObjectSet[Entry[Long,V]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">entrySet</span><span class="params">()</span><span class="result">: <span class="extype" name="it.unimi.dsi.fastutil.objects.ObjectSet">ObjectSet</span>[<span class="extype" name="java.util.Map.Entry">Entry</span>[<span class="extype" name="java.lang.Long">Long</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@entrySet():it.unimi.dsi.fastutil.objects.ObjectSet[java.util.Map.Entry[Long,V]]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#get" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="get(x$1:Any):V"></a>
+      <a id="get(Any):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">get</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@get(x$1:Any):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map → Long2ObjectFunction → Function</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#getOrDefault" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getOrDefault(x$1:Any,x$2:V):V"></a>
+      <a id="getOrDefault(Any,V):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">getOrDefault</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>, <span name="arg1">arg1: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@getOrDefault(x$1:Any,x$2:V):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map → Long2ObjectFunction → Function</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#merge" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="merge(x$1:Long,x$2:V,x$3:java.util.function.BiFunction[_&gt;:V,_&gt;:V,_&lt;:V]):V"></a>
+      <a id="merge(Long,V,BiFunction[_&gt;:V,_&gt;:V,_&lt;:V]):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">merge</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>, <span name="arg2">arg2: <span class="extype" name="java.util.function.BiFunction">BiFunction</span>[_ &gt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>, _ &gt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>, _ &lt;: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@merge(x$1:Long,x$2:V,x$3:java.util.function.BiFunction[_&gt;:V,_&gt;:V,_&lt;:V]):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#put" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="put(x$1:Long,x$2:V):V"></a>
+      <a id="put(Long,V):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">put</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@put(x$1:Long,x$2:V):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map → Long2ObjectFunction → Function</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#putIfAbsent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="putIfAbsent(x$1:Long,x$2:V):V"></a>
+      <a id="putIfAbsent(Long,V):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">putIfAbsent</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@putIfAbsent(x$1:Long,x$2:V):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#remove" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="remove(x$1:Any,x$2:Any):Boolean"></a>
+      <a id="remove(Any,Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">remove</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@remove(x$1:Any,x$2:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#remove" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="remove(x$1:Any):V"></a>
+      <a id="remove(Any):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">remove</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@remove(x$1:Any):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map → Long2ObjectFunction → Function</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#replace" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="replace(x$1:Long,x$2:V):V"></a>
+      <a id="replace(Long,V):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">replace</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@replace(x$1:Long,x$2:V):V" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li><li name="it.unimi.dsi.fastutil.longs.Long2ObjectMap#replace" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="replace(x$1:Long,x$2:V,x$3:V):Boolean"></a>
+      <a id="replace(Long,V,V):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version ) see corresponding Javadoc for more information.">replace</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>, <span name="arg2">arg2: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState@replace(x$1:Long,x$2:V,x$3:V):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Long2ObjectMap → Map</dd><dt>Annotations</dt><dd>
+                <span class="name">@Deprecated</span>
+              
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version )</i> see corresponding Javadoc for more information.</p></dd></dl></div>
+    </li></ol>
+            </div>
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap">
+              <h3>Inherited from <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap">Long2ObjectOpenHashMap</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</h3>
+            </div><div class="parent" name="it.unimi.dsi.fastutil.Hash">
+              <h3>Inherited from <span class="extype" name="it.unimi.dsi.fastutil.Hash">Hash</span></h3>
+            </div><div class="parent" name="java.lang.Cloneable">
+              <h3>Inherited from <span class="extype" name="java.lang.Cloneable">Cloneable</span></h3>
+            </div><div class="parent" name="it.unimi.dsi.fastutil.longs.AbstractLong2ObjectMap">
+              <h3>Inherited from <span class="extype" name="it.unimi.dsi.fastutil.longs.AbstractLong2ObjectMap">AbstractLong2ObjectMap</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</h3>
+            </div><div class="parent" name="it.unimi.dsi.fastutil.longs.Long2ObjectMap">
+              <h3>Inherited from <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectMap">Long2ObjectMap</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</h3>
+            </div><div class="parent" name="java.util.Map">
+              <h3>Inherited from <span class="extype" name="java.util.Map">Map</span>[<span class="extype" name="java.lang.Long">Long</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</h3>
+            </div><div class="parent" name="it.unimi.dsi.fastutil.longs.AbstractLong2ObjectFunction">
+              <h3>Inherited from <span class="extype" name="it.unimi.dsi.fastutil.longs.AbstractLong2ObjectFunction">AbstractLong2ObjectFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction">
+              <h3>Inherited from <span class="extype" name="it.unimi.dsi.fastutil.longs.Long2ObjectFunction">Long2ObjectFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</h3>
+            </div><div class="parent" name="java.util.function.LongFunction">
+              <h3>Inherited from <span class="extype" name="java.util.function.LongFunction">LongFunction</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</h3>
+            </div><div class="parent" name="it.unimi.dsi.fastutil.Function">
+              <h3>Inherited from <span class="extype" name="it.unimi.dsi.fastutil.Function">Function</span>[<span class="extype" name="java.lang.Long">Long</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</h3>
+            </div><div class="parent" name="java.util.function.Function">
+              <h3>Inherited from <span class="extype" name="java.util.function.Function">Function</span>[<span class="extype" name="java.lang.Long">Long</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.LongObjectHashMapWithState.V">V</span>]</h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>
