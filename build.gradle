@@ -1069,6 +1069,8 @@ task product(type: Zip) {
     copy {
       from "${projectDir}/docs"
       into "${snappyProductDir}/docs"
+      exclude 'apidocs/**'
+      exclude '.git*'
     }
 
     copy {

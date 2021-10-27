@@ -20,7 +20,7 @@ The following topics are covered in this section:
 
 * [SnappyData Spark extension API Reference Guide](API_Reference/apireference_guide.md)
 
-* [Full API Reference](../apidocs)
+* [Full API Reference](../apidocs){target=_blank}
 
 * [ODBC Supported API](API_Reference/odbc_supported_apis.md)
 

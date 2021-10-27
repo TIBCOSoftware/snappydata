@@ -319,8 +319,7 @@ nav:
         - 'sys-disk-dir': 'reference/configuration_parameters/sys-disk-dir.md'
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
-    - 'SnappyData Spark extension API Reference Guide': 'reference/API_Reference/apireference_guide.md'
-    - 'Full API Reference': '/snappydata/apidocs'
+    - 'Full API Reference Guides': 'apidocsintro.md'
     - 'ODBC Supported API': 'reference/API_Reference/odbc_supported_apis.md'
     - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
@@ -360,7 +359,7 @@ theme:
         accent: cyan
     font:
       text: 'Lato'
-      code: 'Fira Code'
+      code: 'Fira Mono'
     logo: Images/logo.png
     favicon: favicon.ico
     features:
@@ -397,6 +396,7 @@ markdown_extensions:
     - pymdownx.superfences
     - pymdownx.snippets
     - pymdownx.superfences
+    - attr_list
     - pymdownx.tabbed:
         alternate_style: true
     - toc:

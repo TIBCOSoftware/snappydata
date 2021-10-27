@@ -52,6 +52,7 @@ fi
 # Generate and copy the built-in function docs
 spark/sql/create-docs.sh --markdown-only
 rm -rf docs/reference/sql_functions/*
+mkdir -p docs/reference/sql_functions
 cp -dR spark/sql/docs/* docs/reference/sql_functions/
 rm -rf spark/sql/docs
 

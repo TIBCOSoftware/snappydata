@@ -63,9 +63,11 @@ Multiple options are provided to get started with SnappyData. Easiest way to get
 
 You can find more information on options for running SnappyData [here](quickstart/index.md).
 
-## Quick Test to Measure Performance of SnappyData vs Apache Spark
+## Quick Performance Comparison of SnappyData vs Apache Spark
 
-If you are already using Apache Spark, you can experience upto 20x speedup for your query performance with SnappyData. Try this [test](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala) using the Spark Shell.
+If you are already using Apache Spark, you can experience upto 20x speedup for your query performance with SnappyData.
+Try this [test](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala)
+using the Spark Shell.
 
 ## Other Relevant content
 - [Paper](http://cidrdb.org/cidr2017/papers/p28-mozafari-cidr17.pdf) on Snappydata (Community Edition of TIBCO ComputeDB) at Conference on Innovative Data Systems Research (CIDR) - Info on key concepts and motivating problems.
@@ -152,7 +154,7 @@ Apache Spark is turned into an in-memory operational database capable of transac
 
 
 ## Streaming Example - Ad Analytics
-Here is a stream + Transactions + Analytics use case example to illustrate the SQL as well as the Apache Spark programming approaches in SnappyData - [Ad Analytics code example](https://github.com/TIBCOSoftware/snappy-poc). Here is a [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData. The example also goes through a benchmark comparing SnappyData to a Hybrid in-memory database and Cassandra.
+Here is a stream + Transactions + Analytics use case example to illustrate the SQL as well as the Apache Spark programming approaches in SnappyData - [Ad Analytics code example](https://github.com/TIBCOSoftware/snappy-examples). Here is a [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData. The example also goes through a benchmark comparing SnappyData to a Hybrid in-memory database and Cassandra.
 
 ## Contributing to SnappyData
 
