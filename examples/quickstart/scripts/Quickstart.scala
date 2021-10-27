@@ -17,39 +17,46 @@
 /**
  * This script demonstrate the performance difference between Spark and Snappydata.
  * To execute this script on spark you can use below command:
- * ./spark-shell --driver-memory 4g --master local[*] --packages "TIBCOSoftware:snappydata:1.3.0-s_2.11" \
- * -i Quickstart.scala
  *
- * To execute this script on spark you can use same command as above without specifying packages
- * as follows:
- * ./bin/spark-shell --driver-memory=4g --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g -i Quickstart.scala
+ * ./spark-shell --driver-memory 4g --master local[*] \
+ * --packages "TIBCOSoftware:snappydata:1.3.0-s_2.11" -i Quickstart.scala
+ *
+ * Or you can execute this script on SnappyData's spark distribution with the same command as above
+ * without requiring packages as follows:
+ *
+ * ./bin/spark-shell --driver-memory=4g --driver-java-options="-XX:+UseConcMarkSweepGC \
+ * -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g" -i Quickstart.scala
  */
 
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.internal.SQLConf
-
-//Benchmark function that will execute a function and returns time taken to execute that function
-def benchmark(name: String, times: Int = 5, warmups: Int = 3)(f: => Unit) : Double = {
-  for (i <- 1 to warmups) {
+// Benchmark function that will execute a function and returns time taken to execute that function
+def benchmark(name: String, times: Int = 5, warmups: Int = 3)(f: => Unit): Double = {
+  for (_ <- 1 to warmups) {
     f
   }
   val startTime = System.nanoTime
-  for (i <- 1 to times) {
+  for (_ <- 1 to times) {
     f
   }
   val endTime = System.nanoTime
   val timeTaken = (endTime - startTime).toDouble / (times * 1000000.0)
+  // scalastyle:off println
+  println()
   println(s"Average time taken in $name for $times runs: $timeTaken millis")
+  println()
+  // scalastyle:on println
   timeTaken
 }
 
-//Create Dataframe can register temp table
-var testDF = spark.range(100000000).selectExpr("id", "concat('sym', cast((id % 100) as STRING)) as sym")
-testDF.cache
+sc.setLogLevel("ERROR")
+// Create Dataframe can register temp table
+var testDF = spark.range(100000000).selectExpr("id",
+  "concat('sym', cast((id % 100) as STRING)) as sym")
+testDF.cache()
 testDF.createOrReplaceTempView("sparkCacheTable")
 
-
-val timeTakenSpark = benchmark("Spark perf") {spark.sql("select sym, avg(id) from sparkCacheTable group by sym").collect()}
+val timeTakenSpark = benchmark("Spark perf") {
+  spark.sql("select sym, avg(id) from sparkCacheTable group by sym").collect()
+}
 
 
 testDF.unpersist()
@@ -57,13 +64,24 @@ System.gc()
 System.runFinalization()
 
 
-//Create SnappySession to execute queries from spark
+// Create SnappySession to execute queries from spark
 val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
-testDF = snappy.range(100000000).selectExpr("id", "concat('sym', cast((id % 100) as varchar(10))) as sym")
+testDF = snappy.range(100000000).selectExpr("id",
+  "concat('sym', cast((id % 100) as varchar(10))) as sym")
 
 snappy.sql("drop table if exists snappyTable")
 snappy.sql("create table snappyTable (id bigint not null, sym varchar(10) not null) using column")
-benchmark("Snappy insert perf", 1, 0) {testDF.write.insertInto("snappyTable") }
+benchmark("Snappy insert perf", 1, 0) {
+  testDF.write.insertInto("snappyTable")
+}
 
-val timeTakenSnappy = benchmark("Snappy perf") {snappy.sql("select sym, avg(id) from snappyTable group by sym").collect()}
+// GROUP BY on single key when number of results is not large is faster with older implementation
+snappy.conf.set("snappydata.sql.useOptimizedHashAggregateForSingleKey", "false")
+// Direct collect for GROUP BY at driver avoiding an EXCHANGE when number of results is not large
+snappy.conf.set("snappydata.sql.useDriverCollectForGroupBy", "true")
+
+val timeTakenSnappy = benchmark("Snappy perf") {
+  snappy.sql("select sym, avg(id) from snappyTable group by sym").collect()
+}
+
 System.exit(0)

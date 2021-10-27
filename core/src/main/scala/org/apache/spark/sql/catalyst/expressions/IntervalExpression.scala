@@ -80,8 +80,8 @@ case class IntervalExpression(children: Seq[Expression], units: Seq[Long])
     var months = 0
     var micros = 0L
     unit match {
-      case -1 => months = v.toInt * 12
-      case -2 => months = v.toInt
+      case -1L => months = v.toInt * 12
+      case -2L => months = v.toInt
       case _ => micros = v * unit
     }
     new CalendarInterval(months, micros)
@@ -100,7 +100,7 @@ case class IntervalExpression(children: Seq[Expression], units: Seq[Long])
            |${childGen.code}
            |$intervalClass ${ev.value};
            |${doGenCodeSingle(childGen.value, childIsNull, ev.value,
-              units.head.toString, months, micros, intervalClass)}
+              s"${units.head}L", months, micros, intervalClass)}
         """.stripMargin
       if (childIsNull == "false") {
         ev.copy(code = code, isNull = "false")
@@ -153,8 +153,8 @@ case class IntervalExpression(children: Seq[Expression], units: Seq[Long])
        |} else {
        |  int $months = 0;
        |  long $micros = 0L;
-       |  if ($unit == -1) $months = ((int)$value) * 12;
-       |  else if ($unit == -2) $months = (int)$value;
+       |  if ($unit == -1L) $months = ((int)$value) * 12;
+       |  else if ($unit == -2L) $months = (int)$value;
        |  else $micros = $value * $unit;
        |  $result = new $intervalClass($months, $micros);
        |}
