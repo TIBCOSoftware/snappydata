@@ -8,6 +8,7 @@
 
 
 **Master**
+
 ```pre
 > git clone https://github.com/TIBCOSoftware/snappydata.git --recursive
 > cd snappydata
@@ -41,9 +42,41 @@ The artifacts are in **build-artifacts/scala-2.11/distributions**
 
 Building SparkR with the `-PR.enable` flag requires R 3.x or 4.x to be installed locally.
 At least the following R packages along with their dependencies also need to be installed:
-`knitr`, `markdown`, `rmarkdown`, `testthat`
+`knitr`, `markdown`, `rmarkdown`, `e1071`, `testthat`
+
+The R build also needs a base installation of `texlive` or an equivalent `TeX` distribution for `pdflatex` and related tools to build the documentation.
 
 Official builds are published to maven using the `publishMaven` task.
+
+### Docs
+
+Documentation is created using the `publishDocs` target. You need an installation of `mkdocs`
+with its `material` and `minify` plugins to build and publish the docs. The standard way to
+install these is using python package installer `pip`. This is present in the repositories
+of all distributions e.g. `sudo apt install python3-pip` on Ubuntu/Debian based distributions
+and `sudo yum install python3-pip` on CentOS/RHEL/Fedora based ones. Other distributions will
+have a similar way to install the package (e.g. `sudo pacman -S python-pip` on Arch-like
+    distributions).
+
+Once you have `pip` installed, then you can install the required packages using:
+
+``` shell
+pip3 install mkdocs mkdocs-material mkdocs-minify-plugin
+```
+
+!!!Note
+    On some newer distributions, the executable is `pip` instead of `pip3` though latter is usually still available as a symlink.
+
+Then you can run the target that will build the documentation and host it locally
+(the local URL will be shown at the bottom of the output):
+
+``` shell
+./gradlew publishDocs -PenablePublish
+```
+
+Uncommenting the `mkdocs gh-deploy` target in the `publish-site.sh` script and running the
+above target will publish the docs to the public
+[site](https://tibcosoftware.github.io/snappydata) assuming you have the requisite write permissions to the repository.
 
 ## Repository Layout
 
