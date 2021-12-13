@@ -13,7 +13,7 @@ The following APIs are supported for ODBC in Snappy Driver:
 | SQLAllocHandle      | Core              | Yes                        ||
 | SQLBindCol          | Core              | Yes                        ||
 | SQLBindParameter    | Core[1]           | Yes                        ||
-| SQLBrowseConnect    | Level 1           | Not                        ||
+| SQLBrowseConnect    | Level 1           | No                         ||
 | SQLBulkOperations   | Level 1           | Yes                        ||
 | SQLCancel           | Core[1]           | Yes                        ||
 | SQLCancelHandle     | Core[1]           | Yes                        ||
@@ -22,13 +22,13 @@ The following APIs are supported for ODBC in Snappy Driver:
 | SQLColumnPrivileges | Level 2           | Yes                        ||
 | SQLColumns          | Core              | Yes                        ||
 | SQLConnect          | Core              | Yes                        ||
-| SQLCopyDesc         | Core              | Not                        ||
-| SQLDataSources      | Core              | Not                        |As per MSDN document it should be implemented by Driver Manager.|
+| SQLCopyDesc         | Core              | No                         ||
+| SQLDataSources      | Core              | No                         |It should be implemented by the Driver Manager.|
 | SQLDescribeCol      | Core[1]           | Yes                        ||
 | SQLDescribeParam    | Level 2           | Yes                        ||
 | SQLDisconnect       | Core              | Yes                        ||
 | SQLDriverConnect    | Core              | Yes                        ||
-| SQLDrivers          | Core              | Not                        ||
+| SQLDrivers          | Core              | No                         |It should be implemented by the Driver Manager.|
 | SQLEndTran          | Core[1]           | Yes                        ||
 | SQLExecDirect       | Core              | Yes                        ||
 | SQLExecute          | Core              | Yes                        ||
@@ -40,8 +40,8 @@ The following APIs are supported for ODBC in Snappy Driver:
 | SQLGetConnectAttr   | Core              | Yes                        ||
 | SQLGetCursorName    | Core              | Yes                        ||
 | SQLGetData          | Core              | Yes                        ||
-| SQLGetDescField     | Core              | Not                        ||
-| SQLGetDescRec       | Core              | Not                        ||
+| SQLGetDescField     | Core              | No                         ||
+| SQLGetDescRec       | Core              | No                         ||
 | SQLGetDiagField     | Core              | Yes                        ||
 | SQLGetDiagRec       | Core              | Yes                        ||
 | SQLGetEnvAttr       | Core              | Yes                        ||
@@ -62,8 +62,8 @@ The following APIs are supported for ODBC in Snappy Driver:
 | SQLRowCount         | Core              | Yes                        ||
 | SQLSetConnectAttr   | Core[2]           | Yes                        ||
 | SQLSetCursorName    | Core              | Yes                        ||
-| SQLSetDescField     | Core[1]           | Not                        ||
-| SQLSetDescRec       | Core              | Not                        ||
+| SQLSetDescField     | Core[1]           | No                         ||
+| SQLSetDescRec       | Core              | No                         ||
 | SQLSetEnvAttr       | Core[2]           | Yes                        ||
 | SQLSetPos           | Level 1[1]        | Yes                        ||
 | SQLSetStmtAttr      | Core[2]           | Yes                        ||
@@ -80,18 +80,18 @@ The following APIs are supported for ODBC in Snappy Driver:
 
 | Attributes                  | Conformance </br>Level | Supported in </br>Snappy Driver |Exceptions|
 |-----------------------------|-------------------|----------------------------|---|
-| SQL_ATTR_CONNECTION_POOLING | --[1]             | Yes                        |This is an optional feature and as such is not part of the conformance levels.|
-| SQL_ATTR_CP_MATCH           | --[1]             | Yes                        ||
+| SQL_ATTR_CONNECTION_POOLING | [1]               | Yes                        |This is an optional feature and as such is not part of the conformance levels.|
+| SQL_ATTR_CP_MATCH           | [1]               | Yes                        ||
 | SQL_ATTR_ODBC_VER           | Core              | Yes                        ||
-| SQL_ATTR_OUTPUT_NTS         | --[1]             | Yes                        ||
+| SQL_ATTR_OUTPUT_NTS         | [1]               | Yes                        ||
 
 ### ODBC Connection Attribute
 
 | Attributes                  | Conformance </br>Level  |  Supported in </br>Snappy Driver|Exceptions|
 |-----------------------------|--------------------|----------------------------|---|
 | SQL_ATTR_ACCESS_MODE        | Core               | Yes                        ||
-| SQL_ATTR_ASYNC_ENABLE       | Level 1/Level 2[1] | Yes                        |Applications that support connection-level asynchrony (required for Level 1) must support setting this attribute to SQL_TRUE by calling SQLSetConnectAttr; the attribute need not be settable to a value other than its default value through SQLSetStmtAttr. Applications that support statement-level asynchrony (required for Level 2) must support setting this attribute to SQL_TRUE using either function.|
-| SQL_ATTR_AUTO_IPD           | Level 2            | Not                        ||
+| SQL_ATTR_ASYNC_ENABLE       | Level 1/Level 2[1] | Yes                        |Applications that support connection-level asynchronously (required for Level 1) must support setting this attribute to SQL_TRUE by calling SQLSetConnectAttr; the attribute need not be settable to a value other than its default value through SQLSetStmtAttr. Applications that support statement-level asynchronously (required for Level 2) must support setting this attribute to SQL_TRUE using either function.|
+| SQL_ATTR_AUTO_IPD           | Level 2            | No                         ||
 | SQL_ATTR_AUTOCOMMIT         | Level 1            | Yes                        |For Level 1 interface conformance, the driver must support one value in addition to the driver-defined default value (available by calling SQLGetInfo with the SQL_DEFAULT_TXN_ISOLATION option). For Level 2 interface conformance, the driver must also support SQL_TXN_SERIALIZABLE.|
 | SQL_ATTR_CONNECTION_DEAD    | Level 1            | Yes                        ||
 | SQL_ATTR_CONNECTION_TIMEOUT | Level 2            | Yes                        ||
@@ -115,7 +115,7 @@ The following APIs are supported for ODBC in Snappy Driver:
 | SQL_ATTR_CONCURRENCY           | Level 1/Level 2[2] | Yes                        ||
 | SQL_ATTR_CURSOR_SCROLLABLE     | Level 1            | Yes                        ||
 | SQL_ATTR_CURSOR_SENSITIVITY    | Level 2            | Yes                        ||
-| SQL_ATTR_CURSOR_TYPE           | Core/Level 2[3]    | Yes                        | Applications that support connection-level asynchrony (required for Level 1) must support setting this attribute to SQL_TRUE by calling SQLSetConnectAttr; the attribute need not be settable to a value other than its default value through SQLSetStmtAttr. Applications that support statement-level asynchrony (required for Level 2) must support setting this attribute to SQL_TRUE using either function.|
+| SQL_ATTR_CURSOR_TYPE           | Core/Level 2[3]    | Yes                        | Applications that support connection-level asynchronously (required for Level 1) must support setting this attribute to SQL_TRUE by calling SQLSetConnectAttr; the attribute need not be settable to a value other than its default value through SQLSetStmtAttr. Applications that support statement-level asynchronously (required for Level 2) must support setting this attribute to SQL_TRUE using either function.|
 | SQL_ATTR_ENABLE_AUTO_IPD       | Level 2            | Yes                        ||
 | SQL_ATTR_FETCH_BOOKMARK_PTR    | Level 2            | Yes                        | For Level 2 interface conformance, the driver must support SQL_CONCUR_READ_ONLY and at least one other value.|
 | SQL_ATTR_IMP_PARAM_DESC        | Core               | Yes                        ||
@@ -140,5 +140,5 @@ The following APIs are supported for ODBC in Snappy Driver:
 | SQL_ATTR_ROW_OPERATION_PTR     | Level 1            | Yes                        ||
 | SQL_ATTR_ROW_STATUS_PTR        | Core               | Yes                        ||
 | SQL_ATTR_ROWS_FETCHED_PTR      | Core               | Yes                        ||
-| SQL_ATTR_SIMULATE_CURSOR       | Level 2            | Not                        ||
-| SQL_ATTR_USE_BOOKMARKS         | Level 2            | Not                        ||
+| SQL_ATTR_SIMULATE_CURSOR       | Level 2            | No                         ||
+| SQL_ATTR_USE_BOOKMARKS         | Level 2            | No                         ||
