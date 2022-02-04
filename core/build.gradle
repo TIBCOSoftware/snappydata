@@ -30,10 +30,12 @@ dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
 
+  compile 'log4j:log4j:' + log4jVersion
   compile 'org.slf4j:slf4j-api:' + slf4jVersion
   compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
   compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
   compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
+
   compile group: 'org.codehaus.janino', name: 'janino', version: janinoVersion
   compile("org.apache.thrift:libthrift:${thriftVersion}") {
     exclude(group: 'org.slf4j', module: 'slf4j-api')

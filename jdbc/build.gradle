@@ -23,13 +23,14 @@ dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
 
-  compile 'org.slf4j:slf4j-api:' + slf4jVersion
-  compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
-  compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
-  compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
   compile("org.apache.thrift:libthrift:${thriftVersion}") {
     exclude(group: 'org.slf4j', module: 'slf4j-api')
   }
+
+  // JDBC driver uses log4j 2.x, so include in the shadow jar
+  shadowInclude "org.apache.logging.log4j:log4j-api:${log4j2Version}"
+  shadowInclude "org.apache.logging.log4j:log4j-core:${log4j2Version}"
+  shadowInclude "org.apache.logging.log4j:log4j-slf4j-impl:${log4j2Version}"
 
   // always use stock spark so that snappy extensions don't get accidently
   // included here in snappy-jdbc code.
@@ -78,12 +79,17 @@ jar.classifier = 'only'
 shadowJar {
   classifier = null
 
+  configurations = [ project.configurations.runtimeClasspath, project.configurations.shadowInclude ]
   // avoid conflict with the 0.9.2 version in stock Spark
   relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
   relocate 'org.apache.spark.unsafe', 'io.snappydata.org.apache.spark.unsafe'
 
   mergeServiceFiles()
   exclude 'log4j.properties'
+  exclude 'console-log4j.properties'
+  exclude 'store-log4j.properties'
+  exclude 'io/snappydata/log4j/**'
+  exclude '**/Log4j1Configurator*'
 
   if (rootProject.hasProperty('enablePublish')) {
     createdBy = vendorName

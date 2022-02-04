@@ -56,7 +56,7 @@ After installing the JDBCConnector application, add the SnappyData profile in th
 
 6. Click **Add**, to add/update option **-Xmx1024M**.
 
-7. In the **JDBC Driver** tab, select the path to the **snappydata-client-1.6.0.jar** file.
+7. In the **JDBC Driver** tab, select the path to the **snappydata-jdbc_2.11-1.3.0.jar** file.
 
 8. In the **Advanced** tab, add the JDBC Driver Classname **io.snappydata.jdbc.ClientDriver**.
 
@@ -75,7 +75,7 @@ After installing the JDBCConnector application, add the SnappyData profile in th
 
 5. Click **Configure**. Verfiy that the following configuration is displayed:
 	* In the Java VM Options tab, the path to **jvm.dll** file is correct and also the add/update option displays **-Xmx1024M**.
-	* In the JDBC Driver tab, the path to the **snappydata-client-1.6.0.jar** file is correct.
+	* In the JDBC Driver tab, the path to the **snappydata-jdbc_2.11-1.3.0.jar** file is correct.
 	* In the Advanced tab, JDBC Driver class name is displayed as **io.snappydata.jdbc.ClientDriver**.
 
 6. Click **Connect**. The Connect through QlikView JDBC Connector window is displayed.

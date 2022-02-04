@@ -29,6 +29,7 @@ import _root_.com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import _root_.com.pivotal.gemfirexd.internal.engine.GfxdConstants
 import _root_.com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.{Constant, Property, ServerManager, SnappyTableStatsProviderService}
+import org.slf4j.{Logger, LoggerFactory}
 
 import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql.collection.Utils
@@ -118,10 +119,11 @@ object ServiceUtils {
     }
     // set the log-level from initialized SparkContext's level if set to higher level than default
     if (!properties.containsKey("log-level")) {
-      val level = org.apache.log4j.Logger.getRootLogger.getLevel
-      if ((level ne null) && level.isGreaterOrEqual(org.apache.log4j.Level.WARN)) {
+      // preserve existing sl4j level if it is higher
+      val rootLogger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)
+      if (rootLogger.isWarnEnabled()) {
         properties.setProperty("log-level",
-          ClientSharedUtils.convertToJavaLogLevel(level).getName.toLowerCase)
+          ClientSharedUtils.getJavaLogLevel(rootLogger).getName.toLowerCase)
       }
     }
     ServerManager.getServerInstance.start(properties)

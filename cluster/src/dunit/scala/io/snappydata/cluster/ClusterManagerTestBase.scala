@@ -133,7 +133,7 @@ abstract class ClusterManagerTestBase(s: String)
     val sysProps = this.sysProps
     DistributedTestBase.invokeInLocator(new SerializableRunnable() {
       override def run(): Unit = {
-        // force initialize test-log4j.properties to enable override by SnappyData
+        // force initialize console-log4j(2).properties to enable override by SnappyData
         getStaticLogWriter.info("[SnappyData] starting locator...")
         ClusterManagerTestBase.setSystemProperties(sysProps)
         val loc: Locator = ServiceManager.getLocatorInstance
@@ -153,7 +153,7 @@ abstract class ClusterManagerTestBase(s: String)
     val nodeProps = bootProps
     val startNode = new SerializableRunnable() {
       override def run(): Unit = {
-        // force initialize test-log4j.properties to enable override by SnappyData
+        // force initialize console-log4j(2).properties to enable override by SnappyData
         getStaticLogWriter.info("[SnappyData] starting server...")
         ClusterManagerTestBase.setSystemProperties(sysProps)
         val node = ServiceManager.currentFabricServiceInstance

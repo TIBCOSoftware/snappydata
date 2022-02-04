@@ -372,8 +372,8 @@ trait SplitClusterDUnitTestObject extends Logging {
    * Returns the SnappyContext for external(connector) Spark cluster connected to
    * SnappyData cluster
    */
-  def getSnappyContextForConnector(locatorClientPort: Int, props: Properties = null):
-  SnappyContext = {
+  def getSnappyContextForConnector(locatorClientPort: Int,
+      props: Properties = null): SnappyContext = {
     val hostName = InetAddress.getLocalHost.getHostName
 //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
       val connectionURL = s"localhost:$locatorClientPort"

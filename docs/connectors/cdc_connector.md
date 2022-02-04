@@ -159,7 +159,8 @@ package io.snappydata.app;
 
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SnappySession;
@@ -170,7 +171,7 @@ import static org.apache.spark.SnappyJavaUtils.snappyJavaUtil;
 
 public class ProcessEvents implements SnappyStreamSink {
 
-  private static Logger log = Logger.getLogger(ProcessEvents.class.getName());
+  private static Logger log = LoggerFactory.getLogger(ProcessEvents.class.getName());
 
   private static List<String> metaColumns = asList("__$start_lsn",
       "__$end_lsn", "__$seqval", "__$operation", "__$update_mask", "__$command_id");

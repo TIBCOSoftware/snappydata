@@ -19,9 +19,9 @@ package org.apache.spark.sql.hive.thriftserver
 
 import java.net.InetAddress
 
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.hive.service.cli.thrift.ThriftCLIService
-import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.hive.client.HiveClientImpl
@@ -55,12 +55,11 @@ object SnappyHiveThriftServer2 extends Logging {
     // full conf used is from the internal hive client from SnappySharedState.
 
     // avoid meta-store init warnings
-    val rootLogger = LogManager.getRootLogger
-    val metaLogger = LogManager.getLogger("org.apache.hadoop.hive.metastore.MetaStoreDirectSql")
-    val currentRootLevel = rootLogger.getLevel
-    val currentMetaLevel = metaLogger.getLevel
-    rootLogger.setLevel(Level.ERROR)
-    metaLogger.setLevel(Level.ERROR)
+    val metaLogger = "org.apache.hadoop.hive.metastore.MetaStoreDirectSql"
+    val currentRootLevel = ClientSharedUtils.getLog4jLevel(null)
+    val currentMetaLevel = ClientSharedUtils.getLog4jLevel(metaLogger)
+    ClientSharedUtils.setLog4jLevel(null, "ERROR")
+    ClientSharedUtils.setLog4jLevel(metaLogger, "ERROR")
     val externalCatalog = SnappyHiveExternalCatalog.getExistingInstance
     val hiveConf = try {
       val executionHive = HiveUtils.newClientForExecution(conf,
@@ -87,8 +86,8 @@ object SnappyHiveThriftServer2 extends Logging {
         conf
       }
     } finally {
-      rootLogger.setLevel(currentRootLevel)
-      metaLogger.setLevel(currentMetaLevel)
+      ClientSharedUtils.setLog4jLevel(null, currentRootLevel)
+      ClientSharedUtils.setLog4jLevel(metaLogger, currentMetaLevel)
     }
 
     val server = new HiveThriftServer2(SparkSQLEnv.sqlContext)

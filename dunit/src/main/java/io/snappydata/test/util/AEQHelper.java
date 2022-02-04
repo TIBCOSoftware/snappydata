@@ -39,8 +39,8 @@ import com.gemstone.gemfire.internal.cache.wan.parallel.ParallelGatewaySenderQue
 import com.gemstone.gemfire.internal.cache.wan.serial.ConcurrentSerialGatewaySenderEventProcessor;
 import com.gemstone.gemfire.internal.cache.wan.serial.SerialGatewaySenderEventProcessor;
 import io.snappydata.test.dunit.DistributedTestBase;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author lynng
@@ -49,7 +49,7 @@ import org.apache.log4j.Logger;
  */
 public class AEQHelper {
 
-  protected final static Logger logger = LogManager.getLogger(AEQHelper.class);
+  protected final static Logger logger = LoggerFactory.getLogger(AEQHelper.class);
 
   /** Wait for async event queues in this member to drain. This wait is done
    *  once for all threads that call this concurrently.

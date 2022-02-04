@@ -397,8 +397,7 @@ trait NativeTableRowLevelSecurityRelation
   def isRowLevelSecurityEnabled: Boolean = {
     val conn = connFactory()
     try {
-      JdbcExtendedUtils.isRowLevelSecurityEnabled(resolvedName,
-        conn, dialect, sqlContext)
+      JdbcExtendedUtils.isRowLevelSecurityEnabled(resolvedName, conn)
     } catch {
       case se: java.sql.SQLException =>
         if (se.getMessage.contains("No suitable driver found")) {

@@ -51,8 +51,6 @@ object HiveClientUtil extends Logging {
     ConfVars.HIVEHISTORYFILELOC -> hivePath("query_logs"),
     ConfVars.HIVE_SERVER2_LOGGING_OPERATION_LOG_LOCATION -> hivePath("operation_logs"))
 
-  ExternalStoreUtils.registerBuiltinDrivers()
-
   private def hivePath(name: String): String =
     Paths.get(s"$HIVE_TMPDIR/$name").toAbsolutePath.toString
 
@@ -63,6 +61,7 @@ object HiveClientUtil extends Logging {
    */
   def getOrCreateExternalCatalog(sparkContext: SparkContext,
       conf: SparkConf): SnappyHiveExternalCatalog = synchronized {
+    ExternalStoreUtils.init()
     val (dbURL, dbDriver) = resolveMetaStoreDBProps(SnappyContext.getClusterMode(sparkContext))
     val metadataConf = new SnappyHiveConf
     // make a copy of SparkConf since it is to be updated later

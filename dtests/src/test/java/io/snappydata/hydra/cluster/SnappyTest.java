@@ -639,9 +639,16 @@ public class SnappyTest implements Serializable {
    */
   public static void HydraTask_writeWorkerConfigData() {
     snappyTest.writeWorkerConfigData("slaves", "workerLogDir");
+    snappyTest.writeToFile("JAVA_HOME=" + javaHome(),
+        new File(productConfDirPath + "spark-env.sh"), true);
     snappyTest.writeConfigData("spark-env.sh", "sparkLogDir");
     snappyTest.writeConfigData("spark-env.sh", "sparkWorkerDir");
     //snappyTest.writeConfigData("spark-env.sh", "sparkMasterHost");
+  }
+
+  public static String javaHome() {
+    String value = System.getenv("JAVA_HOME");
+    return value != null ? value : System.getProperty("java.home");
   }
 
   protected void writeConfigData(String fileName, String logDir) {

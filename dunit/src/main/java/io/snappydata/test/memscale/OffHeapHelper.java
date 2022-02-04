@@ -65,8 +65,8 @@ import com.pivotal.gemfirexd.internal.engine.store.offheap.OffHeapRowWithLobs;
 import io.snappydata.test.dunit.DistributedTestBase;
 import io.snappydata.test.util.AEQHelper;
 import io.snappydata.test.util.TestException;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author lynng
@@ -80,7 +80,7 @@ public class OffHeapHelper {
   private final static int _totalNumberOnHeapObjects = 4;
 
   protected final static Logger logger =
-      LogManager.getLogger(OffHeapHelper.class);
+      LoggerFactory.getLogger(OffHeapHelper.class);
 
   /**
    * Do consistency checks on off-heap memory. This is non-intrusive of the

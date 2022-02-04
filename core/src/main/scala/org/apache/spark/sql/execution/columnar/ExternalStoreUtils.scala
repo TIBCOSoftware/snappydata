@@ -106,6 +106,10 @@ object ExternalStoreUtils extends Logging {
 
   registerBuiltinDrivers()
 
+  def init(): Unit = {
+    // empty method just to ease initialization by registerBuiltinDrivers()
+  }
+
   def registerBuiltinDrivers(): Unit = {
     DriverRegistry.register(Constant.JDBC_EMBEDDED_DRIVER)
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)

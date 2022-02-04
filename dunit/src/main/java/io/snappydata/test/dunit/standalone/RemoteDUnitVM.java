@@ -41,8 +41,8 @@ import java.rmi.server.UnicastRemoteObject;
 import io.snappydata.test.dunit.RemoteDUnitVMIF;
 import io.snappydata.test.hydra.MethExecutor;
 import io.snappydata.test.hydra.MethExecutorResult;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author dsmith
@@ -50,7 +50,7 @@ import org.apache.log4j.Logger;
  */
 public class RemoteDUnitVM extends UnicastRemoteObject implements RemoteDUnitVMIF {
 
-  private static final Logger logger = LogManager.getLogger(RemoteDUnitVM.class);
+  private static final Logger logger = LoggerFactory.getLogger(RemoteDUnitVM.class);
   
   public RemoteDUnitVM() throws RemoteException {
     super();

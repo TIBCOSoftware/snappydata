@@ -17,18 +17,15 @@
 
 package io.snappydata.cluster
 
-import java.io.{BufferedWriter, FileWriter, PrintWriter}
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.collection.JavaConverters._
-import scala.io.{Codec, Source}
 import scala.sys.process._
-import scala.util.control.NonFatal
 
+import io.snappydata.SnappyTestRunner
 import io.snappydata.test.dunit.VM
 import io.snappydata.test.util.TestException
-import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
 
 import org.apache.spark.Logging
@@ -135,7 +132,7 @@ object ClusterUtils extends Serializable with Logging {
 
   def getEnvironmentVariable(name: String): String = {
     val value = System.getenv(name)
-    if (name eq null) {
+    if (value eq null) {
       throw new TestException(s"Environment variable $name is not defined")
     }
     value
@@ -144,39 +141,16 @@ object ClusterUtils extends Serializable with Logging {
   def getSparkClusterDirectory(productDir: String): String =
     getClusterDirectory(Paths.get(productDir), isSnappy = false)
 
-  def writeToFile(str: String, filePath: String, append: Boolean): Unit = {
-    val fileWriter = new FileWriter(filePath, append)
-    val bufferedWriter = new BufferedWriter(fileWriter)
-    val pw = new PrintWriter(bufferedWriter)
-    try {
-      pw.write(str)
-      pw.flush()
-    } finally {
-      pw.close()
-    }
-    // wait until file becomes available (e.g. running on NFS)
-    var matched = append
-    while (!matched) {
-      Thread.sleep(100)
-      try {
-        val source = Source.fromFile(filePath)(Codec.UTF8)
-        val lines = try {
-          source.mkString
-        } finally {
-          source.close()
-        }
-        matched = lines == str
-      } catch {
-        case NonFatal(_) =>
-      }
-    }
-  }
+  def writeToFile(str: String, filePath: String, append: Boolean): Unit =
+    SnappyTestRunner.writeToFile(str, filePath, append)
 
   def startSparkCluster(clusterDir: String): String = {
     logInfo(s"Starting spark cluster in $clusterDir/work")
     writeToFile(
-      s"\nSPARK_WORKER_CORES=${TestUtils.defaultCores * 2}",
-      s"$clusterDir/conf/spark-env.sh", append = true)
+      s"""
+         |JAVA_HOME=${SnappyTestRunner.javaHome}
+         |SPARK_WORKER_CORES=${SnappyTestRunner.defaultCores * 2}
+         |""".stripMargin, s"$clusterDir/conf/spark-env.sh", append = true)
     val output = s"$clusterDir/sbin/start-all.sh".!!
     logInfo(output)
     output

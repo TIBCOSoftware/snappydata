@@ -22,8 +22,10 @@ import java.net.InetAddress
 import java.sql.{Connection, DriverManager}
 import java.util.regex.Pattern
 
+import scala.io.{Codec, Source}
 import scala.language.postfixOps
 import scala.sys.process._
+import scala.util.control.NonFatal
 import scala.util.parsing.json.JSON
 
 import com.gemstone.gemfire.internal.AvailablePort
@@ -102,16 +104,10 @@ with Logging with Retries {
 
   def startupCluster(): Unit = {
     val serverFile = new File(s"$snappyHome/conf/servers")
-    new PrintWriter(serverFile) {
-      write(servers)
-      close()
-    }
+    SnappyTestRunner.writeToFile(servers, serverFile.getPath, append = false)
     serverFile.deleteOnExit()
     val leadFile = new File(s"$snappyHome/conf/leads")
-    new PrintWriter(leadFile) {
-      write(leads)
-      close()
-    }
+    SnappyTestRunner.writeToFile(leads, leadFile.getPath, append = false)
     leadFile.deleteOnExit()
 
     val (out, _) = executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-start-all.sh",
@@ -120,6 +116,13 @@ with Logging with Retries {
     if (!clusterSuccessPattern.matcher(out).find()) {
       throw new Exception(s"Failed to start Snappy cluster: " + out)
     }
+    val envFile = new File(s"$snappyHome/conf/spark-env.sh")
+    SnappyTestRunner.writeToFile(
+      s"""
+         |JAVA_HOME=${SnappyTestRunner.javaHome}
+         |SPARK_WORKER_CORES=${SnappyTestRunner.defaultCores * 2}
+         |""".stripMargin, envFile.getPath, append = false)
+    envFile.deleteOnExit()
     executeProcess("sparkCluster", s"$snappyHome/sbin/start-all.sh", Some(commandOutput))
   }
 
@@ -357,5 +360,43 @@ with Logging with Retries {
       stdoutStr += s"\n***** Exit with Exception code = $code\n"
     }
     (stdoutStr, stderrStream.toString)
+  }
+}
+
+object SnappyTestRunner {
+
+  val defaultCores: Int = math.max(8, Runtime.getRuntime.availableProcessors()) * 2
+
+  def javaHome: String = {
+    val value = System.getenv("JAVA_HOME")
+    if (value ne null) value else System.getProperty("java.home")
+  }
+
+  def writeToFile(str: String, filePath: String, append: Boolean): Unit = {
+    val fileWriter = new FileWriter(filePath, append)
+    val bufferedWriter = new BufferedWriter(fileWriter)
+    val pw = new PrintWriter(bufferedWriter)
+    try {
+      pw.write(str)
+      pw.flush()
+    } finally {
+      pw.close()
+    }
+    // wait until file becomes available (e.g. running on NFS)
+    var matched = append
+    while (!matched) {
+      Thread.sleep(100)
+      try {
+        val source = Source.fromFile(filePath)(Codec.UTF8)
+        val lines = try {
+          source.mkString
+        } finally {
+          source.close()
+        }
+        matched = lines == str
+      } catch {
+        case NonFatal(_) =>
+      }
+    }
   }
 }

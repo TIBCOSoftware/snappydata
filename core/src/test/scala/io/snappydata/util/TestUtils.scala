@@ -16,6 +16,8 @@
  */
 package io.snappydata.util
 
+import io.snappydata.SnappyTestRunner
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
@@ -25,7 +27,7 @@ import org.apache.spark.sql.{Row, SnappyContext, SnappySession}
 object TestUtils extends Logging {
 
   // factor of 2 like in product by default
-  val defaultCores: Int = math.max(8, Runtime.getRuntime.availableProcessors()) * 2
+  val defaultCores: Int = SnappyTestRunner.defaultCores
 
   def defaultCoresForSmartConnector: String = defaultCores.toString
 

@@ -42,7 +42,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.nio.channels.FileChannel;
 import java.rmi.AccessException;
@@ -60,6 +59,7 @@ import java.util.Properties;
 import java.util.concurrent.Semaphore;
 
 import com.gemstone.gemfire.distributed.Locator;
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils;
 import io.snappydata.test.batterytest.greplogs.ExpectedStrings;
 import io.snappydata.test.batterytest.greplogs.LogConsumer;
 import io.snappydata.test.dunit.AvailablePortHelper;
@@ -70,11 +70,6 @@ import io.snappydata.test.dunit.RemoteDUnitVMIF;
 import io.snappydata.test.dunit.SerializableCallable;
 import io.snappydata.test.dunit.VM;
 import io.snappydata.test.hydra.MethExecutorResult;
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
 import org.junit.Assert;
 
 /**
@@ -233,16 +228,12 @@ public class DUnitLauncher {
    */
   private static void addSuspectFileAppender(final String workspaceDir) {
     final String suspectFilename = new File(workspaceDir, SUSPECT_FILENAME).getAbsolutePath();
-
-    final Logger logger = LogManager.getLogger(Host.BASE_LOGGER_NAME);
-    logger.setLevel(Level.INFO);
-
-    final PatternLayout layout = new PatternLayout(
-        "[%level{lowerCase=true} %date{yyyy/MM/dd HH:mm:ss.SSS z} <%thread> tid=%tid] %message%n%throwable%n");
-
+    final String layout =
+        "[%level{lowerCase=true} %date{yyyy/MM/dd HH:mm:ss.SSS z} <%thread> tid=%tid] %message%n%throwable%n";
     try {
-      final FileAppender fileAppender = new FileAppender(layout, suspectFilename, true);
-      logger.addAppender(fileAppender);
+      ClientSharedUtils.addFileAppender("suspect", Host.BASE_LOGGER_NAME,
+          suspectFilename, layout, true);
+      ClientSharedUtils.setLog4jLevel(Host.BASE_LOGGER_NAME, "INFO");
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }

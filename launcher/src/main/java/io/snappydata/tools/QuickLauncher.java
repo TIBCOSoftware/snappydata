@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.Properties;
 
 import com.gemstone.gemfire.internal.cache.Status;
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils;
@@ -182,22 +181,12 @@ class QuickLauncher extends LauncherBase {
     String logFile = (String)options.get(LOG_FILE);
     if (logFile == null || logFile.isEmpty()) {
       // check for log4j settings
-      Properties confProps = ClientSharedUtils.getLog4jConfProperties(snappyHome);
-      if (confProps != null) {
-        // read directly avoiding log4j API usage
-        String rootCategory = confProps.getProperty("log4j.rootCategory");
-        int commaIndex;
-        if (rootCategory != null && (commaIndex = rootCategory.indexOf(',')) != -1) {
-          String categoryName = rootCategory.substring(commaIndex + 1).trim();
-          // check for file name property
-          logFile = confProps.getProperty("log4j.appender." + categoryName + ".file");
-          if (logFile == null || logFile.isEmpty()) {
-            // perhaps it is the console appender
-            String appenderType = confProps.getProperty("log4j.appender." + categoryName);
-            if (appenderType != null && appenderType.contains("ConsoleAppender")) {
-              logFile = this.startLogFileName;
-            }
-          }
+      if (!ClientSharedUtils.isDefaultLoggingConfiguration()) {
+        // check if all logs are being sent only to console
+        if (ClientSharedUtils.isRootLoggingOnlyOnConsole()) {
+          logFile = this.startLogFileName;
+        } else {
+          logFile = ClientSharedUtils.getRootLog4jFileName();
         }
       }
     } else {

@@ -32,7 +32,7 @@ import com.pivotal.gemfirexd.internal.snappy.InterpreterExecute
 import com.pivotal.gemfirexd.{Attribute, Constants}
 import io.snappydata.Constant
 import io.snappydata.gemxd.SnappySessionPerConnection
-import org.apache.log4j.Logger
+import org.slf4j.LoggerFactory
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -279,7 +279,7 @@ object SnappyInterpreterExecute {
 
   object PermissionChecker {
 
-    private val logger = Logger.getLogger(
+    private[this] val logger = LoggerFactory.getLogger(
       "io.snappydata.remote.interpreter.SnappyInterpreterExecute")
 
     def isAllowed(key: String, currentUser: String, tableSchema: String): Boolean = {

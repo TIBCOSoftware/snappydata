@@ -31,6 +31,9 @@ class CommandLineToolsSuite extends SnappyTestRunner {
 
   private val snappyProductDir = System.getProperty("SNAPPY_HOME")
   private val snappyNativeTestDir = s"$snappyProductDir/../../../store/native/tests"
+  private val bArgs: String = "-bind-address=localhost"
+  private val lArgs: String = s"$bArgs -hostname-for-clients=localhost " +
+      "-client-bind-address=localhost"
 
   test("exec scala") {
     val conn = getJdbcConnection(1527)
@@ -244,18 +247,18 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       assert(backupDir.mkdir(), s"could not create backup dir in $snappyHome")
 
       // online backup command
-      val backupcommand = s"$snappyHome/bin/snappy backup $backupDir -locators=localhost:10334"
-      val (out, _) = executeCommand(backupcommand)
+      val backupCmd = s"$snappyHome/bin/snappy backup $backupDir -locators=localhost:10334 $bArgs"
+      val (out, err) = executeCommand(backupCmd)
 
       if (!out.contains("successful")) {
-        throw new Exception(s"Could not take successful backup")
+        throw new Exception(s"Could not take successful backup.\nOutput: $out\nError: $err")
       }
       stopCluster()
 
       val (_, err1) = executeCommand(s"rm -rf $snappyHome/work")
 
       if (err1 != null && err1.length > 0) {
-        throw new Exception(s"Failed to remove work dir")
+        throw new Exception(s"Failed to remove work dir: $err1")
       }
       // Find all the restore scripts
       val (out3, _) = executeCommand(s"find $backupDir -name restore.sh")
@@ -298,17 +301,17 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       stmnt.execute("insert into testDD values (100, 100), (200, 200)")
 
       // online incremental backup command
-      val incre_backupcommand = s"$snappyHome/bin/snappy" +
-          s" backup -baseline=$backupDir $backupDir -locators=localhost:10334"
-      val (out4, _) = executeCommand(incre_backupcommand)
+      val incrBackupCmd = s"$snappyHome/bin/snappy" +
+          s" backup -baseline=$backupDir $backupDir -locators=localhost:10334 $bArgs"
+      val (out4, err4) = executeCommand(incrBackupCmd)
 
       if (!out4.contains("successful")) {
-        throw new Exception(s"Could not take successful backup")
+        throw new Exception(s"Could not take successful backup.\nOutput: $out4\nError: $err4")
       }
       stopCluster()
       val (_, err5) = executeCommand(s"rm -rf $snappyHome/work")
       if (err5 != null && err5.length > 0) {
-        throw new Exception(s"Failed to remove work dir")
+        throw new Exception(s"Failed to remove work dir: $err5")
       }
 
       debugWriter.println(s"backup dir  = $backupDir")
@@ -408,7 +411,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
   test("-dir option with old server launch script") {
     try {
       var consoleOutput = (snappyProductDir +
-          "/sbin/snappy-server.sh start -locators=localhost:10334 -client-port=2001").!!
+          s"/sbin/snappy-server.sh start -locators=localhost:10334 -client-port=2001 $lArgs").!!
       assert(consoleOutput.contains("ERROR"),
         s"Option -dir not specified: $consoleOutput")
 
@@ -426,7 +429,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       "mkdir ./SNAP-2631-work-server".!!
       consoleOutput = (snappyProductDir +
           "/sbin/snappy-server.sh start -locators=localhost:10334 -client-port=2001  " +
-          "-dir=./SNAP-2631-work-server").!!
+          s"-dir=./SNAP-2631-work-server $lArgs").!!
       assert(consoleOutput.contains("running"), s"Server launch failed: $consoleOutput")
 
     } finally {
@@ -439,13 +442,13 @@ class CommandLineToolsSuite extends SnappyTestRunner {
   test("-dir option with old lead launch script") {
     try {
       var consoleOutput = (snappyProductDir +
-          "/sbin/snappy-lead.sh start -locators=localhost:10334 -client-port=2002").!!
+          s"/sbin/snappy-lead.sh start -locators=localhost:10334 -client-port=2002 $lArgs").!!
       assert(consoleOutput.contains("ERROR"),
         "Option -dir not specified")
 
       consoleOutput = (snappyProductDir +
           "/sbin/snappy-lead.sh start -locators=localhost:10334 -client-port=2002" +
-          " -dir=").!!
+          s" -dir= $lArgs").!!
       assert(consoleOutput.contains("ERROR"),
         "Option -dir not specified with a value")
 
@@ -459,7 +462,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
 
       consoleOutput = (snappyProductDir +
           "/sbin/snappy-lead.sh start -locators=localhost:10334 -client-port=2002 " +
-          "-dir=./SNAP-2631-work-lead").!!
+          s"-dir=./SNAP-2631-work-lead $lArgs").!!
 
       assert(consoleOutput.contains("standby"),
         s"lead launch failed: $consoleOutput")

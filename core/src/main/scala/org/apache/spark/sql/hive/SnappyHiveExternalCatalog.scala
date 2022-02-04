@@ -28,6 +28,7 @@ import scala.concurrent.ExecutionException
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.internal.LogWriterImpl
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.google.common.cache.{Cache, CacheBuilder, CacheLoader, LoadingCache}
 import com.pivotal.gemfirexd.Constants
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -41,7 +42,6 @@ import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, R
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException
 import org.apache.hadoop.hive.ql.metadata.Hive
-import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
@@ -62,7 +62,7 @@ import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.sources.JdbcExtendedUtils.normalizeSchema
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.LongType
-import org.apache.spark.sql.{AnalysisException, _}
+import org.apache.spark.sql._
 
 class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     val hadoopConf: Configuration, val createTime: Long)
@@ -872,20 +872,19 @@ object SnappyHiveExternalCatalog {
     // Once the initialization is done, restore the logging level.
     val logger = Misc.getI18NLogWriter.asInstanceOf[LogWriterImpl]
     val previousLevel = logger.getLevel
-    val log4jLogger = LogManager.getRootLogger
-    val log4jLevel = log4jLogger.getEffectiveLevel
+    val log4jLevel = ClientSharedUtils.getLog4jLevel(null)
     logger.info("Starting hive meta-store initialization")
     val reduceLog = previousLevel == LogWriterImpl.CONFIG_LEVEL ||
         previousLevel == LogWriterImpl.INFO_LEVEL
     if (reduceLog) {
       logger.setLevel(LogWriterImpl.ERROR_LEVEL)
-      log4jLogger.setLevel(Level.ERROR)
+      ClientSharedUtils.setLog4jLevel(null, "ERROR")
     }
     try {
       instance = new SnappyHiveExternalCatalog(sparkConf, hadoopConf, createTime)
     } finally {
       logger.setLevel(previousLevel)
-      log4jLogger.setLevel(log4jLevel)
+      ClientSharedUtils.setLog4jLevel(null, log4jLevel)
       logger.info("Done hive meta-store initialization")
     }
     instance

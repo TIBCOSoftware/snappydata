@@ -112,7 +112,7 @@ class CassandraSnappyDUnitTest(val s: String)
     }
     if (downloadFiles) {
       val cassandraTarball = s"apache-cassandra-$cassandraVersion-bin.tar.gz"
-      s"curl -OL http://www-us.apache.org/dist/cassandra/$cassandraVersion/$cassandraTarball".!!
+      s"curl -OL http://www.apache.org/dist/cassandra/$cassandraVersion/$cassandraTarball".!!
       ("curl -OL https://repo1.maven.org/maven2/com/datastax/spark/" +
           s"spark-cassandra-connector_2.11/$cassandraConnVersion/$cassandraConnectorJar").!!
       ("tar xf " + cassandraTarball).!!

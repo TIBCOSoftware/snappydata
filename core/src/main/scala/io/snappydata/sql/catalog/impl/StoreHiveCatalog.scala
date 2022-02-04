@@ -27,7 +27,7 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.cache.RegionDestroyedException
 import com.gemstone.gemfire.internal.LogWriterImpl
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemfireCacheHelper, LocalRegion, PolicyTableData}
-import com.gemstone.gemfire.internal.shared.SystemProperties
+import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, SystemProperties}
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -40,7 +40,6 @@ import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.sql.catalog.SnappyExternalCatalog.checkSchemaPermission
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, SnappyExternalCatalog}
 import io.snappydata.thrift._
-import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
@@ -237,9 +236,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
             lockTaken = lockService.readLock(hiveClientObject, lockOwner,
               GfxdLockSet.MAX_LOCKWAIT_VAL)
             // reduce log4j level to avoid "function exists" warnings
-            val log4jLogger = LogManager.getRootLogger
-            if (log4jLogger.getEffectiveLevel == Level.WARN) {
-              log4jLogger.setLevel(Level.ERROR)
+            if ("WARN".equalsIgnoreCase(ClientSharedUtils.getLog4jLevel(null))) {
+              ClientSharedUtils.setLog4jLevel(null, "ERROR")
             }
           } else {
             lockTaken = lockService.writeLock(hiveClientObject, lockOwner,

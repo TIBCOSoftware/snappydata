@@ -18,7 +18,6 @@ package io.snappydata.test.dunit;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
@@ -47,17 +46,16 @@ import com.gemstone.gemfire.distributed.DistributedSystem;
 import com.gemstone.gemfire.distributed.internal.DistributionConfig;
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem;
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl;
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils;
 import com.gemstone.gemfire.internal.shared.NativeCalls;
 import io.snappydata.test.dunit.standalone.DUnitBB;
 import io.snappydata.test.dunit.standalone.DUnitLauncher;
 import io.snappydata.test.util.TestException;
 import junit.framework.Test;
 import junit.framework.TestCase;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
 import org.junit.internal.MethodSorter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class is the superclass of all distributed unit tests.
@@ -613,35 +611,35 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     return clazz;
   }
 
-  private static Level getLevel(String gemfireLogLevel) {
+  private static String getLevel(String gemfireLogLevel) {
     switch (gemfireLogLevel) {
       case "config":
       case "info":
-        return Level.INFO;
+        return "INFO";
       case "fine":
-        return Level.DEBUG;
+        return "DEBUG";
       case "finer":
       case "finest":
-        return Level.TRACE;
+        return "TRACE";
       case "warning":
-        return Level.WARN;
+        return "WARN";
       case "error":
-        return Level.ERROR;
+        return "ERROR";
       case "severe":
-        return Level.FATAL;
+        return "FATAL";
       case "all":
-        return Level.ALL;
+        return "ALL";
       case "none":
-        return Level.OFF;
+        return "OFF";
       default:
-        return Level.INFO;
+        return "INFO";
     }
   }
 
   private static Logger newGlobalLogger() {
-    Logger logger = LogManager.getLogger(Host.BASE_LOGGER_NAME);
-    logger.setLevel(getLevel(DUnitLauncher.LOG_LEVEL));
-    return logger;
+    ClientSharedUtils.setLog4jLevel(Host.BASE_LOGGER_NAME,
+        getLevel(DUnitLauncher.LOG_LEVEL));
+    return LoggerFactory.getLogger(Host.BASE_LOGGER_NAME);
   }
 
   public static Logger getGlobalLogger() {
@@ -653,19 +651,13 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
   }
 
   private static synchronized Logger newLogWriter() {
-    Logger logger = LogManager.getLogger("DUnitTest");
+    String level = getLevel(DUnitLauncher.LOG_LEVEL);
     try {
-      Properties props = new Properties();
-      // fallback to defaults
-      try (InputStream in = DistributedTestBase.class.getResourceAsStream(
-          "/test-log4j.properties")) {
-        props.load(in);
-      }
-      new PropertyConfigurator().doConfigure(props, logger.getLoggerRepository());
+      ClientSharedUtils.initLog4j(null, level, "console-log4j${version}.properties");
     } catch (IOException ignored) {
     }
-    logger.setLevel(getLevel(DUnitLauncher.LOG_LEVEL));
-    return logger;
+    ClientSharedUtils.setLog4jLevel("DUnitTest", level);
+    return LoggerFactory.getLogger("DUnitTest");
   }
 
   public final Logger getLogWriter() {

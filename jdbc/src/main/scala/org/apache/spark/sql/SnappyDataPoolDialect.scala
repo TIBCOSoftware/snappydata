@@ -21,8 +21,8 @@ import java.util.regex.Pattern
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import io.snappydata.Constant
 import io.snappydata.jdbc.TomcatConnectionPool
+import org.slf4j.LoggerFactory
 
-import org.apache.spark.Logging
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.Attribute
@@ -36,7 +36,9 @@ import org.apache.spark.sql.types._
  * Default dialect for SnappyData using pooled client Driver.
  */
 @DeveloperApi
-case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
+case object SnappyDataPoolDialect extends SnappyDataBaseDialect {
+
+  private[this] val logger = LoggerFactory.getLogger(SnappyDataPoolDialect.getClass)
 
   // register the dialect
   JdbcDialects.registerDialect(SnappyDataPoolDialect)
@@ -110,7 +112,7 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
       case ae: AnalysisException => throw ae
       case t: Throwable =>
         // fallback to full query on connection
-        logWarning(s"Unexpected exception in getTableExistsQuery: $t")
+        logger.warn(s"Unexpected exception in getTableExistsQuery: $t")
         // snappy-store parser understand FETCH FIRST ROW ONLY
         s"SELECT 1 FROM $query FETCH FIRST ROW ONLY"
     }
@@ -155,7 +157,7 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
       case ae: AnalysisException => throw ae
       case t: Throwable =>
         // fallback to full query on connection
-        logWarning(s"Unexpected exception in getSchemaQuery: $t")
+        logger.warn(s"Unexpected exception in getSchemaQuery: $t")
         // snappy-store parser understand FETCH FIRST ROW ONLY
         s"SELECT * FROM $query FETCH FIRST ROW ONLY"
     }

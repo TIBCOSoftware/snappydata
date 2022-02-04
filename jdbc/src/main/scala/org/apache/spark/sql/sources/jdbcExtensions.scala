@@ -29,7 +29,6 @@ import com.pivotal.gemfirexd.Attribute
 import io.snappydata.Constant
 import org.apache.commons.collections.map.CaseInsensitiveMap
 
-import org.apache.spark.Logging
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
@@ -75,7 +74,7 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
   def getPartitionByClause(col: String): String
 }
 
-object JdbcExtendedUtils extends Logging {
+object JdbcExtendedUtils {
 
   val SYSIBM_SCHEMA: String = "sysibm"
   val DUMMY_TABLE_NAME: String = "sysdummy1"
@@ -337,8 +336,7 @@ object JdbcExtendedUtils extends Logging {
     }
   }
 
-  def isRowLevelSecurityEnabled(table: String, conn: Connection, dialect: JdbcDialect,
-      context: SQLContext): Boolean = {
+  def isRowLevelSecurityEnabled(table: String, conn: Connection): Boolean = {
     val (schemaName, tableName) = getTableWithSchema(table, conn, None, forSpark = false)
     val q = s"select 1 from sys.systables s where s.tablename = '$tableName' and " +
         s" s.tableschemaname = '$schemaName' and s.rowlevelsecurityenabled = true "

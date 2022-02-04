@@ -38,15 +38,15 @@ package io.snappydata.test.dunit.standalone;
 import java.rmi.Naming;
 
 import com.gemstone.gemfire.internal.shared.NativeCalls;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author dsmith
  */
 public class ChildVM {
 
-  private final static Logger logger = LogManager.getLogger(ChildVM.class);
+  private final static Logger logger = LoggerFactory.getLogger(ChildVM.class);
 
   public static void main(String[] args) throws Throwable {
     try {
