@@ -32,7 +32,6 @@ import kafka.api.Request
 import kafka.server.{KafkaConfig, KafkaServer}
 import kafka.utils.ZkUtils
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord, RecordMetadata}
-import org.apache.kafka.common.errors.TopicExistsException
 import org.apache.kafka.common.network.ListenerName
 import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.log4j.{Level, Logger}
@@ -411,9 +410,17 @@ class EmbeddedKafkaUtils extends Logging {
     props.put("port", brokerPort.toString)
     props.put("log.dir", Utils.createTempDir().getAbsolutePath)
     props.put("zookeeper.connect", zkAddress)
+    props.put("zookeeper.connection.timeout.ms", "60000")
     props.put("log.flush.interval.messages", "1")
     props.put("replica.socket.timeout.ms", "1500")
     props.put("delete.topic.enable", "true")
+    props.put("group.initial.rebalance.delay.ms", "10")
+
+    // Change the following settings as we have only 1 broker
+    props.put("offsets.topic.num.partitions", "1")
+    props.put("offsets.topic.replication.factor", "1")
+    props.put("transaction.state.log.replication.factor", "1")
+    props.put("transaction.state.log.min.isr", "1")
     props
   }
 
