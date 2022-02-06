@@ -56,10 +56,10 @@ allprojects {
 
   repositories {
     mavenCentral()
-    maven { url 'https://repo.hortonworks.com/content/repositories/releases/' }
-    maven { url "https://repo.spring.io/libs-release" }
-    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    maven { url 'https://packages.atlassian.com/maven-3rdparty' }
+    maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
     maven { url 'https://app.camunda.com/nexus/content/repositories/public' }
+    maven { url "https://repo.spring.io/libs-release" }
   }
 
   apply plugin: 'java'
@@ -110,24 +110,24 @@ allprojects {
     snappySparkMetricsLibVersion = '2.0.0.1'
     log4jVersion = '1.2.17'
     log4j2Version = '2.17.1'
-    slf4jVersion = '1.7.30'
+    slf4jVersion = '1.7.35'
     junitVersion = '4.12'
     mockitoVersion = '1.10.19'
-    hadoopVersion = '3.2.0'
+    hadoopVersion = '3.3.1'
     awsSdkVersion = '1.11.375'
-    gcsHadoop2ConnectorVersion = 'hadoop2-2.0.0'
-    gcsHadoop3ConnectorVersion = 'hadoop3-2.0.0'
+    gcsHadoop3ConnectorVersion = 'hadoop3-2.1.2'
     sparkAvroVersion = '4.0.0'
     sparkXmlVersion = '0.4.1'
     scalatestVersion = '2.2.6'
     py4jVersion = '0.10.7'
-    jettyVersion = '9.2.26.v20180806'
+    jettyVersion = '9.4.44.v20210927'
     guavaVersion = '14.0.1'
-    fastutilVersion = '8.5.4'
+    fastutilVersion = '8.5.6'
     kryoVersion = '4.0.1'
     thriftVersion = '0.9.3'
-    jacksonVersion = '2.9.9'
-    hiveVersion = '1.21.2.3.1.2.1-1'
+    jacksonVersion = '2.13.1'
+    jacksonDatabindVersion = '2.13.1'
+    hiveVersion = '1.21.2.7.0.3.2-3'
     metricsVersion = '4.0.3'
     metrics2Version = '2.2.0'
     janinoVersion = '3.0.8'
