@@ -26,19 +26,19 @@ import java.util.{Properties, Map => JMap}
 import kafka.admin.AdminUtils
 import kafka.api.Request
 import kafka.common.TopicAndPartition
-import kafka.server.{KafkaConfig, KafkaServer, OffsetCheckpoint}
+import kafka.server.{KafkaApis, KafkaConfig, KafkaServer, OffsetCheckpoint}
 import kafka.utils.ZkUtils
 import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer._
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
+
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.util.Utils
 import org.apache.zookeeper.server.{NIOServerCnxnFactory, ZooKeeperServer}
 import org.scalatest.concurrent.Eventually._
 import org.scalatest.time.SpanSugar._
-
 import scala.collection.JavaConverters._
 import scala.language.postfixOps
 import scala.util.Random
@@ -348,7 +348,14 @@ class KafkaTestUtils extends Logging {
   }
 
   private def waitUntilMetadataIsPropagated(topic: String, partition: Int): Unit = {
-    def isPropagated = server.apis.metadataCache.getPartitionInfo(topic, partition) match {
+    val apis = try {
+      server.getClass.getMethod("apis").invoke(server).asInstanceOf[KafkaApis]
+    } catch {
+      case _: Exception => server.getClass.getMethod("dataPlaneRequestProcessor")
+          .invoke(server).asInstanceOf[KafkaApis]
+    }
+
+    def isPropagated = apis.metadataCache.getPartitionInfo(topic, partition) match {
       case Some(partitionState) =>
         val leaderAndInSyncReplicas = partitionState.leaderIsrAndControllerEpoch.leaderAndIsr
 

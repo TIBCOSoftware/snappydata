@@ -30,6 +30,7 @@ buildscript {
     classpath 'de.undercouch:gradle-download-task:3.4.3'
     classpath 'net.rdrei.android.buildtimetracker:gradle-plugin:0.11.+'
     classpath 'com.netflix.nebula:gradle-ospackage-plugin:5.2.+'
+    // classpath 'org.owasp:dependency-check-gradle:6.5.3'
   }
 }
 
@@ -37,6 +38,7 @@ apply plugin: 'wrapper'
 apply plugin: 'distribution'
 apply plugin: 'nebula.ospackage-base'
 apply plugin: "nebula.ospackage"
+// apply plugin: 'org.owasp.dependencycheck'
 
 // def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
 
@@ -110,10 +112,10 @@ allprojects {
     snappySparkMetricsLibVersion = '2.0.0.1'
     log4jVersion = '1.2.17'
     log4j2Version = '2.17.1'
-    slf4jVersion = '1.7.35'
+    slf4jVersion = '1.7.32'
     junitVersion = '4.12'
     mockitoVersion = '1.10.19'
-    hadoopVersion = '3.3.1'
+    hadoopVersion = '3.2.0'
     awsSdkVersion = '1.11.375'
     gcsHadoop3ConnectorVersion = 'hadoop3-2.1.2'
     sparkAvroVersion = '4.0.0'

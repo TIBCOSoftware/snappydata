@@ -466,7 +466,8 @@ class EmbeddedKafkaUtils extends Logging {
   }
 
   private def waitUntilMetadataIsPropagated(topic: String, partition: Int): Unit = {
-    def isPropagated = server.apis.metadataCache.getPartitionInfo(topic, partition) match {
+    def isPropagated = server.dataPlaneRequestProcessor.metadataCache
+        .getPartitionInfo(topic, partition) match {
       case Some(partitionState) =>
         zkUtils.getLeaderForPartition(topic, partition).isDefined &&
             Request.isValidBrokerId(partitionState.basePartitionState.leader) &&
