@@ -59,6 +59,7 @@ dependencies {
     testCompile project(path: ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion, configuration: 'testOutput')
     testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion, configuration: 'testOutput')
     testCompile project(path: ':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion, configuration: 'testOutput')
+    testCompile project(path: ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion, configuration: 'testOutput')
   } else {
     compile(group: 'com.fasterxml.jackson.module', name: 'jackson-module-scala_' + scalaBinaryVersion, version: jacksonVersion) {
       exclude(group: 'org.scala-lang', module: 'scala-library')
@@ -133,7 +134,6 @@ dependencies {
     testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}:tests")
     testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
     testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests")
-    testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
