@@ -5,7 +5,6 @@ import java.io.{File, PrintWriter}
 import scala.util.Try
 
 import com.typesafe.config.Config
-import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.sql.{SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession, SparkSession}
 
@@ -155,10 +154,6 @@ object SynopsisDataExample extends SnappySQLJob {
 
   def main(args: Array[String]): Unit = {
     parseArgs(args)
-
-    // reducing the log level to minimize the messages on console
-    Logger.getLogger("org").setLevel(Level.ERROR)
-    Logger.getLogger("akka").setLevel(Level.ERROR)
 
     val dataDirAbsolutePath = createAndGetDataDir
 

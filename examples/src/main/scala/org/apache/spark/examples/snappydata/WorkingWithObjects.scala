@@ -21,7 +21,6 @@ import java.io.File
 import scala.collection.Map
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession, SparkSession}
 
@@ -65,10 +64,6 @@ object WorkingWithObjects extends SnappySQLJob {
       config: Config): SnappyJobValidation = SnappyJobValid()
 
   def main(args: Array[String]) {
-    // reducing the log level to minimize the messages on console
-    Logger.getLogger("org").setLevel(Level.ERROR)
-    Logger.getLogger("akka").setLevel(Level.ERROR)
-
     val dataDirAbsolutePath: String = createAndGetDataDir
 
     val spark: SparkSession = SparkSession

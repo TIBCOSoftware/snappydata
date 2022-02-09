@@ -110,7 +110,6 @@ allprojects {
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
     sparkJobServerVersion = '0.6.2.12'
     snappySparkMetricsLibVersion = '2.0.0.1'
-    log4jVersion = '1.2.17'
     log4j2Version = '2.17.1'
     slf4jVersion = '1.7.32'
     junitVersion = '4.12'
@@ -772,6 +771,14 @@ subprojects {
       "org.apache.hadoop:hadoop-yarn-server-nodemanager:${hadoopVersion}",
       "org.apache.hadoop:hadoop-yarn-server-web-proxy:${hadoopVersion}"
     exclude(group: 'org.mortbay.jetty', module: 'servlet-api')
+  }
+  configurations.runtime {
+    exclude(group: 'log4j', module: 'log4j')
+    exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
+  }
+  configurations.testRuntime {
+    exclude(group: 'log4j', module: 'log4j')
+    exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
   }
   /*
   configurations.testRuntime {

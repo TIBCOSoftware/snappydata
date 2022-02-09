@@ -86,6 +86,7 @@ shadowJar {
 
   mergeServiceFiles()
   exclude 'log4j.properties'
+  exclude 'log4j2.properties'
   exclude 'console-log4j.properties'
   exclude 'store-log4j.properties'
   exclude 'io/snappydata/log4j/**'

@@ -59,8 +59,6 @@ if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-sketch_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion
-  include ':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion
-  include ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion
@@ -95,8 +93,6 @@ if (new File(rootDir, 'spark/build.gradle').exists()) {
   project(':snappy-spark:snappy-spark-sketch_' + scalaBinaryVersion).projectDir =
       "$rootDir/spark/common/sketch" as File
   project(':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/spark/assembly" as File
-  project(':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/flume" as File
-  project(':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/flume-sink" as File
   project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/kafka-0-10" as File
   project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/kafka-0-10-sql" as File
   project(':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion).projectDir = "$rootDir/spark/examples" as File

@@ -34,7 +34,6 @@ import kafka.utils.ZkUtils
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord, RecordMetadata}
 import org.apache.kafka.common.network.ListenerName
 import org.apache.kafka.common.serialization.StringSerializer
-import org.apache.log4j.{Level, Logger}
 import org.apache.zookeeper.server.{NIOServerCnxnFactory, ZooKeeperServer}
 
 import org.apache.spark.SparkConf
@@ -72,10 +71,6 @@ import org.apache.spark.util.Utils
 object StreamingExample {
 
   def main(args: Array[String]) {
-    // reducing the log level to minimize the messages on console
-    Logger.getLogger("org").setLevel(Level.ERROR)
-    Logger.getLogger("akka").setLevel(Level.ERROR)
-
     val dataDirAbsolutePath = createAndGetDataDir
 
     println("Initializing a SnappyStreamingContext")

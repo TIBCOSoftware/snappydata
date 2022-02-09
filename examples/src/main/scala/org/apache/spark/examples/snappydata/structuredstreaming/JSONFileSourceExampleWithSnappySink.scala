@@ -17,7 +17,6 @@
 package org.apache.spark.examples.snappydata.structuredstreaming
 
 import com.typesafe.config.Config
-import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.streaming.{ProcessingTime, StreamingQuery}
@@ -85,10 +84,6 @@ object JSONFileSourceExampleWithSnappySink extends SnappySQLJob with Logging {
 
   // Entry point for local mode
   def main(args: Array[String]) {
-    // reducing the log level to minimize the messages on console
-    Logger.getLogger("org").setLevel(Level.ERROR)
-    Logger.getLogger("akka").setLevel(Level.ERROR)
-
     val checkpointDirectory = if (args.length >= 1) args(0)
     else getClass.getSimpleName
     val inputDirectory = if (args.length >= 2) args(1)

@@ -17,8 +17,6 @@
 
 package org.apache.spark.examples.snappydata.structuredstreaming
 
-import org.apache.log4j.{Level, Logger}
-
 import org.apache.spark.sql.streaming.ProcessingTime
 import org.apache.spark.sql.{SnappySession, SparkSession}
 import scala.language.postfixOps
@@ -61,10 +59,6 @@ import scala.reflect.io.Path
 object CDCExample{
 
   def main(args: Array[String]) {
-    // reducing the log level to minimize the messages on console
-    Logger.getLogger("org").setLevel(Level.ERROR)
-    Logger.getLogger("akka").setLevel(Level.ERROR)
-
     println("Initializing a SnappySession")
     val checkpointDirectory = this.getClass.getSimpleName
     val spark: SparkSession = SparkSession
