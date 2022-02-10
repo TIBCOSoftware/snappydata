@@ -772,13 +772,11 @@ subprojects {
       "org.apache.hadoop:hadoop-yarn-server-web-proxy:${hadoopVersion}"
     exclude(group: 'org.mortbay.jetty', module: 'servlet-api')
   }
-  configurations.runtime {
-    exclude(group: 'log4j', module: 'log4j')
-    exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
-  }
-  configurations.testRuntime {
-    exclude(group: 'log4j', module: 'log4j')
-    exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
+  if (it.name != 'gemfire-shared') {
+    configurations.all {
+      exclude(group: 'log4j', module: 'log4j')
+      exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
+    }
   }
   /*
   configurations.testRuntime {
