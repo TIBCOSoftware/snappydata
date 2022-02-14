@@ -772,10 +772,15 @@ subprojects {
       "org.apache.hadoop:hadoop-yarn-server-web-proxy:${hadoopVersion}"
     exclude(group: 'org.mortbay.jetty', module: 'servlet-api')
   }
-  if (it.name != 'gemfire-shared') {
+  def projectName = it.name
+  if (projectName != 'gemfire-shared') {
     configurations.all {
-      exclude(group: 'log4j', module: 'log4j')
-      exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
+      if (projectName != 'snappy-core_' + scalaBinaryVersion ||
+          it.name == 'compileOnly') {
+        exclude(group: 'log4j', module: 'log4j')
+        exclude(group: 'log4j', module: 'apache-log4j-extras')
+        exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
+      }
     }
   }
   /*

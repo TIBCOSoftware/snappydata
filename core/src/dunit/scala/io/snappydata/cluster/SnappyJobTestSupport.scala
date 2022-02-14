@@ -18,10 +18,11 @@ package io.snappydata.cluster
 
 import java.io.File
 
+import scala.annotation.tailrec
 import scala.sys.process._
 
 import io.snappydata.test.dunit.DistributedTestBase
-import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
+import io.snappydata.test.dunit.DistributedTestBase.{WaitCriterion, sleepForMs}
 import org.apache.commons.lang.StringUtils
 
 import org.apache.spark.{Logging, TestPackageUtils}
@@ -84,12 +85,19 @@ trait SnappyJobTestSupport extends Logging {
    * @param jobCmdAffix   additional configs needs to be passed while submitting the job
    * @return job submission result
    */
-  def submitJob(classFullName: String, jobCmdAffix: String): String = {
+  @tailrec
+  final def submitJob(classFullName: String, jobCmdAffix: String, tries: Int = 5): String = {
     val className = StringUtils.substringAfterLast(classFullName, ".")
     val packageStr = StringUtils.substringBeforeLast(classFullName, ".")
     val job = s"${buildJobSubmissionCommand(packageStr, className)} $jobCmdAffix"
     logInfo(s"Submitting job $job")
-    job.!!
+    val consoleLog = job.!!
+    // if there is no proper response then job server may still be starting up, so try again
+    if (tries <= 1 || consoleLog.contains("status")) consoleLog
+    else {
+      sleepForMs(1000)
+      submitJob(classFullName, jobCmdAffix, tries - 1)
+    }
   }
 
   private def buildJobSubmissionCommand(packageStr: String, className: String): String = {
