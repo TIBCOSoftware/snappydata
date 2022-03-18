@@ -29,11 +29,6 @@ dependencies {
   compile 'org.scala-lang:scala-library:' + scalaVersion
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
 
-  compile 'org.slf4j:slf4j-api:' + slf4jVersion
-  compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
-  compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
-  compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
-
   if (new File(rootDir, 'spark/build.gradle').exists()) {
     compile project(':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
@@ -54,6 +49,7 @@ dependencies {
 
     testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
         configuration: 'testOutput')
+    testCompile project(path: ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion, configuration: 'testOutput')
   } else {
     compile 'io.snappydata:snappy-spark-unsafe_' + scalaBinaryVersion + ':' + snappySparkVersion
     compile 'io.snappydata:snappy-spark-core_' + scalaBinaryVersion + ':' + snappySparkVersion
@@ -74,6 +70,7 @@ dependencies {
 
     testCompile group: 'io.snappydata', name: 'snappy-spark-sql_' + scalaBinaryVersion,
                 version: snappySparkVersion, classifier: 'tests'
+    testCompile group: 'io.snappydata', name: 'snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion, version: snappySparkVersion, classifier: 'tests'
   }
 
   compile (project(':snappy-core_' + scalaBinaryVersion)) {

@@ -14,11 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/*
+ * Changes for TIBCO Project SnappyData data platform.
+ *
+ * Portions Copyright (c) 2017-2022 TIBCO Software Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 
 package org.apache.spark
 
-import org.apache.log4j.{LogManager, PropertyConfigurator}
-import org.slf4j.impl.StaticLoggerBinder
+import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import org.slf4j.{Logger, LoggerFactory}
 
 import org.apache.spark.util.Utils
@@ -147,27 +164,7 @@ trait Logging {
   }
 
   private def initializeLogging(): Unit = {
-    // Don't use a logger in here, as this is itself occurring during initialization of a logger
-    // If Log4j 1.2 is being used, but is not initialized, load a default properties file
-    val binderClass = StaticLoggerBinder.getSingleton.getLoggerFactoryClassStr
-    // This distinguishes the log4j 1.2 binding, currently
-    // org.slf4j.impl.Log4jLoggerFactory, from the log4j 2.0 binding, currently
-    // org.apache.logging.slf4j.Log4jLoggerFactory
-    val usingLog4j12 = "org.slf4j.impl.Log4jLoggerFactory".equals(binderClass)
-    if (usingLog4j12) {
-      val log4j12Initialized = LogManager.getRootLogger.getAllAppenders.hasMoreElements
-      // scalastyle:off println
-      if (!log4j12Initialized) {
-        val defaultLogProps = "org/apache/spark/log4j-defaults.properties"
-        Option(Utils.getSparkClassLoader.getResource(defaultLogProps)) match {
-          case Some(url) =>
-            PropertyConfigurator.configure(url)
-            System.err.println(s"Using Spark's default log4j profile: $defaultLogProps")
-          case None =>
-            System.err.println(s"Spark was unable to load $defaultLogProps")
-        }
-      }
-    }
+    ClientSharedUtils.initLog4j(null, null, "org/apache/spark/log4j${version}-defaults.properties")
     Logging.initialized = true
 
     // Force a call into slf4j to initialize it. Avoids this happening from multiple threads

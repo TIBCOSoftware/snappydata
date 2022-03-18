@@ -16,8 +16,6 @@
  */
 package org.apache.spark.examples.snappydata.structuredstreaming
 
-import org.apache.log4j.{Level, Logger}
-
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.streaming.ProcessingTime
 import org.apache.spark.sql.{SnappySession, SparkSession}
@@ -50,10 +48,6 @@ import org.apache.spark.sql.{SnappySession, SparkSession}
 object CSVFileSourceExampleWithSnappySink extends Logging {
 
   def main(args: Array[String]) {
-    // reducing the log level to minimize the messages on console
-    Logger.getLogger("org").setLevel(Level.ERROR)
-    Logger.getLogger("akka").setLevel(Level.ERROR)
-
     val checkpointDirectory = if (args.length >= 1) args(0)
     else getClass.getSimpleName
     val inputDirectory = if (args.length >= 2) args(1)

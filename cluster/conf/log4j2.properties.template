@@ -1,0 +1,232 @@
+#
+# Copyright (c) 2017-2022 TIBCO Software Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you
+# may not use this file except in compliance with the License. You
+# may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied. See the License for the specific language governing
+# permissions and limitations under the License. See accompanying
+# LICENSE file.
+#
+# Some parts taken from Spark's log4j2.properties having license below.
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+status = error
+dest = err
+name = PropertiesConfig
+
+rootLogger.level = info
+rootLogger.appenderRef.rolling.ref = RollingFile
+
+appender.rolling.type = RollingFile
+appender.rolling.name = RollingFile
+appender.rolling.fileName = snappydata.log
+appender.rolling.filePattern = snappydata.%d{yy-MM-dd}.%i.log.gz
+appender.rolling.append = true
+appender.rolling.policies.type = Policies
+appender.rolling.policies.size.type = SizeBasedTriggeringPolicy
+appender.rolling.policies.size.size = 100MB
+appender.rolling.strategy.type = DefaultRolloverStrategy
+appender.rolling.strategy.max = 100000
+appender.rolling.layout.type = PatternLayout
+appender.rolling.layout.pattern = %d{yy/MM/dd HH:mm:ss.SSS zzz} %t<tid=%T> %p %c{1}: %m%n
+
+# Appender for code dumps of WholeStageCodegenExec, CodeGenerator etc
+appender.code.type = RollingFile
+appender.code.name = Code
+appender.code.fileName = generatedcode.log
+appender.code.filePattern = generatedcode.%d{yy-MM-dd}.%i.log.gz
+appender.code.append = true
+appender.code.policies.type = Policies
+appender.code.policies.size.type = SizeBasedTriggeringPolicy
+appender.code.policies.size.size = 100MB
+appender.code.strategy.type = DefaultRolloverStrategy
+appender.code.strategy.max = 100000
+appender.code.layout.type = PatternLayout
+appender.code.layout.pattern = %d{yy/MM/dd HH:mm:ss.SSS zzz} %t<tid=%T> %p %c{1}: %m%n
+
+# Console appender
+appender.console.type = Console
+appender.console.name = STDOUT
+appender.console.target = SYSTEM_OUT
+appender.console.layout.type = PatternLayout
+appender.console.layout.pattern = %d{yy/MM/dd HH:mm:ss.SSS zzz} %t<tid=%T> %p %c{1}: %m%n
+
+# Set the default spark-shell/spark-sql log level to WARN. When running the
+# spark-shell/spark-sql, the log level for these classes is used to overwrite
+# the root logger's log level, so that the user can have different defaults
+# for the shell and regular Spark apps.
+logger.repl.name = org.apache.spark.repl.Main
+logger.repl.level = warn
+
+logger.thriftserver.name = org.apache.spark.sql.hive.thriftserver.SparkSQLCLIDriver
+logger.thriftserver.level = warn
+
+# Settings to quiet third party logs that are too verbose
+logger.jetty1.name = org.spark-project.jetty
+logger.jetty1.level = warn
+logger.jetty2.name = org.spark-project.jetty.util.component.AbstractLifeCycle
+logger.jetty2.level = error
+logger.jetty3.name = org.mortbay.jetty
+logger.jetty3.level = warn
+logger.jetty4.name = org.eclipse.jetty
+logger.jetty4.level = warn
+logger.replexprTyper.name = org.apache.spark.repl.SparkIMain$exprTyper
+logger.replexprTyper.level = info
+logger.replSparkILoopInterpreter.name = org.apache.spark.repl.SparkILoop$SparkILoopInterpreter
+logger.replSparkILoopInterpreter.level = info
+# Parquet related logging
+logger.parquet1.name = org.apache.parquet
+logger.parquet1.level = error
+logger.parquet2.name = parquet
+logger.parquet2.level = error
+logger.parquet_stats1.name = org.apache.parquet.CorruptStatistics
+logger.parquet_stats1.level = error
+logger.parquet_stats2.name = parquet.CorruptStatistics
+logger.parquet_stats2.level = error
+
+# SPARK-9183: Settings to avoid annoying messages when looking up
+# nonexistent UDFs in SparkSQL with Hive support
+logger.RetryingHMSHandler.name = org.apache.hadoop.hive.metastore.RetryingHMSHandler
+logger.RetryingHMSHandler.level = fatal
+logger.FunctionRegistry.name = org.apache.hadoop.hive.ql.exec.FunctionRegistry
+logger.FunctionRegistry.level = error
+
+# Some packages are noisy for no good reason.
+logger.parquet_recordreader.name = org.apache.parquet.hadoop.ParquetRecordReader
+logger.parquet_recordreader.additivity = false
+logger.parquet_recordreader.level = off
+
+logger.parquet_outputcommitter.name = org.apache.parquet.hadoop.ParquetOutputCommitter
+logger.parquet_outputcommitter.additivity = false
+logger.parquet_outputcommitter.level = off
+
+logger.hadoop_lazystruct.name = org.apache.hadoop.hive.serde2.lazy.LazyStruct
+logger.hadoop_lazystruct.additivity = false
+logger.hadoop_lazystruct.level = off
+
+logger.hive_log.name = hive.log
+logger.hive_log.additivity = false
+logger.hive_log.level = off
+
+logger.hive_metadata.name = hive.ql.metadata.Hive
+logger.hive_metadata.additivity = false
+logger.hive_metadata.level = off
+
+logger.parquet_recordreader2.name = parquet.hadoop.ParquetRecordReader
+logger.parquet_recordreader2.additivity = false
+logger.parquet_recordreader2.level = off
+
+logger.hive_rcfile.name = org.apache.hadoop.hive.ql.io.RCFile
+logger.hive_rcfile.additivity = false
+logger.hive_rcfile.level = error
+
+# Other Spark classes that generate unnecessary logs at INFO level
+logger.torrent.name = org.apache.spark.broadcast.TorrentBroadcast
+logger.torrent.level = warn
+logger.cleaner.name = org.apache.spark.ContextCleaner
+logger.cleaner.level = warn
+logger.tracker.name = org.apache.spark.MapOutputTracker
+logger.tracker.level = warn
+logger.tracker_master.name = org.apache.spark.MapOutputTrackerMaster
+logger.tracker_master.level = warn
+logger.tracker_master_ep.name = org.apache.spark.MapOutputTrackerMasterEndpoint
+logger.tracker_master_ep.level = warn
+logger.tracker_worker.name = org.apache.spark.MapOutputTrackerWorker
+logger.tracker_worker.level = warn
+logger.scheduler.name = org.apache.spark.scheduler.TaskSchedulerImpl
+logger.scheduler.level = warn
+logger.fetcher.name = org.apache.spark.storage.ShuffleBlockFetcherIterator
+logger.fetcher.level = warn
+logger.dag.name = org.apache.spark.scheduler.DAGScheduler
+logger.dag.level = warn
+logger.taskset.name = org.apache.spark.scheduler.TaskSetManager
+logger.taskset.level = warn
+logger.fair.name = org.apache.spark.scheduler.FairSchedulableBuilder
+logger.fair.level = warn
+logger.coarse.name = org.apache.spark.scheduler.cluster.CoarseGrainedSchedulerBackend$DriverEndpoint
+logger.coarse.level = warn
+logger.block_manager.name = org.apache.spark.storage.BlockManager
+logger.block_manager.level = warn
+logger.block_info.name = org.apache.spark.storage.BlockManagerInfo
+logger.block_info.level = warn
+logger.hive.name = org.apache.hadoop.hive
+logger.hive.level = warn
+logger.sources.name = org.apache.spark.sql.execution.datasources
+logger.sources.level = warn
+logger.snappy_scheduler.name = org.apache.spark.scheduler.SnappyTaskSchedulerImpl
+logger.snappy_scheduler.level = warn
+logger.memory.name = org.apache.spark.storage.memory.MemoryStore
+logger.memory.level = warn
+logger.compress.name = org.apache.hadoop.io.compress
+logger.compress.level = warn
+logger.supervisor.name = spark.jobserver.LocalContextSupervisorActor
+logger.supervisor.level = warn
+logger.jar_manager.name = spark.jobserver.JarManager
+logger.jar_manager.level = warn
+logger.datanucleus.name = org.datanucleus
+logger.datanucleus.level = error
+# Task logger created in SparkEnv
+logger.task.name = org.apache.spark.Task
+logger.task.level = warn
+logger.parser.name = org.apache.spark.sql.catalyst.parser.CatalystSqlParser
+logger.parser.level = warn
+# HiveExternalCatalog spits out a warning every time a non-hive table is persisted in meta-store
+logger.catalog.name = org.apache.spark.sql.hive.SnappyHiveExternalCatalog
+logger.catalog.level = error
+
+# Keep log-level of some classes as INFO even if root level is higher
+logger.lead.name = io.snappydata.impl.LeadImpl
+logger.lead.level = info
+logger.server.name = io.snappydata.impl.ServerImpl
+logger.server.level = info
+logger.locator.name = io.snappydata.impl.LocatorImpl
+logger.locator.level = info
+logger.http_listener.name = spray.can.server.HttpListener
+logger.http_listener.level = info
+
+# Note: all code generation classes that dump using "code" logger should
+# also be listed in Log4jConfigurator.initLog4j for removal in case top-level
+# file has not been set (e.g. common for JDBC clients) else an empty
+# generatedcode.log will be created.
+
+# for generated code of plans
+logger.codegen_exec.name = org.apache.spark.sql.execution.WholeStageCodegenExec
+logger.codegen_exec.additivity = false
+logger.codegen_exec.level = info
+logger.codegen_exec.appenderRef.code.ref = Code
+logger.codegen_rdd.name = org.apache.spark.sql.execution.WholeStageCodegenRDD
+logger.codegen_rdd.additivity = false
+logger.codegen_rdd.level = info
+logger.codegen_rdd.appenderRef.code.ref = Code
+# for all Spark generated code (including ad-hoc UnsafeProjection calls etc)
+logger.codegen.name = org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
+logger.codegen.additivity = false
+logger.codegen.level = warn
+logger.codegen.appenderRef.code.ref = Code
+# for SnappyData generated code used on store (ComplexTypeSerializer, JDBC inserts ...)
+logger.codegeneration.name = org.apache.spark.sql.store.CodeGeneration
+logger.codegeneration.additivity = false
+logger.codegeneration.level = info
+logger.codegeneration.appenderRef.code.ref = Code

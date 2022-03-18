@@ -19,7 +19,6 @@ package org.apache.spark.examples.snappydata
 import java.io.{File, PrintWriter}
 
 import com.typesafe.config.Config
-import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{SnappySession, SparkSession, SnappyJobValid, SnappyJobValidation, SnappyContext, SnappySQLJob}
@@ -138,10 +137,6 @@ object CollocatedJoinExample extends SnappySQLJob {
   }
 
   def main(args: Array[String]): Unit = {
-    // reducing the log level to minimize the messages on console
-    Logger.getLogger("org").setLevel(Level.ERROR)
-    Logger.getLogger("akka").setLevel(Level.ERROR)
-
     val dataDirAbsolutePath: String = createAndGetDataDir
 
     println("Creating a SnappySession")

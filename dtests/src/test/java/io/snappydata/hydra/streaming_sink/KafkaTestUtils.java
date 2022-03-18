@@ -189,9 +189,18 @@ public class KafkaTestUtils extends SnappyTest{
         //change port and logdir for servers
         modifyPropFile(myPropFile,"log.dirs=", brokerLogDirPath);
         modifyPropFile(myPropFile,"zookeeper.connect=",zookeeperHost+":"+ zookeeperPort);
+        modifyPropFile(myPropFile, "zookeeper.connection.timeout.ms=", "60000");
         modifyPropFile(myPropFile,"host.name=",hostname);
+        modifyPropFile(myPropFile, "advertised.host.name=", hostname);
         modifyPropFile(myPropFile,"port=",Integer.toString(initialBrokerPort));
         modifyPropFile(myPropFile,"broker.id=",Integer.toString(initialBrokerId++));
+        modifyPropFile(myPropFile, "group.initial.rebalance.delay.ms=", "10");
+        // Change the following settings as we have only 1 broker
+        modifyPropFile(myPropFile, "offsets.topic.num.partitions=", "1");
+        modifyPropFile(myPropFile, "offsets.topic.replication.factor=", "1");
+        modifyPropFile(myPropFile, "transaction.state.log.replication.factor=", "1");
+        modifyPropFile(myPropFile, "transaction.state.log.min.isr=", "1");
+
         Log.getLogWriter().info(broker + " properties files is  " + myPropFile);
         if(!hostname.equals("localhost"))
           command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostname;

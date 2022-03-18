@@ -1,66 +1,43 @@
 # Configuring Logging
 
-By default, log files for SnappyData members are created inside the working directory of the member. To change the log file directory, you can specify a property `-log-file` as the path of the directory, while starting a member. 
+By default, log files for SnappyData members are created inside the working directory of the member. To change the log file directory, you can specify a property `-log-file` as the path of the directory, while starting a member.
 
-SnappyData uses [log4j](http://logging.apache.org/log4j/) for logging.
-You can configure logging by copying the existing template file **log4j.properties.template** to the **conf** directory and renaming it to **log4j.properties**.
+SnappyData uses [log4j 2](http://logging.apache.org/log4j/) for logging.
+You can configure logging by copying the existing template file **log4j2.properties.template** to the **conf** directory and renaming it to **log4j2.properties**.
 
-For example, the following can be added to the **log4j.properties** file to change the logging level of the classes of Spark scheduler.
+For example, the following can be added to the **log4j2.properties** file to change the logging level of the classes of Spark scheduler.
 
 ```pre
-$ cat conf/log4j.properties 
-log4j.logger.org.apache.spark.scheduler=DEBUG
+$ cat conf/log4j2.properties
+logger.scheduler.name = org.apache.spark.scheduler.TaskSchedulerImpl
+logger.scheduler.level = debug
 ```
 
-The default template uses a custom layout (io.snappydata.log4j.PatternLayout) that adds a thread ID at the end of thread name in the logs for the `%t` pattern.
+The default template uses a layout that includes both the thread name and ID.
 
 For example, the default pattern:
 
 ```pre
-log4j.appender.file.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss.SSS zzz} %t %p %c{1}: %m%n
-``` 
+appender.rolling.layout.pattern = %d{yy/MM/dd HH:mm:ss.SSS zzz} %t<tid=%T> %p %c{1}: %m%n
+```
 
 produces
 
 ```pre
-17/11/07 16:42:05.115 IST serverConnector<tid=0xe> INFO snappystore: GemFire P2P Listener started on  tcp:///192.168.1.6:53116
+17/11/07 16:42:05.115 IST serverConnector<tid=9> INFO snappystore: GemFire P2P Listener started on  tcp:///192.168.1.6:53116
 ```
 
-This is the recommended PatternLayout to use for SnappyData logging. 
-
-When using a custom **log4j.properties**, and the mentioned layout cannot be used or when using AsyncAppender, then a custom appender `ThreadIdAppender` has been provided that can be inserted as the first appender to get the same output.
-
-### Examples:
-
-**When using the default PatternLayout in the log4j.properties file:**
-
-```pre
-log4j.rootCategory=INFO, file
-
-log4j.appender.file=org.apache.log4j.RollingFileAppender
-log4j.appender.file.layout=io.snappydata.log4j.PatternLayout
-```
-
-**When adding the custom appender**
-
-```pre
-log4j.rootCategory=INFO, threadId, file
-
-log4j.appender.threadId=io.snappydata.log4j.ThreadIdAppender
-
-log4j.appender.file=org.apache.log4j.RollingFileAppender
-log4j.appender.file.layout=org.apache.log4j.PatternLayout
-```
+This is the recommended pattern to use for SnappyData logging.
 
 ## Setting Log Level at Runtime
 
-The inbuilt procedure `set_log_level` can be used to set the log level of SnappyData classes at runtime. You must execute the procedure as a system user. 
+The inbuilt procedure `set_log_level` can be used to set the log level of SnappyData classes at runtime. You must execute the procedure as a system user.
 
-Following is the usage of the procedure: 
+Following is the usage of the procedure:
 ```pre
 call sys.set_log_level (loggerName, logLevel);
 ```
- 
+
 The `logLevel` can be a log4j level, that is, ALL, DEBUG, INFO, WARN, ERROR, FATAL, OFF, TRACE. `loggerName` can be a class name or a package name. If it is left empty, the root logger's level is set.
 
 For example:

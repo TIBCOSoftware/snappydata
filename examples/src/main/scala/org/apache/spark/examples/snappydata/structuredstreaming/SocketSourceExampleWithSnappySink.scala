@@ -18,8 +18,6 @@ package org.apache.spark.examples.snappydata.structuredstreaming
 
 import scala.reflect.io.Path
 
-import org.apache.log4j.{Level, Logger}
-
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.streaming.ProcessingTime
 import org.apache.spark.sql.{SnappySession, SparkSession}
@@ -46,10 +44,6 @@ import org.apache.spark.sql.{SnappySession, SparkSession}
 object SocketSourceExampleWithSnappySink extends Logging {
 
   def main(args: Array[String]) {
-    // reducing the log level to minimize the messages on console
-    Logger.getLogger("org").setLevel(Level.ERROR)
-    Logger.getLogger("akka").setLevel(Level.ERROR)
-
     println("Initializing SnappySession ... ")
     val checkpointDirectory = this.getClass.getSimpleName
     val spark: SparkSession = SparkSession

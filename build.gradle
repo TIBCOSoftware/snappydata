@@ -30,6 +30,7 @@ buildscript {
     classpath 'de.undercouch:gradle-download-task:3.4.3'
     classpath 'net.rdrei.android.buildtimetracker:gradle-plugin:0.11.+'
     classpath 'com.netflix.nebula:gradle-ospackage-plugin:5.2.+'
+    // classpath 'org.owasp:dependency-check-gradle:6.5.3'
   }
 }
 
@@ -37,6 +38,7 @@ apply plugin: 'wrapper'
 apply plugin: 'distribution'
 apply plugin: 'nebula.ospackage-base'
 apply plugin: "nebula.ospackage"
+// apply plugin: 'org.owasp.dependencycheck'
 
 // def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
 
@@ -56,10 +58,10 @@ allprojects {
 
   repositories {
     mavenCentral()
-    maven { url 'https://repo.hortonworks.com/content/repositories/releases/' }
-    maven { url "https://repo.spring.io/libs-release" }
-    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    maven { url 'https://packages.atlassian.com/maven-3rdparty' }
+    maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
     maven { url 'https://app.camunda.com/nexus/content/repositories/public' }
+    maven { url "https://repo.spring.io/libs-release" }
   }
 
   apply plugin: 'java'
@@ -70,7 +72,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.3.0.1'
+  version = '1.3.1'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -102,32 +104,31 @@ allprojects {
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.1.3'
-    snappySparkVersion = '2.1.3.1'
+    snappySparkVersion = '2.1.3.2'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     sparkCurrentVersion = '2.4.8'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
     sparkJobServerVersion = '0.6.2.12'
     snappySparkMetricsLibVersion = '2.0.0.1'
-    log4jVersion = '1.2.17'
     log4j2Version = '2.17.1'
-    slf4jVersion = '1.7.30'
+    slf4jVersion = '1.7.32'
     junitVersion = '4.12'
     mockitoVersion = '1.10.19'
     hadoopVersion = '3.2.0'
     awsSdkVersion = '1.11.375'
-    gcsHadoop2ConnectorVersion = 'hadoop2-2.0.0'
-    gcsHadoop3ConnectorVersion = 'hadoop3-2.0.0'
+    gcsHadoop3ConnectorVersion = 'hadoop3-2.1.2'
     sparkAvroVersion = '4.0.0'
     sparkXmlVersion = '0.4.1'
     scalatestVersion = '2.2.6'
     py4jVersion = '0.10.7'
-    jettyVersion = '9.2.26.v20180806'
+    jettyVersion = '9.4.44.v20210927'
     guavaVersion = '14.0.1'
-    fastutilVersion = '8.5.4'
+    fastutilVersion = '8.5.6'
     kryoVersion = '4.0.1'
     thriftVersion = '0.9.3'
-    jacksonVersion = '2.9.9'
-    hiveVersion = '1.21.2.3.1.2.1-1'
+    jacksonVersion = '2.13.1'
+    jacksonDatabindVersion = '2.13.1'
+    hiveVersion = '1.21.2.7.0.3.2-3'
     metricsVersion = '4.0.3'
     metrics2Version = '2.2.0'
     janinoVersion = '3.0.8'
@@ -770,6 +771,17 @@ subprojects {
       "org.apache.hadoop:hadoop-yarn-server-nodemanager:${hadoopVersion}",
       "org.apache.hadoop:hadoop-yarn-server-web-proxy:${hadoopVersion}"
     exclude(group: 'org.mortbay.jetty', module: 'servlet-api')
+  }
+  def projectName = it.name
+  if (projectName != 'gemfire-shared') {
+    configurations.all {
+      if (projectName != 'snappy-core_' + scalaBinaryVersion ||
+          it.name == 'compileOnly') {
+        exclude(group: 'log4j', module: 'log4j')
+        exclude(group: 'log4j', module: 'apache-log4j-extras')
+        exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
+      }
+    }
   }
   /*
   configurations.testRuntime {

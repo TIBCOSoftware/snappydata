@@ -18,36 +18,31 @@
 package org.apache.spark.examples.snappydata
 
 import java.io.File
-import java.lang.{Integer => JInt}
 import java.net.InetSocketAddress
-import java.util.concurrent.TimeUnit
-import java.util.{Properties, Map => JMap}
+import java.util.Properties
+import java.util.concurrent.{TimeUnit, TimeoutException}
+
+import scala.annotation.tailrec
+import scala.language.postfixOps
+import scala.util.Random
+import scala.util.control.NonFatal
 
 import kafka.admin.AdminUtils
 import kafka.api.Request
 import kafka.server.{KafkaConfig, KafkaServer}
 import kafka.utils.ZkUtils
-import org.apache.kafka.clients.consumer.KafkaConsumer
 import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerRecord, RecordMetadata}
-import org.apache.kafka.common.TopicPartition
-import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
-import org.apache.log4j.{Level, Logger}
+import org.apache.kafka.common.network.ListenerName
+import org.apache.kafka.common.serialization.StringSerializer
+import org.apache.zookeeper.server.{NIOServerCnxnFactory, ZooKeeperServer}
+
 import org.apache.spark.SparkConf
 import org.apache.spark.internal.Logging
 import org.apache.spark.jdbc.{ConnectionConfBuilder, ConnectionUtil}
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamToRowsConverter}
 import org.apache.spark.sql.{Row, SparkSession}
-import org.apache.spark.streaming.{Seconds, SnappyStreamingContext}
+import org.apache.spark.streaming.{Seconds, SnappyStreamingContext, Time}
 import org.apache.spark.util.Utils
-import org.apache.zookeeper.server.{NIOServerCnxnFactory, ZooKeeperServer}
-import org.json4s.NoTypeHints
-import org.json4s.jackson.Serialization
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable.HashMap
-import scala.language.postfixOps
-import scala.util.Random
-import scala.util.control.NonFatal
 
 /**
   * An example showing usage of streaming with SnappyData
@@ -76,10 +71,6 @@ import scala.util.control.NonFatal
 object StreamingExample {
 
   def main(args: Array[String]) {
-    // reducing the log level to minimize the messages on console
-    Logger.getLogger("org").setLevel(Level.ERROR)
-    Logger.getLogger("akka").setLevel(Level.ERROR)
-
     val dataDirAbsolutePath = createAndGetDataDir
 
     println("Initializing a SnappyStreamingContext")
@@ -309,7 +300,7 @@ class EmbeddedKafkaUtils extends Logging {
       brokerConf = new KafkaConfig(brokerConfiguration, doLog = false)
       server = new KafkaServer(brokerConf)
       server.startup()
-      brokerPort = server.boundPort()
+      brokerPort = server.boundPort(new ListenerName("PLAINTEXT"))
       (server, brokerPort)
     }, new SparkConf(), "KafkaBroker")
 
@@ -358,7 +349,10 @@ class EmbeddedKafkaUtils extends Logging {
         AdminUtils.createTopic(zkUtils, topic, partitions, 1)
         created = true
       } catch {
-        case e: kafka.common.TopicExistsException if overwrite => // deleteTopic(topic)
+        // Workaround fact that TopicExistsException is in kafka.common in 0.10.0 and
+        // org.apache.kafka.common.errors in 0.10.1 (!)
+        case e: Exception if (e.getClass.getSimpleName == "TopicExistsException") && overwrite =>
+          // deleteTopic(topic)
       }
     }
     // wait until metadata is propagated
@@ -411,9 +405,17 @@ class EmbeddedKafkaUtils extends Logging {
     props.put("port", brokerPort.toString)
     props.put("log.dir", Utils.createTempDir().getAbsolutePath)
     props.put("zookeeper.connect", zkAddress)
+    props.put("zookeeper.connection.timeout.ms", "60000")
     props.put("log.flush.interval.messages", "1")
     props.put("replica.socket.timeout.ms", "1500")
     props.put("delete.topic.enable", "true")
+    props.put("group.initial.rebalance.delay.ms", "10")
+
+    // Change the following settings as we have only 1 broker
+    props.put("offsets.topic.num.partitions", "1")
+    props.put("offsets.topic.replication.factor", "1")
+    props.put("transaction.state.log.replication.factor", "1")
+    props.put("transaction.state.log.min.isr", "1")
     props
   }
 
@@ -427,17 +429,50 @@ class EmbeddedKafkaUtils extends Logging {
     props
   }
 
-  private def waitUntilMetadataIsPropagated(topic: String, partition: Int): Unit = {
-    def isPropagated = server.apis.metadataCache.getPartitionInfo(topic, partition) match {
-      case Some(partitionState) =>
-        val leaderAndInSyncReplicas = partitionState.leaderIsrAndControllerEpoch.leaderAndIsr
+  // A simplified version of scalatest eventually, rewritten here to avoid adding extra test
+  // dependency
+  def eventually[T](timeout: Time, interval: Time)(func: => T): T = {
+    def makeAttempt(): Either[Throwable, T] = {
+      try {
+        Right(func)
+      } catch {
+        case e if NonFatal(e) => Left(e)
+      }
+    }
 
+    val startTime = System.currentTimeMillis()
+    @tailrec
+    def tryAgain(attempt: Int): T = {
+      makeAttempt() match {
+        case Right(result) => result
+        case Left(e) =>
+          val duration = System.currentTimeMillis() - startTime
+          if (duration < timeout.milliseconds) {
+            Thread.sleep(interval.milliseconds)
+          } else {
+            throw new TimeoutException(e.getMessage)
+          }
+
+          tryAgain(attempt + 1)
+      }
+    }
+
+    tryAgain(1)
+  }
+
+  private def waitUntilMetadataIsPropagated(topic: String, partition: Int): Unit = {
+    def isPropagated = server.dataPlaneRequestProcessor.metadataCache
+        .getPartitionInfo(topic, partition) match {
+      case Some(partitionState) =>
         zkUtils.getLeaderForPartition(topic, partition).isDefined &&
-          Request.isValidBrokerId(leaderAndInSyncReplicas.leader) &&
-          leaderAndInSyncReplicas.isr.size >= 1
+            Request.isValidBrokerId(partitionState.basePartitionState.leader) &&
+            !partitionState.basePartitionState.replicas.isEmpty
 
       case _ =>
         false
+    }
+    eventually(Time(10000), Time(100)) {
+      assert(isPropagated, s"Partition [$topic, $partition] metadata not propagated after timeout")
     }
   }
 

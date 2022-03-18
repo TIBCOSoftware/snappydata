@@ -30,12 +30,6 @@ dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
 
-  compile 'log4j:log4j:' + log4jVersion
-  compile 'org.slf4j:slf4j-api:' + slf4jVersion
-  compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
-  compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
-  compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
-
   compile group: 'org.codehaus.janino', name: 'janino', version: janinoVersion
   compile("org.apache.thrift:libthrift:${thriftVersion}") {
     exclude(group: 'org.slf4j', module: 'slf4j-api')
@@ -59,6 +53,7 @@ dependencies {
     testCompile project(path: ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion, configuration: 'testOutput')
     testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion, configuration: 'testOutput')
     testCompile project(path: ':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion, configuration: 'testOutput')
+    testCompile project(path: ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion, configuration: 'testOutput')
   } else {
     compile(group: 'com.fasterxml.jackson.module', name: 'jackson-module-scala_' + scalaBinaryVersion, version: jacksonVersion) {
       exclude(group: 'org.scala-lang', module: 'scala-library')
@@ -86,6 +81,7 @@ dependencies {
       exclude(group: 'org.slf4j', module: 'slf4j-api')
       exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
       exclude(group: 'log4j', module: 'log4j')
+      exclude(group: 'log4j', module: 'apache-log4j-extras')
       exclude(group: 'commons-logging', module: 'commons-logging')
       exclude(group: 'org.codehaus.groovy', module: 'groovy-all')
       exclude(group: 'jline', module: 'jline')
@@ -104,6 +100,7 @@ dependencies {
       exclude(group: 'org.slf4j', module: 'slf4j-api')
       exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
       exclude(group: 'log4j', module: 'log4j')
+      exclude(group: 'log4j', module: 'apache-log4j-extras')
       exclude(group: 'org.apache.derby', module: 'derby')
     }
 
@@ -133,7 +130,6 @@ dependencies {
     testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}:tests")
     testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
     testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests")
-    testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
@@ -265,6 +261,7 @@ shadowJar {
 
   mergeServiceFiles()
   exclude 'log4j.properties'
+  exclude 'log4j2.properties'
 
   if (rootProject.hasProperty('enablePublish')) {
     createdBy = vendorName
