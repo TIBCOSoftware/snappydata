@@ -49,14 +49,40 @@
 
 /* @import url(https://fonts.googleapis.com/css?family=Roboto+Slab:300,400,400i,700); */
 
-.md-main html {
-    font-size: 15px;
+/*
+ * Reduce overall font-size and let all other fonts scale proportionately
+ */
+
+/*
+ * The base sizes are all blown up in material theme
+ *  see https://github.com/squidfunk/mkdocs-material/blob/master/src/assets/stylesheets/main/layout/_base.scss
+ */
+/* changing overall font reduces the width of main content even further
+html {
+    font-size: 18.75px;
 }
+@media screen and (min-width:110em) { html {
+    font-size: 20.625px;
+} }
+@media screen and (min-width:125em) { html {
+    font-size: 22.5px;
+} }
+*/
+
+/* Increase the size of TOC fonts from 0.7rem */
+.md-nav {
+  font-size: 0.75rem;
+}
+
 /* Formatting for body text */
 .md-main body {
     font-size: 15px;
 }
 .md-main p {
+    font-size: 15px;
+}
+.md-typeset pre,
+.md-typeset kbd {
     font-size: 15px;
 }
 .md-main ul {
@@ -134,16 +160,18 @@
     overflow-x: auto
 }
 
-/* Formatting for inline code */
+/* Formatting for code/pre-formatted text */
 .md-typeset code {
     white-space: pre-wrap;
     word-wrap: break-word;
     padding: 2px 5px;
+    font-size: 0.9em;
 }
 
 .md-typeset .admonition,
 .md-typeset details {
     background-color: #eee;
+    font-size: 0.75rem;
 }
 
 /* Change color background of `monospace` elements used in markdown pages */
@@ -164,37 +192,6 @@ pre.small-text {
 .custom-search-form {
     z-index: 0;
 }
-
-/*Formatting for Note
-note-sub {
-    background-color: #e8f7ff;
-    color: 6ab0de;
-    margin: 10px 0px;
-    border: #e8f7ff 1px solid;
-    border-radius: 5px;
-    word-wrap: normal;
-    display: block;
-    font-size: 15px;
-    font-style: italic;
-    list-style-type: square;
-}
-
-{
-  background-color: #e8f7ff;
-  color: green;
-  background-image: url(Images/info.png);
-  margin: 10px 0px;
-  padding: 5px 5px 10px 50px;
-  background-repeat: no-repeat;
-  background-position: 10px center;
-  border: #e8f7ff 1px solid;
-  border-radius: 5px;
-  word-wrap: normal;
-  display: block;
-  font-size: 15px;
-  font-style: italic;
-}
-*/
 
 /* Formatting for Glossary Term */
 
@@ -286,6 +283,9 @@ table {
     width: auto;
     color: black;
     /* font-size: 15px; */
+}
+.md-typeset table:not([class]) {
+    font-size: 0.7rem;
 }
 
 th {

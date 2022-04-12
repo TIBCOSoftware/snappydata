@@ -12,12 +12,13 @@ as part of a licensed subscription.
 
 The SnappyData team is pleased to announce the availability of version 1.3.0 of the platform
 in which all the platform's private modules have been made open-source apart from the streaming
-GemFire connector (which includes non-OSS Pivotal GemFire product jars, and hence cannot be open-sourced).
-These include Approximate Query Processing (AQP) and the JDBC connector repositories
+GemFire connector (which depends on non-OSS Pivotal GemFire product jars).
+These include [Approximate Query Processing (AQP)](https://github.com/TIBCOSoftware/snappy-aqp)
+and the [JDBC connector](https://github.com/TIBCOSoftware/snappy-connectors) repositories
 which also include the off-heap storage support for column tables and the security modules.
-In addition, the ODBC driver has also been made open-source. With this, the entire
-code base of the platform (apart from the GemFire connector) has been made
-open source and there are no longer separate Community and Enterprise editions.
+In addition, the [ODBC driver](https://github.com/TIBCOSoftware/snappy-odbc) has also been
+made open-source. With this, the entire code base of the platform (apart from the GemFire
+connector) has been made open source and there is no longer an Enterprise edition distributed by TIBCO.
 
 You can find details of the release artifacts towards the end of this page.
 
@@ -67,46 +68,47 @@ The following table summarizes the high-level features available in the SnappyDa
 
 SnappyData 1.3.0 release includes the following new features over the previous 1.2.0 release:
 
-* **Open sourcing of non-OSS components**</br>
+* **Open sourcing of non-OSS components**<br/>
 
-    All components except for the streaming GemFire connector are now OSS! This includes the Approximate Querying
-    Engine, off-heap storage for column tables, the streaming JDBC connector for CDC, security modules and the ODBC driver.
-    All new OSS modules are available under the Apache Source License v2.0 like the rest of the product.
-    Overall the new 1.3.0 OSS release is both more feature rich than the erstwhile 1.2.0 Enterprise product,
-    and more efficient.</br></br>
+    All components except for the streaming GemFire connector are now OSS! This includes the
+    [Approximate Querying Engine](https://github.com/TIBCOSoftware/snappy-aqp), off-heap storage for column tables,
+    the [streaming JDBC connector for CDC](https://github.com/TIBCOSoftware/snappy-connectors),
+    security modules and the ODBC driver. All new OSS modules are available under the Apache Source
+    License v2.0 like the rest of the product. Overall the new 1.3.0 OSS release is both more feature
+    rich than the erstwhile 1.2.0 Enterprise product, and more efficient.<br/><br/>
 
-* **Online compaction of column block data**</br>
+* **Online compaction of column block data**<br/>
 
     Automatic online compaction of column blocks that have seen significant percentage of deletes or updates.
     The compaction is triggered in one of the foreground threads performing delete or update operations
-    to avoid the "hidden" background operational costs of the platform. The ratio of data at which compaction
-    is triggered can be configured using two cluster level (or system) properties:</br>
+    thus avoiding any "hidden" background operational costs of the platform. The ratio of data at which compaction
+    is triggered can be configured using two cluster level (or system) properties:<br/>
 
-    * _snappydata.column.compactionRatio_: for the ratio of deletes to trigger compaction (default 0.1)
-    * _snappydata.column.updateCompactionRatio_: for the ratio of updates to trigger compaction (default 0.2)</br></br>
+    * _snappydata.column.compactionRatio_: the ratio of deletes that will trigger compaction (default 0.1)
+    * _snappydata.column.updateCompactionRatio_: the ratio of updates that will trigger compaction (default 0.2)<br/><br/>
 
-* **Transparent disk overflow of large query results**</br>
+* **Transparent disk overflow of large query results**<br/>
 
     Queries that return large results have been a problem with Spark and SnappyData alike due to lack
     of streaming of the final results to application layer resulting in large heap consumption on the driver.
     There are properties like _spark.driver.maxResultSize_ in Spark to altogether disallow large query results.
     SnappyData has had driver-side persistence of large results for JDBC/ODBC to reduce the memory pressure
     but even so fetching multi-GB results was not possible in most cases and would lead to OOME on driver or
-    the server that is servicing the JDBC/ODBC client.</br>
+    the server that is servicing the JDBC/ODBC client.<br/>
 
     This new feature adds disk overflow for large query results on the executors completely eliminating all
     memory problems for any size of results. It works when using the JDBC/ODBC driver and for the
     SnappySession.sql().toLocalIterator() API. Note that usage of any other Dataset APIs will result in
     creation of base Spark Dataset implementation that will not use disk overflow. A couple of
-    cluster level (or system) properties can be used to fine-tune the behaviour:</br>
+    cluster level (or system) properties can be used to fine-tune the behaviour:<br/>
 
-    * _spark.sql.maxMemoryResultSize_: maximum size of results from a JDBC/ODBC/SQL query in a partition
-      that will be held in memory beyond which the results will be written to disk, while the maximum
-      size of a single disk block is fixed to 8 times this value (default 4mb)
-    * _spark.sql.resultPersistenceTimeout_: maximum duration in seconds for which results overflowed to disk
-      are held on disk after which they are cleaned up (default 21600 i.e. 6 hours)</br></br>
+    * _spark.sql.maxMemoryResultSize_: Maximum size of results from a JDBC/ODBC/SQL query in a partition
+      that will be held in memory beyond which the results will be written to disk. A single disk file keeps
+      growing to a maximum size 8 times this value beyond which a new disk file will be created. (default 4mb)
+    * _spark.sql.resultPersistenceTimeout_: Maximum duration in seconds for which results overflowed to disk
+      are held on disk after which they are cleaned up. (default 21600 i.e. 6 hours)<br/><br/>
 
-* **Eager cleanup of broadcast join data blocks**</br>
+* **Eager cleanup of broadcast join data blocks**<br/>
 
     The Dataset broadcast join operator uses the Spark broadcast variables to collect required data
     from the executors (when it is within the _spark.sql.autoBroadcastJoinThreshold_ limit) that is cached
@@ -115,41 +117,42 @@ SnappyData 1.3.0 release includes the following new features over the previous 1
     broadcast joins, then this causes large GC pressure on the nodes even though BlockManager will
     overflow data to disk after a point. This is because broadcast join is for relatively small
     data so when those start accumulating for long period of time, they get promoted to old generation
-    which will lead to more frequent full GC cycles that need to do quite a bit of work. This is
-    especially the case for executors since the cleanup is driven by GC on the driver that may happen
-    far more infrequently than the executors, so the GC cycles may fail to clean up old data that
-    has not exceeded the execution cache limit.</br>
+    which will lead to more frequent full GC cycles that are expensive. This is especially the case for
+    executors since the cleanup is driven by GC on the driver that may happen far more infrequently than the
+    executors, so the GC cycles may fail to clean up old data that has not exceeded the execution cache limit.<br/>
 
     This new feature eagerly removes broadcast join data blocks at the end of query from the executors
-    (which can still fetch from driver on demand) and also from the driver for DML executions.</br></br>
+    (which can still fetch from driver on demand). For DML operations the broadcast blocks are removed from both
+    the driver and the executors.<br/><br/>
 
-* **Hadoop upgraded to version 3.2.0 and added ADLS gen 1/2 connectivity**</br>
+* **Hadoop upgraded to version 3.2.0 and added ADLS gen 1/2 connectivity**<br/>
 
-    Hadoop upgraded to 3.2.0 from 2.7.x to allow support for newer components like ADLS gen 1/2.
-    ADLS gen 2 jars added to the product by default to enable support for Azure Data Lake Storage (ADLS) out of the box.</br></br>
+    Apache Hadoop has been upgraded to 3.2.0 from 2.7.x to allow support for newer components like Azure Data Lake
+    Storage (ADLS) gen 2. The product now also ships with the ADLS gen 2 jars by default allowing support for ADLS
+    out of the box.<br/><br/>
 
-* **Enable LRUCOUNT eviction for column tables to enable creation of disk-only column tables**</br>
+* **Enable LRUCOUNT eviction for column tables to enable creation of disk-only column tables**<br/>
 
-    LRUCOUNT based eviction was disabled for column tables since the count would represent column blocks
+    LRUCOUNT based eviction was disabled for column tables because the count would represent column blocks
     per data node while the number of rows being cached in memory would be indeterminate. This is now
     enabled to allow for cases like disk-only tables with minimal memory caching. So now one can create
     a column table like:
 
-    ```
-        CREATE TABLE diskTable (...) using column options (eviction_by 'lrucount 1')
+    ``` sql
+    create table diskTable (...) using column options(eviction_by 'lrucount 1')
     ```
 
     This will keep only one column block in memory which will be few MB at maximum (in practise only
-    few KB since statistics blocks will be preferred for caching). Documentation covers the fact that
-    LRUCOUNT based eviction for column tables will lead to indeterminate memory usage.</br></br>
+    few KB since statistics blocks will be preferred for caching). Note that in the general case,
+    LRUCOUNT based eviction for column tables will lead to indeterminate memory usage.<br/><br/>
 
-* **Spark layer updated to v2.1.3**</br>
+* **Spark layer updated to v2.1.3 (from v2.1.1)**<br/>
 
-    SnappyData Smart Connector will continue to support Apache Spark 2.1.1 as well as later 2.1.x releases.</br></br>
+    SnappyData Smart Connector will continue to support Apache Spark 2.1.1 as well as later 2.1.x releases.<br/><br/>
 
-* **JDBC driver now supports Java 11**</br>
+* **JDBC driver now supports Java 11**<br/>
 
-    The JDBC driver is now compatible with Java 11 and higher till Java 16. It will continue to be
+    The JDBC driver is now compatible with Java 11 and higher. It will continue to be
     compatible with Java 8 like the rest of the product.
 
 Apart from the above new features, the interactive execution of Scala code using **EXEC SCALA** SQL
@@ -161,33 +164,34 @@ that was marked experimental in the previous release is now considered productio
 Apart from open sourcing of the source code, the SnappyData ODBC Driver has also seen many enhancements
 over the previous TIBCO ComputeDB™ ODBC Driver 1.2.0 release:
 
-* **Transparent reconnect to the cluster after failure**</br>
+* **Transparent reconnect to the cluster after failure**<br/>
 
     If a connection to the cluster fails for some reason (network or anything else), then the driver
     will attempt to reconnect to the cluster on the next operation, including trying failover on all the
     available locators and servers of the cluster. This is enabled by setting the new `AutoReconnect`
-    option to true (default is false).</br></br>
+    option to true (default is false).<br/><br/>
 
-* **Ability to read passwords securely from the system credential manager**</br>
+* **Ability to read passwords securely from the system credential manager**<br/>
 
     The new boolean `CredentialManager` option can be enabled to allow reading the login password as well
     as private SSL key password (for SSL mutual authentication) from the system credential manager.
     On Windows this uses the standard CredRead() API with type as CRED_TYPE_GENERIC so user must add
     the user name and password under Generic Windows Credentials, then provide the address key in the password fields.
-    On Mac OSX the "security" tool is used to look up the password for the given value as provided in the password field.
+    On Mac OSX the `security` tool is used to look up the password for the given value as provided in the password field.
     On Linux and other UNIXes, the `secret-tool` utility must be installed (`libsecret-tools` package on debian/ubuntu
     based systems, `libsecret` on most of the others) which is used to look up the password with the
-    password field split on the first ':' to obtain the attribute and its value.</br></br>
+    password field split on the first ':' to obtain the attribute and its value.<br/><br/>
 
-* **Set the default schema to use on the connection**</br>
+* **Set the default schema to use on the connection**<br/>
 
-    The default schema on a connection is normally set to the same name as the user. The new `DefaultSchema` option
-    can be used to change it to a different value which is equivalent to the `USE <SCHEMA>` SQL statement.</br></br>
+    The default schema on a connection is normally set to the name as the user, and the user is granted read/write
+    permissions to own schema by default. The new `DefaultSchema` option can be used to change it to a different
+    value which is equivalent to the `USE <SCHEMA>` SQL statement.<br/><br/>
 
-* **New API implementations for SQLCancel and SQLCancelHandle and fixes to many existing ones**</br>
+* **New API implementations for SQLCancel and SQLCancelHandle and fixes to many existing ones**<br/>
 
     The SQLCancel and SQLCancelHandle APIs are now implemented. A number of existing APIs including SQLPutData,
-    SQLBindParameter, SQLGetDiagRec, SQLGetDiagField have seen bug fixes while SQLGetInfo has been enhanced.</br></br>
+    SQLBindParameter, SQLGetDiagRec, SQLGetDiagField have seen bug fixes while SQLGetInfo has been enhanced.<br/><br/>
 
 * **Updated build dependencies Thrift, Boost, OpenSSL to new releases having many fixes**
 
@@ -261,7 +265,7 @@ SnappyData 1.3.0 resolves the following major issues:
   SparkR support for R 4.0.0+
 
 * [SNAP-3306](https://jirasnappydataio.atlassian.net/browse/SNAP-3306):
-  Row tables with altered schema having added columns causes failure in recovery mode:</br>
+  Row tables with altered schema having added columns causes failure in recovery mode:<br/>
   Allowing -1 as value for SchemaColumnId, for the case when the column is missing in the schema-version
   under consideration. This happens when it tries to read older rows, which doesn't have the new column. (PR#1529)
 
@@ -271,15 +275,15 @@ SnappyData 1.3.0 resolves the following major issues:
   now allows for switching to the required SQL type.
 
 * [SDENT-175](https://jirasnappydataio.atlassian.net/browse/SDENT-175):
-  Support for cancelling query via JDBC (PR#1539)
+  Support for cancelling query via JDBC. (PR#1539)
 
 * [SDENT-171](https://jirasnappydataio.atlassian.net/browse/SDENT-171):
   rand() alias in sub-select is not working. Fixed collectProjectsAndFilters for nondeterministic
   functions in PR#1541.
 
 * [SDENT-187](https://jirasnappydataio.atlassian.net/browse/SDENT-187):
-  Wrong results returned by queries against partitioned ROW table.
-  Fix by handling EqualTo(Attribute, Attribute) case (PR#1544).
+  Wrong results returned by queries against partitioned ROW table.<br/>
+  Fix by handling EqualTo(Attribute, Attribute) case. (PR#1544)<br/>
   Second set of cases fixed by handling comparisons other than EqualTo. (PR#1546)
 
 * [SDENT-199](https://jirasnappydataio.atlassian.net/browse/SDENT-199):
@@ -296,10 +300,10 @@ SnappyData 1.3.0 resolves the following major issues:
   Exception in extracting SQLState (when it's not set or improper) masks original problem.
 
 * [SDENT-195](https://jirasnappydataio.atlassian.net/browse/SDENT-195):
-  Fix NPE by adding a null check for Statement instance before getting its maxRows value.(Store PR#559)
+  Fix NPE by adding a null check for Statement instance before getting its maxRows value. (Store PR#559)
 
 * [SDENT-194](https://jirasnappydataio.atlassian.net/browse/SDENT-194):
-  Return the table type as just a `table` instead of `ROW TABLE` or `COLUMN TABLE`.(Store PR#560)
+  Return the table type as just a `table` instead of `ROW TABLE` or `COLUMN TABLE`. (Store PR#560)
 
 * [GITHUB-1559](https://github.com/TIBCOSoftware/snappydata/issues/1559):
   JDBC ResultSet metadata search is not case-insensitive.
@@ -330,13 +334,18 @@ SnappyData 1.3.0 resolves the following major issues:
 
 ## Known Issues
 
-The following among the known issues have been **fixed** over the previous 1.2.0 release:
+The following known issues in the previous 1.2.0 release have been **fixed**: [<s>SNAP-3306</s>](https://jirasnappydataio.atlassian.net/browse/SNAP-3306). Remaining are the same as in the **Known Issues** section of the [1.2.0 release notes](https://raw.githubusercontent.com/TIBCOSoftware/snappydata/community_docv1.2.0/docs/release_notes/TIB_compute-ce_1.2.0_relnotes.pdf#%5B%7B%22num%22%3A21%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C69%2C720%2C0%5D).
 
-| Key | Item | Description |
-| --- | ---- | ----------- |
-|[<s>SNAP-3306</s>](https://jirasnappydataio.atlassian.net/browse/SNAP-3306) [FIXED] | Row tables with altered schema having added columns causes failure in recovery mode. | A new column that is added in an existing table in normal mode fails to get restored in the recovery mode. |
+| Key | Item | Description | Workaround |
+| --- | ---- | ----------- | ---------- |
+| [SNAP-1422](https://jirasnappydataio.atlassian.net/browse/SNAP-1422) | Catalog in Smart connector inconsistent with servers. | Catalog in Smart connector is inconsistent with servers when a table is queried from spark-shell (or from an application that uses Smart connector mode) the table metadata is cached on the Smart connector side. If this table is dropped from the SnappyData Embedded cluster (by using snappy-shell, or JDBC application, or a Snappy job), the metadata on the Smart connector side stays cached even though the catalog has changed (table is dropped). In such cases, the user may see unexpected errors such as `org.apache.spark.sql.AnalysisException: Table "SNAPPYTABLE" already exists` in the Smart connector app side, for example, for DataFrameWriter.saveAsTable() API if the same table name that was dropped is used in saveAsTable(). | <ul><li>User may either create a new SnappySession in such scenarios</li><b>OR</b><li>Invalidate the cache on the Smart Connector mode. For example, by calling `snappy.sessionCatalog.invalidateAll()`.</li></ul> |
+| [SNAP-1153](https://jirasnappydataio.atlassian.net/browse/SNAP-1153) | Creating a temporary table with the same name as an existing table in any schema should not be allowed. | When creating a temporary table, the SnappyData catalog is not referred, which means, a temporary table with the same name as that of an existing SnappyData table can be created. Two tables with the same name lead to ambiguity during query execution and can either cause the query to fail or return the wrong results. | Ensure that you create temporary tables with a unique name. |
+| [SNAP-2910](https://jirasnappydataio.atlassian.net/browse/SNAP-2910) | DataFrame API behavior in Spark, Snappy. | Saving a Dataset using Spark's JDBC provider with SnappyData JDBC driver into SnappyData row/column tables fails. | Use row or column provider in the Embedded or Smart connector. For Spark versions not supported by Smart connector, use the [SnappyData JDBC Extension Connector](../programming_guide/spark_jdbc_connector.md). |
+| [SNAP-3148](https://jirasnappydataio.atlassian.net/browse/SNAP-3148) | Unicode escape character `\u` does not work for `insert into table values()` syntax. | Escape character `\u` is used to indicate that code following `\u` is for a Unicode character but this does not work with `insert into table values ()` syntax that is allowed for column and row tables. | As a workaround, instead of `insert into table values ('\u...', ...)` syntax, use `insert into table select '\u...', ...` syntax. User can also directly insert the Unicode character instead of using an escape sequence.<br/><br/> For example: `create table region (val string, description string) using column`<br/><br/> The following insert query will insert a string value `'\u7ca5'` instead of a Unicode char:<br/><br/> `insert into region values ('\u7ca5', 'unicode2')`<br/><br/> However, following insert statement will insert the appropriate Unicode char:<br/><br/>`insert into region select '\u7ca5', 'unicode2'`<br/><br/> The following query that directly inserts a Unicode char instead of using escape char also works:<br/><br/>`insert into region values ('粤','unicode2')` |
+| [SNAP-3146](https://jirasnappydataio.atlassian.net/browse/SNAP-3146) | UDF execution from Smart Connector. | A UDF, once executed from the smart connector side, continues to remain accessible from the same SnappySession on the Smart connector side, even if it is deleted from the embedded side. | Drop the UDF from the Smart connector side or use a new SnappySession. |
+| [SNAP-3293](https://jirasnappydataio.atlassian.net/browse/SNAP-3293) | Cache optimized plan for plan caching instead of the physical plan. | Currently, SnappyData caches the physical plan of the query for plan caching. Evaluating the physical plan may lead to an extra sampling job for some type of queries like view creations. Because of this, you may notice an extra job submitted while running the **CREATE VIEW** DDL if the view query contains some operations which require a sampling job. This may impact the performance of the **CREATE VIEW** query. | |
+| [SNAP-3298](https://jirasnappydataio.atlassian.net/browse/SNAP-3298) | Credentials set in Hadoop configuration in the Spark context can be set only once without restarting the cluster. | The credentials that are embedded in a FileSystem object. The object is cached in FileSystem cache. The cached object does not get refreshed when there is a configuration (credentials) change. Hence, it uses the initially set credentials even if you have set new credentials. | Run the `org.apache.hadoop.fs.FileSystem.closeAll()` command on `snappy-scala` shell or using `EXEC SCALA` SQL or in a job. This clears the cache. Ensure that there are no queries running on the cluster when you are executing the command. After this you can set the new credentials. |
 
-For the remaining known issues, see the **Known Issues** section of [1.2.0 release notes](https://raw.githubusercontent.com/TIBCOSoftware/snappydata/community_docv1.2.0/docs/release_notes/TIB_compute-ce_1.2.0_relnotes.pdf#%5B%7B%22num%22%3A21%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C69%2C720%2C0%5D).
 
 ## Description of Download Artifacts
 
@@ -350,4 +359,4 @@ The following table describes the download artifacts included in SnappyData 1.3.
 |snappydata-odbc\_1.3.0\_win64.zip | 32-bit and 64-bit ODBC client drivers for Windows 64-bit platform. |
 |[snappydata-zeppelin\_2.11-0.8.2.1.jar](https://github.com/TIBCOSoftware/snappy-zeppelin-interpreter/releases/download/v0.8.2.1/snappydata-zeppelin_2.11-0.8.2.1.jar) | The Zeppelin interpreter jar for SnappyData compatible with Apache Zeppelin 0.8.2. The standard jdbc interpreter is now recommended instead of this. See [How to Use Apache Zeppelin with SnappyData](../howto/use_apache_zeppelin_with_snappydata.md). |
 |snappydata-1.3.0.sha256 | The SHA256 checksums of the product artifacts. On Linux verify using `sha256sum --check snappydata-1.3.0.sha256`. |
-|snappydata-1.3.0.sha256.asc | PGP signature for snappydata-1.3.0.sha256 in ASCII format. Get the public key using `gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys A7994CE77A24E5511A68727D8CED09EB8184C4D6`. Then verify using `gpg --verify snappydata-1.3.0.sha256.asc` which should show the mentioned key in the verification with email as `build@snappydata.io`. |
+|snappydata-1.3.0.sha256.asc | PGP signature for snappydata-1.3.0.sha256 in ASCII format. Get the public key using `gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys A7994CE77A24E5511A68727D8CED09EB8184C4D6`. Then verify using `gpg --verify snappydata-1.3.0.sha256.asc` which should show a good signature using that key having `build@snappydata.io` as the email. |

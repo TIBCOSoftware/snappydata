@@ -1084,6 +1084,8 @@ task product(type: Zip) {
     copy {
       from "${projectDir}/docs"
       into "${snappyProductDir}/docs"
+      exclude 'apidocs/**'
+      exclude '.git*'
     }
 
     copy {
@@ -1557,7 +1559,7 @@ task docs(type: ScalaDoc) {
 
 task publishDocs(type: Exec) {
   dependsOn product, docs
-  //on linux
+  // on linux
   commandLine './publish-site.sh'
 }
 

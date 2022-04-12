@@ -1,5 +1,5 @@
 site_name: SnappyData™ 1.3.0
-site_url: https://github.com/TIBCOSoftware/snappydata
+site_url: https://tibcosoftware.github.io/snappydata
 site_description: Project documentation for SnappyData
 site_author: SnappyData Team
 
@@ -319,9 +319,8 @@ nav:
         - 'sys-disk-dir': 'reference/configuration_parameters/sys-disk-dir.md'
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
-    - 'API Reference': 'apidocsintro.md'
+    - 'Full API Reference Guides': 'apidocsintro.md'
     - 'ODBC Supported API': 'reference/API_Reference/odbc_supported_apis.md'
-    - 'SnappyData Spark extension API Reference Guide': 'reference/API_Reference/apireference_guide.md'
     - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver': 'setting_up_odbc_driver.md'
@@ -360,7 +359,7 @@ theme:
         accent: cyan
     font:
       text: 'Lato'
-      code: 'Fira Code'
+      code: 'Fira Mono'
     logo: Images/logo.png
     favicon: favicon.ico
     features:
@@ -397,6 +396,7 @@ markdown_extensions:
     - pymdownx.superfences
     - pymdownx.snippets
     - pymdownx.superfences
+    - attr_list
     - pymdownx.tabbed:
         alternate_style: true
     - toc:

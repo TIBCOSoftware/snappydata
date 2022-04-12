@@ -15,10 +15,10 @@
    Note that while these instructions work with any version of Zeppelin, the demo notebooks installed later
    have been created and tested only on Zeppelin 0.8.2 and may not work correctly on other versions.
 
-5. Install a couple of additional interpreters (angular is used by display panels of the sample notebooks installed later): </br>
-
-        ZEPPELIN_INTERPRETER_DEP_MVNREPO=https://repo1.maven.org/maven2 ./bin/install-interpreter.sh --name angular,jdbc
-
+5. Install a couple of additional interpreters (angular is used by display panels of the sample notebooks installed later):
+    ```
+    ZEPPELIN_INTERPRETER_DEP_MVNREPO=https://repo1.maven.org/maven2 ./bin/install-interpreter.sh --name angular,jdbc
+    ```
    If you are using the `all` binary package from zeppelin instead of the `netinst` package linked in the previous step,
    then you can skip this step.
 
@@ -54,7 +54,7 @@ Refer [here](concurrent_apache_zeppelin_access_to_secure_snappydata.md) for inst
    |default.url                  |jdbc:snappydata://localhost:1527 |Specify the JDBC URL for SnappyData cluster in the format `jdbc:snappydata://<locator_hostname>:1527` |
    |default.user                 |SQL user name or `app`           |If security is enabled in the SnappyData cluster, then the configured user name else `app` |
    |default.password             |SQL user password or `app`       |If security is enabled in the SnappyData cluster, then the password of the user else can be anything |
-   |zeppelin.splitQueries        |true                             |Each query in a paragraph is executed apart and returns the result |
+   |default.splitQueries         |true                             |Each query in a paragraph is executed apart and returns the result |
    |zeppelin.jdbc.concurrent.use |true                             |Specify the Zeppelin scheduler to be used. </br>Select **True** for Fair and **False** for FIFO |
    |zeppelin.jdbc.interpolation  |true                             |If interpolation of `ZeppelinContext` objects into the paragraph text is allowed |
 

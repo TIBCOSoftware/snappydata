@@ -11,6 +11,7 @@ vm_*
 dist/*
 build-artifacts/
 site/
+docs/apidocs/
 lib_managed/
 src_managed/
 project/boot/
