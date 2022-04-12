@@ -25,6 +25,7 @@ import scala.util.{Failure, Success, Try}
 
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
+import org.apache.commons.io.FileUtils
 
 import org.apache.spark.{SparkUtilsAccess, TestUtils}
 import org.apache.spark.TestUtils.JavaSourceFromString
@@ -35,6 +36,11 @@ case class OrderData(ref: Int, description: String, amount: Long)
 
 class UserDefinedFunctionsDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) {
+
+  override def afterClass(): Unit = {
+    super.afterClass()
+    FileUtils.deleteQuietly(SparkUtilsAccess.destDir)
+  }
 
   def testDriverHA(): Unit = {
     // Stop the lead node

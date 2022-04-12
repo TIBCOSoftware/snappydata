@@ -164,7 +164,10 @@ trait Logging {
   }
 
   private def initializeLogging(): Unit = {
-    ClientSharedUtils.initLog4j(null, null, "org/apache/spark/log4j${version}-defaults.properties")
+    if (ClientSharedUtils.isDefaultLoggingConfiguration) {
+      ClientSharedUtils.initLog4j(null, null,
+        "org/apache/spark/log4j${version}-defaults.properties")
+    }
     Logging.initialized = true
 
     // Force a call into slf4j to initialize it. Avoids this happening from multiple threads

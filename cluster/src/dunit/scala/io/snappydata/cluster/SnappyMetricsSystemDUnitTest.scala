@@ -83,7 +83,7 @@ class SnappyMetricsSystemDUnitTest(s: String)
   def collectJsonStats(): mutable.Map[String, AnyRef] = {
     val url = "http://localhost:9090/metrics/json/"
     // val json = scala.io.Source.fromURL(url).mkString
-    val json = s"curl $url".!!
+    val json = s"curl -s $url".!!
     val data = jsonStrToMap(json)
     val rs = data.-("counters", "meters", "histograms", "timers", "version")
     val map = scala.collection.mutable.LinkedHashMap[String, AnyRef]()

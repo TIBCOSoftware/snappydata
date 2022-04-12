@@ -22,12 +22,10 @@ import org.apache.spark.TestUtils.JavaSourceFromString
 
 object SparkUtilsAccess {
 
-  private val userDir = System.getProperty("user.dir")
-
   def destDir: File = {
-    val jarDir = new File(s"$userDir/jars")
+    val jarDir = new File("/tmp/snappy-test-jars")
     if (!jarDir.exists()) {
-      jarDir.mkdir()
+      jarDir.mkdirs()
     }
     jarDir
   }

@@ -134,10 +134,13 @@ class CassandraSnappyDUnitTest(val s: String)
     stopSnappyCluster()
 
     logInfo("Stopping cassandra cluster")
-    val p = Runtime.getRuntime.exec("pkill -f cassandra")
-    p.waitFor()
-    p.exitValue() == 0
-    logInfo("Cassandra cluster stopped successfully")
+    val cmd = "pkill -f cassandra"
+    val p = Runtime.getRuntime.exec(cmd)
+    val msg = p.waitFor() match {
+      case 0 => "Cassandra cluster stopped successfully"
+      case exitCode => s"Failed to stop cassandra cluster with '$cmd' (exitCode=$exitCode)"
+    }
+    logInfo(msg)
   }
 
   private def downloadURI(url: String): String = {

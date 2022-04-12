@@ -1152,10 +1152,16 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     checkSchemaPermission(schemaName, funcDefinition.identifier.funcName, defaultUser = null)
     createSchema(schemaName, ignoreIfExists = true)
 
+    val functionKey = funcDefinition.identifier.copy(database = Some(schemaName)).unquotedString
+    // function name cannot contain the DELIMITER used to separate values in the meta-data
+    if (functionKey.contains(ContextJarUtils.DELIMITER)) {
+      throw new AnalysisException(
+        s"Function name '$functionKey' cannot contain ${ContextJarUtils.DELIMITER}")
+    }
     super.createFunction(funcDefinition, ignoreIfExists)
 
     if (isEmbeddedMode) {
-      ContextJarUtils.addFunctionArtifacts(funcDefinition, schemaName)
+      ContextJarUtils.addFunctionArtifacts(funcDefinition, functionKey)
     }
   }
 

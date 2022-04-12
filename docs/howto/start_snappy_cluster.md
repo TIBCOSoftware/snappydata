@@ -91,7 +91,7 @@ You can use the cluster-util.sh utility to execute a given command on selected m
  	If specified, the script does not prompt for the confirmation to execute the command on each member node.
 
  *	`--copy-conf`</br>
-	This is a shortcut command. When you specify this comand, the  log4j.properties, snappy-env.sh and spark-env.sh configuration files are copied from the local machine to all the members. 	These files are copied only in the following conditions:
+	This is a shortcut command. When you specify this comand, the  log4j2.properties, snappy-env.sh and spark-env.sh configuration files are copied from the local machine to all the members. 	These files are copied only in the following conditions:
     *	If these are absent in the destination member
     *	If their content is different.
     	In latter case, a backup of the file is taken in **conf/backup** directory, on the destination member, before copy.

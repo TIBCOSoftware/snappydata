@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
 #
@@ -61,7 +61,7 @@ usage() {
   echo -e ' \t ''\t'"If specified, the script doesn't ask for confirmation for execution of the command on each member node."
   echo
   echo -e ' \t '"--copy-conf"
-  echo -e ' \t ''\t'"This is a shortcut command which when specified copies log4j.properties, snappy-env.sh and "
+  echo -e ' \t ''\t'"This is a shortcut command which when specified copies log4j2.properties, snappy-env.sh and "
   echo -e ' \t ''\t'"spark-env.sh configuration files from local machine to all the members."
   echo -e ' \t ''\t'"These files are copied only if a) these are absent in the destination member or b) their content is different. In "
   echo -e ' \t ''\t'"latter case, a backup of the file is taken in conf/backup directory on destination member, before copy."
@@ -165,9 +165,9 @@ START_ALL_TIMESTAMP="$(date +"%Y_%m_%d_%H_%M_%S")"
 
 function copyConf() { 
   for entry in "${SPARK_CONF_DIR}"/*; do
-    if [ -f "$entry" ];then
+    if [ -f "$entry" ]; then
       fileName=$(basename $entry)
-      if [[ $fileName == "log4j.properties" || $fileName == "snappy-env.sh" || $fileName == "spark-env.sh" ]]; then  	
+      if [[ $fileName == "log4j2.properties" || $fileName == "snappy-env.sh" || $fileName == "spark-env.sh" ]]; then
 	if ! ssh $node "test -e $entry"; then #"File does not exist."
 	  scp ${SPARK_CONF_DIR}/$fileName  $node:${SPARK_CONF_DIR}
 	else

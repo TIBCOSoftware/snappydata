@@ -21,7 +21,6 @@ antlr-runtime-3.4.jar				BSD License:	http://antlr.org/license.html
 antlr4-runtime-4.5.3.jar			BSD License:	http://antlr.org/license.html
 aopalliance-1.0.jar				Public Domain
 aopalliance-repackaged-2.5.0-b42.jar		CDDL/GPLv2+CE:	https://glassfish.java.net/nonav/public/CDDL+GPL_1_1.html
-apache-log4j-extras-1.2.17.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 arpack_combined_all-0.1.jar			BSD License:	http://www.opensource.org/licenses/bsd-license.php
 audience-annotations-0.5.0.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 avro-1.7.7.jar					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
@@ -58,7 +57,7 @@ commons-modeler-2.0.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.
 commons-net-3.6.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 commons-pool-1.6.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 commons-pool2-2.6.0.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-compress-lzf-1.0.4.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+compress-lzf-1.1.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 concurrentlinkedhashmap-lru-1.4.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 config-1.3.3.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 core-1.1.2.jar					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
@@ -73,33 +72,33 @@ derby-10.14.2.0.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 eigenbase-properties-1.1.5.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 fastutil-core-8.5.4.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 flyway-core-3.2.1.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-gemfire-core-1.6.2.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-gemfire-jgroups-1.6.2.1.jar			LGPL2.1:	http://www.opensource.org/licenses/lgpl-2.1.php
-gemfire-shared-1.6.2.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-gemfire-trove-1.6.2.1.jar			LGPL2.1:	http://www.opensource.org/licenses/lgpl-2.1.php
-gemfire-util-1.6.2.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+gemfire-core-1.6.7.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+gemfire-jgroups-1.6.7.jar			LGPL2.1:	http://www.opensource.org/licenses/lgpl-2.1.php
+gemfire-shared-1.6.7.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+gemfire-trove-1.6.7.jar				LGPL2.1:	http://www.opensource.org/licenses/lgpl-2.1.php
+gemfire-util-1.6.7.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 gson-2.2.4.jar					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 guava-14.0.1.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 guice-3.0.jar					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 guice-servlet-3.0.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 h2-1.3.176.jar					H2 License V1:	http://h2database.com/html/license.html
-hadoop-annotations-2.7.7.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-auth-2.7.7.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-aws-2.7.7.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-client-2.7.7.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-common-2.7.7.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-hdfs-2.7.7.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-mapreduce-client-app-2.7.7.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-mapreduce-client-common-2.7.7.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-mapreduce-client-core-2.7.7.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-mapreduce-client-jobclient-2.7.7.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-mapreduce-client-shuffle-2.7.7.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-yarn-api-2.7.7.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-yarn-client-2.7.7.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-yarn-common-2.7.7.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-yarn-server-common-2.7.7.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-yarn-server-nodemanager-2.7.7.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-hadoop-yarn-server-web-proxy-2.7.7.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-annotations-3.2.0.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-auth-3.2.0.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-aws-3.2.0.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-azure-3.2.0.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-azure-datalake-3.2.0.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-client-3.2.0.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-common-3.2.0.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-hdfs-client-3.2.0.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-mapreduce-client-common-3.2.0.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-mapreduce-client-core-3.2.0.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-mapreduce-client-jobclient-3.2.0.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-yarn-api-3.2.0.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-yarn-client-3.2.0.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-yarn-common-3.2.0.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-yarn-registry-3.2.0.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-yarn-server-common-3.2.0.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+hadoop-yarn-server-web-proxy-3.2.0.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 hammer.js					MIT:		http://www.opensource.org/licenses/mit-license.php
 hive-beeline-1.2.1.spark2.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 hive-cli-1.2.1.spark2.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
@@ -113,16 +112,18 @@ htrace-core-3.2.0-incubating.jar		Apache V2:	http://www.apache.org/licenses/LICE
 httpclient-4.5.6.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 httpcore-4.4.10.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 ivy-2.4.0.jar					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jackson-annotations-2.6.7.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jackson-core-2.6.7.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jackson-core-asl-1.9.13.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jackson-databind-2.6.7.2.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jackson-jaxrs-1.9.13.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jackson-mapper-asl-1.9.13.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jackson-module-paranamer-2.6.7.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jackson-module-scala_2.11-2.6.7.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jackson-xc-1.9.13.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-janino-3.0.11.jar				BSD:		https://raw.githubusercontent.com/janino-compiler/janino/master/LICENSE
+jackson-annotations-2.13.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jackson-core-2.13.1.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jackson-core-asl-1.9.14-atlassian-6.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jackson-databind-2.13.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jackson-dataformat-chor-2.13.1.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jackson-datatype-jdk8-2.13.1.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jackson-jaxrs-base-2.13.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jackson-jaxrs-json-provider-2.13.1.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jackson-mapper-asl-1.9.14-atlassian-6.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jackson-module-jaxb-annotations-2.13.1.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jackson-module-scala_2.11-2.13.1.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+janino-3.0.8.jar				BSD:		https://raw.githubusercontent.com/janino-compiler/janino/master/LICENSE
 java-xmlbuilder-1.1.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 javassist-3.22.0-CR2.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 javax.annotation-api-1.2.jar			CDDL/GPLv2+CE:	https://glassfish.java.net/public/CDDL+GPL_1_1.html
@@ -146,22 +147,22 @@ jersey-server-2.27.jar				CDDL/GPLv2+CE:	https://glassfish.java.net/public/CDDL+
 jets3t-0.9.4.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 jettison-1.1.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 jetty-6.1.26.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-client-9.2.26.v20180806.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-continuation-9.2.26.v20180806.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-http-9.2.26.v20180806.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-io-9.2.26.v20180806.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-jndi-9.2.26.v20180806.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-plus-9.2.26.v20180806.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-proxy-9.2.26.v20180806.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-security-9.2.26.v20180806.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-server-9.2.26.v20180806.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-servlet-9.2.26.v20180806.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-servlets-9.2.26.v20180806.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-client-9.4.43.v20210629.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-continuation-9.4.43.v20210629.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-http-9.4.43.v20210629.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-io-9.4.43.v20210629.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-jndi-9.4.43.v20210629.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-plus-9.4.43.v20210629.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-proxy-9.4.43.v20210629.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-security-9.4.43.v20210629.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-server-9.4.43.v20210629.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-servlet-9.4.43.v20210629.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-servlets-9.4.43.v20210629.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 jetty-sslengine-6.1.26.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 jetty-util-6.1.26.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-util-9.2.26.v20180806.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-webapp-9.2.26.v20180806.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-jetty-xml-9.2.26.v20180806.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-util-9.4.43.v20210629.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-webapp-9.4.43.v20210629.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+jetty-xml-9.4.43.v20210629.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 jline-2.14.6.jar				BSD:		http://www.opensource.org/licenses/bsd-license.php
 jna-4.5.2.jar					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 joda-convert-2.1.2.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
@@ -175,7 +176,8 @@ jsp-api-2.1.jar					CDDL/GPLv2+CE:	https://glassfish.java.net/public/CDDL+GPL_1_
 jsr305-3.0.2.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 jta-1.1.jar					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 jtransforms-2.4.0.jar				MPL:		http://www.mozilla.org/MPL/2.0/index.txt
-jul-to-slf4j-1.7.25.jar				MIT:		http://www.opensource.org/licenses/mit-license.php
+jcl-over-slf4j-1.7.32.jar			MIT:		http://www.opensource.org/licenses/mit-license.php
+jul-to-slf4j-1.7.32.jar				MIT:		http://www.opensource.org/licenses/mit-license.php
 kafka-clients-0.10.0.1.jar			Apache V2:	http://jpam.sourceforge.net/LICENSE.txt
 kafka_2.11-0.10.0.1.jar				Apache V2:	http://jpam.sourceforge.net/LICENSE.txt
 kryo-shaded-4.0.2.jar				BSD:		http://www.opensource.org/licenses/bsd-license.php
@@ -191,8 +193,11 @@ libnative64.dylib				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 libnative64.so					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 libthrift-0.9.3.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 liquidFillGauge.js				BSD:		http://choosealicense.com/licenses/bsd-2-clause
-log4j-1.2.17.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-lz4-java-1.5.0.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+log4j-1.2-api-2.17.2.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+log4j-api-2.17.2.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+log4j-core-2.17.2.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+log4j-slf4j-impl-2.17.2.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+lz4-java-1.8.0.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 machinist_2.11-0.6.1.jar			MIT:		http://opensource.org/licenses/MIT
 macro-compat_2.11-1.1.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 metrics-core-2.2.0.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
@@ -207,7 +212,7 @@ mx4j-3.0.2.jar					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 mx4j-remote-3.0.2.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 mx4j-tools-3.0.1.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 netty-3.10.6.Final.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-netty-all-4.0.56.Final.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+netty-all-4.1.73.Final.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 objenesis-3.0.1.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 opencsv-2.3.jar					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 org.osgi.core-6.0.0.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
@@ -238,41 +243,40 @@ scalap-2.11.8.jar				BSD-3:		http://www.scala-lang.org/license.html
 servlet-api-2.5-20081211.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 shapeless_2.11-2.3.3.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 shiro-core-1.2.6.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-slf4j-api-1.7.25.jar				MIT:		http://www.opensource.org/licenses/mit-license.php
-slf4j-log4j12-1.7.25.jar			MIT:		http://www.opensource.org/licenses/mit-license.php
+slf4j-api-1.7.32.jar				MIT:		http://www.opensource.org/licenses/mit-license.php
 slick_2.11-2.1.0.jar				BSD:		http://github.com/slick/slick/blob/master/LICENSE.txt
 snappy-0.2.jar					Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-java-1.1.7.2.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-catalyst_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-core_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-graphx_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-hive-thriftserver_2.11-2.1.1.4.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-hive_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-launcher_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-mllib-local_2.11-2.1.1.4.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-mllib_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-network-common_2.11-2.1.1.4.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-network-shuffle_2.11-2.1.1.4.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-repl_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-sketch_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-sql_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-sql-kafka-0.10_2.11-2.1.1.4.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-streaming-kafka-0.10_2.11-2.1.1.4.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-streaming_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-tags_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-unsafe_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappy-spark-yarn_2.11-2.1.1.4.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappydata-aqp_2.11-1.0.2.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappydata-cluster_2.11-1.0.2.1.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappydata-core_2.11-1.0.2.1.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappydata-jdbc_2.11-1.0.2.1-only.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappydata-launcher-1.0.2.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappydata-store-client-1.6.2.1.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappydata-store-core-1.6.2.1.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappydata-store-hibernate-1.6.2.1.jar		LGPL2.1:	http://www.gnu.org/licenses/lgpl-2.1.html
-snappydata-store-shared-1.6.2.1.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-snappydata-store-tools-1.6.2.1.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
-spark-jobserver_2.11-0.6.2.8.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-java-1.1.8.4.jar				Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-catalyst_2.11-2.1.3.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-core_2.11-2.1.3.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-graphx_2.11-2.1.3.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-hive-thriftserver_2.11-2.1.3.2.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-hive_2.11-2.1.3.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-launcher_2.11-2.1.3.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-mllib-local_2.11-2.1.3.2.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-mllib_2.11-2.1.3.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-network-common_2.11-2.1.3.2.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-network-shuffle_2.11-2.1.3.2.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-repl_2.11-2.1.3.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-sketch_2.11-2.1.3.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-sql_2.11-2.1.3.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-sql-kafka-0.10_2.11-2.1.3.2.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-streaming-kafka-0.10_2.11-2.1.3.2.jar	Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-streaming_2.11-2.1.3.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-tags_2.11-2.1.3.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-unsafe_2.11-2.1.3.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappy-spark-yarn_2.11-2.1.3.2.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-aqp_2.11-1.3.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-cluster_2.11-1.3.1.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-core_2.11-1.3.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-jdbc_2.11-1.3.1-only.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-launcher-1.3.1.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-store-client-1.6.7.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-store-core-1.6.7.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-store-hibernate-1.6.7.jar		LGPL2.1:	http://www.gnu.org/licenses/lgpl-2.1.html
+snappydata-store-shared-1.6.7.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+snappydata-store-tools-1.6.7.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
+spark-jobserver_2.11-0.6.2.12.jar		Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
 spire-macros_2.11-0.13.0.jar			MIT:		http://opensource.org/licenses/MIT
 spire_2.11-0.13.0.jar				MIT:		http://opensource.org/licenses/MIT
 spray-caching_2.11-1.3.4.jar			Apache V2:	http://www.apache.org/licenses/LICENSE-2.0
@@ -1008,7 +1012,7 @@ SECTION 1: BSD-STYLE, MIT-STYLE, OR SIMILAR STYLE LICENSES
 
 SECTION 2: Apache License, V2.0
 
-   >>> hadoop-common-2.7.7
+   >>> hadoop-common-3.2.0
    >>> swagger-ui-2.0.17
 
 
@@ -1178,7 +1182,7 @@ Copyright (C) 2006-2009 Dustin Sallings
 Apache License, V2.0 is applicable to the following component(s).
 
 
->>> hadoop-common-2.7.7
+>>> hadoop-common-3.2.0
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.

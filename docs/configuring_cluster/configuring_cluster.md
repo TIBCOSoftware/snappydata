@@ -272,15 +272,17 @@ export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 ## Logging
 
 Currently, log files for SnappyData components go inside the working directory. To change the log file directory, you can specify a property _-log-file_ as the path of the directory. </br>
-The logging levels can be modified by adding a *conf/log4j.properties* file in the product directory.
+The logging levels can be modified by adding a *conf/log4j2.properties* file in the product directory.
 
 ```pre
-$ cat conf/log4j.properties
-log4j.logger.org.apache.spark.scheduler.DAGScheduler=DEBUG
-log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
+$ cat conf/log4j2.properties
+logger.dag.name = org.apache.spark.scheduler.DAGScheduler
+logger.dag.level = debug
+logger.taskset.name = org.apache.spark.scheduler.TaskSetManager
+logger.taskset.level = debug
 ```
 !!! Note
-	For a set of applicable class names and default values see the file **conf/log4j.properties.template**, which can be used as a starting point. Consult the [log4j 1.2.x documentation](http://logging.apache.org/log4j/) for more details on the configuration file.
+	For a set of applicable class names and default values see the file **conf/log4j2.properties.template**, which can be used as a starting point. Consult the [log4j 2 documentation](http://logging.apache.org/log4j/) for more details on the configuration file.
 
 <a id="autoconfigur_offheap"></a>
 ## Auto-Configuring Off-Heap Memory Size

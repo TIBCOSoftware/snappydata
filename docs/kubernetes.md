@@ -353,12 +353,12 @@ bash-4.1# ls /data0/snappydata-server-0/*.*log
 
 <a id= loglevel> </a>
 ## Configuring the Log Level
-You can provide a **log4j.properties** file while installing the SnappyData Helm chart. A template file **log4j.properties.template** is provided in the `charts/snappydata/conf/` directory. This template file can be renamed and used to configure log level as shown in the following example:
+You can provide a **log4j2.properties** file while installing the SnappyData Helm chart. A template file **log4j2.properties.template** is provided in the `charts/snappydata/conf/` directory. This template file can be renamed and used to configure log level as shown in the following example:
 
 ```
 $ cd charts/snappydata/conf/
 # copy the template file and edit it to configure log level
-$ cp log4j.properties.template log4j.properties
+$ cp log4j2.properties.template log4j2.properties
 ```
 
 When SnappyData chart is installed, the **log4.properties** file  will be used to configure the log level.

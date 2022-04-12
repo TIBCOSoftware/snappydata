@@ -32,6 +32,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql.internal.ContextJarUtils
+import org.apache.spark.sql.internal.ContextJarUtils.droppedFunctionsKey
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
 import org.apache.spark.{Logging, SparkConf, SparkEnv, SparkFiles}
 
@@ -89,7 +90,7 @@ class SnappyExecutor(
         val appDependencies = appNameAndJars.drop(2).toSeq
         var urls = Seq.empty[URL]
         // Fetch urls only if appName is not in dropped functions list
-        if (!ContextJarUtils.checkItemExists(ContextJarUtils.droppedFunctionsKey, appName)) {
+        if (!ContextJarUtils.checkItemExists(droppedFunctionsKey, appName, droppedFunctionsKey)) {
           logInfo(s"Creating ClassLoader for $appName" +
               s" with dependencies $appDependencies")
           val includeInGlobalCmdRegion =
@@ -108,8 +109,8 @@ class SnappyExecutor(
             // is not yet dropped.
             if (firstHyphen > -1) {
               val udfName = localName.substring(0, firstHyphen)
-              fetch = udfName.equalsIgnoreCase(appName) ||
-                  !ContextJarUtils.checkItemExists(ContextJarUtils.droppedFunctionsKey, udfName)
+              fetch = udfName.equalsIgnoreCase(appName) || !ContextJarUtils.checkItemExists(
+                droppedFunctionsKey, udfName, droppedFunctionsKey)
             }
             if (fetch && !name.equalsIgnoreCase(io.snappydata.Constant.SNAPPY_JOB_URL)) {
               logInfo(s"Fetching file $name for App[$appName]")
@@ -174,6 +175,9 @@ class SnappyExecutor(
     def setUserClassPathFirst(userClassPathFirst: Boolean): Unit = {
       this.userClasspathFirst = userClassPathFirst
     }
+
+    override def toString: String =
+      s"ClassLoaderKey[appName=$appName, appTime=$appTime, isReplPath=$isReplPath]"
   }
 
   override def updateDependencies(newFiles: mutable.HashMap[String, Long],
@@ -281,7 +285,6 @@ class SnappyExecutor(
 class SnappyMutableURLClassLoader(urls: Array[URL],
     parent: ClassLoader)
     extends MutableURLClassLoader(urls, parent) with Logging {
-
 
   override def loadClass(name: String, resolve: Boolean): Class[_] = {
     loadJar(() => super.loadClass(name, resolve)).

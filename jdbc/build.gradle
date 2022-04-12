@@ -88,7 +88,9 @@ shadowJar {
   exclude 'log4j.properties'
   exclude 'log4j2.properties'
   exclude 'console-log4j.properties'
+  exclude 'console-log4j2.properties'
   exclude 'store-log4j.properties'
+  exclude 'store-log4j2.properties'
   exclude 'io/snappydata/log4j/**'
   exclude '**/Log4j1Configurator*'
 

@@ -195,6 +195,7 @@ class QuickLauncher extends LauncherBase {
     if (logFile == null || logFile.isEmpty()) {
       logFile = this.defaultLogFileName;
     }
+    this.startLogFileName = "start_" + logFile;
     options.put(LOG_FILE, "-" + LOG_FILE + '=' + logFile);
 
     // add the command options
@@ -203,7 +204,6 @@ class QuickLauncher extends LauncherBase {
     }
 
     // finally launch the main process
-    assert startLogFileName != null;
     assert pidFileName != null;
     final Path startLogFile = this.workingDir.resolve(startLogFileName);
     final Path pidFile = this.workingDir.resolve(pidFileName);

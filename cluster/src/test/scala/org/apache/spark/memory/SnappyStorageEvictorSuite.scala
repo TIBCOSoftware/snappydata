@@ -75,9 +75,11 @@ class SnappyStorageEvictorSuite extends MemoryFunSuite {
     assert(SparkEnv.get.memoryManager.storageMemoryUsed == 0)
     val row = Row(1, 1, 1)
     snSession.insert("t1", row)
+    assert(snSession.table("t1").count() === 1)
     val afterInsertSize = SparkEnv.get.memoryManager.storageMemoryUsed
     assert( afterInsertSize > 0) // borrowed from execution memory
     snSession.delete("t1", "col1=1")
+    assert(snSession.table("t1").count() === 0)
     val afterDeleteSize = SparkEnv.get.memoryManager.storageMemoryUsed
     assert(afterDeleteSize < afterInsertSize)
     snSession.dropTable("t1")

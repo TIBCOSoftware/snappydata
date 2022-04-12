@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.util.matching.Regex
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.SnappyExternalCatalog
@@ -46,11 +47,11 @@ import org.apache.spark.sql.{AnalysisException, SnappyContext}
   *
   */
 object ContextJarUtils extends Logging {
-  val JAR_PATH = "snappy-jars"
-  private val driverJars = new ConcurrentHashMap[String, URLClassLoader]().asScala
-  val functionKeyPrefix = "__FUNC__"
-  val droppedFunctionsKey = functionKeyPrefix + "DROPPED__"
-  val DELIMITER = ","
+  final val JAR_PATH: String = "snappy-jars"
+  private final val driverJars = new ConcurrentHashMap[String, URLClassLoader]().asScala
+  final val functionKeyPrefix: String = "__FUNC__"
+  final val droppedFunctionsKey: String = functionKeyPrefix + "DROPPED__"
+  final val DELIMITER: String = ","
 
   def addDriverJar(key: String, classLoader: URLClassLoader): Option[URLClassLoader] = {
     driverJars.putIfAbsent(key, classLoader)
@@ -58,10 +59,10 @@ object ContextJarUtils extends Logging {
 
   def getDriverJar(key: String): Option[URLClassLoader] = driverJars.get(key)
 
-  def removeDriverJar(key: String) : Unit = driverJars.remove(key)
+  def removeDriverJar(key: String): Unit = driverJars.remove(key)
 
-  def getDriverJarURLs(): Array[URL] = {
-    var urls = new mutable.HashSet[URL]()
+  def getDriverJarURLs: Array[URL] = {
+    val urls = new mutable.HashSet[URL]()
     driverJars.foreach(_._2.getURLs.foreach(urls += _))
     urls.toArray
   }
@@ -77,7 +78,7 @@ object ContextJarUtils extends Logging {
   def fetchFile(prefix: String, path: String): URL = {
     val callbacks = ToolsCallbackInit.toolsCallback
     val localName = path.split("/").last
-    val changedFileName = s"${prefix}-${localName}"
+    val changedFileName = s"$prefix-$localName"
     logInfo(s"Fetching jar $path to driver local directory $jarDir")
     val changedFile = new File(jarDir, changedFileName)
     if (!changedFile.exists()) {
@@ -90,13 +91,13 @@ object ContextJarUtils extends Logging {
     val callbacks = ToolsCallbackInit.toolsCallback
     if (callbacks != null) {
       val localName = path.split("/").last
-      val changedFileName = s"${prefix}-${localName}"
+      val changedFileName = s"$prefix-$localName"
       val jarFile = new File(jarDir, changedFileName)
 
       try {
         if (isEmbedded) {
           // Add to the list in (__FUNC__DROPPED__, dropped-udf-list)
-          addToTheListInCmdRegion(droppedFunctionsKey, prefix + DELIMITER, droppedFunctionsKey)
+          addToTheListInCmdRegion(droppedFunctionsKey, prefix, droppedFunctionsKey)
         }
         if (jarFile.exists()) {
           jarFile.delete()
@@ -120,7 +121,7 @@ object ContextJarUtils extends Logging {
     try {
       val catalogFunction = externalCatalog.getFunction(schemaName, identifier.funcName)
       catalogFunction.resources.foreach { r =>
-        deleteFile(catalogFunction.identifier.toString(), r.uri, isEmbeddedMode)
+        deleteFile(catalogFunction.identifier.unquotedString, r.uri, isEmbeddedMode)
       }
     } catch {
       case e: AnalysisException =>
@@ -135,13 +136,12 @@ object ContextJarUtils extends Logging {
     }
   }
 
-  def addFunctionArtifacts(funcDefinition: CatalogFunction, schemaName: String): Unit = {
-    val k = funcDefinition.identifier.copy(database = Some(schemaName)).toString
+  def addFunctionArtifacts(funcDefinition: CatalogFunction, key: String): Unit = {
     // resources has just one jar
     val jarPath = if (funcDefinition.resources.isEmpty) "" else funcDefinition.resources.head.uri
-    Misc.getMemStore.getMetadataCmdRgn.put(ContextJarUtils.functionKeyPrefix + k, jarPath)
+    Misc.getMemStore.getMetadataCmdRgn.put(functionKeyPrefix + key, jarPath)
     // Remove from the list in (__FUNC__DROPPED__, dropped-udf-list)
-    removeFromTheListInCmdRegion(ContextJarUtils.droppedFunctionsKey, k + ContextJarUtils.DELIMITER)
+    removeFromTheListInCmdRegion(droppedFunctionsKey, key, droppedFunctionsKey)
   }
 
   private def sparkContext = SnappyContext.globalSparkContext
@@ -152,40 +152,50 @@ object ContextJarUtils extends Logging {
     jarDirectory
   }
 
+  private def regexForItemInTheList(item: String, head: String): Regex = {
+    val pattern = s"^$head(.*$DELIMITER)?($item$DELIMITER)(.*)$$"
+    pattern.r
+  }
+
   def addToTheListInCmdRegion(k: String, item: String, head: String): Unit = {
     val r = Misc.getMemStore.getMetadataCmdRgn
-    var old1: String = null
-    var old2: AnyRef = null
+    var replaced = false
+    val findItemRegex = regexForItemInTheList(item, head)
     do {
-      val oldObj = r.get(k)
-      old1 = if ( oldObj != null ) oldObj.asInstanceOf[String] else null
-      val newValue = if (old1 != null) old1 + item else head + item
-      old2 = r.put(k, newValue)
-    } while (old1 != old2)
-  }
-
-  def removeFromTheListInCmdRegion(k: String, item: String): Unit = {
-    val r = Misc.getMemStore.getMetadataCmdRgn
-    var old1: String = null
-    var old2: AnyRef = null
-    do {
-      val oldObj = r.get(k)
-      if (oldObj != null) {
-        old1 = oldObj.asInstanceOf[String]
-        val newValue = old1.replace(item, "")
-        old2 = r.put(k, newValue)
+      replaced = r.get(k) match {
+        // An older put may have already succeeded but another thread may have changed
+        // the value, so first check if item is already present.
+        // NOTE: not using region.replace(k, old, new) because it doesn't work correctly
+        // from a data node though works from accessor node.
+        case oldValue: String => findItemRegex.findFirstIn(oldValue).isDefined ||
+            oldValue.equals(r.put(k, oldValue + item + DELIMITER))
+        case _ => r.putIfAbsent(k, head + item + DELIMITER) eq null
       }
-    } while (old1 != old2.asInstanceOf[String])
+    } while (!replaced)
   }
 
-  def checkItemExists(k: String, item: String): Boolean = {
-    var value = Misc.getMemStore.getMetadataCmdRgn.get(k)
+  def removeFromTheListInCmdRegion(k: String, item: String, head: String): Unit = {
+    val r = Misc.getMemStore.getMetadataCmdRgn
+    var replaced = false
+    val findItemRegex = regexForItemInTheList(item, head)
+    do {
+      replaced = r.get(k) match {
+        // An older put may have already succeeded but another thread may have changed
+        // the value, so first check if item has already been removed.
+        // NOTE: not using region.replace(k, old, new) because it doesn't work correctly
+        // from a data node though works from accessor node.
+        case oldValue: String => findItemRegex.findFirstIn(oldValue).isEmpty ||
+            oldValue.equals(r.put(k, findItemRegex.replaceFirstIn(oldValue, head + "$1$3")))
+        case _ => true
+      }
+    } while (!replaced)
+  }
+
+  def checkItemExists(k: String, item: String, head: String): Boolean = {
+    val value = Misc.getMemStore.getMetadataCmdRgn.get(k)
     if (value != null) {
       val valueStr = value.asInstanceOf[String]
-      return valueStr.contains(item)
-    }
-    false
+      regexForItemInTheList(item, head).findFirstIn(valueStr).isDefined
+    } else false
   }
 }
-
-

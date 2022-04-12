@@ -32,6 +32,7 @@ import io.snappydata.Constant
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
+import org.apache.commons.io.FileUtils
 
 import org.apache.spark.SparkUtilsAccess
 import org.apache.spark.sql._
@@ -69,6 +70,14 @@ class SplitClusterDUnitSecurityTest(s: String)
   var vm1: VM = _
   var vm2: VM = _
   var vm3: VM = _
+
+  if (Host.getHostCount > 0) {
+    host = Host.getHost(0)
+    vm0 = host.getVM(0)
+    vm1 = host.getVM(1)
+    vm2 = host.getVM(2)
+    vm3 = host.getVM(3)
+  }
 
   val jdbcUser1 = "gemfire1"
   val jdbcUser2 = "gemfire2"
@@ -181,6 +190,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     stopSparkCluster()
     stopSnappyCluster()
     stopLdapTestServer()
+    FileUtils.deleteQuietly(SparkUtilsAccess.destDir)
   }
 
   def stopLdapTestServer(): Unit = {

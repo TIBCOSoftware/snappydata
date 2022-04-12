@@ -725,7 +725,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       checkSchemaPermission(schema, functionObj.getFunctionName, user)
       val catalogFunction = ConnectorExternalCatalog.convertToCatalogFunction(functionObj)
       externalCatalog.createFunction(schema, catalogFunction)
-      ContextJarUtils.addFunctionArtifacts(catalogFunction, schema)
+      val functionKey = catalogFunction.identifier.copy(database = Some(schema)).unquotedString
+      ContextJarUtils.addFunctionArtifacts(catalogFunction, functionKey)
 
     case snappydataConstants.CATALOG_DROP_FUNCTION =>
       assert(request.getNamesSize == 2, "DROP FUNCTION: unexpected names = " + request.getNames)

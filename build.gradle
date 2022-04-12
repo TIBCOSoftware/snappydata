@@ -108,9 +108,9 @@ allprojects {
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     sparkCurrentVersion = '2.4.8'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
-    sparkJobServerVersion = '0.6.2.12'
+    sparkJobServerVersion = '0.6.2.13'
     snappySparkMetricsLibVersion = '2.0.0.1'
-    log4j2Version = '2.17.1'
+    log4j2Version = '2.17.2'
     slf4jVersion = '1.7.32'
     junitVersion = '4.12'
     mockitoVersion = '1.10.19'
@@ -121,7 +121,7 @@ allprojects {
     sparkXmlVersion = '0.4.1'
     scalatestVersion = '2.2.6'
     py4jVersion = '0.10.7'
-    jettyVersion = '9.4.44.v20210927'
+    jettyVersion = '9.4.43.v20210629'
     guavaVersion = '14.0.1'
     fastutilVersion = '8.5.6'
     kryoVersion = '4.0.1'
@@ -159,7 +159,7 @@ allprojects {
     eclipseCollectionsVersion = '10.4.0'
 
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.6'
+    snappyStoreVersion = '1.6.7'
     snappydataVersion = version
     zeppelinInterpreterVersion = '0.8.2.1'
 

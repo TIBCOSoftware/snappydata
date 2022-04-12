@@ -128,6 +128,7 @@ object ClusterUtils extends Serializable with Logging {
     Files.deleteIfExists(Paths.get(clusterDir, "conf", "snappy-env.sh"))
     Files.deleteIfExists(Paths.get(clusterDir, "conf", "spark-env.sh"))
     Files.deleteIfExists(Paths.get(clusterDir, "conf", "log4j.properties"))
+    Files.deleteIfExists(Paths.get(clusterDir, "conf", "log4j2.properties"))
   }
 
   def getEnvironmentVariable(name: String): String = {
@@ -162,6 +163,7 @@ object ClusterUtils extends Serializable with Logging {
     logInfo(s"$clusterDir/sbin/stop-all.sh".!!)
     Files.deleteIfExists(Paths.get(clusterDir, "conf", "spark-env.sh"))
     Files.deleteIfExists(Paths.get(clusterDir, "conf", "log4j.properties"))
+    Files.deleteIfExists(Paths.get(clusterDir, "conf", "log4j2.properties"))
     Files.deleteIfExists(Paths.get(clusterDir, "conf", "workers"))
   }
 
