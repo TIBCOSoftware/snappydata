@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2017-2022 TIBCO Software Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package org.apache.spark.examples.snappydata
 
 import java.io.{File, PrintWriter}
@@ -12,7 +29,7 @@ import org.apache.spark.sql.{SnappyJobInvalid, SnappyJobValid, SnappyJobValidati
  * An example that shows how to create sample tables in SnappyData
  * and execute approaximate queries using Synopsis Data Engine feature.
  *
- * Refer to https://tibcosoftware.github.io/snappydata/1.3.0/sde/ for more details on
+ * Refer to https://tibcosoftware.github.io/snappydata/1.3.1/sde/ for more details on
  * Synopsis Data Engine
  *
  * <p></p>
@@ -88,7 +105,7 @@ object SynopsisDataExample extends SnappySQLJob {
     // stratification and attribute 'fraction' specifies how big the sample needs to be
     // (3% of the base table AIRLINE in this case).
     // For full details of various option related to Synopsis Data Engine
-    // refer to https://tibcosoftware.github.io/snappydata/1.3.0/sde/
+    // refer to https://tibcosoftware.github.io/snappydata/1.3.1/sde/
     snSession.sql("CREATE SAMPLE TABLE AIRLINE_SAMPLE ON AIRLINE OPTIONS" +
         "(qcs 'UniqueCarrier, Year_, Month_', fraction '0.03')  " +
         "AS (SELECT Year_, Month_ , DayOfMonth, " +
@@ -117,7 +134,7 @@ object SynopsisDataExample extends SnappySQLJob {
     pw.println("Which airline had the most flights each year?")
     // the 'with error 0.20' clause in the query below signals query engine to execute the
     // query on the sample table instead of the base table and maximum 20% error is allowed,
-    // refer to https://tibcosoftware.github.io/snappydata/1.3.0/sde/running_queries for more details
+    // refer to https://tibcosoftware.github.io/snappydata/1.3.1/sde/running_queries for more details
     var result = snSession.sql("select  count(*) flightRecCount, description AirlineName, " +
         "UniqueCarrier carrierCode ,Year_ from airline , airlineref where " +
         "airline.UniqueCarrier = airlineref.code group by " +

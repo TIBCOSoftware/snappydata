@@ -40,5 +40,5 @@
 #     lead1   -dir=/tmp/data/server -spark.ui.port=3333 -spark.executor.cores=16 -zeppelin.interpreter.enable=true
 #
 # For more options, see
-# https://tibcosoftware.github.io/snappydata/1.3.0/configuring_cluster/configuring_cluster/#configuration-files
+# https://tibcosoftware.github.io/snappydata/1.3.1/configuring_cluster/configuring_cluster/#configuration-files
 localhost

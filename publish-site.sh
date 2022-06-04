@@ -66,7 +66,7 @@ cp -dR build-artifacts/scala-2.11/docs/* docs/apidocs/
 ##mkdocs build --clean --strict
 
 ##mkdocs gh-deploy
-mike deploy --push --update-aliases 1.3.0 latest
+mike deploy --push --update-aliases 1.3.1 latest
 mike set-default --push latest
 
 # remove extra files added to docs

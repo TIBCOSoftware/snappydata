@@ -85,7 +85,7 @@ import org.apache.spark.util.{Utils => SparkUtils}
  * User should use obtain reference to a SnappyContext instance as below
  * val snc: SnappyContext = SnappyContext.getOrCreate(sparkContext)
  *
- * @see https://tibcosoftware.github.io/snappydata/1.3.0/quickstart/snappydataquick_start/
+ * @see https://tibcosoftware.github.io/snappydata/1.3.1/quickstart/snappydataquick_start/
  * @see https://github.com/TIBCOSoftware/snappydata
  * @todo document describing the Job server API
  * @todo Provide links to above descriptions
