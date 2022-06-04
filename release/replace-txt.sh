@@ -5,7 +5,7 @@ file_extensions=".scala .java .sh .gradle .h .cpp .py .xml .thrift .tmpl .proper
 usage() {
   echo "Usage: replace-txt.sh < -d|--dir srcfolder > < -t|--text perl regex (multiline matching) > < -r|--replace replacement text|-f|--replace-file replacement text from file > [ -e|--extension file_extensions ]"
   echo
-  echo "For example to update license headers: replace-text.sh -d <dir> -t '\/\*.*?\* Copyright [^ ]* 20..-20.. TIBCO Software Inc. All rights reserved..*?\*\/' -f filehdr.txt"
+  echo "For example to update license headers: replace-text.sh -d <dir> -t '\/\*.*?\* Copyright [^ ]* 2017-2022 TIBCO Software Inc. All rights reserved..*?\*\/' -f filehdr.txt"
   echo
 }
 
