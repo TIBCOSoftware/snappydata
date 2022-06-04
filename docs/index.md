@@ -101,7 +101,7 @@ SnappyData's artifacts are hosted in Maven Central. You can add a Maven dependen
 ```
 groupId: io.snappydata
 artifactId: snappydata-cluster_2.11
-version: 1.3.0
+version: 1.3.1
 ```
 
 ### Using SBT Dependency
@@ -109,13 +109,13 @@ version: 1.3.0
 If you are using SBT, add this line to your **build.sbt** for core SnappyData artifacts:
 
 ``` scala
-libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.3.0"
+libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.3.1"
 ```
 
 For additions related to SnappyData cluster, use:
 
 ``` scala
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.0"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.1"
 ```
 
 You can find more specific SnappyData artifacts [here](http://mvnrepository.com/artifact/io.snappydata)

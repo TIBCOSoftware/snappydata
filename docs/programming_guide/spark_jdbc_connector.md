@@ -38,10 +38,10 @@ The SnappyData connector internally figures out the structure of the result set 
 Following is a sample of Spark JDBC Extension setup and usage:
 
 * Include the **snappydata-jdbc** package in the Spark job with spark-submit or spark-shell.
-  You can download the same from [here](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.0/snappydata-jdbc_2.11-1.3.0.jar):
+  You can download the same from [here](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-jdbc_2.11-1.3.1.jar):
 
 ``` shell
- $SPARK_HOME/bin/spark-shell --jars snappydata-jdbc-2.11_1.3.0.jar
+ $SPARK_HOME/bin/spark-shell --jars snappydata-jdbc-2.11_1.3.1.jar
 ```
 
 * Set the session properties.</br>
@@ -57,7 +57,7 @@ Following is a sample of Spark JDBC Extension setup and usage:
     of configuring the properties in **SparkConf**:
 
 ``` shell
- $SPARK_HOME/bin/spark-shell --jars snappydata-jdbc-2.11_1.3.0.jar --conf spark.snappydata.connection=localhost:1527 --conf spark.snappydata.user=<user> --conf spark.snappydata.password=<password>
+ $SPARK_HOME/bin/spark-shell --jars snappydata-jdbc-2.11_1.3.1.jar --conf spark.snappydata.connection=localhost:1527 --conf spark.snappydata.user=<user> --conf spark.snappydata.password=<password>
 ```
 
 * Import the required implicits in the job/shell code as follows:

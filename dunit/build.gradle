@@ -33,7 +33,7 @@ dependencies {
 }
 
 task packageJavaDocs(type: Jar, dependsOn: javadoc) {
-  classifier = 'javadoc'
+  archiveClassifier = 'javadoc'
   from javadoc
 }
 if (rootProject.hasProperty('enablePublish')) {

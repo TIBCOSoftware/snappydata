@@ -7,7 +7,7 @@ SnappyData can connect to TDV as a data source to import, process, and store dat
 
 ## Version and Compatibility
 
-SnappyData edition 1.3.0 is tested and works with TIBCO Data Virtualization 8.2.0 version.
+SnappyData edition 1.3.1 is tested and works with TIBCO Data Virtualization 8.2.0 - 8.5.x versions.
 
 ## Connecting to TDV from SnappyData
 

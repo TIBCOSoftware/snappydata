@@ -1,8 +1,8 @@
 # SnappyData Community Edition (Open Source)
 
-With the 1.3.0 release, SnappyData Community Edition gets close to the erstwhile TIBCO ComputeDB Enterprise Edition in terms of the features.
-Apart from the GemFire connector (that depends on non-OSS Pivotal GemFire jars), the 1.3.0 Community Edition
-exceeds the previous TIBCO ComputeDB Enterprise Edition 1.2.0 in both features and performance. You can find a list
+Starting with the 1.3.0 release, SnappyData Community Edition gets close to the erstwhile TIBCO ComputeDB Enterprise Edition in terms of the features.
+Apart from the GemFire connector (that depends on non-OSS Pivotal GemFire jars), the 1.3.0/1.3.1 Community Editions
+exceed the previous TIBCO ComputeDB Enterprise Edition 1.2.0 in both features and performance. You can find a list
 of new features and performance improvements in the [release notes](../release_notes/release_notes.md).
 
 The features hitherto available only in Enterprise edition - Off-heap storage for column tables, Approximate Query Processing, LDAP-based Authentication and Authorization, ODBC driver, to name a few -

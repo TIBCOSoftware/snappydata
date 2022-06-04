@@ -19,10 +19,10 @@ SNAPPY_HOME=$SNAPPY_SRC/build-artifacts/scala-2.11/snappy
 #spark-executor-cores has nothing to do with CPU cores available.
 #sparkProperties="-J-Xmx2g -spark.network.timeout=300s -spark.driver.maxResultSize=2g -spark.shuffle.sort.bypassMergeThreshold=28"
 # As specicifed in the docs, the packages parameter is to fetch the Snappydata jars from maven central repo
-#sparkProperties="--driver-memory 2g --conf spark.executor.memory=2g --packages TIBCOSoftware:snappydata:1.3.0-s_2.11"
+#sparkProperties="--driver-memory 2g --conf spark.executor.memory=2g --packages io.snappydata:snappydata-spark-connector_2.11:1.3.1"
 # Alternatively, the --jars parameter is used (instead of --packages) to download an unreleased version in development. 
 # The core jar is built with the build target `./gradlew distProduct`.
-sparkProperties="--driver-memory 2g --conf spark.executor.memory=2g --jars $SNAPPY_HOME/../distributions/snappydata-core_2.11-1.3.0.jar"
+sparkProperties="--driver-memory 2g --conf spark.executor.memory=2g --jars $SNAPPY_HOME/../distributions/snappydata-spark-connector_2.11-1.3.1.jar"
 #sparkProperties="--driver-memory 2g --conf spark.executor.memory=2g"
 
 leadProperties="-heap-size=2g -conserve-sockets=false"

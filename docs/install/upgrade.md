@@ -20,9 +20,9 @@ Before you begin the upgrade, ensure that you understand the new features and an
 
 7. To ensure that the restore script (restore.sh) copies files back to their original locations, make sure that the disk files are available at the original location before restarting the cluster with the latest version of SnappyData.
 
-## Upgrading to SnappyData 1.3.0 from 1.0.1 or Earlier Versions
+## Upgrading to SnappyData 1.3.1 from 1.0.1 or Earlier Versions
 
-When you upgrade to SnappyData 1.3.0 from product version 1.0.1 or earlier versions, it is recommended to save all the table data as parquet files, recreate the tables in the new cluster, and then load data from the saved parquet files. Before taking the backup ensure that no operations are currently running on the system. Ensure to cleanup the data from the previous cluster and start the new cluster from a clean directory.
+When you upgrade to SnappyData 1.3.1 from product version 1.0.1 or earlier versions, it is recommended to save all the table data as parquet files, recreate the tables in the new cluster, and then load data from the saved parquet files. Before taking the backup ensure that no operations are currently running on the system. Ensure to cleanup the data from the previous cluster and start the new cluster from a clean directory.
 
 For example:
 
@@ -32,7 +32,7 @@ snappy> create external table table1Parquet using parquet options (path '<path-t
 snappy> drop table table1;
 snappy> drop table table1Parquet;
 
-# Creating tables from parquet files in SnappyData 1.3.0
+# Creating tables from parquet files in SnappyData 1.3.1
 snappy> create external table table1_parquet using parquet options (path '<path-to-parquet-file>') ;
 snappy> create table table1(...);
 snappy> insert into table1 select * from table1_parquet;
@@ -48,7 +48,7 @@ Use a path for the Parquet file that has enough space to hold the table data. On
 If you have been using TIBCO ComputeDB™ ODBC Driver from 1.2.0 or earlier releases, then you can install the
 SnappyData ODBC Driver alongside it without any conflicts. The product name as well as the ODBC Driver name
 for the two are `TIBCO ComputeDB` and `SnappyData` respectively that do not overlap with one another.
-The older drivers and their DSNs will continue to work against SnappyData 1.3.0 without any changes.
+The older drivers and their DSNs will continue to work against SnappyData 1.3.1 without any changes.
 
 While the older driver will continue to work, migrating to the new SnappyData ODBC Driver is highly recommended
 to avail the new features and bug fixes over the TIBCO ComputeDB™ ODBC Driver releases. This includes new options

@@ -22,7 +22,7 @@
    If you are using the `all` binary package from zeppelin instead of the `netinst` package linked in the previous step,
    then you can skip this step.
 
-6. Copy the [SnappyData JDBC client jar](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.0/snappydata-jdbc_2.11-1.3.0.jar)
+6. Copy the [SnappyData JDBC client jar](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-jdbc_2.11-1.3.1.jar)
    inside the `interpreter/jdbc` directory.
 
 7. Download the predefined SnappyData notebooks with configuration [notebooks\_embedded\_zeppelin.tar.gz](https://github.com/TIBCOSoftware/snappy-zeppelin-interpreter/blob/master/examples/notebook/notebooks_embedded_zeppelin.tar.gz). </br>
@@ -86,7 +86,7 @@ Refer [here](concurrent_apache_zeppelin_access_to_secure_snappydata.md) for inst
 * **Is Zeppelin the only interface to interact with SnappyData?**
     No, if you prefer a command-line interface, then the product provides two command-line interfaces. The SQL interface, which can be accessed using **./bin/snappy** and the experimental scala interpreter can be invoked using **./bin/snappy-scala**.
     You can also use standard JDBC tools like SQuirreL SQL, DbVisualizer, DBeaver etc.
-    See the respective tool documentation to configure SnappyData JDBC driver (snappydata-jdbc_2.11-1.3.0.jar).
+    See the respective tool documentation to configure SnappyData JDBC driver (snappydata-jdbc_2.11-1.3.1.jar).
     For BI tools, refer to [TIBCO Spotfire®](connecttibcospotfire.md) and [Tableau](tableauconnect.md).
 
 * **How to configure Apache Zeppelin to securely and concurrently access the SnappyData Cluster?**

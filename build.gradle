@@ -1265,7 +1265,7 @@ buildRpm {
   requires('perl')
   requires('curl')
   if (rootProject.hasProperty('hadoop-provided')) {
-    classifier 'without_hadoop'
+    archiveClassifier.set('without_hadoop')
   }
 
   preInstall file('release/preInstallRpm.sh')
@@ -1279,7 +1279,7 @@ buildDeb {
   requires('curl')
   recommends('java8-sdk')
   if (rootProject.hasProperty('hadoop-provided')) {
-    classifier 'without-hadoop'
+    archiveClassifier.set('without-hadoop')
   }
 
   preInstall file('release/preInstallDeb.sh')
@@ -1289,21 +1289,21 @@ distTar {
   // if (isEnterpriseProduct) {
   //   archiveName = 'TIB_compute' + devEdition + '_' + version + '_' + buildDateShort + osFamilyName + '.tar.gz'
   // } else {
-  classifier 'bin'
+  archiveClassifier.set('bin')
   // }
   dependsOn product
   compression = Compression.GZIP
   archiveExtension.set('tar.gz')
   if (rootProject.hasProperty('hadoop-provided')) {
-    classifier 'without-hadoop-bin'
+    archiveClassifier.set('without-hadoop-bin')
   }
 }
 
 distZip {
-  classifier 'bin'
+  archiveClassifier.set('bin')
   dependsOn product
   if (rootProject.hasProperty('hadoop-provided')) {
-    classifier 'without-hadoop-bin'
+    archiveClassifier.set('without-hadoop-bin')
   }
 }
 
@@ -1325,13 +1325,11 @@ task jdbcJar {
 
   doLast {
     def jdbcProject = project(":snappy-jdbc_${scalaBinaryVersion}")
-    String jdbcName = "snappydata-jdbc_${scalaBinaryVersion}-${version}.jar"
     // copy the snappy-jdbc shadow jar into distributions
     copy {
       from jdbcProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"
       include jdbcProject.shadowJar.archiveName
-      rename { filename -> jdbcName }
     }
   }
 }
@@ -1342,12 +1340,10 @@ task copyShadowJars {
 
   doLast {
     def coreProject = project(":snappy-core_${scalaBinaryVersion}")
-    String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
     copy {
       from coreProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"
       include coreProject.shadowJar.archiveName
-      rename { filename -> coreName }
     }
   }
 }

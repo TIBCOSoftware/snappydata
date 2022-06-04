@@ -17,8 +17,6 @@
 package org.apache.spark.ui
 
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
 import javax.servlet.http.HttpServletRequest
 
 import scala.collection.mutable
@@ -30,10 +28,10 @@ import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberLogsMessage
 import com.pivotal.gemfirexd.internal.engine.ui.MemberStatistics
 import io.snappydata.SnappyTableStatsProviderService
+import org.apache.commons.text.StringEscapeUtils
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.util.Utils
-
 
 private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
     extends WebUIPage("memberDetails") with Logging {
@@ -265,9 +263,9 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
         .getOrElse(defaultBytes)
 
     val memberId = Option(UIUtils.stripXSS(request.getParameter("memId"))).map { memberId =>
-      UIUtils.decodeURLParameter(memberId)
+      UIUtils.decodeURLParameter(StringEscapeUtils.unescapeHtml4(memberId))
     }.getOrElse {
-      throw new IllegalArgumentException(s"Missing memId parameter")
+      throw new IllegalArgumentException("Missing memId parameter")
     }
 
     val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsFromService
@@ -275,7 +273,7 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
       var mem: MemberStatistics = null
       breakable {
         allMembers.foreach(m => {
-          if (m._2.getId().equalsIgnoreCase(memberId)) {
+          if (m._2.getId.equalsIgnoreCase(memberId)) {
             mem = m._2
             break
           }
@@ -285,7 +283,8 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
     }
 
     if (memberDetails == null) {
-      throw new IllegalArgumentException(s"Missing memId parameter")
+      throw new IllegalArgumentException(
+        s"Missing memberId=$memberId in members list. Try again after sometime.")
     }
 
     val memberStats = getMemberStats(memberDetails)
@@ -406,9 +405,9 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
         .getOrElse(defaultBytes)
 
     val memberId = Option(UIUtils.stripXSS(request.getParameter("memId"))).map { memberId =>
-      UIUtils.decodeURLParameter(memberId)
+      UIUtils.decodeURLParameter(StringEscapeUtils.unescapeHtml4(memberId))
     }.getOrElse {
-      throw new IllegalArgumentException(s"Missing memId parameter")
+      throw new IllegalArgumentException("Missing memId parameter")
     }
 
     // Get Log Details

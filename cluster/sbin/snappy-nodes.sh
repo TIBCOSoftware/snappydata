@@ -141,7 +141,7 @@ MEMBERS_FILE="$SNAPPY_HOME/work/members.txt"
 
 
 function execute() {
-  dirparam="$(echo $args | sed -n 's/^.*\(-dir=[^ ]*\).*$/\1/p')"
+  dirparam="$(echo ' ' $args | sed -n 's/^.*[[:space:]]\(-dir=[^ ]*\).*$/\1/p')"
 
   # Set directory folder if not already set.
   if [ -z "${dirparam}" ]; then

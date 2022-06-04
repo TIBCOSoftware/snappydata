@@ -351,12 +351,12 @@ The following known issues in the previous 1.2.0 release have been **fixed**: [<
 
 The following table describes the download artifacts included in SnappyData 1.3.0 release:
 
-| Artifact Name | Description |
-| ------------- | ----------- |
-|snappydata-1.3.0-bin.tar.gz     | Full product binary (includes Hadoop 3.2.0). |
-|snappydata-jdbc\_2.11-1.3.0.jar | JDBC client driver and push down JDBC data source for Spark. Compatible with Java 8, Java 11 and higher. |
-|snappydata-core\_2.11-1.3.0.jar | The single jar needed in Smart Connector mode; an alternative to --packages option. Compatible with Spark versions 2.1.1, 2.1.2 and 2.1.3. |
-|snappydata-odbc\_1.3.0\_win64.zip | 32-bit and 64-bit ODBC client drivers for Windows 64-bit platform. |
-|[snappydata-zeppelin\_2.11-0.8.2.1.jar](https://github.com/TIBCOSoftware/snappy-zeppelin-interpreter/releases/download/v0.8.2.1/snappydata-zeppelin_2.11-0.8.2.1.jar) | The Zeppelin interpreter jar for SnappyData compatible with Apache Zeppelin 0.8.2. The standard jdbc interpreter is now recommended instead of this. See [How to Use Apache Zeppelin with SnappyData](../howto/use_apache_zeppelin_with_snappydata.md). |
-|snappydata-1.3.0.sha256 | The SHA256 checksums of the product artifacts. On Linux verify using `sha256sum --check snappydata-1.3.0.sha256`. |
-|snappydata-1.3.0.sha256.asc | PGP signature for snappydata-1.3.0.sha256 in ASCII format. Get the public key using `gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys A7994CE77A24E5511A68727D8CED09EB8184C4D6`. Then verify using `gpg --verify snappydata-1.3.0.sha256.asc` which should show a good signature using that key having `build@snappydata.io` as the email. |
+| Artifact Name                                                                                                                                                         | Description |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------| ----------- |
+| snappydata-1.3.1-bin.tar.gz                                                                                                                                           | Full product binary (includes Hadoop 3.2.0). |
+| snappydata-jdbc\_2.11-1.3.1.jar                                                                                                                                       | JDBC client driver and push down JDBC data source for Spark. Compatible with Java 8, Java 11 and higher. |
+| snappydata-spark-connector\_2.11-1.3.1.jar                                                                                                                            | The single jar needed in Smart Connector mode; an alternative to --packages option. Compatible with Spark versions 2.1.1, 2.1.2 and 2.1.3. |
+| snappydata-odbc\_1.3.0\_win64.zip                                                                                                                                     | 32-bit and 64-bit ODBC client drivers for Windows 64-bit platform. |
+| [snappydata-zeppelin\_2.11-0.8.2.1.jar](https://github.com/TIBCOSoftware/snappy-zeppelin-interpreter/releases/download/v0.8.2.1/snappydata-zeppelin_2.11-0.8.2.1.jar) | The Zeppelin interpreter jar for SnappyData compatible with Apache Zeppelin 0.8.2. The standard jdbc interpreter is now recommended instead of this. See [How to Use Apache Zeppelin with SnappyData](../howto/use_apache_zeppelin_with_snappydata.md). |
+| snappydata-1.3.1.sha256                                                                                                                                               | The SHA256 checksums of the product artifacts. On Linux verify using `sha256sum --check snappydata-1.3.0.sha256`. |
+| snappydata-1.3.1.sha256.asc                                                                                                                                           | PGP signature for snappydata-1.3.0.sha256 in ASCII format. Get the public key using `gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys A7994CE77A24E5511A68727D8CED09EB8184C4D6`. Then verify using `gpg --verify snappydata-1.3.0.sha256.asc` which should show a good signature using that key having `build@snappydata.io` as the email. |

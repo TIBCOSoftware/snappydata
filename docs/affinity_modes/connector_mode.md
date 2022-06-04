@@ -78,7 +78,7 @@ You can either start SnappyData members using the `snappy_start_all` script or y
 
 ``` shell
 
-./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "TIBCOSoftware:snappydata:1.3.0-s_2.11"
+./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1"
 ```
 
 !!! Note
@@ -115,11 +115,11 @@ The code example for writing a Smart Connector application program is located in
 **Cluster mode**
 
 ``` shell
-./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "TIBCOSoftware:snappydata:1.3.0-s_2.11"
+./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1"
 ```
 **Client mode**
 ``` shell
-./bin/spark-submit --deploy-mode client --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "TIBCOSoftware:snappydata:1.3.0-s_2.11"
+./bin/spark-submit --deploy-mode client --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1"
 ```
 
 
@@ -127,10 +127,10 @@ The code example for writing a Smart Connector application program is located in
 
 **Cluster mode**
 ``` shell
-./spark-submit --master yarn --deploy-mode cluster --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-1.3.0-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-1.3.0-bin/jars/* --class MainClass SampleProjectYarn.jar
+./spark-submit --master yarn --deploy-mode cluster --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-1.3.1-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-1.3.1-bin/jars/* --class MainClass SampleProjectYarn.jar
 ```
 
 **Client mode**
 ``` shell
-./spark-submit --master yarn --deploy-mode client --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-1.3.0-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-1.3.0-bin/jars/* --class MainClass SampleProjectYarn.jar
+./spark-submit --master yarn --deploy-mode client --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-1.3.1-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-1.3.1-bin/jars/* --class MainClass SampleProjectYarn.jar
 ```

@@ -63,7 +63,7 @@ if (!(new File(rootDir, 'cluster/build.gradle').exists())) {
 }
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
-  classifier = 'javadoc'
+  archiveClassifier.set('javadoc')
   from scaladoc
 }
 if (rootProject.hasProperty('enablePublish')) {

@@ -54,7 +54,7 @@ dependencies {
 }
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
-  classifier = 'javadoc'
+  archiveClassifier = 'javadoc'
   from scaladoc
 }
 
@@ -74,10 +74,10 @@ test.dependsOn ':cleanJUnit'
 check.dependsOn test, scalaTest, dunitTest
 
 archivesBaseName = 'snappydata-jdbc_' + scalaBinaryVersion
-jar.classifier = 'only'
+jar.archiveClassifier = 'only'
 // shadowJar will act like the real jar for inclusion by applications
 shadowJar {
-  classifier = null
+  archiveClassifier = ''
 
   configurations = [ project.configurations.runtimeClasspath, project.configurations.shadowInclude ]
   // avoid conflict with the 0.9.2 version in stock Spark
@@ -104,7 +104,7 @@ shadowJar {
       'Manifest-Version'  : '1.0',
       'Created-By'        : createdBy,
       'Title'             : "snappydata-jdbc_${scalaBinaryVersion}",
-      'Version'           : version,
+      'Version'           : archiveVersion,
       'Vendor'            : vendorName
     )
   }
@@ -153,7 +153,7 @@ task sparkPackagePom(dependsOn: shadowJar) { doLast {
   copy {
     from "${buildDir}/libs"
     into "${rootProject.buildDir}/distributions"
-    include "${shadowJar.archiveName}"
+    include "${shadowJar.getArchiveName}"
     rename { filename -> "${sparkPackageName}.jar" }
   }
 } }
