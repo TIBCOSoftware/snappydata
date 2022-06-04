@@ -21,7 +21,7 @@ DROP TABLE [IF EXISTS] table_name
 </code></pre></div> <p>For row format tables column definition can take underlying GemFire XD syntax to create a table.e.g.note the PRIMARY KEY clause below.</p> <div class=highlight><pre><span></span><code>snc.sql(&quot;CREATE TABLE tableName (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT)
          USING row options(BUCKETS &#39;8&#39;)&quot; )
 </code></pre></div> <p>But for column table it's restricted to Spark syntax for column definition e.g.</p> <div class=highlight><pre><span></span><code>snc.sql(&quot;CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS &#39;8&#39;)&quot; )
-</code></pre></div> <p>Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.</p> <h5 id=spark-api-for-managing-tables>Spark API for managing tables<a class=headerlink href=#spark-api-for-managing-tables title="Permanent link">&para;</a></h5> <p>Get a reference to <a href=http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext>SnappyContext</a></p> <div class=highlight><pre><span></span><code>val snc: SnappyContext = SnappyContext.getOrCreate(sparkContext)
+</code></pre></div> <p>Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition.</p> <h5 id=spark-api-for-managing-tables>Spark API for managing tables<a class=headerlink href=#spark-api-for-managing-tables title="Permanent link">&para;</a></h5> <p>Get a reference to <a href=../../apidocs/#org.apache.spark.sql.SnappyContext>SnappyContext</a></p> <div class=highlight><pre><span></span><code>val snc: SnappyContext = SnappyContext.getOrCreate(sparkContext)
 </code></pre></div> <p>Create a SnappyStore table using Spark APIs</p> <div class=highlight><pre><span></span><code>val props = Map(&#39;BUCKETS&#39;,&#39;5&#39;) //This map should contain required DDL extensions, see next section
 case class Data(col1: Int, col2: Int, col3: Int)
 val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
@@ -38,7 +38,7 @@ UPDATE tablename SET column = value [, column = value ...] [WHERE expression]
 PUT INTO tableName (column, ...) VALUES (value, ...)
 DELETE FROM tablename1 [WHERE expression]
 TRUNCATE TABLE tablename1;
-</code></pre></div> <h5 id=api-extensions-provided-in-snappycontext>API extensions provided in SnappyContext<a class=headerlink href=#api-extensions-provided-in-snappycontext title="Permanent link">&para;</a></h5> <p>We have added several APIs in <a href=http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext>SnappyContext</a> to manipulate data stored in row and column format. Apart from SQL these APIs can be used to manipulate tables.</p> <div class=highlight><pre><span></span><code>//  Applicable for both row &amp; column tables
+</code></pre></div> <h5 id=api-extensions-provided-in-snappycontext>API extensions provided in SnappyContext<a class=headerlink href=#api-extensions-provided-in-snappycontext title="Permanent link">&para;</a></h5> <p>We have added several APIs in <a href=../../apidocs/#org.apache.spark.sql.SnappyContext>SnappyContext</a> to manipulate data stored in row and column format. Apart from SQL these APIs can be used to manipulate tables.</p> <div class=highlight><pre><span></span><code>//  Applicable for both row &amp; column tables
 def insert(tableName: String, rows: Row*): Int .
 
 // Only for row tables
