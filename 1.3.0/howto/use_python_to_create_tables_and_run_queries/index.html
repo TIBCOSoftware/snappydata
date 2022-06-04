@@ -4,11 +4,9 @@
  conf = SparkConf().setAppName(appName).setMaster(master)
  sc = SparkContext(conf=conf)
  snappy = SnappySession(sc)
-</code></pre></div> <p><strong>Create table using SnappySession</strong>:</p> <div class=highlight><pre><span></span><code># Creating partitioned table PARTSUPP using SQL
+</code></pre></div> <p><strong>Create table using SnappySession</strong>:</p> <p>For complete list of table attributes refer the <a href=../../programming_guide/ >Programming Guide</a></p> <div class=highlight><pre><span></span><code># Creating partitioned table PARTSUPP using SQL
 snappy.sql(&quot;DROP TABLE IF EXISTS PARTSUPP&quot;)
 # &quot;PARTITION_BY&quot; attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
-# For complete list of table attributes refer the documentation
-# http://tibcosoftware.github.io/snappydata/programming_guide
 snappy.sql(&quot;CREATE TABLE PARTSUPP ( &quot; +
       &quot;PS_PARTKEY     INTEGER NOT NULL PRIMARY KEY,&quot; +
       &quot;PS_SUPPKEY     INTEGER NOT NULL,&quot; +
@@ -39,8 +37,6 @@ schema = StructType([StructField(&#39;PS_PARTKEY&#39;, IntegerType(), False),
       ])
 
  # &quot;PARTITION_BY&quot; attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY)
- # For complete list of table attributes refer the documentation at
- # http://tibcosoftware.github.io/snappydata/programming_guide
  snappy.createTable(&#39;PARTSUPP&#39;, &#39;row&#39;, schema, False, PARTITION_BY = &#39;PS_PARTKEY&#39;)
 
  # Inserting data in PARTSUPP table using DataFrame
