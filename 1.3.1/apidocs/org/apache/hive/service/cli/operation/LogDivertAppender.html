@@ -1,0 +1,1166 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>LogDivertAppender - snappydata_2.11 1.3.1 API - org.apache.hive.service.cli.operation.LogDivertAppender</title>
+          <meta name="description" content="LogDivertAppender - snappydata 2.11 1.3.1 API - org.apache.hive.service.cli.operation.LogDivertAppender" />
+          <meta name="keywords" content="LogDivertAppender snappydata 2.11 1.3.1 API org.apache.hive.service.cli.operation.LogDivertAppender" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.hive.service.cli.operation.LogDivertAppender';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img alt="Class" src="../../../../../../lib/class_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.hive">hive</a>.<a href="../../package.html" class="extype" name="org.apache.hive.service">service</a>.<a href="../package.html" class="extype" name="org.apache.hive.service.cli">cli</a>.<a href="package.html" class="extype" name="org.apache.hive.service.cli.operation">operation</a></p>
+        <h1>LogDivertAppender</h1><h3><span class="morelinks"><div>Related Doc:
+            <a href="package.html" class="extype" name="org.apache.hive.service.cli.operation">package operation</a>
+          </div></span></h3><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">LogDivertAppender</span><span class="result"> extends <span class="extype" name="org.apache.logging.log4j.core.appender.AbstractWriterAppender">AbstractWriterAppender</span>[<span class="extype" name="org.apache.logging.log4j.core.appender.WriterManager">WriterManager</span>]</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.logging.log4j.core.appender.AbstractWriterAppender">AbstractWriterAppender</span>[<span class="extype" name="org.apache.logging.log4j.core.appender.WriterManager">WriterManager</span>], <span class="extype" name="org.apache.logging.log4j.core.appender.AbstractAppender">AbstractAppender</span>, <span class="extype" name="org.apache.logging.log4j.core.impl.LocationAware">LocationAware</span>, <span class="extype" name="org.apache.logging.log4j.core.Appender">Appender</span>, <span class="extype" name="org.apache.logging.log4j.core.filter.AbstractFilterable">AbstractFilterable</span>, <span class="extype" name="org.apache.logging.log4j.core.filter.Filterable">Filterable</span>, <span class="extype" name="org.apache.logging.log4j.core.AbstractLifeCycle">AbstractLifeCycle</span>, <span class="extype" name="org.apache.logging.log4j.core.LifeCycle2">LifeCycle2</span>, <span class="extype" name="org.apache.logging.log4j.core.LifeCycle">LifeCycle</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.hive.service.cli.operation.LogDivertAppender"><span>LogDivertAppender</span></li><li class="in" name="org.apache.logging.log4j.core.appender.AbstractWriterAppender"><span>AbstractWriterAppender</span></li><li class="in" name="org.apache.logging.log4j.core.appender.AbstractAppender"><span>AbstractAppender</span></li><li class="in" name="org.apache.logging.log4j.core.impl.LocationAware"><span>LocationAware</span></li><li class="in" name="org.apache.logging.log4j.core.Appender"><span>Appender</span></li><li class="in" name="org.apache.logging.log4j.core.filter.AbstractFilterable"><span>AbstractFilterable</span></li><li class="in" name="org.apache.logging.log4j.core.filter.Filterable"><span>Filterable</span></li><li class="in" name="org.apache.logging.log4j.core.AbstractLifeCycle"><span>AbstractLifeCycle</span></li><li class="in" name="org.apache.logging.log4j.core.LifeCycle2"><span>LifeCycle2</span></li><li class="in" name="org.apache.logging.log4j.core.LifeCycle"><span>LifeCycle</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="org.apache.hive.service.cli.operation.LogDivertAppender#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(operationManager:org.apache.hive.service.cli.operation.OperationManager,loggingMode:org.apache.hadoop.hive.ql.session.OperationLog.LoggingLevel):org.apache.hive.service.cli.operation.LogDivertAppender"></a>
+      <a id="&lt;init&gt;:LogDivertAppender"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">LogDivertAppender</span><span class="params">(<span name="operationManager">operationManager: <a href="OperationManager.html" class="extype" name="org.apache.hive.service.cli.operation.OperationManager">OperationManager</a></span>, <span name="loggingMode">loggingMode: <span class="extype" name="org.apache.hadoop.hive.ql.session.OperationLog.LoggingLevel">LoggingLevel</span></span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@&lt;init&gt;(operationManager:org.apache.hive.service.cli.operation.OperationManager,loggingMode:org.apache.hadoop.hive.ql.session.OperationLog.LoggingLevel):org.apache.hive.service.cli.operation.LogDivertAppender" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@##():Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@==(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.filter.AbstractFilterable#addFilter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="addFilter(x$1:org.apache.logging.log4j.core.Filter):Unit"></a>
+      <a id="addFilter(Filter):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addFilter</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="org.apache.logging.log4j.core.Filter">Filter</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@addFilter(x$1:org.apache.logging.log4j.core.Filter):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractFilterable → Filterable</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.operation.LogDivertAppender#append" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="append(event:org.apache.logging.log4j.core.LogEvent):Unit"></a>
+      <a id="append(LogEvent):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">append</span><span class="params">(<span name="event">event: <span class="extype" name="org.apache.logging.log4j.core.LogEvent">LogEvent</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@append(event:org.apache.logging.log4j.core.LogEvent):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.operation.LogDivertAppender">LogDivertAppender</a> → AbstractWriterAppender → Appender</dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@clone():Object" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#equalsImpl" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equalsImpl(x$1:Any):Boolean"></a>
+      <a id="equalsImpl(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equalsImpl</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@equalsImpl(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../logging$log4j$core.html" class="extype" name="org.apache.logging.log4j.core">org.apache.logging.log4j.core</a>] </dd><dt>Definition Classes</dt><dd>AbstractLifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractAppender#error" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="error(x$1:String,x$2:Throwable):Unit"></a>
+      <a id="error(String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">error</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="java.lang.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@error(x$1:String,x$2:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractAppender</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractAppender#error" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="error(x$1:String,x$2:org.apache.logging.log4j.core.LogEvent,x$3:Throwable):Unit"></a>
+      <a id="error(String,LogEvent,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">error</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>, <span name="arg1">arg1: <span class="extype" name="org.apache.logging.log4j.core.LogEvent">LogEvent</span></span>, <span name="arg2">arg2: <span class="extype" name="java.lang.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@error(x$1:String,x$2:org.apache.logging.log4j.core.LogEvent,x$3:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractAppender</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractAppender#error" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="error(x$1:String):Unit"></a>
+      <a id="error(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">error</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@error(x$1:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractAppender</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@finalize():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@getClass():Class[_]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.filter.AbstractFilterable#getFilter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getFilter():org.apache.logging.log4j.core.Filter"></a>
+      <a id="getFilter():Filter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getFilter</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.logging.log4j.core.Filter">Filter</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@getFilter():org.apache.logging.log4j.core.Filter" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractFilterable → Filterable</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractAppender#getHandler" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getHandler():org.apache.logging.log4j.core.ErrorHandler"></a>
+      <a id="getHandler():ErrorHandler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getHandler</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.logging.log4j.core.ErrorHandler">ErrorHandler</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@getHandler():org.apache.logging.log4j.core.ErrorHandler" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractAppender → Appender</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractAppender#getLayout" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getLayout():org.apache.logging.log4j.core.Layout[_&lt;:java.io.Serializable]"></a>
+      <a id="getLayout():Layout[_&lt;:Serializable]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getLayout</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.logging.log4j.core.Layout">Layout</span>[_ &lt;: <span class="extype" name="java.io.Serializable">Serializable</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@getLayout():org.apache.logging.log4j.core.Layout[_&lt;:java.io.Serializable]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractAppender → Appender</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractWriterAppender#getManager" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getManager():M"></a>
+      <a id="getManager():WriterManager"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getManager</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.logging.log4j.core.appender.WriterManager">WriterManager</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@getManager():M" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractWriterAppender</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractAppender#getName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getName():String"></a>
+      <a id="getName():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getName</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@getName():String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractAppender → Appender</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.filter.AbstractFilterable#getPropertyArray" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getPropertyArray():Array[org.apache.logging.log4j.core.config.Property]"></a>
+      <a id="getPropertyArray():Array[Property]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getPropertyArray</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.logging.log4j.core.config.Property">Property</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@getPropertyArray():Array[org.apache.logging.log4j.core.config.Property]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractFilterable</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#getState" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getState():org.apache.logging.log4j.core.LifeCycle.State"></a>
+      <a id="getState():State"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getState</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.logging.log4j.core.LifeCycle.State">State</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@getState():org.apache.logging.log4j.core.LifeCycle.State" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractLifeCycle → LifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractWriterAppender#getStringLayout" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getStringLayout():org.apache.logging.log4j.core.StringLayout"></a>
+      <a id="getStringLayout():StringLayout"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getStringLayout</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.logging.log4j.core.StringLayout">StringLayout</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@getStringLayout():org.apache.logging.log4j.core.StringLayout" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractWriterAppender</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.filter.AbstractFilterable#hasFilter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasFilter():Boolean"></a>
+      <a id="hasFilter():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasFilter</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@hasFilter():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractFilterable → Filterable</dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#hashCodeImpl" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCodeImpl():Int"></a>
+      <a id="hashCodeImpl():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCodeImpl</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@hashCodeImpl():Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../logging$log4j$core.html" class="extype" name="org.apache.logging.log4j.core">org.apache.logging.log4j.core</a>] </dd><dt>Definition Classes</dt><dd>AbstractLifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractAppender#ignoreExceptions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ignoreExceptions():Boolean"></a>
+      <a id="ignoreExceptions():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ignoreExceptions</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@ignoreExceptions():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractAppender → Appender</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#initialize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initialize():Unit"></a>
+      <a id="initialize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initialize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@initialize():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractLifeCycle → LifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.filter.AbstractFilterable#isFiltered" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isFiltered(x$1:org.apache.logging.log4j.core.LogEvent):Boolean"></a>
+      <a id="isFiltered(LogEvent):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isFiltered</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="org.apache.logging.log4j.core.LogEvent">LogEvent</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@isFiltered(x$1:org.apache.logging.log4j.core.LogEvent):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractFilterable → Filterable</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#isInitialized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInitialized():Boolean"></a>
+      <a id="isInitialized():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInitialized</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@isInitialized():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractLifeCycle</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#isStarted" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isStarted():Boolean"></a>
+      <a id="isStarted():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isStarted</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@isStarted():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractLifeCycle → LifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#isStarting" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isStarting():Boolean"></a>
+      <a id="isStarting():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isStarting</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@isStarting():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractLifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#isStopped" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isStopped():Boolean"></a>
+      <a id="isStopped():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isStopped</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@isStopped():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractLifeCycle → LifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#isStopping" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isStopping():Boolean"></a>
+      <a id="isStopping():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isStopping</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@isStopping():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractLifeCycle</dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@notify():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@notifyAll():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.filter.AbstractFilterable#removeFilter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="removeFilter(x$1:org.apache.logging.log4j.core.Filter):Unit"></a>
+      <a id="removeFilter(Filter):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">removeFilter</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="org.apache.logging.log4j.core.Filter">Filter</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@removeFilter(x$1:org.apache.logging.log4j.core.Filter):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractFilterable → Filterable</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractAppender#requiresLocation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="requiresLocation():Boolean"></a>
+      <a id="requiresLocation():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">requiresLocation</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@requiresLocation():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractAppender → LocationAware</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractAppender#setHandler" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setHandler(x$1:org.apache.logging.log4j.core.ErrorHandler):Unit"></a>
+      <a id="setHandler(ErrorHandler):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setHandler</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="org.apache.logging.log4j.core.ErrorHandler">ErrorHandler</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@setHandler(x$1:org.apache.logging.log4j.core.ErrorHandler):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractAppender → Appender</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#setStarted" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setStarted():Unit"></a>
+      <a id="setStarted():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setStarted</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@setStarted():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../logging$log4j$core.html" class="extype" name="org.apache.logging.log4j.core">org.apache.logging.log4j.core</a>] </dd><dt>Definition Classes</dt><dd>AbstractLifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#setStarting" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setStarting():Unit"></a>
+      <a id="setStarting():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setStarting</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@setStarting():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../logging$log4j$core.html" class="extype" name="org.apache.logging.log4j.core">org.apache.logging.log4j.core</a>] </dd><dt>Definition Classes</dt><dd>AbstractLifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#setState" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setState(x$1:org.apache.logging.log4j.core.LifeCycle.State):Unit"></a>
+      <a id="setState(State):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setState</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="org.apache.logging.log4j.core.LifeCycle.State">State</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@setState(x$1:org.apache.logging.log4j.core.LifeCycle.State):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../logging$log4j$core.html" class="extype" name="org.apache.logging.log4j.core">org.apache.logging.log4j.core</a>] </dd><dt>Definition Classes</dt><dd>AbstractLifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#setStopped" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setStopped():Unit"></a>
+      <a id="setStopped():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setStopped</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@setStopped():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../logging$log4j$core.html" class="extype" name="org.apache.logging.log4j.core">org.apache.logging.log4j.core</a>] </dd><dt>Definition Classes</dt><dd>AbstractLifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#setStopping" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setStopping():Unit"></a>
+      <a id="setStopping():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setStopping</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@setStopping():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../logging$log4j$core.html" class="extype" name="org.apache.logging.log4j.core">org.apache.logging.log4j.core</a>] </dd><dt>Definition Classes</dt><dd>AbstractLifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractWriterAppender#start" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="start():Unit"></a>
+      <a id="start():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">start</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@start():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractWriterAppender → AbstractFilterable → AbstractLifeCycle → LifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractWriterAppender#stop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stop(x$1:Long,x$2:java.util.concurrent.TimeUnit):Boolean"></a>
+      <a id="stop(Long,TimeUnit):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stop</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="java.util.concurrent.TimeUnit">TimeUnit</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@stop(x$1:Long,x$2:java.util.concurrent.TimeUnit):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractWriterAppender → AbstractFilterable → AbstractLifeCycle → LifeCycle2</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.filter.AbstractFilterable#stop" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stop(x$1:Long,x$2:java.util.concurrent.TimeUnit,x$3:Boolean):Boolean"></a>
+      <a id="stop(Long,TimeUnit,Boolean):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stop</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="java.util.concurrent.TimeUnit">TimeUnit</span></span>, <span name="arg2">arg2: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@stop(x$1:Long,x$2:java.util.concurrent.TimeUnit,x$3:Boolean):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../logging$log4j$core$filter.html" class="extype" name="org.apache.logging.log4j.core.filter">org.apache.logging.log4j.core.filter</a>] </dd><dt>Definition Classes</dt><dd>AbstractFilterable</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#stop" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stop(x$1:java.util.concurrent.Future[_]):Boolean"></a>
+      <a id="stop(Future[_]):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stop</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.util.concurrent.Future">Future</span>[_]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@stop(x$1:java.util.concurrent.Future[_]):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../logging$log4j$core.html" class="extype" name="org.apache.logging.log4j.core">org.apache.logging.log4j.core</a>] </dd><dt>Definition Classes</dt><dd>AbstractLifeCycle</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.AbstractLifeCycle#stop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stop():Unit"></a>
+      <a id="stop():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stop</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@stop():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractLifeCycle → LifeCycle</dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractAppender#toSerializable" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toSerializable(x$1:org.apache.logging.log4j.core.LogEvent):java.io.Serializable"></a>
+      <a id="toSerializable(LogEvent):Serializable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toSerializable</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="org.apache.logging.log4j.core.LogEvent">LogEvent</span></span>)</span><span class="result">: <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@toSerializable(x$1:org.apache.logging.log4j.core.LogEvent):java.io.Serializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../logging$log4j$core$appender.html" class="extype" name="org.apache.logging.log4j.core.appender">org.apache.logging.log4j.core.appender</a>] </dd><dt>Definition Classes</dt><dd>AbstractAppender</dd></dl></div>
+    </li><li name="org.apache.logging.log4j.core.appender.AbstractAppender#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@toString():String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AbstractAppender → AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@wait():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.operation.LogDivertAppender@wait(x$1:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="org.apache.logging.log4j.core.appender.AbstractWriterAppender">
+              <h3>Inherited from <span class="extype" name="org.apache.logging.log4j.core.appender.AbstractWriterAppender">AbstractWriterAppender</span>[<span class="extype" name="org.apache.logging.log4j.core.appender.WriterManager">WriterManager</span>]</h3>
+            </div><div class="parent" name="org.apache.logging.log4j.core.appender.AbstractAppender">
+              <h3>Inherited from <span class="extype" name="org.apache.logging.log4j.core.appender.AbstractAppender">AbstractAppender</span></h3>
+            </div><div class="parent" name="org.apache.logging.log4j.core.impl.LocationAware">
+              <h3>Inherited from <span class="extype" name="org.apache.logging.log4j.core.impl.LocationAware">LocationAware</span></h3>
+            </div><div class="parent" name="org.apache.logging.log4j.core.Appender">
+              <h3>Inherited from <span class="extype" name="org.apache.logging.log4j.core.Appender">Appender</span></h3>
+            </div><div class="parent" name="org.apache.logging.log4j.core.filter.AbstractFilterable">
+              <h3>Inherited from <span class="extype" name="org.apache.logging.log4j.core.filter.AbstractFilterable">AbstractFilterable</span></h3>
+            </div><div class="parent" name="org.apache.logging.log4j.core.filter.Filterable">
+              <h3>Inherited from <span class="extype" name="org.apache.logging.log4j.core.filter.Filterable">Filterable</span></h3>
+            </div><div class="parent" name="org.apache.logging.log4j.core.AbstractLifeCycle">
+              <h3>Inherited from <span class="extype" name="org.apache.logging.log4j.core.AbstractLifeCycle">AbstractLifeCycle</span></h3>
+            </div><div class="parent" name="org.apache.logging.log4j.core.LifeCycle2">
+              <h3>Inherited from <span class="extype" name="org.apache.logging.log4j.core.LifeCycle2">LifeCycle2</span></h3>
+            </div><div class="parent" name="org.apache.logging.log4j.core.LifeCycle">
+              <h3>Inherited from <span class="extype" name="org.apache.logging.log4j.core.LifeCycle">LifeCycle</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>
