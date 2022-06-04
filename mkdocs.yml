@@ -6,6 +6,7 @@ site_author: SnappyData Team
 repo_url: https://github.com/TIBCOSoftware/snappydata
 
 use_directory_urls: True
+strict: True
 
 nav:
 - Overview: index.md
@@ -388,6 +389,12 @@ plugins:
   - search
   - minify:
       minify_html: true
+  - mike:
+      version_selector: true
+
+extra:
+  version:
+    provider: mike
 
 markdown_extensions:
     - admonition

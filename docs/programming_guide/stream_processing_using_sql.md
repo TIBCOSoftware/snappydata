@@ -136,5 +136,5 @@ dStream.foreachDataFrame(_.write.insertInto("yourTableName"))
 ```
 
 ## Dynamic (ad-hoc) Continuous Queries
-Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The continuous queries can be registered even after the [SnappyStreamingContext](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) has started.
+Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The continuous queries can be registered even after the [SnappyStreamingContext](../apidocs/index.html#org.apache.spark.streaming.SnappyStreamingContext) has started.
 

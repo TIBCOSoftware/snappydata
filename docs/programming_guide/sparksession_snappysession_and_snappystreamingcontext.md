@@ -22,7 +22,7 @@ SparkSession.builder().getOrCreate()
 ```
 
 ## Create a SnappySession
-[SnappySession](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's [SparkSession](http://spark.apache.org/docs/2.1.3/api/scala/index.html#org.apache.spark.sql.SparkSession) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.
+[SnappySession](../apidocs/index.html#org.apache.spark.sql.SnappySession) is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's [SparkSession](http://spark.apache.org/docs/2.1.3/api/scala/index.html#org.apache.spark.sql.SparkSession) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.
 
 To create a SnappySession:
 
@@ -66,7 +66,7 @@ To create a SnappySession:
     Dataframe created from Snappy session and Spark session cannot be used across interchangeably.
 
 ## Create a SnappyStreamingContext
-[SnappyStreamingContext](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's
+[SnappyStreamingContext](../apidocs/index.html#org.apache.spark.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's
 [Streaming Context](http://spark.apache.org/docs/2.1.3/api/scala/index.html#org.apache.spark.streaming.StreamingContext).
 
 To create a SnappyStreamingContext:

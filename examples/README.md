@@ -40,7 +40,7 @@ Similarly, you can also run the test suite (ExampleTestSuite.scala) from IDE, pr
 
 ### As jobs (from console).
 
-You can run the example programs as jobs in the SnappyData cluster using either snappy-job.sh script ([Embedded mode](https://tibcosoftware.github.io/snappydata/affinity_modes/embedded_mode/)) or spark-submit script ([Smart Connector mode](https://tibcosoftware.github.io/snappydata/affinity_modes/connector_mode/)).
+You can run the example programs as jobs in the SnappyData cluster using either snappy-job.sh script ([Embedded mode](https://tibcosoftware.github.io/snappydata/1.3.0/affinity_modes/embedded_mode/)) or spark-submit script ([Smart Connector mode](https://tibcosoftware.github.io/snappydata/1.3.0/affinity_modes/connector_mode/)).
 
 - The examples which can be run as a job in Embedded mode do extend one of `SnappySQLJob`, `SnappyStreamingJob` and `JavaSnappySQLJob`.
   Below command runs `CreateAndLoadAirlineDataJob` as a SnappyData job in Embedded mode.

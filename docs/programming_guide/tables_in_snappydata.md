@@ -55,7 +55,7 @@ To access the complex data from JDBC you can see [JDBCWithComplexTypes](https://
 
 ### Spark API for Managing Tables
 
-**Get a reference to [SnappySession](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession):**
+**Get a reference to [SnappySession](../apidocs/index.html#org.apache.spark.sql.SnappySession):**
 
     val snappy: SnappySession = new SnappySession(spark.sparkContext)
 
@@ -108,7 +108,7 @@ TRUNCATE TABLE tablename1;
 ```
 
 ### API Extensions Provided in SnappyContext
-Several APIs have been added in [SnappySession](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL, these APIs can be used to manipulate tables.
+Several APIs have been added in [SnappySession](../apidocs/index.html#org.apache.spark.sql.SnappySession) to manipulate data stored in row and column format. Apart from SQL, these APIs can be used to manipulate tables.
 
 ```pre
 //  Applicable for both row and column tables

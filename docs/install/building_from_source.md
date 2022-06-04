@@ -51,8 +51,8 @@ Official builds are published to maven using the `publishMaven` task.
 ### Docs
 
 Documentation is created using the `publishDocs` target. You need an installation of `mkdocs`
-with its `material` and `minify` plugins to build and publish the docs. The standard way to
-install these is using python package installer `pip`. This is present in the repositories
+with its `material`, `minify` and 'mike' plugins to build and publish the docs. The standard way
+to install these is using python package installer `pip`. This is present in the repositories
 of all distributions e.g. `sudo apt install python3-pip` on Ubuntu/Debian based distributions
 and `sudo yum install python3-pip` on CentOS/RHEL/Fedora based ones. Other distributions will
 have a similar way to install the package (e.g. `sudo pacman -S python-pip` on Arch-like
@@ -61,22 +61,21 @@ have a similar way to install the package (e.g. `sudo pacman -S python-pip` on A
 Once you have `pip` installed, then you can install the required packages using:
 
 ``` shell
-pip3 install mkdocs mkdocs-material mkdocs-minify-plugin
+pip3 install mkdocs mkdocs-material mkdocs-minify-plugin mike
 ```
 
 !!!Note
     On some newer distributions, the executable is `pip` instead of `pip3` though latter is usually still available as a symlink.
 
-Then you can run the target that will build the documentation and host it locally
-(the local URL will be shown at the bottom of the output):
+Then you can run the target that will build the documentation as below:
 
 ``` shell
 ./gradlew publishDocs -PenablePublish
 ```
 
-Uncommenting the `mkdocs gh-deploy` target in the `publish-site.sh` script and running the
-above target will publish the docs to the public
-[site](https://tibcosoftware.github.io/snappydata) assuming you have the requisite write permissions to the repository.
+This will publish the docs for the current release version to the public [site](https://tibcosoftware.github.io/snappydata) assuming you have the requisite write permissions to the repository. If there are docs for multiple releases, then they will appear in the drop-down at the top.
+
+If you want to see the docs locally, then uncomment the last `mike serve` line in `publish-site.sh` and the site will be hosted locally in [localhost:8000](http://localhost:8000). Note that locally hosted site may have some subtle differences from the one published on the site, so its best to check the final published output on the site.
 
 ## Repository Layout
 

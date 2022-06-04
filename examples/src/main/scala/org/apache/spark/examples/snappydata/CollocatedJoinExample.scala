@@ -81,7 +81,7 @@ object CollocatedJoinExample extends SnappySQLJob {
     // "PARTITION_BY" attribute specifies partitioning key for CUSTOMER table(C_CUSTKEY),
     // Refer to the documentation, for complete list of attributes
     // For complete list of attributes refer the documentation
-    // http://tibcosoftware.github.io/snappydata/programming_guide#tables-in-snappydata
+    // https://tibcosoftware.github.io/snappydata/1.3.0/programming_guide/tables_in_snappydata
     snSession.sql("CREATE TABLE CUSTOMER ( " +
         "C_CUSTKEY     INTEGER NOT NULL," +
         "C_NAME        VARCHAR(25) NOT NULL," +

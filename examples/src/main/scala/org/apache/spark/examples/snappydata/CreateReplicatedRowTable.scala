@@ -99,7 +99,7 @@ object CreateReplicatedRowTable extends SnappySQLJob {
     // props1 map specifies the properties for the table to be created
     // "PERSISTENT" that the table data should be persisted to disk asynchronously
     // For complete list of attributes refer the documentation
-    // http://tibcosoftware.github.io/snappydata/programming_guide#tables-in-snappydata
+    // https://tibcosoftware.github.io/snappydata/1.3.0/programming_guide/tables_in_snappydata
     val props1 = Map("PERSISTENT" -> "asynchronous")
     // create a row table using createTable API
     snSession.createTable("SUPPLIER", "row", schema, props1)
@@ -164,7 +164,7 @@ object CreateReplicatedRowTable extends SnappySQLJob {
     // Create a row table using SQL
     // "PERSISTENT" that the table data should be persisted to disk asynchronously
     // For complete list of attributes refer the documentation
-    // http://tibcosoftware.github.io/snappydata/programming_guide#tables-in-snappydata
+    // https://tibcosoftware.github.io/snappydata/1.3.0/programming_guide/tables_in_snappydata
     snSession.sql(
       "CREATE TABLE SUPPLIER ( " +
           "S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, " +
