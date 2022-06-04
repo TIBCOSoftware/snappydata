@@ -7,7 +7,7 @@ Refer to [SnappyData Smart Connector Mode](../affinity_modes/connector_mode.md#e
 
 To support such cases it is also possible to run native Spark jobs that access a SnappyData cluster as a storage layer in a parallel fashion. To connect to the SnappyData store the `spark.snappydata.connection` property should be provided while starting the Spark-shell. 
 
-To run all SnappyData functionalities, you need to create a [SnappySession](http://tibcosoftware.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession).
+To run all SnappyData functionalities, you need to create a [SnappySession](../apidocs/index.html#org.apache.spark.sql.SnappySession).
 
 ```pre
 // from the SnappyData base directory  

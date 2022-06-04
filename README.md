@@ -73,7 +73,7 @@ You can find more information on options for running SnappyData [here](docs/quic
 If you are already using Apache Spark, you can experience upto 20x speedup for your query performance with SnappyData. Try this [test](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala) using the Spark Shell.
 
 ## Documentation
-To understand SnappyData and its features refer to the [documentation](http://tibcosoftware.github.io/snappydata/).
+To understand SnappyData and its features refer to the [documentation](https://tibcosoftware.github.io/snappydata).
 
 ### Other Relevant content
 - [Paper](http://cidrdb.org/cidr2017/papers/p28-mozafari-cidr17.pdf) on Snappydata at Conference on Innovative Data Systems Research (CIDR) - Info on key concepts and motivating problems.

@@ -43,6 +43,6 @@
 # viz. -client-bind-address and -hostname-for-clients with appropriate values to the server's configuration, so that
 # users do not have to specify them here explicitly.
 #
-# For more configuration options,
-# see http://tibcosoftware.github.io/snappydata/configuration/#configuration
+# For more configuration options, see
+# https://tibcosoftware.github.io/snappydata/1.3.0/configuring_cluster/configuring_cluster/#configuration-files
 localhost

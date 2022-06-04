@@ -136,7 +136,7 @@ For example:
 ./bin/snappy backup   /snappydata_backup_location/   -locators=locatorhostname:10334  -auth-provider=LDAP  -gemfirexd.auth-ldap-server=ldap://<ldap-server-host>:389/  -user=<username>  -password=<password>  -gemfirexd.auth-ldap-search-base=<search-base-values>  -gemfirexd.auth-ldap-search-dn=<search-dn-values> -gemfirexd.auth-ldap-search-pw=<password>
 
 ```
-Optionally, you can encrypt the user's password first and use it in the above command to explicitly avoid putting the password in plain text in the command-line. Here is [how you can encrypt the password](https://tibcosoftware.github.io/snappydata/security/specify_encrypt_passwords_conf_client/#using-encrypted-password-in-client-connections)
+Optionally, you can encrypt the user's password first and use it in the above command to explicitly avoid putting the password in plain text in the command-line. Here is [how you can encrypt the password](../../security/specify_encrypt_passwords_conf_client.md#using-encrypted-password-in-client-connections)
 
 <a id="incremental-backup"></a>
 ## Performing an Incremental backup
