@@ -1,0 +1,142 @@
+/* Hide the duplicate page title entry. */
+li.toctree-l3 > a,
+ul.subnav > li > span {
+  display: none;
+}
+/* Hide redirected pages */
+li > a[href*="techsupport.md"] {
+  display: none;
+  font-size: 10pt;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+/* Indent 2nd-level menus. Not in use
+ul.subnav > li.toctree-l1 > a.current {
+  padding-left: 2.4em !important;	
+	}
+ul.subnav > li.toctree-l1.current > ul > li > a {
+  padding-left: 3.4em !important;
+}
+*/
+/* Indent 3rd-level menus.Not in use
+ul.subnav > ul.subnav,
+ul.subnav > ul.subnav > li {
+  margin-left: -1em;
+}
+ul.subnav > ul.subnav > li > a,
+ul.subnav > ul.subnav > li.current > a {
+  padding-left: 3.0em !important;
+}
+ul.subnav > ul.subnav > li.current > ul > li > a {
+  padding-left: 5.4em !important;	
+}
+*/
+/* Indent 4th-level menus.Not in use
+ul.subnav > ul.subnav > ul.subnav,
+ul.subnav > ul.subnav > ul.subnav > li {
+  margin-left: -1.5em;
+}
+ul.subnav > ul.subnav > ul.subnav > li > a,
+ul.subnav > ul.subnav > ul.subnav > li.current > a {
+  padding-left: 6.4em !important;	
+}
+ul.subnav > ul.subnav > ul.subnav > li.current > ul > li > a {
+  padding-left: 7.4em !important;
+}
+*/
+/* Add collapsible markers */
+.current a.expander.top-level,
+a.expander.top-level,
+.current .subnav a.expander,
+.subnav a.expander {
+  float: left;
+  margin-left: -1.4em;
+  margin-right: -2.3em;
+  /*padding: 0.4045em 0em 0.4045em 1.618em !important;*/
+  padding-right: 0;
+  z-index: 10;
+  background: none;
+  color: #019117;
+  font-size: 18px;	
+}
+
+.collapse {
+  display: none !important;
+} 
+
+/* TOC Padding*/
+.toctree-l1  a
+{
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+
+/*left navigation settings*/
+
+/*Left navigation colour */
+.wy-nav-side {
+  background: #e3e3e3;
+/*  width: 100px; 	*/
+}
+
+/*heading level-1 in left nav*/
+.wy-menu-vertical li{
+  font-size: 12px;
+  color: #000000;	
+/*  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  text-transform: capitalize;	*/
+/*  font-weight: bold;*/
+}
+
+.wy-menu-vertical li ul li a{
+  /*color of the Level 2 menu item*/
+  font-size: 12px;
+  color: #000000;	
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+/*  text-transform: capitalize;*/
+}
+.wy-menu-vertical a:active{
+/*colour of the left nav selected item*/
+	background-color:#000000;cursor:pointer;color:#000000
+	
+}
+
+.wy-nav-top {
+/*colour of the top bar when resized/mobile view*/
+    background: #48bd90;
+ }
+ 
+.wy-breadcrumbs {
+/*settings for the breadcrumbs*/
+  margin-bottom:0;
+  color:#000000;
+  font-size:100%;
+  display:inline-block
+  font-weight: italic;	
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-style: none; 
+  background: #f7f7f7;
+}
+
+	
+.wy-menu-vertical a
+/*colour for the text in the nav bar*/	
+{
+	color:#000000;
+	font-size:100%;
+	display:inline-block
+	font-weight: italics;	
+	font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+	font-style: none; 	
+}
+
+
+/*.wy-nav-side .wy-menu-vertical */.toctree-l1.on > a
+{
+border-top: .1px solid grey;
+}
+
+.wy-nav-side .wy-menu-vertical .toctree-l1 a.current, .wy-nav-side .wy-menu-vertical .toctree-l1.current a{
+	border-bottom: none;
+}	
