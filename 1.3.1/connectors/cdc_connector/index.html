@@ -40,65 +40,65 @@
         from $tableName where ${offsetColumn} &gt; master.dbo.fn_cdc_hexstrtobin(&#39;$currentOffset&#39;)
           group by ${offsetColumn}) x where runningCount &lt;= $maxEvents&quot;&quot;&quot;
 }
-</code></pre></div> </li> <li> <p><strong>sourceTableName</strong>: The source table from which the data is read. For example, <strong>testdatabase.cdc.dbo_customer_CT</strong>.</p> </li> <li> <p><strong>maxEvents</strong>: Number of rows to be read in one batch.</p> </li> <li> <p><strong>connectionOptions</strong>: A map of key values containing different parameters to access the source database.</p> <table> <thead> <tr> <th>Key</th> <th>Value</th> </tr> </thead> <tbody> <tr> <td><code>driver</code></td> <td>The JDBC driver to be used to access source database. E.g. <code>com.microsoft.sqlserver.jdbc.SQLServerDriver</code></td> </tr> <tr> <td><code>url</code></td> <td>The JDBC connection url</td> </tr> <tr> <td><code>user</code></td> <td>User name to access the database</td> </tr> <tr> <td><code>password</code></td> <td>Password to access the database</td> </tr> <tr> <td><code>databaseName</code></td> <td>The name of the database</td> </tr> <tr> <td><code>poolImpl</code></td> <td>Connection pool implementation(default Tomcat). Currently, only Tomcat and Hikari are supported</td> </tr> <tr> <td><code>poolProperties</code></td> <td>Comma separated pool specific properties. For more details see Tomcat or Hikari JDBC connection pool documents. Example: connectionTestQuery=select 1,minimumIdle=5</td> </tr> </tbody> </table> </li> </ul> <p>Optionally, you can use any Spark API to transform your data obtained from the stream reader.</p> <p>The sample usage can be as follows:</p> <div class=highlight><pre><span></span><code>Dataset&lt;Row&gt; ds = reader.load();
-ds.filter(&lt;filter_condition&gt;)
-</code></pre></div> <h2 id=writing-into-snappydata-tables>Writing into SnappyData tables<a class=headerlink href=#writing-into-snappydata-tables title="Permanent link">&para;</a></h2> <p>To write into SnappyData tables you need to have a StreamWriter as follows:</p> <div class=highlight><pre><span></span><code>ds.writeStream()
-        .trigger(ProcessingTime.create(10, TimeUnit.SECONDS))
-        .format(&quot;snappystore&quot;)
-        .option(&quot;sink&quot;, ProcessEvents.class.getName())
-        .option(&quot;tableName&quot;, tableName)
-        .start();
-</code></pre></div> <p>Here, the value of the <code>.format</code> parameter is always <code>snappystore</code> and is a mandatory.</p> <h3 id=snappydata-stream-writer-options>SnappyData Stream Writer options<a class=headerlink href=#snappydata-stream-writer-options title="Permanent link">&para;</a></h3> <p>The <strong>sink</strong> option is mandatory for SnappyStore sink. This option is required to give the user control of the obtained data frame. When writing streaming data to the tables, you can also provide any custom option.</p> <table> <thead> <tr> <th>Key</th> <th>Value</th> </tr> </thead> <tbody> <tr> <td>sink</td> <td>A user-defined callback class which gets a data frame in each batch. The class must implement <code>org.apache.spark.sql.streaming.jdbc.SnappyStreamSink</code> interface.</td> </tr> </tbody> </table> <p><strong>org.apache.spark.sql.streaming.jdbc.SnappyStreamSink</strong></p> <p>The above trait contains a single method, which user needs to implement. A user can use SnappyData mutable APIs (INSERT, UPDATE, DELETE, PUT INTO) to maintain tables.</p> <div class=highlight><pre><span></span><code>    def process(snappySession: SnappySession, sinkProps: Map[String, String],
-      batchId: Long, df: Dataset[Row]): Unit
-</code></pre></div> <p>The following examples illustrates how you can write into a <a href=../../programming_guide/building_snappydata_applications_using_spark_api/#building-snappydata-applications-using-spark-api>SnappyData table</a>:</p> <div class=highlight><pre><span></span><code>package io.snappydata.app;
-
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SnappySession;
-import org.apache.spark.sql.streaming.jdbc.SnappyStreamSink;
-
-import static java.util.Arrays.asList;
-import static org.apache.spark.SnappyJavaUtils.snappyJavaUtil;
-
-public class ProcessEvents implements SnappyStreamSink {
-
-  private static Logger log = LoggerFactory.getLogger(ProcessEvents.class.getName());
-
-  private static List&lt;String&gt; metaColumns = asList(&quot;__$start_lsn&quot;,
-      &quot;__$end_lsn&quot;, &quot;__$seqval&quot;, &quot;__$operation&quot;, &quot;__$update_mask&quot;, &quot;__$command_id&quot;);
-
-  @Override
-  public void process(SnappySession snappySession,
-      scala.collection.immutable.Map&lt;String, String&gt; sinkProps, long batchId, Dataset&lt;Row&gt; df) {
-
-    String snappyTable = sinkProps.apply(&quot;tablename&quot;).toUpperCase();
-
-    log.info(&quot;SB: Processing for &quot; + snappyTable + &quot; batchId &quot; + batchId);
-
-    df.cache();
-
-    Dataset&lt;Row&gt; snappyCustomerDelete = df
-        // pick only delete ops
-        .filter(&quot;\&quot;__$operation\&quot; = 1&quot;)
-        // exclude the first 5 columns and pick the columns that needs to control
-        // the WHERE clause of the delete operation.
-        .drop(metaColumns.toArray(new String[metaColumns.size()]));
-
-    if (snappyCustomerDelete.count() &gt; 0) {
-      snappyJavaUtil(snappyCustomerDelete.write()).deleteFrom(&quot;APP.&quot; + snappyTable);
-    }
-
-    Dataset&lt;Row&gt; snappyCustomerUpsert = df
-        // pick only insert/update ops
-        .filter(&quot;\&quot;__$operation\&quot; = 4 OR \&quot;__$operation\&quot; = 2&quot;)
-        .drop(metaColumns.toArray(new String[metaColumns.size()]));
-    snappyJavaUtil(snappyCustomerUpsert.write()).putInto(&quot;APP.&quot; + snappyTable);
-
-  }
-}
+</code></pre></div> </li> <li> <p><strong>sourceTableName</strong>: The source table from which the data is read. For example, <strong>testdatabase.cdc.dbo_customer_CT</strong>.</p> </li> <li> <p><strong>maxEvents</strong>: Number of rows to be read in one batch.</p> </li> <li> <p><strong>connectionOptions</strong>: A map of key values containing different parameters to access the source database.</p> <table> <thead> <tr> <th>Key</th> <th>Value</th> </tr> </thead> <tbody> <tr> <td><code>driver</code></td> <td>The JDBC driver to be used to access source database. E.g. <code>com.microsoft.sqlserver.jdbc.SQLServerDriver</code></td> </tr> <tr> <td><code>url</code></td> <td>The JDBC connection url</td> </tr> <tr> <td><code>user</code></td> <td>User name to access the database</td> </tr> <tr> <td><code>password</code></td> <td>Password to access the database</td> </tr> <tr> <td><code>databaseName</code></td> <td>The name of the database</td> </tr> <tr> <td><code>poolImpl</code></td> <td>Connection pool implementation(default Tomcat). Currently, only Tomcat and Hikari are supported</td> </tr> <tr> <td><code>poolProperties</code></td> <td>Comma separated pool specific properties. For more details see Tomcat or Hikari JDBC connection pool documents. Example: connectionTestQuery=select 1,minimumIdle=5</td> </tr> </tbody> </table> </li> </ul> <p>Optionally, you can use any Spark API to transform your data obtained from the stream reader.</p> <p>The sample usage can be as follows:</p> <div class=highlight><pre><span></span><code><a id=__codelineno-0-1 name=__codelineno-0-1></a>Dataset&lt;Row&gt; ds = reader.load();
+<a id=__codelineno-0-2 name=__codelineno-0-2></a>ds.filter(&lt;filter_condition&gt;)
+</code></pre></div> <h2 id=writing-into-snappydata-tables>Writing into SnappyData tables<a class=headerlink href=#writing-into-snappydata-tables title="Permanent link">&para;</a></h2> <p>To write into SnappyData tables you need to have a StreamWriter as follows:</p> <div class=highlight><pre><span></span><code><a id=__codelineno-1-1 name=__codelineno-1-1></a>ds.writeStream()
+<a id=__codelineno-1-2 name=__codelineno-1-2></a>        .trigger(ProcessingTime.create(10, TimeUnit.SECONDS))
+<a id=__codelineno-1-3 name=__codelineno-1-3></a>        .format(&quot;snappystore&quot;)
+<a id=__codelineno-1-4 name=__codelineno-1-4></a>        .option(&quot;sink&quot;, ProcessEvents.class.getName())
+<a id=__codelineno-1-5 name=__codelineno-1-5></a>        .option(&quot;tableName&quot;, tableName)
+<a id=__codelineno-1-6 name=__codelineno-1-6></a>        .start();
+</code></pre></div> <p>Here, the value of the <code>.format</code> parameter is always <code>snappystore</code> and is a mandatory.</p> <h3 id=snappydata-stream-writer-options>SnappyData Stream Writer options<a class=headerlink href=#snappydata-stream-writer-options title="Permanent link">&para;</a></h3> <p>The <strong>sink</strong> option is mandatory for SnappyStore sink. This option is required to give the user control of the obtained data frame. When writing streaming data to the tables, you can also provide any custom option.</p> <table> <thead> <tr> <th>Key</th> <th>Value</th> </tr> </thead> <tbody> <tr> <td>sink</td> <td>A user-defined callback class which gets a data frame in each batch. The class must implement <code>org.apache.spark.sql.streaming.jdbc.SnappyStreamSink</code> interface.</td> </tr> </tbody> </table> <p><strong>org.apache.spark.sql.streaming.jdbc.SnappyStreamSink</strong></p> <p>The above trait contains a single method, which user needs to implement. A user can use SnappyData mutable APIs (INSERT, UPDATE, DELETE, PUT INTO) to maintain tables.</p> <div class=highlight><pre><span></span><code><a id=__codelineno-2-1 name=__codelineno-2-1></a>    def process(snappySession: SnappySession, sinkProps: Map[String, String],
+<a id=__codelineno-2-2 name=__codelineno-2-2></a>      batchId: Long, df: Dataset[Row]): Unit
+</code></pre></div> <p>The following examples illustrates how you can write into a <a href=../../programming_guide/building_snappydata_applications_using_spark_api/#building-snappydata-applications-using-spark-api>SnappyData table</a>:</p> <div class=highlight><pre><span></span><code><a id=__codelineno-3-1 name=__codelineno-3-1></a>package io.snappydata.app;
+<a id=__codelineno-3-2 name=__codelineno-3-2></a>
+<a id=__codelineno-3-3 name=__codelineno-3-3></a>import java.util.List;
+<a id=__codelineno-3-4 name=__codelineno-3-4></a>
+<a id=__codelineno-3-5 name=__codelineno-3-5></a>import org.slf4j.Logger;
+<a id=__codelineno-3-6 name=__codelineno-3-6></a>import org.slf4j.LoggerFactory;
+<a id=__codelineno-3-7 name=__codelineno-3-7></a>import org.apache.spark.sql.Dataset;
+<a id=__codelineno-3-8 name=__codelineno-3-8></a>import org.apache.spark.sql.Row;
+<a id=__codelineno-3-9 name=__codelineno-3-9></a>import org.apache.spark.sql.SnappySession;
+<a id=__codelineno-3-10 name=__codelineno-3-10></a>import org.apache.spark.sql.streaming.jdbc.SnappyStreamSink;
+<a id=__codelineno-3-11 name=__codelineno-3-11></a>
+<a id=__codelineno-3-12 name=__codelineno-3-12></a>import static java.util.Arrays.asList;
+<a id=__codelineno-3-13 name=__codelineno-3-13></a>import static org.apache.spark.SnappyJavaUtils.snappyJavaUtil;
+<a id=__codelineno-3-14 name=__codelineno-3-14></a>
+<a id=__codelineno-3-15 name=__codelineno-3-15></a>public class ProcessEvents implements SnappyStreamSink {
+<a id=__codelineno-3-16 name=__codelineno-3-16></a>
+<a id=__codelineno-3-17 name=__codelineno-3-17></a>  private static Logger log = LoggerFactory.getLogger(ProcessEvents.class.getName());
+<a id=__codelineno-3-18 name=__codelineno-3-18></a>
+<a id=__codelineno-3-19 name=__codelineno-3-19></a>  private static List&lt;String&gt; metaColumns = asList(&quot;__$start_lsn&quot;,
+<a id=__codelineno-3-20 name=__codelineno-3-20></a>      &quot;__$end_lsn&quot;, &quot;__$seqval&quot;, &quot;__$operation&quot;, &quot;__$update_mask&quot;, &quot;__$command_id&quot;);
+<a id=__codelineno-3-21 name=__codelineno-3-21></a>
+<a id=__codelineno-3-22 name=__codelineno-3-22></a>  @Override
+<a id=__codelineno-3-23 name=__codelineno-3-23></a>  public void process(SnappySession snappySession,
+<a id=__codelineno-3-24 name=__codelineno-3-24></a>      scala.collection.immutable.Map&lt;String, String&gt; sinkProps, long batchId, Dataset&lt;Row&gt; df) {
+<a id=__codelineno-3-25 name=__codelineno-3-25></a>
+<a id=__codelineno-3-26 name=__codelineno-3-26></a>    String snappyTable = sinkProps.apply(&quot;tablename&quot;).toUpperCase();
+<a id=__codelineno-3-27 name=__codelineno-3-27></a>
+<a id=__codelineno-3-28 name=__codelineno-3-28></a>    log.info(&quot;SB: Processing for &quot; + snappyTable + &quot; batchId &quot; + batchId);
+<a id=__codelineno-3-29 name=__codelineno-3-29></a>
+<a id=__codelineno-3-30 name=__codelineno-3-30></a>    df.cache();
+<a id=__codelineno-3-31 name=__codelineno-3-31></a>
+<a id=__codelineno-3-32 name=__codelineno-3-32></a>    Dataset&lt;Row&gt; snappyCustomerDelete = df
+<a id=__codelineno-3-33 name=__codelineno-3-33></a>        // pick only delete ops
+<a id=__codelineno-3-34 name=__codelineno-3-34></a>        .filter(&quot;\&quot;__$operation\&quot; = 1&quot;)
+<a id=__codelineno-3-35 name=__codelineno-3-35></a>        // exclude the first 5 columns and pick the columns that needs to control
+<a id=__codelineno-3-36 name=__codelineno-3-36></a>        // the WHERE clause of the delete operation.
+<a id=__codelineno-3-37 name=__codelineno-3-37></a>        .drop(metaColumns.toArray(new String[metaColumns.size()]));
+<a id=__codelineno-3-38 name=__codelineno-3-38></a>
+<a id=__codelineno-3-39 name=__codelineno-3-39></a>    if (snappyCustomerDelete.count() &gt; 0) {
+<a id=__codelineno-3-40 name=__codelineno-3-40></a>      snappyJavaUtil(snappyCustomerDelete.write()).deleteFrom(&quot;APP.&quot; + snappyTable);
+<a id=__codelineno-3-41 name=__codelineno-3-41></a>    }
+<a id=__codelineno-3-42 name=__codelineno-3-42></a>
+<a id=__codelineno-3-43 name=__codelineno-3-43></a>    Dataset&lt;Row&gt; snappyCustomerUpsert = df
+<a id=__codelineno-3-44 name=__codelineno-3-44></a>        // pick only insert/update ops
+<a id=__codelineno-3-45 name=__codelineno-3-45></a>        .filter(&quot;\&quot;__$operation\&quot; = 4 OR \&quot;__$operation\&quot; = 2&quot;)
+<a id=__codelineno-3-46 name=__codelineno-3-46></a>        .drop(metaColumns.toArray(new String[metaColumns.size()]));
+<a id=__codelineno-3-47 name=__codelineno-3-47></a>    snappyJavaUtil(snappyCustomerUpsert.write()).putInto(&quot;APP.&quot; + snappyTable);
+<a id=__codelineno-3-48 name=__codelineno-3-48></a>
+<a id=__codelineno-3-49 name=__codelineno-3-49></a>  }
+<a id=__codelineno-3-50 name=__codelineno-3-50></a>}
 </code></pre></div> <h2 id=additional-information>Additional Information<a class=headerlink href=#additional-information title="Permanent link">&para;</a></h2> <ul> <li> <p><strong>Offset Management</strong>: SnappyData keeps a persistent table for offset management (Offset table name for application = SNAPPY_JDBC_STREAM_OFFSET_TABLE). The schema of the table is:</p> <table> <thead> <tr> <th>APP_NAME</th> <th>TABLE_NAME</th> <th>LAST_OFFSET</th> </tr> </thead> <tbody> <tr> <td></td> <td></td> <td></td> </tr> </tbody> </table> <p>Initially, the table contains no rows. The connector inserts a row for the table with minimum offset queried from the database. On subsequent intervals, it consults this table to get the offset number. If connector application crashes, it refers to this table on a restart to query further.</p> </li> <li> <p><strong>Idempotency for Streaming application</strong>: If <code>DELETE</code> and <code>PUT INTO</code> APIs are used, SnappyData ensures idempotent behavior. This is useful when the application restarts after a crash and some of the CDC events are replayed. The PUT INTO API either inserts a record (if not present) or updates the record (if already exists). The existence of the record is checked based on the key columns defined when a table is created. As primary keys are not supported for column tables, you can use <code>key_columns</code> instead, to uniquely identify each row/record in a database table. For more information, see <a href=../../reference/sql_reference/create-table/ >CREATE TABLE</a>.</p> <p>For example:</p> <div class=highlight><pre><span></span><code>CREATE TABLE &lt;table_name&gt; USING column OPTIONS(partition_by &#39;&lt;column_name&gt;&#39;, buckets &#39;&lt;num_partitions&gt;&#39;,key_columns &#39;&lt;primary_key&gt;&#39;) AS (SELECT * FROM from external table);
 </code></pre></div> </li> </ul> <div class="admonition note"> <p class=admonition-title>Note</p> <ul> <li> <p>Writing data from different tables to a single table is currently not supported as the schema for incoming data frame cannot be changed. </p> </li> <li> <p>For every source table that needs to be tracked for changes, ensure that there is a corresponding destination table in SnappyData.</p> </li> </ul> </div> </article> </div> </div> <a href=# class="md-top md-icon" data-md-component=top data-md-state=hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"/></svg> Back to top </a> </main> <footer class=md-footer> <nav class="md-footer__inner md-grid" aria-label=Footer> <a href=../../data/external_hive_support/ class="md-footer__link md-footer__link--prev" aria-label="Previous: Connecting to External Hive Metastores" rel=prev> <div class="md-footer__button md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg> </div> <div class=md-footer__title> <div class=md-ellipsis> <span class=md-footer__direction> Previous </span> Connecting to External Hive Metastores </div> </div> </a> <a href=../jdbc_streaming_connector/ class="md-footer__link md-footer__link--next" aria-label="Next: Using the SnappyData JDBC Streaming Connector" rel=next> <div class=md-footer__title> <div class=md-ellipsis> <span class=md-footer__direction> Next </span> Using the SnappyData JDBC Streaming Connector </div> </div> <div class="md-footer__button md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg> </div> </a> </nav> <div class="md-footer-meta md-typeset"> <div class="md-footer-meta__inner md-grid"> <div class=md-footer-copyright> <div class=md-footer-copyright__highlight> Copyright © 2017-2022 TIBCO Software Inc. All rights reserved. </div> </div> <div class=md-social> </div> <div class=md-footer-generator> Made with <a href=https://squidfunk.github.io/mkdocs-material/ target=_blank rel=noopener> Material for MkDocs </a> </div> </div> </div> </footer> </div> <div class=md-dialog data-md-component=dialog> <div class="md-dialog__inner md-typeset"></div> </div> <script id=__config type=application/json>{"base": "../..", "features": ["navigation.instant", "navigation.indexes", "navigation.top", "header.autohide"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.01824240.min.js", "version": {"provider": "mike"}}</script> <script src=../../assets/javascripts/bundle.e0abf5b0.min.js></script> </body> </html>
