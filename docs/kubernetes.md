@@ -23,6 +23,7 @@ The following sections are included in this topic:
 
 
 <a id= prerequisites> </a>
+
 ## Prerequisites
 
 The following prerequisites must be met to deploy SnappyData on Kubernetes:
@@ -34,6 +35,7 @@ The following prerequisites must be met to deploy SnappyData on Kubernetes:
 
 
 <a id= pksaccess> </a>
+
 ## Getting Access to Kubernetes Cluster
 
 If you would like to deploy Kubernetes on-premises, you can use any of the following options:
@@ -53,35 +55,33 @@ If you would like to deploy Kubernetes on-premises, you can use any of the follo
 - If you are using Google cloud, you will find instructions for setting up Google Cloud SDK ('gcloud') along with `kubectl` [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 
 <a id= deploykubernetes> </a>
+
 ## Deploying SnappyData on Kubernetes 
 
 **SnappyData Helm **chart is used to deploy SnappyData on Kubernetes.  It uses Kubernetes [statefulsets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to launch the locator, lead, and server members. 
 
 **To deploy SnappyData on Kubernetes:**
 
-1.	Clone the **spark-on-k8s** repository and change to **charts** directory.</br>
-`git clone https://github.com/TIBCOSoftware/spark-on-k8s`</br>
-`cd spark-on-k8s/charts`
+1. Clone the **snappy-on-k8s** repository and change to **charts** directory.</br>
 
-2.	Edit the **snappydata > values.yaml**  file to configure in the SnappyData chart. Specify the details of your SnappyData Docker image as mentioned in the example below. Replace values for image and tag appropriatly with your Dockerhub registry name, image name and tag .
-           
-```
-image: your-dockerhub-registry/snappydata-docker-image
-imageTag: 1.2
-imagePullPolicy: IfNotPresent
-```
-       To pull a Docker image from a private registry, create a secret by following steps as mentioned [here](#https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials) and specify the name of the secret in values.yaml as shown below. Note that, secret must be created in the namespace in which SnappyData will be deployed (namespace "snappy" in this case)
+        git clone https://github.com/TIBCOSoftware/snappy-on-k8s
+        cd snappy-on-k8s/charts
 
-```
-imagePullSecrets: secretName
-``` 
+2. Edit the **snappydata > values.yaml**  file to configure in the SnappyData chart. Specify the details of your SnappyData Docker image as mentioned in the example below. Replace values for image and tag appropriately with your Dockerhub registry name, image name and tag.
 
-3.	Optionally, you can edit the **snappydata > values.yaml**  file to change the default configurations in the SnappyData chart. Configurations can be specified in the respective attributes for locators, leaders, and servers in this file. Refer [List of Configuration Parameters for SnappyData Chart](#chartparameters)
+        image: your-dockerhub-registry/snappydata-docker-image
+        imageTag: 1.2
+        imagePullPolicy: IfNotPresent
+3. To pull a Docker image from a private registry, create a secret by following steps as mentioned [here](#https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials) and specify the name of the secret in values.yaml as shown below. Note that, secret must be created in the namespace in which SnappyData will be deployed (namespace "snappy" in this case)
 
-4.	Install the **snappydata** chart using the following command:</br>
+        imagePullSecrets: secretName
+
+4. Optionally, you can edit the **snappydata > values.yaml**  file to change the default configurations in the SnappyData chart. Configurations can be specified in the respective attributes for locators, leaders, and servers in this file. Refer [List of Configuration Parameters for SnappyData Chart](#chartparameters)
+
+5. Install the **snappydata** chart using the following command:</br>
 `helm install --name snappydata --namespace snappy ./snappydata/`
 
-	The above command installs the SnappyData chart in a namespace called *snappy* and displays the Kubernetes objects (service, statefulsets etc.) created by the chart on the console.</br>
+    The above command installs the SnappyData chart in a namespace called *snappy* and displays the Kubernetes objects (service, statefulsets etc.) created by the chart on the console.</br>
     By default, **SnappyData Helm **chart deploys a SnappyData cluster which consists of one locator, one lead, two servers and services to access SnappyData endpoints.
 
 You can monitor the Kubernetes UI dashboard to check the status of the components as it takes few minutes for all the servers to be online. To access the Kubernetes UI refer to the instructions [here](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/#accessing-the-dashboard-ui). 
@@ -89,9 +89,10 @@ You can monitor the Kubernetes UI dashboard to check the status of the component
 SnappyData chart dynamically provisions volumes for servers, locators, and leads. These volumes and the data in it are retained even after the chart deployment is deleted.
 
 <a id= interactkubernetes> </a>
+
 ## Interacting with SnappyData Cluster on Kubernetes
 
-You can interact with the SnappyData cluster on Kuberenetes in the same manner as you interact with a SnappyData cluster that runs locally or on-premise. All you require is the host IP address of the locator and the lead with their respective ports numbers.
+You can interact with the SnappyData cluster on Kubernetes in the same manner as you interact with a SnappyData cluster that runs locally or on-premise. All you require is the host IP address of the locator and the lead with their respective ports numbers.
 
 To find the IP addresses and port numbers of the SnappyData processes, use command `kubectl get svc --namespace=snappy`. 
 In the [output](#output), three services namely **snappydata-leader-public**, **snappydata-locator-public** and 
@@ -113,6 +114,7 @@ You can do the following on the SnappyData cluster that is deployed on Kubernete
 - [Stop SnappyData Cluster on Kubernetes](#deletehelm)
 
 <a id= accesskubernetes> </a>
+
 ### Accessing SnappyData Monitoring Console
 
 The dashboards on the SnappyData Monitoring Console can be accessed using **snappydata-leader-public** service. To view the dashboard, type the URL in the web browser in the format: [externalIp:5050]().
@@ -126,6 +128,7 @@ Replace *externalip* with the external IP address of the **snappydata-leader-pub
 3. Type [externalIp:5050]() in the browser. Here you must replace *externalip* with the external IP address of the **leader-public** service.</br> For example, 35.232.102.51:5050.
 
 <a id= jdbckubernetes> </a>
+
 ### Connecting SnappyData Using JDBC Driver
 
 For Kubernetes deployments, JDBC clients can connect to SnappyData cluster using the JDBC URL that is derived from the **snappydata-locator-public** service.
@@ -141,6 +144,7 @@ The output displays the external IP address  of the *snappydata-locator-public* 
 You can refer to [SnappyData documentation](howto/connect_using_jdbc_driver.md) for an example of JDBC program and for instructions on how to obtain JDBC driver using Maven/SBT co-ordinates.
 
 <a id= querykubernetes> </a>
+
 ### Executing Queries Using SnappyData Shell
 
 You  can use SnappyData shell to connect to SnappyData and execute your queries. You can simply connect to one of the pods in the cluster and use the SnappyData Shell. Alternatively, you can download the SnappyData distribution from [SnappyData github releases](https://github.com/TIBCOSoftware/snappydata/releases). SnappyData shell need not run within the Kubernetes cluster.
@@ -165,6 +169,7 @@ The output displays the external IP address of the **snappydata-locator-public**
 ```
 
 <a id= jobkubernetes> </a>
+
 ### Submitting a SnappyData Job
 
 Refer to the [How Tos section](howto/run_spark_job_inside_cluster.md) in SnappyData documentation to understand how to submit SnappyData jobs.
@@ -181,7 +186,7 @@ The output displays the external IP address of **snappydata-leader-public** serv
 
 3.	Submit the job using the external IP of the **snappydata-leader-public** service and the port number **8090** in the **--lead** option.</br> Following is an example of submitting a SnappyData Job:
 
-```
+```sh
 bin/snappy-job.sh submit
 --app-name CreatePartitionedRowTable
   --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
@@ -193,7 +198,7 @@ bin/snappy-job.sh submit
 
 To stop the SnappyData cluster on Kubernetes, you must delete the **SnappyData Helm** chart using the `helm delete` command.
 
-```
+```sh
 $ helm delete --purge snappydata
 ```
 The dynamically provisioned volumes and the data in it is retained, even if the chart deployment is deleted.
@@ -203,6 +208,7 @@ The dynamically provisioned volumes and the data in it is retained, even if the 
 
 
 <a id= chartparameters> </a>
+
 ## List of Configuration Parameters for SnappyData Chart
 
 You can modify the **values.yaml**  file to configure the SnappyData chart. The following table lists the configuration parameters available for this chart:
@@ -233,7 +239,7 @@ You can modify the **values.yaml**  file to configure the SnappyData chart. The 
 
 The following sample shows the configuration used to start four servers each with a heap size of 2048 MB:
 
-```
+```yaml
 servers:
   replicaCount: 4
   ## config options for servers
@@ -243,6 +249,7 @@ servers:
 You can specify SnappyData [configuration parameters](configuring_cluster/configuring_cluster.md) in the **servers.conf**, **locators.conf**, and **leaders.conf** attributes for servers, locators, and leaders respectively.
 
 <a id= kubernetesobjects> </a>
+
 ## Kubernetes Objects Used in SnappyData Chart
 
 This section provides details about the following Kubernetes objects that are used in SnappyData Chart:
@@ -254,12 +261,14 @@ This section provides details about the following Kubernetes objects that are us
 *	[Persistent Volumes](#persistentvolumes)
 
 <a id= statefulsets> </a>
+
 ### Statefulsets for Servers, Leaders, and Locators
 
 [Kubernetes statefulsets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) are used to manage stateful applications. Statefulsets provide many benefits such as stable and unique network identifiers, stable persistent storage, ordered deployment and scaling, graceful deletion, and rolling updates.
 SnappyData Helm chart deploys statefulsets for servers, leaders, and locators. By default the chart deploys two data servers, one locator, and one leader. Upon deletion of the Helm deployment, each pod gracefully terminates the SnappyData process that is running on it.
 
 <a id= services> </a>
+
 ### Services that Expose External Endpoints
 
 SnappyData Helm chart creates services to allow you to make JDBC connections, execute Spark jobs, and access
@@ -267,6 +276,7 @@ SnappyData Monitoring Console etc.  Services of the type LoadBalancer have exter
 To check the service created for SnappyData deployment, use command `kubectl get svc --namespace=snappy`. The following output is displayed:
 
 <a id= output> </a>
+
 ```pre
 NAME                        TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)                                        AGE
 snappydata-leader           ClusterIP      None            <none>           5050/TCP                                       5m
@@ -275,8 +285,8 @@ snappydata-locator          ClusterIP      None            <none>           1033
 snappydata-locator-public   LoadBalancer   10.51.241.224   104.198.47.162   1527:31957/TCP                                 5m
 snappydata-server           ClusterIP      None            <none>           1527/TCP                                       5m
 snappydata-server-public    LoadBalancer   10.51.248.27    35.232.16.4      1527:31853/TCP                                 5m
-
 ```
+
 In the above output, three services namely **snappydata-leader-public**, **snappydata-locator-public** and 
 **snappydata-server-public**  of type **LoadBalancer** are created. These services have external IP addresses assigned and therefore can be accessed from outside Kubernetes. The remaining services that do not have external IP addresses are those that are created for internal use.
  
@@ -284,23 +294,26 @@ In the above output, three services namely **snappydata-leader-public**, **snapp
 **snappydata-locator-public** service exposes port **1527** to accept JDBC connections.
 
 <a id= persistentvolumes> </a>
+
 ### Persistent Volumes
 
 A pod in a SnappyData deployment has a persistent volume mounted on it. This volume is dynamically provisioned and is used
 to store data directory for SnappyData. On each pod, the persistent volume is mounted on path `/opt/snappydata/work`. These volumes and the data in it is retained even if the chart deployment is deleted.
 
 <a id= accesslogs> </a>
+
 ## Accessing Logs
 
 You can access the logs when the [SnappyData cluster is running](#running) as well as when the [SnappyData cluster is not running](#notrunning). 
 
 <a id= running> </a>
+
 ### Accessing Logs When SnappyData Cluster is Running
 
 When a SnappyData cluster is running, you can open a session for a pod using `kubectl` command and then view the logs.
 The following example shows how to access logs of **snappydata-server-0**:
 
-```
+```sh
 # Connect to snappydata-server-0 pod and open a shell.
 $ kubectl exec -it snappydata-server-0 --namespace snappy -- /bin/bash
 
@@ -309,6 +322,7 @@ $ cd /opt/snappydata/work
 $ ls 
 ```
 <a id= notrunning> </a>
+
 ### Accessing Logs When SnappyData Cluster is not Running
 
 When SnappyData cluster is not running, you can access the volumes used in SnappyData with a utility script `snappy-debug-pod.sh` located in the **utils** directory of [Spark on k8s](https://github.com/TIBCOSoftware/spark-on-k8s/tree/master/utils) repository.
@@ -317,7 +331,7 @@ This script launches a pod in the Kubernetes cluster with persistent volumes, sp
 <!-- The following example shows, how to access the logs when the SnappyData Cluster is not running: -->
 In the following example, the names of the persistent volume claims used by the cluster are retrieved and passed to the `snappy-debug-pod.sh` script to be mounted on the pod.
 
-```
+```sh
 # Get the names of persistent volume claims used by SnappyData cluster installed in a namespace
 # called *snappy*. The PVCs used by SnappyData are prefixed with 'snappy-disk-claim-'.
 
@@ -352,10 +366,11 @@ bash-4.1# ls /data0/snappydata-server-0/*.*log
 ```
 
 <a id= loglevel> </a>
+
 ## Configuring the Log Level
 You can provide a **log4j2.properties** file while installing the SnappyData Helm chart. A template file **log4j2.properties.template** is provided in the `charts/snappydata/conf/` directory. This template file can be renamed and used to configure log level as shown in the following example:
 
-```
+```sh
 $ cd charts/snappydata/conf/
 # copy the template file and edit it to configure log level
 $ cp log4j2.properties.template log4j2.properties
@@ -366,6 +381,7 @@ When SnappyData chart is installed, the **log4.properties** file  will be used t
 <a id= deletehelm> </a>
 
 <a id= configmaps> </a>
+
 ## Mounting ConfigMaps
 Files created in **charts/snappydata/conf/** are mounted on SnappyData server, lead, and locator pods as configmaps and copied into the product's **conf** directory. This is useful to make configuration files (such as spark-env.sh,
 metrics.properties etc.) available to the product. Template files are provided in the
@@ -373,9 +389,8 @@ metrics.properties etc.) available to the product. Template files are provided i
 
 For example:
 
-```
+```sh
 $ cd snappydata/conf/
 $ cp spark-env.sh.template spark-env.sh
 # now modify the spark-env.sh to specify configuration 
-```  
-
+```

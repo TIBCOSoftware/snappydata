@@ -14,14 +14,14 @@ This is the simplest form of deployment and can be used for testing and POCs.
 
 Open the command prompt, go the location of the downloaded SnappyData file, and run the following command to extract the archive file.
 
-```pre
+```sh
 $ tar -xzf snappydata-<version-number>bin.tar.gz
 $ cd snappydata-<version-number>-bin/
 ```
 
 Start a basic cluster with one data node, one lead, and one locator:
 
-```pre
+```sh
 ./sbin/snappy-start-all.sh
 ```
 
@@ -56,16 +56,16 @@ If all the machines in your cluster can share a path over an NFS or similar prot
 
 2. Extract the downloaded archive file and go to SnappyData home directory.
 
-		$ tar -xzf snappydata-<version-number>-bin.tar.gz
-		$ cd snappydata-<version-number>-bin/
+        $ tar -xzf snappydata-<version-number>-bin.tar.gz
+        $ cd snappydata-<version-number>-bin/
 
 3. Configure the cluster as described in [Configuring the Cluster](../configuring_cluster/configuring_cluster.md).
 
 4. After configuring each of the members in the cluster, run the `snappy-start-all.sh` script:
 
-		./sbin/snappy-start-all.sh
+        ./sbin/snappy-start-all.sh
 
-	This creates a default folder named **work** and stores all SnappyData member's artifacts separately. The folder is identified by the name of the node.
+    This creates a default folder named **work** and stores all SnappyData member's artifacts separately. The folder is identified by the name of the node.
 
 !!!Tip
 	For optimum performance, configure the **-dir** to a local directory and not to a network directory. When **-dir** property is configured for each member in the cluster, the artifacts of the respective members get created in the  **-dir** folder.
@@ -91,7 +91,7 @@ In case all the machines in your cluster do not share a path over an NFS or simi
 
 4.	Run the `snappy-start-all.sh` script:
 
-		./sbin/snappy-start-all.sh
+        ./sbin/snappy-start-all.sh
 
 <a id="without_passwordless"></a>
 ### Machines Without Passwordless SSH
@@ -101,30 +101,27 @@ In case the machines in your cluster do not share a common path as well as canno
 
 **To set up the cluster for machines without passwordless SSH:**
 
-1.	Copy and extract the downloaded binaries into each machine. The binaries can be placed in different directory structures.
+1. Copy and extract the downloaded binaries into each machine. The binaries can be placed in different directory structures.
 
-3.	Configure each member separately.
+2. Configure each member separately.
 
-	!!!Note
-			The scripts used for starting individual members in the cluster do not read from the **conf** file of each member, hence there is no need to edit the **conf** files for starting the members. These scripts will start the member with the default configuration properties. To override the default configuration, you can pass the properties as arguments to the above scripts.
+    !!!Note
+        The scripts used for starting individual members in the cluster do not read from the **conf** file of each member, hence there is no need to edit the **conf** files for starting the members. These scripts will start the member with the default configuration properties. To override the default configuration, you can pass the properties as arguments to the above scripts.
 
-5.	Start the members in the cluster one at a time. Start the locator first, then the servers, and finally the leads. Use the following scripts to start the members:
+3. Start the members in the cluster one at a time. Start the locator first, then the servers, and finally the leads. Use the following scripts to start the members:
 
-	*	`$SNAPPY_HOME/sbin/snappy-locator.sh`
-
-	*	`$SNAPPY_HOME/sbin/snappy-server.sh`
-	
-	*	`$SNAPPY_HOME/sbin/snappy-lead.sh`
+    * `$SNAPPY_HOME/sbin/snappy-locator.sh`
+    * `$SNAPPY_HOME/sbin/snappy-server.sh`
+    * `$SNAPPY_HOME/sbin/snappy-lead.sh`
 
     **Start Examples**:
 
-    	    $SNAPPY_HOME/sbin/snappy-locator.sh start -dir=/tmp/locator
-            $SNAPPY_HOME/sbin/snappy-server.sh  start -dir=/tmp/server -locators="localhost:10334"
-            $SNAPPY_HOME/sbin/snappy-lead.sh      start -dir=/tmp/lead      -locators="localhost:10334"
+        $SNAPPY_HOME/sbin/snappy-locator.sh start -dir=/tmp/locator
+        $SNAPPY_HOME/sbin/snappy-server.sh  start -dir=/tmp/server -locators="localhost:10334"
+        $SNAPPY_HOME/sbin/snappy-lead.sh      start -dir=/tmp/lead      -locators="localhost:10334"
 
     **Stop Examples**:
 
-    	    $SNAPPY_HOME/sbin/snappy-locator.sh stop -dir=/tmp/locator
-			$SNAPPY_HOME/sbin/snappy-server.sh  stop -dir=/tmp/server
-			$SNAPPY_HOME/sbin/snappy-lead.sh      stop -dir=/tmp/lead
-
+        $SNAPPY_HOME/sbin/snappy-locator.sh stop -dir=/tmp/locator
+        $SNAPPY_HOME/sbin/snappy-server.sh  stop -dir=/tmp/server
+        $SNAPPY_HOME/sbin/snappy-lead.sh      stop -dir=/tmp/lead

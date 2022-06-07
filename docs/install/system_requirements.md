@@ -6,7 +6,7 @@ In this section, we discuss the hardware, software, and network requirements for
 
 SnappyData turns Apache Spark into a mission-critical, elastic scalable in-memory data store. This allows users to run Spark workloads and classic database workloads on SnappyData.
 
-**Memory**: SnappyData works well with anywhere from 8GB of memory to hundreds of GB of memory. While exact memory requirements depend on the end user application, we recommend allocating no more than 75% of the memory to SnappyData. We recommend using a machine with at least 8GB of RAM when working with SnappyData.
+**Memory**: SnappyData works well with anywhere from 8GB of memory to TBs of memory. While exact memory requirements depend on the end user application, we recommend allocating no more than 75% of the memory to SnappyData. We recommend using a machine with at least 8GB of RAM when working with SnappyData.
 
 !!!Note
 	It is recommended to have a minimum of 8GB memory for server-grade machines.
@@ -32,13 +32,13 @@ SnappyData turns Apache Spark into a mission-critical, elastic scalable in-memor
 Requirements for each host:
 
 * A supported [Oracle Java SE 8](http://www.oracle.com/technetwork/java/javase/downloads) JDK installation.
-  Required minimum version: 1.8.0\_144 (see [SNAP-2017](https://jirasnappydataio.atlassian.net/browse/SNAP-2017),
+  Required minimum version: `1.8.0_144` (see [SNAP-2017](https://jirasnappydataio.atlassian.net/browse/SNAP-2017),
   [SNAP-1999](https://jirasnappydataio.atlassian.net/browse/SNAP-1999),
   [SNAP-1911](https://jirasnappydataio.atlassian.net/browse/SNAP-1911),
   [SNAP-1375](https://jirasnappydataio.atlassian.net/browse/SNAP-1375) for crashes reported with earlier versions).
   Recommended is the latest stable release version.
 
-* Alternatively equivalent Java version >= 1.8.0\_144 from OpenJDK distributions (Linux vendor build, AdoptOpenJDK
+* Alternatively equivalent Java version >= `1.8.0_144` from OpenJDK distributions (Linux vendor build, AdoptOpenJDK
   or equivalent). Recommended is the latest stable release version. A full JDK installation is required.
 
 * The latest version of Bash shell.
@@ -51,7 +51,7 @@ Requirements for each host:
 
 * For each Linux host, the hostname and host files must be properly configured. See the system manual pages for hostname and host settings.
 
-* For each Linux host, configure the swap to be in the range of 32-64GB to allow for swapping out of unused pages.
+* For each Linux host, configure the swap to be in the range of 16-64GB to allow for swapping out of unused pages.
 
 * Time synchronization service such as Network Time Protocol (NTP).
 

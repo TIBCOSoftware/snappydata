@@ -2,14 +2,13 @@
 # Building from Source
 
 !!! Note
-	Building SnappyData requires JDK 8 installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)).
+	Building SnappyData requires JDK 8 installation (like [Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html) or OpenJDK 8).
 
 ## Build all Components of SnappyData
 
-
 **Master**
 
-```pre
+```sh
 > git clone https://github.com/TIBCOSoftware/snappydata.git --recursive
 > cd snappydata
 > ./gradlew product
@@ -19,7 +18,7 @@ The product is in **build-artifacts/scala-2.11/snappy**
 
 To build product artifacts in all supported formats (tarball, zip, rpm, deb):
 
-```pre
+```sh
 > git clone https://github.com/TIBCOSoftware/snappydata.git --recursive
 > cd snappydata
 > ./gradlew cleanAll distProduct
@@ -32,7 +31,7 @@ SnappyData distributions but that also requires an installation of R as noted be
 
 To build all product artifacts that are in the official SnappyData distributions:
 
-```pre
+```sh
 > git clone https://github.com/TIBCOSoftware/snappydata.git --recursive
 > cd snappydata
 > ./gradlew cleanAll product copyShadowJars distTar -PenablePublish -PR.enable
@@ -45,6 +44,12 @@ At least the following R packages along with their dependencies also need to be 
 `knitr`, `markdown`, `rmarkdown`, `e1071`, `testthat`
 
 The R build also needs a base installation of `texlive` or an equivalent `TeX` distribution for `pdflatex` and related tools to build the documentation.
+
+On distributions like Ubuntu/Debian/Arch you can install them from repositories (for Arch some packages need AUR). For example on recent Ubuntu/Debian:
+
+```sh
+sudo apt install texlive r-cran-knitr r-cran-markdown r-cran-rmarkdown r-cran-e1071 r-cran-testthat
+```
 
 Official builds are published to maven using the `publishMaven` task.
 
@@ -60,7 +65,7 @@ have a similar way to install the package (e.g. `sudo pacman -S python-pip` on A
 
 Once you have `pip` installed, then you can install the required packages using:
 
-``` shell
+```sh
 pip3 install mkdocs mkdocs-material mkdocs-minify-plugin mike
 ```
 
@@ -69,7 +74,7 @@ pip3 install mkdocs mkdocs-material mkdocs-minify-plugin mike
 
 Then you can run the target that will build the documentation as below:
 
-``` shell
+```sh
 ./gradlew publishDocs -PenablePublish
 ```
 
@@ -97,7 +102,7 @@ This component depends on _core_ and _store_. The code in the _cluster_ depends 
 
   The _spark_, _store_, _spark-jobserver_, _aqp_, and _snappy-connectors_ directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git submodules. When working with submodules, updating the repositories follows the normal [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). One can add some aliases in gitconfig to aid pull/push as follows:
 
-```pre
+```ini
 [alias]
   spull = !git pull && git submodule sync --recursive && git submodule update --init --recursive
   spush = push --recurse-submodules=on-demand
@@ -116,7 +121,7 @@ If working on all the separate projects integrated inside the top-level SnappyDa
 
 Useful build and test targets:
 
-```pre
+```sh
 ./gradlew assemble      -  build all the sources
 ./gradlew testClasses   -  build all the tests
 ./gradlew product       -  build and place the product distribution
@@ -141,7 +146,7 @@ The default build directory is _build-artifacts/scala-2.11_ for projects. An exc
 
 The usual Gradle test run targets (_test_, _check_) work as expected for JUnit tests. Separate targets have been provided for running Scala tests (_scalaTest_) while the _check_ target runs both the JUnit and ScalaTests. One can run a single Scala test suite class with _singleSuite_ option while running a single test within some suite works with the `--tests` option:
 
-```pre
+```sh
 > ./gradlew snappy-core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
 > ./gradlew snappy-core:scalaTest \
 >    --tests "Test the creation/dropping of table using SQL"  # run a single test (use full name)
@@ -211,7 +216,6 @@ Error:(236, 18) value getByte is not a member of org.apache.spark.unsafe.types.U
     if (source.getByte(i) == first && matchAt(source, target, i)) return true
     Error:(233, 24) value getByte is not a member of org.apache.spark.unsafe.types.UTF8String
     val first = target.getByte(0)
-
 ```
 
 Even with the above, running unit tests in IDEA may result in more runtime errors due to unexpected **slf4j** versions. A more comprehensive way to correct, both the compilation and unit test problems in IDEA, is to update the snappy-cluster or for whichever module unit tests are to be run and have the **TEST** imports at the end.
