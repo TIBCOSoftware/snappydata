@@ -105,5 +105,5 @@ To start SnappyData locally, you need to create a SnappySession in your program:
 If you already have Spark 2.1.1 - 2.1.3 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
 
 ``` shell
-./bin/spark-shell --packages "TIBCOSoftware:snappydata:1.3.0-s_2.11"
+./bin/spark-shell --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.0"
 ```

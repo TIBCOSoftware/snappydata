@@ -16,7 +16,7 @@ Use any of the options mentioned below to start the Spark shell:
 
         # Create a directory for SnappyData artifacts
         $ mkdir quickstartdatadir 
-        $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "TIBCOSoftware:snappydata:1.3.0-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
+        $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.0" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 
 * **If you have downloaded SnappyData**:
 
