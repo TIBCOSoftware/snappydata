@@ -843,9 +843,9 @@ subprojects {
 
             developers {
               developer {
-                id 'smenon'
-                name 'Sudhir Menon'
-                email 'sumenon@tibco.com'
+                id 'swale'
+                name 'Sumedh Wale'
+                email 'swale@tibco.com'
               }
             }
           }
@@ -1323,15 +1323,15 @@ task jdbcJar {
 
 task copyShadowJars {
   dependsOn jdbcJar
-  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
+  dependsOn ":snappy-connector_${scalaBinaryVersion}:shadowJar"
 
   doLast {
-    def coreProject = project(":snappy-core_${scalaBinaryVersion}")
+    def connectorProject = project(":snappy-connector_${scalaBinaryVersion}")
     String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
     copy {
-      from coreProject.shadowJar.destinationDir
+      from connectorProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"
-      include coreProject.shadowJar.archiveName
+      include connectorProject.shadowJar.archiveName
       rename { filename -> coreName }
     }
   }
@@ -1477,10 +1477,6 @@ def packageZeppelinInterpreter() {
   } else {
     println "Skipping including Zeppelin Interpreter jar due to unwritable ${zeppelinInterpreterDir}"
   }
-}
-
-task sparkPackage {
-  dependsOn ":snappy-core_${scalaBinaryVersion}:sparkPackage"
 }
 
 product.mustRunAfter clean, cleanAll
