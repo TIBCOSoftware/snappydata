@@ -8,19 +8,44 @@
   **/
   def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation
 }
-</code></pre></div> <p><strong>Dependencies</strong>: To compile your job, use the Maven/SBT dependencies for the latest released version of SnappyData.</p> <p><strong>Example: Maven dependency</strong>:</p> <div class=highlight><pre><span></span><code>// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-&lt;dependency&gt;
-    &lt;groupId&gt;io.snappydata&lt;/groupId&gt;
-    &lt;artifactId&gt;snappydata-cluster_2.11&lt;/artifactId&gt;
-    &lt;version&gt;1.3.0&lt;/version&gt;
-&lt;/dependency&gt;
-</code></pre></div> <p><strong>Example: SBT dependency</strong>:</p> <div class=highlight><pre><span></span><code>// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-cluster_2.11&quot; % &quot;1.3.0&quot;
-</code></pre></div> <div class="admonition note"> <p class=admonition-title>Note</p> <p>If your project fails while resolving the above dependency (ie. it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. As a workaround, add the below code to the <code>build.sbt</code>:</p> </div> <div class=highlight><pre><span></span><code>val workaround = {
-  sys.props += &quot;packaging.type&quot; -&gt; &quot;jar&quot;
-  ()
-}
-</code></pre></div> <p>For more details, refer <a href=https://github.com/sbt/sbt/issues/3618>https://github.com/sbt/sbt/issues/3618</a>.</p> <p><strong>Running the Job</strong>: Once you create a jar file for SnappyData job, use the <code>./bin/snappy-job.sh</code> to submit the job in the SnappyData cluster, and then run the job. This is similar to <code>spark-submit</code> for any Spark application. </p> <p>For example, to run the job implemented in <a href=https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala>CreatePartitionedRowTable.scala</a> you can use the following command. The command submits the job and runs it as:</p> <p><div class=highlight><pre><span></span><code> # first change the directory to the SnappyData product directory
+</code></pre></div> <p><strong>Dependencies</strong>: To compile your job, use the Maven/Gradle/SBT dependencies for the latest released version of SnappyData.</p> <div class="tabbed-set tabbed-alternate" data-tabs=1:1><input checked=checked id=__tabbed_1_1 name=__tabbed_1 type=radio><div class=tabbed-labels><label for=__tabbed_1_1>Maven</label></div> <div class=tabbed-content> <div class=tabbed-block></div> </div> </div> <div class=highlight><pre><span></span><code> <span class=cm>&lt;!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 --&gt;</span>
+  <span class=nt>&lt;repositories&gt;</span>
+    <span class=nt>&lt;repository&gt;</span>
+      <span class=nt>&lt;id&gt;</span>cloudera-repo<span class=nt>&lt;/id&gt;</span>
+      <span class=nt>&lt;name&gt;</span>cloudera repo<span class=nt>&lt;/name&gt;</span>
+      <span class=nt>&lt;url&gt;</span>https://repository.cloudera.com/artifactory/cloudera-repos<span class=nt>&lt;/url&gt;</span>
+    <span class=nt>&lt;/repository&gt;</span>
+    ...
+  <span class=nt>&lt;/repositories&gt;</span>
+
+  <span class=nt>&lt;dependencies&gt;</span>
+    <span class=nt>&lt;dependency&gt;</span>
+      <span class=nt>&lt;groupId&gt;</span>io.snappydata<span class=nt>&lt;/groupId&gt;</span>
+      <span class=nt>&lt;artifactId&gt;</span>snappydata-cluster_2.11<span class=nt>&lt;/artifactId&gt;</span>
+      <span class=nt>&lt;version&gt;</span>1.3.0<span class=nt>&lt;/version&gt;</span>
+    <span class=nt>&lt;/dependency&gt;</span>
+    ...
+  <span class=nt>&lt;/dependencies&gt;</span>
+</code></pre></div> <div class="tabbed-set tabbed-alternate" data-tabs=2:1><input checked=checked id=__tabbed_2_1 name=__tabbed_2 type=radio><div class=tabbed-labels><label for=__tabbed_2_1>Gradle</label></div> <div class=tabbed-content> <div class=tabbed-block></div> </div> </div> <div class=highlight><pre><span></span><code><span class=c1>// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11</span><span class=w></span>
+<span class=n>repositories</span><span class=w> </span><span class=o>{</span><span class=w></span>
+<span class=w>  </span><span class=n>mavenCentral</span><span class=o>()</span><span class=w></span>
+<span class=w>  </span><span class=n>maven</span><span class=w> </span><span class=o>{</span><span class=w> </span><span class=n>url</span><span class=w> </span><span class=s1>&#39;https://repository.cloudera.com/artifactory/cloudera-repos&#39;</span><span class=w> </span><span class=o>}</span><span class=w></span>
+<span class=w>  </span><span class=o>...</span><span class=w></span>
+<span class=o>}</span><span class=w></span>
+
+<span class=n>dependencies</span><span class=w> </span><span class=o>{</span><span class=w></span>
+<span class=w>  </span><span class=n>implementation</span><span class=w> </span><span class=s1>&#39;io.snappydata:snappydata-cluster_2.11:1.3.0&#39;</span><span class=w></span>
+<span class=w>  </span><span class=o>...</span><span class=w></span>
+<span class=o>}</span><span class=w></span>
+</code></pre></div> <div class="tabbed-set tabbed-alternate" data-tabs=3:1><input checked=checked id=__tabbed_3_1 name=__tabbed_3 type=radio><div class=tabbed-labels><label for=__tabbed_3_1>SBT</label></div> <div class=tabbed-content> <div class=tabbed-block></div> </div> </div> <div class=highlight><pre><span></span><code><span class=c1>// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11</span>
+<span class=n>resolvers</span><span class=w> </span><span class=o>+=</span><span class=w> </span><span class=s>&quot;Cloudera Repo&quot;</span><span class=w> </span><span class=n>at</span><span class=w> </span><span class=s>&quot;https://repository.cloudera.com/artifactory/cloudera-repos&quot;</span><span class=w></span>
+
+<span class=n>libraryDependencies</span><span class=w> </span><span class=o>+=</span><span class=w> </span><span class=s>&quot;io.snappydata&quot;</span><span class=w> </span><span class=o>%</span><span class=w> </span><span class=s>&quot;snappydata-cluster_2.11&quot;</span><span class=w> </span><span class=o>%</span><span class=w> </span><span class=s>&quot;1.3.0&quot;</span><span class=w></span>
+</code></pre></div> <div class="admonition note"> <p class=admonition-title>Note</p> <p>If your project fails while resolving the above dependency (ie. it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. As a workaround, add the below code to the <code>build.sbt</code>:</p> <div class=highlight><pre><span></span><code><span class=kd>val</span><span class=w> </span><span class=n>workaround</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span><span class=w></span>
+<span class=w>  </span><span class=n>sys</span><span class=p>.</span><span class=n>props</span><span class=w> </span><span class=o>+=</span><span class=w> </span><span class=s>&quot;packaging.type&quot;</span><span class=w> </span><span class=o>-&gt;</span><span class=w> </span><span class=s>&quot;jar&quot;</span><span class=w></span>
+<span class=w>  </span><span class=p>()</span><span class=w></span>
+<span class=p>}</span><span class=w></span>
+</code></pre></div> <p>For more details, refer <a href=https://github.com/sbt/sbt/issues/3618>https://github.com/sbt/sbt/issues/3618</a>.</p> </div> <p><strong>Running the Job</strong>: Once you create a jar file for SnappyData job, use the <code>./bin/snappy-job.sh</code> to submit the job in the SnappyData cluster, and then run the job. This is similar to <code>spark-submit</code> for any Spark application. </p> <p>For example, to run the job implemented in <a href=https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala>CreatePartitionedRowTable.scala</a> you can use the following command. The command submits the job and runs it as:</p> <p><div class=highlight><pre><span></span><code> # first change the directory to the SnappyData product directory
  $ cd $SNAPPY_HOME
  $ ./bin/snappy-job.sh submit
     --app-name CreatePartitionedRowTable

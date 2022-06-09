@@ -2,7 +2,7 @@
 </code></pre></div> <h2 id=dependencies>Dependencies<a class=headerlink href=#dependencies title="Permanent link">&para;</a></h2> <p>SnappyData core and SnappyData jdbc streaming connector maven dependencies would be needed for your application. <div class=highlight><pre><span></span><code><span class=nt>&lt;dependency&gt;</span>
   <span class=nt>&lt;groupId&gt;</span>io.snappydata<span class=nt>&lt;/groupId&gt;</span>
   <span class=nt>&lt;artifactId&gt;</span>snappydata-jdbc-stream-connector_2.11<span class=nt>&lt;/artifactId&gt;</span>
-  <span class=nt>&lt;version&gt;</span>0.9.3<span class=nt>&lt;/version&gt;</span>
+  <span class=nt>&lt;version&gt;</span>1.3.0<span class=nt>&lt;/version&gt;</span>
   <span class=nt>&lt;scope&gt;</span>compile<span class=nt>&lt;/scope&gt;</span>
 <span class=nt>&lt;/dependency&gt;</span>
 <span class=nt>&lt;dependency&gt;</span>
@@ -11,7 +11,15 @@
   <span class=nt>&lt;version&gt;</span>1.3.0<span class=nt>&lt;/version&gt;</span>
   <span class=nt>&lt;scope&gt;</span>compile<span class=nt>&lt;/scope&gt;</span>
 <span class=nt>&lt;/dependency&gt;</span>
-</code></pre></div></p> <h2 id=configuring-the-jdbc-source>Configuring the JDBC Source<a class=headerlink href=#configuring-the-jdbc-source title="Permanent link">&para;</a></h2> <p>Spark(SnappyData) Streaming polls the JDBC source and reads the data that is newer than the offset last read. The offset management is done by streaming but the offset has to be defined by the JDBC source. An offset has to be a monotonically increasing column inside the source table. Following few properties of the JDBC source have to be configured.</p> <ul> <li>table: Table from which the data would be sourced.</li> <li>offsetColumn: the designated column for offset. For e.g. in SQLServer CDC tables __$start_lsn should be used.</li> <li>getNextOffset: function to get the next offset. This can be a JDBC function or query.</li> <li>offsetToStrFunc and strToOffsetFunc - functions to convert offset to and from a string. This is needed to internally manipulate an offset.</li> <li>offsetIncFunc - If getNextOffset is not available, a function to increment the offset</li> </ul> <p>In this quickstart since we are using spark-shell, use the following command which loads the required dependencies of Snappy and SQL Server. <div class=highlight><pre><span></span><code>$ &lt;SnappyData-product-home&gt;/bin/spark-shell --master local<span class=o>[</span>*<span class=o>]</span>
+</code></pre></div></p> <p>Also add cloudera repository to the set of Maven repositories to be searched:</p> <div class=highlight><pre><span></span><code>  <span class=nt>&lt;repositories&gt;</span>
+    <span class=nt>&lt;repository&gt;</span>
+      <span class=nt>&lt;id&gt;</span>cloudera-repo<span class=nt>&lt;/id&gt;</span>
+      <span class=nt>&lt;name&gt;</span>cloudera repo<span class=nt>&lt;/name&gt;</span>
+      <span class=nt>&lt;url&gt;</span>https://repository.cloudera.com/artifactory/cloudera-repos<span class=nt>&lt;/url&gt;</span>
+    <span class=nt>&lt;/repository&gt;</span>
+    ...
+  <span class=nt>&lt;/repositories&gt;</span>
+</code></pre></div> <h2 id=configuring-the-jdbc-source>Configuring the JDBC Source<a class=headerlink href=#configuring-the-jdbc-source title="Permanent link">&para;</a></h2> <p>Spark(SnappyData) Streaming polls the JDBC source and reads the data that is newer than the offset last read. The offset management is done by streaming but the offset has to be defined by the JDBC source. An offset has to be a monotonically increasing column inside the source table. Following few properties of the JDBC source have to be configured.</p> <ul> <li>table: Table from which the data would be sourced.</li> <li>offsetColumn: the designated column for offset. For e.g. in SQLServer CDC tables __$start_lsn should be used.</li> <li>getNextOffset: function to get the next offset. This can be a JDBC function or query.</li> <li>offsetToStrFunc and strToOffsetFunc - functions to convert offset to and from a string. This is needed to internally manipulate an offset.</li> <li>offsetIncFunc - If getNextOffset is not available, a function to increment the offset</li> </ul> <p>In this quickstart since we are using spark-shell, use the following command which loads the required dependencies of Snappy and SQL Server. <div class=highlight><pre><span></span><code>$ &lt;SnappyData-product-home&gt;/bin/spark-shell --master local<span class=o>[</span>*<span class=o>]</span>
     --conf snappydata.connection<span class=o>=</span>localhost:1527
     --packages com.microsoft.sqlserver:mssql-jdbc:6.1.0.jre8
     --jars &lt;SnappyData-product-home&gt;/connectors/snappydata-jdbc-stream-connector_2.11-0.9.jar
