@@ -105,16 +105,17 @@ dependencies {
       exclude(group: 'org.apache.derby', module: 'derby')
     }
 
-    compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}")
+    compile "org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}"
+    compile "org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}"
+    compile "org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}"
+    compile "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}"
+    compile "org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}"
+    compile "org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}"
+    compile "org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}"
+    compile "org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}"
 
     compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+    testCompile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
 
     testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
     testCompile("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")

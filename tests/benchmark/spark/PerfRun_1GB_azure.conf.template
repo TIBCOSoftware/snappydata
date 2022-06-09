@@ -30,7 +30,7 @@ buckets_Order_Lineitem=128
 buckets_Cust_Part_PartSupp=128
 
 # location of jar which has TPCH related class files
-TPCHJar=/data1/users/perfuser/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.0.2-SNAPSHOT-tests.jar
+TPCHJar=/data1/users/perfuser/snappydata/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.3.0-tests.jar
 
 #Size of the TPCH data. Do not chage format
 dataSize=1GB

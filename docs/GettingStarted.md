@@ -104,18 +104,67 @@ artifactId: snappydata-cluster_2.11
 version: 1.3.0
 ```
 
+Also add cloudera repository to the set of Maven repositories to be searched:
+
+```xml
+  <repositories>
+    <repository>
+      <id>cloudera-repo</id>
+      <name>cloudera repo</name>
+      <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
+    </repository>
+    ...
+  </repositories>
+```
+
+### Using Gradle Dependency
+
+If you are using Gradle, add this to your **build.gradle** for core SnappyData artifacts:
+
+```groovy
+dependencies {
+  implementation 'io.snappydata:snappydata-core_2.11:1.3.0'
+  ...
+}
+```
+
+For additions related to SnappyData cluster, use:
+
+```groovy
+dependencies {
+  implementation 'io.snappydata:snappydata-cluster_2.11:1.3.0'
+  ...
+}
+```
+
+Also add cloudera repository to the set of Maven repositories to be searched:
+
+```groovy
+repositories {
+  mavenCentral()
+  maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
+  ...
+}
+```
+
 ### Using SBT Dependency
 
 If you are using SBT, add this line to your **build.sbt** for core SnappyData artifacts:
 
-``` scala
+```scala
 libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.3.0"
 ```
 
 For additions related to SnappyData cluster, use:
 
-``` scala
+```scala
 libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.0"
+```
+
+Also add cloudera repository to the set of Maven repositories to be searched:
+
+```scala
+resolvers += "Cloudera Repo" at "https://repository.cloudera.com/artifactory/cloudera-repos"
 ```
 
 You can find more specific SnappyData artifacts [here](http://mvnrepository.com/artifact/io.snappydata)

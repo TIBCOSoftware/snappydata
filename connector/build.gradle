@@ -18,7 +18,18 @@
 apply plugin: 'scala'
 
 dependencies {
-  runtime project(':snappy-core_' + scalaBinaryVersion)
+  runtime(project(':snappy-core_' + scalaBinaryVersion)) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+  }
 }
 
 if (rootProject.hasProperty('enablePublish')) {
@@ -28,7 +39,6 @@ if (rootProject.hasProperty('enablePublish')) {
 }
 
 archivesBaseName = 'snappydata-spark-connector_' + scalaBinaryVersion
-jar.archiveClassifier.set('only')
 
 shadowJar {
   archiveClassifier.set('')
@@ -66,7 +76,12 @@ install {
     pom.whenConfigured { p -> p.dependencies.clear() }
   }
 }
+
 if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources
+  }
+
   uploadArchives {
     repositories.mavenDeployer {
       pom.whenConfigured { p -> p.dependencies.clear() }

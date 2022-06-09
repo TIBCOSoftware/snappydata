@@ -23,61 +23,106 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
 
 === "Maven"
 
-    ``` xml
-    <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 -->
+```xml
+  <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11 -->
+  <repositories>
+    <repository>
+      <id>cloudera-repo</id>
+      <name>cloudera repo</name>
+      <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
+    </repository>
+    ...
+  </repositories>
+
+  <dependencies>
     <dependency>
-        <groupId>io.snappydata</groupId>
-        <artifactId>snappydata-cluster_2.11</artifactId>
-        <version>1.3.0</version>
+      <groupId>io.snappydata</groupId>
+      <artifactId>snappydata-cluster_2.11</artifactId>
+      <version>1.3.0</version>
     </dependency>
-    ```
+    ...
+  </dependencies>
+```
 
 === "Gradle"
 
-    ``` groovy
-    // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-    compile 'io.snappydata:snappydata-cluster_2.11:1.3.0'
-    ```
+```groovy
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
+repositories {
+  mavenCentral()
+  maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
+  ...
+}
+
+dependencies {
+  implementation 'io.snappydata:snappydata-cluster_2.11:1.3.0'
+  ...
+}
+```
 
 === "SBT"
 
-    ``` scala
-    // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-    libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.0"
-    ```
+```scala
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
+resolvers += "Cloudera Repo" at "https://repository.cloudera.com/artifactory/cloudera-repos"
+
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.0"
+```
 
 For Approximate Query Engine support:
 
 === "Maven"
 
-    ``` xml
-    <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-aqp_2.11 -->
+```xml
+<!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-aqp_2.11 -->
+  <repositories>
+    <repository>
+        <id>cloudera-repo</id>
+        <name>cloudera repo</name>
+        <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
+    </repository>
+    ...
+  </repositories>
+
+  <dependencies>
     <dependency>
-        <groupId>io.snappydata</groupId>
-        <artifactId>snappydata-aqp_2.11</artifactId>
-        <version>1.3.0</version>
+      <groupId>io.snappydata</groupId>
+      <artifactId>snappydata-aqp_2.11</artifactId>
+      <version>1.3.0</version>
     </dependency>
-    ```
+    ...
+  </dependencies>
+```
 
 === "Gradle"
 
-    ``` groovy
-    // https://mvnrepository.com/artifact/io.snappydata/snappydata-aqp_2.11
-    compile 'io.snappydata:snappydata-aqp_2.11:1.3.0'
-    ```
+```groovy
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-aqp_2.11
+repositories {
+  mavenCentral()
+  maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
+  ...
+}
+
+dependencies {
+  implementation 'io.snappydata:snappydata-aqp_2.11:1.3.0'
+  ...
+}
+```
 
 === "SBT"
 
-    ``` scala
-    // https://mvnrepository.com/artifact/io.snappydata/snappydata-aqp_2.11
-    libraryDependencies += "io.snappydata" % "snappydata-aqp_2.11" % "1.3.0"
-    ```
+```scala
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-aqp_2.11
+resolvers += "Cloudera Repo" at "https://repository.cloudera.com/artifactory/cloudera-repos"
+
+libraryDependencies += "io.snappydata" % "snappydata-aqp_2.11" % "1.3.0"
+```
 
 !!!Note
-
     If your project fails when resolving the dependency with SBT (that is, it fails to download `javax.ws.rs#javax.ws.rs-api;2.1`), it may be due an issue with its pom file. </br>As a workaround, add the below code to the **build.sbt**:
 
-    ``` scala
+    ```scala
     val workaround = {
       sys.props += "packaging.type" -> "jar"
       ()

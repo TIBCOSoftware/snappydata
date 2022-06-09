@@ -5,7 +5,7 @@ To create a job that can be submitted through the job server, the job must imple
 
 **Scala**
 
-```pre
+```scala
 object SnappySampleJob extends SnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
@@ -17,7 +17,7 @@ object SnappySampleJob extends SnappySQLJob {
 ```
 
 **Java**
-```pre
+```java
 class SnappySampleJob extends JavaSnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   public Object runSnappyJob(SnappySession snappy, Config jobConfig) {//Implementation}
@@ -29,7 +29,7 @@ class SnappySampleJob extends JavaSnappySQLJob {
 ```
 
 **Scala**
-```pre
+```scala
 object SnappyStreamingSampleJob extends SnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   override def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any = {
@@ -40,7 +40,7 @@ object SnappyStreamingSampleJob extends SnappyStreamingJob {
 ```
 
 **Java**
-```pre
+```java
 class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   public Object runSnappyJob(JavaSnappyStreamingContext snsc, Config jobConfig) {//implementation }
@@ -73,7 +73,7 @@ The following command submits [CreateAndLoadAirlineDataJob](https://github.com/T
 
 The program must be compiled and bundled as a jar file and submitted to jobs server as shown below:
 
-```pre
+```sh
 $ ./bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
@@ -95,7 +95,7 @@ The utility `snappy-job.sh` submits the job and returns a JSON that has a Job Id
 
 The status returned by the utility is displayed below:
 
-```pre
+```json
 {
   "status": "STARTED",
   "result": {
@@ -106,7 +106,7 @@ The status returned by the utility is displayed below:
 ```
 This Job ID can be used to query the status of the running job.
 
-```pre
+```sh
 $ ./bin/snappy-job.sh status  \
     --lead localhost:8090  \
     --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
@@ -123,7 +123,7 @@ $ ./bin/snappy-job.sh status  \
 ```
 Once the tables are created, they can be queried by running another job. Please refer to [AirlineDataJob](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala) for implementing the job.
 
-```pre
+```sh
 $ ./bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
@@ -138,28 +138,25 @@ For writing jobs users need to include [Maven/SBT dependencies for the latest re
 
 For example, gradle can be configured as:
 
-```pre
-compile('io.snappydata:snappydata-cluster_2.11:1.3.0') {
-        exclude(group: 'io.snappydata', module: 'snappy-spark-unsafe_2.11')
-        exclude(group: 'io.snappydata', module: 'snappy-spark-core_2.11')
-        exclude(group: 'io.snappydata',module: 'snappy-spark-yarn_2.11')
-        exclude(group: 'io.snappydata',module: 'snappy-spark-hive-thriftserver_2.11')
-        exclude(group: 'io.snappydata',module: 'snappy-spark-streaming-kafka-0.10_2.11')
-        exclude(group: 'io.snappydata',module: 'snappy-spark-repl_2.11')
-        exclude(group: 'io.snappydata',module: 'snappy-spark-sql_2.11')
-        exclude(group: 'io.snappydata',module: 'snappy-spark-mllib_2.11')
-        exclude(group: 'io.snappydata',module: 'snappy-spark-streaming_2.11')
-        exclude(group: 'io.snappydata',module: 'snappy-spark-catalyst_2.11')
-        exclude(group: 'io.snappydata',module: 'snappy-spark-hive_2.11')
-        exclude(group: 'io.snappydata',module: 'snappy-spark-graphx_2.11')
-    }
+```groovy
+// https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
+repositories {
+  mavenCentral()
+  maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
+  ...
+}
+
+dependencies {
+  implementation 'io.snappydata:snappydata-cluster_2.11:1.3.0'
+  ...
+}
 ```
 
 ## Running Python Applications
 
 Python users can submit a Python application using `./bin/spark-submit` in the SnappyData Connector mode. Run the following command to submit a Python application:
 
-```pre
+```sh
 ./bin/spark-submit \
     --master local[*]  \
     --conf snappydata.connection=localhost:1527 \
@@ -182,7 +179,7 @@ Alternatively, you can specify the name of an existing/pre-created streaming con
 For example, [TwitterPopularTagsJob](https://github.com/TIBCOSoftware/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) can be submitted as follows.
 This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, and top 10 popular tweets.
 
-```pre
+```sh
 $ ./bin/snappy-job.sh submit  \
     --lead localhost:8090  \
     --app-name airlineApp \
@@ -201,7 +198,7 @@ $ ./bin/snappy-job.sh submit  \
 ```
 To start another streaming job with a new streaming context, you need to first stop the currently running streaming job, followed by its streaming context.
 
-```pre
+```sh
 $ ./bin/snappy-job.sh stop  \
     --lead localhost:8090  \
     --job-id 982ac142-3550-41e1-aace-6987cb39fec8
