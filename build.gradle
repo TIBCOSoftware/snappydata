@@ -65,7 +65,7 @@ allprojects {
   }
 
   apply plugin: 'java'
-  apply plugin: 'maven'
+  apply plugin: 'maven-publish'
   apply plugin: 'scalaStyle'
   apply plugin: 'com.github.johnrengelman.shadow'
   apply plugin: 'idea'
@@ -818,69 +818,75 @@ subprojects {
     archiveClassifier.set('javadoc')
     from javadoc
   }
+
+  ext {
+    publishArtifacts = [ jar, packageSources ]
+  }
+
   pluginManager.withPlugin('scala') {
     task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
-      classifier = 'javadoc'
+      archiveClassifier.set('javadoc')
       from scaladoc
     }
-    if (rootProject.hasProperty('enablePublish')) {
-      artifacts {
-        archives packageScalaDocs
-      }
-    }
+    publishArtifacts.add(packageScalaDocs)
   }
   if (rootProject.hasProperty('enablePublish')) {
-    artifacts {
-      archives packageSources
-    }
-
-    signing {
-      useGpgCmd()
-      sign configurations.archives
-    }
-
-    uploadArchives {
+    publishing {
       repositories {
-        mavenDeployer {
-          beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-          repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
-            authentication(userName: ossrhUsername, password: ossrhPassword)
+        maven {
+          def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+          def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
+          url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+          name = 'SonatypeOSS'
+          credentials {
+            username = ossrhUsername
+            password = ossrhPassword
           }
-          snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
-            authentication(userName: ossrhUsername, password: ossrhPassword)
+        }
+      }
+      publications {
+        maven(MavenPublication) {
+          from components.java
+          afterEvaluate {
+            artifactId = jar.archiveBaseName.get()
+            artifacts = publishArtifacts
           }
 
-          pom.project {
-            name 'SnappyData'
-            packaging 'jar'
+          pom {
+            name = 'SnappyData'
+            packaging = 'jar'
             // optionally artifactId can be defined here
-            description 'SnappyData distributed data store and execution engine'
-            url 'https://github.com/TIBCOSoftware/snappydata'
+            description = 'SnappyData distributed data store and execution engine'
+            url = 'https://github.com/TIBCOSoftware/snappydata'
 
             scm {
-              connection 'scm:git:https://github.com/TIBCOSoftware/snappydata.git'
-              developerConnection 'scm:git:https://github.com/TIBCOSoftware/snappydata.git'
-              url 'https://github.com/TIBCOSoftware/snappydata'
+              connection = 'scm:git:https://github.com/TIBCOSoftware/snappydata.git'
+              developerConnection = 'scm:git:https://github.com/TIBCOSoftware/snappydata.git'
+              url = 'https://github.com/TIBCOSoftware/snappydata'
             }
 
             licenses {
               license {
-                name 'The Apache License, Version 2.0'
-                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                name = 'The Apache License, Version 2.0'
+                url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
               }
             }
 
             developers {
               developer {
-                id 'swale'
-                name 'Sumedh Wale'
-                email 'swale@tibco.com'
+                id = 'swale'
+                name = 'Sumedh Wale'
+                email = 'swale@tibco.com'
               }
             }
           }
         }
       }
+    }
+
+    signing {
+      useGpgCmd()
+      sign publishing.publications.maven
     }
   }
 }
@@ -983,17 +989,18 @@ gradle.taskGraph.whenReady { graph ->
 
 Set<String> skipPublishFor = [
   'snappydata_' + scalaBinaryVersion, 'snappy-spark', 'snappy-store',
+  'snappy-dtests_' + scalaBinaryVersion, 'snappy-compatibility-tests_' + scalaBinaryVersion,
   'snappydata-native', 'snappydata-store-prebuild',
   'snappy-spark-assembly_' + scalaBinaryVersion
 ]
 
 task publishLocal() {
-  dependsOn getTasksByName('install', true).findAll {
+  dependsOn getTasksByName('publishToMavenLocal', true).findAll {
     !skipPublishFor.contains(it.project.name) }
 }
 
 task publishMaven {
-  dependsOn getTasksByName('uploadArchives', true).findAll {
+  dependsOn getTasksByName('publish', true).findAll {
     !skipPublishFor.contains(it.project.name) }
 }
 

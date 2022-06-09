@@ -107,19 +107,17 @@ shadowJar {
 }
 
 // clear dependencies from shadowJar POM
-install {
-  repositories.mavenInstaller {
-    pom.whenConfigured { p -> p.dependencies.clear() }
-  }
-}
 if (rootProject.hasProperty('enablePublish')) {
-  artifacts {
-    archives shadowJar
-  }
-
-  uploadArchives {
-    repositories.mavenDeployer {
-      pom.whenConfigured { p -> p.dependencies.clear() }
+  publishing.publications {
+    maven(MavenPublication) {
+      afterEvaluate {
+        pom.withXml {
+          def xmlNode = asNode()
+          xmlNode.remove(xmlNode.get('dependencies'))
+        }
+      }
     }
   }
 }
+
+publishArtifacts.add(shadowJar)

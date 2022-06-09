@@ -18,7 +18,7 @@
 apply plugin: 'java'
 
 group = 'io.snappydata'
-version = '1.0.3.7'
+version = '1.0.3.8'
 
 compileJava.options.encoding = 'UTF-8'
 
@@ -32,8 +32,4 @@ dependencies {
   }
 }
 
-if (rootProject.hasProperty('enablePublish')) {
-  artifacts {
-    archives packageDocs
-  }
-}
+publishArtifacts.add(packageDocs)

@@ -104,9 +104,7 @@ task buildDtests {
   dependsOn ':cleanScalaTest', ':snappy-store:storeProduct', ':product', packageTests
 }
 
-artifacts {
-  archives packageTests
-}
+publishArtifacts.add(packageTests)
 
 archivesBaseName = 'snappydata-store-scala-tests'
 
