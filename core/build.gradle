@@ -177,16 +177,6 @@ dependencies {
   }
 }
 
-task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
-  archiveClassifier.set('javadoc')
-  from scaladoc
-}
-if (rootProject.hasProperty('enablePublish')) {
-  artifacts {
-    archives packageScalaDocs, packageSources
-  }
-}
-
 scalaTest {
   dependsOn ':cleanScalaTest'
   doFirst {

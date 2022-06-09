@@ -32,12 +32,6 @@ dependencies {
   }
 }
 
-if (rootProject.hasProperty('enablePublish')) {
-  artifacts {
-    archives shadowJar
-  }
-}
-
 archivesBaseName = 'snappydata-spark-connector_' + scalaBinaryVersion
 
 shadowJar {
@@ -79,7 +73,7 @@ install {
 
 if (rootProject.hasProperty('enablePublish')) {
   artifacts {
-    archives packageScalaDocs, packageSources
+    archives shadowJar
   }
 
   uploadArchives {

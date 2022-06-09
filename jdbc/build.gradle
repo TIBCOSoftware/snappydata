@@ -52,11 +52,6 @@ dependencies {
   }
 }
 
-task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
-  classifier = 'javadoc'
-  from scaladoc
-}
-
 scalaTest {
   dependsOn ':cleanScalaTest'
   doFirst {
@@ -102,12 +97,6 @@ shadowJar {
   }
 }
 
-if (rootProject.hasProperty('enablePublish')) {
-  artifacts {
-    archives packageScalaDocs, packageSources, shadowJar
-  }
-}
-
 // clear dependencies from shadowJar POM
 install {
   repositories.mavenInstaller {
@@ -115,6 +104,10 @@ install {
   }
 }
 if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives shadowJar
+  }
+
   uploadArchives {
     repositories.mavenDeployer {
       pom.whenConfigured { p -> p.dependencies.clear() }

@@ -803,7 +803,22 @@ subprojects {
     archiveClassifier.set('javadoc')
     from javadoc
   }
+  pluginManager.withPlugin('scala') {
+    task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+      classifier = 'javadoc'
+      from scaladoc
+    }
+    if (rootProject.hasProperty('enablePublish')) {
+      artifacts {
+        archives packageScalaDocs
+      }
+    }
+  }
   if (rootProject.hasProperty('enablePublish')) {
+    artifacts {
+      archives packageSources
+    }
+
     signing {
       useGpgCmd()
       sign configurations.archives
@@ -951,19 +966,20 @@ gradle.taskGraph.whenReady { graph ->
 }
 
 
-task publishLocal {
-  dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
-    p.name != 'snappydata-store-prebuild' && p.name != 'snappydata-store' }.collect {
-      it.getTasksByName('install', false).collect { it.path }
-  }
+Set<String> skipPublishFor = [
+  'snappydata_' + scalaBinaryVersion, 'snappy-spark', 'snappy-store',
+  'snappydata-native', 'snappydata-store-prebuild',
+  'snappy-spark-assembly_' + scalaBinaryVersion
+]
+
+task publishLocal() {
+  dependsOn getTasksByName('install', true).findAll {
+    !skipPublishFor.contains(it.project.name) }
 }
 
 task publishMaven {
-  dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
-    p.name != 'snappydata-store-prebuild' && p.name != 'snappy-store' &&
-      p.name != 'snappydata-store' }.collect {
-      it.getTasksByName('uploadArchives', false).collect { it.path }
-  }
+  dependsOn getTasksByName('uploadArchives', true).findAll {
+    !skipPublishFor.contains(it.project.name) }
 }
 
 task product(type: Zip) {

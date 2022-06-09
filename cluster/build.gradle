@@ -212,16 +212,6 @@ task createVersionPropertiesFile(dependsOn: 'processResources') {
 
 compileJava.dependsOn createVersionPropertiesFile
 
-task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
-  archiveClassifier.set('javadoc')
-  from scaladoc
-}
-if (rootProject.hasProperty('enablePublish')) {
-  artifacts {
-    archives packageScalaDocs, packageSources
-  }
-}
-
 test.dependsOn ':cleanJUnit'
 scalaTest {
   dependsOn ':cleanScalaTest'
