@@ -216,7 +216,7 @@ Refer [SnappyData properties](property_description.md).
 SnappyData configuration properties can be specified using environment variables LOCATOR\_STARTUP\_OPTIONS, SERVER\_STARTUP\_OPTIONS, and LEAD\_STARTUP\_OPTIONS respectively for locators, leads and servers.  These environment variables are useful to specify common properties for locators, servers, and leads.  These startup environment variables can be specified in **conf/spark-env.sh** file. This file is sourced when SnappyData system is started. A template file **conf/spark-env.sh.template** is provided in **conf** directory for reference. You can copy this file and use it to configure properties.
 
 For example:
-``` shell
+```sh
 # create a spark-env.sh from the template file
 $cp conf/spark-env.sh.template conf/spark-env.sh
 
@@ -231,9 +231,8 @@ LOCATOR_STARTUP_OPTIONS=”$SECURITY_ARGS”
 SERVER_STARTUP_OPTIONS=”$SECURITY_ARGS”
 #applies the configuration specified by SECURITY_ARGS to all leads
 LEAD_STARTUP_OPTIONS=”$SECURITY_ARGS”
-
-
 ```
+
 <a id="configure-smart-connector"></a>
 ## Configuring SnappyData Smart Connector
 
@@ -245,7 +244,7 @@ Spark applications run as independent sets of processes on a cluster, coordinate
 
 **Example**:
 
-``` shell
+```sh
 $ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass
 	--master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527
 	--packages 'io.snappydata:snappydata-spark-connector_2.11:1.3.1'

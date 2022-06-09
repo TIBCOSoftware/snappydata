@@ -62,16 +62,6 @@ if (!(new File(rootDir, 'cluster/build.gradle').exists())) {
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 
-task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
-  archiveClassifier.set('javadoc')
-  from scaladoc
-}
-if (rootProject.hasProperty('enablePublish')) {
-  artifacts {
-    archives packageScalaDocs, packageSources
-  }
-}
-
 task productExamples(dependsOn: 'jar') { doLast {
   copy {
     from 'src/main/python/*'

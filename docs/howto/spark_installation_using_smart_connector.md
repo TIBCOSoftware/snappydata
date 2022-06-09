@@ -66,14 +66,14 @@ The Smart Connector Application can now connect to this SnappyData cluster. </br
 
 The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside the SnappyData cluster. </br>SnappyData package has to be specified along with the application jar to run the Smart Connector application.
 
-```pre
+```sh
 $ ./bin/spark-submit --master local[*] --conf snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample --packages io.snappydata:snappydata-spark-connector_2.11:1.3.1 $SNAPPY_HOME/examples/jars/quickstart.jar
 ```
 
 ## Execute a Smart Connector Application
 Start a SnappyData cluster and create a table inside it.
 
-```pre
+```sh
 $ ./sbin/snappy-start-all.sh
 
 $ ./bin/snappy
@@ -90,6 +90,6 @@ exit;
 
 A Smart Connector Application can now connect to this SnappyData cluster. The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside SnappyData cluster. SnappyData package has to be specified along with the application jar to run the Smart Connector application. 
 
-```pre
-$ ./bin/spark-submit --master local[*] --conf spark.snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample --packages io.snappydata:snappydata-spark-connector_2.11:1.3.1 $SNAPPY_HOME/examples/jars/quickstart.jar
+```sh
+$ ./bin/spark-submit --master local[*] --conf spark.snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample   --packages io.snappydata:snappydata-spark-connector_2.11:1.3.1 $SNAPPY_HOME/examples/jars/quickstart.jar
 ```

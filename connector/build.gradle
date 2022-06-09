@@ -1,0 +1,84 @@
+/*
+ * Copyright (c) 2017-2022 TIBCO Software Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
+apply plugin: 'scala'
+
+dependencies {
+  runtime(project(':snappy-core_' + scalaBinaryVersion)) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+  }
+}
+
+archivesBaseName = 'snappydata-spark-connector_' + scalaBinaryVersion
+
+shadowJar {
+  archiveClassifier.set('')
+
+  zip64 = true
+  // avoid conflict with the 0.9.2 version in stock Spark
+  relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
+  // relocate fastutil for possible conflicts with user dependencies
+  relocate 'it.unimi.dsi.fastutil', 'io.snappydata.it.unimi.dsi.fastutil'
+  // relocate the guava's com.google packages
+  relocate 'com.google.common', 'io.snappydata.com.google.common'
+
+  mergeServiceFiles()
+  exclude 'log4j.properties'
+
+  if (rootProject.hasProperty('enablePublish')) {
+    createdBy = vendorName
+  } else {
+    createdBy = System.getProperty('user.name')
+  }
+  manifest {
+    attributes(
+      'Manifest-Version'  : '1.0',
+      'Created-By'        : createdBy,
+      'Title'             : "snappydata-spark-connector_${scalaBinaryVersion}",
+      'Version'           : archiveVersion,
+      'Vendor'            : vendorName
+    )
+  }
+}
+
+// clear dependencies from shadowJar POM
+install {
+  repositories.mavenInstaller {
+    pom.whenConfigured { p -> p.dependencies.clear() }
+  }
+}
+
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives shadowJar
+  }
+
+  uploadArchives {
+    repositories.mavenDeployer {
+      pom.whenConfigured { p -> p.dependencies.clear() }
+    }
+  }
+}

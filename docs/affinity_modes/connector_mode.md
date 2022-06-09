@@ -76,7 +76,7 @@ You can either start SnappyData members using the `snappy_start_all` script or y
 
 ***_In the Local mode_***
 
-``` shell
+```sh
 
 ./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1"
 ```
@@ -114,11 +114,12 @@ The code example for writing a Smart Connector application program is located in
 
 **Cluster mode**
 
-``` shell
+```sh
 ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1"
 ```
+
 **Client mode**
-``` shell
+```sh
 ./bin/spark-submit --deploy-mode client --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1"
 ```
 
@@ -126,11 +127,11 @@ The code example for writing a Smart Connector application program is located in
 ***_Using YARN as a Cluster Manager_***
 
 **Cluster mode**
-``` shell
+```sh
 ./spark-submit --master yarn --deploy-mode cluster --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-1.3.1-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-1.3.1-bin/jars/* --class MainClass SampleProjectYarn.jar
 ```
 
 **Client mode**
-``` shell
+```sh
 ./spark-submit --master yarn --deploy-mode client --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-1.3.1-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-1.3.1-bin/jars/* --class MainClass SampleProjectYarn.jar
 ```

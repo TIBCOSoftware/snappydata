@@ -61,7 +61,7 @@ allprojects {
     maven { url 'https://packages.atlassian.com/maven-3rdparty' }
     maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
     maven { url 'https://app.camunda.com/nexus/content/repositories/public' }
-    maven { url "https://repo.spring.io/libs-release" }
+    maven { url 'https://repo.spring.io/plugins-release' }
   }
 
   apply plugin: 'java'
@@ -818,7 +818,22 @@ subprojects {
     archiveClassifier.set('javadoc')
     from javadoc
   }
+  pluginManager.withPlugin('scala') {
+    task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+      classifier = 'javadoc'
+      from scaladoc
+    }
+    if (rootProject.hasProperty('enablePublish')) {
+      artifacts {
+        archives packageScalaDocs
+      }
+    }
+  }
   if (rootProject.hasProperty('enablePublish')) {
+    artifacts {
+      archives packageSources
+    }
+
     signing {
       useGpgCmd()
       sign configurations.archives
@@ -858,9 +873,9 @@ subprojects {
 
             developers {
               developer {
-                id 'smenon'
-                name 'Sudhir Menon'
-                email 'sumenon@tibco.com'
+                id 'swale'
+                name 'Sumedh Wale'
+                email 'swale@tibco.com'
               }
             }
           }
@@ -966,19 +981,20 @@ gradle.taskGraph.whenReady { graph ->
 }
 
 
-task publishLocal {
-  dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
-    p.name != 'snappydata-store-prebuild' && p.name != 'snappydata-store' }.collect {
-      it.getTasksByName('install', false).collect { it.path }
-  }
+Set<String> skipPublishFor = [
+  'snappydata_' + scalaBinaryVersion, 'snappy-spark', 'snappy-store',
+  'snappydata-native', 'snappydata-store-prebuild',
+  'snappy-spark-assembly_' + scalaBinaryVersion
+]
+
+task publishLocal() {
+  dependsOn getTasksByName('install', true).findAll {
+    !skipPublishFor.contains(it.project.name) }
 }
 
 task publishMaven {
-  dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
-    p.name != 'snappydata-store-prebuild' && p.name != 'snappy-store' &&
-      p.name != 'snappydata-store' }.collect {
-      it.getTasksByName('uploadArchives', false).collect { it.path }
-  }
+  dependsOn getTasksByName('uploadArchives', true).findAll {
+    !skipPublishFor.contains(it.project.name) }
 }
 
 task product(type: Zip) {
@@ -1336,14 +1352,14 @@ task jdbcJar {
 
 task copyShadowJars {
   dependsOn jdbcJar
-  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
+  dependsOn ":snappy-connector_${scalaBinaryVersion}:shadowJar"
 
   doLast {
-    def coreProject = project(":snappy-core_${scalaBinaryVersion}")
+    def connectorProject = project(":snappy-connector_${scalaBinaryVersion}")
     copy {
-      from coreProject.shadowJar.destinationDir
+      from connectorProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"
-      include coreProject.shadowJar.archiveName
+      include connectorProject.shadowJar.archiveName
     }
   }
 }
@@ -1356,8 +1372,7 @@ task distInstallers {
 
 // use the task below to prepare final release bits
 task distProduct {
-  dependsOn product, copyShadowJars, distTar, distZip
-  dependsOn distInstallers
+  dependsOn product, copyShadowJars, distTar
 }
 
 task generateSources {
@@ -1490,10 +1505,6 @@ def packageZeppelinInterpreter() {
   } else {
     println "Skipping including Zeppelin Interpreter jar due to unwritable ${zeppelinInterpreterDir}"
   }
-}
-
-task sparkPackage {
-  dependsOn ":snappy-core_${scalaBinaryVersion}:sparkPackage"
 }
 
 product.mustRunAfter clean, cleanAll

@@ -6,7 +6,7 @@ Other than `create` and `drop` table, rest are all based on the Spark SQL Data S
 
 === "Scala"
 
-``` scala
+    ```scala
      val props = Map("BUCKETS" -> "8")// Number of partitions to use in the SnappyStore
 
      case class Data(COL1: Int, COL2: Int, COL3: Int)
@@ -28,11 +28,11 @@ Other than `create` and `drop` table, rest are all based on the Spark SQL Data S
      val results = snappy.sql("SELECT * FROM COLUMN_TABLE")
      println("contents of column table are:")
      results.foreach(r => println(r))
-```
+    ```
 
 === "Java"
 
-``` java
+    ```java
      Map<String, String> props1 = new HashMap<>();
      props1.put("buckets", "16");
 
@@ -66,11 +66,11 @@ Other than `create` and `drop` table, rest are all based on the Spark SQL Data S
      for (Row r : results.select("col1", "col2", "col3"). collectAsList()) {
        System.out.println(r);
      }
-```
+    ```
 
 === "Python"
 
-``` python
+    ```python
     from pyspark.sql.types import *
 
     data = [(1,2,3),(7,8,9),(9,2,3),(4,2,3),(5,6,7)]
@@ -93,7 +93,7 @@ Other than `create` and `drop` table, rest are all based on the Spark SQL Data S
 
     print("contents of column table are:")
     results1.select("col1", "col2", "col3"). show()
-```
+    ```
 
 The optional BUCKETS attribute specifies the number of partitions or buckets to use. In SnappyStore, when data migrates between nodes (say if the cluster is expanded) a bucket is the smallest unit that can be moved around.
 For more details about the properties ('props1' map in above example) and `createTable` API refer to the documentation for [row and column tables](#tables-in-snappydata).
@@ -137,7 +137,7 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
 
 === "Scala"
 
-``` scala
+    ```scala
      import org.apache.spark.sql._
      import org.apache.spark.streaming._
      import scala.collection.mutable
@@ -168,11 +168,11 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
 
      snsc.start()
      snsc.sql("select count(*) from streamingExample").show
-```
+    ```
 
 === "Java"
 
-``` java
+    ```java
      StructType schema = new StructType(new StructField[]{
          new StructField("id", DataTypes.IntegerType, false, Metadata.empty()),
          new StructField("text", DataTypes.StringType, false, Metadata.empty())
@@ -209,11 +209,11 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
      jsnsc.start();
 
      jsnsc.sql("select count(*) from streamingExample").show();
-```
+    ```
 
 === "Python"
 
-``` python
+    ```python
     from pyspark.streaming.snappy.context import SnappyStreamingContext
     from pyspark.sql.types import *
 
@@ -238,4 +238,4 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
     snsc.start()
     time.sleep(1)
     snsc.sql("select count(*) from streamingExample").show()
-```
+    ```

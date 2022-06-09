@@ -32,12 +32,8 @@ dependencies {
   }
 }
 
-task packageJavaDocs(type: Jar, dependsOn: javadoc) {
-  archiveClassifier = 'javadoc'
-  from javadoc
-}
 if (rootProject.hasProperty('enablePublish')) {
   artifacts {
-    archives packageJavaDocs, packageSources
+    archives packageDocs
   }
 }

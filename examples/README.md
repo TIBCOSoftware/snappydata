@@ -66,7 +66,7 @@ You can run the example programs as jobs in the SnappyData cluster using either 
 
   If you use Apache Spark 2.1.1 distribution, you can add the required SnappyData classes into its classpath via `--packages` option as shown below.
 
-  ```
+  ```sh
   $SNAPPY_HOME/bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp \
   --master spark://<hostname>:7077 --conf snappydata.connection=localhost:1527 \
   --packages io.snappydata:snappydata-spark-connector_2.11:1.3.1 \

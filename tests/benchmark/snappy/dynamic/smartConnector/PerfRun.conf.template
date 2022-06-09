@@ -99,7 +99,7 @@ WarmupRuns=2
 AverageRuns=3
 
 # location of jar which has TPCH related class files - it is not part of the binary distribution. Build by running the task './$SNAPPY_SRC/gradlew buildAll'
-TPCHJar=$SNAPPY_SRC/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.1.0-tests.jar
+TPCHJar=$SNAPPY_SRC/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.3.1-tests.jar
 #Size of the TPCH data. Do not change format
 #dataSize=1GB_Stages
 dataSize=1GB
