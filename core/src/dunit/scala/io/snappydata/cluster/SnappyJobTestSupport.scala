@@ -53,7 +53,7 @@ trait SnappyJobTestSupport extends Logging {
    *                       exceeds specified time, the method will throw exception.
    */
   def submitAndWaitForCompletion(classFullName: String, jobCmdAffix: String = "",
-      waitTimeMillis: Int = 60000): Unit = {
+      waitTimeMillis: Int = 120000): Unit = {
     val consoleLog: String = submitJob(classFullName, jobCmdAffix)
     logInfo("Job submission response:" + consoleLog)
     val jobId = getJobId(consoleLog)

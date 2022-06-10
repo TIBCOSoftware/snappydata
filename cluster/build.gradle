@@ -171,7 +171,11 @@ dependencies {
     //exclude(group: 'org.scala-lang', module: 'scala-library')
     //exclude(group: 'org.apache.avro', module: 'avro')
   }
-  compile(group:'com.google.cloud.bigdataoss', name:'gcs-connector', version: gcsHadoop3ConnectorVersion, classifier: 'shaded')
+  compile(group:'com.google.cloud.bigdataoss', name:'gcs-connector', version: gcsHadoop3ConnectorVersion, classifier: 'shaded') {
+    // shaded jar includes all dependencies but the pom still lists all dependencies as per
+    // the non-shaded jar, so skip all dependencies explicitly
+    transitive = false
+  }
 
   testCompile project(':dunit')
   testCompile "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"

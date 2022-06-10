@@ -76,7 +76,7 @@ SnappyData 1.3.1 release includes the following new features over the previous 1
     to the latest Log4J 2.x (2.17.2) from the previous Log4J 1.x. Patches were ported for the Spark components
     (where support for Log4J 2.x will land only with the 3.3.0 release), while other components were updated
     to use Log4J/SLF4J. The Spark connector component supports both Log4J 2.x and Log4J 1.x to allow compatibility
-    with upstream Spark releases which the SnappyData's Spark distribution only uses Log4J 2.x.
+    with upstream Spark releases while the SnappyData's Spark distribution only uses Log4J 2.x.
 
 
 ## Stability and Security Improvements
@@ -88,68 +88,74 @@ SnappyData 1.3.1 includes the following changes to improve stability and securit
 * Fixed a race condition in old entries cleaner thread deleting in-use snapshot entries.
 
 * Allow retry in startup failure even for data nodes. In some rare cases region initialization may fail
-  due to colocated region still being initialized, so retry region initialization.
+  due to colocated region still being initialized, so retry region initialization for such cases.
 
-* Fixed UDF names lookups to do exact regex match in the CSV list in the meta-data region.
+* Fixed UDF name lookups to do exact regex match in the CSV list in the meta-data region.
 
 * Apart from Log4J, following dependencies were updated to address known security issues:
-  - Jetty upgraded to 9.4.44.v20210927
-  - jackson-mapper-asl and jackson-core-asl upgraded to 1.9.14-atlassian-6
-  - jackson and jackson-databind upgraded to 2.13.1
-  - Kafka upgraded to 2.2.2
-  - [SPARK-34110](https://issues.apache.org/jira/browse/SPARK-34110): Upgrade Zookeeper to 3.6.2
-  - [SPARK-37901](https://issues.apache.org/jira/browse/SPARK-37901): Upgrade Netty to 4.1.73
-  - gcs-hadoop-connector upgraded to hadoop3-2.1.2
+    - Jetty upgraded to 9.4.44.v20210927
+    - jackson-mapper-asl and jackson-core-asl upgraded to 1.9.14-atlassian-6
+    - jackson and jackson-databind upgraded to 2.13.1
+    - Kafka upgraded to 2.2.2
+    - [SPARK-34110](https://issues.apache.org/jira/browse/SPARK-34110): Upgrade Zookeeper to 3.6.2
+    - [SPARK-37901](https://issues.apache.org/jira/browse/SPARK-37901): Upgrade Netty to 4.1.73
+    - gcs-hadoop-connector upgraded to hadoop3-2.1.2
 
 * Ported patches for the following issues from Apache Geode:
-  - [GEODE-1252](https://issues.apache.org/jira/browse/GEODE-1252): Modify bits field atomically
-  - [GEODE-2802](https://issues.apache.org/jira/browse/GEODE-2802): Tombstone version vector to contain only
+    - [GEODE-1252](https://issues.apache.org/jira/browse/GEODE-1252): Modify bits field atomically
+    - [GEODE-2802](https://issues.apache.org/jira/browse/GEODE-2802): Tombstone version vector to contain only
     the members that generate the tombstone
-  - [GEODE-5278](https://issues.apache.org/jira/browse/GEODE-5278): Unexpected CommitConflictException caused by
+    - [GEODE-5278](https://issues.apache.org/jira/browse/GEODE-5278): Unexpected CommitConflictException caused by
     faulty region synchronization
-  - [GEODE-4083](https://issues.apache.org/jira/browse/GEODE-4083): Fix infinite loop caused by thread race
-    changing version
-  - [GEODE-3796](https://issues.apache.org/jira/browse/GEODE-3796): Changes are made to validate region version
-    after the region is initialized
-  - [GEODE-6058](https://issues.apache.org/jira/browse/GEODE-6058): recordVersion should allow update higher local
-    version if for non-persistent region
-  - [GEODE-6013](https://issues.apache.org/jira/browse/GEODE-6013): Use expected initial image requester's
-    rvv information
-  - [GEODE-2159](https://issues.apache.org/jira/browse/GEODE-2159): Add serialVersionUIDs to exception classes
-    not having them
-  - [GEODE-5559](https://issues.apache.org/jira/browse/GEODE-5559): Improve runtime of
-    RegionVersionHolder.canonicalExceptions
-  - [GEODE-5612](https://issues.apache.org/jira/browse/GEODE-5612): Fix RVVExceptionB.writeReceived()
-  - [GEODE-7085](https://issues.apache.org/jira/browse/GEODE-7085): Ensure that the bitset stays within
-    BIT_SET_WIDTH and is flushed in all code paths
-  - GFE-50415: Wait for membership change in persistence advisor can hang if the event was missed
-  - [GEODE-5111](https://issues.apache.org/jira/browse/GEODE-5111): Set offline members to null only when done
-    waiting for them
+    - [GEODE-4083](https://issues.apache.org/jira/browse/GEODE-4083): Fix infinite loop caused
+      by thread race changing version
+    - [GEODE-3796](https://issues.apache.org/jira/browse/GEODE-3796): Changes are made to
+      validate region version after the region is initialized
+    - [GEODE-6058](https://issues.apache.org/jira/browse/GEODE-6058): recordVersion should
+      allow update higher local version if for non-persistent region
+    - [GEODE-6013](https://issues.apache.org/jira/browse/GEODE-6013): Use expected initial
+      image requester's rvv information
+    - [GEODE-2159](https://issues.apache.org/jira/browse/GEODE-2159): Add serialVersionUIDs to
+      exception classes not having them
+    - [GEODE-5559](https://issues.apache.org/jira/browse/GEODE-5559): Improve runtime of
+      RegionVersionHolder.canonicalExceptions
+    - [GEODE-5612](https://issues.apache.org/jira/browse/GEODE-5612):
+      Fix RVVExceptionB.writeReceived()
+    - [GEODE-7085](https://issues.apache.org/jira/browse/GEODE-7085): Ensure that the bitset
+      stays within BIT_SET_WIDTH and is flushed in all code paths
+    - GFE-50415: Wait for membership change in persistence advisor can hang if the member
+      join event was missed
+    - [GEODE-5111](https://issues.apache.org/jira/browse/GEODE-5111): Set offline members to
+      null only when done waiting for them
 
 * Merged patches for the following Spark issues:
-  - [SPARK-6305](https://issues.apache.org/jira/browse/SPARK-6305): Migrate from log4j1 to log4j2
-  - Followups SPARK-37684, SPARK-37774 to upgrade log4j to 2.17.x
-  - [SPARK-37791](https://issues.apache.org/jira/browse/SPARK-37791): Use log4j2 in examples
-  - [SPARK-37794](https://issues.apache.org/jira/browse/SPARK-37794): Remove internal log4j bridge api usage
-  - [SPARK-37746](https://issues.apache.org/jira/browse/SPARK-37746): log4j2-defaults.properties is not working
-    since log4j 2 is always initialized by default
-  - [SPARK-37792](https://issues.apache.org/jira/browse/SPARK-37792): Fix the check of custom configuration in
-    SparkShellLoggingFilter
-  - [SPARK-37795](https://issues.apache.org/jira/browse/SPARK-37795): Add a scalastyle rule to ban `org.apache.log4j`
-    imports
-  - [SPARK-37805](https://issues.apache.org/jira/browse/SPARK-37805): Refactor `TestUtils#configTestLog4j` method
-    to use log4j2 api
-  - [SPARK-37889](https://issues.apache.org/jira/browse/SPARK-37889): Replace Log4j2 MarkerFilter with RegexFilter
-  - [SPARK-26267](https://issues.apache.org/jira/browse/SPARK-26267): Retry when detecting incorrect offsets
-    from Kafka
-  - [SPARK-37729](https://issues.apache.org/jira/browse/SPARK-37729): Fix SparkSession.setLogLevel that is not
-    working in Spark Shell
-  - [SPARK-37887](https://issues.apache.org/jira/browse/SPARK-37887): Fix the check of repl log level
-  - [SPARK-37790](https://issues.apache.org/jira/browse/SPARK-37790): Upgrade SLF4J to 1.7.32
-  - [SPARK-22324](https://issues.apache.org/jira/browse/SPARK-22324): Upgrade Arrow to 0.8.0
-  - [SPARK-25598](https://issues.apache.org/jira/browse/SPARK-25598): Remove flume connector in Spark
-  - [SPARK-37693](https://issues.apache.org/jira/browse/SPARK-37693): Fix ChildProcAppHandleSuite failed in Jenkins
-    maven test
+    - [SPARK-6305](https://issues.apache.org/jira/browse/SPARK-6305): Migrate from log4j1 to log4j2
+    - Followups SPARK-37684, SPARK-37774 to upgrade log4j to 2.17.x
+    - [SPARK-37791](https://issues.apache.org/jira/browse/SPARK-37791): Use log4j2 in examples
+    - [SPARK-37794](https://issues.apache.org/jira/browse/SPARK-37794): Remove internal log4j
+      bridge api usage
+    - [SPARK-37746](https://issues.apache.org/jira/browse/SPARK-37746):
+      log4j2-defaults.properties is not working since log4j 2 is always initialized by default
+    - [SPARK-37792](https://issues.apache.org/jira/browse/SPARK-37792): Fix the check of
+      custom configuration in SparkShellLoggingFilter
+    - [SPARK-37795](https://issues.apache.org/jira/browse/SPARK-37795): Add a scalastyle rule
+      to ban `org.apache.log4j` imports
+    - [SPARK-37805](https://issues.apache.org/jira/browse/SPARK-37805):
+      Refactor `TestUtils#configTestLog4j` method to use log4j2 api
+    - [SPARK-37889](https://issues.apache.org/jira/browse/SPARK-37889): Replace Log4j2
+      MarkerFilter with RegexFilter
+    - [SPARK-26267](https://issues.apache.org/jira/browse/SPARK-26267): Retry when detecting
+      incorrect offsets from Kafka
+    - [SPARK-37729](https://issues.apache.org/jira/browse/SPARK-37729):
+      Fix SparkSession.setLogLevel that is not working in Spark Shell
+    - [SPARK-37887](https://issues.apache.org/jira/browse/SPARK-37887): Fix the check of REPL
+      log level
+    - [SPARK-37790](https://issues.apache.org/jira/browse/SPARK-37790): Upgrade SLF4J to 1.7.32
+    - [SPARK-22324](https://issues.apache.org/jira/browse/SPARK-22324): Upgrade Arrow to 0.8.0
+    - [SPARK-25598](https://issues.apache.org/jira/browse/SPARK-25598): Remove flume connector
+      in Spark
+    - [SPARK-37693](https://issues.apache.org/jira/browse/SPARK-37693):
+      Fix ChildProcAppHandleSuite failed in Jenkins maven test
 
 
 ## Resolved Issues
@@ -162,7 +168,7 @@ SnappyData 1.3.1 resolves the following major issues apart from the patches note
 ## Known Issues
 
 The known issues noted in [1.3.0 release notes](https://tibcosoftware.github.io/snappydata/1.3.0/release_notes/release_notes/#known-issues)
-still apply in 1.3.1 release.
+still apply in 1.3.1 release. These have been reproduced below for reference:
 
 | Key | Item | Description | Workaround |
 | --- | ---- | ----------- | ---------- |
