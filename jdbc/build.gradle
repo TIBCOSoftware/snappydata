@@ -100,7 +100,7 @@ shadowJar {
       'Manifest-Version'  : '1.0',
       'Created-By'        : createdBy,
       'Title'             : "snappydata-jdbc_${scalaBinaryVersion}",
-      'Version'           : archiveVersion,
+      'Version'           : archiveVersion.get(),
       'Vendor'            : vendorName
     )
   }

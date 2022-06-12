@@ -4,11 +4,11 @@ SnappyData™ is a memory-optimized database based on Apache Spark. It delivers 
 throughput, low latency, and high concurrency for unified analytic workloads that may combine
 streaming, interactive analytics, and artificial intelligence in a single, easy to manage distributed cluster.
 
-In previous releases there were two editions namely, the Community Edition which was a fully functional
-core OSS distribution that was under the Apache Source License v2.0, and the Enterprise Edition
-which was sold by TIBCO Software under the name TIBCO ComputeDB™ that included everything offered
-in the OSS version along with additional capabilities that are closed source and only available
-as part of a licensed subscription.
+Prior to release 1.3.0 there were two editions namely, the Community Edition which was a fully
+functional core OSS distribution that was under the Apache Source License v2.0, and the
+Enterprise Edition which was sold by TIBCO Software under the name TIBCO ComputeDB™ that included
+everything offered in the OSS version along with additional capabilities that are closed source
+and only available as part of a licensed subscription.
 
 The SnappyData team is pleased to announce the availability of version 1.3.1 of the platform.
 Starting with release 1.3.0, all the platform's private modules have been made open-source apart from
@@ -25,7 +25,8 @@ You can find details of the release artifacts towards the end of this page.
 The full set of documentation for SnappyData 1.3.1 including installation guide, user guide
 and reference guide can be found [here](https://tibcosoftware.github.io/snappydata/1.3.1/).
 
-Release notes for the previous 1.3.0 release can be found [here](https://tibcosoftware.github.io/snappydata/1.3.0/).
+Release notes for the previous 1.3.0 release can be found
+[here](https://tibcosoftware.github.io/snappydata/1.3.0/release_notes/release_notes).
 
 The following table summarizes the high-level features available in the SnappyData platform:
 
@@ -94,11 +95,21 @@ SnappyData 1.3.1 includes the following changes to improve stability and securit
 
 * Apart from Log4J, following dependencies were updated to address known security issues:
     - Jetty upgraded to 9.4.44.v20210927
+    - Eclipse Jersey upgraded to 2.35
     - jackson-mapper-asl and jackson-core-asl upgraded to 1.9.14-atlassian-6
-    - jackson and jackson-databind upgraded to 2.13.1
+    - jackson and jackson-databind upgraded to 2.13.3
     - Kafka upgraded to 2.2.2
+    - Protobuf upgraded to 3.16.1
+    - Ant upgraded to 1.10.12
+    - Apache HttpClient upgraded to 4.5.13
+    - Upgrades to Apache commons dependencies:
+        - commons-io: 2.6 => 2.11.0
+        - commons-codec: 1.11 => 1.15
+        - commons-compress: 1.4.1 => 1.21
+        - commons-beanutils: 1.9.3 => 1.9.4
     - [SPARK-34110](https://issues.apache.org/jira/browse/SPARK-34110): Upgrade Zookeeper to 3.6.2
     - [SPARK-37901](https://issues.apache.org/jira/browse/SPARK-37901): Upgrade Netty to 4.1.73
+    - Netty further upgraded to 4.1.77
     - gcs-hadoop-connector upgraded to hadoop3-2.1.2
 
 * Ported patches for the following issues from Apache Geode:
@@ -130,7 +141,8 @@ SnappyData 1.3.1 includes the following changes to improve stability and securit
 
 * Merged patches for the following Spark issues:
     - [SPARK-6305](https://issues.apache.org/jira/browse/SPARK-6305): Migrate from log4j1 to log4j2
-    - Followups SPARK-37684, SPARK-37774 to upgrade log4j to 2.17.x
+    - Followup [SPARK-37684](https://issues.apache.org/jira/browse/SPARK-37684) and
+      [SPARK-37774](https://issues.apache.org/jira/browse/SPARK-37774) to upgrade log4j to 2.17.x
     - [SPARK-37791](https://issues.apache.org/jira/browse/SPARK-37791): Use log4j2 in examples
     - [SPARK-37794](https://issues.apache.org/jira/browse/SPARK-37794): Remove internal log4j
       bridge api usage
@@ -181,7 +193,18 @@ still apply in 1.3.1 release. These have been reproduced below for reference:
 | [SNAP-3298](https://jirasnappydataio.atlassian.net/browse/SNAP-3298) | Credentials set in Hadoop configuration in the Spark context can be set only once without restarting the cluster. | The credentials that are embedded in a FileSystem object. The object is cached in FileSystem cache. The cached object does not get refreshed when there is a configuration (credentials) change. Hence, it uses the initially set credentials even if you have set new credentials. | Run the `org.apache.hadoop.fs.FileSystem.closeAll()` command on `snappy-scala` shell or using `EXEC SCALA` SQL or in a job. This clears the cache. Ensure that there are no queries running on the cluster when you are executing the command. After this you can set the new credentials. |
 
 
-## Description of Download Artifacts
+## Downloading and verifying Release Artifacts
+
+Download all the artifacts listed on the [release](https://github.com/TIBCOSoftware/snappydata/releases/tag/v1.3.1)
+page, then use the following to verify on Linux or Mac:
+
+    gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys A7994CE77A24E5511A68727D8CED09EB8184C4D6
+    gpg --verify snappydata-1.3.1.sha256.asc
+    (above should show a good signature from "SnappyData Inc. (build artifacts) <build@snappydata.io>")
+    sha256sum --check snappydata-1.3.1.sha256
+    (above should show OK for all the artifacts)
+
+If you do not need some of the artifacts, then you can skip downloading them in which case the `sha256sum` command will show `FAILED open or read` error or equivalent for this missing artifacts. Alternatively you can explicitly run `sha256sum` on only the downloaded artifacts, then manually compare the values to those listed in `snappydata-1.3.1.sha256`.
 
 The following table describes the download artifacts included in SnappyData 1.3.1 release:
 
