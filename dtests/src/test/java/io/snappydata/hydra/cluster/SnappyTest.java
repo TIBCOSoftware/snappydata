@@ -451,6 +451,8 @@ public class SnappyTest implements Serializable {
         }*/
         SnappyBB.getBB().getSharedMap().put("sparkLogDir" + "_" + snappyTest.getMyTid(), sparkLogDir);
         SnappyBB.getBB().getSharedMap().put("sparkWorkerDir" + "_" + snappyTest.getMyTid(), sparkWorkerDir);
+        SnappyBB.getBB().getSharedMap().put("sparkJavaHome" + "_" + snappyTest.getMyTid(),
+            System.getProperty("java.home"));
         break;
     }
     SnappyBB.getBB().getSharedMap().put(logDir + "_" + RemoteTestModule.getMyVmid() + "_" +
@@ -641,6 +643,7 @@ public class SnappyTest implements Serializable {
     snappyTest.writeWorkerConfigData("slaves", "workerLogDir");
     snappyTest.writeConfigData("spark-env.sh", "sparkLogDir");
     snappyTest.writeConfigData("spark-env.sh", "sparkWorkerDir");
+    snappyTest.writeConfigData("spark-env.sh", "sparkJavaHome");
     //snappyTest.writeConfigData("spark-env.sh", "sparkMasterHost");
   }
 

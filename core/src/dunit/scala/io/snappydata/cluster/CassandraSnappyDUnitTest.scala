@@ -112,7 +112,7 @@ class CassandraSnappyDUnitTest(val s: String)
     }
     if (downloadFiles) {
       val cassandraTarball = s"apache-cassandra-$cassandraVersion-bin.tar.gz"
-      s"curl -OL http://www-us.apache.org/dist/cassandra/$cassandraVersion/$cassandraTarball".!!
+      s"curl -OL http://www.apache.org/dist/cassandra/$cassandraVersion/$cassandraTarball".!!
       ("curl -OL https://repo1.maven.org/maven2/com/datastax/spark/" +
           s"spark-cassandra-connector_2.11/$cassandraConnVersion/$cassandraConnectorJar").!!
       ("tar xf " + cassandraTarball).!!
@@ -134,10 +134,13 @@ class CassandraSnappyDUnitTest(val s: String)
     stopSnappyCluster()
 
     logInfo("Stopping cassandra cluster")
-    val p = Runtime.getRuntime.exec("pkill -f cassandra")
-    p.waitFor()
-    p.exitValue() == 0
-    logInfo("Cassandra cluster stopped successfully")
+    val cmd = "pkill -f cassandra"
+    val p = Runtime.getRuntime.exec(cmd)
+    val msg = p.waitFor() match {
+      case 0 => "Cassandra cluster stopped successfully"
+      case exitCode => s"Failed to stop cassandra cluster with '$cmd' (exitCode=$exitCode)"
+    }
+    logInfo(msg)
   }
 
   private def downloadURI(url: String): String = {

@@ -174,8 +174,9 @@ object ClusterUtils extends Serializable with Logging {
 
   def startSparkCluster(clusterDir: String): String = {
     logInfo(s"Starting spark cluster in $clusterDir/work")
+    val javaHome = System.getProperty("java.home")
     writeToFile(
-      s"\nSPARK_WORKER_CORES=${TestUtils.defaultCores * 2}",
+      s"\nSPARK_WORKER_CORES=${TestUtils.defaultCores * 2}\nJAVA_HOME=$javaHome\n",
       s"$clusterDir/conf/spark-env.sh", append = true)
     val output = s"$clusterDir/sbin/start-all.sh".!!
     logInfo(output)

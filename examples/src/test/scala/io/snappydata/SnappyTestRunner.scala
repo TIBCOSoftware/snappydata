@@ -113,6 +113,12 @@ with Logging with Retries {
       close()
     }
     leadFile.deleteOnExit()
+    val envFile = new File(s"$snappyHome/conf/spark-env.sh")
+    new PrintWriter(envFile) {
+      write(s"JAVA_HOME=${System.getProperty("java.home")}\n")
+      close()
+    }
+    envFile.deleteOnExit()
 
     val (out, _) = executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-start-all.sh",
       Some(commandOutput))
