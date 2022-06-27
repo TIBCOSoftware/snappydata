@@ -72,7 +72,7 @@ allprojects {
   apply plugin: 'org.owasp.dependencycheck'
 
   group = 'io.snappydata'
-  version = '1.3.1'
+  version = '1.3.1-HF-1'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -160,7 +160,7 @@ allprojects {
     eclipseCollectionsVersion = '10.4.0'
 
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.7'
+    snappyStoreVersion = '1.6.7-HF-1'
     snappydataVersion = version
     zeppelinInterpreterVersion = '0.8.2.1'
 

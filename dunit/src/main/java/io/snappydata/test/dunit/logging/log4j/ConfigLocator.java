@@ -38,7 +38,7 @@ package io.snappydata.test.dunit.logging.log4j;
 import java.io.File;
 
 /**
- * Utility methods for finding the Log4J 2 configuration file.
+ * Utility methods for finding the Log4j 2 configuration file.
  *
  * TODO This class is copied from GEODE source but put into snappy-dunits.
  * TODO The current package is renamed from com.gemstone.gemfire.internal.logging.log4j to avoid package sealing issue.

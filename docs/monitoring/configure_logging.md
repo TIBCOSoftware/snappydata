@@ -8,7 +8,6 @@ You can configure logging by copying the existing template file **log4j2.propert
 For example, the following can be added to the **log4j2.properties** file to change the logging level of the classes of Spark scheduler.
 
 ```pre
-$ cat conf/log4j2.properties
 logger.scheduler.name = org.apache.spark.scheduler.TaskSchedulerImpl
 logger.scheduler.level = debug
 ```
@@ -28,6 +27,12 @@ produces
 ```
 
 This is the recommended pattern to use for SnappyData logging.
+
+## Logging in application code
+
+Application code like in jobs, UDFs etc. should use SLF4J for logging instead of using Log4j directly.
+Scala code can extend `org.apache.spark.Logging` trait which provides convenience methods like
+`logInfo`/`logError`/`logDebug`. Refer to its [API docs](../apidocs/index.html#org.apache.spark.Logging) for details.
 
 ## Setting Log Level at Runtime
 
@@ -79,7 +84,7 @@ SnappyData Store provides the following trace flags that you can use with the `g
 To enable logging of specific features of SnappyData, set the required trace flag in the `gemfirexd.debug.true` system property. For example, you can add the following setting inside the configuration file of the SnappyData member to enable logging for query distribution and indexing:
 
 ```pre
-localhost -J-Dgemfirexd.debug.true=QueryDistribution,TraceIndex
+localhost -Dgemfirexd.debug.true=QueryDistribution,TraceIndex
 ```
 
 If you need to set a trace flag in a running system, use the [SYS.SET_TRACE_FLAG](../reference/inbuilt_system_procedures/set-trace-flag.md) system procedure. The procedure sets the trace flag in all members of the distributed system, including locators. You must execute the procedure as a system user. For example:
@@ -88,5 +93,3 @@ If you need to set a trace flag in a running system, use the [SYS.SET_TRACE_FLAG
 snappy> call sys.set_trace_flag('traceindex', 'true');
 Statement executed.
 ```
-!!! Note
-	Trace flags work only for `snappy` and `jdbc` and not for `snappy-sql`.

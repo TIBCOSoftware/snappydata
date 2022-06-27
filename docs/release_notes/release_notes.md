@@ -71,13 +71,50 @@ The following table summarizes the high-level features available in the SnappyDa
 
 SnappyData 1.3.1 release includes the following new features over the previous 1.3.1 release:
 
-* **Support for Log4J 2.x (2.17.2) which is used by default**<br/>
+* **Support for Log4j 2.x (2.17.2) which is used by default**<br/>
 
     Following up with the exposure of Log4Shell and related vulnerabilities, SnappyData Platform has moved
-    to the latest Log4J 2.x (2.17.2) from the previous Log4J 1.x. Patches were ported for the Spark components
-    (where support for Log4J 2.x will land only with the 3.3.0 release), while other components were updated
-    to use Log4J/SLF4J. The Spark connector component supports both Log4J 2.x and Log4J 1.x to allow compatibility
-    with upstream Spark releases while the SnappyData's Spark distribution only uses Log4J 2.x.
+    to the latest Log4j 2.x (2.17.2) from the previous Log4j 1.x. Patches were ported for the Spark components
+    (where support for Log4j 2.x will land only with the 3.3.0 release), while other components were updated
+    to use Log4j/SLF4J. The Spark connector component supports both Log4j 2.x and Log4j 1.x to allow compatibility
+    with upstream Spark releases while the SnappyData's Spark distribution only uses Log4j 2.x.
+
+
+## Upgrading from 1.3.0 and older releases
+
+Apart from the usual steps noted in the [Migration Guide](../migration/migration.md), due to the move
+to Log4j 2 from Log4j 1, users may need to perform a one or more of the steps noted below:
+
+* If the existing installation is using a custom `log4j.properties`/`log4j.xml` configuration in **conf**
+  directory, then you will need to convert it to an equivalent `log4j2.properties`/`log4j2.xml` configuration.
+  More details can be found in the [Log4j documentation](https://logging.apache.org/log4j/2.x/manual/migration.html).
+  For convenience, a template configuration is included in the product as `conf/log4j2.properties.template`
+  which is tne equivalent of the `conf/log4j.properties.template` configuration included in previous releases
+  and is also the default configuration used by the product (apart from the default log file name).
+  Hence if the existing configuration has been created by modifying the `conf/log4j.properties.template` file
+  from the previous release, then it will be easier to find the differences between the two and just migrate
+  those to the new `conf/log4j2.properties.template` (copied to `conf/log4j2.properties`) instead of migrating
+  the entire configuration.
+
+* If code of a [job](../programming_guide/snappydata_jobs.md) or its dependencies is using Log4j 1,
+  then they should be migrated to use Log4j 2. It is recommended that user's job code should use SLF4J
+  for logging instead of directly using Log4j. Scala code can extend `org.apache.spark.Logging` trait
+  for convenience which provides methods like `logInfo`/`logError`/`logDebug` etc.
+
+* If the code of a [UDF or UDAF](../programming_guide/udf_and_udaf.md) or its dependencies is using Log4j 1,
+  then they should likewise be migrated to use Log4j 2 or preferably SLF4J. Like above scala code can use
+  the `org.apache.spark.Logging` trait for convenience. Upgrading a `UDF` will need one to drop it first
+  then recreate with the new jar.
+
+* Likewise, if a [DEPLOY JAR or PACKAGE](../reference/sql_reference/deploy.md) depends on Log4j 1,
+  then it should be migrated to use Log4j 2 or preferably SLF4J or the `org.apache.spark.Logging` trait.
+  Undeploy and deploy the updated jar/package for the change to take effect.
+
+* In the worst case where one or more dependencies for any of the above three cases have a hard dependency on
+  Log4j 1 which cannot be changed to use Log4j 2, you can have a `log4j.properties`/`log4j.xml` packaged in
+  the jar which configures logging for only those components. The log file used must be distinct from any
+  of the others to avoid any conflicts with Log4j 2 loggers. Furthermore, Log4j 1 itself must be included
+  as a dependency in the jars directly or indirectly since the product no longer includes it.
 
 
 ## Stability and Security Improvements
@@ -93,7 +130,7 @@ SnappyData 1.3.1 includes the following changes to improve stability and securit
 
 * Fixed UDF name lookups to do exact regex match in the CSV list in the meta-data region.
 
-* Apart from Log4J, following dependencies were updated to address known security issues:
+* Apart from Log4j, following dependencies were updated to address known security issues:
     - Jetty upgraded to 9.4.44.v20210927
     - Eclipse Jersey upgraded to 2.35
     - jackson-mapper-asl and jackson-core-asl upgraded to 1.9.14-atlassian-6

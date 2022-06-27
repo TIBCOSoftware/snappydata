@@ -40,7 +40,8 @@ snappy> insert into table1 select * from table1_parquet;
 Use a path for the Parquet file that has enough space to hold the table data. Once the re-import has completed successfully, make sure that the Parquet files are deleted explicitly.
 
 !!! Note
-	Upgrade to SnappyData from 1.0.2 or later versions can be done directly. 
+	Upgrade to SnappyData from 1.0.2 or later versions can be done directly.
+	For changes related to Log4j 2 migration in 1.3.1, please check the release notes.
 
 
 ## Migrating to the SnappyData ODBC Driver
